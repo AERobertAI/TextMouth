@@ -265231,6 +265231,12 @@
     "The microphone TextMouth used last isn't connected, so recordings use %@." : {
       "comment" : "Said by the Record window when the microphone used last is not connected as the window opens. %@ is the name of the microphone recordings use instead.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "الميكروفون الذي استخدمه TextMouth آخر مرة غير متصل، لذا تستخدم التسجيلات %@."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -265296,6 +265302,12 @@
     "The microphone to record from. TextMouth remembers it; the input macOS uses elsewhere is unchanged." : {
       "comment" : "VoiceOver hint and tooltip of the Microphone pop-up in the Record window. TextMouth is the app's name.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "الميكروفون الذي يُسجَّل منه. يتذكره TextMouth؛ ولا يتغير الإدخال الذي يستخدمه macOS في أماكن أخرى."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -266981,6 +266993,12 @@
     "The original audio was deleted on %@, so edits saved before then can't be undone." : {
       "comment" : "Said when Undo can't reach edits already saved, and the hint of a dimmed Undo in the audio editor: the book's original audio was deleted. %@ is the date it was deleted, in long form.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "حُذف الصوت الأصلي في %@، لذا لا يمكن التراجع عن التعديلات المحفوظة قبل ذلك."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -268045,6 +268063,12 @@
     "The original is the lossless take a recording is saved from, or a copy of an audiobook's file from before its first edit. Keeping it lets every edit be undone without loss; a recording's costs about 345 MB an hour. A change also applies to originals already kept, and in a cloud library an original syncs with its book." : {
       "comment" : "Hint of the Original audio picker in Storage settings (Audio Editing): what an original is, what keeping it costs (345 MB is for an hour of a recording), and that a change reaches originals already kept.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "الأصل هو النسخة بلا فقدان التي يُحفظ منها التسجيل، أو نسخة من ملف الكتاب الصوتي قبل أول تعديل له. يتيح الاحتفاظ به التراجع عن كل تعديل دون فقدان؛ ويكلّف أصل التسجيل نحو 345 ميغابايت في الساعة. ويسري أي تغيير أيضًا على الأصول المحتفَظ بها بالفعل، وفي مكتبة سحابية يُزامَن الأصل مع كتابه."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -268609,6 +268633,12 @@
     "The pauses couldn't be found." : {
       "comment" : "Said when the audio editor couldn't find the audio's pauses. A sentence giving the reason follows.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تعذّر العثور على الوقفات."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -269699,6 +269729,12 @@
     "The podcast's own transcript, downloaded with the episode on %@." : {
       "comment" : "Sentence saying a podcast episode's transcript is the one the podcast published. %@ is a date.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "النسخة النصية الخاصة بالبودكاست، نُزّلت مع الحلقة في %@."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -269764,6 +269800,12 @@
     "The pre-cleanup transcript is only in the cloud. Download the book and try again." : {
       "comment" : "Error shown when Undo Cleanup is pressed and the transcript from before the cleanup has not been downloaded from the cloud drive.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "النسخة النصية السابقة للتنظيف موجودة في السحابة فقط. نزّل الكتاب وحاول مرة أخرى."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -270972,6 +271014,12 @@
     "The recording couldn't be converted to an audiobook file." : {
       "comment" : "Error in the Record window when saving: the recording could not be encoded as an audiobook file.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تعذّر تحويل التسجيل إلى ملف كتاب صوتي."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -271037,6 +271085,12 @@
     "The recording couldn't be finished properly. What was recorded is kept." : {
       "comment" : "Error in the Record window when stopping could not finish the recording's file properly.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تعذّر إنهاء التسجيل بشكل صحيح. تم الاحتفاظ بما سُجّل."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -271102,6 +271156,12 @@
     "The recording couldn't be saved: %@ It is kept; choose %@ or %@." : {
       "comment" : "Status line and announcement of the Record window when saving a recording failed. %1$@ is the reason, a whole sentence that ends with its own full stop, %2$@ is the title of the button that tries again, and %3$@ is the title of the button that deletes the recording.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تعذّر حفظ التسجيل: %1$@ تم الاحتفاظ به؛ اختر %2$@ أو %3$@."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -271238,6 +271298,12 @@
     "The recording was discarded." : {
       "comment" : "Status line of the Record window after a recording was discarded.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تم تجاهل التسجيل."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -271368,6 +271434,12 @@
     "The recording's audio couldn't be read." : {
       "comment" : "Error in the Record window when saving: the recorded take holds no audio that can be read.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تعذّرت قراءة صوت التسجيل."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -272018,6 +272090,12 @@
     "The selection is all the audio; nothing to trim." : {
       "comment" : "Said by the audio editor's Trim to Selection when the selection is all of the audio.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "التحديد هو كل الصوت؛ لا شيء للاقتصاص."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -272343,6 +272421,12 @@
     "The speech model for %@ isn't on this Mac yet. Download it first." : {
       "comment" : "Error shown when transcription is tried before the language's speech model is downloaded. %@ is the language's name.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "نموذج الكلام للغة %@ غير موجود على هذا الـ Mac بعد. نزّله أولًا."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -272408,6 +272492,12 @@
     "The stretch of the take to use isn't inside the take." : {
       "comment" : "Said when a punch-in's recording is asked to use a stretch that is not inside the recording.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "المقطع المراد استخدامه من اللقطة ليس داخل اللقطة."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -273194,6 +273284,12 @@
     "The transcript and the text made from it are deleted." : {
       "comment" : "First sentence of the question asked before an audiobook's transcript is deleted.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تُحذف النسخة النصية والنص المصنوع منها."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -273389,6 +273485,12 @@
     "The transcript can't be read. If the book is only in the cloud, download it and try again." : {
       "comment" : "Error shown when Clean Up Transcript cannot read the transcript.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تعذّرت قراءة النسخة النصية. إذا كان الكتاب في السحابة فقط، فنزّله وحاول مرة أخرى."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -273454,6 +273556,12 @@
     "The transcript changed since this was shown. Reopen Clean Up Transcript to see the changes." : {
       "comment" : "Error shown when the transcript changed after the Clean Up Transcript sheet showed its changes. Clean Up Transcript is the command's name.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تغيّرت النسخة النصية منذ عرض هذا. أعد فتح “تنظيف النسخة النصية” لرؤية التغييرات."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -273584,6 +273692,12 @@
     "The transcript files beside the audio weren't attached: %@" : {
       "comment" : "Notice after an import: the transcript files beside each track's audio were not attached. %@ is the reason, a sentence.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لم تُرفق ملفات النسخ النصية الموجودة بجوار الصوت: %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -273649,6 +273763,12 @@
     "The transcript from before the cleanup can't be used: %@." : {
       "comment" : "Error shown when Undo Cleanup is pressed and the transcript from before the cleanup is damaged. %@ is the reason, a technical phrase in English.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تعذّر استخدام النسخة النصية السابقة للتنظيف: %@."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -273714,6 +273834,12 @@
     "The transcript from “%@” replaces the book's transcript and the text made from it." : {
       "comment" : "First sentence of the question asked before a transcript from a file replaces an audiobook's transcript. %@ is the file's name.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تحلّ النسخة النصية من “%@” محل النسخة النصية للكتاب والنص المصنوع منها."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -273779,6 +273905,12 @@
     "The transcript holds no text to attach." : {
       "comment" : "Error shown when an attached transcript file holds no text.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لا تحتوي النسخة النصية على نص لإرفاقه."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -273844,6 +273976,12 @@
     "The transcript is only in iCloud, so TextMouth leaves it. Download the book, then try again." : {
       "comment" : "Line of the Transcribe Audio sheet when the book's transcript file has not been downloaded from iCloud to this Mac.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "النسخة النصية موجودة في iCloud فقط، لذا يتركها TextMouth. نزّل الكتاب ثم حاول مرة أخرى."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -273909,6 +274047,12 @@
     "The transcript is only in the cloud. Its details appear once the book is downloaded." : {
       "comment" : "Book Information's Transcript detail when the transcript file has not been downloaded from the cloud drive.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "النسخة النصية موجودة في السحابة فقط. تظهر تفاصيلها بعد تنزيل الكتاب."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -273974,6 +274118,12 @@
     "The transcript of %@ can't be read. If the book is only in the cloud, download it and try again." : {
       "comment" : "Alert shown when Clean Up Transcript is chosen for an audiobook whose transcript cannot be read. %@ is the audiobook's title.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تعذّرت قراءة النسخة النصية لـ%@. إذا كان الكتاب في السحابة فقط، فنزّله وحاول مرة أخرى."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -274039,6 +274189,12 @@
     "The transcript runs to %@, past the audio's end at %@, so it is for other audio." : {
       "comment" : "Error shown when an attached transcript file's times run past the end of the book's audio. %1$@ is where the transcript ends and %2$@ where the audio ends, each a length of time in words such as \"1 hour, 2 minutes, 5 seconds\".",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تمتد النسخة النصية إلى %1$@، متجاوزةً نهاية الصوت عند %2$@، لذا فهي لصوت آخر."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -274110,6 +274266,12 @@
     "The transcript's files could not be examined once they were written." : {
       "comment" : "Error shown when TextMouth could not check the audio files after writing a transcript for them.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تعذّر فحص ملفات النسخة النصية بعد كتابتها."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -274240,6 +274402,12 @@
     "The transcript's text didn't read back as one chapter per chapter of the book." : {
       "comment" : "Error shown when the text written from a transcript did not have one chapter for each chapter of the audiobook.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لم يُقرأ نص النسخة النصية فصلًا واحدًا لكل فصل من الكتاب."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -274305,6 +274473,12 @@
     "The transcript's times don't fit together, so TextMouth can't use it." : {
       "comment" : "Error shown when an attached transcript file's times are out of order or inconsistent.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "أزمنة النسخة النصية غير متوافقة، لذا لا يستطيع TextMouth استخدامها."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -274435,6 +274609,12 @@
     "The transcript, with your changes, stays with the episode in its feed, even after its download is deleted. Deleting the episode or feed deletes it; Move to Library keeps it as a book." : {
       "comment" : "Note under a podcast episode's transcript editor and cleanup sheet. Move to Library is the name of a command in the feed's episode menu.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تبقى النسخة النصية، مع تغييراتك، مع الحلقة في موجزها، حتى بعد حذف تنزيلها. يؤدي حذف الحلقة أو الموجز إلى حذفها؛ ويحتفظ بها “نقل إلى المكتبة” ككتاب."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -276641,6 +276821,12 @@
     "There's an empty filter between two commas." : {
       "comment" : "Problem found in a typed filter chain (the audio editor's Apply Filter and the filter presets): two commas in a row leave a filter with nothing in it.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يوجد مرشح فارغ بين فاصلتين."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -276706,6 +276892,12 @@
     "There's no audio after the cursor to preview." : {
       "comment" : "Said when the audio editor has no audio after the cursor to preview a filter on.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لا يوجد صوت بعد المؤشر لمعاينته."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -276901,6 +277093,12 @@
     "There's nothing to redo." : {
       "comment" : "Said by the audio editor's Redo when nothing has been undone.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لا شيء لإعادته."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -276966,6 +277164,12 @@
     "There's nothing to undo." : {
       "comment" : "Said when Undo is asked for and there is no edit to undo, and the hint of a dimmed Undo in the audio editor.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لا شيء للتراجع عنه."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -277291,6 +277495,12 @@
     "These edits need the original audio, which is no longer kept." : {
       "comment" : "Said when the edits wait to be rendered from an original audio that is gone. A second sentence says what helps.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تحتاج هذه التعديلات إلى الصوت الأصلي، وهو لم يعد محتفَظًا به."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -277551,6 +277761,12 @@
     "These transcript files beside the audio weren't attached: %@. The debug log says why." : {
       "comment" : "Notice after an import: several transcript files found beside the audio were not attached. %@ is their names as a list, such as \"“03.vtt”, “07.vtt”, and “09.srt”\".",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لم تُرفق ملفات النسخ النصية هذه الموجودة بجوار الصوت: %@. يبيّن سجل التصحيح السبب."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -278331,6 +278547,12 @@
     "This Mac can't run the speech model that transcription uses." : {
       "comment" : "Error shown when transcription is tried on a Mac whose hardware cannot run the speech model.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لا يستطيع هذا الـ Mac تشغيل نموذج الكلام الذي يستخدمه التفريغ."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -278396,6 +278618,12 @@
     "This Mac doesn't allow TextMouth to use the microphone: a device management profile or Screen Time restricts it." : {
       "comment" : "Error in the Record window when something other than the user, a device management profile or Screen Time, keeps TextMouth from using the microphone.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لا يسمح هذا الـ Mac لـ TextMouth باستخدام الميكروفون: ملف تعريف لإدارة الأجهزة أو مدة استخدام الجهاز يقيّده."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -279383,6 +279611,12 @@
     "This audio has no chapter markers." : {
       "comment" : "Said by the audio editor's chapter commands when the audio has no chapter markers.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لا يحتوي هذا الصوت على علامات فصل."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -279448,6 +279682,12 @@
     "This audiobook has no audio to transcribe." : {
       "comment" : "Error shown when transcription is tried for an audiobook with no audio file.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لا يحتوي هذا الكتاب الصوتي على صوت لتفريغه."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -279773,6 +280013,12 @@
     "This book follows the global setting now." : {
       "comment" : "Said as a book's original audio policy is set to follow the global setting. A sentence saying what that setting does follows.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يتبع هذا الكتاب الآن الإعداد العام."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -280071,6 +280317,12 @@
     "This book has a transcript made by a later version of TextMouth." : {
       "comment" : "Sentence in the Transcribe Audio sheet and Book Information saying the book's transcript was written by a newer version of this app, which this version cannot read.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لهذا الكتاب نسخة نصية أنشأها إصدار أحدث من TextMouth."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -280396,6 +280648,48 @@
     "This book keeps its original audio for %lld days after it was saved or last edited." : {
       "comment" : "Said as a book's original audio policy is set to keep the original for a number of days. %lld is the number of days.",
       "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "يحتفظ هذا الكتاب بصوته الأصلي لمدة %lld أيام بعد حفظه أو آخر تحرير له."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "يحتفظ هذا الكتاب بصوته الأصلي لمدة %lld يومًا بعد حفظه أو آخر تحرير له."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "يحتفظ هذا الكتاب بصوته الأصلي لمدة %lld يوم بعد حفظه أو آخر تحرير له."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "يحتفظ هذا الكتاب بصوته الأصلي لمدة %lld يوم بعد حفظه أو آخر تحرير له."
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "يحتفظ هذا الكتاب بصوته الأصلي لمدة %lld يومين بعد حفظه أو آخر تحرير له."
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "يحتفظ هذا الكتاب بصوته الأصلي لمدة %lld أيام بعد حفظه أو آخر تحرير له."
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -280629,6 +280923,12 @@
     "This book keeps its original audio until the book is removed." : {
       "comment" : "Said as a book's original audio policy is set to keep the original until the book is removed.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يحتفظ هذا الكتاب بصوته الأصلي حتى تتم إزالة الكتاب."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -280694,6 +280994,12 @@
     "This book keeps no original audio: saved edits change its audio in place, and can't be undone after." : {
       "comment" : "Said as a book's original audio policy is set to keep no original.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لا يحتفظ هذا الكتاب بصوت أصلي: تغيّر التعديلات المحفوظة صوته في مكانه، ولا يمكن التراجع عنها بعد ذلك."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -284584,6 +284890,12 @@
     "This recording isn't saved. %@ tries again, %@ deletes it, and %@ keeps the window open." : {
       "comment" : "Explanation under the question asked when the Record window is closed with a recording that could not be saved. %1$@, %2$@, and %3$@ are the titles of the question's three buttons: the one that saves, the one that deletes the recording, and the one that keeps the window open.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "هذا التسجيل غير محفوظ. %1$@ يحاول مرة أخرى، و%2$@ يحذفه، و%3$@ يُبقي النافذة مفتوحة."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -284915,6 +285227,12 @@
     "Time" : {
       "comment" : "A segment of the display picker in Search in Book: each result's position is shown as an estimated time into the book.\nLabel before the time of the refusal, in a line of the speech refusal report; the time is written as the log files write it.\nLabel of a field in the audio editor that takes a time.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "الوقت"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -285370,6 +285688,12 @@
     "Time to transcribe: %@." : {
       "comment" : "Line of the Transcribe Audio sheet estimating how long transcribing will take. %@ is the estimate in words, such as \"about 6 minutes\" or \"less than a minute\".",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "وقت التفريغ: %@."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -285435,6 +285759,12 @@
     "Time to transcribe: not known yet." : {
       "comment" : "Line of the Transcribe Audio sheet before the audiobook's length is known, so no time estimate can be made.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "وقت التفريغ: غير معروف بعد."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -286188,6 +286518,12 @@
     "Title for a chapter marker at the cursor. One already there is renamed." : {
       "comment" : "Explains the title field of the audio editor's Insert Chapter Marker sheet.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "عنوان لعلامة فصل عند المؤشر. إذا وُجدت علامة هناك، تتم إعادة تسميتها."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -287662,6 +287998,12 @@
     "To use it, open the book and choose %@ from the Book menu." : {
       "comment" : "Last sentence of a notice after an import, saying how to attach the transcript file by hand. %@ is the name of the Attach Transcript command in the Book menu.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لاستخدامه، افتح الكتاب واختر %@ من قائمة الكتاب."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -288070,6 +288412,12 @@
     "Too long to keep for pasting. To move it, paste right after cutting." : {
       "comment" : "Said by the audio editor's Paste when the audio cut was too long to keep for pasting.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "طويل جدًا بحيث لا يمكن الاحتفاظ به للصق. لنقله، الصق مباشرة بعد القص."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -288135,6 +288483,48 @@
     "Too many timed passages: the limit is %lld." : {
       "comment" : "Error shown when a chosen transcript file holds more timed passages than the app reads. %lld is the limit, written with the region's digit grouping.",
       "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "عدد الفقرات الزمنية أكبر من اللازم: الحد هو %lld."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "عدد الفقرات الزمنية أكبر من اللازم: الحد هو %lld."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "عدد الفقرات الزمنية أكبر من اللازم: الحد هو %lld."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "عدد الفقرات الزمنية أكبر من اللازم: الحد هو %lld."
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "عدد الفقرات الزمنية أكبر من اللازم: الحد هو %lld."
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "عدد الفقرات الزمنية أكبر من اللازم: الحد هو %lld."
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -288628,6 +289018,12 @@
     "Track" : {
       "comment" : "Label of the pop-up that chooses which audio track of a book to edit.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "المقطع"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -288758,6 +289154,12 @@
     "Transcribe" : {
       "comment" : "Button of the Transcribe Audio sheet that starts transcribing the audiobook.\nButton of the question offered after an import that opens Transcribe Audio for the new audiobook.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تفريغ"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -288823,6 +289225,12 @@
     "Transcribe %@" : {
       "comment" : "Heading of the Transcribe Audio sheet before transcribing. %@ is the audiobook's title.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تفريغ %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -288888,6 +289296,12 @@
     "Transcribe Audio" : {
       "comment" : "Heading of the Transcribe Audio sheet when it can only explain why transcription is not possible.\nTitle of the alert saying why Transcribe Audio did nothing.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تفريغ الصوت"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -288953,6 +289367,12 @@
     "Transcribe Audio…" : {
       "comment" : "Menu item and VoiceOver action that opens the sheet for turning an audiobook's speech into text. The ellipsis means a sheet follows.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تفريغ الصوت…"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -289213,6 +289633,12 @@
     "Transcribe it now?" : {
       "comment" : "Last sentence of the question offering to transcribe a new audiobook.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "هل تريد تفريغه الآن؟"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -289278,6 +289704,12 @@
     "Transcribe the Audiobook?" : {
       "comment" : "Title of the question asked after an audiobook is imported, offering to transcribe it.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "هل تريد تفريغ الكتاب الصوتي؟"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -289343,6 +289775,12 @@
     "Transcribed" : {
       "comment" : "Note after a book's title in the library, saying the audiobook has a transcript.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "مفرَّغ"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -289408,6 +289846,12 @@
     "Transcribed %@: %@ in %@." : {
       "comment" : "What VoiceOver hears when a transcription finishes and the transcript is saved. %1$@ is the audiobook's title; %2$@ is the number of words, such as \"7,077 words\"; %3$@ is how long it took, such as \"51 seconds\".",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تم تفريغ %1$@: %2$@ في %3$@."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -289479,6 +289923,12 @@
     "Transcribed on %@, in %@." : {
       "comment" : "Sentence in the Transcribe Audio sheet and Book Information saying when and in which language TextMouth made an audiobook's transcript. %1$@ is a date, such as \"October 4, 2026\"; %2$@ is the language's name.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تم التفريغ في %1$@ باللغة %2$@."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -289550,6 +290000,12 @@
     "Transcribes the book's audio again, replacing its transcript." : {
       "comment" : "VoiceOver hint of the Retranscribe button.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يفرّغ صوت الكتاب مرة أخرى، ويستبدل نسخته النصية."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -289615,6 +290071,12 @@
     "Transcribes the book's audio on this Mac, so VoiceOver and braille can read the narration as text." : {
       "comment" : "VoiceOver hint of the Transcribe button.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يفرّغ صوت الكتاب على هذا الـ Mac، ليتمكن VoiceOver وبرايل من قراءة السرد كنص."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -289680,6 +290142,12 @@
     "Transcribing" : {
       "comment" : "Note after a book's title in the library, saying the audiobook is being transcribed now.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "قيد التفريغ"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -289745,6 +290213,12 @@
     "Transcribing %@" : {
       "comment" : "Heading of the Transcribe Audio sheet while the audiobook is being transcribed. %@ is the audiobook's title.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "جارٍ تفريغ %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -289810,6 +290284,12 @@
     "Transcribing %@, %@." : {
       "comment" : "What VoiceOver hears as a transcription begins. %1$@ is the audiobook's title; %2$@ is the time it should take, such as \"about 1 minute\".",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "جارٍ تفريغ %1$@، %2$@."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -289881,6 +290361,12 @@
     "Transcribing %@." : {
       "comment" : "What VoiceOver hears as a transcription begins, when the audio's length is not known. %@ is the audiobook's title.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "جارٍ تفريغ %@."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -289946,6 +290432,12 @@
     "Transcribing again replaces it." : {
       "comment" : "Last sentence of the Transcribe Audio sheet's line about a transcript made by a later version of TextMouth.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يؤدي التفريغ مرة أخرى إلى استبدالها."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -290011,6 +290503,12 @@
     "Transcribing again replaces this transcript." : {
       "comment" : "Last sentence of the Transcribe Audio sheet's line about the transcript a book already has.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يؤدي التفريغ مرة أخرى إلى استبدال هذه النسخة النصية."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -290076,6 +290574,12 @@
     "Transcribing it takes %@." : {
       "comment" : "Second sentence of the question offering to transcribe a new audiobook. %@ is the time it should take, such as \"about 6 minutes\" or \"less than a minute\".",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يستغرق تفريغه %@."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -290206,6 +290710,12 @@
     "Transcription" : {
       "comment" : "Heading of the group of transcription settings in Playback settings.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "التفريغ النصي"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -290271,6 +290781,12 @@
     "Transcription doesn't support %@." : {
       "comment" : "Error shown when the chosen transcription language cannot be transcribed. %@ is the language's name.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لا يدعم التفريغ النصي %@."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -290336,6 +290852,12 @@
     "Transcription language" : {
       "comment" : "Label of the pop-up in Playback settings that chooses the language audiobooks are transcribed in.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لغة التفريغ النصي"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -290401,6 +290923,12 @@
     "Transcription needs macOS 26 or later." : {
       "comment" : "Error shown when transcription is tried on a Mac whose system is too old.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يتطلب التفريغ النصي macOS 26 أو أحدث."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -290466,6 +290994,12 @@
     "Transcription progress" : {
       "comment" : "VoiceOver label of the progress bar in the Transcribe Audio sheet.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تقدم التفريغ النصي"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -290531,6 +291065,12 @@
     "Transcription stopped." : {
       "comment" : "What VoiceOver hears when a transcription stopped for a reason that has no words of its own.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "توقف التفريغ النصي."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -290596,6 +291136,12 @@
     "Transcription stopped: %@" : {
       "comment" : "What VoiceOver hears when a transcription stopped because of an error from the system. %@ is the system's own sentence.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "توقف التفريغ النصي: %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -290661,6 +291207,12 @@
     "Transcription stopped: %@." : {
       "comment" : "Error shown when the speech recognizer failed. %@ is the reason, a short phrase in English.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "توقف التفريغ النصي: %@."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -290726,6 +291278,12 @@
     "Transcription was cancelled." : {
       "comment" : "What VoiceOver hears, and the Transcribe Audio sheet shows, when the user cancels a transcription.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تم إلغاء التفريغ النصي."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -290791,6 +291349,12 @@
     "Transcription works on one audiobook at a time." : {
       "comment" : "First sentence of the alert shown when Transcribe Audio is chosen with several books selected.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يعمل التفريغ النصي على كتاب صوتي واحد في كل مرة."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -290921,6 +291485,12 @@
     "Tries again to save the recording as an audiobook." : {
       "comment" : "VoiceOver hint of the Save Again button of the Record window.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يحاول مرة أخرى حفظ التسجيل ككتاب صوتي."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -291051,6 +291621,12 @@
     "Trim End" : {
       "comment" : "Name of an edit, as the Undo and Redo menu items and VoiceOver say it after \"Undo\" or \"Redo\": trimming the end of the audio.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اقتصاص النهاية"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -291116,6 +291692,12 @@
     "Trim Silence at Both Ends" : {
       "comment" : "Title of a premade audio filter preset: removes the silence at the start and at the end of the audio.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اقتصاص الصمت من الطرفين"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -291181,6 +291763,12 @@
     "Trim Start" : {
       "comment" : "Name of an edit, as the Undo and Redo menu items and VoiceOver say it after \"Undo\" or \"Redo\": trimming the start of the audio.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اقتصاص البداية"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -291246,6 +291834,12 @@
     "Trim to Selection" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Deletes all audio outside the selection.\nName of an edit, as the Undo and Redo menu items say it after \"Undo\" or \"Redo\": the audio editor's Trim to Selection, which trims the start and the end together.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اقتصاص إلى التحديد"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -291311,6 +291905,12 @@
     "Trimmed to the selection: %@ kept." : {
       "comment" : "Said as the audio editor's Trim to Selection trims. %@ is the length kept, in words.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تم الاقتصاص إلى التحديد: تم الاحتفاظ بـ%@."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -291701,6 +292301,12 @@
     "Try again once the book has downloaded." : {
       "comment" : "Ends a message saying a file of the book is only in the cloud and isn't on this Mac yet: what to do about it.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "حاول مرة أخرى بعد تنزيل الكتاب."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -292233,6 +292839,12 @@
     "Type a chain of filters." : {
       "comment" : "Shown under a filter preset's chain field while it is empty.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اكتب سلسلة مرشحات."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -292558,6 +293170,12 @@
     "Type a time, such as 12:04.3, 1:02:03, or 75.5." : {
       "comment" : "Shown or spoken when a time field holds nothing, or something that is not a time (Go to Time, Insert Silence, the reader's Go to Time). The examples are clock times and seconds.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اكتب وقتًا، مثل 12:04.3 أو 1:02:03 أو 75.5."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -293598,6 +294216,12 @@
     "Undid %@." : {
       "comment" : "Said as the audio editor's Undo undoes an edit. %@ is the edit's name, such as \"Cut 2.5 Seconds\".",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تم التراجع عن %@."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -293663,6 +294287,12 @@
     "Undid the cleanup of the transcript of %@." : {
       "comment" : "What VoiceOver hears once a transcript's cleanup is undone. %@ is the audiobook's title.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تم التراجع عن تنظيف النسخة النصية لـ%@."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -293793,6 +294423,12 @@
     "Undo %@" : {
       "comment" : "Title of the audio editor's Undo button. %@ is the name of the edit it would undo, such as \"Cut 2.5 Seconds\".",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تراجع عن %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -293858,6 +294494,12 @@
     "Undo Cleanup" : {
       "comment" : "Button of the Clean Up Transcript sheet that puts back the transcript from before the last cleanup.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تراجع عن التنظيف"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -293923,6 +294565,12 @@
     "Undo Cleanup puts back the transcript from before." : {
       "comment" : "Last sentence of the Clean Up Transcript sheet's line about a transcript cleaned up already. Undo Cleanup is the name of a button of the sheet.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يعيد “تراجع عن التنظيف” النسخة النصية السابقة."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -293988,6 +294636,12 @@
     "Undo or redo back to the audio as last saved." : {
       "comment" : "Ends a message saying the edits need an original audio that is gone: only undoing or redoing back to the audio as last saved helps.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تراجع أو أعد للرجوع إلى الصوت كما حُفظ آخر مرة."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -294053,6 +294707,12 @@
     "Undoes every edit, back to the original; Redo brings them back." : {
       "comment" : "Hint of the audio editor's Revert to Original button. \"Redo\" is the name of a command.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يتراجع عن كل تعديل حتى الأصل؛ وتعيدها “إعادة”."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -294118,6 +294778,12 @@
     "Undoes the newest edit." : {
       "comment" : "Hint of the audio editor's Undo button.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يتراجع عن أحدث تعديل."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -294248,6 +294914,12 @@
     "Unknown Length" : {
       "comment" : "A length of audio that is no length (not a finite number of seconds), as a menu item's title-cased words, such as the Undo item's \"Cut Unknown Length\".",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "طول غير معروف"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -296635,6 +297307,12 @@
     "Use ffmpeg for filters" : {
       "comment" : "Label of the switch in Storage settings (Audio Editing) that lets the audio editor's filters run through an installed ffmpeg program. ffmpeg is the program's name.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "استخدام ffmpeg للمرشحات"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -298266,6 +298944,12 @@
     "VoiceOver speaks the level while recording. Over speakers, its speech can be recorded." : {
       "comment" : "VoiceOver hint and tooltip of the switch in the Record window that announces the microphone level.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يقرأ VoiceOver المستوى أثناء التسجيل. عبر مكبرات الصوت، قد يُسجَّل كلامه."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -303857,6 +304541,12 @@
     "Which track of %@ do you want to edit?" : {
       "comment" : "Question asked before editing a book of several audio tracks. %@ is the book's title.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "أي مقطع من %@ تريد تحريره؟"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -304356,6 +305046,12 @@
     "Whole File" : {
       "comment" : "Choice in the audio editor's Apply Filter sheet: filter all of the audio.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "الملف كله"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -306324,6 +307020,12 @@
     "Writes chapter markers and markers beside the audio, in an Audacity label file of the same name." : {
       "comment" : "Hint of the Also write the markers as Audacity labels checkbox. Audacity is the name of an audio editing program.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يكتب علامات الفصل والعلامات بجانب الصوت، في ملف تسميات Audacity بالاسم نفسه."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -306844,6 +307546,12 @@
     "You cleaned it up on %@." : {
       "comment" : "Sentence of Book Information's Transcript detail saying when the user cleaned up the transcript. %@ is a date, such as \"October 5, 2026\".",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "نظّفتها في %@."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -306909,6 +307617,12 @@
     "You cleaned up this transcript on %@. Transcribing again replaces the cleanup." : {
       "comment" : "Line of the Transcribe Audio sheet warning that transcribing again replaces the cleanup the user applied. %@ is a date, such as \"October 5, 2026\".",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "نظّفت هذه النسخة النصية في %@. يؤدي التفريغ مرة أخرى إلى استبدال التنظيف."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -306974,6 +307688,12 @@
     "You edited it on %@." : {
       "comment" : "Sentence of Book Information's Transcript detail saying when the user edited the transcript. %@ is a date, such as \"October 5, 2026\".",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "حرّرتها في %@."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -307039,6 +307759,12 @@
     "You edited the transcript on %@, after the cleanup. Undo Cleanup undoes those edits too." : {
       "comment" : "Line of the Clean Up Transcript sheet warning that undoing the cleanup also undoes the user's later edits. %@ is a date, such as \"October 5, 2026\". Undo Cleanup is the name of a button of the sheet.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "حرّرت النسخة النصية في %@، بعد التنظيف. يتراجع “تراجع عن التنظيف” عن هذه التعديلات أيضًا."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -307104,6 +307830,12 @@
     "You edited this transcript on %@. Transcribing again replaces your edits." : {
       "comment" : "Line of the Transcribe Audio sheet warning that transcribing again replaces the user's own edits. %@ is a date, such as \"October 5, 2026\".",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "حرّرت هذه النسخة النصية في %@. يؤدي التفريغ مرة أخرى إلى استبدال تعديلاتك."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -307494,6 +308226,12 @@
     "Your copy of the rules is empty. Edit Rules… opens it to add some." : {
       "comment" : "Line of the Clean Up Transcript sheet when the user's own rules file holds no rule. Edit Rules… is the name of a button of the sheet.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "نسختك من القواعد فارغة. يفتحها “تحرير القواعد…” لإضافة بعضها."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -307559,6 +308297,12 @@
     "Your copy of the rules is only in the cloud, so TextMouth asked for it and uses its own meanwhile." : {
       "comment" : "Line of the Clean Up Transcript sheet when the user's own rules file has not been downloaded from the cloud drive yet.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "نسختك من القواعد موجودة في السحابة فقط، لذا طلبها TextMouth ويستخدم قواعده الخاصة في هذه الأثناء."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -307689,6 +308433,12 @@
     "Your edits to the transcript are deleted too." : {
       "comment" : "Last sentence of the question asked before a transcript is deleted, when the user had edited it.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تُحذف تعديلاتك على النسخة النصية أيضًا."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -307754,6 +308504,12 @@
     "Your edits to the transcript are replaced too." : {
       "comment" : "Sentence of the question asked before a transcript from a file replaces the book's, when the user had edited it.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تُستبدل تعديلاتك على النسخة النصية أيضًا."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -308085,6 +308841,12 @@
     "Your rules file can't be used: %@. TextMouth keeps it and a copy, and uses its own rules until you correct it." : {
       "comment" : "Line of the Clean Up Transcript sheet when the user's own rules file is damaged. %@ is the reason, a short technical phrase in English.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لا يمكن استخدام ملف قواعدك: %@. يحتفظ TextMouth به وبنسخة منه، ويستخدم قواعده الخاصة إلى أن تصحّحه."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -308800,6 +309562,12 @@
     "about 140 MB" : {
       "comment" : "The approximate size of one language's speech model, said in the Download button's label. MB means megabytes.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "نحو 140 ميغابايت"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -309358,6 +310126,48 @@
     "all %lld files" : {
       "comment" : "End of the transcription progress bar's spoken value once every audio file is transcribed, after \"100 percent, \". %lld is the number of files.",
       "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "كل الملفات (%lld)"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "كل الملفات (%lld)"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "كل الملفات (%lld)"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "كل الملفات (%lld)"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "كل الملفات (%lld)"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "كل الملفات (%lld)"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -312454,6 +313264,12 @@
     "downloading" : {
       "comment" : "Status of a language's speech model that is downloading now, said after the language's name in the Transcribe Audio sheet.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "قيد التنزيل"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -313039,6 +313855,12 @@
     "ffmpeg couldn't be started. Check it is installed, or turn off Use ffmpeg in Storage settings." : {
       "comment" : "Problem said when the ffmpeg program can't be started. \"Use ffmpeg\" is the name of a switch in the Storage settings.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تعذّر تشغيل ffmpeg. تأكد من تثبيته، أو أوقف “استخدام ffmpeg” في إعدادات التخزين."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -313104,6 +313926,12 @@
     "ffmpeg couldn't run the filters: %@" : {
       "comment" : "Problem said when the ffmpeg program refused a filter chain or the audio. %@ is ffmpeg's own words, in English.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تعذّر على ffmpeg تشغيل المرشحات: %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -313169,6 +313997,12 @@
     "ffmpeg isn't installed; TextMouth's own filters are used." : {
       "comment" : "Shown in Storage settings (Audio Editing) when no ffmpeg program is installed. ffmpeg is the program's name.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ffmpeg غير مثبّت؛ تُستخدم مرشحات TextMouth الخاصة."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -313299,6 +314133,12 @@
     "file %lld of %lld" : {
       "comment" : "End of the transcription progress bar's spoken value, after \"40 percent, \", saying which audio file is being transcribed. %1$lld is that file's place, from 1; %2$lld is the number of files.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "الملف %1$lld من %2$lld"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -314020,6 +314860,12 @@
     "give a frequency below half the audio's sample rate, %@ Hz" : {
       "comment" : "What a frequency option of a filter accepts, said at the end of a refusal such as \"The highpass filter's frequency can't be “x”: <this>.\" Written without its full stop. %@ is half the audio's sample rate, in hertz, written without digit grouping.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "أدخل تردّدًا أقل من نصف معدل أخذ العينات للصوت، %@ هرتز"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -314085,6 +314931,12 @@
     "give a narrower width, since this one makes no usable filter at %@ Hz" : {
       "comment" : "What a width option of a filter accepts, said at the end of a refusal such as \"The equalizer filter's width can't be “x”: <this>.\" Written without its full stop. %@ is the filter's frequency in hertz, already written.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "أدخل عرضًا أضيق، لأن هذا العرض لا ينتج مرشحًا صالحًا للاستخدام عند %@ هرتز"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -314150,6 +315002,12 @@
     "give a number from %@ to %@" : {
       "comment" : "What a number option of a filter accepts, said at the end of a refusal such as \"The volume filter's volume can't be “x”: <this>.\" Written without its full stop. %1$@ is the lowest number allowed and %2$@ the highest, already written.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "أدخل رقمًا من %1$@ إلى %2$@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -314221,6 +315079,12 @@
     "give a number, such as 0.5, or decibels, such as -6dB" : {
       "comment" : "What a volume option of a filter accepts, said at the end of a refusal such as \"The volume filter's volume can't be “x”: <this>.\" Written without its full stop. The examples are filter syntax.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "أدخل رقمًا، مثل 0.5، أو ديسيبل، مثل -6dB"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -314286,6 +315150,12 @@
     "give a time such as 2.5, 250ms, or 0:01:30" : {
       "comment" : "What a time option of a filter accepts, said at the end of a refusal such as \"The afade filter's duration can't be “x”: <this>.\" Written without its full stop. The examples are filter syntax.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "أدخل وقتًا مثل 2.5 أو 250ms أو 0:01:30"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -314351,6 +315221,12 @@
     "give a whole number from %@ to %@" : {
       "comment" : "What a whole-number option of a filter accepts, said at the end of a refusal such as \"The afade filter's duration can't be “x”: <this>.\" Written without its full stop. %1$@ is the lowest number allowed and %2$@ the highest, already written.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "أدخل عددًا صحيحًا من %1$@ إلى %2$@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -314422,6 +315298,12 @@
     "give one of %@" : {
       "comment" : "What a choice option of a filter accepts, said at the end of a refusal such as \"The afade filter's type can't be “x”: <this>.\" Written without its full stop. %@ is the allowed values, filter syntax, as a list such as \"in, out\".",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "أدخل واحدًا من: %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -314487,6 +315369,12 @@
     "give true or false" : {
       "comment" : "What an on-or-off option of a filter accepts, said at the end of a refusal such as \"The loudnorm filter's dual_mono can't be “x”: <this>.\" Written without its full stop.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "أدخل true أو false"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -314552,6 +315440,12 @@
     "good" : {
       "comment" : "A word describing the microphone's loudness in the Record window: a voice at a good level. Lower case, since it follows figures.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "جيد"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -315072,6 +315966,12 @@
     "in chapter %@: %@" : {
       "comment" : "A part of the audio editor's status line: the chapter the cursor is in. %1$@ is the chapter's number, an identifier written without digit grouping, and %2$@ its title.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "في الفصل %1$@: %2$@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -315338,6 +316238,12 @@
     "installed" : {
       "comment" : "Status of a language's speech model that is on this Mac, said after the language's name in the Transcribe Audio sheet and Settings.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "مثبَّت"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -318964,6 +319870,12 @@
     "less than a minute" : {
       "comment" : "A time estimate, said after \"Time to transcribe:\" or inside a sentence, for a transcription that takes under 45 seconds.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "أقل من دقيقة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -319159,6 +320071,12 @@
     "loud" : {
       "comment" : "A word describing the microphone's loudness in the Record window: close to the most a recording can hold. Lower case, since it follows figures.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "مرتفع"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -319419,6 +320337,48 @@
     "minus %lld decibels" : {
       "comment" : "A negative sound level in decibels, spoken, in the Record window. %lld is the number of decibels below the maximum.",
       "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "ناقص %lld ديسيبلات"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "ناقص %lld ديسيبل"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "ناقص %lld ديسيبل"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "ناقص %lld ديسيبل"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "ناقص %lld ديسيبلين"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "ناقص %lld ديسيبلات"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -320015,6 +320975,12 @@
     "needs download" : {
       "comment" : "Status of a language's speech model that is not on this Mac yet, said after the language's name in the Transcribe Audio sheet and Settings.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يحتاج إلى تنزيل"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -320936,6 +321902,12 @@
     "none" : {
       "comment" : "Said in place of a list of filters or options when there are none, inside a filter message such as \"Its options are none.\"",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لا شيء"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -321727,6 +322699,12 @@
     "not supported" : {
       "comment" : "Status of a language that the speech recognizer cannot transcribe, said after the language's name in the Transcribe Audio sheet and Settings.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "غير مدعوم"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -323071,6 +324049,12 @@
     "quiet" : {
       "comment" : "A word describing the microphone's loudness in the Record window: too quiet to be heard well. Lower case, since it follows figures.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "منخفض"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -324214,6 +325198,12 @@
     "selection from %@ to %@, %@" : {
       "comment" : "A part of the audio editor's status line: the selection. %1$@ is its start and %2$@ its end, as clock times such as \"11:58\", and %3$@ its length in words.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "التحديد من %1$@ إلى %2$@، %3$@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -324648,6 +325638,12 @@
     "silent" : {
       "comment" : "A word describing the microphone's loudness in the Record window: no sound reaches TextMouth. Lower case, since it follows figures.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "صامت"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -328825,6 +329821,12 @@
     "too loud" : {
       "comment" : "A word describing the microphone's loudness in the Record window: peaks reach the top and are cut off. Lower case, since it follows figures.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "مرتفع جدًا"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -329085,6 +330087,12 @@
     "unknown length" : {
       "comment" : "A length of audio that is no length (not a finite number of seconds), said in a sentence, such as \"Cut unknown length.\"",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "طول غير معروف"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -330104,6 +331112,12 @@
     "“%@” becomes “%@”, inside words too: %@." : {
       "comment" : "Heading of one rule's changes in the Clean Up Transcript sheet, for a rule that also changes the text inside longer words. %1$@ is the text the rule looks for; %2$@ is the text it puts in its place; %3$@ is the number of corrections, such as \"4 corrections\".",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%1$@” تصبح “%2$@”، داخل الكلمات أيضًا: %3$@."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -330175,6 +331189,12 @@
     "“%@” becomes “%@”: %@." : {
       "comment" : "Heading of one rule's changes in the Clean Up Transcript sheet. %1$@ is the text the rule looks for; %2$@ is the text it puts in its place; %3$@ is the number of corrections, such as \"4 corrections\".",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%1$@” تصبح “%2$@”: %3$@."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -330246,6 +331266,12 @@
     "“%@” beside the audio wasn't attached: %@" : {
       "comment" : "Notice after an import: a transcript file found beside the audio was not attached. %1$@ is the file's name; %2$@ is the reason, a sentence.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لم يُرفق “%1$@” الموجود بجوار الصوت: %2$@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -330589,6 +331615,12 @@
     "“%@” couldn't be read: %@." : {
       "comment" : "Error shown when an audio file cannot be read. %1$@ is the audio file's name; %2$@ is the reason, a short phrase in English.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تعذّرت قراءة “%1$@”: %2$@."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -331328,6 +332360,12 @@
     "“%@” is only in the cloud. Download the book, then transcribe it." : {
       "comment" : "Error shown when an audio file has not been downloaded from the cloud drive. %@ is the audio file's name.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” موجود في السحابة فقط. نزّل الكتاب، ثم فرّغه."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -331393,6 +332431,12 @@
     "“%@” is recording. Stop or discard it with Clear Selection, then quit." : {
       "comment" : "Said in an audio editor when TextMouth can't quit because a punch-in records there. %@ is the book's title. \"Clear Selection\" is the name of a command.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” قيد التسجيل. أوقفه أو تجاهله باستخدام “إلغاء التحديد”، ثم أنهِ TextMouth."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -331458,6 +332502,12 @@
     "“%@” is still working. Quit once the change is done." : {
       "comment" : "Said in an audio editor when TextMouth can't quit because its work is under way. %@ is the book's title.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” لا يزال قيد العمل. أنهِ TextMouth بعد اكتمال التغيير."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -331588,6 +332638,12 @@
     "“%@” isn't a filter's name." : {
       "comment" : "Problem found in a typed filter chain: the text before an equals sign is not a filter's name. %@ is that text.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” ليس اسم مرشح."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -331937,6 +332993,12 @@
     "“%@” uses %@ samples, which TextMouth can't play." : {
       "comment" : "Refuses an audio file whose samples TextMouth can't decode, which is not damaged. %1$@ is the file's name and %2$@ its sample form, such as \"64-bit integer\".",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يستخدم “%1$@” عينات %2$@ لا يستطيع TextMouth تشغيلها."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -332073,6 +333135,12 @@
     "“%@” was imported, with %@ of audio." : {
       "comment" : "First sentence of the question offering to transcribe a new audiobook. %1$@ is the audiobook's title; %2$@ is its length in words, such as \"6 hours, 12 minutes\".",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تم استيراد “%1$@”، بصوت مدته %2$@."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -332144,6 +333212,12 @@
     "“%@” was imported." : {
       "comment" : "First sentence of the question offering to transcribe a new audiobook whose length is not known. %@ is the audiobook's title.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تم استيراد “%@”."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -332274,6 +333348,12 @@
     "“%@” wasn't attached to %@: %@" : {
       "comment" : "Alert, and what VoiceOver hears, when a chosen file was not attached as a transcript. %1$@ is the file's name; %2$@ is the audiobook's title; %3$@ is the reason, a sentence.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لم يُرفق “%1$@” بـ%2$@: %3$@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
