@@ -16759,7 +16759,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ de %2$@ transcritos"
+            "value" : "Transcrito: %1$@ de %2$@"
           }
         },
         "fr" : {
@@ -104569,7 +104569,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Aplicar filtro muestra estos en este orden. Cada uno es una cadena de filtros con la sintaxis de ffmpeg, como highpass=f=80,volume=3dB. TextMouth ejecuta sus propios filtros, y también todos los de ffmpeg cuando ffmpeg está instalado y activado arriba."
+            "value" : "Aplicar filtro los muestra en este orden. Cada uno es una cadena de filtros con la sintaxis de ffmpeg, como highpass=f=80,volume=3dB. TextMouth ejecuta sus propios filtros, y también todos los de ffmpeg cuando ffmpeg está instalado y activado arriba."
           }
         },
         "fr" : {
@@ -451018,19 +451018,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "TextMouth movió %lld de copias nuevas de libros duplicados a la Papelera, porque no se respondieron las preguntas sobre si conservarlos como duplicados antes de que TextMouth se cerrara. Para recuperarlos, abre la Papelera y elige Volver a colocar."
+                  "value" : "TextMouth movió %lld de copias nuevas de libros duplicados a la Papelera, porque no se respondieron las preguntas sobre si conservarlas como duplicados antes de que TextMouth se cerrara. Para recuperarlas, abre la Papelera y elige Volver a colocar."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "TextMouth movió %lld copia nueva de libros duplicados a la Papelera, porque no se respondieron las preguntas sobre si conservarlos como duplicados antes de que TextMouth se cerrara. Para recuperarlos, abre la Papelera y elige Volver a colocar."
+                  "value" : "TextMouth movió %lld copia nueva de un libro duplicado a la Papelera, porque no se respondió la pregunta sobre si conservarla como duplicado antes de que TextMouth se cerrara. Para recuperarla, abre la Papelera y elige Volver a colocar."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "TextMouth movió %lld copias nuevas de libros duplicados a la Papelera, porque no se respondieron las preguntas sobre si conservarlos como duplicados antes de que TextMouth se cerrara. Para recuperarlos, abre la Papelera y elige Volver a colocar."
+                  "value" : "TextMouth movió %lld copias nuevas de libros duplicados a la Papelera, porque no se respondieron las preguntas sobre si conservarlas como duplicados antes de que TextMouth se cerrara. Para recuperarlas, abre la Papelera y elige Volver a colocar."
                 }
               }
             }
@@ -451362,7 +451362,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth movió a la Papelera las copias nuevas de %@, porque no se respondieron las preguntas sobre si conservarlos como duplicados antes de que TextMouth se cerrara. Para recuperarlos, abre la Papelera y elige Volver a colocar."
+            "value" : "TextMouth movió a la Papelera las copias nuevas de %@, porque no se respondieron las preguntas sobre si conservarlas como duplicados antes de que TextMouth se cerrara. Para recuperarlas, abre la Papelera y elige Volver a colocar."
           }
         },
         "fr" : {
@@ -451487,7 +451487,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth movió a la Papelera la copia nueva de “%@”, porque no se respondió la pregunta sobre si conservarlo como duplicado antes de que TextMouth se cerrara. Para recuperarlo, abre la Papelera y elige Volver a colocar."
+            "value" : "TextMouth movió a la Papelera la copia nueva de “%@”, porque no se respondió la pregunta sobre si conservarla como duplicado antes de que TextMouth se cerrara. Para recuperarla, abre la Papelera y elige Volver a colocar."
           }
         },
         "fr" : {
@@ -476415,7 +476415,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "El archivo bookInfo.json no se leyó de vuelta tal como se escribió."
+            "value" : "Al volver a leer el archivo bookInfo.json, no coincidía con lo escrito."
           }
         },
         "fr" : {
@@ -490066,7 +490066,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Los encabezados de %@ pasan del final del audio, así que las pistas se importaron sin ellos."
+            "value" : "Los encabezados de %@ van más allá del final del audio, así que las pistas se importaron sin ellos."
           }
         },
         "fr" : {
@@ -490578,7 +490578,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Las etiquetas del archivo de etiquetas “%@” pasan del final de su audio, así que no se usaron sus encabezados."
+            "value" : "Las etiquetas del archivo de etiquetas “%@” van más allá del final de su audio, así que no se usaron sus encabezados."
           }
         },
         "fr" : {
@@ -509784,7 +509784,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Las pistas del archivo CUE “%@” pasan del final de su audio, así que no se usaron sus encabezados."
+            "value" : "Las pistas del archivo CUE “%@” van más allá del final de su audio, así que no se usaron sus encabezados."
           }
         },
         "fr" : {
@@ -518726,7 +518726,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Este canal usa http simple"
+            "value" : "Este canal usa http sin cifrar"
           }
         },
         "fr" : {
@@ -561618,7 +561618,7 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Se eliminó lo que se conservó para %lld descargas quitadas."
+                  "value" : "Se eliminó lo que se conservó para %lld de descargas quitadas."
                 }
               },
               "one" : {
@@ -609874,7 +609874,7 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "lo que se conservó (%@) para %lld descargas quitadas"
+                  "value" : "lo que se conservó (%@) para %lld de descargas quitadas"
                 }
               },
               "one" : {
@@ -615563,7 +615563,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "hoy a las %@"
+            "value" : "hoy, %@"
           }
         },
         "fr" : {
@@ -617025,7 +617025,7 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "lo que se conservó para %lld descargas quitadas"
+                  "value" : "lo que se conservó para %lld de descargas quitadas"
                 }
               },
               "one" : {
@@ -617625,7 +617625,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ayer a las %@"
+            "value" : "ayer, %@"
           }
         },
         "fr" : {
