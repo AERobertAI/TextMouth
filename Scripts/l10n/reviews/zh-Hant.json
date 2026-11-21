@@ -1380,6 +1380,661 @@
      "why": "natural: 訂閱源訂閱項目 said feed and subscription twice over"
     }
    ]
+  },
+  {
+   "part": 3,
+   "areas": [
+    "reader, formats, and menus",
+    "export, speech, and the iPhone's screens"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ %@, which TextMouth can't export with its structure.",
+     "english": "%1$@ %2$@, which TextMouth can't export with its structure.",
+     "before": "%1$@ %2$@，TextMouth 無法連同其結構一起輸出。",
+     "after": "%1$@中，%2$@，TextMouth 無法連同其結構一起輸出。",
+     "why": "grammar: the nesting clause ran straight on from the chapter's name with nothing between / then punctuation: what nests (X 的第 2 章, X 的文字) ends in Chinese, so no space after it, as parts 1 and 2 write it"
+    },
+    {
+     "key": "%@ adds one at the current position.",
+     "english": "%@ adds one at the current position.",
+     "before": "%@ 會在目前位置加入一個。",
+     "after": "「%@」會在目前位置加入書籤。",
+     "why": "natural: the button name as subject needs corner quotes, and 加入一個 left out what is added"
+    },
+    {
+     "key": "%@ has no words, so the cursor is %@.",
+     "english": "%1$@ has no words, so the cursor is %2$@.",
+     "before": "%1$@ 沒有文字，所以游標在 %2$@。",
+     "after": "%1$@沒有文字，所以游標在%2$@。",
+     "why": "punctuation: the page phrases (第 8 頁, 第 1 頁之前, 標示為 3 的頁面中的第二個) meet Chinese text, so no space beside them, as parts 1 and 2 write it"
+    },
+    {
+     "key": "%@ in the cloud",
+     "english": "%@ in the cloud",
+     "before": "%@ 僅在雲端",
+     "after": "%@僅在雲端",
+     "why": "punctuation: the count (2 本書) ends in its noun, so no space after it, as parts 1 and 2 write it"
+    },
+    {
+     "key": "%@ is a Word 6 or Word 95 document, which TextMouth on iPhone can't read yet.",
+     "english": "%@ is a Word 6 or Word 95 document, which TextMouth on iPhone can't read yet.",
+     "before": "%@ 是 Word 6 或 Word 95 文件，iPhone 版 TextMouth 目前還無法讀取。",
+     "after": "%@是 Word 6 或 Word 95 文件，iPhone 版 TextMouth 目前還無法讀取。",
+     "why": "punctuation: the file's name comes in 「」 or is 這個檔案, so no space beside it, as parts 1 and 2 write it"
+    },
+    {
+     "key": "%@ is in %@, which TextMouth on iPhone can't play yet.",
+     "english": "%1$@ is in %2$@, which TextMouth on iPhone can't play yet.",
+     "before": "%1$@ 是 %2$@ 格式，iPhone 版 TextMouth 目前還無法播放。",
+     "after": "%1$@是 %2$@ 格式，iPhone 版 TextMouth 目前還無法播放。",
+     "why": "punctuation: the file's name comes in 「」 or is 這個檔案, so no space beside it, as parts 1 and 2 write it"
+    },
+    {
+     "key": "%@ is in a skipped section, so the cursor is %@.",
+     "english": "%1$@ is in a skipped section, so the cursor is %2$@.",
+     "before": "%1$@ 位於已略過的區段中，所以游標在 %2$@。",
+     "after": "%1$@位於已略過的區段中，所以游標在%2$@。",
+     "why": "punctuation: the page phrases (第 8 頁, 第 1 頁之前, 標示為 3 的頁面中的第二個) meet Chinese text, so no space beside them, as parts 1 and 2 write it"
+    },
+    {
+     "key": "%@ needs “%@”, one of a Mac's own braille tables, which TextMouth on iPhone doesn't have.",
+     "english": "%1$@ needs “%2$@”, one of a Mac's own braille tables, which TextMouth on iPhone doesn't have.",
+     "before": "%1$@ 需要「%2$@」，這是 Mac 內建的點字表之一，iPhone 版 TextMouth 沒有這個點字表。",
+     "after": "%1$@需要「%2$@」，這是 Mac 內建的點字表之一，iPhone 版 TextMouth 沒有這個點字表。",
+     "why": "punctuation: the file's name comes in 「」 or is 這個檔案, so no space beside it, as parts 1 and 2 write it"
+    },
+    {
+     "key": "%@ nests too deeply",
+     "english": "%@ nests too deeply",
+     "before": "%@ 的巢狀層次太深",
+     "after": "%@的巢狀層次太深",
+     "why": "punctuation: what nests (X 的第 2 章, X 的文字) ends in Chinese, so no space after it, as parts 1 and 2 write it"
+    },
+    {
+     "key": "%@ sound",
+     "english": "%@ sound",
+     "before": "%@ 音效",
+     "after": "%@ 的音效",
+     "why": "meaning: 播放 音效 is heard as the command play the sound effect; this names the sound for the Play event"
+    },
+    {
+     "key": "%@ tries again, %@ quits without saving, %@ keeps TextMouth open.",
+     "english": "%1$@ tries again, %2$@ quits without saving, %3$@ keeps TextMouth open.",
+     "before": "%1$@ 會重試儲存，%2$@ 會結束且不儲存，%3$@ 會讓 TextMouth 保持打開。",
+     "after": "「%1$@」會重試儲存，「%2$@」會結束且不儲存，「%3$@」會讓 TextMouth 保持打開。",
+     "why": "natural: button names as the subjects of three clauses need corner quotes, or a name such as 不儲存 runs into its verb"
+    },
+    {
+     "key": "%@ works in %@.",
+     "english": "%1$@ works in %2$@.",
+     "before": "%1$@ 在 %2$@ 中有效。",
+     "after": "%1$@ 在%2$@中有效。",
+     "why": "punctuation: the windows phrase (每個視窗, 音訊編輯器) is Chinese text, so no space beside it, as parts 1 and 2 write it"
+    },
+    {
+     "key": "%@, %@ quality",
+     "english": "%1$@, %2$@ quality",
+     "before": "%1$@，%2$@ 品質",
+     "after": "%1$@，%2$@",
+     "why": "grammar: the quality tier now names itself with Apple's 增強音質, 高音質, so a trailing 品質 doubled it (加強 品質 also read as a verb, improve quality)"
+    },
+    {
+     "key": "%lld entries give only a phonetic spelling, so they were set aside.",
+     "english": {
+      "one": "%lld entry gives only a phonetic spelling, so it was set aside.",
+      "other": "%lld entries give only a phonetic spelling, so they were set aside."
+     },
+     "before": {
+      "other": "有 %lld 個詞條只提供拼音，因此已略過。"
+     },
+     "after": {
+      "other": "有 %lld 個詞條只提供音標，因此已略過。"
+     },
+     "why": "meaning: 拼音 is heard as pinyin; a phonetic spelling is 音標"
+    },
+    {
+     "key": "Added %lld rules from “%@”.",
+     "english": {
+      "one": "Added %lld rule from “%@”.",
+      "other": "Added %lld rules from “%@”."
+     },
+     "before": {
+      "other": "已加入 %lld 條規則，來自「%@」。"
+     },
+     "after": {
+      "other": "已從「%2$@」加入 %1$lld 條規則。"
+     },
+     "why": "natural: 已加入 N 條規則，來自「X」 copies the English order"
+    },
+    {
+     "key": "Adds an Export button to each reader's toolbar. File, Export works either way.",
+     "english": "Adds an Export button to each reader's toolbar. File, Export works either way.",
+     "before": "在每個閱讀器的工具列加入「輸出」按鈕。「檔案」>「輸出」同樣可用。",
+     "after": "在每個閱讀器的工具列加入「輸出」按鈕。無論是否加入，「檔案」選單中的「輸出」都可以使用。",
+     "why": "voiceover: the added > is read aloud as 大於號, and 同樣可用 lost either way"
+    },
+    {
+     "key": "Adds the lexicon's entries after your rules; entries with only a phonetic spelling are set aside",
+     "english": "Adds the lexicon's entries after your rules; entries with only a phonetic spelling are set aside",
+     "before": "在你的規則之後加入詞典的詞條；只有拼音的詞條會被略過。",
+     "after": "在你的規則之後加入詞典的詞條；只有音標的詞條會被略過。",
+     "why": "meaning: 拼音 is heard as pinyin; a phonetic spelling is 音標"
+    },
+    {
+     "key": "Apostrophe",
+     "english": "Apostrophe",
+     "before": "單引號",
+     "after": "撇號",
+     "why": "term: VoiceOver's Traditional Chinese name for the apostrophe key; 單引號 is a quotation mark"
+    },
+    {
+     "key": "Asks for an optional note, then marks the reading position.",
+     "english": "Asks for an optional note, then marks the reading position.",
+     "before": "詢問選用的備註，然後標記閱讀位置。",
+     "after": "先讓你輸入選填的備註，再標記閱讀位置。",
+     "why": "natural: 詢問選用的備註 is a literal copy of asks for an optional note"
+    },
+    {
+     "key": "Chapter %@ of this book %@, which TextMouth can't export safely. Choose Edit Text, flatten the nesting, and save; then export again.",
+     "english": "Chapter %1$@ of this book %2$@, which TextMouth can't export safely. Choose Edit Text, flatten the nesting, and save; then export again.",
+     "before": "此書的第 %1$@ 章 %2$@，TextMouth 無法安全輸出。請選擇「編輯文字」，將巢狀結構攤平並儲存，然後再次輸出。",
+     "after": "此書的第 %1$@ 章中，%2$@，TextMouth 無法安全輸出。請選擇「編輯文字」，減少巢狀層級並儲存，然後再次輸出。",
+     "why": "grammar: the nesting clause ran straight on from the chapter with nothing between; 攤平 for flatten said less than reduce the nesting"
+    },
+    {
+     "key": "Close All",
+     "english": "Close All",
+     "before": "全部關閉",
+     "after": "關閉全部",
+     "why": "term: AppKit's Traditional Chinese File menu says 關閉全部, and the sentence names that menu item"
+    },
+    {
+     "key": "Down Arrow",
+     "english": "Down Arrow",
+     "before": "下箭頭",
+     "after": "向下箭頭",
+     "why": "term: VoiceOver's Traditional Chinese name for the down arrow key"
+    },
+    {
+     "key": "End of book behavior for this book",
+     "english": "End of book behavior for this book",
+     "before": "此書的結尾行為",
+     "after": "此書結束時的行為",
+     "why": "natural: 結尾行為 copies the English; the app-wide menu already says 書籍結束時的行為"
+    },
+    {
+     "key": "Enhanced",
+     "english": "Enhanced",
+     "before": "加強",
+     "after": "增強音質",
+     "why": "term: Apple's Traditional Chinese voices name this tier 增強音質; 加強 alone reads as the verb strengthen"
+    },
+    {
+     "key": "Exported %@ to %@.",
+     "english": "Exported %1$@ to %2$@.",
+     "before": "已將 %1$@ 輸出至 %2$@。",
+     "after": "已將 %1$@輸出至 %2$@。",
+     "why": "punctuation: the count (3 個項目) ends in its noun, so no space after it, as parts 1 and 2 write it"
+    },
+    {
+     "key": "From",
+     "english": "From",
+     "before": "從",
+     "after": "起點",
+     "why": "natural: a bare preposition 從 is no label; the pop-up chooses where the spoken audio begins"
+    },
+    {
+     "key": "How soon a second press must follow the first. A key with different single and double press actions waits this long before its single press acts.",
+     "english": "How soon a second press must follow the first. A key with different single and double press actions waits this long before its single press acts.",
+     "before": "第二次按鍵必須在多快內跟上第一次。單按與連按兩次動作不同的按鍵，會先等候這段時間才執行單按動作。",
+     "after": "第二次按鍵必須在第一次之後多久內按下。單按與連按兩次動作不同的按鍵，會先等候這段時間才執行單按動作。",
+     "why": "natural: 必須在多快內跟上第一次 is a literal copy of how soon ... must follow"
+    },
+    {
+     "key": "Importing %@ was stopped when TextMouth closed.",
+     "english": "Importing %@ was stopped when TextMouth closed.",
+     "before": "輸入 %@ 的操作在 TextMouth 關閉時已停止。",
+     "after": "輸入%@的操作在 TextMouth 關閉時已停止。",
+     "why": "punctuation: the names come in 「」, so no space beside them, as parts 1 and 2 write it"
+    },
+    {
+     "key": "It has no headings, so the contents list has %lld entries for its chapters and the places it marks.",
+     "english": {
+      "one": "It has no headings, so the contents list has %lld entry for its chapters and the places it marks.",
+      "other": "It has no headings, so the contents list has %lld entries for its chapters and the places it marks."
+     },
+     "before": {
+      "other": "它沒有標題，因此目錄列有 %lld 個項目，對應其章節和它標記的位置。"
+     },
+     "after": {
+      "other": "它沒有標題，因此目錄中有 %lld 個項目，對應其章節和它標記的位置。"
+     },
+     "why": "natural: 目錄列 is heard as a contents bar (as 工具列 is a toolbar); 目錄中 says in the contents list"
+    },
+    {
+     "key": "It has no headings, so the contents list has one entry for the whole book.",
+     "english": "It has no headings, so the contents list has one entry for the whole book.",
+     "before": "它沒有標題，因此目錄列只有一個項目，對應整本書。",
+     "after": "它沒有標題，因此目錄中只有一個項目，對應整本書。",
+     "why": "natural: 目錄列 is heard as a contents bar (as 工具列 is a toolbar); 目錄中 says in the contents list"
+    },
+    {
+     "key": "Its headings are real headings, and the contents list links them.",
+     "english": "Its headings are real headings, and the contents list links them.",
+     "before": "它的標題是真正的標題，目錄列有連結指向它們。",
+     "after": "它的標題是真正的標題，目錄會連結到這些標題。",
+     "why": "natural: 目錄列 is heard as a contents bar (as 工具列 is a toolbar); 目錄中 says in the contents list"
+    },
+    {
+     "key": "Jumped to page %@, the %@ page labelled %@.",
+     "english": "Jumped to page %1$@, the %2$@ page labelled %3$@.",
+     "before": "已跳至頁面 %1$@：標示為 %3$@ 的頁面中的 %2$@。",
+     "after": "已跳至第 %1$@ 頁，即標示為 %3$@ 的頁面中的%2$@。",
+     "why": "natural: the app says 第 %@ 頁 for a page; 頁面 %@ copies the English order / then punctuation: the ordinal word (第二個) meets Chinese text, so no space before it, as parts 1 and 2 write it"
+    },
+    {
+     "key": "Jumped to page %@.",
+     "english": "Jumped to page %@.",
+     "before": "已跳至頁面 %@。",
+     "after": "已跳至第 %@ 頁。",
+     "why": "natural: the app says 第 %@ 頁 for a page; 頁面 %@ copies the English order"
+    },
+    {
+     "key": "Left Arrow",
+     "english": "Left Arrow",
+     "before": "左箭頭",
+     "after": "向左箭頭",
+     "why": "term: VoiceOver's Traditional Chinese name for the left arrow key"
+    },
+    {
+     "key": "Minimize",
+     "english": "Minimize",
+     "before": "縮至最小",
+     "after": "縮到最小",
+     "why": "term: the Window menu's Minimize is 縮到最小 in Apple's Traditional Chinese, and the sentence names that item"
+    },
+    {
+     "key": "Minimize All",
+     "english": "Minimize All",
+     "before": "全部縮至最小",
+     "after": "將全部縮到最小",
+     "why": "term: AppKit's Traditional Chinese Minimize All is 將全部縮到最小, and the sentence names that item"
+    },
+    {
+     "key": "No voice is installed. Add one in System Settings, Accessibility, Spoken Content, then export again.",
+     "english": "No voice is installed. Add one in System Settings, Accessibility, Spoken Content, then export again.",
+     "before": "尚未安裝語音。請在「系統設定」>「輔助使用」>「語音內容」中加入語音，然後再次輸出。",
+     "after": "尚未安裝語音。請在「系統設定」的「輔助使用」中，於「語音內容」加入語音，然後再次輸出。",
+     "why": "voiceover: the English names the path with commas; the added > is read aloud as 大於號"
+    },
+    {
+     "key": "No voices are installed. Add voices in Settings, Accessibility, Read & Speak.",
+     "english": "No voices are installed. Add voices in Settings, Accessibility, Read & Speak.",
+     "before": "尚未安裝語音。請在「設定」>「輔助使用」>「閱讀與朗讀」中加入語音。",
+     "after": "尚未安裝語音。請在「設定」的「輔助使用」中，於「閱讀與朗讀」加入語音。",
+     "why": "voiceover: the English names the path with commas; the added > is read aloud as 大於號"
+    },
+    {
+     "key": "Passes over finished books when a book from the list ends.",
+     "english": "Passes over finished books when a book from the list ends.",
+     "before": "從列表中的書結束時，略過已完成的書。",
+     "after": "列表中的書結束時，略過已完成的書。",
+     "why": "grammar: 從列表中的書結束時 is garbled (from the list's book ends)"
+    },
+    {
+     "key": "Plays when you skip backward",
+     "english": "Plays when you skip backward",
+     "before": "在你倒轉時播放。",
+     "after": "在你向後跳轉時播放。",
+     "why": "term: the glossary's Skip Backward is 向後跳轉; 倒轉 is rewinding audio, and a skip may move by a sentence"
+    },
+    {
+     "key": "Plays when you skip forward",
+     "english": "Plays when you skip forward",
+     "before": "在你快轉時播放。",
+     "after": "在你向前跳轉時播放。",
+     "why": "term: the glossary's Skip Forward is 向前跳轉; 快轉 is fast-forwarding audio, and a skip may move by a sentence"
+    },
+    {
+     "key": "Premium",
+     "english": "Premium",
+     "before": "優質",
+     "after": "高音質",
+     "why": "term: Apple's Traditional Chinese voices name the Premium tier 高音質; 優質 品質 doubled the word"
+    },
+    {
+     "key": "Preview %@ sound",
+     "english": "Preview %@ sound",
+     "before": "預聽 %@ 音效",
+     "after": "預聽 %@ 的音效",
+     "why": "natural: 預聽 播放 音效 runs the event name into the noun; matches %@ 的音效 for the pop-up"
+    },
+    {
+     "key": "Quitting now leaves these changes unsaved:",
+     "english": "Quitting now leaves these changes unsaved:",
+     "before": "現在結束會使這些更改未儲存：",
+     "after": "現在結束的話，以下更改將不會儲存：",
+     "why": "natural: 會使這些更改未儲存 is a broken calque of leaves these changes unsaved"
+    },
+    {
+     "key": "Restores the standard list: the ASCII symbols, bullets, dashes, the ellipsis, and box-drawing lines",
+     "english": "Restores the standard list: the ASCII symbols, bullets, dashes, the ellipsis, and box-drawing lines",
+     "before": "還原標準列表：ASCII 符號、項目符號、破折號、省略號和製表線。",
+     "after": "還原標準列表：ASCII 符號、項目符號、破折號、刪節號和製表線。",
+     "why": "term: Taiwan and VoiceOver's Traditional Chinese call the ellipsis 刪節號; 省略號 is mainland usage"
+    },
+    {
+     "key": "Restores this action's default shortcuts, which follow later releases' changes",
+     "english": "Restores this action's default shortcuts, which follow later releases' changes",
+     "before": "還原此動作的預設快速鍵，日後版本可能會更改這些預設值。",
+     "after": "還原此動作的預設快速鍵；預設快速鍵會隨日後版本的更改而更新。",
+     "why": "meaning: the text said later releases may change the defaults, not that the restored keys follow those changes"
+    },
+    {
+     "key": "Rich text, with each heading at its outline level, for Word, Pages, and TextEdit.",
+     "english": "Rich text, with each heading at its outline level, for Word, Pages, and TextEdit.",
+     "before": "多重格式文字，每個標題依其大綱層級呈現，適用於 Word、Pages 和 TextEdit。",
+     "after": "多重格式文字，每個標題依其大綱層級呈現，適用於 Word、Pages 和「文字編輯」。",
+     "why": "term: TextEdit is 文字編輯 in Apple's Traditional Chinese, as the app says elsewhere"
+    },
+    {
+     "key": "Right Arrow",
+     "english": "Right Arrow",
+     "before": "右箭頭",
+     "after": "向右箭頭",
+     "why": "term: VoiceOver's Traditional Chinese name for the right arrow key"
+    },
+    {
+     "key": "Select Chapter",
+     "english": "Select Chapter",
+     "before": "選擇章節",
+     "after": "選取章節",
+     "why": "meaning: the audio editor command selects the chapter's audio (選取, as in 選取至下一個停頓); 選擇 is choose"
+    },
+    {
+     "key": "Skip backward",
+     "english": "Skip backward",
+     "before": "倒轉",
+     "after": "向後跳轉",
+     "why": "term: the glossary's Skip Backward is 向後跳轉; 倒轉 is rewinding audio, and a skip may move by a sentence"
+    },
+    {
+     "key": "Skip backward: %@",
+     "english": "Skip backward: %@",
+     "before": "倒轉：%@",
+     "after": "向後跳轉：%@",
+     "why": "meaning: 倒轉 is rewinding audio, but the unit may be a sentence or a heading; the glossary's Skip Backward is 向後跳轉"
+    },
+    {
+     "key": "Skip forward",
+     "english": "Skip forward",
+     "before": "快轉",
+     "after": "向前跳轉",
+     "why": "term: the glossary's Skip Forward is 向前跳轉; 快轉 is fast-forwarding audio, and a skip may move by a sentence"
+    },
+    {
+     "key": "Skip forward: %@",
+     "english": "Skip forward: %@",
+     "before": "快轉：%@",
+     "after": "向前跳轉：%@",
+     "why": "meaning: 快轉 is fast-forwarding audio, but the unit may be a sentence or a heading; the glossary's Skip Forward is 向前跳轉"
+    },
+    {
+     "key": "Sort books by %@",
+     "english": "Sort books by %@",
+     "before": "依 %@ 排序書籍",
+     "after": "依%@排序書籍",
+     "why": "punctuation: the sort (書名，遞增, 手動順序) is Chinese text, so no space beside it, as parts 1 and 2 write it"
+    },
+    {
+     "key": "Sorted by %@",
+     "english": "Sorted by %@",
+     "before": "已依 %@ 排序",
+     "after": "已依%@排序",
+     "why": "punctuation: the sort (書名，遞增, 手動順序) is Chinese text, so no space beside it, as parts 1 and 2 write it"
+    },
+    {
+     "key": "Standard",
+     "english": "Standard",
+     "before": "標準",
+     "after": "標準音質",
+     "why": "natural: matches Apple's tier names 增強音質 and 高音質, so each tier reads as a quality beside a voice's name"
+    },
+    {
+     "key": "Text not updated: %@ was removed, or its download deleted, so Edit Text has stopped for it.",
+     "english": "Text not updated: %@ was removed, or its download deleted, so Edit Text has stopped for it.",
+     "before": "文字未更新：%@ 已被移除，或其下載項目已刪除，因此「編輯文字」已為它停止。",
+     "after": "文字未更新：%@ 已被移除，或其下載項目已刪除，因此其「編輯文字」已停止。",
+     "why": "natural: 已為它停止 copies has stopped for it; the app says X 的「編輯文字」已停止 elsewhere"
+    },
+    {
+     "key": "Text not updated: chapter %@ of the edited text of %@ %@, which TextMouth can't read safely. Flatten it and save again, or undo the change; the book keeps its old text until then.",
+     "english": "Text not updated: chapter %1$@ of the edited text of %2$@ %3$@, which TextMouth can't read safely. Flatten it and save again, or undo the change; the book keeps its old text until then.",
+     "before": "文字未更新：%2$@ 編輯後文字的第 %1$@ 章 %3$@，TextMouth 無法安全讀取。請將它攤平後再儲存，或還原更改；在此之前，書籍會保留舊的文字。",
+     "after": "文字未更新：%2$@ 編輯後文字的第 %1$@ 章中，%3$@，TextMouth 無法安全讀取。請減少巢狀層級後再次儲存，或還原更改；在此之前，書籍會保留舊的文字。",
+     "why": "grammar: the clause (引用、列表或強調的巢狀層級超過 N 層) ran into 文字 with nothing between; 攤平 for flatten said less than reduce the nesting"
+    },
+    {
+     "key": "Text not updated: the edited text of %@ %@, which TextMouth can't read safely. Flatten it and save again, or undo the change; the book keeps its old text until then.",
+     "english": "Text not updated: the edited text of %1$@ %2$@, which TextMouth can't read safely. Flatten it and save again, or undo the change; the book keeps its old text until then.",
+     "before": "文字未更新：%1$@ 編輯後的文字 %2$@，TextMouth 無法安全讀取。請將它攤平後再儲存，或還原更改；在此之前，書籍會保留舊的文字。",
+     "after": "文字未更新：%1$@ 編輯後的文字中，%2$@，TextMouth 無法安全讀取。請減少巢狀層級後再次儲存，或還原更改；在此之前，書籍會保留舊的文字。",
+     "why": "grammar: the clause (引用、列表或強調的巢狀層級超過 N 層) ran into 文字 with nothing between; 攤平 for flatten said less than reduce the nesting"
+    },
+    {
+     "key": "TextMouth is finishing up before it quits: %@. It quits when that is done.",
+     "english": "TextMouth is finishing up before it quits: %@. It quits when that is done.",
+     "before": "TextMouth 正在完成收尾工作後才會結束：%@。完成後便會結束。",
+     "after": "TextMouth 結束前正在完成收尾工作：%@。完成後便會結束。",
+     "why": "grammar: 正在完成收尾工作後才會結束 mixed a progressive with after-then"
+    },
+    {
+     "key": "TextMouth reads BRF and BRL files you add from now on with these characters, and recognizes Unicode braille patterns by itself. The Export dialog starts a BRF with them. A book keeps its import characters, which Book Information can change.",
+     "english": "TextMouth reads BRF and BRL files you add from now on with these characters, and recognizes Unicode braille patterns by itself. The Export dialog starts a BRF with them. A book keeps its import characters, which Book Information can change.",
+     "before": "TextMouth 之後加入的 BRF 和 BRL 檔案會以這些字元讀取，並自動辨識 Unicode 點字圖樣。輸出對話框會以這些字元開始 BRF。每本書都保留其輸入時的字元，可在「書籍資訊」中更改。",
+     "after": "你之後加入的 BRF 和 BRL 檔案，TextMouth 會以這些字元讀取，並自動辨識 Unicode 點字圖樣。輸出對話框中的 BRF 一開始也會使用這些字元。每本書都保留其輸入時的字元，可在「書籍資訊」中更改。",
+     "why": "meaning: the text said TextMouth adds the files; the reader adds them, and the Export dialog only starts with these characters"
+    },
+    {
+     "key": "The %@ ends %@ into “%@”, which is only %@ long.",
+     "english": "The %1$@ ends %2$@ into “%3$@”, which is only %4$@ long.",
+     "before": "%1$@ 在「%3$@」的 %2$@ 處結束，但該檔案只有 %4$@ 長。",
+     "after": "%1$@ 在「%3$@」的 %2$@處結束，但該檔案只有 %4$@長。",
+     "why": "punctuation: a spoken length ends in its unit (秒, 分鐘), so no space between it and the Chinese after it, as parts 1 and 2 write it"
+    },
+    {
+     "key": "The %@ page labelled %@",
+     "english": "The %1$@ page labelled %2$@",
+     "before": "標示為 %2$@ 的頁面中的 %1$@",
+     "after": "標示為 %2$@ 的頁面中的%1$@",
+     "why": "punctuation: the ordinal word (第二個) meets Chinese text, so no space before it, as parts 1 and 2 write it"
+    },
+    {
+     "key": "The %@ starts %@ into “%@”, before the earlier %@, which starts %@ in.",
+     "english": "The %1$@ starts %2$@ into “%3$@”, before the earlier %4$@, which starts %5$@ in.",
+     "before": "%1$@ 在「%3$@」的 %2$@ 處開始，早於較前面的 %4$@，後者在 %5$@ 處開始。",
+     "after": "%1$@ 在「%3$@」的 %2$@處開始，早於較前面的%4$@，後者在 %5$@處開始。",
+     "why": "punctuation: a spoken length ends in its unit (秒, 分鐘), so no space between it and the Chinese after it, as parts 1 and 2 write it; the section phrase (標題「…」) begins in Chinese"
+    },
+    {
+     "key": "The %@ starts %@ into “%@”, which is only %@ long.",
+     "english": "The %1$@ starts %2$@ into “%3$@”, which is only %4$@ long.",
+     "before": "%1$@ 在「%3$@」的 %2$@ 處開始，但該檔案只有 %4$@ 長。",
+     "after": "%1$@ 在「%3$@」的 %2$@處開始，但該檔案只有 %4$@長。",
+     "why": "punctuation: a spoken length ends in its unit (秒, 分鐘), so no space between it and the Chinese after it, as parts 1 and 2 write it"
+    },
+    {
+     "key": "The braille table writes an eight-dot cell, %@, but TextMouth's BRF and PEF files are six-dot only.",
+     "english": "The braille table writes an eight-dot cell, %@, but TextMouth's BRF and PEF files are six-dot only.",
+     "before": "此點字表寫出八點點字格 %@，但 TextMouth 的 BRF 和 PEF 檔案只支援六點。",
+     "after": "此點字表寫出八點點字格（%@），但 TextMouth 的 BRF 和 PEF 檔案只支援六點。",
+     "why": "natural: the dots (點 4 和 7) ran into 點字格; parentheses set them apart without a space"
+    },
+    {
+     "key": "The cursor is %@.",
+     "english": "The cursor is %@.",
+     "before": "游標在 %@。",
+     "after": "游標在%@。",
+     "why": "punctuation: the page phrases (第 8 頁, 第 1 頁之前, 標示為 3 的頁面中的第二個) meet Chinese text, so no space beside them, as parts 1 and 2 write it"
+    },
+    {
+     "key": "The file %@ could not be read quickly enough.",
+     "english": "The file %@ could not be read quickly enough.",
+     "before": "無法足夠快地讀取檔案 %@。",
+     "after": "讀取檔案 %@ 的速度不夠快。",
+     "why": "natural: 無法足夠快地讀取 is a word-for-word copy of could not be read quickly enough"
+    },
+    {
+     "key": "The heading whose section ends the audio, with its subheadings, or the end of the book.",
+     "english": "The heading whose section ends the audio, with its subheadings, or the end of the book.",
+     "before": "其區段結束音訊的標題（連同其子標題），或書籍結尾。",
+     "after": "音訊結束的位置：某個標題的區段結尾（連同其子標題），或書籍結尾。",
+     "why": "natural: 其區段結束音訊的標題 copies the English relative clause; now parallel with the From hint 音訊開始的位置"
+    },
+    {
+     "key": "The reading list is empty. To add a book, choose Add to Reading List from its context menu, its VoiceOver actions, or the Library menu.",
+     "english": "The reading list is empty. To add a book, choose Add to Reading List from its context menu, its VoiceOver actions, or the Library menu.",
+     "before": "閱讀列表是空的。若要加入書籍，請從其內容選單、VoiceOver 動作或「書庫」選單中選擇「加入閱讀列表」。",
+     "after": "閱讀列表是空的。若要加入書籍，請從其快速選單、VoiceOver 動作或「書庫」選單中選擇「加入閱讀列表」。",
+     "why": "term: Apple's Traditional Chinese calls the context menu 快速選單; 內容選單 is Microsoft's word"
+    },
+    {
+     "key": "The text of this book %@, which TextMouth can't export safely. Choose Edit Text, flatten the nesting, and save; then export again.",
+     "english": "The text of this book %@, which TextMouth can't export safely. Choose Edit Text, flatten the nesting, and save; then export again.",
+     "before": "此書的文字 %@，TextMouth 無法安全輸出。請選擇「編輯文字」，將巢狀結構攤平並儲存，然後再次輸出。",
+     "after": "此書的文字中，%@，TextMouth 無法安全輸出。請選擇「編輯文字」，減少巢狀層級並儲存，然後再次輸出。",
+     "why": "grammar: the nesting clause ran straight on from 文字 with nothing between; 攤平 for flatten said less than reduce the nesting"
+    },
+    {
+     "key": "Time at %@",
+     "english": "Time at %@",
+     "before": "時間，以 %@ 計",
+     "after": "時間，以%@計",
+     "why": "punctuation: the speed (每分鐘 500 字) is Chinese text, so no space beside it, as parts 1 and 2 write it"
+    },
+    {
+     "key": "To",
+     "english": "To",
+     "before": "至",
+     "after": "終點",
+     "why": "natural: a bare preposition 至 is no label; the pop-up chooses where the spoken audio ends (pairs with 起點)"
+    },
+    {
+     "key": "Two presses, %@ apart. Set the time above %@ to count them as one.",
+     "english": "Two presses, %1$@ apart. Set the time above %2$@ to count them as one.",
+     "before": "按了兩次，相隔 %1$@。請將時間設定為高於 %2$@，才會算作一次。",
+     "after": "按了兩次，相隔 %1$@。請將時間設定為高於 %2$@，才會算作連按兩次。",
+     "why": "meaning: 算作一次 is heard as one single press, the opposite of counting the two as one double press"
+    },
+    {
+     "key": "Type straight quotation marks: in TextEdit, turn off Smart Quotes under Edit, Substitutions.",
+     "english": "Type straight quotation marks: in TextEdit, turn off Smart Quotes under Edit, Substitutions.",
+     "before": "請輸入直引號：在「文字編輯」中，於「編輯」>「替換」下關閉「智慧型引號」。",
+     "after": "請輸入直引號：在「文字編輯」的「編輯」選單中，於「替代」下關閉「智慧型引號」。",
+     "why": "term: Apple's Edit menu names the submenu 替代, not 替換; the added > is read aloud as 大於號"
+    },
+    {
+     "key": "Up Arrow",
+     "english": "Up Arrow",
+     "before": "上箭頭",
+     "after": "向上箭頭",
+     "why": "term: VoiceOver's Traditional Chinese name for the up arrow key"
+    },
+    {
+     "key": "Voice: %@ (%@), %@, %@ quality",
+     "english": "Voice: %1$@ (%2$@), %3$@, %4$@ quality",
+     "before": "語音：%1$@（%2$@），%3$@，%4$@ 品質",
+     "after": "語音：%1$@（%2$@），%3$@，%4$@",
+     "why": "grammar: the quality tier now names itself (增強音質, 高音質, 標準音質), so a trailing 品質 doubled it"
+    },
+    {
+     "key": "Where Am I? Announces current position in the book",
+     "english": "Where Am I? Announces current position in the book",
+     "before": "我在哪裡？宣告書籍中的目前位置",
+     "after": "我在哪裡？播報書籍中的目前位置",
+     "why": "natural: 宣告 means proclaim; the app announces with 播報, as in 停止「我在哪裡？」播報"
+    },
+    {
+     "key": "Works in %@",
+     "english": "Works in %@",
+     "before": "在 %@ 中有效",
+     "after": "在%@中有效",
+     "why": "punctuation: the windows phrase (每個視窗, 音訊編輯器) is Chinese text, so no space beside it, as parts 1 and 2 write it"
+    },
+    {
+     "key": "at %@ of %@ at %@",
+     "english": "at %1$@ of %2$@ at %3$@",
+     "before": "位於 %1$@，全長 %2$@，速度 %3$@",
+     "after": "位於 %1$@，全長 %2$@，速度%3$@",
+     "why": "punctuation: the speed (每分鐘 500 字) begins in Chinese, so no space before it, as parts 1 and 2 write it"
+    },
+    {
+     "key": "dot %@",
+     "english": "dot %@",
+     "before": "%@ 點",
+     "after": "點 %@",
+     "why": "term: VoiceOver's Traditional Chinese says 點1 2 for a braille cell; 1 點 is heard as one o'clock"
+    },
+    {
+     "key": "dots %@",
+     "english": "dots %@",
+     "before": "%@ 點",
+     "after": "點 %@",
+     "why": "term: VoiceOver's Traditional Chinese says 點1 2 for a braille cell; 1 點 is heard as one o'clock"
+    },
+    {
+     "key": "it %@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the book opens.",
+     "english": "it %@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the book opens.",
+     "before": "它 %@，TextMouth 無法安全讀取。請將它攤平後再儲存，或還原更改，書籍便會打開。",
+     "after": "其中%@，TextMouth 無法安全讀取。請減少巢狀層級後再次儲存，或還原更改，書籍便會打開。",
+     "why": "grammar: the nesting clause (引用、列表或強調的巢狀層級超過 N 層) ran straight on from 它; 攤平 for flatten said less than reduce the nesting / then punctuation: the nesting clause is Chinese text, so no space beside it, as parts 1 and 2 write it"
+    },
+    {
+     "key": "it %@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the text shows.",
+     "english": "it %@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the text shows.",
+     "before": "它 %@，TextMouth 無法安全讀取。請將它攤平後再儲存，或還原更改，文字便會顯示。",
+     "after": "其中%@，TextMouth 無法安全讀取。請減少巢狀層級後再次儲存，或還原更改，文字便會顯示。",
+     "why": "grammar: the nesting clause (引用、列表或強調的巢狀層級超過 N 層) ran straight on from 它; 攤平 for flatten said less than reduce the nesting / then punctuation: the nesting clause is Chinese text, so no space beside it, as parts 1 and 2 write it"
+    },
+    {
+     "key": "its chapter %@ %@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the book opens.",
+     "english": "its chapter %1$@ %2$@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the book opens.",
+     "before": "它的第 %1$@ 章 %2$@，TextMouth 無法安全讀取。請將它攤平後再儲存，或還原更改，書籍便會打開。",
+     "after": "它的第 %1$@ 章中，%2$@，TextMouth 無法安全讀取。請減少巢狀層級後再次儲存，或還原更改，書籍便會打開。",
+     "why": "grammar: the nesting clause (引用、列表或強調的巢狀層級超過 N 層) ran straight on from 它; 攤平 for flatten said less than reduce the nesting"
+    },
+    {
+     "key": "its chapter %@ %@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the text shows.",
+     "english": "its chapter %1$@ %2$@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the text shows.",
+     "before": "它的第 %1$@ 章 %2$@，TextMouth 無法安全讀取。請將它攤平後再儲存，或還原更改，文字便會顯示。",
+     "after": "它的第 %1$@ 章中，%2$@，TextMouth 無法安全讀取。請減少巢狀層級後再次儲存，或還原更改，文字便會顯示。",
+     "why": "grammar: the nesting clause (引用、列表或強調的巢狀層級超過 N 層) ran straight on from 它; 攤平 for flatten said less than reduce the nesting"
+    },
+    {
+     "key": "on the %@ page labelled %@",
+     "english": "on the %1$@ page labelled %2$@",
+     "before": "標示為 %2$@ 的頁面中的 %1$@",
+     "after": "標示為 %2$@ 的頁面中的%1$@",
+     "why": "punctuation: the ordinal word (第二個) meets Chinese text, so no space before it, as parts 1 and 2 write it"
+    },
+    {
+     "key": "the file %@ could not be read quickly enough",
+     "english": "the file %@ could not be read quickly enough",
+     "before": "無法足夠快地讀取檔案 %@",
+     "after": "讀取檔案 %@ 的速度不夠快",
+     "why": "natural: 無法足夠快地讀取 is a word-for-word copy of could not be read quickly enough"
+    },
+    {
+     "key": "“%@” uses XML entities of its own, which TextMouth does not read.",
+     "english": "“%@” uses XML entities of its own, which TextMouth does not read.",
+     "before": "「%@」使用它自己的 XML 實體，TextMouth 不會讀取。",
+     "after": "「%@」使用自行定義的 XML 實體，TextMouth 無法讀取。",
+     "why": "term: does not read is 無法讀取, as parts 1 and 2 write it (不會讀取 says it chooses not to); 它自己的 copied of its own"
+    }
+   ]
   }
  ]
 }
