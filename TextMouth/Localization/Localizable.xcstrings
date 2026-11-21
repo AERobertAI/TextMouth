@@ -2806,19 +2806,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%1$@ também contém %2$lld de livros adicionados por um TextMouth mais recente, que são mantidos."
+                  "value" : "%1$@ também contém %2$lld de livros adicionados por uma versão mais recente do TextMouth, e eles são mantidos."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%1$@ também contém %2$lld livro adicionado por um TextMouth mais recente, que é mantido."
+                  "value" : "%1$@ também contém %2$lld livro adicionado por uma versão mais recente do TextMouth, e ele é mantido."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%1$@ também contém %2$lld livros adicionados por um TextMouth mais recente, que são mantidos."
+                  "value" : "%1$@ também contém %2$lld livros adicionados por uma versão mais recente do TextMouth, e eles são mantidos."
                 }
               }
             }
@@ -13485,7 +13485,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Em %3$@, %1$@ está %2$@; em %5$@, está %4$@."
+            "value" : "Segundo %3$@, %1$@ está %2$@; segundo %5$@, está %4$@."
           }
         },
         "ru" : {
@@ -87910,19 +87910,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld de visualizações precisam de um TextMouth mais recente. Elas são mantidas como estão e não são oferecidas."
+                  "value" : "%lld de visualizações precisam de uma versão mais recente do TextMouth. Elas são mantidas como estão e não são oferecidas."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld visualização precisa de um TextMouth mais recente. Ela é mantida como está e não é oferecida."
+                  "value" : "%lld visualização precisa de uma versão mais recente do TextMouth. Ela é mantida como está e não é oferecida."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld visualizações precisam de um TextMouth mais recente. Elas são mantidas como estão e não são oferecidas."
+                  "value" : "%lld visualizações precisam de uma versão mais recente do TextMouth. Elas são mantidas como estão e não são oferecidas."
                 }
               }
             }
@@ -95893,7 +95893,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Um movimento desloca um livro por vez, e há vários selecionados. Selecione um único livro e tente novamente."
+            "value" : "Só é possível mover um livro por vez, e há vários selecionados. Selecione um único livro e tente novamente."
           }
         },
         "ru" : {
@@ -109047,7 +109047,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sempre oferece uma visualização o tempo todo. Quando aplicável a oferece só enquanto ela lista algo: a Lista de leitura enquanto contém um livro, episódio ou artigo, e Feeds enquanto há um feed. Oculta a deixa de fora. Uma janela mantém a visualização até que você escolha outra."
+            "value" : "Com Sempre, a visualização é oferecida o tempo todo. Com Quando aplicável, só é oferecida enquanto lista algo: a Lista de leitura enquanto contém um livro, episódio ou artigo, e Feeds enquanto há um feed. Com Oculta, fica de fora. Uma janela mantém a visualização até que você escolha outra."
           }
         },
         "ru" : {
@@ -127377,7 +127377,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Livro somente em %1$@: %2$@."
+            "value" : "Livro que só %1$@ tem: %2$@."
           }
         },
         "ru" : {
@@ -128348,7 +128348,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Marcador %1$@ em %2$@: somente em %3$@, %4$@."
+            "value" : "Marcador %1$@ em %2$@: só %3$@ o tem, %4$@."
           }
         },
         "ru" : {
@@ -133299,19 +133299,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Mas %1$@ também contém %2$lld de livros adicionados por um TextMouth mais recente: eles são mantidos onde estão, assim como todas as pastas que contêm algum deles."
+                  "value" : "Mas %1$@ também contém %2$lld de livros adicionados por uma versão mais recente do TextMouth: eles são mantidos onde estão, assim como todas as pastas que contêm algum deles."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Mas %1$@ também contém %2$lld livro adicionado por um TextMouth mais recente: ele é mantido onde está, assim como todas as pastas que o contêm."
+                  "value" : "Mas %1$@ também contém %2$lld livro adicionado por uma versão mais recente do TextMouth: ele é mantido onde está, assim como todas as pastas que o contêm."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Mas %1$@ também contém %2$lld livros adicionados por um TextMouth mais recente: eles são mantidos onde estão, assim como todas as pastas que contêm algum deles."
+                  "value" : "Mas %1$@ também contém %2$lld livros adicionados por uma versão mais recente do TextMouth: eles são mantidos onde estão, assim como todas as pastas que contêm algum deles."
                 }
               }
             }
@@ -203388,7 +203388,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Editar texto é interrompido para este livro; escolha Editar texto novamente para editar a nova leitura."
+            "value" : "A edição do texto deste livro é interrompida; escolha Editar texto novamente para editar a nova leitura."
           }
         },
         "ru" : {
@@ -233193,7 +233193,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "A pasta “%1$@” em %2$@ é “%3$@” em %4$@."
+            "value" : "A pasta “%1$@”, segundo %2$@, é “%3$@” segundo %4$@."
           }
         },
         "ru" : {
@@ -233336,7 +233336,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "A pasta “%1$@” só existe em %2$@."
+            "value" : "Só %2$@ tem a pasta “%1$@”."
           }
         },
         "ru" : {
@@ -233884,7 +233884,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Pastas é sempre exibida: todas as pastas e feeds se abrem ali."
+            "value" : "A visualização Pastas é sempre exibida: todas as pastas e feeds se abrem nela."
           }
         },
         "ru" : {
@@ -281426,7 +281426,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Aberto pela última vez %@"
+            "value" : "Última abertura: %@"
           }
         },
         "ru" : {
@@ -345875,7 +345875,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Não dentro dos últimos"
+            "value" : "Não nos últimos"
           }
         },
         "ru" : {
@@ -357755,7 +357755,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Texto do OpenDocument"
+            "value" : "Texto OpenDocument"
           }
         },
         "ru" : {
@@ -378927,7 +378927,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Posição em %1$@: mais recente em %2$@, %3$@."
+            "value" : "Posição em %1$@: %2$@ tem a mais recente, %3$@."
           }
         },
         "ru" : {
@@ -388075,7 +388075,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ler “%@” novamente automaticamente?"
+            "value" : "Ler “%@” de novo automaticamente?"
           }
         },
         "ru" : {
@@ -389314,7 +389314,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Lista de leitura: %1$@ só está na lista de %2$@, na posição %3$@."
+            "value" : "Lista de leitura: só %2$@ tem %1$@ na lista, na posição %3$@."
           }
         },
         "ru" : {
@@ -389594,7 +389594,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Lista de leitura: “%1$@” é %2$@ em %3$@ e %4$@ em %5$@."
+            "value" : "Lista de leitura: %3$@ tem a opção “%1$@” %2$@, e %5$@, %4$@."
           }
         },
         "ru" : {
