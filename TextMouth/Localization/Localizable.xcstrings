@@ -11942,7 +11942,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ ভেতরে"
+            "value" : "শুরু থেকে %@"
           }
         },
         "de" : {
@@ -13598,7 +13598,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ হলো %2$@ ফরম্যাটে, যা iPhone-এ TextMouth এখনও চালাতে পারে না।"
+            "value" : "%1$@ %2$@ ফরম্যাটে আছে, যা iPhone-এ TextMouth এখনও চালাতে পারে না।"
           }
         },
         "de" : {
@@ -20936,7 +20936,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ শব্দ"
+            "value" : "%@ সাউন্ড"
           }
         },
         "de" : {
@@ -40414,13 +40414,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld অডিওবুক"
+                  "value" : "%lldটি অডিওবুক"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld অডিওবুক"
+                  "value" : "%lldটি অডিওবুক"
                 }
               }
             }
@@ -44617,13 +44617,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "সর্বকালে %lld বই শেষ হয়েছে"
+                  "value" : "এ পর্যন্ত মোট %lldটি বই শেষ হয়েছে"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "সর্বকালে %lld বই শেষ হয়েছে"
+                  "value" : "এ পর্যন্ত মোট %lldটি বই শেষ হয়েছে"
                 }
               }
             }
@@ -45084,13 +45084,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "এ বছর %lld বই শেষ হয়েছে"
+                  "value" : "এ বছর %lldটি বই শেষ হয়েছে"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "এ বছর %lld বই শেষ হয়েছে"
+                  "value" : "এ বছর %lldটি বই শেষ হয়েছে"
                 }
               }
             }
@@ -50825,13 +50825,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld বই আগে থেকেই তাতে ছিল।"
+                  "value" : "%lldটি বই আগে থেকেই তাতে ছিল।"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld বই আগে থেকেই তাতে ছিল।"
+                  "value" : "%lldটি বই আগে থেকেই তাতে ছিল।"
                 }
               }
             }
@@ -51759,13 +51759,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld বই তাতে ছিল না।"
+                  "value" : "%lldটি বই তাতে ছিল না।"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld বই তাতে ছিল না।"
+                  "value" : "%lldটি বই তাতে ছিল না।"
                 }
               }
             }
@@ -61242,13 +61242,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld এন্ট্রিতে শুধু ধ্বনিগত বানান আছে, তাই সেগুলো আলাদা করে রাখা হয়েছে।"
+                  "value" : "%lldটি এন্ট্রিতে শুধু ধ্বনিগত বানান আছে, তাই সেটি আলাদা করে রাখা হয়েছে।"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld এন্ট্রিতে শুধু ধ্বনিগত বানান আছে, তাই সেগুলো আলাদা করে রাখা হয়েছে।"
+                  "value" : "%lldটি এন্ট্রিতে শুধু ধ্বনিগত বানান আছে, তাই সেগুলো আলাদা করে রাখা হয়েছে।"
                 }
               }
             }
@@ -61709,13 +61709,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%1$lld এন্ট্রি পড়া হয়নি, কারণ একটি লেক্সিকন একবারে সর্বোচ্চ %2$@টি নিয়ম যোগ করে।"
+                  "value" : "%1$lldটি এন্ট্রি পড়া হয়নি, কারণ একটি লেক্সিকন একবারে সর্বোচ্চ %2$@টি নিয়ম যোগ করে।"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%1$lld এন্ট্রি পড়া হয়নি, কারণ একটি লেক্সিকন একবারে সর্বোচ্চ %2$@টি নিয়ম যোগ করে।"
+                  "value" : "%1$lldটি এন্ট্রি পড়া হয়নি, কারণ একটি লেক্সিকন একবারে সর্বোচ্চ %2$@টি নিয়ম যোগ করে।"
                 }
               }
             }
@@ -64044,13 +64044,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld ফাইল"
+                  "value" : "%lldটি ফাইল"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld ফাইল"
+                  "value" : "%lldটি ফাইল"
                 }
               }
             }
@@ -67313,13 +67313,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld আইটেম"
+                  "value" : "%lldটি আইটেম"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld আইটেম"
+                  "value" : "%lldটি আইটেম"
                 }
               }
             }
@@ -76577,13 +76577,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld অন্যান্য বই"
+                  "value" : "%lldটি অন্যান্য বই"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld অন্যান্য বই"
+                  "value" : "%lldটি অন্যান্য বই"
                 }
               }
             }
@@ -79516,13 +79516,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld পডকাস্ট পর্ব"
+                  "value" : "%lldটি পডকাস্ট পর্ব"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld পডকাস্ট পর্ব"
+                  "value" : "%lldটি পডকাস্ট পর্ব"
                 }
               }
             }
@@ -81384,13 +81384,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld নিয়ম আপনার নিয়মগুলোতে আগে থেকেই ছিল।"
+                  "value" : "%lldটি নিয়ম আপনার নিয়মগুলোতে আগে থেকেই ছিল।"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld নিয়ম আপনার নিয়মগুলোতে আগে থেকেই ছিল।"
+                  "value" : "%lldটি নিয়ম আপনার নিয়মগুলোতে আগে থেকেই ছিল।"
                 }
               }
             }
@@ -81851,13 +81851,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld নিয়ম বাদ দেওয়া হয়েছে: রেগুলার এক্সপ্রেশন এবং বন্ধ থাকা নিয়ম লেক্সিকনে লেখা যায় না।"
+                  "value" : "%lldটি নিয়ম বাদ দেওয়া হয়েছে: রেগুলার এক্সপ্রেশন এবং বন্ধ থাকা নিয়ম লেক্সিকনে লেখা যায় না।"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld নিয়ম বাদ দেওয়া হয়েছে: রেগুলার এক্সপ্রেশন এবং বন্ধ থাকা নিয়ম লেক্সিকনে লেখা যায় না।"
+                  "value" : "%lldটি নিয়ম বাদ দেওয়া হয়েছে: রেগুলার এক্সপ্রেশন এবং বন্ধ থাকা নিয়ম লেক্সিকনে লেখা যায় না।"
                 }
               }
             }
@@ -85120,13 +85120,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টেক্সট বই"
+                  "value" : "%lldটি টেক্সট বই"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টেক্সট বই"
+                  "value" : "%lldটি টেক্সট বই"
                 }
               }
             }
@@ -99715,13 +99715,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "পড়ার তালিকায় %lld বই যোগ করুন"
+                  "value" : "পড়ার তালিকায় %lldটি বই যোগ করুন"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "পড়ার তালিকায় %lld বই যোগ করুন"
+                  "value" : "পড়ার তালিকায় %lldটি বই যোগ করুন"
                 }
               }
             }
@@ -100182,13 +100182,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "পড়ার তালিকায় %lld বই যোগ করুন"
+                  "value" : "পড়ার তালিকায় %lldটি বই যোগ করুন"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "পড়ার তালিকায় %lld বই যোগ করুন"
+                  "value" : "পড়ার তালিকায় %lldটি বই যোগ করুন"
                 }
               }
             }
@@ -103630,7 +103630,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "পড়ার তালিকায় %lld বই যোগ করা হয়েছে।"
+            "value" : "পড়ার তালিকায় %lldটি বই যোগ করা হয়েছে।"
           }
         },
         "de" : {
@@ -103806,13 +103806,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "“%2$@” থেকে %1$lld নিয়ম যোগ করা হয়েছে।"
+                  "value" : "“%2$@” থেকে %1$lldটি নিয়ম যোগ করা হয়েছে।"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "“%2$@” থেকে %1$lld নিয়ম যোগ করা হয়েছে।"
+                  "value" : "“%2$@” থেকে %1$lldটি নিয়ম যোগ করা হয়েছে।"
                 }
               }
             }
@@ -104782,7 +104782,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "প্রতিটি রিডারের টুলবারে একটি রপ্তানি বোতাম যোগ করে। ফাইল, রপ্তানি করুন দুভাবেই কাজ করে।"
+            "value" : "প্রতিটি রিডারের টুলবারে একটি রপ্তানি বোতাম যোগ করে। ফাইল মেনুর “রপ্তানি করুন…” যেকোনো ক্ষেত্রেই কাজ করে।"
           }
         },
         "de" : {
@@ -106569,7 +106569,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "এরপর চালান বোতাম আবার অংশটি চেষ্টা করে।"
+            "value" : "এরপর “চালান” অংশটি আবার পড়ার চেষ্টা করে।"
           }
         },
         "de" : {
@@ -107858,7 +107858,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "সর্বকাল"
+            "value" : "সর্বমোট"
           }
         },
         "de" : {
@@ -120686,13 +120686,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Audacity লেবেল একটি অডিও ফাইল চিহ্নিত করে, আর এই বইয়ের অডিও %lld ফাইলে আছে।"
+                  "value" : "Audacity লেবেল একটি অডিও ফাইল চিহ্নিত করে, আর এই বইয়ের অডিও %lldটি ফাইলে আছে।"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Audacity লেবেল একটি অডিও ফাইল চিহ্নিত করে, আর এই বইয়ের অডিও %lld ফাইলে আছে।"
+                  "value" : "Audacity লেবেল একটি অডিও ফাইল চিহ্নিত করে, আর এই বইয়ের অডিও %lldটি ফাইলে আছে।"
                 }
               }
             }
@@ -130546,7 +130546,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "সর্বকালে শেষ করা বই"
+            "value" : "সর্বমোট শেষ করা বই"
           }
         },
         "de" : {
@@ -141778,7 +141778,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "এই বইয়ের অধ্যায় %1$@ %2$@, যা TextMouth নিরাপদে রপ্তানি করতে পারে না। টেক্সট সম্পাদনা করুন বেছে নিন, নেস্টিং সমতল করুন এবং সংরক্ষণ করুন; তারপর আবার রপ্তানি করুন।"
+            "value" : "এই বইয়ের অধ্যায় %1$@ %2$@, যা TextMouth নিরাপদে রপ্তানি করতে পারে না। “টেক্সট সম্পাদনা করুন” বেছে নিন, নেস্টিং সমতল করুন এবং সংরক্ষণ করুন; তারপর আবার রপ্তানি করুন।"
           }
         },
         "de" : {
@@ -151952,7 +151952,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "রপ্তানির ফোল্ডারটি বেছে নিন। নতুন ফোল্ডার একটি তৈরি করে।"
+            "value" : "রপ্তানির ফোল্ডারটি বেছে নিন। “নতুন ফোল্ডার” একটি তৈরি করে।"
           }
         },
         "de" : {
@@ -201149,7 +201149,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "তালিকাভুক্ত প্রতিটি অক্ষর একটি ধারা গড়তে পারে। ফাঁক উপেক্ষা করা হয়, আর অক্ষর ও অঙ্ক কখনও ধারা গড়ে না।"
+            "value" : "তালিকাভুক্ত প্রতিটি চিহ্ন একটি ধারা গড়তে পারে। ফাঁক উপেক্ষা করা হয়, আর বর্ণ ও অঙ্ক কখনও ধারা গড়ে না।"
           }
         },
         "de" : {
@@ -201423,7 +201423,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "প্রতিটি হেডিংয়ের শিরোনাম ও শুরু, একটি CUE শিট হিসেবে, যা অডিওকে সেই নামেই উল্লেখ করে যে নামে অডিও রপ্তানি করে।"
+            "value" : "প্রতিটি হেডিংয়ের শিরোনাম ও শুরু, একটি CUE শিট হিসেবে, যা অডিওকে সেই নামেই উল্লেখ করে যে নামে “অডিও” এটি রপ্তানি করে।"
           }
         },
         "de" : {
@@ -212980,7 +212980,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "এর উপরের সব বই শেষ হয়েছে"
+            "value" : "পড়ার তালিকায় এর উপরের সব বই শেষ হয়েছে"
           }
         },
         "de" : {
@@ -217577,13 +217577,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld বই রপ্তানি করুন"
+                  "value" : "%lldটি বই রপ্তানি করুন"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld বই রপ্তানি করুন"
+                  "value" : "%lldটি বই রপ্তানি করুন"
                 }
               }
             }
@@ -218044,13 +218044,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld বই রপ্তানি করুন…"
+                  "value" : "%lldটি বই রপ্তানি করুন…"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld বই রপ্তানি করুন…"
+                  "value" : "%lldটি বই রপ্তানি করুন…"
                 }
               }
             }
@@ -219979,7 +219979,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "রপ্তানি সেই ফোল্ডারে লিখতে পারে না, যেখানে TextMouth পড়ে শোনানো অধ্যায়গুলো রাখে এবং যেটি সে খালি করে দেয়। অন্য একটি ফোল্ডার বেছে নিন।"
+            "value" : "রপ্তানি সেই ফোল্ডারে লিখতে পারে না, যেখানে TextMouth পড়ে শোনানো অধ্যায়গুলো রাখে এবং যা এটি খালি করে দেয়। অন্য একটি ফোল্ডার বেছে নিন।"
           }
         },
         "de" : {
@@ -220846,13 +220846,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "“%2$@”-এ %1$lld নিয়ম রপ্তানি করা হয়েছে।"
+                  "value" : "“%2$@”-এ %1$lldটি নিয়ম রপ্তানি করা হয়েছে।"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "“%2$@”-এ %1$lld নিয়ম রপ্তানি করা হয়েছে।"
+                  "value" : "“%2$@”-এ %1$lldটি নিয়ম রপ্তানি করা হয়েছে।"
                 }
               }
             }
@@ -222575,7 +222575,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%2$@-এর মধ্যে %1$lld রপ্তানি হচ্ছে…"
+            "value" : "%2$@-এর মধ্যে %1$lldটি রপ্তানি হচ্ছে…"
           }
         },
         "de" : {
@@ -627592,7 +627592,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "কাজ করে এখানে: %@"
+            "value" : "যেখানে কাজ করে: %@"
           }
         },
         "de" : {
