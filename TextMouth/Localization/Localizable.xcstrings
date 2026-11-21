@@ -112529,6 +112529,12 @@
     "Feed settings for %@" : {
       "comment" : "Spoken label of the Library toolbar button, in the folder of a feed, that opens the feed's settings. %@ is the feed's title.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@-এর জন্য ফিড সেটিংস"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -112659,6 +112665,12 @@
     "Feeds" : {
       "comment" : "Text of the Folder Settings sheet, which shows one library folder's facts and its listening options. The label of the feeds inside the folder, shown only when it has any.\nText of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of row as its checkbox names it: \"Books\", \"Episodes\", \"Articles\", or \"Feeds\". This is the case .feeds.\nThe heading of the Library's section of feeds. Title case.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ফিড"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -112724,6 +112736,12 @@
     "Feeds are always listed by title" : {
       "comment" : "Text of the Library window's View pop-up and Go to View. The hint of that one item, which says why there is no other.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ফিড সবসময় শিরোনাম অনুযায়ী তালিকাভুক্ত হয়"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -112789,6 +112807,12 @@
     "Feeds are listed by title" : {
       "comment" : "Text of the Library window's View pop-up and Go to View. What VoiceOver says when that item is chosen.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ফিড শিরোনাম অনুযায়ী তালিকাভুক্ত"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -113126,6 +113150,12 @@
     "File Size" : {
       "comment" : "Name of a way to sort the books: by the size of the book's file. Shown in the Sort menu, the library view editor, the window title, and in sort announcements.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ফাইলের আকার"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -113256,6 +113286,12 @@
     "File size %@" : {
       "comment" : "Speak Info: the part of a book's full summary that says how big its file is. %@ is a size such as \"2.4 MB\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ফাইলের আকার %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -113321,6 +113357,12 @@
     "Files not read" : {
       "comment" : "Label of the list of files the Compare Libraries comparison could not read.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "যে ফাইল পড়া যায়নি"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -114627,6 +114669,12 @@
     "First in the Sort" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A limit's order as its pop-up names it. This is the case .viewSort.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সাজানোর ক্রমে প্রথম"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -114757,6 +114805,12 @@
     "Folder" : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The kind a folder's summary names after the folder's name.\nText of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of test as a condition's test pop-up names it. This is the case .folder.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ফোল্ডার"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -114822,6 +114876,12 @@
     "Folder %@ created in %@." : {
       "comment" : "VoiceOver announcement once the New Folder sheet has closed on a folder made. %1$@ is the new folder's name. %2$@ is the place it is in: its parent folder's path, or the name of the library's top level.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%2$@-এ ফোল্ডার %1$@ তৈরি হয়েছে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -114893,6 +114953,12 @@
     "Folder %@ created. %@: %@." : {
       "comment" : "VoiceOver announcement when a folder is made with the new folder's fields. %1$@ is the new folder's name. %2$@ is the pop-up's spoken label, such as Destination folder. %3$@ is the new folder's full path, now chosen in the pop-up.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ফোল্ডার %1$@ তৈরি হয়েছে। %2$@: %3$@।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -114964,6 +115030,12 @@
     "Folder Settings" : {
       "comment" : "Text of the Folder Settings sheet, which shows one library folder's facts and its listening options. The sheet's navigation title (the window's title while it is open).\nTitle of the Library toolbar button, in a plain folder, that opens the folder's settings.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ফোল্ডার সেটিংস"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -115354,6 +115426,12 @@
     "Folder settings for %@" : {
       "comment" : "Spoken label of the Library toolbar button, in a plain folder, that opens the folder's settings. %@ is the folder's name.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@-এর জন্য ফোল্ডার সেটিংস"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -115614,6 +115692,12 @@
     "Folder “%@” in %@ is “%@” in %@." : {
       "comment" : "A difference found by Compare Libraries: the same folder has two paths. %1$@ is its path in this copy, %2$@ is this copy, %3$@ is its path in the other copy, and %4$@ is the other copy.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%2$@-এ ফোল্ডার “%1$@”, আর %4$@-এ “%3$@”।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -115685,6 +115769,12 @@
     "Folder “%@” is only in %@." : {
       "comment" : "A difference found by Compare Libraries. %1$@ is a library folder's path and %2$@ is the copy of the library that has it.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ফোল্ডার “%1$@” শুধু %2$@-এ আছে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -115756,6 +115846,12 @@
     "Folders" : {
       "comment" : "Header of the Library list's section of folders, and name of the VoiceOver rotor that moves between them.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ফোল্ডার"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -115821,6 +115917,12 @@
     "Folders and the Reading List have no conditions to copy." : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). Duplicate's hint for Folders and the Reading List, when it is dimmed.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ফোল্ডার ও পড়ার তালিকায় কপি করার মতো শর্ত নেই।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -115886,6 +115988,12 @@
     "Folders and the Reading List list what they always have. You can move them, and hide the Reading List." : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. Its hint for Folders and the Reading List, when it is dimmed.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ফোল্ডার ও পড়ার তালিকা সবসময় যা তালিকাভুক্ত করে তা-ই করে। এগুলো সরানো যায়, আর পড়ার তালিকা লুকানো যায়।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -115951,6 +116059,12 @@
     "Folders is always shown: every folder and feed opens there." : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The Visibility pop-up's hint for Folders, whose visibility is fixed.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ফোল্ডার সবসময় দেখানো হয়: প্রতিটি ফোল্ডার ও ফিড সেখানেই খোলে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -118530,6 +118644,12 @@
     "Give the view a name." : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. Save's problem with no name.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ভিউটির একটি নাম দিন।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -118595,6 +118715,12 @@
     "Gives the view back the name, conditions, sort, and limit TextMouth gave it." : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). Restore Default…'s hint.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ভিউটিকে TextMouth-এর দেওয়া নাম, শর্ত, সাজানো ও সীমা ফিরিয়ে দেয়।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -119375,6 +119501,12 @@
     "Go to View" : {
       "comment" : "Text of the Library window's View pop-up and Go to View. The Library menu's submenu listing the views the key Library window offers, each item titled by its view's name.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ভিউয়ে যান"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -120090,6 +120222,12 @@
     "Go up one folder level" : {
       "comment" : "Spoken label of the toolbar button that goes up to the folder that holds the folder shown.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এক ফোল্ডার উপরে যান"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -120740,6 +120878,12 @@
     "Guessed from the book's braille. If it reads wrongly, choose Unified English Braille in Braille Code." : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What Book Information says under the pop-up of a book whose code the import guessed: where the code came from, how to correct it, and how to keep it. Plain and short, so VoiceOver and a braille display read it as it is.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বইয়ের ব্রেইল থেকে অনুমান করা। ভুল পড়লে ব্রেইল কোডে Unified English Braille বেছে নিন।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -120805,6 +120949,12 @@
     "Has New Episodes or Articles" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A condition's relation as its relation pop-up names it, by its test and whether it is negated. This is the form for the other case of the condition.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "নতুন পর্ব বা প্রবন্ধ আছে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -120870,6 +121020,12 @@
     "Has None New" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A condition's relation as its relation pop-up names it, by its test and whether it is negated. This is the form for the first case of the condition.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "কোনোটিই নতুন নয়"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -121759,6 +121915,12 @@
     "Hidden" : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). A visibility as the Visibility pop-up names it: \"Always\", \"When Applicable\", or \"Hidden\". This is the case .hidden.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "লুকানো"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -121824,6 +121986,12 @@
     "Hide" : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The command that gives a view visibility: \"Show Always\", \"Show When Applicable\", or \"Hide\". This is the case .hidden.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "লুকান"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -124235,6 +124403,12 @@
     "If the file is not written in %@, TextMouth refuses it, and nothing changes." : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What the alert says first of a choice to or from Unicode braille patterns, which the re-read checks byte by byte before it changes anything (BrailleBookReader.requireReadable(_:as:)), so a wrong one is refused at its first line (review of October 30, finding 5): a file not written in the code named codeName, the one chosen, is refused, and nothing changes. \"If the file is not written in Unicode braille patterns, TextMouth refuses it, and nothing changes.\". Placeholders in order: codeName.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ফাইলটি %@-এ লেখা না হলে TextMouth সেটি প্রত্যাখ্যান করে, এবং কিছুই বদলায় না।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -126810,6 +126984,12 @@
     "In %@" : {
       "comment" : "Speak Info: the part of a summary that says where a book or a feed's folder is. %@ is the folder's path, such as Fiction/Mystery.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@-এ"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -126875,6 +127055,12 @@
     "In %@, a feed" : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. Where an episode or an article is, in the feed titled feedTitle: \"In The Digital Antiquarian, a feed\". Placeholders in order: feedTitle.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@-এ, একটি ফিড"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -127135,6 +127321,12 @@
     "In Progress" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A reading state as the pop-up names it. This is the case .inProgress.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "চলমান"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -127395,6 +127587,12 @@
     "In reading list, %lld of %lld" : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. Where a book in the reading list stands in it, as its brief summary says it, counted as the Reading List shows the list (FR09): \"In reading list, 3 of 12\". Said in every view, the Reading List's own included, where its rows say no more than the list's order does. Placeholders in order: place.position, place.count.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পড়ার তালিকায়, %2$lldটির মধ্যে %1$lld"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -127466,6 +127664,12 @@
     "In the Reading List" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A condition's relation as its relation pop-up names it, by its test and whether it is negated. This is the form for the other case of the condition.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পড়ার তালিকায় আছে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -127797,6 +128001,12 @@
     "Including Subfolders" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The subfolders checkbox's visible title.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সাবফোল্ডারসহ"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -129525,6 +129735,12 @@
     "Invalid regular expression: %@" : {
       "comment" : "Status line when the search text is not a valid regular expression. %@ is the reason the system gives, which may be in English.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "অবৈধ রেগুলার এক্সপ্রেশন: %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -129590,6 +129806,12 @@
     "Is" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A condition's relation as its relation pop-up names it, by its test and whether it is negated. This is the form for the other case of the condition.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "হলো"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -129655,6 +129877,12 @@
     "Is Not" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A condition's relation as its relation pop-up names it, by its test and whether it is negated. This is the form for the first case of the condition.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "নয়"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -131123,6 +131351,12 @@
     "It has the same books, places, bookmarks, reading list, and folders." : {
       "comment" : "Sentence of Use This Library's account: the other copy matches the library in use exactly.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এতে একই বই, অবস্থান, বুকমার্ক, পড়ার তালিকা ও ফোল্ডার আছে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -131667,6 +131901,12 @@
     "It holds the folder of the feed %@." : {
       "comment" : "Sentence of the dialog that asks how to delete a folder that holds one feed's folder. %@ is the feed's title in quotation marks.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এতে ফিড %@-এর ফোল্ডার আছে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -131732,6 +131972,12 @@
     "It holds the folders of the feeds %@." : {
       "comment" : "Sentence of the dialog that asks how to delete a folder that holds several feeds' folders. %@ is a list of the feeds' titles in quotation marks.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এতে ফিড %@-এর ফোল্ডারগুলো আছে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -132004,6 +132250,12 @@
     "It is the folder of the feed %@. Either way, the feed and its downloads stay, listed in no folder until Feed Info gives the feed another; Delete Feed… on its row deletes it." : {
       "comment" : "Sentence of the dialog that asks how to delete a folder, when it is the folder of one feed. %@ is the feed's title in quotation marks. \"Feed Info\" and \"Delete Feed…\" name a sheet and a command.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এটি ফিড %@-এর ফোল্ডার। যেভাবেই হোক, ফিড ও তার ডাউনলোড থেকে যায়, আর ফিডের তথ্য অন্য একটি ফোল্ডার না দেওয়া পর্যন্ত কোনো ফোল্ডারে তালিকাভুক্ত থাকে না; এর সারিতে ফিড মুছুন… ফিডটি মুছে ফেলে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -132069,6 +132321,12 @@
     "It is the folder of the feeds %@. Either way, the feeds and their downloads stay, listed in no folder until Feed Info gives each another; Delete Feed… on a feed's row deletes it." : {
       "comment" : "Sentence of the dialog that asks how to delete a folder, when it is the folder of several feeds. %@ is a list of the feeds' titles in quotation marks. \"Feed Info\" and \"Delete Feed…\" name a sheet and a command.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এটি ফিড %@-এর ফোল্ডার। যেভাবেই হোক, ফিডগুলো ও সেগুলোর ডাউনলোড থেকে যায়, আর ফিডের তথ্য প্রতিটিকে অন্য একটি ফোল্ডার না দেওয়া পর্যন্ত সেগুলো কোনো ফোল্ডারে তালিকাভুক্ত থাকে না; একটি ফিডের সারিতে ফিড মুছুন… সেটি মুছে ফেলে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -134171,6 +134429,12 @@
     "Its conditions and sort are deleted. The books, episodes, articles, and feeds it lists stay in the library, and a Library window showing it shows another view." : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). What the question says Delete does, and what it keeps.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এর শর্ত ও সাজানো মুছে ফেলা হয়। এটি যে বই, পর্ব, প্রবন্ধ ও ফিড তালিকাভুক্ত করত তা লাইব্রেরিতেই থাকে, আর এটি দেখাচ্ছে এমন লাইব্রেরি উইন্ডো অন্য একটি ভিউ দেখায়।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -134821,6 +135085,12 @@
     "Its name, conditions, sort, and limit go back to TextMouth's own. Its place in the list and when it is offered stay as they are." : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). What the question says Restore Default does, and what it keeps.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এর নাম, শর্ত, সাজানো ও সীমা TextMouth-এর নিজস্ব মানে ফিরে যায়। তালিকায় এর জায়গা ও কখন দেখানো হয় তা যেমন আছে তেমনই থাকে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -135217,6 +135487,12 @@
     "Its place, bookmarks, and transcript, if it has any, are kept, and it can be downloaded again." : {
       "comment" : "Sentence about one deleted download: what the listener left in it is kept, and it can be downloaded again.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এর অবস্থান, বুকমার্ক এবং ট্রান্সক্রিপ্ট (থাকলে) রাখা হয়, আর এটি আবার ডাউনলোড করা যায়।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -135412,6 +135688,12 @@
     "Its text is replaced by the new reading." : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What any re-read does to the book's text.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এর টেক্সট নতুন পড়া দিয়ে প্রতিস্থাপিত হয়।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -136756,6 +137038,12 @@
     "Keep This Code" : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The label of the button under that note that keeps the guessed code (a pop-up cannot be asked for the choice already selected), and what it does.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই কোড রাখুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -138132,6 +138420,12 @@
     "Kindle Book (KFX)" : {
       "comment" : "Name of the book format of a Kindle book in the KFX format (KFX is a format name), shown in a book's information, the format column, and the duplicate finder.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kindle বই (KFX)"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -138197,6 +138491,12 @@
     "Kindle Book (MOBI)" : {
       "comment" : "Name of the book format of a Kindle book in the MOBI format (MOBI is a format name), shown in a book's information, the format column, and the duplicate finder.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kindle বই (MOBI)"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -138593,6 +138893,12 @@
     "Last Opened" : {
       "comment" : "Name of a way to sort the books: by the date the book was last opened. Shown in the Sort menu, the library view editor, the window title, and in sort announcements.\nName of the book information sheet's row that shows the date the book was last opened.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সর্বশেষ খোলা"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -138983,6 +139289,12 @@
     "Last opened %@" : {
       "comment" : "Speak Info: the part of a book's full summary that says when it was last opened. %@ is a date or time, such as \"yesterday\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সর্বশেষ খোলা হয়েছে %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -139438,6 +139750,12 @@
     "Left %@ where it is: episodes and articles stay in their feeds; %@ makes one a book of your library." : {
       "comment" : "VoiceOver announcement when Move to Folder left one feed item where it is. %1$@ is the item's title, in quotes. %2$@ is the name of the Move to Library command, which makes an item a book of the library.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ যেখানে আছে সেখানেই রাখা হয়েছে: পর্ব ও প্রবন্ধ তাদের ফিডেই থাকে; %2$@ একটিকে আপনার লাইব্রেরির বই বানায়।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -139509,6 +139827,12 @@
     "Left %@ where they are: episodes and articles stay in their feeds; %@ makes one a book of your library." : {
       "comment" : "VoiceOver announcement when Move to Folder left several feed items where they are. %1$@ is the items' titles, in quotes, such as \"A\", \"B\", and 2 more. %2$@ is the name of the Move to Library command, which makes an item a book of the library.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ যেখানে আছে সেখানেই রাখা হয়েছে: পর্ব ও প্রবন্ধ তাদের ফিডেই থাকে; %2$@ একটিকে আপনার লাইব্রেরির বই বানায়।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -140295,6 +140619,12 @@
     "Library" : {
       "comment" : "Heading of the group of Library window keyboard shortcuts in Settings, and the title of the Library menu.\nText of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The tab's name in the Settings window's toolbar.\nThe name spoken for the library's top level, the place that holds the folders and the books outside any folder, as in \"Library, 743 books\" after going to it.\nThe top of the library, as the Save in pop-up of the Record window names it.\nTitle of the Library menu in the menu bar, which holds the commands for the library's books and folders. Only a Library window shows it.\nTitle of the first screen, the list of the user's books and folders.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "লাইব্রেরি"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -140620,6 +140950,12 @@
     "Library Root" : {
       "comment" : "The folder name Find Duplicate Books gives a book at the top level of the library, in a duplicate's spoken label.\nThe name of the library's top level, the place that holds the folders and the books outside any folder. Shown as a folder choice, and in messages that say where a folder is.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "লাইব্রেরির মূল"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -141010,6 +141346,12 @@
     "Library view" : {
       "comment" : "Spoken label of the View pop-up of a Library window, which chooses the view of the library shown, such as Unopened.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "লাইব্রেরি ভিউ"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -141140,6 +141482,12 @@
     "Library: %@" : {
       "comment" : "Title of a Library window that shows a view with one fixed order, such as the Reading List. %@ is the view's name.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "লাইব্রেরি: %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -141205,6 +141553,12 @@
     "Library: %@ (%@)" : {
       "comment" : "Title of a Library window. %1$@ is the name of the folder or view it shows. %2$@ is its sort, such as \"Title Ascending\" or \"Manual Order\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "লাইব্রেরি: %1$@ (%2$@)"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -141536,6 +141890,12 @@
     "Listening" : {
       "comment" : "Text of the Folder Settings sheet, which shows one library folder's facts and its listening options. The heading over the listening options.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "শোনা"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -141926,6 +142286,24 @@
     "Listing %lld matches in %@" : {
       "comment" : "Announcement once Show All has listed every match of a book. %1$lld is the number of matches and %2$@ is the book's title.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%2$@-এ %1$lldটি মিল তালিকাভুক্ত করা হচ্ছে"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%2$@-এ %1$lldটি মিল তালিকাভুক্ত করা হচ্ছে"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -142159,6 +142537,24 @@
     "Listing %lld of %@ matches: refine the search to see the rest" : {
       "comment" : "Row under a book whose matches are more than the list shows even after Show All. %1$lld is the number listed, and %2$@ is the book's total, such as \"700\" or \"more than 1,000\".",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%1$lldটি মিল তালিকাভুক্ত, মোট মিল: %2$@; বাকিগুলো দেখতে অনুসন্ধান সংকীর্ণ করুন"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%1$lldটি মিল তালিকাভুক্ত, মোট মিল: %2$@; বাকিগুলো দেখতে অনুসন্ধান সংকীর্ণ করুন"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -142392,6 +142788,24 @@
     "Listing the first %lld of %@ matches in %@" : {
       "comment" : "Announcement once Show All has listed the first matches of a book that holds more. %1$lld is the number listed, %2$@ is the book's total, such as \"700\" or \"more than 1,000\", and %3$@ is the book's title.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%3$@-এ মোট মিল %2$@; প্রথম %1$lldটি তালিকাভুক্ত করা হচ্ছে"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%3$@-এ মোট মিল %2$@; প্রথম %1$lldটি তালিকাভুক্ত করা হচ্ছে"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -142625,6 +143039,12 @@
     "Lists" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The label of the checkboxes saying what the view lists.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "তালিকাভুক্ত করে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -142690,6 +143110,12 @@
     "Lists %@" : {
       "comment" : "Library view editor: the start of a filter's description, which says what a view lists. %@ is a list of the kinds it lists in lower case, such as \"books and feeds\". A description ends with a full stop added later.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "তালিকাভুক্ত করে %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -142755,6 +143181,12 @@
     "Lists %@." : {
       "comment" : "Library view editor: what the sheet says of a draft view's contents. %@ is a list of counts, such as \"23 books and 2 feeds\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "তালিকাভুক্ত করে %@।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -142820,6 +143252,12 @@
     "Lists %@: %@" : {
       "comment" : "Library view editor: the start of a filter's description, which says what a view lists and its conditions. %1$@ is a list of the kinds it lists in lower case, such as \"books and feeds\"; %2$@ is its conditions joined by \"and\" or \"or\". A description ends with a full stop added later.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "তালিকাভুক্ত করে %1$@: %2$@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -143850,6 +144288,12 @@
     "Lists nothing now." : {
       "comment" : "Library view editor: what the sheet says of a draft view that lists nothing at the moment.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এখন কিছুই তালিকাভুক্ত করে না।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -144381,6 +144825,12 @@
     "Lists up to 500 of this book's matches here" : {
       "comment" : "VoiceOver hint of the row that lists a book's matches in the Search Library results. 500 is the most it lists.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এখানে এই বইয়ের সর্বোচ্চ 500টি মিল তালিকাভুক্ত করে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -144706,6 +145156,12 @@
     "Location" : {
       "comment" : "Label of the library's full folder path on the Library Not Available screen.\nText of the Folder Settings sheet, which shows one library folder's facts and its listening options. The label of the folder's place: the folder that holds it.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "অবস্থান"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -145551,6 +146007,12 @@
     "Made %@, %lld of %lld." : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). What VoiceOver says after Duplicate: the copy and its place. Placeholders in order: name, number, count.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ তৈরি হয়েছে, %3$lldটির মধ্যে %2$lld।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -145947,6 +146409,12 @@
     "Makes a view of your own from the conditions you choose." : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. Its hint.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "আপনার বেছে নেওয়া শর্ত থেকে নিজের একটি ভিউ তৈরি করে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -146077,6 +146545,12 @@
     "Makes your own view with these conditions and sort." : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). Duplicate's hint.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই শর্ত ও সাজানো দিয়ে আপনার নিজের ভিউ তৈরি করে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -146278,6 +146752,12 @@
     "Manual Order" : {
       "comment" : "Name of a way to sort the books: by the order the user arranges by hand, with no direction. Shown in the Sort menu, the library view editor, the window title, and in sort announcements.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ম্যানুয়াল ক্রম"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -146343,6 +146823,12 @@
     "Manual order has no direction" : {
       "comment" : "Hint of the Sort menu's direction command, and of the library view editor's order pop-up, while the books are in manual order, which has no ascending or descending.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ম্যানুয়াল ক্রমের কোনো দিক নেই"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -148756,6 +149242,12 @@
     "Match" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The match pop-up's label.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "মিল"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -148821,6 +149313,12 @@
     "Match Case" : {
       "comment" : "Title and VoiceOver label of the checkbox in Search in Book and Search Library that makes a match need the search text's capital and small letters.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "অক্ষরের ছোট-বড় রূপ মেলান"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -149016,6 +149514,12 @@
     "Matches" : {
       "comment" : "Name of the VoiceOver rotor in the Search Library window that moves between the matches listed.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "মিলগুলো"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -150809,6 +151313,24 @@
     "More than %lld matches in %@" : {
       "comment" : "Status line of a finished search where a book's count of matches stopped at its limit. %1$lld is the number of matches found, and %2$@ is the count of books with its noun, such as \"750 books\".",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%2$@-এ %1$lldটির বেশি মিল"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%2$@-এ %1$lldটির বেশি মিল"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -151042,6 +151564,12 @@
     "Most rows shown" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The limit field's spoken label.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সর্বাধিক সারি দেখানো হবে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -151107,6 +151635,12 @@
     "Move" : {
       "comment" : "Button that moves the books or the folder to the place chosen.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "স্থানান্তর করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -151172,6 +151706,12 @@
     "Move \"%@\"" : {
       "comment" : "Heading of the sheet that moves a folder under a new parent folder. %@ is the folder's name.\nHeading of the sheet that moves one book to a folder. %@ is the book's title.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” স্থানান্তর করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -151302,6 +151842,12 @@
     "Move %@ Down" : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The Move Down button's spoken label. Placeholders in order: name.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ নিচে নিন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -151367,6 +151913,12 @@
     "Move %@ Up" : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The Move Up button's spoken label, naming the view it moves. Placeholders in order: name.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ উপরে নিন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -151432,6 +151984,12 @@
     "Move %@ to Trash" : {
       "comment" : "Title of a button that moves the named books' files to the Trash, in title case. %@ is the object, such as \"3 Books\", \"3 Selected\", or \"Everything\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ ট্র্যাশে সরান"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -151497,6 +152055,12 @@
     "Move %@ to the Trash" : {
       "comment" : "VoiceOver label of a removal button that moves files to the Trash. %@ is what is moved, such as \"“Notes”\", \"3 selected books\", or \"the original file\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ ট্র্যাশে সরান"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -151795,6 +152359,24 @@
     "Move %lld Books" : {
       "comment" : "Heading of the sheet that moves several books to a folder. %lld is how many books.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lldটি বই স্থানান্তর করুন"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lldটি বই স্থানান্তর করুন"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -152028,6 +152610,24 @@
     "Move %lld Books to Folder..." : {
       "comment" : "Title of the command that moves several selected books to a folder, in a row's menu. %lld is how many books it moves.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lldটি বই ফোল্ডারে স্থানান্তর করুন..."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lldটি বই ফোল্ডারে স্থানান্তর করুন..."
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -152727,6 +153327,24 @@
     "Move %lld books to folder" : {
       "comment" : "Spoken label of the edit bar's Move button. %lld is how many books are selected.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lldটি বই ফোল্ডারে স্থানান্তর করুন"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lldটি বই ফোল্ডারে স্থানান্তর করুন"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -153090,6 +153708,12 @@
     "Move Contents & Delete Folder" : {
       "comment" : "Button that moves a folder's books and subfolders to the chosen place and then deletes the folder.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বিষয়বস্তু স্থানান্তর করে ফোল্ডার মুছুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -153155,6 +153779,12 @@
     "Move Contents Out" : {
       "comment" : "Button of the question about deleting a folder: it moves the folder's books and subfolders to another place, then deletes the folder.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বিষয়বস্তু সরিয়ে নিন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -153220,6 +153850,12 @@
     "Move Contents of \"%@\"" : {
       "comment" : "Heading of the sheet that chooses where the books and subfolders of a folder go before it is deleted. %@ is the folder's name.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@”-এর বিষয়বস্তু স্থানান্তর করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -153285,6 +153921,12 @@
     "Move Contents: %@" : {
       "comment" : "Window title of the sheet that chooses where a folder's contents go before it is deleted. %@ is the folder's name.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বিষয়বস্তু স্থানান্তর: %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -153350,6 +153992,12 @@
     "Move Down" : {
       "comment" : "Menu item and VoiceOver action of a book's row that moves the book one place toward the bottom of an order the user arranges.\nName of a filter preset's Move Down button, also its VoiceOver action and context menu item.\nName of the command that moves a substitution rule down the list: a row button's label and tooltip, a VoiceOver action, and a context menu item.\nText of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The command that moves a view one place down.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "নিচে নিন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -153415,6 +154063,12 @@
     "Move Folder..." : {
       "comment" : "Item of a folder's menu that opens the sheet that moves the folder under another folder. The three dots mean a sheet opens.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ফোল্ডার স্থানান্তর করুন..."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -153480,6 +154134,12 @@
     "Move Folder: %@" : {
       "comment" : "Window title of the sheet that moves a folder. %@ is the folder's name.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ফোল্ডার স্থানান্তর: %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -153740,6 +154400,12 @@
     "Move Up" : {
       "comment" : "Menu item and VoiceOver action of a book's row that moves the book one place toward the top of an order the user arranges.\nName of a filter preset's Move Up button, also its VoiceOver action and context menu item.\nName of the command that moves a substitution rule up the list: a row button's label and tooltip, a VoiceOver action, and a context menu item.\nText of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The command that moves a view one place up, as a VoiceOver action and a context menu item.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "উপরে নিন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -153870,6 +154536,12 @@
     "Move contents to" : {
       "comment" : "Caption of the pop-up that chooses the folder a deleted folder's books and subfolders move into.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বিষয়বস্তুর গন্তব্য"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -154130,6 +154802,12 @@
     "Move to Folder..." : {
       "comment" : "Menu command of the Library menu that moves the selected books into a folder, asking which one. The three periods say that a question follows.\nTitle of the command that moves the selected book to a folder, in a row's menu. The three dots mean a sheet opens to choose the folder.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ফোল্ডারে স্থানান্তর করুন..."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -154260,6 +154938,12 @@
     "Move to Trash" : {
       "comment" : "Title of the button that removes books and moves their files to the Trash, in title case.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ট্র্যাশে সরান"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -154455,6 +155139,12 @@
     "Moved %@ above %@" : {
       "comment" : "VoiceOver announcement after a book moved up past another in a manual order. %1$@ is the moved book's title. %2$@ is the title of the book it moved above.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ %2$@-এর উপরে নেওয়া হয়েছে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -154526,6 +155216,12 @@
     "Moved %@ below %@" : {
       "comment" : "VoiceOver announcement after a book moved down past another in a manual order. %1$@ is the moved book's title. %2$@ is the title of the book it moved below.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ %2$@-এর নিচে নেওয়া হয়েছে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -154668,6 +155364,12 @@
     "Moved %@ to the Trash." : {
       "comment" : "Report that books' files were moved to the Trash. %@ is what was moved, such as \"“Notes”\" or \"3 books\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ ট্র্যাশে সরানো হয়েছে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -155432,6 +156134,12 @@
     "Moved to %@, %@." : {
       "comment" : "Announcement after the reader moved to a search result in a transcribed audiobook. %1$@ is the time moved to, spoken, and %2$@ is where that is, such as a chapter's title.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@-এ সরানো হয়েছে, %2$@।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -155503,6 +156211,12 @@
     "Moved to %@." : {
       "comment" : "Announcement after the reader moved to a search result in a transcribed audiobook. %@ is the time moved to, spoken, such as \"1 minute, 5 seconds\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@-এ সরানো হয়েছে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -155568,6 +156282,12 @@
     "Moved to the match, %@." : {
       "comment" : "Announcement after the reader moved to a search match. %@ is its place, such as a chapter's title.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "মিলে সরানো হয়েছে, %@।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -155633,6 +156353,12 @@
     "Moved to the match." : {
       "comment" : "Announcement after the reader moved to a search match whose place is unknown.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "মিলে সরানো হয়েছে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -156457,6 +157183,12 @@
     "Moves it one place down" : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The Move Down button's hint.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এক ধাপ নিচে নেয়"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -156522,6 +157254,12 @@
     "Moves it one place up" : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The Move Up button's hint.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এক ধাপ উপরে নেয়"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -158521,6 +159259,24 @@
     "Moving %lld books..." : {
       "comment" : "Status shown and spoken in the Move sheet while the books' packages move. %lld is how many books. The three dots mean it is in progress.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lldটি বই স্থানান্তর করা হচ্ছে..."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lldটি বই স্থানান্তর করা হচ্ছে..."
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -158949,6 +159705,12 @@
     "Moving the folder's contents..." : {
       "comment" : "Status shown and spoken while a deleted folder's books and subfolders move to their new place. The three dots mean it is in progress.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ফোল্ডারের বিষয়বস্তু স্থানান্তর করা হচ্ছে..."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -159014,6 +159776,12 @@
     "Moving the folder..." : {
       "comment" : "Status shown and spoken in the sheet that moves a folder, while its books' packages move. The three dots mean it is in progress.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ফোল্ডার স্থানান্তর করা হচ্ছে..."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -159599,6 +160367,12 @@
     "Names that differ only in capitalization or accent encoding refer to the same folder on this disk." : {
       "comment" : "Second sentence of the error about a folder name that is taken, added when the two names are spelled differently, in capital letters or in how an accent is stored.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "শুধু বড়-ছোট হাতের অক্ষর বা অ্যাকসেন্ট এনকোডিংয়ে ভিন্ন নামগুলো এই ডিস্কে একই ফোল্ডার বোঝায়।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -159729,6 +160503,12 @@
     "Navigate to %@" : {
       "comment" : "Spoken label of a breadcrumb button that goes to a folder. %@ is the folder's name.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@-এ যান"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -159794,6 +160574,12 @@
     "Navigate to library root" : {
       "comment" : "Spoken label of the first breadcrumb button, which goes to the library's top level.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "লাইব্রেরির মূলে যান"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -160379,6 +161165,12 @@
     "Neither has newer places or books the other lacks, but they differ in other ways." : {
       "comment" : "Sentence of Use This Library's account: the copies differ, but neither has newer places or books the other lacks.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "কোনোটিতেই অন্যটির অভাব এমন নতুন অবস্থান বা বই নেই, তবে অন্যান্য দিক থেকে তারা আলাদা।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -160444,6 +161236,12 @@
     "Neither is newer: each has changes the other lacks." : {
       "comment" : "Sentence of Use This Library's account: each copy has changes the other lacks.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "কোনোটিই নতুন নয়: প্রতিটিতে এমন পরিবর্তন আছে, যা অন্যটিতে নেই।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -160769,6 +161567,12 @@
     "New Book from Text" : {
       "comment" : "Window title of the sheet that makes a new book from typed or pasted text.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "টেক্সট থেকে নতুন বই"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -160964,6 +161768,12 @@
     "New Folder" : {
       "comment" : "Heading of the sheet that makes a new folder, and of the group of fields that makes one inside a folder chooser.\nName of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Makes a new folder in the library. Also the title of the menu command of the same name.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "নতুন ফোল্ডার"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -161029,6 +161839,12 @@
     "New Folder cancelled." : {
       "comment" : "VoiceOver announcement when the new folder's fields close without a folder made, and no place is chosen in the pop-up.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "নতুন ফোল্ডার বাতিল করা হয়েছে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -161094,6 +161910,12 @@
     "New Folder cancelled. %@: %@." : {
       "comment" : "VoiceOver announcement when the new folder's fields close without a folder made. %1$@ is the pop-up's spoken label, such as Destination folder. %2$@ is the place still chosen in it.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "নতুন ফোল্ডার বাতিল করা হয়েছে। %1$@: %2$@।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -161165,6 +161987,12 @@
     "New Folder..." : {
       "comment" : "Button in a folder chooser that shows the fields that make a new folder. The three dots mean more fields open.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "নতুন ফোল্ডার..."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -161490,6 +162318,12 @@
     "New View" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The sheet's title for a new view.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "নতুন ভিউ"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -161555,6 +162389,12 @@
     "New View…" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The Library tab's button that makes a view.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "নতুন ভিউ…"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -161750,6 +162590,12 @@
     "New folder name" : {
       "comment" : "What VoiceOver says for the text field that holds the name a folder is made or renamed with.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "নতুন ফোল্ডারের নাম"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -161945,6 +162791,12 @@
     "New parent folder" : {
       "comment" : "Caption of the pop-up that chooses the folder a moved folder goes into.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "নতুন প্যারেন্ট ফোল্ডার"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -163115,6 +163967,12 @@
     "No Library Window" : {
       "comment" : "Text of the Library window's View pop-up and Go to View. The submenu's one item, dimmed, while no Library window is in front.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "কোনো লাইব্রেরি উইন্ডো নেই"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -163375,6 +164233,12 @@
     "No book in the library has text to search." : {
       "comment" : "Status line of the Search Library window when no book in the library has text that can be searched.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "লাইব্রেরির কোনো বইয়েই অনুসন্ধান করার মতো টেক্সট নেই।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -163505,6 +164369,12 @@
     "No book is selected. Select the book to move, then try again." : {
       "comment" : "VoiceOver announcement when Move Book Up or Move Book Down is used with no book selected.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "কোনো বই নির্বাচিত নেই। যে বইটি সরাবেন সেটি নির্বাচন করুন, তারপর আবার চেষ্টা করুন।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -164090,6 +164960,12 @@
     "No conditions: the view lists every item of the kinds chosen." : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. What the editor says while the view has no condition.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "কোনো শর্ত নেই: ভিউটি বেছে নেওয়া ধরনের প্রতিটি আইটেম তালিকাভুক্ত করে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -164220,6 +165096,12 @@
     "No differences between this library and the copy in %@." : {
       "comment" : "First sentence of the results of Compare Libraries when the two copies do not differ. %@ is the other copy's folder path.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই লাইব্রেরি এবং %@-এর কপির মধ্যে কোনো পার্থক্য নেই।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -165065,6 +165947,12 @@
     "No matches" : {
       "comment" : "Status line of Search in Book when a search found nothing.\nStatus line of the Search Library window when a search found nothing.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "কোনো মিল নেই"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -167118,6 +168006,12 @@
     "No previous position to return to." : {
       "comment" : "Announcement of Go Back when the reader has no saved position to return to.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ফিরে যাওয়ার মতো কোনো আগের অবস্থান নেই।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -170168,6 +171062,12 @@
     "Not Within the Last" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A condition's relation as its relation pop-up names it, by its test and whether it is negated. This is the form for the first case of the condition.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "গত সময়ের মধ্যে নয়"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -170791,6 +171691,12 @@
     "Not in a folder" : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What a book's summary says of a book in no folder.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "কোনো ফোল্ডারে নেই"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -170856,6 +171762,12 @@
     "Not in the Reading List" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A condition's relation as its relation pop-up names it, by its test and whether it is negated. This is the form for the first case of the condition.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পড়ার তালিকায় নেই"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -171051,6 +171963,12 @@
     "Not known until the book is downloaded" : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The pop-up's value for a book that records no encoding and whose file is only in the cloud, which is never downloaded to learn it.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বই ডাউনলোড না হওয়া পর্যন্ত জানা যায় না"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -171116,6 +172034,12 @@
     "Not known, since the file can't be read" : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The pop-up's value for a book that records no encoding and whose file cannot be read.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "জানা যায় না, কারণ ফাইলটি পড়া যায় না"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -171571,6 +172495,12 @@
     "Nothing checks that this is the right choice. If numbers and punctuation sound wrong, choose another." : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What the alert says first of a choice between two seven-bit codes: nothing can tell whether it is right, since every printable ASCII byte is a cell in every seven-bit code, so a wrong one reads with no error (research of October 25, section 8.3).",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এটি সঠিক পছন্দ কিনা তা কিছুই যাচাই করে না। সংখ্যা ও যতিচিহ্ন ভুল শোনালে অন্যটি বেছে নিন।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -171636,6 +172566,12 @@
     "Nothing could be compared with the copy in %@, because a file the comparison needs couldn't be read." : {
       "comment" : "First sentence of the results of Compare Libraries when the other copy's library index could not be read. %@ is the other copy's folder path.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@-এর কপির সঙ্গে কিছুই তুলনা করা যায়নি, কারণ তুলনার জন্য প্রয়োজনীয় একটি ফাইল পড়া যায়নি।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -171766,6 +172702,12 @@
     "Nothing is changed." : {
       "comment" : "Last sentence of what the Compare Libraries sheet says while it works: the comparison changes nothing in either copy.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "কিছুই পরিবর্তন করা হয় না।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -172156,6 +173098,12 @@
     "Nothing matches this view now." : {
       "comment" : "Text of the Library window's View pop-up and Go to View. The row a view shows while it lists nothing at all: the Feeds view, a view the listener made, and any view without a Books section (LibraryView.showsEmptySentence).",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এখন এই ভিউয়ে কিছুই মেলে না।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -172676,6 +173624,12 @@
     "Now Reading" : {
       "comment" : "Badge on a book's row in the Library list: the book is open in a reader window now.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এখন পড়া হচ্ছে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -173402,6 +174356,12 @@
     "Of each feed's episodes and articles, lists only the one you opened last." : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. Its hint.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "প্রতিটি ফিডের পর্ব ও প্রবন্ধের মধ্যে আপনি সর্বশেষ যেটি খুলেছেন, শুধু সেটিই তালিকাভুক্ত করে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -174377,6 +175337,12 @@
     "Only the Latest from Each Feed" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The checkbox that keeps one item per feed.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "প্রতিটি ফিডের শুধু সর্বশেষটি"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -175000,6 +175966,12 @@
     "Open a folder first to see its settings" : {
       "comment" : "VoiceOver announcement when the Folder Settings shortcut is pressed where the window shows no folder, at the top level or in a view other than Folders.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ফোল্ডারের সেটিংস দেখতে আগে একটি ফোল্ডার খুলুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -175065,6 +176037,12 @@
     "Open in Editor" : {
       "comment" : "Button of the New Book from Text sheet that opens the text in another app's text editor.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এডিটরে খুলুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -175195,6 +176173,12 @@
     "Open in a reader window" : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What a book's full summary says of a book a reader window has open.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "রিডার উইন্ডোতে খোলা"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -175910,6 +176894,12 @@
     "OpenDocument Text" : {
       "comment" : "Name of the book format of an OpenDocument text file (.odt), shown in a book's information, the format column, and the duplicate finder.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "OpenDocument টেক্সট"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -175975,6 +176965,12 @@
     "Opened Last" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A limit's order as its pop-up names it. This is the case .lastOpened.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সবশেষে খোলা"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -176430,6 +177426,12 @@
     "Opens a file picker to import books in any format TextMouth reads." : {
       "comment" : "Hint of the choice that opens a file picker to import books, in the Add to Library sheet.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "যেকোনো ফরম্যাটের বই আমদানি করার জন্য একটি ফাইল পিকার খোলে, যে ফরম্যাট TextMouth পড়তে পারে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -177340,6 +178342,12 @@
     "Opens the book at this match" : {
       "comment" : "VoiceOver hint of a search match's row in the Search Library window.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই মিলে বইটি খোলে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -177405,6 +178413,12 @@
     "Opens the book." : {
       "comment" : "Hint of a book's row in the Library list.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বইটি খোলে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -177535,6 +178549,12 @@
     "Opens the feed's settings: where its downloads go, what it lists and downloads, and what happens when an episode ends" : {
       "comment" : "Hint of the Library toolbar button, in the folder of a feed, that opens the feed's settings.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ফিডের সেটিংস খোলে: এর ডাউনলোড কোথায় যায়, কী তালিকাভুক্ত ও ডাউনলোড হয়, আর একটি পর্ব শেষ হলে কী হয়"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -177665,6 +178685,12 @@
     "Opens the folder's settings: what it holds, and what happens when one of its books ends" : {
       "comment" : "Hint of the Library toolbar button, in a plain folder, that opens the folder's settings.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ফোল্ডারের সেটিংস খোলে: এতে কী আছে, আর এর একটি বই শেষ হলে কী হয়"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -177730,6 +178756,12 @@
     "Opens the folder." : {
       "comment" : "Hint of a folder's row in the Library list.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ফোল্ডারটি খোলে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -177795,6 +178827,12 @@
     "Opens the last book you were reading" : {
       "comment" : "Hint of the Continue button at the top of the Library list.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "আপনার সর্বশেষ পড়া বইটি খোলে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -178120,6 +179158,12 @@
     "Opens the text in an external editor" : {
       "comment" : "Hint of the Open in Editor button of the New Book from Text sheet.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বাইরের এডিটরে টেক্সট খোলে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -178315,6 +179359,12 @@
     "Order" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The direction pop-up's label.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ক্রম"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -179854,6 +180904,12 @@
     "Parent folder" : {
       "comment" : "Name of the pop-up that chooses the folder a new folder is made in.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "প্যারেন্ট ফোল্ডার"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -179919,6 +180975,12 @@
     "Parent folder for new folder" : {
       "comment" : "What VoiceOver says for the pop-up that chooses the folder a new folder is made in, among a folder chooser's new folder fields.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "নতুন ফোল্ডারের প্যারেন্ট ফোল্ডার"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -180672,6 +181734,12 @@
     "Paste from Clipboard" : {
       "comment" : "Button of the New Book from Text sheet that replaces the text with the text on the system clipboard.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ক্লিপবোর্ড থেকে পেস্ট করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -180737,6 +181805,12 @@
     "Paste or type the text here instead, or try again." : {
       "comment" : "Second sentence of the announcement when Open in Editor failed: what to do instead.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এর বদলে এখানে টেক্সট পেস্ট করুন বা টাইপ করুন, অথবা আবার চেষ্টা করুন।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -182471,6 +183545,12 @@
     "Picture" : {
       "comment" : "Name of the book format of a picture of a page (a PNG, JPEG, HEIC, or TIFF photograph or scan) that text recognition reads, shown in a book's information, the format column, and the duplicate finder.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ছবি"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -182731,6 +183811,12 @@
     "Plain Text" : {
       "comment" : "Name of the book format of a plain text file (.txt), shown in a book's information, the format column, and the duplicate finder.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সাধারণ টেক্সট"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -185954,6 +187040,12 @@
     "Position display mode" : {
       "comment" : "VoiceOver label of the picker in Search in Book that chooses how each result's position is shown.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "অবস্থান প্রদর্শনের মোড"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -186019,6 +187111,12 @@
     "Position in %@: differs, and both were saved at the same time." : {
       "comment" : "First sentence of a position difference found by Compare Libraries when both copies saved their places at the same moment. %@ is a book's title.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@-এর অবস্থান: ভিন্ন, এবং দুটিই একই সময়ে সংরক্ষিত হয়েছিল।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -186084,6 +187182,12 @@
     "Position in %@: newer in %@, %@." : {
       "comment" : "First sentence of a position difference found by Compare Libraries. %1$@ is a book's title, %2$@ is the copy that has the newer place, and %3$@ is that place, such as \"chapter 3, 41%\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@-এর অবস্থান: %2$@-এ নতুন, %3$@।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -186285,6 +187389,12 @@
     "Preparing %@ of %@…" : {
       "comment" : "Status line of the Search Library window while a search must prepare books' text, which takes longer. %1$@ is the number of books prepared so far, and %2$@ is the count of all the books with its noun, such as \"737 books\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%2$@-এর মধ্যে %1$@ প্রস্তুত করা হচ্ছে…"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -190256,6 +191366,12 @@
     "Read Again" : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The alert's button that reads the book again; Cancel leaves it.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "আবার পড়ুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -190451,6 +191567,12 @@
     "Read “%@” again as %@?" : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The title of the alert that asks before the book titled bookTitle is read again as the reading named readingName: \"Read “Ledger” again as Shift JIS (Japanese)?\". Braille file characters are asked about in the same sentence (BrailleFileCodeWording.confirmTitle(bookTitle:code:)). Placeholders in order: bookTitle, readingName.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%1$@” কি %2$@ হিসেবে আবার পড়া হবে?"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -190522,6 +191644,12 @@
     "Read “%@” again automatically?" : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The title of the alert that asks before a book is read again as option says: \"Read “Ledger” again as Shift JIS (Japanese)?\", or \"Read “Ledger” again automatically?\". Placeholders in order: bookTitle.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” কি স্বয়ংক্রিয়ভাবে আবার পড়া হবে?"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -190912,6 +192040,12 @@
     "Reading State" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of test as a condition's test pop-up names it. This is the case .readingState.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পড়ার স্থিতি"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -191113,6 +192247,12 @@
     "Reading list: %@ is only on %@'s list, at place %@." : {
       "comment" : "A difference found by Compare Libraries. %1$@ is a book's title, %2$@ is the copy of the library whose Reading List holds it, and %3$@ is its place in that list, an identifier written without digit grouping.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পড়ার তালিকা: %1$@ শুধু %2$@-এর তালিকায় আছে, অবস্থান %3$@-এ।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -191184,6 +192324,12 @@
     "Reading list: the order differs." : {
       "comment" : "First sentence of a Reading List difference found by Compare Libraries: the two copies hold the same books in a different order.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পড়ার তালিকা: ক্রম ভিন্ন।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -191249,6 +192395,12 @@
     "Reading list: “%@” is %@ in %@ and %@ in %@." : {
       "comment" : "A difference found by Compare Libraries. %1$@ is the name of a Reading List option, %2$@ is its value (on or off) in this copy, %3$@ is this copy, %4$@ is its value in the other copy, and %5$@ is the other copy.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পড়ার তালিকা: “%1$@” %3$@-এ %2$@ এবং %5$@-এ %4$@।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -191981,6 +193133,12 @@
     "Reading the book again..." : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What Book Information shows, beside a spinner, while the book is read again (SheetWorkIndicator).",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বইটি আবার পড়া হচ্ছে..."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -195364,6 +196522,12 @@
     "Regular Expression" : {
       "comment" : "Title and VoiceOver label of the checkbox in the Search Library window that makes the search text a regular expression.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "রেগুলার এক্সপ্রেশন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -195559,6 +196723,12 @@
     "Reload from Editor" : {
       "comment" : "Button of the New Book from Text sheet that reads the text again from the file the other app's editor saved. Shown after Open in Editor.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এডিটর থেকে আবার লোড করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -195624,6 +196794,12 @@
     "Reloads the text from the editor's file" : {
       "comment" : "Hint of the Reload from Editor button of the New Book from Text sheet.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এডিটরের ফাইল থেকে টেক্সট আবার লোড করে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -195819,6 +196995,12 @@
     "Remove %@ from Library Only" : {
       "comment" : "Title of a button that removes the named books from the library and keeps their files, in title case. %@ is the object, such as \"3 Books\" or \"3 Selected\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ শুধু লাইব্রেরি থেকে সরান"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -195884,6 +197066,12 @@
     "Remove %@ from the library" : {
       "comment" : "VoiceOver label of the Remove button when it asks how to remove before it removes anything. %@ is what is removed, such as \"“Notes”\" or \"3 books\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ লাইব্রেরি থেকে সরান"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -195949,6 +197137,12 @@
     "Remove %@ from the library and keep the files" : {
       "comment" : "VoiceOver label of a removal button that keeps the files. %@ is what is removed, such as \"“Notes”\" or \"3 selected books\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ লাইব্রেরি থেকে সরান এবং ফাইলগুলো রাখুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -196014,6 +197208,24 @@
     "Remove %lld Books from Library..." : {
       "comment" : "Title of the Remove command in a context menu when several books are chosen and it asks how to remove them first. %lld is how many books, a count. The three dots say a choice follows.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lldটি বই লাইব্রেরি থেকে সরান..."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lldটি বই লাইব্রেরি থেকে সরান..."
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -196480,6 +197692,24 @@
     "Remove %lld Books?" : {
       "comment" : "Title of the confirmation that asks how to remove several books. %lld is how many, a count.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lldটি বই সরাবেন?"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lldটি বই সরাবেন?"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -196946,6 +198176,12 @@
     "Remove Book?" : {
       "comment" : "Title of the confirmation that asks how to remove one book.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বই সরাবেন?"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -197634,6 +198870,12 @@
     "Remove condition %@" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The remove button's spoken label. %@ is the condition's number, an identifier written without digit grouping.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "শর্ত %@ সরান"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -197764,6 +199006,12 @@
     "Remove from Library Only" : {
       "comment" : "Title of the button that removes books from the library and keeps their files, in title case.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "শুধু লাইব্রেরি থেকে সরান"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -197829,6 +199077,12 @@
     "Remove from Library..." : {
       "comment" : "Title of the Remove command when it asks how to remove before it removes anything. The three dots say a choice follows.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "লাইব্রেরি থেকে সরান..."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -198160,6 +199414,12 @@
     "Remove..." : {
       "comment" : "Short title of the edit bar's Remove button when it asks how to remove before it removes anything. The three dots say a choice follows.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সরান..."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -198225,6 +199485,12 @@
     "Removed %@ from the library." : {
       "comment" : "Report that books were removed from the library only. %@ is what was removed, such as \"“Notes”\" or \"3 books\". A sentence about their files follows.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ লাইব্রেরি থেকে সরানো হয়েছে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -198680,6 +199946,12 @@
     "Rename Folder" : {
       "comment" : "Heading and window title of the sheet that renames a folder.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ফোল্ডারের নাম পরিবর্তন করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -198745,6 +200017,12 @@
     "Rename Folder..." : {
       "comment" : "Item of a folder's menu that opens the sheet that renames the folder. The three dots mean a sheet opens.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ফোল্ডারের নাম পরিবর্তন করুন..."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -198810,6 +200088,12 @@
     "Renaming the folder..." : {
       "comment" : "Status shown and spoken in the Rename Folder sheet while the folder's books' packages move to the new name. The three dots mean it is in progress.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ফোল্ডারের নাম পরিবর্তন করা হচ্ছে..."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -199531,6 +200815,12 @@
     "Replaced “%@”." : {
       "comment" : "First sentence of the announcement after Replace Existing put the new copy in place of a book and kept the old copy's text beside the new text. %@ is the book's title. A sentence about where the earlier text is kept follows.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” প্রতিস্থাপন করা হয়েছে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -199726,6 +201016,12 @@
     "Replaces the text with the text on the clipboard" : {
       "comment" : "Hint of the Paste from Clipboard button of the New Book from Text sheet.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ক্লিপবোর্ডের টেক্সট দিয়ে টেক্সট প্রতিস্থাপন করে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -201871,6 +203167,12 @@
     "Restore Default" : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The question's button that restores.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ডিফল্ট পুনরুদ্ধার করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -201936,6 +203238,12 @@
     "Restore Default…" : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The command that gives a built-in view back its own, asking first.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ডিফল্ট পুনরুদ্ধার করুন…"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -202196,6 +203504,12 @@
     "Restore “%@” to its default?" : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The question Restore Default… asks. Placeholders in order: name.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” কি তার ডিফল্টে ফিরিয়ে আনবেন?"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -202261,6 +203575,12 @@
     "Restored %@." : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). What VoiceOver says once the view is restored, by its restored name. Placeholders in order: name.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ পুনরুদ্ধার করা হয়েছে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -202651,6 +203971,12 @@
     "Results" : {
       "comment" : "VoiceOver label of the list of results in the Search Library window.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ফলাফল"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -202716,6 +204042,12 @@
     "Results copied to the clipboard." : {
       "comment" : "VoiceOver announcement once the Compare Libraries results are on the clipboard.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ফলাফল ক্লিপবোর্ডে কপি করা হয়েছে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -203821,6 +205153,12 @@
     "Reverses the order of the books" : {
       "comment" : "Hint of the Sort menu's direction command: it reverses the order of the books shown.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বইগুলোর ক্রম উল্টে দেয়"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -204509,6 +205847,12 @@
     "Rich Text" : {
       "comment" : "Name of the book format of a Rich Text Format file (.rtf), shown in a book's information, the format column, and the duplicate finder.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "রিচ টেক্সট"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -204574,6 +205918,12 @@
     "Rich Text with Attachments" : {
       "comment" : "Name of the book format of a Rich Text Format package with attachments (.rtfd), shown in a book's information, the format column, and the duplicate finder.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সংযুক্তিসহ রিচ টেক্সট"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -206925,6 +208275,12 @@
     "Save the file in the editor, then choose %@ again, or choose %@ to start again." : {
       "comment" : "Second sentence of the announcement when Reload from Editor could not read the editor's file back: what to do. %1$@ is the name of the Reload from Editor button. %2$@ is the name of the Open in Editor button.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এডিটরে ফাইলটি সংরক্ষণ করুন, তারপর আবার %1$@ বেছে নিন, অথবা নতুন করে শুরু করতে %2$@ বেছে নিন।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -207386,6 +208742,12 @@
     "Saved %@." : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. What VoiceOver says once a changed view is saved. Placeholders in order: name.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ সংরক্ষণ করা হয়েছে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -208822,6 +210184,12 @@
     "Search Library" : {
       "comment" : "Title of the Search Library window, which VoiceOver names it by, and the name of its command in the Edit menu's Find submenu.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "লাইব্রেরিতে অনুসন্ধান করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -208952,6 +210320,12 @@
     "Search Results" : {
       "comment" : "Name of the VoiceOver rotor in Search in Book that moves between the search results.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "অনুসন্ধানের ফলাফল"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -209017,6 +210391,12 @@
     "Search books" : {
       "comment" : "Prompt of the Library window's search field, which narrows the listed books.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বই অনুসন্ধান করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -209147,6 +210527,12 @@
     "Search in Book" : {
       "comment" : "Heading and navigation title of the Search in Book sheet, and the name of its command.\nName of a keyboard shortcut action, listed in Settings in the Playback group and read by VoiceOver. Searches the text of the open book. Also the title of the menu command of the same name.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বইয়ে অনুসন্ধান করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -209342,6 +210728,12 @@
     "Search progress" : {
       "comment" : "VoiceOver label of the progress bar shown while a search runs in the Search Library window.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "অনুসন্ধানের অগ্রগতি"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -209407,6 +210799,12 @@
     "Search results" : {
       "comment" : "VoiceOver label of the list of results in Search in Book.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "অনুসন্ধানের ফলাফল"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -209705,6 +211103,12 @@
     "Search text" : {
       "comment" : "Title and VoiceOver label of the search field in Search in Book.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "অনুসন্ধানের টেক্সট"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -209770,6 +211174,12 @@
     "Search the library" : {
       "comment" : "VoiceOver label of the search field in the Search Library window.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "লাইব্রেরিতে অনুসন্ধান করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -209835,6 +211245,12 @@
     "Searched %@ of %@…" : {
       "comment" : "Status line of the Search Library window while a search runs, once some books are done. %1$@ is the number of books searched so far, and %2$@ is the count of all the books with its noun, such as \"750 books\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%2$@-এর মধ্যে %1$@ অনুসন্ধান করা হয়েছে…"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -209971,6 +211387,24 @@
     "Searching %lld books…" : {
       "comment" : "Status line of the Search Library window while a search runs, before any book is done. %lld is the number of books being searched.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lldটি বই অনুসন্ধান করা হচ্ছে…"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lldটি বই অনুসন্ধান করা হচ্ছে…"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -210269,6 +211703,12 @@
     "Searching…" : {
       "comment" : "Status line of Search in Book while a search waits for typing to pause or runs.\nStatus line of the Search Library window while a search runs and the books are not yet counted.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "অনুসন্ধান করা হচ্ছে…"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -210854,6 +212294,24 @@
     "Select all %lld books" : {
       "comment" : "Spoken label of the edit bar's button that selects every listed book. %lld is how many books are listed.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "সব %lldটি বই নির্বাচন করুন"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "সব %lldটি বই নির্বাচন করুন"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -211087,6 +212545,12 @@
     "Select all books" : {
       "comment" : "Spoken label of the edit bar's button that selects every listed book, while no book is listed and the button is dimmed.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সব বই নির্বাচন করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -211542,6 +213006,12 @@
     "Selected" : {
       "comment" : "First part of a book's spoken row label in edit mode, when the book is selected.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "নির্বাচিত"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -212334,6 +213804,12 @@
     "Selects this book." : {
       "comment" : "Hint of a book's row in the Library list in edit mode, while the book is not selected.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই বই নির্বাচন করে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -213223,6 +214699,12 @@
     "Sets when the View pop-up offers this view" : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The Visibility pop-up's hint.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ভিউ পপ-আপ কখন এই ভিউ দেখাবে তা ঠিক করে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -214756,6 +216238,12 @@
     "Show Always" : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The command that gives a view visibility: \"Show Always\", \"Show When Applicable\", or \"Hide\". This is the case .always.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সবসময় দেখান"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -215276,6 +216764,12 @@
     "Show When Applicable" : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The command that gives a view visibility: \"Show Always\", \"Show When Applicable\", or \"Hide\". This is the case .whenApplicable.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "প্রযোজ্য হলে দেখান"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -215341,6 +216835,24 @@
     "Show all %lld matches in %@" : {
       "comment" : "Title of the row that lists all of a book's matches in the Search Library results. %1$lld is the number of matches and %2$@ is the book's title.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%2$@-এ সব %1$lldটি মিল দেখান"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%2$@-এ সব %1$lldটি মিল দেখান"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -215639,6 +217151,12 @@
     "Show at Most" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The limit checkbox.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সর্বাধিক দেখান"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -216354,6 +217872,24 @@
     "Show the first %lld of %@ matches in %@" : {
       "comment" : "Title of the row that lists the first matches of a book that holds more than the list can show. %1$lld is the number listed, %2$@ is the book's total, such as \"700\" or \"more than 1,000\", and %3$@ is the book's title.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%3$@-এ মোট মিল %2$@, প্রথম %1$lldটি দেখান"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%3$@-এ মোট মিল %2$@, প্রথম %1$lldটি দেখান"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -216794,6 +218330,24 @@
     "Showing the first %lld matches; refine your search" : {
       "comment" : "Status line of Search in Book when a search stopped at the result limit. %lld is the number of matches listed.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "প্রথম %lldটি মিল দেখানো হচ্ছে; অনুসন্ধান সংকীর্ণ করুন"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "প্রথম %lldটি মিল দেখানো হচ্ছে; অনুসন্ধান সংকীর্ণ করুন"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -217157,6 +218711,12 @@
     "Shows one folder at a time" : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). Folders' row hint: what it shows.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "একবারে একটি ফোল্ডার দেখায়"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -217287,6 +218847,12 @@
     "Shows the books in the order you arrange" : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The Reading List's row hint: what it shows.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "আপনার সাজানো ক্রমে বইগুলো দেখায়"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -220392,6 +221958,12 @@
     "Some details appear once the book is downloaded." : {
       "comment" : "Note in Book Information when the book's file is only in the cloud, so the sheet shows the details the library keeps and the others wait for a download.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বইটি ডাউনলোড হলে কিছু বিবরণ দেখা যায়।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -220457,6 +222029,12 @@
     "Some files of “%@” are only in the cloud, and replacing it now would leave them behind. Download the book, then choose %@ again." : {
       "comment" : "Why Replace Existing waits: some files of the library's copy are only in the cloud. %1$@ is the book's title. %2$@ is the name of the Replace Existing button, which the sentence asks the user to choose again.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%1$@”-এর কিছু ফাইল শুধু ক্লাউডে আছে, আর এখন প্রতিস্থাপন করলে সেগুলো পেছনে পড়ে থাকবে। বইটি ডাউনলোড করুন, তারপর আবার %2$@ বেছে নিন।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -220593,6 +222171,12 @@
     "Sort" : {
       "comment" : "Title of the Library window's toolbar menu that chooses how the books are sorted.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সাজান"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -220658,6 +222242,12 @@
     "Sort Ascending" : {
       "comment" : "Title of the Sort menu's command that reverses the sort, while the books are sorted descending. It switches them to ascending.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ঊর্ধ্বক্রমে সাজান"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -220723,6 +222313,12 @@
     "Sort By" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The sort field pop-up's label.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "যে অনুযায়ী সাজান"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -220788,6 +222384,12 @@
     "Sort Descending" : {
       "comment" : "Title of the Sort menu's command that reverses the sort, while the books are sorted ascending. It switches them to descending.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "নিম্নক্রমে সাজান"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -220918,6 +222520,12 @@
     "Sort feeds by Title" : {
       "comment" : "Text of the Library window's View pop-up and Go to View. The Sort button's spoken label in a view listing only feeds.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ফিড শিরোনাম অনুযায়ী সাজান"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -224294,6 +225902,24 @@
     "Still comparing: %lld seconds so far. Press Escape to stop." : {
       "comment" : "VoiceOver announcement now and then during a long Compare Libraries comparison. %lld is how many seconds it has taken so far, a count. Escape is the key that stops it.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "এখনও তুলনা চলছে: এ পর্যন্ত %lld সেকেন্ড। থামাতে Escape চাপুন।"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "এখনও তুলনা চলছে: এ পর্যন্ত %lld সেকেন্ড। থামাতে Escape চাপুন।"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -224982,6 +226608,12 @@
     "Stop Comparing" : {
       "comment" : "Button in Storage settings that stops the comparison made before Use This Library.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "তুলনা বন্ধ করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -226098,6 +227730,12 @@
     "Stopped after %@ of %@:" : {
       "comment" : "Opening of the Search Library status after the user stopped a search, followed by what it had found. %1$@ is the number of books searched, and %2$@ is the count of all the books with its noun, such as \"750 books\". Ends with a colon.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%2$@-এর মধ্যে %1$@ অনুসন্ধানের পর থামানো হয়েছে:"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -226494,6 +228132,12 @@
     "Stops comparing. Nothing in either copy has been changed." : {
       "comment" : "VoiceOver hint of the Stop button of the Compare Libraries sheet.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "তুলনা বন্ধ করে। কোনো কপিতেই কিছু পরিবর্তন করা হয়নি।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -226884,6 +228528,12 @@
     "Stops saying the code was guessed. The book is not read again." : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "কোডটি অনুমান করা হয়েছে বলা বন্ধ করে। বইটি আবার পড়া হয় না।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -227209,6 +228859,12 @@
     "Stops the search, keeping the matches found so far" : {
       "comment" : "VoiceOver hint of the Stop button of the Search Library window.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "অনুসন্ধান থামায়, এ পর্যন্ত পাওয়া মিলগুলো রেখে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -227729,6 +229385,12 @@
     "Subfolders" : {
       "comment" : "Text of the Folder Settings sheet, which shows one library folder's facts and its listening options. The label of the folder's own subfolders, shown only when it has any.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সাবফোল্ডার"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -228559,6 +230221,12 @@
     "Subscription" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of test as a condition's test pop-up names it. This is the case .subscribed.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সাবস্ক্রিপশন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -230261,6 +231929,12 @@
     "Text Encoding" : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The label of Book Information's row, and pop-up, that names the encoding.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "টেক্সট এনকোডিং"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -230586,6 +232260,12 @@
     "Text content" : {
       "comment" : "Spoken label of the text area of the New Book from Text sheet.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "টেক্সট বিষয়বস্তু"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -230651,6 +232331,12 @@
     "Text encoding: %@" : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. Speak Info's sentence for an encoding described as description (\"Windows-1251 (Cyrillic), guessed\"): \"Text encoding: Windows-1251 (Cyrillic), guessed\". Placeholders in order: description.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "টেক্সট এনকোডিং: %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -232019,6 +233705,12 @@
     "Text to find in every book" : {
       "comment" : "Placeholder of the empty search field in the Search Library window.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "প্রতিটি বইয়ে খোঁজার টেক্সট"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
