@@ -541,6 +541,12 @@
             "value" : "%1$@ %2$@, тому TextMouth не може експортувати це зі збереженням структури."
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ %2$@، اور TextMouth اسے اس کی ساخت کے ساتھ برآمد نہیں کر سکتا۔"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -1250,6 +1256,12 @@
             "value" : "%@ - оригінальне аудіо"
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ - اصل آڈیو"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -1385,6 +1397,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%@ - оригінальні файли"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ - اصل فائلیں"
           }
         },
         "vi" : {
@@ -1528,6 +1546,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%1$@ - оригінальний запис.%2$@"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ - اصل ریکارڈنگ.%2$@"
           }
         },
         "vi" : {
@@ -2364,6 +2388,12 @@
             "value" : "%@ додає закладку в поточній позиції."
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ موجودہ پوزیشن پر بک مارک شامل کرتا ہے۔"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -2499,6 +2529,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%@ додає її в поточній позиції."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ موجودہ پوزیشن پر ایک شامل کرتا ہے۔"
           }
         },
         "vi" : {
@@ -3526,6 +3562,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%1$@ як %2$@"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ بطور %2$@"
           }
         },
         "vi" : {
@@ -6861,6 +6903,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%@ робить те саме з кожним таким розділом цього експорту без повторних запитів."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ اس برآمد کے ہر ایسے باب کے لیے یہی کرتا ہے، دوبارہ پوچھے بغیر۔"
           }
         },
         "vi" : {
@@ -12047,6 +12095,12 @@
             "value" : "%@ від початку"
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ گزر چکے"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -12327,6 +12381,12 @@
             "value" : "%@ у хмарі"
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ کلاؤڈ میں"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -12464,6 +12524,12 @@
             "value" : "%@ — документ Word 6 або Word 95, який TextMouth на iPhone поки не може прочитати."
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ ایک Word 6 یا Word 95 دستاویز ہے، جسے iPhone پر TextMouth ابھی نہیں پڑھ سکتا۔"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -12599,6 +12665,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%@ уже є у списку читання."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ پہلے ہی مطالعے کی فہرست میں ہے۔"
           }
         },
         "vi" : {
@@ -13707,6 +13779,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%1$@ — у форматі %2$@, який TextMouth на iPhone поки не може відтворити."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ %2$@ میں ہے، جسے iPhone پر TextMouth ابھی نہیں چلا سکتا۔"
           }
         },
         "vi" : {
@@ -16074,6 +16152,12 @@
             "value" : "%@ немає у списку читання."
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ مطالعے کی فہرست میں نہیں ہے۔"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -17518,6 +17602,12 @@
             "value" : "Для %1$@ потрібна «%2$@» — одна з власних брайлівських таблиць Mac, якої немає в TextMouth на iPhone."
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ کو “%2$@” درکار ہے، جو Mac کے اپنے بریل جدولوں میں سے ایک ہے، اور iPhone پر TextMouth میں موجود نہیں۔"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -17653,6 +17743,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%@ має надто глибоку вкладеність"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ میں بہت گہری تہہ بندی ہے"
           }
         },
         "vi" : {
@@ -19659,6 +19755,12 @@
             "value" : "Залишилося %@"
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ باقی"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -19931,6 +20033,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "У цьому заголовку залишилося %@"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اس سرخی میں %@ باقی"
           }
         },
         "vi" : {
@@ -21041,6 +21149,12 @@
             "value" : "Звук: %@"
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ کا ساؤنڈ"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -21464,6 +21578,12 @@
             "value" : "%@ зупиняє весь експорт. Уже записані файли залишаються."
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ پوری برآمد روک دیتا ہے۔ لکھی جا چکی فائلیں برقرار رہتی ہیں۔"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -21738,6 +21858,12 @@
             "value" : "швидкість у %@ раза"
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ گنا رفتار"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -21879,6 +22005,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "від %1$@ до %2$@"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ سے %2$@ تک"
           }
         },
         "vi" : {
@@ -25255,6 +25387,12 @@
             "value" : "%@ записує цей розділ звичайними абзацами з його рядків, зберігаючи позначки цитат і списків як символи, а решту експортує як зазвичай."
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ اس باب کو اس کی سطروں کے سادہ پیراگرافوں کی صورت میں لکھتا ہے، اس کے اقتباس اور فہرست کے نشانات حروف کی شکل میں رکھتا ہے، اور باقی سب کچھ معمول کے مطابق برآمد کرتا ہے۔"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -25390,6 +25528,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%@ записує текст звичайними абзацами з його рядків, зберігаючи позначки цитат і списків як символи, а решту експортує як зазвичай."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ متن کو اس کی سطروں کے سادہ پیراگرافوں کی صورت میں لکھتا ہے، اس کے اقتباس اور فہرست کے نشانات حروف کی شکل میں رکھتا ہے، اور باقی سب کچھ معمول کے مطابق برآمد کرتا ہے۔"
           }
         },
         "vi" : {
@@ -29810,6 +29954,12 @@
             "value" : "%1$@, завершено %2$@"
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@، مکمل کیا گیا: %2$@"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -30088,6 +30238,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%1$@, %2$@"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@، %2$@ میں"
           }
         },
         "vi" : {
@@ -35231,6 +35387,12 @@
             "value" : "%@: кожен символ читається як записано"
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@: ہر علامت جیسی لکھی ہو ویسی ہی پڑھی جاتی ہے"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -36383,6 +36545,12 @@
             "value" : "%@: вимкнено, поки позначено «Ніколи не згортати»"
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@: جب تک “کبھی نہ سمیٹیں” پر نشان ہے، بند ہے"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -36827,6 +36995,24 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "%@: послідовності довжиною від %lld і більше читаються як кількість"
+                }
+              }
+            }
+          }
+        },
+        "ur" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%@: %lld یا اس سے زیادہ علامات کا تسلسل تعداد کے طور پر پڑھا جاتا ہے"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%@: %lld یا اس سے زیادہ علامات کا تسلسل تعداد کے طور پر پڑھا جاتا ہے"
                 }
               }
             }
@@ -37294,6 +37480,24 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "%@: послідовності довжиною від %lld і більше пропускаються з паузою"
+                }
+              }
+            }
+          }
+        },
+        "ur" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%@: %lld یا اس سے زیادہ علامات کا تسلسل وقفے کے ساتھ چھوڑ دیا جاتا ہے"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%@: %lld یا اس سے زیادہ علامات کا تسلسل وقفے کے ساتھ چھوڑ دیا جاتا ہے"
                 }
               }
             }
@@ -37869,6 +38073,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%@×"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@x"
           }
         },
         "vi" : {
@@ -40787,6 +40997,24 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "%lld аудіокниги"
+                }
+              }
+            }
+          }
+        },
+        "ur" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld آڈیو بک"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld آڈیو بکس"
                 }
               }
             }
@@ -44995,6 +45223,24 @@
             }
           }
         },
+        "ur" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "اب تک %lld کتاب مکمل کی گئی"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "اب تک %lld کتابیں مکمل کی گئیں"
+                }
+              }
+            }
+          }
+        },
         "vi" : {
           "variations" : {
             "plural" : {
@@ -45457,6 +45703,24 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "За цей рік завершено книг: %lld"
+                }
+              }
+            }
+          }
+        },
+        "ur" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "اس سال %lld کتاب مکمل کی گئی"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "اس سال %lld کتابیں مکمل کی گئیں"
                 }
               }
             }
@@ -51203,6 +51467,24 @@
             }
           }
         },
+        "ur" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld کتاب پہلے سے اس میں تھی۔"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld کتابیں پہلے سے اس میں تھیں۔"
+                }
+              }
+            }
+          }
+        },
         "vi" : {
           "variations" : {
             "plural" : {
@@ -52132,6 +52414,24 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "%lld книги не було в ньому."
+                }
+              }
+            }
+          }
+        },
+        "ur" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld کتاب اس میں نہیں تھی۔"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld کتابیں اس میں نہیں تھیں۔"
                 }
               }
             }
@@ -53676,6 +53976,24 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "%lld комірки"
+                }
+              }
+            }
+          }
+        },
+        "ur" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld سیل"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld سیل"
                 }
               }
             }
@@ -61620,6 +61938,24 @@
             }
           }
         },
+        "ur" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld اندراج صرف صوتی ہجے دیتا ہے، اس لیے اسے الگ رکھا گیا۔"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld اندراجات صرف صوتی ہجے دیتے ہیں، اس لیے انہیں الگ رکھا گیا۔"
+                }
+              }
+            }
+          }
+        },
         "vi" : {
           "variations" : {
             "plural" : {
@@ -62082,6 +62418,24 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "%lld записи не прочитано, бо словник вимови додає щонайбільше %@ правил за раз."
+                }
+              }
+            }
+          }
+        },
+        "ur" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%1$lld اندراج نہیں پڑھا گیا، کیونکہ لغت ایک وقت میں زیادہ سے زیادہ %2$@ اصول شامل کرتی ہے۔"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%1$lld اندراجات نہیں پڑھے گئے، کیونکہ لغت ایک وقت میں زیادہ سے زیادہ %2$@ اصول شامل کرتی ہے۔"
                 }
               }
             }
@@ -64417,6 +64771,24 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "%lld файли"
+                }
+              }
+            }
+          }
+        },
+        "ur" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld فائل"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld فائلیں"
                 }
               }
             }
@@ -67691,6 +68063,24 @@
             }
           }
         },
+        "ur" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld آئٹم"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld آئٹمز"
+                }
+              }
+            }
+          }
+        },
         "vi" : {
           "variations" : {
             "plural" : {
@@ -68153,6 +68543,24 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "%lld рядка"
+                }
+              }
+            }
+          }
+        },
+        "ur" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld سطر"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld سطریں"
                 }
               }
             }
@@ -69554,6 +69962,24 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "%lld хвилини"
+                }
+              }
+            }
+          }
+        },
+        "ur" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld منٹ"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld منٹ"
                 }
               }
             }
@@ -76220,6 +76646,12 @@
             "value" : "%1$lld з %2$lld"
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%2$lld میں سے %1$lld"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -76950,6 +77382,24 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "%lld іншої книги"
+                }
+              }
+            }
+          }
+        },
+        "ur" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld دیگر کتاب"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld دیگر کتابیں"
                 }
               }
             }
@@ -79894,6 +80344,24 @@
             }
           }
         },
+        "ur" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld پوڈکاسٹ ایپی سوڈ"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld پوڈکاسٹ ایپی سوڈز"
+                }
+              }
+            }
+          }
+        },
         "vi" : {
           "variations" : {
             "plural" : {
@@ -81762,6 +82230,24 @@
             }
           }
         },
+        "ur" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld اصول پہلے ہی آپ کے اصولوں میں موجود تھا۔"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld اصول پہلے ہی آپ کے اصولوں میں موجود تھے۔"
+                }
+              }
+            }
+          }
+        },
         "vi" : {
           "variations" : {
             "plural" : {
@@ -82224,6 +82710,24 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "%lld правила пропущено: регулярні вирази та вимкнені правила не можна записати у словник вимови."
+                }
+              }
+            }
+          }
+        },
+        "ur" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld اصول چھوڑ دیا گیا: ریگولر ایکسپریشن اور بند اصول لغت میں نہیں لکھے جا سکتے۔"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld اصول چھوڑ دیے گئے: ریگولر ایکسپریشن اور بند اصول لغت میں نہیں لکھے جا سکتے۔"
                 }
               }
             }
@@ -85031,6 +85535,24 @@
             }
           }
         },
+        "ur" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld علامت"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld علامات"
+                }
+              }
+            }
+          }
+        },
         "vi" : {
           "variations" : {
             "plural" : {
@@ -85493,6 +86015,24 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "%lld текстової книги"
+                }
+              }
+            }
+          }
+        },
+        "ur" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld ٹیکسٹ کتاب"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld ٹیکسٹ کتابیں"
                 }
               }
             }
@@ -91102,6 +91642,24 @@
             }
           }
         },
+        "ur" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld الفاظ فی منٹ"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld الفاظ فی منٹ"
+                }
+              }
+            }
+          }
+        },
         "vi" : {
           "variations" : {
             "plural" : {
@@ -94177,6 +94735,12 @@
             "value" : "У новому вікні"
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "نئی ونڈو"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -96381,6 +96945,12 @@
             "value" : "Новий таймер замінює той, що працює."
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "نیا ٹائمر چلتے ہوئے ٹائمر کی جگہ لے لیتا ہے۔"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -96655,6 +97225,12 @@
             "value" : "Число від 2 до 99."
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "2 سے 99 تک کا نمبر"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -96927,6 +97503,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Послідовність — це один символ, що повторюється окремо або через одинарні пробіли, наприклад * * * * чи ====. Озвучення переписує послідовності перед правилами вище; екран і брайль зберігають кожен символ."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تسلسل ایک ہی علامت کا بار بار آنا ہے، اکیلی یا اکہری جگہوں کے ساتھ، جیسے * * * * یا ====۔ اسپیچ اوپر کے اصولوں سے پہلے تسلسل کو دوبارہ لکھتی ہے؛ اسکرین اور بریل ہر علامت برقرار رکھتے ہیں۔"
           }
         },
         "vi" : {
@@ -98548,6 +99130,12 @@
             "value" : "Вебсторінка з текстом книги та змістом, де кожен пункт веде до заголовка."
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "کتاب کے متن کا ویب صفحہ، جس میں ہر سرخی سے جڑی فہرست مضامین ہوتی ہے۔"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -98957,6 +99545,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Про програму"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "کے بارے میں"
           }
         },
         "vi" : {
@@ -99644,6 +100238,12 @@
             "value" : "Додати"
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "شامل کریں"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -100088,6 +100688,24 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Додати %lld книги до списку читання"
+                }
+              }
+            }
+          }
+        },
+        "ur" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld کتاب مطالعے کی فہرست میں شامل کریں"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld کتابیں مطالعے کی فہرست میں شامل کریں"
                 }
               }
             }
@@ -100560,6 +101178,24 @@
             }
           }
         },
+        "ur" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld کتاب مطالعے کی فہرست میں شامل کریں"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld کتابیں مطالعے کی فہرست میں شامل کریں"
+                }
+              }
+            }
+          }
+        },
         "vi" : {
           "variations" : {
             "plural" : {
@@ -100713,6 +101349,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Додати закладку"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "بک مارک شامل کریں"
           }
         },
         "vi" : {
@@ -102222,6 +102864,12 @@
             "value" : "Додайте його ще раз."
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اسے دوبارہ شامل کریں۔"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -102357,6 +103005,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Додайте його на Mac, а потім надішліть книгу сюди."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اسے اپنے Mac پر شامل کریں، پھر کتاب یہاں بھیجیں۔"
           }
         },
         "vi" : {
@@ -102905,6 +103559,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Додайте їх ще раз."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "انہیں دوبارہ شامل کریں۔"
           }
         },
         "vi" : {
@@ -103735,6 +104395,12 @@
             "value" : "Додано книг до списку читання: %lld."
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%lld کتابیں مطالعے کی فہرست میں شامل کی گئیں۔"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -104184,6 +104850,24 @@
             }
           }
         },
+        "ur" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "“%2$@” سے %1$lld اصول شامل کیا گیا۔"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "“%2$@” سے %1$lld اصول شامل کیے گئے۔"
+                }
+              }
+            }
+          }
+        },
         "vi" : {
           "variations" : {
             "plural" : {
@@ -104474,6 +105158,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Додано до списку читання: %@"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "مطالعے کی فہرست میں شامل کیا گیا: %@"
           }
         },
         "vi" : {
@@ -104887,6 +105577,12 @@
             "value" : "Додає кнопку «Експортувати» на панель інструментів кожного вікна читання. Команда «Файл» > «Експортувати» працює в обох випадках."
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ہر ریڈر کے ٹول بار میں برآمد کا بٹن شامل کرتا ہے۔ فائل، برآمد کریں دونوں صورتوں میں کام کرتا ہے۔"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -105296,6 +105992,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Додає записи словника після ваших правил; записи лише з фонетичним написанням пропускаються."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لغت کے اندراجات آپ کے اصولوں کے بعد شامل کرتا ہے؛ صرف صوتی ہجے والے اندراجات الگ رکھے جاتے ہیں"
           }
         },
         "vi" : {
@@ -105709,6 +106411,12 @@
             "value" : "Додає вибрані книги в кінець списку читання."
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "منتخب کتابوں کو مطالعے کی فہرست کے آخر میں شامل کرتا ہے۔"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -105981,6 +106689,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Змінити хвилини"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "منٹ تبدیل کریں"
           }
         },
         "vi" : {
@@ -106672,6 +107386,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Після цього «Відтворити» знову спробує цей уривок."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "بعد میں، چلائیں دبانے سے یہ حصہ دوبارہ آزمایا جاتا ہے"
           }
         },
         "vi" : {
@@ -107961,6 +108681,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "За весь час"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اب تک"
           }
         },
         "vi" : {
@@ -110018,6 +110744,12 @@
             "value" : "Електронна книга із заголовками, змістом і номерами сторінок книги, для Apple Books та інших програм для читання. Без зображень."
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "کتاب کی سرخیوں، فہرست مضامین اور صفحہ نمبروں (اگر ہوں) کے ساتھ ایک ای بک، Apple Books اور دوسری ریڈنگ ایپس کے لیے۔ اس میں تصاویر شامل نہیں ہوتیں۔"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -110701,6 +111433,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Сталася невідома помилка."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ایک نامعلوم خرابی پیش آئی۔"
           }
         },
         "vi" : {
@@ -114028,6 +114766,12 @@
             "value" : "Діє, коли прослуховування переходить до іншої статті."
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اس وقت لاگو ہوتا ہے جب سننا کسی دوسرے مضمون پر جاتا ہے"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -114163,6 +114907,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Діє, коли прослуховування переходить до іншої книги."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اس وقت لاگو ہوتا ہے جب سننا کسی دوسری کتاب پر جاتا ہے"
           }
         },
         "vi" : {
@@ -114302,6 +115052,12 @@
             "value" : "Діє, коли прослуховування переходить до іншого епізоду."
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اس وقت لاگو ہوتا ہے جب سننا کسی دوسرے ایپی سوڈ پر جاتا ہے"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -114437,6 +115193,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Діє, коли прослуховування переходить до іншого елемента."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اس وقت لاگو ہوتا ہے جب سننا کسی دوسرے آئٹم پر جاتا ہے"
           }
         },
         "vi" : {
@@ -117017,6 +117779,12 @@
             "value" : "Як визначає таблиця"
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "جیسا جدول متعین کرتا ہے"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -118522,6 +119290,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Запитує необов’язкову нотатку, потім позначає місце читання."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ایک اختیاری نوٹ مانگتا ہے، پھر مطالعے کی پوزیشن پر نشان لگاتا ہے۔"
           }
         },
         "vi" : {
@@ -121064,6 +121838,24 @@
             }
           }
         },
+        "ur" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Audacity لیبلز ایک آڈیو فائل کو نشان زد کرتے ہیں، اور اس کتاب کا آڈیو %lld فائل میں ہے۔"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Audacity لیبلز ایک آڈیو فائل کو نشان زد کرتے ہیں، اور اس کتاب کا آڈیو %lld فائلوں میں ہے۔"
+                }
+              }
+            }
+          }
+        },
         "vi" : {
           "variations" : {
             "plural" : {
@@ -121217,6 +122009,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Аудіо"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "آڈیو"
           }
         },
         "vi" : {
@@ -122313,6 +123111,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Швидкість аудіо скинуто до: %@"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "آڈیو کی رفتار %@ پر ری سیٹ کی گئی"
           }
         },
         "vi" : {
@@ -123685,6 +124489,12 @@
             "value" : "Доступно, лише коли статті цієї стрічки переходять до наступної статті після завершення попередньої."
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "صرف اس وقت دستیاب ہے جب اس فیڈ کے مضامین ایک کے ختم ہونے پر اگلے مضمون پر جاتے ہوں"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -123820,6 +124630,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Доступно, лише коли епізоди цієї стрічки переходять до наступного епізоду після завершення попереднього."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "صرف اس وقت دستیاب ہے جب اس فیڈ کے ایپی سوڈز ایک کے ختم ہونے پر اگلے ایپی سوڈ پر جاتے ہوں"
           }
         },
         "vi" : {
@@ -123959,6 +124775,12 @@
             "value" : "Доступно, лише коли елементи цієї стрічки переходять до наступного елемента після завершення попереднього."
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "صرف اس وقت دستیاب ہے جب اس فیڈ کے آئٹمز ایک کے ختم ہونے پر اگلے آئٹم پر جاتے ہوں"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -124094,6 +124916,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Доступно, лише коли книги цієї папки переходять до наступної книги після завершення попередньої."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "صرف اس وقت دستیاب ہے جب اس فولڈر کی کتابیں ایک کے ختم ہونے پر اگلی کتاب پر جاتی ہوں"
           }
         },
         "vi" : {
@@ -126020,6 +126848,12 @@
             "value" : "Початок"
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "آغاز"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -126155,6 +126989,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Початок книги"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "کتاب کا آغاز"
           }
         },
         "vi" : {
@@ -128230,6 +129070,12 @@
             "value" : "Книга: %1$@ (%2$@)"
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "کتاب: %1$@ (%2$@)"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -128504,6 +129350,12 @@
             "value" : "Закладка %@"
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "بک مارک %@"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -128639,6 +129491,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Закладку %@ додано"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "بک مارک %@ شامل کیا گیا"
           }
         },
         "vi" : {
@@ -129064,6 +129922,12 @@
             "value" : "Закладку %@ вилучено"
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "بک مارک %@ ہٹایا گیا"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -129205,6 +130069,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Закладка %1$@, %2$@, нотатка: %3$@, додано %4$@"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "بک مارک %1$@، %2$@، نوٹ: %3$@، شامل کیا گیا %4$@"
           }
         },
         "vi" : {
@@ -129350,6 +130220,12 @@
             "value" : "Закладка %1$@, %2$@, додано %3$@"
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "بک مارک %1$@، %2$@، شامل کیا گیا %3$@"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -129491,6 +130367,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Закладка %1$@, нотатка: %2$@, додано %3$@"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "بک مارک %1$@، نوٹ: %2$@، شامل کیا گیا %3$@"
           }
         },
         "vi" : {
@@ -129636,6 +130518,12 @@
             "value" : "Закладка %1$@, додано %2$@"
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "بک مارک %1$@، شامل کیا گیا %2$@"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -129773,6 +130661,12 @@
             "value" : "Нотатка до закладки"
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "بک مارک کا نوٹ"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -129908,6 +130802,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Закладки"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "بک مارکس"
           }
         },
         "vi" : {
@@ -130651,6 +131551,12 @@
             "value" : "Завершено книг за весь час"
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اب تک مکمل کی گئی کتابیں"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -130786,6 +131692,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Завершено книг цього року"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اس سال مکمل کی گئی کتابیں"
           }
         },
         "vi" : {
@@ -132158,6 +133070,12 @@
             "value" : "Брайль"
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "بریل"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -132569,6 +133487,12 @@
             "value" : "Braille Ready Format: сторінки брайлем для брайлівських дисплеїв і принтерів."
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Braille Ready Format: بریل کے صفحات، بریل ڈسپلے اور ایمبوسرز کے لیے۔"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -132841,6 +133765,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Код Брайля"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "بریل کوڈ"
           }
         },
         "vi" : {
@@ -133117,6 +134047,12 @@
             "value" : "Символи файлу Брайля"
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "بریل فائل کے حروف"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -133252,6 +134188,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Номери брайлівських сторінок"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "بریل صفحہ نمبر"
           }
         },
         "vi" : {
@@ -133526,6 +134468,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Переходить до речення, яке озвучується."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "متن کو اس جملے تک لاتا ہے جو بولا جا رہا ہے۔"
           }
         },
         "vi" : {
@@ -134680,6 +135628,12 @@
             "value" : "CR LF підходить для більшості брайлівських дисплеїв і принтерів."
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "CR LF زیادہ تر بریل ڈسپلے اور ایمبوسرز کے لیے موزوں ہے۔"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -134817,6 +135771,12 @@
             "value" : "Не вдається відтворити: виклик або інша програма використовує аудіо."
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "چلایا نہیں جا سکتا: کوئی کال یا دوسری ایپ آڈیو استعمال کر رہی ہے۔"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -134952,6 +135912,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Скасувати"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "منسوخ کریں"
           }
         },
         "vi" : {
@@ -135226,6 +136192,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Скасувати експорт"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "برآمد منسوخ کریں"
           }
         },
         "vi" : {
@@ -135911,6 +136883,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Скасувати таймер"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ٹائمر منسوخ کریں"
           }
         },
         "vi" : {
@@ -136741,6 +137719,12 @@
             "value" : "Субтитри у форматі %1$@ (.%2$@), який читає майже кожен програвач: один файл, відлік часу від початку аудіо."
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ (.%2$@) میں کیپشنز، جنہیں تقریباً ہر پلیئر پڑھتا ہے: ایک فائل، آڈیو کے آغاز سے وقت بندی کے ساتھ۔"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -136876,6 +137860,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Субтитри у форматі %@, який читають вебпереглядачі та більшість програвачів: один файл, відлік часу від початку аудіо."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ میں کیپشنز، جنہیں ویب براؤزر اور زیادہ تر پلیئرز پڑھتے ہیں: ایک فائل، آڈیو کے آغاز سے وقت بندی کے ساتھ۔"
           }
         },
         "vi" : {
@@ -137424,6 +138414,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Комірок у рядку"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "فی سطر سیل"
           }
         },
         "vi" : {
@@ -138659,6 +139655,12 @@
             "value" : "Змінює число на одиницю, від 2 до 99."
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "نمبر کو ایک ایک کر کے بدلتا ہے، 2 سے 99 تک"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -138794,6 +139796,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Змінює швидкість кроками по %@."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "رفتار کو %@ گنا کے قدموں میں بدلتا ہے"
           }
         },
         "vi" : {
@@ -139240,6 +140248,24 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Змінює швидкість кроками по %lld слова за хвилину."
+                }
+              }
+            }
+          }
+        },
+        "ur" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "رفتار کو %lld لفظ فی منٹ کے قدم میں بدلتا ہے۔"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "رفتار کو %lld الفاظ فی منٹ کے قدموں میں بدلتا ہے۔"
                 }
               }
             }
@@ -141460,6 +142486,12 @@
             "value" : "Розділ %1$@ книги %2$@"
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%2$@ کا باب %1$@"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -141601,6 +142633,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Розділ %1$@ із %2$@ (chapter=%3$@ у журналі)"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%2$@ کا باب %1$@ (لاگز میں chapter=%3$@)"
           }
         },
         "vi" : {
@@ -141887,6 +142925,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Розділ %1$@ цієї книги %2$@, тому TextMouth не може безпечно експортувати це. Виберіть «Редагувати текст», вирівняйте вкладеність і збережіть, а потім експортуйте знову."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اس کتاب کے باب %1$@ میں %2$@، جسے TextMouth محفوظ طریقے سے برآمد نہیں کر سکتا۔ “متن میں ترمیم کریں” منتخب کریں، تہہ بندی کو ہموار کریں اور محفوظ کریں؛ پھر دوبارہ برآمد کریں۔"
           }
         },
         "vi" : {
@@ -145475,6 +146519,12 @@
             "value" : "Вибрати"
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "منتخب کریں"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -146575,6 +147625,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Вибрати папку…"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "فولڈر منتخب کریں…"
           }
         },
         "vi" : {
@@ -148904,6 +149960,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Виберіть файл словника вимови, щоб додати його як правила."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اصولوں کے طور پر شامل کرنے کے لیے تلفظ کی لغت کی فائل منتخب کریں۔"
           }
         },
         "vi" : {
@@ -152057,6 +153119,12 @@
             "value" : "Виберіть папку для експорту. Кнопка «Нова папка» створює її."
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "برآمد کرنے کے لیے فولڈر منتخب کریں۔ “نیا فولڈر” ایک بناتا ہے۔"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -152605,6 +153673,12 @@
             "value" : "Вибирає формат файлу. M4B — аудіокнига; M4A і MP3 відтворюються в більшій кількості програм. У M4B і M4A кожному заголовку відповідає розділ, а в MP3 — перші %@."
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "فائل کا فارمیٹ منتخب کرتا ہے۔ M4B ایک آڈیو بک ہے؛ M4A اور MP3 زیادہ ایپس میں چلتے ہیں۔ M4B اور M4A میں ہر سرخی کے لیے ایک باب ہوتا ہے؛ MP3 میں صرف ابتدائی %@ کے لیے۔"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -152740,6 +153814,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Вибирає папку, до якої експортуються позначені елементи."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "وہ فولڈر منتخب کرتا ہے جس میں نشان زد آئٹمز برآمد ہوں گے۔"
           }
         },
         "vi" : {
@@ -152879,6 +153959,12 @@
             "value" : "Вибирає порядок книг."
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "کتابوں کی ترتیب منتخب کرتا ہے۔"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -153014,6 +154100,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Вибирає, на яку одиницю переходять «Відтворити» та кнопки перемотування."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "منتخب کرتا ہے کہ چلائیں اور چھلانگ کے بٹن کس اکائی سے آگے بڑھیں۔"
           }
         },
         "vi" : {
@@ -153153,6 +154245,12 @@
             "value" : "Вибирає, що робить книга, відкрита зі списку, коли закінчується."
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "منتخب کرتا ہے کہ فہرست سے کھولی گئی کتاب ختم ہونے پر کیا ہو۔"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -153288,6 +154386,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Вибирає, що відбувається, коли закінчується одна зі статей цієї стрічки."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "منتخب کرتا ہے کہ اس فیڈ کا کوئی مضمون ختم ہونے پر کیا ہو"
           }
         },
         "vi" : {
@@ -153427,6 +154531,12 @@
             "value" : "Вибирає, що відбувається, коли закінчується один з епізодів цієї стрічки."
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "منتخب کرتا ہے کہ اس فیڈ کا کوئی ایپی سوڈ ختم ہونے پر کیا ہو"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -153562,6 +154672,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Вибирає, що відбувається, коли закінчується один з елементів цієї стрічки."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "منتخب کرتا ہے کہ اس فیڈ کا کوئی آئٹم ختم ہونے پر کیا ہو"
           }
         },
         "vi" : {
@@ -153701,6 +154817,12 @@
             "value" : "Вибирає, що відбувається, коли закінчується одна з книг цієї папки."
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "منتخب کرتا ہے کہ اس فولڈر کی کوئی کتاب ختم ہونے پر کیا ہو"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -153836,6 +154958,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Вибирає, що показує бібліотека."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "منتخب کرتا ہے کہ لائبریری کیا دکھائے۔"
           }
         },
         "vi" : {
@@ -153975,6 +155103,12 @@
             "value" : "Вибирає, де відкривається наступна книга: у цьому вікні чи в новому. Книга, відкрита в іншому вікні, виходить на передній план, а якщо вибрано «%@», це вікно закривається."
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "منتخب کرتا ہے کہ اگلی کتاب کہاں کھلے: اسی ونڈو میں یا نئی ونڈو میں۔ دوسری ونڈو میں کھلی کتاب سامنے آ جاتی ہے، اور %@ منتخب ہو تو یہ ونڈو بند ہو جاتی ہے۔"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -154110,6 +155244,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Вибирає, де відкривається наступна стаття цієї стрічки."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "منتخب کرتا ہے کہ اس فیڈ کا اگلا مضمون کہاں کھلے۔"
           }
         },
         "vi" : {
@@ -154249,6 +155389,12 @@
             "value" : "Вибирає, де відкривається наступний епізод цієї стрічки."
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "منتخب کرتا ہے کہ اس فیڈ کا اگلا ایپی سوڈ کہاں کھلے۔"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -154386,6 +155532,12 @@
             "value" : "Вибирає, де відкривається наступний елемент цієї стрічки."
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "منتخب کرتا ہے کہ اس فیڈ کا اگلا آئٹم کہاں کھلے۔"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -154521,6 +155673,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Вибирає, де відкривається наступна книга цієї папки."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "منتخب کرتا ہے کہ اس فولڈر کی اگلی کتاب کہاں کھلے۔"
           }
         },
         "vi" : {
@@ -156588,6 +157746,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Закрити"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "بند کریں"
           }
         },
         "vi" : {
@@ -158923,6 +160087,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Згортати послідовності від"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تسلسل سمیٹیں، کم از کم"
           }
         },
         "vi" : {
@@ -163035,6 +164205,12 @@
             "value" : "Зміст"
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "فہرست مضامین"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -163994,6 +165170,12 @@
             "value" : "Зі скороченнями"
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "مختصر"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -164131,6 +165313,12 @@
             "value" : "Зі скороченнями (ступінь %@)"
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "مختصر (درجہ %@)"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -164266,6 +165454,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Скорочення"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اختصار"
           }
         },
         "vi" : {
@@ -164953,6 +166147,12 @@
             "value" : "Перетворити заголовки на"
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "سرخیوں کو اس میں تبدیل کریں"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -165227,6 +166427,12 @@
             "value" : "Перетворити на"
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اس میں تبدیل کریں"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -165362,6 +166568,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Перетворити транскрипцію на"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ٹرانسکرپٹ کو اس میں تبدیل کریں"
           }
         },
         "vi" : {
@@ -166067,6 +167279,12 @@
             "value" : "Перетворення цього типу файлів на iPhone поки недоступне."
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اس قسم کی فائل کی تبدیلی ابھی iPhone پر دستیاب نہیں۔"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -166615,6 +167833,12 @@
             "value" : "Копіює весь звіт як звичайний текст."
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "پوری رپورٹ سادہ متن کے طور پر کاپی کرتا ہے"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -166887,6 +168111,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Скопіювати подробиці"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تفصیلات کاپی کریں"
           }
         },
         "vi" : {
@@ -167709,6 +168939,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Не вдалося додати закладку: «%@» більше немає в бібліотеці."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "بک مارک شامل نہیں کیا جا سکا: “%@” اب لائبریری میں نہیں ہے۔"
           }
         },
         "vi" : {
@@ -170040,6 +171276,12 @@
             "value" : "Не вдалося вилучити закладку: «%@» більше немає в бібліотеці."
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "بک مارک ہٹایا نہیں جا سکا: “%@” اب لائبریری میں نہیں ہے۔"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -171839,6 +173081,12 @@
             "value" : "Не вдалося експортувати %@."
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ برآمد نہیں ہو سکا۔"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -171982,6 +173230,12 @@
             "value" : "Не вдалося експортувати %1$@. Перший: %2$@."
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ برآمد نہیں ہو سکے۔ پہلی ناکامی: %2$@۔"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -172123,6 +173377,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Не вдалося експортувати %1$@: %2$@."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ برآمد نہیں ہو سکے: %2$@۔"
           }
         },
         "vi" : {
@@ -173787,6 +175047,12 @@
             "value" : "Поточна серія"
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "موجودہ تسلسل"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -173924,6 +175190,12 @@
             "value" : "Поточний таймер"
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "موجودہ ٹائمر"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -174059,6 +175331,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Поточна серія прослуховування"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "سننے کا موجودہ تسلسل"
           }
         },
         "vi" : {
@@ -174609,6 +175887,12 @@
             "value" : "Власна кількість хвилин"
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "حسب ضرورت منٹ"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -174744,6 +176028,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Власний:"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "حسب ضرورت:"
           }
         },
         "vi" : {
@@ -177075,6 +178365,12 @@
             "value" : "Зменшити швидкість аудіо на %@"
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "آڈیو کی رفتار %@ گنا کم کریں"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -177519,6 +178815,24 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Зменшити швидкість на %lld слова за хвилину"
+                }
+              }
+            }
+          }
+        },
+        "ur" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "رفتار %lld لفظ فی منٹ کم کریں"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "رفتار %lld الفاظ فی منٹ کم کریں"
                 }
               }
             }
@@ -179240,6 +180554,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Видалити"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "حذف کریں"
           }
         },
         "vi" : {
@@ -182584,6 +183904,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Видалити закладку %@"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "بک مارک %@ حذف کریں"
           }
         },
         "vi" : {
@@ -186702,6 +188028,12 @@
             "value" : "Подробиці"
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تفصیلات"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -186974,6 +188306,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Подробиці скопійовано"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تفصیلات کاپی ہو گئیں"
           }
         },
         "vi" : {
@@ -189585,6 +190923,12 @@
             "value" : "Готово"
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ہو گیا"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -192032,6 +193376,12 @@
             "value" : "Завантаження скасовано, тому відтворення зупинено."
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ڈاؤن لوڈ منسوخ ہو گیا، اس لیے پلے بیک رک گیا۔"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -193819,6 +195169,12 @@
             "value" : "Завантажувати наступну статтю до завершення цієї"
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "موجودہ مضمون ختم ہونے سے پہلے اگلا مضمون ڈاؤن لوڈ کریں"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -193954,6 +195310,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Завантажувати наступну книгу до завершення цієї"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "موجودہ کتاب ختم ہونے سے پہلے اگلی کتاب ڈاؤن لوڈ کریں"
           }
         },
         "vi" : {
@@ -194093,6 +195455,12 @@
             "value" : "Завантажувати наступний епізод до завершення цього"
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "موجودہ ایپی سوڈ ختم ہونے سے پہلے اگلا ایپی سوڈ ڈاؤن لوڈ کریں"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -194228,6 +195596,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Завантажувати наступний елемент до завершення цього"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "موجودہ آئٹم ختم ہونے سے پہلے اگلا آئٹم ڈاؤن لوڈ کریں"
           }
         },
         "vi" : {
@@ -197418,6 +198792,12 @@
             "value" : "Завантажується наступна стаття: %@"
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اگلا مضمون ڈاؤن لوڈ ہو رہا ہے: %@"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -197553,6 +198933,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Завантажується наступний епізод: %@"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اگلا ایپی سوڈ ڈاؤن لوڈ ہو رہا ہے: %@"
           }
         },
         "vi" : {
@@ -198101,6 +199487,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Завантаження «%@»"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” ڈاؤن لوڈ ہو رہا ہے"
           }
         },
         "vi" : {
@@ -201117,6 +202509,12 @@
             "value" : "Назва та місце кожної закладки як мітки Audacity, для книги з одним аудіофайлом."
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ہر بک مارک کا نام اور مقام، Audacity لیبلز کی صورت میں، ایک آڈیو فائل والی کتاب کے لیے۔"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -201252,6 +202650,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Кожен вказаний символ може утворювати послідовність. Пробіли ігноруються, а літери й цифри ніколи не утворюють послідовностей."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "درج ہر علامت تسلسل بنا سکتی ہے۔ خالی جگہیں نظر انداز کی جاتی ہیں، اور حروف تہجی اور اعداد کبھی تسلسل نہیں بناتے۔"
           }
         },
         "vi" : {
@@ -201391,6 +202795,12 @@
             "value" : "Назва й початок кожного заголовка як мітки Audacity, для книги з одним аудіофайлом."
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ہر سرخی کا عنوان اور آغاز، Audacity لیبلز کی صورت میں، ایک آڈیو فائل والی کتاب کے لیے۔"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -201526,6 +202936,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Назва й початок кожного заголовка як аркуш CUE, що називає аудіо так, як його експортує «Аудіо»."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ہر سرخی کا عنوان اور آغاز، ایک CUE شیٹ کی صورت میں جو آڈیو کا نام اسی طرح لکھتی ہے جیسے آڈیو اسے برآمد کرتا ہے۔"
           }
         },
         "vi" : {
@@ -202493,6 +203909,12 @@
             "value" : "Редагувати закладку %@"
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "بک مارک %@ میں ترمیم کریں"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -203313,6 +204735,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Редагувати нотатку"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "نوٹ میں ترمیم کریں"
           }
         },
         "vi" : {
@@ -205108,6 +206536,12 @@
             "value" : "Редагувати нотатку закладки %@"
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "بک مارک %@ کے نوٹ میں ترمیم کریں"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -205791,6 +207225,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Редагування в іншій програмі на iPhone поки недоступне."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "کسی دوسری ایپ میں ترمیم ابھی iPhone پر دستیاب نہیں۔"
           }
         },
         "vi" : {
@@ -207300,6 +208740,12 @@
             "value" : "Увімкнути звукові ефекти"
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ساؤنڈ ایفیکٹس فعال کریں"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -207711,6 +209157,12 @@
             "value" : "Кодування аудіофайлу…"
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "آڈیو فائل انکوڈ ہو رہی ہے…"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -207846,6 +209298,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "End"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اختتام"
           }
         },
         "vi" : {
@@ -208120,6 +209578,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Кінець книги"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "کتاب کا اختتام"
           }
         },
         "vi" : {
@@ -208533,6 +209997,12 @@
             "value" : "Кінець заголовка"
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "سرخی کا اختتام"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -208944,6 +210414,12 @@
             "value" : "Кінець книги"
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "کتاب کا اختتام"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -209081,6 +210557,12 @@
             "value" : "Кінець книги."
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "کتاب کا اختتام۔"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -209216,6 +210698,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Кінець списку читання"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "مطالعے کی فہرست کا اختتام"
           }
         },
         "vi" : {
@@ -211796,6 +213284,12 @@
             "value" : "Помилка"
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "خرابی"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -213085,6 +214579,12 @@
             "value" : "Усі книги вище в списку читання завершено"
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "مطالعے کی فہرست میں اس سے اوپر کی ہر کتاب مکمل ہو چکی ہے"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -213220,6 +214720,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Усі наступні книги в папці завершено"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "فولڈر میں اس کے بعد کی ہر کتاب مکمل ہو چکی ہے"
           }
         },
         "vi" : {
@@ -213359,6 +214865,12 @@
             "value" : "Усі попередні книги в папці завершено"
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "فولڈر میں اس سے پہلے کی ہر کتاب مکمل ہو چکی ہے"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -213494,6 +215006,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Усі книги нижче в списку читання завершено"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "مطالعے کی فہرست میں اس سے نیچے کی ہر کتاب مکمل ہو چکی ہے"
           }
         },
         "vi" : {
@@ -217369,6 +218887,12 @@
             "value" : "Експортувати"
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "برآمد کریں"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -217504,6 +219028,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Експорт: %@"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ برآمد کریں"
           }
         },
         "vi" : {
@@ -217950,6 +219480,24 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Експортувати %lld книги"
+                }
+              }
+            }
+          }
+        },
+        "ur" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld کتاب برآمد کریں"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld کتابیں برآمد کریں"
                 }
               }
             }
@@ -218422,6 +219970,24 @@
             }
           }
         },
+        "ur" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld کتاب برآمد کریں…"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld کتابیں برآمد کریں…"
+                }
+              }
+            }
+          }
+        },
         "vi" : {
           "variations" : {
             "plural" : {
@@ -218714,6 +220280,12 @@
             "value" : "Експортувати кожен такий розділ як є"
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ہر ایسے باب کو جیسا لکھا ہے ویسا برآمد کریں"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -218849,6 +220421,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Не вдалося експортувати"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "برآمد ناکام ہو گئی"
           }
         },
         "vi" : {
@@ -219536,6 +221114,12 @@
             "value" : "Експортувати правила…"
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اصول برآمد کریں…"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -219671,6 +221255,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Експортувати до"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "یہاں برآمد کریں"
           }
         },
         "vi" : {
@@ -219810,6 +221400,12 @@
             "value" : "Експортувати як є"
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "جیسا لکھا ہے ویسا برآمد کریں"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -219945,6 +221541,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Експорт не може записувати в папку бібліотеки TextMouth. Виберіть іншу папку."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "برآمد TextMouth کے لائبریری فولڈر میں نہیں لکھ سکتی۔ کوئی دوسرا فولڈر منتخب کریں۔"
           }
         },
         "vi" : {
@@ -220084,6 +221686,12 @@
             "value" : "Експорт не може записувати в папку, де TextMouth зберігає озвучені розділи і яку очищає. Виберіть іншу папку."
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "برآمد اس فولڈر میں نہیں لکھ سکتی جہاں TextMouth بولے گئے ابواب رکھتا ہے اور جسے وہ خالی کر دیتا ہے۔ کوئی دوسرا فولڈر منتخب کریں۔"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -220219,6 +221827,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Експортувати правила як файл словника вимови"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اصولوں کو تلفظ کی لغت کی فائل کے طور پر برآمد کریں"
           }
         },
         "vi" : {
@@ -220358,6 +221972,12 @@
             "value" : "Експорт зупинено. Нічого не експортовано."
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "برآمد روک دی گئی۔ کچھ بھی برآمد نہیں ہوا۔"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -220495,6 +222115,12 @@
             "value" : "Експортувати цю книгу"
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اس کتاب کو برآمد کریں"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -220630,6 +222256,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Експортувати до: %@"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "یہاں برآمد کریں: %@"
           }
         },
         "vi" : {
@@ -220773,6 +222405,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Експортовано %1$@ до %2$@."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ کو %2$@ میں برآمد کیا گیا۔"
           }
         },
         "vi" : {
@@ -221219,6 +222857,24 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Експортовано %lld правила до «%@»."
+                }
+              }
+            }
+          }
+        },
+        "ur" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%1$lld اصول “%2$@” میں برآمد کیا گیا۔"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%1$lld اصول “%2$@” میں برآمد کیے گئے۔"
                 }
               }
             }
@@ -222686,6 +224342,12 @@
             "value" : "Експортується %1$lld з %2$@…"
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%2$@ میں سے %1$lld برآمد ہو رہے ہیں…"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -222821,6 +224483,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Експортується…"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "برآمد ہو رہا ہے…"
           }
         },
         "vi" : {
@@ -222960,6 +224628,12 @@
             "value" : "Експортує позначені елементи, щойно буде перевірено щойно вибрану брайлівську таблицю."
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "منتخب کردہ بریل جدول کی جانچ ہو جانے پر نشان زد آئٹمز برآمد کرتا ہے۔"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -223095,6 +224769,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Експортує позначені елементи до папки."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "نشان زد آئٹمز کو فولڈر میں برآمد کرتا ہے۔"
           }
         },
         "vi" : {
@@ -224608,6 +226288,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Затухання"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "فیڈ آؤٹ ہو رہا ہے"
           }
         },
         "vi" : {
@@ -231042,6 +232728,12 @@
             "value" : "Пошук того, що можна експортувати…"
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "یہ تلاش کیا جا رہا ہے کہ کیا برآمد ہو سکتا ہے…"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -231314,6 +233006,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Завершено"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "مکمل"
           }
         },
         "vi" : {
@@ -231868,6 +233566,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Завершено: %@"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "مکمل: %@"
           }
         },
         "vi" : {
@@ -235182,6 +236886,12 @@
             "value" : "Стежити в брайлі"
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "بریل میں پیروی کریں"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -235454,6 +237164,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Для спроби з брайлівським дисплеєм."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "بریل ڈسپلے کے ساتھ آزمانے کے لیے۔"
           }
         },
         "vi" : {
@@ -237573,6 +239289,12 @@
             "value" : "Від"
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "سے"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -238393,6 +240115,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Загальні"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "عمومی"
           }
         },
         "vi" : {
@@ -241135,6 +242863,12 @@
             "value" : "Перейти"
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "پر جائیں"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -243601,6 +245335,12 @@
             "value" : "Перейти до закладки %@"
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "بک مارک %@ پر جائیں"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -243875,6 +245615,12 @@
             "value" : "Повертається туди, де почався останній перехід."
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "وہاں واپس جاتا ہے جہاں آخری چھلانگ شروع ہوئی تھی۔"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -244010,6 +245756,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Переходить до сторінки, відсотка або часу."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "کسی صفحے، فیصد یا وقت پر جاتا ہے۔"
           }
         },
         "vi" : {
@@ -244149,6 +245901,12 @@
             "value" : "Переходить до цієї закладки та закриває список."
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اس بک مارک پر جاتا ہے اور فہرست بند کر دیتا ہے۔"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -244286,6 +246044,12 @@
             "value" : "Переходить до цього заголовка та закриває список."
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اس سرخی پر جاتا ہے اور فہرست بند کر دیتا ہے۔"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -244421,6 +246185,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Переходить до цього результату."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اس نتیجے پر جاتا ہے۔"
           }
         },
         "vi" : {
@@ -244969,6 +246739,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Вгадувати брайлівський код нових книг"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "نئی کتابوں کا بریل کوڈ اندازاً معلوم کریں"
           }
         },
         "vi" : {
@@ -248732,6 +250508,12 @@
             "value" : "Як файл BRF або BRL записує кожну брайлівську комірку. Більшість файлів використовує North American Braille ASCII."
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "BRF یا BRL فائل ہر بریل سیل کو کیسے لکھتی ہے۔ زیادہ تر فائلیں North American Braille ASCII استعمال کرتی ہیں۔"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -248869,6 +250651,12 @@
             "value" : "Як швидко голос говорить у файлі. Починається зі швидкості книги."
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "فائل میں آواز کتنی تیز بولتی ہے۔ یہ کتاب کی رفتار سے شروع ہوتی ہے۔"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -249004,6 +250792,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Наскільки високо звучить голос у файлі. Починається з висоти тону книги."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "فائل میں آواز کتنی اونچی لگتی ہے۔ یہ کتاب کی پچ سے شروع ہوتی ہے۔"
           }
         },
         "vi" : {
@@ -249280,6 +251074,12 @@
             "value" : "Скільки брайлівських комірок у кожному рядку, від 18 до 80."
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ہر سطر میں کتنے بریل سیل ہوں، 18 سے 80 تک۔"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -249415,6 +251215,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Скільки рядків на кожній брайлівській сторінці, від 4 до 50."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ہر بریل صفحے میں کتنی سطریں ہوں، 4 سے 50 تک۔"
           }
         },
         "vi" : {
@@ -249828,6 +251634,12 @@
             "value" : "Як BRF записує кожну брайлівську комірку. Більшість брайлівських дисплеїв і принтерів читає North American Braille ASCII; налаштовані для німецької читають Eurobraille. Щоб поділитися з читачем деінде, експортуйте PEF."
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "BRF ہر بریل سیل کو کیسے لکھتی ہے۔ زیادہ تر بریل ڈسپلے اور ایمبوسرز North American Braille ASCII پڑھتے ہیں؛ جرمن کے لیے ترتیب دیے گئے Eurobraille پڑھتے ہیں۔ کسی دوسری جگہ کے قاری کے ساتھ شیئر کرنے کے لیے PEF برآمد کریں۔"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -249963,6 +251775,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Як голос читає символ, записаний кілька разів поспіль."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "آواز ایک ہی علامت کے کئی بار لگاتار لکھے ہونے کو کیسے پڑھتی ہے"
           }
         },
         "vi" : {
@@ -253265,6 +255083,12 @@
             "value" : "Не вдалося імпортувати"
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "درآمد ناکام ہو گئی"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -253811,6 +255635,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Імпортувати правила…"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اصول درآمد کریں…"
           }
         },
         "vi" : {
@@ -254909,6 +256739,12 @@
             "value" : "Імпортувати правила з файлу словника вимови"
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تلفظ کی لغت کی فائل سے اصول درآمد کریں"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -255980,6 +257816,12 @@
             "value" : "Імпортується %@"
           }
         },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ درآمد ہو رہا ہے"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -256115,6 +257957,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Імпорт %@ зупинено, коли TextMouth закрився."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth بند ہونے پر %@ کی درآمد رک گئی تھی۔"
           }
         },
         "vi" : {
@@ -256561,6 +258409,24 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Імпортується книг: %lld"
+                }
+              }
+            }
+          }
+        },
+        "ur" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld کتاب درآمد ہو رہی ہے"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld کتابیں درآمد ہو رہی ہیں"
                 }
               }
             }
@@ -257028,6 +258894,24 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Імпорт %lld книги зупинено, коли TextMouth закрився."
+                }
+              }
+            }
+          }
+        },
+        "ur" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "TextMouth بند ہونے پر %lld کتاب کی درآمد رک گئی تھی۔"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "TextMouth بند ہونے پر %lld کتابوں کی درآمد رک گئی تھی۔"
                 }
               }
             }
