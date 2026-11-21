@@ -219790,7 +219790,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Échec de la restauration des valeurs par défaut"
+            "value" : "Échec du retour à l’emplacement par défaut"
           }
         },
         "he" : {
@@ -252735,7 +252735,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Dans le dossier Journaux de ce Mac."
+            "value" : "Dans le dossier Logs de ce Mac"
           }
         },
         "he" : {
@@ -337145,19 +337145,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Aucun des %@ livres sélectionnés n’est conservé sur ce Mac par votre choix, et %lld de livres le sont pour la liste de lecture."
+                  "value" : "Aucun des %@ livres sélectionnés n’est conservé sur ce Mac à votre demande, et %lld de livres le sont pour la liste de lecture."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Aucun des %@ livres sélectionnés n’est conservé sur ce Mac par votre choix, et %lld l’est pour la liste de lecture."
+                  "value" : "Aucun des %@ livres sélectionnés n’est conservé sur ce Mac à votre demande, et %lld l’est pour la liste de lecture."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Aucun des %@ livres sélectionnés n’est conservé sur ce Mac par votre choix, et %lld le sont pour la liste de lecture."
+                  "value" : "Aucun des %@ livres sélectionnés n’est conservé sur ce Mac à votre demande, et %lld le sont pour la liste de lecture."
                 }
               }
             }
@@ -338174,7 +338174,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Le livre sélectionné (%lld) n’est pas conservé sur ce Mac."
+                  "value" : "Sur %lld livre sélectionné, aucun n’est conservé sur ce Mac."
                 }
               },
               "other" : {
@@ -346261,7 +346261,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Une unité pour les deux directions"
+            "value" : "Une unité pour les deux sens"
           }
         },
         "he" : {
@@ -347577,7 +347577,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Rembobine uniquement si la pause a duré plus longtemps que le seuil."
+            "value" : "Revient en arrière uniquement si la pause a duré plus longtemps que le seuil."
           }
         },
         "he" : {
@@ -381978,7 +381978,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Les positions de lecture sont conservées, mais les décalages de caractères peuvent légèrement changer si le texte change."
+            "value" : "Les positions de lecture sont conservées, mais elles peuvent se décaler légèrement si le texte change."
           }
         },
         "he" : {
@@ -382115,7 +382115,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "La lecture de l’audio a pris plus de %@ secondes ; TextMouth a cessé d’attendre."
+            "value" : "La lecture du fichier audio a pris plus de %@ secondes ; TextMouth a cessé d’attendre."
           }
         },
         "he" : {
@@ -382351,19 +382351,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "La lecture de l’audio a pris plus de %lld de minutes ; TextMouth a cessé d’attendre."
+                  "value" : "La lecture du fichier audio a pris plus de %lld de minutes ; TextMouth a cessé d’attendre."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "La lecture de l’audio a pris plus de %lld minute ; TextMouth a cessé d’attendre."
+                  "value" : "La lecture du fichier audio a pris plus de %lld minute ; TextMouth a cessé d’attendre."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "La lecture de l’audio a pris plus de %lld minutes ; TextMouth a cessé d’attendre."
+                  "value" : "La lecture du fichier audio a pris plus de %lld minutes ; TextMouth a cessé d’attendre."
                 }
               }
             }
@@ -382818,19 +382818,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "La lecture de l’audio a pris plus de %lld de secondes ; TextMouth a cessé d’attendre."
+                  "value" : "La lecture du fichier audio a pris plus de %lld de secondes ; TextMouth a cessé d’attendre."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "La lecture de l’audio a pris plus de %lld seconde ; TextMouth a cessé d’attendre."
+                  "value" : "La lecture du fichier audio a pris plus de %lld seconde ; TextMouth a cessé d’attendre."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "La lecture de l’audio a pris plus de %lld secondes ; TextMouth a cessé d’attendre."
+                  "value" : "La lecture du fichier audio a pris plus de %lld secondes ; TextMouth a cessé d’attendre."
                 }
               }
             }
@@ -406188,7 +406188,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Réessayer se trouve en haut de la fenêtre de la bibliothèque."
+            "value" : "Le bouton Réessayer se trouve en haut de la fenêtre de la bibliothèque."
           }
         },
         "he" : {
@@ -448924,7 +448924,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Toujours en cours de téléchargement. Temps écoulé : %@."
+            "value" : "Toujours en cours de téléchargement, temps écoulé : %@."
           }
         },
         "he" : {
@@ -451499,7 +451499,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Arrêter, et Lire repart du début"
+            "value" : "Arrêter et revenir au début"
           }
         },
         "he" : {
@@ -494292,7 +494292,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Le livre sélectionné (%lld) est déjà conservé sur ce Mac."
+                  "value" : "%lld livre sélectionné est déjà conservé sur ce Mac."
                 }
               },
               "other" : {
@@ -494759,7 +494759,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Le livre sélectionné (%lld) est conservé sur ce Mac pour la liste de lecture."
+                  "value" : "%lld livre sélectionné est conservé sur ce Mac pour la liste de lecture."
                 }
               },
               "other" : {
@@ -496776,7 +496776,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "The Hobbit est classé parmi les H et s’affiche comme Hobbit, The. Taper H le trouve parmi les H."
+            "value" : "The Hobbit est classé parmi les H et s’affiche comme Hobbit, The. Taper H permet de le trouver parmi les H."
           }
         },
         "he" : {
@@ -498826,7 +498826,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "L’archive se développe à %1$@, mais le disque contenant la bibliothèque TextMouth n’a que %2$@ libres, et TextMouth en garde %3$@ de libre."
+            "value" : "Une fois décompressée, l’archive occupe %1$@, mais le disque contenant la bibliothèque TextMouth n’a que %2$@ libres, et TextMouth en garde %3$@ en réserve."
           }
         },
         "he" : {
@@ -498969,7 +498969,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "L’archive se développe à %1$@, soit plus que les %2$@ que TextMouth extrait des archives contenant de l’audio ou d’autres archives."
+            "value" : "Une fois décompressée, l’archive occupe %1$@, soit plus que les %2$@ que TextMouth extrait des archives contenant de l’audio ou d’autres archives."
           }
         },
         "he" : {
@@ -499112,7 +499112,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "L’archive se développe à %1$@, soit plus que les %2$@ que TextMouth extrait des archives sans audio."
+            "value" : "Une fois décompressée, l’archive occupe %1$@, soit plus que les %2$@ que TextMouth extrait des archives sans audio."
           }
         },
         "he" : {
@@ -499946,7 +499946,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "L’archive « %1$@ » qu’elle contient se développe à %2$@, mais le disque contenant la bibliothèque TextMouth n’a que %3$@ libres, et TextMouth en garde %4$@ de libre."
+            "value" : "Une fois décompressée, l’archive « %1$@ » qu’elle contient occupe %2$@, mais le disque contenant la bibliothèque TextMouth n’a que %3$@ libres, et TextMouth en garde %4$@ en réserve."
           }
         },
         "he" : {
@@ -510936,7 +510936,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Le dossier de données n’a pas de dossier Journaux ; les journaux vont donc dans %@ jusqu’à ce qu’il en ait un."
+            "value" : "Le dossier de données n’a pas de dossier Logs ; les journaux vont donc dans %@ jusqu’à ce qu’il en ait un."
           }
         },
         "he" : {
@@ -511216,7 +511216,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Le dossier Journaux du dossier de données n’est pas accessible en écriture (%1$@) ; les journaux vont donc dans %2$@ jusqu’à ce qu’il le soit."
+            "value" : "Le dossier Logs du dossier de données n’est pas accessible en écriture (%1$@) ; les journaux vont donc dans %2$@ jusqu’à ce qu’il le soit."
           }
         },
         "he" : {
