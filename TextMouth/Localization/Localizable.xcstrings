@@ -153108,7 +153108,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Kiest wat een boek dat uit de lijst is geopend doet als het eindigt."
+            "value" : "Kiest wat een boek dat uit de lijst is geopend, doet als het eindigt."
           }
         },
         "pl" : {
@@ -219902,7 +219902,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Exporteren kan niet naar de bibliotheekmap van TextMouth schrijven. Kies een andere map."
+            "value" : "Exporteren naar de bibliotheekmap van TextMouth is niet mogelijk. Kies een andere map."
           }
         },
         "pl" : {
@@ -220039,7 +220039,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Exporteren kan niet schrijven naar de map waarin TextMouth uitgesproken hoofdstukken bewaart, en die wordt leeggemaakt. Kies een andere map."
+            "value" : "Exporteren naar de map waarin TextMouth uitgesproken hoofdstukken bewaart, is niet mogelijk, want TextMouth maakt die map leeg. Kies een andere map."
           }
         },
         "pl" : {
@@ -222641,7 +222641,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$lld van %2$@ wordt geëxporteerd…"
+            "value" : "Exporteren: %1$lld van %2$@…"
           }
         },
         "pl" : {
@@ -230997,7 +230997,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Zoeken wat er kan worden geëxporteerd…"
+            "value" : "Uitzoeken wat er kan worden geëxporteerd…"
           }
         },
         "pl" : {
@@ -279527,7 +279527,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bewaart de boeken van de lijst gedownload op deze Mac; elke Mac kiest voor zichzelf. Als je dit uitschakelt, wordt er geen download verwijderd."
+            "value" : "Houdt de boeken van de lijst gedownload op deze Mac; elke Mac kiest voor zichzelf. Als je dit uitschakelt, wordt er geen download verwijderd."
           }
         },
         "pl" : {
@@ -280121,13 +280121,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%@ van %lld hoofdstuk is bewaard totdat TextMouth wordt afgesloten, een andere gesproken audio-export begint of de stem, de tekst, de vervangingen of de pauzes van het boek veranderen. Om verder te gaan vanaf hoofdstuk %@, exporteer je hetzelfde bereik met dezelfde snelheid en toonhoogte."
+                  "value" : "TextMouth bewaart %@ van %lld hoofdstuk totdat de app wordt afgesloten, een andere gesproken audio-export begint of de stem, de tekst, de vervangingen of de pauzes van het boek veranderen. Om verder te gaan vanaf hoofdstuk %@, exporteer je hetzelfde bereik met dezelfde snelheid en toonhoogte."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%@ van %lld hoofdstukken is bewaard totdat TextMouth wordt afgesloten, een andere gesproken audio-export begint of de stem, de tekst, de vervangingen of de pauzes van het boek veranderen. Om verder te gaan vanaf hoofdstuk %@, exporteer je hetzelfde bereik met dezelfde snelheid en toonhoogte."
+                  "value" : "TextMouth bewaart %@ van %lld hoofdstukken totdat de app wordt afgesloten, een andere gesproken audio-export begint of de stem, de tekst, de vervangingen of de pauzes van het boek veranderen. Om verder te gaan vanaf hoofdstuk %@, exporteer je hetzelfde bereik met dezelfde snelheid en toonhoogte."
                 }
               }
             }
@@ -280588,7 +280588,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Het gesproken hoofdstuk (%lld) is bewaard totdat TextMouth wordt afgesloten, een andere gesproken audio-export begint of de stem, de tekst, de vervangingen of de pauzes van het boek veranderen. Om er het audiobestand van te maken, exporteer je hetzelfde bereik met dezelfde snelheid en toonhoogte."
+                  "value" : "Het gesproken hoofdstuk is bewaard totdat TextMouth wordt afgesloten, een andere gesproken audio-export begint of de stem, de tekst, de vervangingen of de pauzes van het boek veranderen. Om er het audiobestand van te maken, exporteer je hetzelfde bereik met dezelfde snelheid en toonhoogte."
                 }
               },
               "other" : {
@@ -303063,7 +303063,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Opmaakbeveiliging: streng, elke punthaak wordt niet uitgesproken, van teken %1$@ tot %2$@ van de gesproken tekst."
+            "value" : "Opmaakbeveiliging: streng, geen enkele punthaak wordt uitgesproken, van teken %1$@ tot %2$@ van de gesproken tekst."
           }
         },
         "pl" : {
@@ -345126,7 +345126,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Er is geen stem geïnstalleerd. Voeg er een toe in Systeeminstellingen, Toegankelijkheid, Gesproken content, en exporteer daarna opnieuw."
+            "value" : "Er is geen stem geïnstalleerd. Voeg er een toe in Systeeminstellingen, Toegankelijkheid, Gesproken materiaal, en exporteer daarna opnieuw."
           }
         },
         "pl" : {
@@ -353022,7 +353022,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Speelt nu af: %@"
+            "value" : "Wordt nu afgespeeld: %@"
           }
         },
         "pl" : {
