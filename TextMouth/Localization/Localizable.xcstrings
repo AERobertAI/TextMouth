@@ -538421,7 +538421,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "La liste de lecture en garde encore %lld téléchargés"
+                  "value" : "La liste de lecture en garde encore %lld téléchargé"
                 }
               },
               "other" : {
@@ -572496,7 +572496,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Pour le laisser partir, retirez-le de la liste de lecture, ou décochez %@ dans les options de la liste de lecture."
+            "value" : "Pour qu’il ne soit plus conservé, retirez-le de la liste de lecture, ou décochez %@ dans les options de la liste de lecture."
           }
         },
         "he" : {
@@ -572633,7 +572633,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Pour les laisser partir, retirez-les de la liste de lecture, ou décochez %@ dans les options de la liste de lecture."
+            "value" : "Pour qu’ils ne soient plus conservés, retirez-les de la liste de lecture, ou décochez %@ dans les options de la liste de lecture."
           }
         },
         "he" : {
@@ -573455,7 +573455,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Avec les archives qu’elle contient, l’archive se développe à %1$@, soit plus que les %2$@ que TextMouth extrait des archives contenant de l’audio ou d’autres archives."
+            "value" : "Avec les archives qu’elle contient, l’archive occupe %1$@ une fois décompressée, soit plus que les %2$@ que TextMouth extrait des archives contenant de l’audio ou d’autres archives."
           }
         },
         "he" : {
@@ -573598,7 +573598,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Avec les archives qu’elle contient, l’archive se développe à %1$@, soit plus que les %2$@ que TextMouth extrait des archives sans audio."
+            "value" : "Avec les archives qu’elle contient, l’archive occupe %1$@ une fois décompressée, soit plus que les %2$@ que TextMouth extrait des archives sans audio."
           }
         },
         "he" : {
