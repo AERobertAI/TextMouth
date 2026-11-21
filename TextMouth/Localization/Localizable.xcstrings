@@ -11823,13 +11823,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%@ ফাইলে %lld টি ফিড আছে। প্রতিটির নিজস্ব ফোল্ডার হয়, ফিডের নামে।"
+                  "value" : "%@ ফাইলে %lldটি ফিড আছে। প্রতিটির নিজস্ব ফোল্ডার হয়, ফিডের নামে।"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%@ ফাইলে %lld টি ফিড আছে। প্রতিটির নিজস্ব ফোল্ডার হয়, ফিডের নামে।"
+                  "value" : "%@ ফাইলে %lldটি ফিড আছে। প্রতিটির নিজস্ব ফোল্ডার হয়, ফিডের নামে।"
                 }
               }
             }
@@ -12416,7 +12416,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ একটি ফিডে ডাউনলোড করা পর্ব বা আর্টিকেল সরায়। ফিডের ফোল্ডারে একটি নির্বাচন করুন।"
+            "value" : "%@ একটি ফিডে ডাউনলোড করা পর্ব বা নিবন্ধ সরায়। ফিডের ফোল্ডারে একটি নির্বাচন করুন।"
           }
         },
         "de" : {
@@ -23962,13 +23962,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%@: %lld টি নতুন আর্টিকেল।"
+                  "value" : "%@: %lldটি নতুন নিবন্ধ।"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%@: %lld টি নতুন আর্টিকেল।"
+                  "value" : "%@: %lldটি নতুন নিবন্ধ।"
                 }
               }
             }
@@ -24297,13 +24297,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%@: %lld টি নতুন পর্ব।"
+                  "value" : "%@: %lldটি নতুন পর্ব।"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%@: %lld টি নতুন পর্ব।"
+                  "value" : "%@: %lldটি নতুন পর্ব।"
                 }
               }
             }
@@ -24632,13 +24632,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%@: %lld টি নতুন আইটেম।"
+                  "value" : "%@: %lldটি নতুন আইটেম।"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%@: %lld টি নতুন আইটেম।"
+                  "value" : "%@: %lldটি নতুন আইটেম।"
                 }
               }
             }
@@ -25806,7 +25806,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@: কোনো নতুন আর্টিকেল নেই।"
+            "value" : "%@: কোনো নতুন নিবন্ধ নেই।"
           }
         },
         "de" : {
@@ -27483,13 +27483,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি .%@ ফাইল"
+                  "value" : "%lldটি .%@ ফাইল"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি .%@ ফাইল"
+                  "value" : "%lldটি .%@ ফাইল"
                 }
               }
             }
@@ -31294,13 +31294,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি বইয়ের কিছু অধ্যায় নেই:"
+                  "value" : "%lldটি বইয়ের কিছু অধ্যায় নেই:"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি বইয়ের কিছু অধ্যায় নেই:"
+                  "value" : "%lldটি বইয়ের কিছু অধ্যায় নেই:"
                 }
               }
             }
@@ -33675,13 +33675,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি বইয়ের কিছু পৃষ্ঠা পড়া যায়নি:"
+                  "value" : "%lldটি বইয়ের কিছু পৃষ্ঠা পড়া যায়নি:"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি বইয়ের কিছু পৃষ্ঠা পড়া যায়নি:"
+                  "value" : "%lldটি বইয়ের কিছু পৃষ্ঠা পড়া যায়নি:"
                 }
               }
             }
@@ -34010,13 +34010,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি বই আমদানি হয়েছে"
+                  "value" : "%lldটি বই আমদানি হয়েছে"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি বই আমদানি হয়েছে"
+                  "value" : "%lldটি বই আমদানি হয়েছে"
                 }
               }
             }
@@ -36169,13 +36169,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি বই প্রক্রিয়া করা হয়েছে"
+                  "value" : "%lldটি বই প্রক্রিয়া করা হয়েছে"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি বই প্রক্রিয়া করা হয়েছে"
+                  "value" : "%lldটি বই প্রক্রিয়া করা হয়েছে"
                 }
               }
             }
@@ -37192,13 +37192,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "“%2$@” থেকে %1$lld টি বই আমদানি করা হয়েছে।"
+                  "value" : "“%2$@” থেকে %1$lldটি বই আমদানি করা হয়েছে।"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "“%2$@” থেকে %1$lld টি বই আমদানি করা হয়েছে।"
+                  "value" : "“%2$@” থেকে %1$lldটি বই আমদানি করা হয়েছে।"
                 }
               }
             }
@@ -41720,13 +41720,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি ডাউনলোড হয়েছে"
+                  "value" : "%lldটি ডাউনলোড হয়েছে"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি ডাউনলোড হয়েছে"
+                  "value" : "%lldটি ডাউনলোড হয়েছে"
                 }
               }
             }
@@ -42055,13 +42055,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি ডাউনলোড হচ্ছে"
+                  "value" : "%lldটি ডাউনলোড হচ্ছে"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি ডাউনলোড হচ্ছে"
+                  "value" : "%lldটি ডাউনলোড হচ্ছে"
                 }
               }
             }
@@ -45441,13 +45441,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি ব্যর্থ"
+                  "value" : "%lldটি ব্যর্থ"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি ব্যর্থ"
+                  "value" : "%lldটি ব্যর্থ"
                 }
               }
             }
@@ -46111,13 +46111,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "সাবস্ক্রিপশন বাতিল করা %lld টি ফিড বাদ দেওয়া হয়েছে।"
+                  "value" : "সাবস্ক্রিপশন বাতিল করা %lldটি ফিড বাদ দেওয়া হয়েছে।"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "সাবস্ক্রিপশন বাতিল করা %lld টি ফিড বাদ দেওয়া হয়েছে।"
+                  "value" : "সাবস্ক্রিপশন বাতিল করা %lldটি ফিড বাদ দেওয়া হয়েছে।"
                 }
               }
             }
@@ -47134,13 +47134,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি ফাইল ব্যর্থ হয়েছে:"
+                  "value" : "%lldটি ফাইল ব্যর্থ হয়েছে:"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি ফাইল ব্যর্থ হয়েছে:"
+                  "value" : "%lldটি ফাইল ব্যর্থ হয়েছে:"
                 }
               }
             }
@@ -47469,13 +47469,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "এক্সটেনশন ছাড়া %lld টি ফাইল"
+                  "value" : "এক্সটেনশন ছাড়া %lldটি ফাইল"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "এক্সটেনশন ছাড়া %lld টি ফাইল"
+                  "value" : "এক্সটেনশন ছাড়া %lldটি ফাইল"
                 }
               }
             }
@@ -47804,13 +47804,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি ফাইল, %@"
+                  "value" : "%lldটি ফাইল, %@"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি ফাইল, %@"
+                  "value" : "%lldটি ফাইল, %@"
                 }
               }
             }
@@ -50520,13 +50520,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "আরও %lld টি"
+                  "value" : "আরও %lldটি"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "আরও %lld টি"
+                  "value" : "আরও %lldটি"
                 }
               }
             }
@@ -50855,13 +50855,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "আরও %lld টি আমদানি অপেক্ষায়"
+                  "value" : "আরও %lldটি আমদানি অপেক্ষায়"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "আরও %lld টি আমদানি অপেক্ষায়"
+                  "value" : "আরও %lldটি আমদানি অপেক্ষায়"
                 }
               }
             }
@@ -51190,13 +51190,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি নতুন"
+                  "value" : "%lldটি নতুন"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি নতুন"
+                  "value" : "%lldটি নতুন"
                 }
               }
             }
@@ -51525,13 +51525,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি নতুন আর্টিকেল"
+                  "value" : "%lldটি নতুন নিবন্ধ"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি নতুন আর্টিকেল"
+                  "value" : "%lldটি নতুন নিবন্ধ"
                 }
               }
             }
@@ -51860,13 +51860,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি নতুন আর্টিকেল, সবচেয়ে নতুনটি “%@”"
+                  "value" : "%lldটি নতুন নিবন্ধ, সবচেয়ে নতুনটি “%@”"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি নতুন আর্টিকেল, সবচেয়ে নতুনটি “%@”"
+                  "value" : "%lldটি নতুন নিবন্ধ, সবচেয়ে নতুনটি “%@”"
                 }
               }
             }
@@ -52195,13 +52195,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি নতুন আর্টিকেল।"
+                  "value" : "%lldটি নতুন নিবন্ধ।"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি নতুন আর্টিকেল।"
+                  "value" : "%lldটি নতুন নিবন্ধ।"
                 }
               }
             }
@@ -52530,13 +52530,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি নতুন পর্ব"
+                  "value" : "%lldটি নতুন পর্ব"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি নতুন পর্ব"
+                  "value" : "%lldটি নতুন পর্ব"
                 }
               }
             }
@@ -52865,13 +52865,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি নতুন পর্ব, সবচেয়ে নতুনটি “%@”"
+                  "value" : "%lldটি নতুন পর্ব, সবচেয়ে নতুনটি “%@”"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি নতুন পর্ব, সবচেয়ে নতুনটি “%@”"
+                  "value" : "%lldটি নতুন পর্ব, সবচেয়ে নতুনটি “%@”"
                 }
               }
             }
@@ -53200,13 +53200,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি নতুন পর্ব।"
+                  "value" : "%lldটি নতুন পর্ব।"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি নতুন পর্ব।"
+                  "value" : "%lldটি নতুন পর্ব।"
                 }
               }
             }
@@ -53535,13 +53535,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি নতুন আইটেম"
+                  "value" : "%lldটি নতুন আইটেম"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি নতুন আইটেম"
+                  "value" : "%lldটি নতুন আইটেম"
                 }
               }
             }
@@ -53870,13 +53870,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি নতুন আইটেম, সবচেয়ে নতুনটি “%@”"
+                  "value" : "%lldটি নতুন আইটেম, সবচেয়ে নতুনটি “%@”"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি নতুন আইটেম, সবচেয়ে নতুনটি “%@”"
+                  "value" : "%lldটি নতুন আইটেম, সবচেয়ে নতুনটি “%@”"
                 }
               }
             }
@@ -54205,13 +54205,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি নতুন আইটেম।"
+                  "value" : "%lldটি নতুন আইটেম।"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি নতুন আইটেম।"
+                  "value" : "%lldটি নতুন আইটেম।"
                 }
               }
             }
@@ -54641,13 +54641,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%2$@-এর মধ্যে %1$lld টি তালিকাভুক্ত"
+                  "value" : "%2$@-এর মধ্যে %1$lldটি তালিকাভুক্ত"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%2$@-এর মধ্যে %1$lld টি তালিকাভুক্ত"
+                  "value" : "%2$@-এর মধ্যে %1$lldটি তালিকাভুক্ত"
                 }
               }
             }
@@ -55240,7 +55240,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%2$lld টির মধ্যে %1$lld টি সম্পন্ন"
+            "value" : "%2$lldটির মধ্যে %1$lldটি সম্পন্ন"
           }
         },
         "de" : {
@@ -55822,13 +55822,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "অন্য %lld টি ফাইল"
+                  "value" : "অন্য %lldটি ফাইল"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "অন্য %lld টি ফাইল"
+                  "value" : "অন্য %lldটি ফাইল"
                 }
               }
             }
@@ -56492,13 +56492,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি পৃষ্ঠা"
+                  "value" : "%lldটি পৃষ্ঠা"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি পৃষ্ঠা"
+                  "value" : "%lldটি পৃষ্ঠা"
                 }
               }
             }
@@ -57927,13 +57927,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "“%2$@”-এর জন্য %1$lld টি পডকাস্ট পাওয়া গেছে।"
+                  "value" : "“%2$@”-এর জন্য %1$lldটি পডকাস্ট পাওয়া গেছে।"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "“%2$@”-এর জন্য %1$lld টি পডকাস্ট পাওয়া গেছে।"
+                  "value" : "“%2$@”-এর জন্য %1$lldটি পডকাস্ট পাওয়া গেছে।"
                 }
               }
             }
@@ -60625,13 +60625,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি ডুপ্লিকেট হিসেবে বাদ দেওয়া হয়েছে"
+                  "value" : "%lldটি ডুপ্লিকেট হিসেবে বাদ দেওয়া হয়েছে"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি ডুপ্লিকেট হিসেবে বাদ দেওয়া হয়েছে"
+                  "value" : "%lldটি ডুপ্লিকেট হিসেবে বাদ দেওয়া হয়েছে"
                 }
               }
             }
@@ -62653,13 +62653,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি ট্র্যাক"
+                  "value" : "%lldটি ট্র্যাক"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি ট্র্যাক"
+                  "value" : "%lldটি ট্র্যাক"
                 }
               }
             }
@@ -62988,13 +62988,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি শোনা হয়নি"
+                  "value" : "%lldটি শোনা হয়নি"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি শোনা হয়নি"
+                  "value" : "%lldটি শোনা হয়নি"
                 }
               }
             }
@@ -63323,13 +63323,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি পড়া হয়নি"
+                  "value" : "%lldটি পড়া হয়নি"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি পড়া হয়নি"
+                  "value" : "%lldটি পড়া হয়নি"
                 }
               }
             }
@@ -64011,13 +64011,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "এই Mac-এ জায়গার অপেক্ষায় %lld টি"
+                  "value" : "এই Mac-এ জায়গার অপেক্ষায় %lldটি"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "এই Mac-এ জায়গার অপেক্ষায় %lld টি"
+                  "value" : "এই Mac-এ জায়গার অপেক্ষায় %lldটি"
                 }
               }
             }
@@ -64346,13 +64346,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "এই Mac ডেটা সীমাহীন নেটওয়ার্কে না আসা পর্যন্ত অপেক্ষায় %lld টি"
+                  "value" : "এই Mac ডেটা সীমাহীন নেটওয়ার্কে না আসা পর্যন্ত অপেক্ষায় %lldটি"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "এই Mac ডেটা সীমাহীন নেটওয়ার্কে না আসা পর্যন্ত অপেক্ষায় %lld টি"
+                  "value" : "এই Mac ডেটা সীমাহীন নেটওয়ার্কে না আসা পর্যন্ত অপেক্ষায় %lldটি"
                 }
               }
             }
@@ -64681,13 +64681,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি আগে থেকেই সাবস্ক্রাইব করা ছিল।"
+                  "value" : "%lldটি আগে থেকেই সাবস্ক্রাইব করা ছিল।"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি আগে থেকেই সাবস্ক্রাইব করা ছিল।"
+                  "value" : "%lldটি আগে থেকেই সাবস্ক্রাইব করা ছিল।"
                 }
               }
             }
@@ -69381,7 +69381,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "সীমা বই, পর্ব ও প্রবন্ধের মধ্যে বেছে নেয়, ফিড কখনও নয়।"
+            "value" : "সীমা বই, পর্ব ও নিবন্ধের মধ্যে বেছে নেয়, ফিড কখনও নয়।"
           }
         },
         "de" : {
@@ -76217,7 +76217,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "একাধিক পৃষ্ঠার বইয়ের জন্য পৃষ্ঠা, যেমন 300-এর মধ্যে 12, ‘আমি কোথায়?’-এর সারাংশে যোগ করে।"
+            "value" : "একাধিক পৃষ্ঠার বইয়ের জন্য পৃষ্ঠা, যেমন 300-এর মধ্যে 12, “আমি কোথায়?”-এর সারাংশে যোগ করে।"
           }
         },
         "de" : {
@@ -76413,7 +76413,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "যে গতিতে সময় গোনা হয় তা সময়ের পাশে যোগ করে, যেমন 1x-এ না থাকা অডিওবুকের জন্য 2.0x বা টেক্সট বইয়ের জন্য মিনিটে 500 শব্দ, রিডার, ‘আমি কোথায়?’, পড়ার অবস্থান কপি করুন এবং হেডিং শিটের সময়কালে।"
+            "value" : "যে গতিতে সময় গোনা হয় তা সময়ের পাশে যোগ করে, যেমন 1x-এ না থাকা অডিওবুকের জন্য 2.0x বা টেক্সট বইয়ের জন্য মিনিটে 500 শব্দ, রিডার, “আমি কোথায়?”, পড়ার অবস্থান কপি করুন এবং হেডিং শিটের সময়কালে।"
           }
         },
         "de" : {
@@ -76805,7 +76805,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "স্বয়ংক্রিয় রিফ্রেশের পর, নতুন পর্ব ও আর্টিকেল আছে এমন প্রতিটি ফিডের নাম একটি বিজ্ঞপ্তিতে জানানো হয়"
+            "value" : "স্বয়ংক্রিয় রিফ্রেশের পর, নতুন পর্ব ও নিবন্ধ আছে এমন প্রতিটি ফিডের নাম একটি বিজ্ঞপ্তিতে জানানো হয়"
           }
         },
         "de" : {
@@ -76900,7 +76900,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "স্বয়ংক্রিয় রিফ্রেশের পর, নতুন পর্ব ও আর্টিকেল আছে এমন ফিডগুলোর নাম একটি অ্যালার্ট জানায়"
+            "value" : "স্বয়ংক্রিয় রিফ্রেশের পর, নতুন পর্ব ও নিবন্ধ আছে এমন ফিডগুলোর নাম একটি সতর্কতা জানায়"
           }
         },
         "de" : {
@@ -78999,7 +78999,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "সবসময় ভিউটি সবসময় দেখায়। প্রযোজ্য হলে ভিউটি শুধু তখনই দেখায় যখন এতে কিছু তালিকাভুক্ত থাকে: পড়ার তালিকায় বই, পর্ব বা প্রবন্ধ থাকলে, আর ফিড ভিউয়ে একটি ফিড থাকলে। লুকানো ভিউটি বাদ দেয়। আপনি অন্য ভিউ বেছে না নেওয়া পর্যন্ত উইন্ডো তার ভিউ ধরে রাখে।"
+            "value" : "সবসময় ভিউটি সবসময় দেখায়। প্রযোজ্য হলে ভিউটি শুধু তখনই দেখায় যখন এতে কিছু তালিকাভুক্ত থাকে: পড়ার তালিকায় বই, পর্ব বা নিবন্ধ থাকলে, আর ফিড ভিউয়ে একটি ফিড থাকলে। লুকানো ভিউটি বাদ দেয়। আপনি অন্য ভিউ বেছে না নেওয়া পর্যন্ত উইন্ডো তার ভিউ ধরে রাখে।"
           }
         },
         "de" : {
@@ -79201,7 +79201,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "আর্টিকেলের বিবরণ এর ফিড থেকে আসে; %@ এটিকে সম্পাদনাযোগ্য বই বানায়।"
+            "value" : "নিবন্ধের বিবরণ এর ফিড থেকে আসে; %@ এটিকে সম্পাদনাযোগ্য বই বানায়।"
           }
         },
         "de" : {
@@ -81976,7 +81976,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "শুধু এমন ভিউয়ে প্রযোজ্য, যা পর্ব বা প্রবন্ধ তালিকাভুক্ত করে।"
+            "value" : "শুধু এমন ভিউয়ে প্রযোজ্য, যা পর্ব বা নিবন্ধ তালিকাভুক্ত করে।"
           }
         },
         "de" : {
@@ -83419,7 +83419,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "আর্টিকেল"
+            "value" : "নিবন্ধ"
           }
         },
         "de" : {
@@ -83553,13 +83553,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "আর্টিকেল (%2$@-এর মধ্যে %1$lld টি তালিকাভুক্ত)"
+                  "value" : "নিবন্ধ (%2$@-এর মধ্যে %1$lldটি তালিকাভুক্ত)"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "আর্টিকেল (%2$@-এর মধ্যে %1$lld টি তালিকাভুক্ত)"
+                  "value" : "নিবন্ধ (%2$@-এর মধ্যে %1$lldটি তালিকাভুক্ত)"
                 }
               }
             }
@@ -83888,13 +83888,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "আর্টিকেল (%lld)"
+                  "value" : "নিবন্ধ (%lld)"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "আর্টিকেল (%lld)"
+                  "value" : "নিবন্ধ (%lld)"
                 }
               }
             }
@@ -90381,7 +90381,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%lld টি হেডিংয়ের প্রথমটির আগে"
+            "value" : "%lldটি হেডিংয়ের প্রথমটির আগে"
           }
         },
         "de" : {
@@ -91070,7 +91070,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bluetooth হেডফোন খুলে নিলে macOS যে অনাকাঙ্ক্ষিত প্লে কমান্ড পাঠায়, তা আটকে দেয়।"
+            "value" : "Bluetooth হেডফোন খুলে নিলে macOS যে অনাকাঙ্ক্ষিত চালানোর কমান্ড পাঠায়, তা আটকে দেয়।"
           }
         },
         "de" : {
@@ -91456,7 +91456,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%2$lld টি বইয়ের মধ্যে %1$lld নম্বর: “%3$@”, %4$@"
+            "value" : "%2$lldটি বইয়ের মধ্যে %1$lld নম্বর: “%3$@”, %4$@"
           }
         },
         "de" : {
@@ -103145,7 +103145,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "আপনার লাইব্রেরি যে ডিস্কে আছে তা সংযুক্ত আছে কি না দেখুন, তারপর ‘আবার চেষ্টা করুন’ বেছে নিন।"
+            "value" : "আপনার লাইব্রেরি যে ডিস্কে আছে তা সংযুক্ত আছে কি না দেখুন, তারপর “আবার চেষ্টা করুন” বেছে নিন।"
           }
         },
         "de" : {
@@ -105170,7 +105170,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "নতুন কপির টেক্সট সম্পাদনা করতে আবার ‘টেক্সট সম্পাদনা করুন’ বেছে নিন।"
+            "value" : "নতুন কপির টেক্সট সম্পাদনা করতে আবার “টেক্সট সম্পাদনা করুন” বেছে নিন।"
           }
         },
         "de" : {
@@ -105271,7 +105271,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "নতুন টেক্সট সম্পাদনা করতে আবার ‘টেক্সট সম্পাদনা করুন’ বেছে নিন।"
+            "value" : "নতুন টেক্সট সম্পাদনা করতে আবার “টেক্সট সম্পাদনা করুন” বেছে নিন।"
           }
         },
         "de" : {
@@ -105657,7 +105657,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "বইয়ের ফাইল আবার পড়তে ‘টেক্সট নিষ্কাশন আবার করুন’ বেছে নিন।"
+            "value" : "বইয়ের ফাইল আবার পড়তে “টেক্সট নিষ্কাশন আবার করুন” বেছে নিন।"
           }
         },
         "de" : {
@@ -105853,7 +105853,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "আবার চেষ্টা করতে ‘আবার চেষ্টা করুন’ বেছে নিন, বা বারবার ব্যর্থ হলে বইটি আবার আমদানি করুন।"
+            "value" : "আবার চেষ্টা করতে “আবার চেষ্টা করুন” বেছে নিন, বা বারবার ব্যর্থ হলে বইটি আবার আমদানি করুন।"
           }
         },
         "de" : {
@@ -111168,7 +111168,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "অন্য ফোল্ডার বেছে নিলে ফিডের পর্ব ও আর্টিকেল তার বদলে সেখানে তালিকাভুক্ত হয়, আগে ডাউনলোড করাগুলোও।"
+            "value" : "অন্য ফোল্ডার বেছে নিলে ফিডের পর্ব ও নিবন্ধ তার বদলে সেখানে তালিকাভুক্ত হয়, আগে ডাউনলোড করাগুলোও।"
           }
         },
         "de" : {
@@ -111263,7 +111263,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "বেছে নিলে শর্টকাটটি আপনার নিজস্ব হয়ে যায়; ‘ডিফল্ট পুনরুদ্ধার করুন’ ডিফল্ট কাজের জায়গা ফিরিয়ে আনে।"
+            "value" : "বেছে নিলে শর্টকাটটি আপনার নিজস্ব হয়ে যায়; “ডিফল্ট পুনরুদ্ধার করুন” ডিফল্ট কাজের জায়গা ফিরিয়ে আনে।"
           }
         },
         "de" : {
@@ -114809,7 +114809,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "স্টোরেজ সেটিংসে ‘লাইব্রেরি তুলনা করুন’ প্রতিটি পার্থক্যের তালিকা দেয়।"
+            "value" : "স্টোরেজ সেটিংসে “লাইব্রেরি তুলনা করুন” প্রতিটি পার্থক্যের তালিকা দেয়।"
           }
         },
         "de" : {
@@ -115409,7 +115409,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "কোনটি নতুন তা বলার জন্য এই লাইব্রেরিকে আপনার বেছে নেওয়া ফোল্ডারের কপির সঙ্গে তুলনা করা হচ্ছে। এতে এক মিনিট পর্যন্ত লাগতে পারে; এড়াতে ‘তুলনা বন্ধ করুন’ বেছে নিন।"
+            "value" : "কোনটি নতুন তা বলার জন্য এই লাইব্রেরিকে আপনার বেছে নেওয়া ফোল্ডারের কপির সঙ্গে তুলনা করা হচ্ছে। এতে এক মিনিট পর্যন্ত লাগতে পারে; এড়াতে “তুলনা বন্ধ করুন” বেছে নিন।"
           }
         },
         "de" : {
@@ -116520,7 +116520,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "বই-সংক্রান্ত শর্ত বই, পর্ব ও প্রবন্ধ পরীক্ষা করে; ফিড-সংক্রান্ত শর্ত ফিড পরীক্ষা করে। যে সারি কোনো শর্ত পরীক্ষা করে না, শর্ত তা কখনও লুকায় না।"
+            "value" : "বই-সংক্রান্ত শর্ত বই, পর্ব ও নিবন্ধ পরীক্ষা করে; ফিড-সংক্রান্ত শর্ত ফিড পরীক্ষা করে। যে সারি কোনো শর্ত পরীক্ষা করে না, শর্ত তা কখনও লুকায় না।"
           }
         },
         "de" : {
@@ -120208,7 +120208,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "একবারে সর্বোচ্চ ১০ মিনিট কপি করুন।"
+            "value" : "একবারে সর্বোচ্চ 10 মিনিট কপি করুন।"
           }
         },
         "de" : {
@@ -120802,7 +120802,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ডুপ্লিকেট আমদানি বাদ দেওয়া যায়নি"
+            "value" : "ডুপ্লিকেট আমদানি বর্জন করা যায়নি"
           }
         },
         "de" : {
@@ -129487,7 +129487,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "আর্টিকেল মুছুন"
+            "value" : "নিবন্ধ মুছুন"
           }
         },
         "de" : {
@@ -129582,7 +129582,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "আর্টিকেল মুছুন…"
+            "value" : "নিবন্ধ মুছুন…"
           }
         },
         "de" : {
@@ -134458,7 +134458,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "বাদ দিন"
+            "value" : "বর্জন করুন"
           }
         },
         "de" : {
@@ -134553,7 +134553,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "রেকর্ডিং বাদ দিন"
+            "value" : "রেকর্ডিং বর্জন করুন"
           }
         },
         "de" : {
@@ -134648,7 +134648,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "বাদ দিন: %@"
+            "value" : "বর্জন করুন: %@"
           }
         },
         "de" : {
@@ -134743,7 +134743,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@-এর রেকর্ডিং বাদ দেওয়া হয়েছে, %2$@।"
+            "value" : "%1$@-এর রেকর্ডিং বর্জন করা হয়েছে, %2$@।"
           }
         },
         "de" : {
@@ -134844,7 +134844,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@-এর রেকর্ডিং বাদ দেওয়া হয়েছে, যাতে কোনো শব্দ ছিল না।"
+            "value" : "%@-এর রেকর্ডিং বর্জন করা হয়েছে, যাতে কোনো শব্দ ছিল না।"
           }
         },
         "de" : {
@@ -135224,7 +135224,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "বাদ দিন"
+            "value" : "খারিজ করুন"
           }
         },
         "de" : {
@@ -135319,7 +135319,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ সম্পর্কিত বিজ্ঞপ্তি বাদ দিন"
+            "value" : "%@ সম্পর্কিত বিজ্ঞপ্তি খারিজ করুন"
           }
         },
         "de" : {
@@ -137379,7 +137379,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%2$lld টির মধ্যে %1$lld নম্বর ডাউনলোড: %4$@ থেকে “%3$@”"
+            "value" : "%2$lldটির মধ্যে %1$lld নম্বর ডাউনলোড: %4$@ থেকে “%3$@”"
           }
         },
         "de" : {
@@ -137955,7 +137955,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "পরবর্তী প্রবন্ধের ডাউনলোড বাতিল করা হয়েছে, তাই প্লেব্যাক থেমে গেছে।"
+            "value" : "পরবর্তী নিবন্ধের ডাউনলোড বাতিল করা হয়েছে, তাই প্লেব্যাক থেমে গেছে।"
           }
         },
         "de" : {
@@ -138056,7 +138056,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "পরবর্তী প্রবন্ধের ডাউনলোড বাতিল করা হয়েছে।"
+            "value" : "পরবর্তী নিবন্ধের ডাউনলোড বাতিল করা হয়েছে।"
           }
         },
         "de" : {
@@ -138359,7 +138359,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "পূর্ববর্তী প্রবন্ধের ডাউনলোড বাতিল করা হয়েছে, তাই প্লেব্যাক থেমে গেছে।"
+            "value" : "পূর্ববর্তী নিবন্ধের ডাউনলোড বাতিল করা হয়েছে, তাই প্লেব্যাক থেমে গেছে।"
           }
         },
         "de" : {
@@ -138460,7 +138460,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "পূর্ববর্তী প্রবন্ধের ডাউনলোড বাতিল করা হয়েছে।"
+            "value" : "পূর্ববর্তী নিবন্ধের ডাউনলোড বাতিল করা হয়েছে।"
           }
         },
         "de" : {
@@ -141775,7 +141775,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "পূর্ববর্তী প্রবন্ধ ডাউনলোড হচ্ছে: %@"
+            "value" : "পূর্ববর্তী নিবন্ধ ডাউনলোড হচ্ছে: %@"
           }
         },
         "de" : {
@@ -151014,13 +151014,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "পর্ব (%2$@-এর মধ্যে %1$lld টি তালিকাভুক্ত)"
+                  "value" : "পর্ব (%2$@-এর মধ্যে %1$lldটি তালিকাভুক্ত)"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "পর্ব (%2$@-এর মধ্যে %1$lld টি তালিকাভুক্ত)"
+                  "value" : "পর্ব (%2$@-এর মধ্যে %1$lldটি তালিকাভুক্ত)"
                 }
               }
             }
@@ -151645,7 +151645,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "পর্ব ও আর্টিকেল"
+            "value" : "পর্ব ও নিবন্ধ"
           }
         },
         "de" : {
@@ -152233,7 +152233,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "সব আর্টিকেল তালিকাভুক্ত, ডাউনলোড নিজে করতে হয়"
+            "value" : "সব নিবন্ধ তালিকাভুক্ত, ডাউনলোড নিজে করতে হয়"
           }
         },
         "de" : {
@@ -152367,13 +152367,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "সব আর্টিকেল তালিকাভুক্ত, সবচেয়ে নতুন %lld টি ডাউনলোড হয়"
+                  "value" : "সব নিবন্ধ তালিকাভুক্ত, সবচেয়ে নতুন %lldটি ডাউনলোড হয়"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "সব আর্টিকেল তালিকাভুক্ত, সবচেয়ে নতুন %lld টি ডাউনলোড হয়"
+                  "value" : "সব নিবন্ধ তালিকাভুক্ত, সবচেয়ে নতুন %lldটি ডাউনলোড হয়"
                 }
               }
             }
@@ -152663,7 +152663,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@-এর সব আর্টিকেল ইতিমধ্যে পড়া হয়েছে।"
+            "value" : "%@-এর সব নিবন্ধ ইতিমধ্যে পড়া হয়েছে।"
           }
         },
         "de" : {
@@ -153373,13 +153373,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "সব পর্ব তালিকাভুক্ত, সবচেয়ে নতুন %lld টি ডাউনলোড হয়"
+                  "value" : "সব পর্ব তালিকাভুক্ত, সবচেয়ে নতুন %lldটি ডাউনলোড হয়"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "সব পর্ব তালিকাভুক্ত, সবচেয়ে নতুন %lld টি ডাউনলোড হয়"
+                  "value" : "সব পর্ব তালিকাভুক্ত, সবচেয়ে নতুন %lldটি ডাউনলোড হয়"
                 }
               }
             }
@@ -153999,13 +153999,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "সব আইটেম তালিকাভুক্ত, সবচেয়ে নতুন %lld টি ডাউনলোড হয়"
+                  "value" : "সব আইটেম তালিকাভুক্ত, সবচেয়ে নতুন %lldটি ডাউনলোড হয়"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "সব আইটেম তালিকাভুক্ত, সবচেয়ে নতুন %lld টি ডাউনলোড হয়"
+                  "value" : "সব আইটেম তালিকাভুক্ত, সবচেয়ে নতুন %lldটি ডাউনলোড হয়"
                 }
               }
             }
@@ -158691,13 +158691,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%2$@-এ %1$lld টি সাবস্ক্রিপশন রপ্তানি করা হয়েছে।"
+                  "value" : "%2$@-এ %1$lldটি সাবস্ক্রিপশন রপ্তানি করা হয়েছে।"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%2$@-এ %1$lld টি সাবস্ক্রিপশন রপ্তানি করা হয়েছে।"
+                  "value" : "%2$@-এ %1$lldটি সাবস্ক্রিপশন রপ্তানি করা হয়েছে।"
                 }
               }
             }
@@ -162500,13 +162500,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "ফিড ডাউনলোড: %lld টি চলছে, %@।"
+                  "value" : "ফিড ডাউনলোড: %lldটি চলছে, %@।"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "ফিড ডাউনলোড: %lld টি চলছে, %@।"
+                  "value" : "ফিড ডাউনলোড: %lldটি চলছে, %@।"
                 }
               }
             }
@@ -162835,13 +162835,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "ফিড ডাউনলোড: %lld টি চলছে।"
+                  "value" : "ফিড ডাউনলোড: %lldটি চলছে।"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "ফিড ডাউনলোড: %lld টি চলছে।"
+                  "value" : "ফিড ডাউনলোড: %lldটি চলছে।"
                 }
               }
             }
@@ -169567,13 +169567,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "TextMouth শেষবার বন্ধ হওয়ার আগের %lldটি রেকর্ডিং পাওয়া গেছে, %@-এর অধীনে। প্রতিটি সংরক্ষণ করুন বা বাদ দিন।"
+                  "value" : "TextMouth শেষবার বন্ধ হওয়ার আগের %lldটি রেকর্ডিং পাওয়া গেছে, %@-এর অধীনে। প্রতিটি সংরক্ষণ করুন বা বর্জন করুন।"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "TextMouth শেষবার বন্ধ হওয়ার আগের %lldটি রেকর্ডিং পাওয়া গেছে, %@-এর অধীনে। প্রতিটি সংরক্ষণ করুন বা বাদ দিন।"
+                  "value" : "TextMouth শেষবার বন্ধ হওয়ার আগের %lldটি রেকর্ডিং পাওয়া গেছে, %@-এর অধীনে। প্রতিটি সংরক্ষণ করুন বা বর্জন করুন।"
                 }
               }
             }
@@ -169863,7 +169863,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth শেষবার বন্ধ হওয়ার আগের একটি রেকর্ডিং পাওয়া গেছে, %@-এর অধীনে। এটি সংরক্ষণ করুন বা বাদ দিন।"
+            "value" : "TextMouth শেষবার বন্ধ হওয়ার আগের একটি রেকর্ডিং পাওয়া গেছে, %@-এর অধীনে। এটি সংরক্ষণ করুন বা বর্জন করুন।"
           }
         },
         "de" : {
@@ -175654,7 +175654,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "নতুন পর্ব বা প্রবন্ধ আছে"
+            "value" : "নতুন পর্ব বা নিবন্ধ আছে"
           }
         },
         "de" : {
@@ -175951,7 +175951,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%2$lld টি হেডিংয়ের মধ্যে %1$lld নম্বর"
+            "value" : "%2$lldটি হেডিংয়ের মধ্যে %1$lld নম্বর"
           }
         },
         "de" : {
@@ -182722,13 +182722,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি বই আমদানি করা হয়েছে, কিন্তু %@"
+                  "value" : "%lldটি বই আমদানি করা হয়েছে, কিন্তু %@"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি বই আমদানি করা হয়েছে, কিন্তু %@"
+                  "value" : "%lldটি বই আমদানি করা হয়েছে, কিন্তু %@"
                 }
               }
             }
@@ -183057,13 +183057,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি বই আমদানি করা হয়েছে।"
+                  "value" : "%lldটি বই আমদানি করা হয়েছে।"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি বই আমদানি করা হয়েছে।"
+                  "value" : "%lldটি বই আমদানি করা হয়েছে।"
                 }
               }
             }
@@ -185692,7 +185692,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "বলা টেক্সটে, যার অফসেট স্পিচ লগ দেয়: স্পিচ %1$@ নম্বর অক্ষরে থেমেছে; প্রত্যাখ্যাত টেক্সট %2$@ থেকে %3$@ নম্বর অক্ষর পর্যন্ত।"
+            "value" : "পড়ে শোনানো টেক্সটে, যার অফসেট স্পিচ লগ দেয়: স্পিচ %1$@ নম্বর অক্ষরে থেমেছে; প্রত্যাখ্যাত টেক্সট %2$@ থেকে %3$@ নম্বর অক্ষর পর্যন্ত।"
           }
         },
         "de" : {
@@ -193296,13 +193296,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "এটি %lld টি এন্ট্রি বাদ দিয়েছে: %@।"
+                  "value" : "এটি %lldটি এন্ট্রি বাদ দিয়েছে: %@।"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "এটি %lld টি এন্ট্রি বাদ দিয়েছে: %@।"
+                  "value" : "এটি %lldটি এন্ট্রি বাদ দিয়েছে: %@।"
                 }
               }
             }
@@ -193916,13 +193916,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "আইটেম (%2$@-এর মধ্যে %1$lld টি তালিকাভুক্ত)"
+                  "value" : "আইটেম (%2$@-এর মধ্যে %1$lldটি তালিকাভুক্ত)"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "আইটেম (%2$@-এর মধ্যে %1$lld টি তালিকাভুক্ত)"
+                  "value" : "আইটেম (%2$@-এর মধ্যে %1$lldটি তালিকাভুক্ত)"
                 }
               }
             }
@@ -195452,7 +195452,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "এর শর্ত ও সাজানো মুছে ফেলা হয়। এটি যে বই, পর্ব, প্রবন্ধ ও ফিড তালিকাভুক্ত করত তা লাইব্রেরিতেই থাকে, আর এটি দেখাচ্ছে এমন লাইব্রেরি উইন্ডো অন্য একটি ভিউ দেখায়।"
+            "value" : "এর শর্ত ও সাজানো মুছে ফেলা হয়। এটি যে বই, পর্ব, নিবন্ধ ও ফিড তালিকাভুক্ত করত তা লাইব্রেরিতেই থাকে, আর এটি দেখাচ্ছে এমন লাইব্রেরি উইন্ডো অন্য একটি ভিউ দেখায়।"
           }
         },
         "de" : {
@@ -200399,13 +200399,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%2$lld অধ্যায়ের মধ্যে %1$@টি রাখা হয়েছে, যতক্ষণ না TextMouth বন্ধ হয়, অন্য একটি স্পোকেন অডিও রপ্তানি শুরু হয়, বা বইয়ের ভয়েস, টেক্সট, প্রতিস্থাপন বা বিরতি বদলায়। অধ্যায় %3$@ থেকে চালিয়ে যেতে একই গতি ও পিচে একই পরিসর রপ্তানি করুন।"
+                  "value" : "%2$lld অধ্যায়ের মধ্যে %1$@টি রাখা হয়েছে, যতক্ষণ না TextMouth বন্ধ হয়, অন্য একটি পড়ে শোনানো অডিও রপ্তানি শুরু হয়, বা বইয়ের ভয়েস, টেক্সট, প্রতিস্থাপন বা বিরতি বদলায়। অধ্যায় %3$@ থেকে চালিয়ে যেতে একই গতি ও পিচে একই পরিসর রপ্তানি করুন।"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%2$lld অধ্যায়ের মধ্যে %1$@টি রাখা হয়েছে, যতক্ষণ না TextMouth বন্ধ হয়, অন্য একটি স্পোকেন অডিও রপ্তানি শুরু হয়, বা বইয়ের ভয়েস, টেক্সট, প্রতিস্থাপন বা বিরতি বদলায়। অধ্যায় %3$@ থেকে চালিয়ে যেতে একই গতি ও পিচে একই পরিসর রপ্তানি করুন।"
+                  "value" : "%2$lld অধ্যায়ের মধ্যে %1$@টি রাখা হয়েছে, যতক্ষণ না TextMouth বন্ধ হয়, অন্য একটি পড়ে শোনানো অডিও রপ্তানি শুরু হয়, বা বইয়ের ভয়েস, টেক্সট, প্রতিস্থাপন বা বিরতি বদলায়। অধ্যায় %3$@ থেকে চালিয়ে যেতে একই গতি ও পিচে একই পরিসর রপ্তানি করুন।"
                 }
               }
             }
@@ -200734,13 +200734,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld পড়ে শোনানো অধ্যায়ের সবকটি রাখা হয়েছে, যতক্ষণ না TextMouth বন্ধ হয়, অন্য একটি স্পোকেন অডিও রপ্তানি শুরু হয়, বা বইয়ের ভয়েস, টেক্সট, প্রতিস্থাপন বা বিরতি বদলায়। সেগুলো থেকে অডিও ফাইল বানাতে একই গতি ও পিচে একই পরিসর রপ্তানি করুন।"
+                  "value" : "%lld পড়ে শোনানো অধ্যায়ের সবকটি রাখা হয়েছে, যতক্ষণ না TextMouth বন্ধ হয়, অন্য একটি পড়ে শোনানো অডিও রপ্তানি শুরু হয়, বা বইয়ের ভয়েস, টেক্সট, প্রতিস্থাপন বা বিরতি বদলায়। সেগুলো থেকে অডিও ফাইল বানাতে একই গতি ও পিচে একই পরিসর রপ্তানি করুন।"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld পড়ে শোনানো অধ্যায়ের সবকটি রাখা হয়েছে, যতক্ষণ না TextMouth বন্ধ হয়, অন্য একটি স্পোকেন অডিও রপ্তানি শুরু হয়, বা বইয়ের ভয়েস, টেক্সট, প্রতিস্থাপন বা বিরতি বদলায়। সেগুলো থেকে অডিও ফাইল বানাতে একই গতি ও পিচে একই পরিসর রপ্তানি করুন।"
+                  "value" : "%lld পড়ে শোনানো অধ্যায়ের সবকটি রাখা হয়েছে, যতক্ষণ না TextMouth বন্ধ হয়, অন্য একটি পড়ে শোনানো অডিও রপ্তানি শুরু হয়, বা বইয়ের ভয়েস, টেক্সট, প্রতিস্থাপন বা বিরতি বদলায়। সেগুলো থেকে অডিও ফাইল বানাতে একই গতি ও পিচে একই পরিসর রপ্তানি করুন।"
                 }
               }
             }
@@ -201220,7 +201220,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "পড়ে শোনানো অধ্যায়টি রাখা হয়েছে, যতক্ষণ না TextMouth বন্ধ হয়, অন্য একটি স্পোকেন অডিও রপ্তানি শুরু হয়, বা বইয়ের ভয়েস, টেক্সট, প্রতিস্থাপন বা বিরতি বদলায়। এটি থেকে অডিও ফাইল বানাতে একই গতি ও পিচে একই পরিসর রপ্তানি করুন।"
+            "value" : "পড়ে শোনানো অধ্যায়টি রাখা হয়েছে, যতক্ষণ না TextMouth বন্ধ হয়, অন্য একটি পড়ে শোনানো অডিও রপ্তানি শুরু হয়, বা বইয়ের ভয়েস, টেক্সট, প্রতিস্থাপন বা বিরতি বদলায়। এটি থেকে অডিও ফাইল বানাতে একই গতি ও পিচে একই পরিসর রপ্তানি করুন।"
           }
         },
         "de" : {
@@ -203263,7 +203263,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ যেখানে আছে সেখানেই রাখা হয়েছে: পর্ব ও প্রবন্ধ তাদের ফিডেই থাকে; %2$@ একটিকে আপনার লাইব্রেরির বই বানায়।"
+            "value" : "%1$@ যেখানে আছে সেখানেই রাখা হয়েছে: পর্ব ও নিবন্ধ তাদের ফিডেই থাকে; %2$@ একটিকে আপনার লাইব্রেরির বই বানায়।"
           }
         },
         "de" : {
@@ -203370,7 +203370,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ যেখানে আছে সেখানেই রাখা হয়েছে: পর্ব ও প্রবন্ধ তাদের ফিডেই থাকে; %2$@ একটিকে আপনার লাইব্রেরির বই বানায়।"
+            "value" : "%1$@ যেখানে আছে সেখানেই রাখা হয়েছে: পর্ব ও নিবন্ধ তাদের ফিডেই থাকে; %2$@ একটিকে আপনার লাইব্রেরির বই বানায়।"
           }
         },
         "de" : {
@@ -208495,13 +208495,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "সব আর্টিকেল তালিকাভুক্ত করে, সবচেয়ে নতুন %lld টি ডাউনলোড করা রাখে, এবং এর তৈরি করা পুরোনো ডাউনলোড সরায়, তাদের অবস্থান, বুকমার্ক ও সেটিংস রেখে দিয়ে।"
+                  "value" : "সব নিবন্ধ তালিকাভুক্ত করে, সবচেয়ে নতুন %lldটি ডাউনলোড করা রাখে, এবং এর তৈরি করা পুরোনো ডাউনলোড সরায়, তাদের অবস্থান, বুকমার্ক ও সেটিংস রেখে দিয়ে।"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "সব আর্টিকেল তালিকাভুক্ত করে, সবচেয়ে নতুন %lld টি ডাউনলোড করা রাখে, এবং এর তৈরি করা পুরোনো ডাউনলোড সরায়, তাদের অবস্থান, বুকমার্ক ও সেটিংস রেখে দিয়ে।"
+                  "value" : "সব নিবন্ধ তালিকাভুক্ত করে, সবচেয়ে নতুন %lldটি ডাউনলোড করা রাখে, এবং এর তৈরি করা পুরোনো ডাউনলোড সরায়, তাদের অবস্থান, বুকমার্ক ও সেটিংস রেখে দিয়ে।"
                 }
               }
             }
@@ -208791,7 +208791,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "সব আর্টিকেল তালিকাভুক্ত করে; কিছুই নিজে থেকে ডাউনলোড হয় না, এবং আপনি না মোছা পর্যন্ত বা চালানোর পরের দিনগুলো না পেরোনো পর্যন্ত ডাউনলোড থাকে।"
+            "value" : "সব নিবন্ধ তালিকাভুক্ত করে; কিছুই নিজে থেকে ডাউনলোড হয় না, এবং আপনি না মোছা পর্যন্ত বা চালানোর পরের দিনগুলো না পেরোনো পর্যন্ত ডাউনলোড থাকে।"
           }
         },
         "de" : {
@@ -208925,13 +208925,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "সব পর্ব ও আর্টিকেল তালিকাভুক্ত করে, সবচেয়ে নতুন %lld টি ডাউনলোড করা রাখে, এবং এর তৈরি করা পুরোনো ডাউনলোড সরায়, তাদের অবস্থান, বুকমার্ক ও সেটিংস রেখে দিয়ে।"
+                  "value" : "সব পর্ব ও নিবন্ধ তালিকাভুক্ত করে, সবচেয়ে নতুন %lldটি ডাউনলোড করা রাখে, এবং এর তৈরি করা পুরোনো ডাউনলোড সরায়, তাদের অবস্থান, বুকমার্ক ও সেটিংস রেখে দিয়ে।"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "সব পর্ব ও আর্টিকেল তালিকাভুক্ত করে, সবচেয়ে নতুন %lld টি ডাউনলোড করা রাখে, এবং এর তৈরি করা পুরোনো ডাউনলোড সরায়, তাদের অবস্থান, বুকমার্ক ও সেটিংস রেখে দিয়ে।"
+                  "value" : "সব পর্ব ও নিবন্ধ তালিকাভুক্ত করে, সবচেয়ে নতুন %lldটি ডাউনলোড করা রাখে, এবং এর তৈরি করা পুরোনো ডাউনলোড সরায়, তাদের অবস্থান, বুকমার্ক ও সেটিংস রেখে দিয়ে।"
                 }
               }
             }
@@ -209221,7 +209221,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "সব পর্ব ও আর্টিকেল তালিকাভুক্ত করে; কিছুই নিজে থেকে ডাউনলোড হয় না, এবং আপনি না মোছা পর্যন্ত বা চালানোর পরের দিনগুলো না পেরোনো পর্যন্ত ডাউনলোড থাকে।"
+            "value" : "সব পর্ব ও নিবন্ধ তালিকাভুক্ত করে; কিছুই নিজে থেকে ডাউনলোড হয় না, এবং আপনি না মোছা পর্যন্ত বা চালানোর পরের দিনগুলো না পেরোনো পর্যন্ত ডাউনলোড থাকে।"
           }
         },
         "de" : {
@@ -209355,13 +209355,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "সব পর্ব তালিকাভুক্ত করে, সবচেয়ে নতুন %lld টি ডাউনলোড করা রাখে, এবং এর তৈরি করা পুরোনো ডাউনলোড সরায়, তাদের অবস্থান, বুকমার্ক ও সেটিংস রেখে দিয়ে।"
+                  "value" : "সব পর্ব তালিকাভুক্ত করে, সবচেয়ে নতুন %lldটি ডাউনলোড করা রাখে, এবং এর তৈরি করা পুরোনো ডাউনলোড সরায়, তাদের অবস্থান, বুকমার্ক ও সেটিংস রেখে দিয়ে।"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "সব পর্ব তালিকাভুক্ত করে, সবচেয়ে নতুন %lld টি ডাউনলোড করা রাখে, এবং এর তৈরি করা পুরোনো ডাউনলোড সরায়, তাদের অবস্থান, বুকমার্ক ও সেটিংস রেখে দিয়ে।"
+                  "value" : "সব পর্ব তালিকাভুক্ত করে, সবচেয়ে নতুন %lldটি ডাউনলোড করা রাখে, এবং এর তৈরি করা পুরোনো ডাউনলোড সরায়, তাদের অবস্থান, বুকমার্ক ও সেটিংস রেখে দিয়ে।"
                 }
               }
             }
@@ -209981,13 +209981,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "আপনি চালাননি এমন সবচেয়ে নতুন %lld টি পর্ব এবং সব ডাউনলোড তালিকাভুক্ত করে। শুধু আপনি যা চান তা ডাউনলোড করে; বাকিগুলোর রেকর্ড থেকে যায়, আর আপনি বেশি তালিকাভুক্ত করলে সেগুলো ফিরে আসে।"
+                  "value" : "আপনি চালাননি এমন সবচেয়ে নতুন %lldটি পর্ব এবং সব ডাউনলোড তালিকাভুক্ত করে। শুধু আপনি যা চান তা ডাউনলোড করে; বাকিগুলোর রেকর্ড থেকে যায়, আর আপনি বেশি তালিকাভুক্ত করলে সেগুলো ফিরে আসে।"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "আপনি চালাননি এমন সবচেয়ে নতুন %lld টি পর্ব এবং সব ডাউনলোড তালিকাভুক্ত করে। শুধু আপনি যা চান তা ডাউনলোড করে; বাকিগুলোর রেকর্ড থেকে যায়, আর আপনি বেশি তালিকাভুক্ত করলে সেগুলো ফিরে আসে।"
+                  "value" : "আপনি চালাননি এমন সবচেয়ে নতুন %lldটি পর্ব এবং সব ডাউনলোড তালিকাভুক্ত করে। শুধু আপনি যা চান তা ডাউনলোড করে; বাকিগুলোর রেকর্ড থেকে যায়, আর আপনি বেশি তালিকাভুক্ত করলে সেগুলো ফিরে আসে।"
                 }
               }
             }
@@ -210316,13 +210316,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "আপনি পড়েননি এমন সবচেয়ে নতুন %lld টি আর্টিকেল এবং সব ডাউনলোড তালিকাভুক্ত করে। শুধু আপনি যা চান তা ডাউনলোড করে; বাকিগুলোর রেকর্ড থেকে যায়, আর আপনি বেশি তালিকাভুক্ত করলে সেগুলো ফিরে আসে।"
+                  "value" : "আপনি পড়েননি এমন সবচেয়ে নতুন %lldটি নিবন্ধ এবং সব ডাউনলোড তালিকাভুক্ত করে। শুধু আপনি যা চান তা ডাউনলোড করে; বাকিগুলোর রেকর্ড থেকে যায়, আর আপনি বেশি তালিকাভুক্ত করলে সেগুলো ফিরে আসে।"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "আপনি পড়েননি এমন সবচেয়ে নতুন %lld টি আর্টিকেল এবং সব ডাউনলোড তালিকাভুক্ত করে। শুধু আপনি যা চান তা ডাউনলোড করে; বাকিগুলোর রেকর্ড থেকে যায়, আর আপনি বেশি তালিকাভুক্ত করলে সেগুলো ফিরে আসে।"
+                  "value" : "আপনি পড়েননি এমন সবচেয়ে নতুন %lldটি নিবন্ধ এবং সব ডাউনলোড তালিকাভুক্ত করে। শুধু আপনি যা চান তা ডাউনলোড করে; বাকিগুলোর রেকর্ড থেকে যায়, আর আপনি বেশি তালিকাভুক্ত করলে সেগুলো ফিরে আসে।"
                 }
               }
             }
@@ -214577,13 +214577,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%2$@-এর %1$lld টি আর্টিকেল পড়া হয়েছে চিহ্নিত করা হয়েছে।"
+                  "value" : "%2$@-এর %1$lldটি নিবন্ধ পড়া হয়েছে চিহ্নিত করা হয়েছে।"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%2$@-এর %1$lld টি আর্টিকেল পড়া হয়েছে চিহ্নিত করা হয়েছে।"
+                  "value" : "%2$@-এর %1$lldটি নিবন্ধ পড়া হয়েছে চিহ্নিত করা হয়েছে।"
                 }
               }
             }
@@ -214912,13 +214912,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%2$@-এর %1$lld টি পর্ব শোনা হয়েছে চিহ্নিত করা হয়েছে।"
+                  "value" : "%2$@-এর %1$lldটি পর্ব শোনা হয়েছে চিহ্নিত করা হয়েছে।"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%2$@-এর %1$lld টি পর্ব শোনা হয়েছে চিহ্নিত করা হয়েছে।"
+                  "value" : "%2$@-এর %1$lldটি পর্ব শোনা হয়েছে চিহ্নিত করা হয়েছে।"
                 }
               }
             }
@@ -215247,13 +215247,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%2$@-এর %1$lld টি আইটেম শোনা হয়েছে চিহ্নিত করা হয়েছে।"
+                  "value" : "%2$@-এর %1$lldটি আইটেম শোনা হয়েছে চিহ্নিত করা হয়েছে।"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%2$@-এর %1$lld টি আইটেম শোনা হয়েছে চিহ্নিত করা হয়েছে।"
+                  "value" : "%2$@-এর %1$lldটি আইটেম শোনা হয়েছে চিহ্নিত করা হয়েছে।"
                 }
               }
             }
@@ -216897,7 +216897,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "মার্কআপ গার্ড: কঠোর, প্রতিটি অ্যাঙ্গেল ব্র্যাকেট নীরব, বলা টেক্সটের %1$@ থেকে %2$@ নম্বর অক্ষর পর্যন্ত।"
+            "value" : "মার্কআপ গার্ড: কঠোর, প্রতিটি অ্যাঙ্গেল ব্র্যাকেট নীরব, পড়ে শোনানো টেক্সটের %1$@ থেকে %2$@ নম্বর অক্ষর পর্যন্ত।"
           }
         },
         "de" : {
@@ -219578,7 +219578,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "মিনিট ৬০-এর কম হতে হবে।"
+            "value" : "মিনিট 60-এর কম হতে হবে।"
           }
         },
         "de" : {
@@ -221360,13 +221360,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি আর্টিকেল লাইব্রেরিতে স্থানান্তর করুন"
+                  "value" : "%lldটি নিবন্ধ লাইব্রেরিতে স্থানান্তর করুন"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি আর্টিকেল লাইব্রেরিতে স্থানান্তর করুন"
+                  "value" : "%lldটি নিবন্ধ লাইব্রেরিতে স্থানান্তর করুন"
                 }
               }
             }
@@ -222401,13 +222401,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি পর্ব লাইব্রেরিতে স্থানান্তর করুন"
+                  "value" : "%lldটি পর্ব লাইব্রেরিতে স্থানান্তর করুন"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি পর্ব লাইব্রেরিতে স্থানান্তর করুন"
+                  "value" : "%lldটি পর্ব লাইব্রেরিতে স্থানান্তর করুন"
                 }
               }
             }
@@ -222736,13 +222736,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি আইটেম লাইব্রেরিতে স্থানান্তর করুন"
+                  "value" : "%lldটি আইটেম লাইব্রেরিতে স্থানান্তর করুন"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি আইটেম লাইব্রেরিতে স্থানান্তর করুন"
+                  "value" : "%lldটি আইটেম লাইব্রেরিতে স্থানান্তর করুন"
                 }
               }
             }
@@ -226115,13 +226115,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%2$@-এ %1$lld টি আর্টিকেল সরানো হয়েছে। এটি এখন লাইব্রেরির বই, আর এর ফিডে এটি %3$@ হিসেবে দেখানো হয়।"
+                  "value" : "%2$@-এ %1$lldটি নিবন্ধ সরানো হয়েছে। এটি এখন লাইব্রেরির বই, আর এর ফিডে এটি %3$@ হিসেবে দেখানো হয়।"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%2$@-এ %1$lld টি আর্টিকেল সরানো হয়েছে। এগুলো এখন লাইব্রেরির বই, আর এদের ফিডে এগুলো %3$@ হিসেবে দেখানো হয়।"
+                  "value" : "%2$@-এ %1$lldটি নিবন্ধ সরানো হয়েছে। এগুলো এখন লাইব্রেরির বই, আর এদের ফিডে এগুলো %3$@ হিসেবে দেখানো হয়।"
                 }
               }
             }
@@ -226450,13 +226450,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%2$@-এ %1$lld টি পর্ব সরানো হয়েছে। এটি এখন লাইব্রেরির বই, আর এর ফিডে এটি %3$@ হিসেবে দেখানো হয়।"
+                  "value" : "%2$@-এ %1$lldটি পর্ব সরানো হয়েছে। এটি এখন লাইব্রেরির বই, আর এর ফিডে এটি %3$@ হিসেবে দেখানো হয়।"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%2$@-এ %1$lld টি পর্ব সরানো হয়েছে। এগুলো এখন লাইব্রেরির বই, আর এদের ফিডে এগুলো %3$@ হিসেবে দেখানো হয়।"
+                  "value" : "%2$@-এ %1$lldটি পর্ব সরানো হয়েছে। এগুলো এখন লাইব্রেরির বই, আর এদের ফিডে এগুলো %3$@ হিসেবে দেখানো হয়।"
                 }
               }
             }
@@ -226785,13 +226785,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%2$@-এ %1$lld টি আইটেম সরানো হয়েছে। এটি এখন লাইব্রেরির বই, আর এর ফিডে এটি %3$@ হিসেবে দেখানো হয়।"
+                  "value" : "%2$@-এ %1$lldটি আইটেম সরানো হয়েছে। এটি এখন লাইব্রেরির বই, আর এর ফিডে এটি %3$@ হিসেবে দেখানো হয়।"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%2$@-এ %1$lld টি আইটেম সরানো হয়েছে। এগুলো এখন লাইব্রেরির বই, আর এদের ফিডে এগুলো %3$@ হিসেবে দেখানো হয়।"
+                  "value" : "%2$@-এ %1$lldটি আইটেম সরানো হয়েছে। এগুলো এখন লাইব্রেরির বই, আর এদের ফিডে এগুলো %3$@ হিসেবে দেখানো হয়।"
                 }
               }
             }
@@ -227631,13 +227631,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld সেকেন্ড করে পিছনে বা সামনে যায়।"
+                  "value" : "%lld সেকেন্ড করে পিছিয়ে বা এগিয়ে যায়।"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld সেকেন্ড করে পিছনে বা সামনে যায়।"
+                  "value" : "%lld সেকেন্ড করে পিছিয়ে বা এগিয়ে যায়।"
                 }
               }
             }
@@ -227927,7 +227927,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "বুকমার্ক ধরে পিছনে বা সামনে যায়।"
+            "value" : "বুকমার্ক ধরে পিছিয়ে বা এগিয়ে যায়।"
           }
         },
         "de" : {
@@ -228022,7 +228022,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "হেডিং ধরে পিছনে বা সামনে যায়।"
+            "value" : "হেডিং ধরে পিছিয়ে বা এগিয়ে যায়।"
           }
         },
         "de" : {
@@ -228117,7 +228117,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "পৃষ্ঠা ধরে পিছনে বা সামনে যায়।"
+            "value" : "পৃষ্ঠা ধরে পিছিয়ে বা এগিয়ে যায়।"
           }
         },
         "de" : {
@@ -228212,7 +228212,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "অনুচ্ছেদ ধরে পিছনে বা সামনে যায়।"
+            "value" : "অনুচ্ছেদ ধরে পিছিয়ে বা এগিয়ে যায়।"
           }
         },
         "de" : {
@@ -228307,7 +228307,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "বাক্য ধরে পিছনে বা সামনে যায়।"
+            "value" : "বাক্য ধরে পিছিয়ে বা এগিয়ে যায়।"
           }
         },
         "de" : {
@@ -228402,7 +228402,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "উপহেডিং ধরে পিছনে বা সামনে যায়।"
+            "value" : "উপহেডিং ধরে পিছিয়ে বা এগিয়ে যায়।"
           }
         },
         "de" : {
@@ -230163,13 +230163,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "এই %lld টি আর্টিকেল একটি লাইব্রেরি ফোল্ডারে সম্পাদনাযোগ্য বই হিসেবে সরায়; সেটি ফিড ছেড়ে যায়"
+                  "value" : "এই %lldটি নিবন্ধ একটি লাইব্রেরি ফোল্ডারে সম্পাদনাযোগ্য বই হিসেবে সরায়; সেটি ফিড ছেড়ে যায়"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "এই %lld টি আর্টিকেল একটি লাইব্রেরি ফোল্ডারে সম্পাদনাযোগ্য বই হিসেবে সরায়; সেগুলো তাদের ফিড ছেড়ে যায়"
+                  "value" : "এই %lldটি নিবন্ধ একটি লাইব্রেরি ফোল্ডারে সম্পাদনাযোগ্য বই হিসেবে সরায়; সেগুলো তাদের ফিড ছেড়ে যায়"
                 }
               }
             }
@@ -230498,13 +230498,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "এই %lld টি পর্ব একটি লাইব্রেরি ফোল্ডারে সম্পাদনাযোগ্য বই হিসেবে সরায়; সেটি ফিড ছেড়ে যায়"
+                  "value" : "এই %lldটি পর্ব একটি লাইব্রেরি ফোল্ডারে সম্পাদনাযোগ্য বই হিসেবে সরায়; সেটি ফিড ছেড়ে যায়"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "এই %lld টি পর্ব একটি লাইব্রেরি ফোল্ডারে সম্পাদনাযোগ্য বই হিসেবে সরায়; সেগুলো তাদের ফিড ছেড়ে যায়"
+                  "value" : "এই %lldটি পর্ব একটি লাইব্রেরি ফোল্ডারে সম্পাদনাযোগ্য বই হিসেবে সরায়; সেগুলো তাদের ফিড ছেড়ে যায়"
                 }
               }
             }
@@ -230833,13 +230833,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "এই %lld টি আইটেম একটি লাইব্রেরি ফোল্ডারে সম্পাদনাযোগ্য বই হিসেবে সরায়; সেটি ফিড ছেড়ে যায়"
+                  "value" : "এই %lldটি আইটেম একটি লাইব্রেরি ফোল্ডারে সম্পাদনাযোগ্য বই হিসেবে সরায়; সেটি ফিড ছেড়ে যায়"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "এই %lld টি আইটেম একটি লাইব্রেরি ফোল্ডারে সম্পাদনাযোগ্য বই হিসেবে সরায়; সেগুলো তাদের ফিড ছেড়ে যায়"
+                  "value" : "এই %lldটি আইটেম একটি লাইব্রেরি ফোল্ডারে সম্পাদনাযোগ্য বই হিসেবে সরায়; সেগুলো তাদের ফিড ছেড়ে যায়"
                 }
               }
             }
@@ -231129,7 +231129,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "এই আর্টিকেলটি একটি লাইব্রেরি ফোল্ডারে সম্পাদনাযোগ্য বই হিসেবে সরায়; এটি ফিড ছেড়ে যায়"
+            "value" : "এই নিবন্ধটি একটি লাইব্রেরি ফোল্ডারে সম্পাদনাযোগ্য বই হিসেবে সরায়; এটি ফিড ছেড়ে যায়"
           }
         },
         "de" : {
@@ -234867,7 +234867,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "নতুন আর্টিকেল"
+            "value" : "নতুন নিবন্ধ"
           }
         },
         "de" : {
@@ -236251,7 +236251,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "নতুন আর্টিকেল: “%@”"
+            "value" : "নতুন নিবন্ধ: “%@”"
           }
         },
         "de" : {
@@ -236839,7 +236839,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "সবচেয়ে নতুন কতগুলো আর্টিকেল ডাউনলোড করা বা তালিকাভুক্ত রাখা হবে, 1 থেকে 2,000"
+            "value" : "সবচেয়ে নতুন কতগুলো নিবন্ধ ডাউনলোড করা বা তালিকাভুক্ত রাখা হবে, 1 থেকে 2,000"
           }
         },
         "de" : {
@@ -236934,7 +236934,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "সবচেয়ে নতুন কতগুলো পর্ব ও আর্টিকেল ডাউনলোড করা বা তালিকাভুক্ত রাখা হবে, 1 থেকে 2,000"
+            "value" : "সবচেয়ে নতুন কতগুলো পর্ব ও নিবন্ধ ডাউনলোড করা বা তালিকাভুক্ত রাখা হবে, 1 থেকে 2,000"
           }
         },
         "de" : {
@@ -241938,13 +241938,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "“%1$@”-এ কোনো নতুন বই নেই: সব %2$lld টি বই আগে থেকেই আপনার লাইব্রেরিতে ছিল।"
+                  "value" : "“%1$@”-এ কোনো নতুন বই নেই: সব %2$lldটি বই আগে থেকেই আপনার লাইব্রেরিতে ছিল।"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "“%1$@”-এ কোনো নতুন বই নেই: সব %2$lld টি বই আগে থেকেই আপনার লাইব্রেরিতে ছিল।"
+                  "value" : "“%1$@”-এ কোনো নতুন বই নেই: সব %2$lldটি বই আগে থেকেই আপনার লাইব্রেরিতে ছিল।"
                 }
               }
             }
@@ -246293,13 +246293,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "এই কমিক বুক আর্কাইভের %lld টি পৃষ্ঠার কোনোটিতেই টেক্সট পাওয়া যায়নি।"
+                  "value" : "এই কমিক বুক আর্কাইভের %lldটি পৃষ্ঠার কোনোটিতেই টেক্সট পাওয়া যায়নি।"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "এই কমিক বুক আর্কাইভের %lld টি পৃষ্ঠার কোনোটিতেই টেক্সট পাওয়া যায়নি।"
+                  "value" : "এই কমিক বুক আর্কাইভের %lldটি পৃষ্ঠার কোনোটিতেই টেক্সট পাওয়া যায়নি।"
                 }
               }
             }
@@ -246628,13 +246628,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "এই ছবির %lld টি পৃষ্ঠার কোনোটিতেই টেক্সট পাওয়া যায়নি।"
+                  "value" : "এই ছবির %lldটি পৃষ্ঠার কোনোটিতেই টেক্সট পাওয়া যায়নি।"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "এই ছবির %lld টি পৃষ্ঠার কোনোটিতেই টেক্সট পাওয়া যায়নি।"
+                  "value" : "এই ছবির %lldটি পৃষ্ঠার কোনোটিতেই টেক্সট পাওয়া যায়নি।"
                 }
               }
             }
@@ -250016,7 +250016,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "এখনও বইয়ের অডিওতে নেই। বাদ দিন সেগুলো পূর্বাবস্থায় ফেরায়; পরের বার এই বই সম্পাদনা করলে, আরেকটি সম্পাদনা না করা পর্যন্ত পুনরায় করুন সেগুলো ফিরিয়ে আনে।"
+            "value" : "এখনও বইয়ের অডিওতে নেই। বর্জন করুন সেগুলো পূর্বাবস্থায় ফেরায়; পরের বার এই বই সম্পাদনা করলে, আরেকটি সম্পাদনা না করা পর্যন্ত পুনরায় করুন সেগুলো ফিরিয়ে আনে।"
           }
         },
         "de" : {
@@ -253727,7 +253727,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "প্রতিটি ফিডের পর্ব ও প্রবন্ধের মধ্যে আপনি সর্বশেষ যেটি খুলেছেন, শুধু সেটিই তালিকাভুক্ত করে।"
+            "value" : "প্রতিটি ফিডের পর্ব ও নিবন্ধের মধ্যে আপনি সর্বশেষ যেটি খুলেছেন, শুধু সেটিই তালিকাভুক্ত করে।"
           }
         },
         "de" : {
@@ -254695,7 +254695,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "শুধু ফিডে ডাউনলোড করা পর্ব বা আর্টিকেল লাইব্রেরিতে সরানো যায়।"
+            "value" : "শুধু ফিডে ডাউনলোড করা পর্ব বা নিবন্ধ লাইব্রেরিতে সরানো যায়।"
           }
         },
         "de" : {
@@ -255316,13 +255316,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "শুধু সবচেয়ে নতুন %lld টি তালিকাভুক্ত"
+                  "value" : "শুধু সবচেয়ে নতুন %lldটি তালিকাভুক্ত"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "শুধু সবচেয়ে নতুন %lld টি তালিকাভুক্ত"
+                  "value" : "শুধু সবচেয়ে নতুন %lldটি তালিকাভুক্ত"
                 }
               }
             }
@@ -263784,13 +263784,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%1$lld টি ফাইলের অংশ, %2$@, ডিকোড করা যায়নি এবং নীরবতা হিসেবে রাখা হয়েছে।"
+                  "value" : "%1$lldটি ফাইলের অংশ, %2$@, ডিকোড করা যায়নি এবং নীরবতা হিসেবে রাখা হয়েছে।"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%1$lld টি ফাইলের অংশ, %2$@, ডিকোড করা যায়নি এবং নীরবতা হিসেবে রাখা হয়েছে।"
+                  "value" : "%1$lldটি ফাইলের অংশ, %2$@, ডিকোড করা যায়নি এবং নীরবতা হিসেবে রাখা হয়েছে।"
                 }
               }
             }
@@ -269671,7 +269671,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "প্লেব্যাক বন্ধ হয়েছে: অডিও সাড়া দেওয়া বন্ধ করেছে। আবার চেষ্টা করতে ‘চালান’ চাপুন; আবার বন্ধ হলে TextMouth প্রস্থান করে আবার খুলুন।"
+            "value" : "প্লেব্যাক বন্ধ হয়েছে: অডিও সাড়া দেওয়া বন্ধ করেছে। আবার চেষ্টা করতে “চালান” চাপুন; আবার বন্ধ হলে TextMouth প্রস্থান করে আবার খুলুন।"
           }
         },
         "de" : {
@@ -276070,7 +276070,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "উপরে রেকর্ড করুন"
+            "value" : "রেকর্ড করে বসান"
           }
         },
         "de" : {
@@ -282863,7 +282863,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "রেকর্ডিং বাদ দেওয়া হয়েছে।"
+            "value" : "রেকর্ডিং বর্জন করা হয়েছে।"
           }
         },
         "de" : {
@@ -283249,7 +283249,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "বিপ শব্দের পর %3$@ থেকে, %2$@-এ, %1$@-এর ওপর রেকর্ড হচ্ছে। উপরে রেকর্ড করুন বা থামান এটি শেষ করে; নির্বাচন সাফ করুন এটি বাদ দেয়।"
+            "value" : "বিপ শব্দের পর %3$@ থেকে, %2$@-এ, %1$@-এর ওপর রেকর্ড হচ্ছে। রেকর্ড করে বসান বা থামান এটি শেষ করে; নির্বাচন সাফ করুন এটি বর্জন করে।"
           }
         },
         "de" : {
@@ -283647,7 +283647,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "বিপ শব্দের পর %2$@ থেকে, %1$@-এ সন্নিবেশের জন্য রেকর্ড হচ্ছে। উপরে রেকর্ড করুন বা থামান এটি শেষ করে; নির্বাচন সাফ করুন এটি বাদ দেয়।"
+            "value" : "বিপ শব্দের পর %2$@ থেকে, %1$@-এ সন্নিবেশের জন্য রেকর্ড হচ্ছে। রেকর্ড করে বসান বা থামান এটি শেষ করে; নির্বাচন সাফ করুন এটি বর্জন করে।"
           }
         },
         "de" : {
@@ -283849,7 +283849,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "রেকর্ড হচ্ছে। এটি থামান, অথবা নির্বাচন সাফ করুন দিয়ে বাদ দিন, তারপর বন্ধ করুন।"
+            "value" : "রেকর্ড হচ্ছে। এটি থামান, অথবা নির্বাচন সাফ করুন দিয়ে বর্জন করুন, তারপর বন্ধ করুন।"
           }
         },
         "de" : {
@@ -305756,7 +305756,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "‘আমি কোথায়?’-এ পৃষ্ঠা বলুন"
+            "value" : "“আমি কোথায়?”-এ পৃষ্ঠা বলুন"
           }
         },
         "de" : {
@@ -307470,13 +307470,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "অনুসন্ধানের ফলাফল, %lld টি পডকাস্ট"
+                  "value" : "অনুসন্ধানের ফলাফল, %lldটি পডকাস্ট"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "অনুসন্ধানের ফলাফল, %lld টি পডকাস্ট"
+                  "value" : "অনুসন্ধানের ফলাফল, %lldটি পডকাস্ট"
                 }
               }
             }
@@ -308814,7 +308814,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "সেকেন্ড ৬০-এর কম হতে হবে।"
+            "value" : "সেকেন্ড 60-এর কম হতে হবে।"
           }
         },
         "de" : {
@@ -310925,7 +310925,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "অধ্যায় ১-এর আগের %@ নির্বাচিত।"
+            "value" : "অধ্যায় 1-এর আগের %@ নির্বাচিত।"
           }
         },
         "de" : {
@@ -312899,7 +312899,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ট্রান্সক্রিপশনের ভাষা ঠিক করে। \"ডাউনলোড দরকার\" চিহ্নিত ভাষা শুধু অডিও ট্রান্সক্রাইব করুন শিট থেকে ডাউনলোড হয়।"
+            "value" : "ট্রান্সক্রিপশনের ভাষা ঠিক করে। “ডাউনলোড দরকার” চিহ্নিত ভাষা শুধু অডিও ট্রান্সক্রাইব করুন শিট থেকে ডাউনলোড হয়।"
           }
         },
         "de" : {
@@ -316491,7 +316491,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "রিফ্রেশে নতুন পর্ব এলে একটি অ্যালার্ট দেখান"
+            "value" : "রিফ্রেশে নতুন পর্ব এলে একটি সতর্কতা দেখান"
           }
         },
         "de" : {
@@ -329474,13 +329474,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "এখনও তুলনা চলছে: এ পর্যন্ত %lld সেকেন্ড। থামাতে Escape চাপুন।"
+                  "value" : "এখনও তুলনা চলছে: এ পর্যন্ত %lld সেকেন্ড। থামাতে এস্কেপ চাপুন।"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "এখনও তুলনা চলছে: এ পর্যন্ত %lld সেকেন্ড। থামাতে Escape চাপুন।"
+                  "value" : "এখনও তুলনা চলছে: এ পর্যন্ত %lld সেকেন্ড। থামাতে এস্কেপ চাপুন।"
                 }
               }
             }
@@ -331174,7 +331174,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "‘আমি কোথায়?’ ঘোষণা থামান"
+            "value" : "“আমি কোথায়?” ঘোষণা থামান"
           }
         },
         "de" : {
@@ -331789,13 +331789,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি ফিড ডাউনলোড থামানো হয়েছে।"
+                  "value" : "%lldটি ফিড ডাউনলোড থামানো হয়েছে।"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি ফিড ডাউনলোড থামানো হয়েছে।"
+                  "value" : "%lldটি ফিড ডাউনলোড থামানো হয়েছে।"
                 }
               }
             }
@@ -333439,7 +333439,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "রপ্তানি বন্ধ করে এবং ইতিমধ্যে পড়ে শোনানো অধ্যায়গুলো রাখে, যতক্ষণ না TextMouth বন্ধ হয়, অন্য একটি স্পোকেন অডিও রপ্তানি শুরু হয়, বা বইয়ের ভয়েস, টেক্সট, প্রতিস্থাপন বা বিরতি বদলায়। একই গতি ও পিচে একই পরিসর রপ্তানি করলে সেখান থেকে চলে।"
+            "value" : "রপ্তানি বন্ধ করে এবং ইতিমধ্যে পড়ে শোনানো অধ্যায়গুলো রাখে, যতক্ষণ না TextMouth বন্ধ হয়, অন্য একটি পড়ে শোনানো অডিও রপ্তানি শুরু হয়, বা বইয়ের ভয়েস, টেক্সট, প্রতিস্থাপন বা বিরতি বদলায়। একই গতি ও পিচে একই পরিসর রপ্তানি করলে সেখান থেকে চলে।"
           }
         },
         "de" : {
@@ -335212,13 +335212,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি ফিডে সাবস্ক্রাইব করা হয়েছে।"
+                  "value" : "%lldটি ফিডে সাবস্ক্রাইব করা হয়েছে।"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি ফিডে সাবস্ক্রাইব করা হয়েছে।"
+                  "value" : "%lldটি ফিডে সাবস্ক্রাইব করা হয়েছে।"
                 }
               }
             }
@@ -335603,7 +335603,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@-এ সাবস্ক্রাইব করা হচ্ছে, %3$lld টির মধ্যে %2$lld…"
+            "value" : "%1$@-এ সাবস্ক্রাইব করা হচ্ছে, %3$lldটির মধ্যে %2$lld…"
           }
         },
         "de" : {
@@ -340287,13 +340287,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "টেক্সট শনাক্তকরণ %lld টি পৃষ্ঠার কোনোটিই পড়তে পারেনি: %@।"
+                  "value" : "টেক্সট শনাক্তকরণ %lldটি পৃষ্ঠার কোনোটিই পড়তে পারেনি: %@।"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "টেক্সট শনাক্তকরণ %lld টি পৃষ্ঠার কোনোটিই পড়তে পারেনি: %@।"
+                  "value" : "টেক্সট শনাক্তকরণ %lldটি পৃষ্ঠার কোনোটিই পড়তে পারেনি: %@।"
                 }
               }
             }
@@ -345548,7 +345548,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth নতুন ডাউনলোডের পাশে আগের টেক্সট রাখতে পারেনি, তাই আর্টিকেলটি আগের মতোই থাকে।"
+            "value" : "TextMouth নতুন ডাউনলোডের পাশে আগের টেক্সট রাখতে পারেনি, তাই নিবন্ধটি আগের মতোই থাকে।"
           }
         },
         "de" : {
@@ -347843,13 +347843,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "TextMouth তাদের মধ্যে %lld টি ফিডগুলোর পরের চেকে, বা পরের বার খোলার সময়, আবার ডাউনলোড করে।"
+                  "value" : "TextMouth তাদের মধ্যে %lldটি ফিডগুলোর পরের চেকে, বা পরের বার খোলার সময়, আবার ডাউনলোড করে।"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "TextMouth তাদের মধ্যে %lld টি ফিডগুলোর পরের চেকে, বা পরের বার খোলার সময়, আবার ডাউনলোড করে।"
+                  "value" : "TextMouth তাদের মধ্যে %lldটি ফিডগুলোর পরের চেকে, বা পরের বার খোলার সময়, আবার ডাউনলোড করে।"
                 }
               }
             }
@@ -350392,7 +350392,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth বন্ধ হচ্ছে এবং বইয়ের অডিওতে এই সম্পাদনাগুলো এখনও নেই। বাদ দিন সেগুলো পূর্বাবস্থায় ফেরায়; পরের বার এই বই সম্পাদনা করলে, আরেকটি সম্পাদনা না করা পর্যন্ত পুনরায় করুন সেগুলো ফিরিয়ে আনে। বাতিল করুন TextMouth খোলা রাখে।"
+            "value" : "TextMouth বন্ধ হচ্ছে এবং বইয়ের অডিওতে এই সম্পাদনাগুলো এখনও নেই। বর্জন করুন সেগুলো পূর্বাবস্থায় ফেরায়; পরের বার এই বই সম্পাদনা করলে, আরেকটি সম্পাদনা না করা পর্যন্ত পুনরায় করুন সেগুলো ফিরিয়ে আনে। বাতিল করুন TextMouth খোলা রাখে।"
           }
         },
         "de" : {
@@ -352613,7 +352613,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth %@-এ ফিডের নামে একটি ফোল্ডার বানায়, এবং এর পর্ব ও আর্টিকেল সেটিতে ডাউনলোড হয়।"
+            "value" : "TextMouth %@-এ ফিডের নামে একটি ফোল্ডার বানায়, এবং এর পর্ব ও নিবন্ধ সেটিতে ডাউনলোড হয়।"
           }
         },
         "de" : {
@@ -353032,13 +353032,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "TextMouth ডুপ্লিকেট বইয়ের %lld টি নতুন কপি ট্র্যাশে সরিয়েছে, কারণ TextMouth বন্ধ হওয়ার আগে সেগুলো ডুপ্লিকেট হিসেবে রাখা হবে কি না সেই প্রশ্নের উত্তর দেওয়া হয়নি। সেগুলো ফিরে পেতে ট্র্যাশ খুলে আগের জায়গায় রাখুন বেছে নিন।"
+                  "value" : "TextMouth ডুপ্লিকেট বইয়ের %lldটি নতুন কপি ট্র্যাশে সরিয়েছে, কারণ TextMouth বন্ধ হওয়ার আগে সেগুলো ডুপ্লিকেট হিসেবে রাখা হবে কি না সেই প্রশ্নের উত্তর দেওয়া হয়নি। সেগুলো ফিরে পেতে ট্র্যাশ খুলে আগের জায়গায় রাখুন বেছে নিন।"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "TextMouth ডুপ্লিকেট বইয়ের %lld টি নতুন কপি ট্র্যাশে সরিয়েছে, কারণ TextMouth বন্ধ হওয়ার আগে সেগুলো ডুপ্লিকেট হিসেবে রাখা হবে কি না সেই প্রশ্নের উত্তর দেওয়া হয়নি। সেগুলো ফিরে পেতে ট্র্যাশ খুলে আগের জায়গায় রাখুন বেছে নিন।"
+                  "value" : "TextMouth ডুপ্লিকেট বইয়ের %lldটি নতুন কপি ট্র্যাশে সরিয়েছে, কারণ TextMouth বন্ধ হওয়ার আগে সেগুলো ডুপ্লিকেট হিসেবে রাখা হবে কি না সেই প্রশ্নের উত্তর দেওয়া হয়নি। সেগুলো ফিরে পেতে ট্র্যাশ খুলে আগের জায়গায় রাখুন বেছে নিন।"
                 }
               }
             }
@@ -355018,13 +355018,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "TextMouth “%2$@”-এর %1$lld টি এন্ট্রি বাদ দিয়েছে: %3$@।"
+                  "value" : "TextMouth “%2$@”-এর %1$lldটি এন্ট্রি বাদ দিয়েছে: %3$@।"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "TextMouth “%2$@”-এর %1$lld টি এন্ট্রি বাদ দিয়েছে: %3$@।"
+                  "value" : "TextMouth “%2$@”-এর %1$lldটি এন্ট্রি বাদ দিয়েছে: %3$@।"
                 }
               }
             }
@@ -355700,7 +355700,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth এই ফিডে নতুন আর্টিকেলের জন্য চেক করা বন্ধ করে।"
+            "value" : "TextMouth এই ফিডে নতুন নিবন্ধের জন্য চেক করা বন্ধ করে।"
           }
         },
         "de" : {
@@ -358726,13 +358726,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "সেই পৃষ্ঠায় %lld টি ফিডের নাম আছে। একটি বেছে নিন, তারপর সাবস্ক্রাইব করুন।"
+                  "value" : "সেই পৃষ্ঠায় %lldটি ফিডের নাম আছে। একটি বেছে নিন, তারপর সাবস্ক্রাইব করুন।"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "সেই পৃষ্ঠায় %lld টি ফিডের নাম আছে। একটি বেছে নিন, তারপর সাবস্ক্রাইব করুন।"
+                  "value" : "সেই পৃষ্ঠায় %lldটি ফিডের নাম আছে। একটি বেছে নিন, তারপর সাবস্ক্রাইব করুন।"
                 }
               }
             }
@@ -360210,13 +360210,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%2$lld টি সরানো ডাউনলোডের জন্য রাখা %1$@ মুছে ফেলা হয়েছে।"
+                  "value" : "%2$lldটি সরানো ডাউনলোডের জন্য রাখা %1$@ মুছে ফেলা হয়েছে।"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%2$lld টি সরানো ডাউনলোডের জন্য রাখা %1$@ মুছে ফেলা হয়েছে।"
+                  "value" : "%2$lldটি সরানো ডাউনলোডের জন্য রাখা %1$@ মুছে ফেলা হয়েছে।"
                 }
               }
             }
@@ -360545,13 +360545,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%2$lld টি সরানো ডাউনলোডের জন্য রাখা %1$@ মুছে ফেলা হয়েছে।"
+                  "value" : "%2$lldটি সরানো ডাউনলোডের জন্য রাখা %1$@ মুছে ফেলা হয়েছে।"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%2$lld টি সরানো ডাউনলোডের জন্য রাখা %1$@ মুছে ফেলা হয়েছে।"
+                  "value" : "%2$lldটি সরানো ডাউনলোডের জন্য রাখা %1$@ মুছে ফেলা হয়েছে।"
                 }
               }
             }
@@ -365744,13 +365744,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "আর্কাইভে আরও %lld টি বই আছে যা আমদানি হয়নি; সেটি আমদানি করতে আনজিপ করুন।"
+                  "value" : "আর্কাইভে আরও %lldটি বই আছে যা আমদানি হয়নি; সেটি আমদানি করতে আনজিপ করুন।"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "আর্কাইভে আরও %lld টি বই আছে যা আমদানি হয়নি; সেগুলো আমদানি করতে আনজিপ করুন।"
+                  "value" : "আর্কাইভে আরও %lldটি বই আছে যা আমদানি হয়নি; সেগুলো আমদানি করতে আনজিপ করুন।"
                 }
               }
             }
@@ -366925,7 +366925,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "আর্টিকেলটি চিরতরে তালিকা থেকে চলে যায়, এবং এর ডাউনলোড, থাকলে, মুছে ফেলা হয়।"
+            "value" : "নিবন্ধটি চিরতরে তালিকা থেকে চলে যায়, এবং এর ডাউনলোড, থাকলে, মুছে ফেলা হয়।"
           }
         },
         "de" : {
@@ -367020,7 +367020,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "আর্টিকেলটি চিরতরে তালিকা থেকে চলে যায়; আপনার লাইব্রেরিতে এটি থেকে তৈরি হওয়া বইটি থেকে যায়।"
+            "value" : "নিবন্ধটি চিরতরে তালিকা থেকে চলে যায়; আপনার লাইব্রেরিতে এটি থেকে তৈরি হওয়া বইটি থেকে যায়।"
           }
         },
         "de" : {
@@ -368128,13 +368128,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "অডিও ফাইল %1$@-এ %2$lld টি চ্যানেল আছে কিন্তু কোনটি কোনটি তা বলা নেই, তাই TextMouth এটিকে স্টেরিওতে মেশাতে পারে না।"
+                  "value" : "অডিও ফাইল %1$@-এ %2$lldটি চ্যানেল আছে কিন্তু কোনটি কোনটি তা বলা নেই, তাই TextMouth এটিকে স্টেরিওতে মেশাতে পারে না।"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "অডিও ফাইল %1$@-এ %2$lld টি চ্যানেল আছে কিন্তু কোনটি কোনটি তা বলা নেই, তাই TextMouth এটিকে স্টেরিওতে মেশাতে পারে না।"
+                  "value" : "অডিও ফাইল %1$@-এ %2$lldটি চ্যানেল আছে কিন্তু কোনটি কোনটি তা বলা নেই, তাই TextMouth এটিকে স্টেরিওতে মেশাতে পারে না।"
                 }
               }
             }
@@ -377720,7 +377720,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ফিডটি তার আর্টিকেলের তালিকা ও সেটিংসসহ আপনার লাইব্রেরি ছেড়ে যায়।"
+            "value" : "ফিডটি তার নিবন্ধের তালিকা ও সেটিংসসহ আপনার লাইব্রেরি ছেড়ে যায়।"
           }
         },
         "de" : {
@@ -386687,7 +386687,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "যে মাইক্রোফোন থেকে উপরে রেকর্ড করুন রেকর্ড করে। macOS-এর ইনপুট থেকে আলাদাভাবে TextMouth এটি মনে রাখে।"
+            "value" : "যে মাইক্রোফোন থেকে রেকর্ড করে বসান রেকর্ড করে। macOS-এর ইনপুট থেকে আলাদাভাবে TextMouth এটি মনে রাখে।"
           }
         },
         "de" : {
@@ -388564,7 +388564,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "পরবর্তী প্রবন্ধ ডাউনলোড করা যায়নি, তাই প্লেব্যাক থেমে গেছে।"
+            "value" : "পরবর্তী নিবন্ধ ডাউনলোড করা যায়নি, তাই প্লেব্যাক থেমে গেছে।"
           }
         },
         "de" : {
@@ -388760,7 +388760,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "পরবর্তী প্রবন্ধ ডাউনলোড করা যায়নি।"
+            "value" : "পরবর্তী নিবন্ধ ডাউনলোড করা যায়নি।"
           }
         },
         "de" : {
@@ -393528,7 +393528,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "পূর্ববর্তী প্রবন্ধ ডাউনলোড করা যায়নি, তাই প্লেব্যাক থেমে গেছে।"
+            "value" : "পূর্ববর্তী নিবন্ধ ডাউনলোড করা যায়নি, তাই প্লেব্যাক থেমে গেছে।"
           }
         },
         "de" : {
@@ -393629,7 +393629,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "পূর্ববর্তী প্রবন্ধ ডাউনলোড করা যায়নি।"
+            "value" : "পূর্ববর্তী নিবন্ধ ডাউনলোড করা যায়নি।"
           }
         },
         "de" : {
@@ -395609,7 +395609,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "রেকর্ডিং বাদ দেওয়া হয়েছে।"
+            "value" : "রেকর্ডিং বর্জন করা হয়েছে।"
           }
         },
         "de" : {
@@ -397717,7 +397717,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "স্পিচ ইঞ্জিনকে দেওয়া টেক্সট, প্রতিস্থাপন ও মার্কআপ গার্ডের পরে, বলা টেক্সটের %1$@ থেকে %2$@ নম্বর অক্ষর:"
+            "value" : "স্পিচ ইঞ্জিনকে দেওয়া টেক্সট, প্রতিস্থাপন ও মার্কআপ গার্ডের পরে, পড়ে শোনানো টেক্সটের %1$@ থেকে %2$@ নম্বর অক্ষর:"
           }
         },
         "de" : {
@@ -407577,7 +407577,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "এই আর্টিকেলের কোনো বিবরণ নেই।"
+            "value" : "এই নিবন্ধের কোনো বিবরণ নেই।"
           }
         },
         "de" : {
@@ -414344,13 +414344,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "এই ছবিতে %lld টি পৃষ্ঠা আছে, যা TextMouth যে %@ পড়ে তার চেয়ে বেশি।"
+                  "value" : "এই ছবিতে %lldটি পৃষ্ঠা আছে, যা TextMouth যে %@ পড়ে তার চেয়ে বেশি।"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "এই ছবিতে %lld টি পৃষ্ঠা আছে, যা TextMouth যে %@ পড়ে তার চেয়ে বেশি।"
+                  "value" : "এই ছবিতে %lldটি পৃষ্ঠা আছে, যা TextMouth যে %@ পড়ে তার চেয়ে বেশি।"
                 }
               }
             }
@@ -418618,13 +418618,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "বাকি %lld টি আবার ডাউনলোড করতে এর সারিতে %@ বেছে নিন।"
+                  "value" : "বাকি %lldটি আবার ডাউনলোড করতে এর সারিতে %@ বেছে নিন।"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "বাকি %lld টি আবার ডাউনলোড করতে তাদের সারিতে %@ বেছে নিন।"
+                  "value" : "বাকি %lldটি আবার ডাউনলোড করতে তাদের সারিতে %@ বেছে নিন।"
                 }
               }
             }
@@ -419199,7 +419199,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "একটি আর্টিকেল রাখতে আগে এর সারিতে %@ বেছে নিন।"
+            "value" : "একটি নিবন্ধ রাখতে আগে এর সারিতে %@ বেছে নিন।"
           }
         },
         "de" : {
@@ -422159,7 +422159,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "আগে ‘অডিও ট্রান্সক্রাইব করুন’ দিয়ে ট্রান্সক্রাইব করুন।"
+            "value" : "আগে “অডিও ট্রান্সক্রাইব করুন” দিয়ে ট্রান্সক্রাইব করুন।"
           }
         },
         "de" : {
@@ -431352,7 +431352,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@-এর সাবস্ক্রিপশন বাতিল করা হয়েছে: TextMouth আর নতুন আর্টিকেলের জন্য এটি চেক করে না%2$@।"
+            "value" : "%1$@-এর সাবস্ক্রিপশন বাতিল করা হয়েছে: TextMouth আর নতুন নিবন্ধের জন্য এটি চেক করে না%2$@।"
           }
         },
         "de" : {
@@ -438654,13 +438654,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি সরানো ডাউনলোডের জন্য যা রাখা ছিল তা মুছে ফেলা হয়েছে।"
+                  "value" : "%lldটি সরানো ডাউনলোডের জন্য যা রাখা ছিল তা মুছে ফেলা হয়েছে।"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি সরানো ডাউনলোডের জন্য যা রাখা ছিল তা মুছে ফেলা হয়েছে।"
+                  "value" : "%lldটি সরানো ডাউনলোডের জন্য যা রাখা ছিল তা মুছে ফেলা হয়েছে।"
                 }
               }
             }
@@ -452776,7 +452776,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "প্রবন্ধ"
+            "value" : "নিবন্ধ"
           }
         },
         "de" : {
@@ -460227,7 +460227,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "নতুন পর্ব বা প্রবন্ধ আছে"
+            "value" : "নতুন পর্ব বা নিবন্ধ আছে"
           }
         },
         "de" : {
@@ -464128,13 +464128,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "এর %lld টি ডাউনলোড করা আর্টিকেল"
+                  "value" : "এর %lldটি ডাউনলোড করা নিবন্ধ"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "এর %lld টি ডাউনলোড করা আর্টিকেল"
+                  "value" : "এর %lldটি ডাউনলোড করা নিবন্ধ"
                 }
               }
             }
@@ -464463,13 +464463,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "এর %lld টি ডাউনলোড করা পর্ব"
+                  "value" : "এর %lldটি ডাউনলোড করা পর্ব"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "এর %lld টি ডাউনলোড করা পর্ব"
+                  "value" : "এর %lldটি ডাউনলোড করা পর্ব"
                 }
               }
             }
@@ -464798,13 +464798,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "এর %lld টি ডাউনলোড করা আইটেম"
+                  "value" : "এর %lldটি ডাউনলোড করা আইটেম"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "এর %lld টি ডাউনলোড করা আইটেম"
+                  "value" : "এর %lldটি ডাউনলোড করা আইটেম"
                 }
               }
             }
@@ -465403,7 +465403,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "এর ডাউনলোড করা আর্টিকেল"
+            "value" : "এর ডাউনলোড করা নিবন্ধ"
           }
         },
         "de" : {
@@ -476734,13 +476734,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%2$lld টি সরানো ডাউনলোডের জন্য রাখা %1$@"
+                  "value" : "%2$lldটি সরানো ডাউনলোডের জন্য রাখা %1$@"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%2$lld টি সরানো ডাউনলোডের জন্য রাখা %1$@"
+                  "value" : "%2$lldটি সরানো ডাউনলোডের জন্য রাখা %1$@"
                 }
               }
             }
@@ -482367,13 +482367,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি সরানো ডাউনলোডের জন্য যা রাখা ছিল"
+                  "value" : "%lldটি সরানো ডাউনলোডের জন্য যা রাখা ছিল"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld টি সরানো ডাউনলোডের জন্য যা রাখা ছিল"
+                  "value" : "%lldটি সরানো ডাউনলোডের জন্য যা রাখা ছিল"
                 }
               }
             }
@@ -485128,7 +485128,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "“%@” রেকর্ড করছে। এটি থামান, অথবা নির্বাচন সাফ করুন দিয়ে বাদ দিন, তারপর প্রস্থান করুন।"
+            "value" : "“%@” রেকর্ড করছে। এটি থামান, অথবা নির্বাচন সাফ করুন দিয়ে বর্জন করুন, তারপর প্রস্থান করুন।"
           }
         },
         "de" : {
