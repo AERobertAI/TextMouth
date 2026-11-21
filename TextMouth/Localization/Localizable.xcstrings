@@ -26642,7 +26642,7 @@
               "two" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld إشارتان مرجعيتان غير موجودة في النسخة الأخرى"
+                  "value" : "%lld إشارتان مرجعيتان غير موجودتين في النسخة الأخرى"
                 }
               },
               "zero" : {
@@ -28215,7 +28215,7 @@
               "few" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld كتب غير منزّل."
+                  "value" : "%lld كتب غير منزّلة."
                 }
               },
               "many" : {
@@ -28239,13 +28239,13 @@
               "two" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld كتابان غير منزّل."
+                  "value" : "%lld كتابان غير منزّلين."
                 }
               },
               "zero" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld كتب غير منزّل."
+                  "value" : "%lld كتب غير منزّلة."
                 }
               }
             }
@@ -31050,7 +31050,7 @@
               "few" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "تم تخطي %lld كتب موجود في السحابة."
+                  "value" : "تم تخطي %lld كتب موجودة في السحابة."
                 }
               },
               "many" : {
@@ -31074,13 +31074,13 @@
               "two" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "تم تخطي %lld كتابين موجود في السحابة."
+                  "value" : "تم تخطي %lld كتابين موجودين في السحابة."
                 }
               },
               "zero" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "تم تخطي %lld كتب موجود في السحابة."
+                  "value" : "تم تخطي %lld كتب موجودة في السحابة."
                 }
               }
             }
@@ -40008,25 +40008,25 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "استُبعد %lld إدخالًا لأنه تقتصر على تهجئة صوتية."
+                  "value" : "استُبعد %lld إدخالًا لأنه يقتصر على تهجئة صوتية."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "استُبعد %lld إدخال لأنه تقتصر على تهجئة صوتية."
+                  "value" : "استُبعد %lld إدخال لأنه يقتصر على تهجئة صوتية."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "استُبعد %lld إدخال لأنه تقتصر على تهجئة صوتية."
+                  "value" : "استُبعد %lld إدخال لأنه يقتصر على تهجئة صوتية."
                 }
               },
               "two" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "استُبعد %lld إدخالان لأنهما تقتصر على تهجئة صوتية."
+                  "value" : "استُبعد %lld إدخالان لأنهما تقتصران على تهجئة صوتية."
                 }
               },
               "zero" : {
@@ -45947,7 +45947,7 @@
               "two" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld عمليتا استيراد أخرى بانتظار دورها"
+                  "value" : "%lld عمليتا استيراد أخريان بانتظار دورها"
                 }
               },
               "zero" : {
@@ -53657,7 +53657,7 @@
               "two" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "تم استبعاد %lld قاعدتان: لا يمكن كتابة التعبيرات النمطية والقواعد المعطّلة في قاموس النطق."
+                  "value" : "تم استبعاد %lld قاعدتين: لا يمكن كتابة التعبيرات النمطية والقواعد المعطّلة في قاموس النطق."
                 }
               },
               "zero" : {
@@ -72206,7 +72206,7 @@
               "two" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "و%lld نسختان أخريان مدرجة في السجل."
+                  "value" : "و%lld نسختان أخريان مدرجتان في السجل."
                 }
               },
               "zero" : {
@@ -253943,7 +253943,7 @@
               "two" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "رُفض النص هنا %lld مرتان منذ فتح هذه النافذة."
+                  "value" : "رُفض النص هنا %lld مرتين منذ فتح هذه النافذة."
                 }
               },
               "zero" : {
@@ -339184,7 +339184,7 @@
               "two" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "يضم المجلد %1$lld كتابان DAISY (%2$@)."
+                  "value" : "يضم المجلد %1$lld كتابين DAISY (%2$@)."
                 }
               },
               "zero" : {
@@ -362434,7 +362434,7 @@
               "two" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "يضم هذا الكتاب %1$lld صفحتان، من %2$@ إلى %3$@."
+                  "value" : "يضم هذا الكتاب %1$lld صفحتين، من %2$@ إلى %3$@."
                 }
               },
               "zero" : {
