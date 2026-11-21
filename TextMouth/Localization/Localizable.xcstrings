@@ -511213,7 +511213,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "MP3 memiliki bab untuk %@ pertama dari %lld tajuknya; ekspor sebagai M4B untuk satu bab bagi masing-masing."
+                  "value" : "MP3 memiliki bab untuk %@ pertama dari %lld tajuknya; ekspor sebagai M4B agar setiap tajuk memiliki bab."
                 }
               }
             }
@@ -522522,7 +522522,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Kode braille tempat buku ditulis."
+            "value" : "Kode braille yang dipakai untuk menulis buku."
           }
         },
         "it" : {
@@ -537862,7 +537862,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bahasa kode braille tempat buku ditulis."
+            "value" : "Bahasa kode braille yang dipakai untuk menulis buku."
           }
         },
         "it" : {
@@ -581898,7 +581898,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Rentang ini memiliki %lld tajuk, tetapi MP3 hanya memiliki bab untuk %@ yang pertama. Pilih M4B untuk satu bab bagi masing-masing."
+                  "value" : "Rentang ini memiliki %lld tajuk, tetapi MP3 hanya memiliki bab untuk %@ yang pertama. Pilih M4B agar setiap tajuk memiliki bab."
                 }
               }
             }
@@ -623500,7 +623500,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Saat diputar, menggerakkan Konten buku mengikuti ucapan, bahkan saat Anda membacanya."
+            "value" : "Saat diputar, menggerakkan Isi buku mengikuti ucapan, bahkan saat Anda membacanya."
           }
         },
         "it" : {
@@ -647721,7 +647721,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "tidak dapat dimuat di liblouis TextMouth %@"
+            "value" : "tidak dapat dimuat di liblouis %@ milik TextMouth"
           }
         },
         "it" : {
@@ -669390,7 +669390,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "pembantu braille gagal"
+            "value" : "program bantu braille gagal"
           }
         },
         "it" : {
@@ -669527,7 +669527,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "pembantu braille dihentikan karena %@"
+            "value" : "program bantu braille dihentikan karena %@"
           }
         },
         "it" : {
