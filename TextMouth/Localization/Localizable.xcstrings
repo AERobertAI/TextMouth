@@ -86510,7 +86510,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "แอมเปอร์แซนด์"
+            "value" : "Ampersand"
           }
         },
         "tr" : {
@@ -89145,7 +89145,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "อะพอสทรอฟี"
+            "value" : "Apostrophe"
           }
         },
         "tr" : {
@@ -93799,7 +93799,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "เครื่องหมายดอกจัน"
+            "value" : "Asterisk"
           }
         },
         "tr" : {
@@ -93906,7 +93906,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "เครื่องหมายแอท"
+            "value" : "At Sign"
           }
         },
         "tr" : {
@@ -98796,7 +98796,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "แบ็กสแลช"
+            "value" : "Backslash"
           }
         },
         "tr" : {
@@ -108158,7 +108158,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "เครื่องหมายแคเรต"
+            "value" : "Caret"
           }
         },
         "tr" : {
@@ -125543,7 +125543,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "เครื่องหมายทวิภาค"
+            "value" : "Colon"
           }
         },
         "tr" : {
@@ -125757,7 +125757,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "เครื่องหมายจุลภาค"
+            "value" : "Comma"
           }
         },
         "tr" : {
@@ -149235,7 +149235,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "เครื่องหมายดอลลาร์"
+            "value" : "Dollar Sign"
           }
         },
         "tr" : {
@@ -150462,7 +150462,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ลูกศรลง"
+            "value" : "Down Arrow"
           }
         },
         "tr" : {
@@ -166944,7 +166944,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "เครื่องหมายเท่ากับ"
+            "value" : "Equals"
           }
         },
         "tr" : {
@@ -170512,7 +170512,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "เครื่องหมายอัศเจรีย์"
+            "value" : "Exclamation Mark"
           }
         },
         "tr" : {
@@ -192962,7 +192962,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "เครื่องหมายเกรฟ"
+            "value" : "Grave Accent"
           }
         },
         "tr" : {
@@ -193069,7 +193069,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "เครื่องหมายมากกว่า"
+            "value" : "Greater Than"
           }
         },
         "tr" : {
@@ -224117,7 +224117,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ลูกศรซ้าย"
+            "value" : "Left Arrow"
           }
         },
         "tr" : {
@@ -224224,7 +224224,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "วงเล็บปีกกาเปิด"
+            "value" : "Left Brace"
           }
         },
         "tr" : {
@@ -224331,7 +224331,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "วงเล็บเหลี่ยมเปิด"
+            "value" : "Left Bracket"
           }
         },
         "tr" : {
@@ -224438,7 +224438,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "วงเล็บเปิด"
+            "value" : "Left Parenthesis"
           }
         },
         "tr" : {
@@ -224771,7 +224771,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "เครื่องหมายน้อยกว่า"
+            "value" : "Less Than"
           }
         },
         "tr" : {
@@ -241624,7 +241624,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "เครื่องหมายลบ"
+            "value" : "Minus"
           }
         },
         "tr" : {
@@ -278464,7 +278464,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "เครื่องหมายสี่เหลี่ยม"
+            "value" : "Number Sign"
           }
         },
         "tr" : {
@@ -293924,7 +293924,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "เครื่องหมายเปอร์เซ็นต์"
+            "value" : "Percent Sign"
           }
         },
         "tr" : {
@@ -294352,7 +294352,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "เครื่องหมายมหัพภาค"
+            "value" : "Period"
           }
         },
         "tr" : {
@@ -299637,7 +299637,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "เครื่องหมายบวก"
+            "value" : "Plus"
           }
         },
         "tr" : {
@@ -305644,7 +305644,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "เครื่องหมายคำถาม"
+            "value" : "Question Mark"
           }
         },
         "tr" : {
@@ -306613,7 +306613,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "เครื่องหมายคำพูด"
+            "value" : "Quotation Mark"
           }
         },
         "tr" : {
@@ -331289,7 +331289,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ลูกศรขวา"
+            "value" : "Right Arrow"
           }
         },
         "tr" : {
@@ -331396,7 +331396,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "วงเล็บปีกกาปิด"
+            "value" : "Right Brace"
           }
         },
         "tr" : {
@@ -331503,7 +331503,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "วงเล็บเหลี่ยมปิด"
+            "value" : "Right Bracket"
           }
         },
         "tr" : {
@@ -331610,7 +331610,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "วงเล็บปิด"
+            "value" : "Right Parenthesis"
           }
         },
         "tr" : {
@@ -344132,7 +344132,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "เครื่องหมายอัฒภาค"
+            "value" : "Semicolon"
           }
         },
         "tr" : {
@@ -354928,7 +354928,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "เครื่องหมายทับ"
+            "value" : "Slash"
           }
         },
         "tr" : {
@@ -459759,7 +459759,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "เครื่องหมายตัวหนอน"
+            "value" : "Tilde"
           }
         },
         "tr" : {
@@ -474256,7 +474256,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ขีดล่าง"
+            "value" : "Underscore"
           }
         },
         "tr" : {
@@ -478280,7 +478280,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ลูกศรขึ้น"
+            "value" : "Up Arrow"
           }
         },
         "tr" : {
@@ -480539,7 +480539,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "เส้นแนวตั้ง"
+            "value" : "Vertical Bar"
           }
         },
         "tr" : {
