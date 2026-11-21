@@ -178816,7 +178816,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Se descargó %@"
+            "value" : "Se descargaron %@"
           }
         },
         "fr" : {
@@ -182568,7 +182568,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Descargas no quitadas"
+            "value" : "No se quitaron las descargas"
           }
         },
         "fr" : {
@@ -199452,7 +199452,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Experimental. Una secuencia de teclas multimedia o controles de AirPods dentro de una ventana de tiempo corta vuelve a armar el último temporizador de apagado, útil cuando uno acaba de expirar."
+            "value" : "Experimental. Una secuencia de teclas multimedia o controles de AirPods dentro de una ventana de tiempo corta reactiva el último temporizador de apagado, útil cuando uno acaba de expirar."
           }
         },
         "fr" : {
@@ -214664,7 +214664,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "La ubicación en carpetas y el orden manual que estaban guardados solo en el índice ilegible se pierden de la biblioteca."
+            "value" : "La ubicación en carpetas y el orden manual que estaban guardados solo en el índice ilegible desaparecen de la biblioteca."
           }
         },
         "fr" : {
@@ -220673,7 +220673,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Dar identidad nueva"
+            "value" : "Dar una identidad nueva"
           }
         },
         "fr" : {
@@ -224685,7 +224685,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Reduce el volumen poco a poco antes de pausar cuando expira el temporizador de apagado. 0 pausa al instante."
+            "value" : "Reduce el volumen poco a poco antes de pausar cuando expira el temporizador de apagado. Con 0, se pausa al instante."
           }
         },
         "fr" : {
@@ -228896,7 +228896,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Cuánto tiempo se bloquean las órdenes multimedia después de que se desconecta un dispositivo Bluetooth. Auméntalo si la reproducción se reanuda al quitarte los audífonos."
+            "value" : "Cuánto tiempo se bloquean las órdenes multimedia después de que se desconecta un dispositivo Bluetooth. Auméntalo si la reproducción se reanuda al quitarte los auriculares."
           }
         },
         "fr" : {
@@ -231801,7 +231801,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Si el archivo llega más tarde desde %@, nombra la misma biblioteca."
+            "value" : "Si el archivo llega más tarde desde %@, identifica la misma biblioteca."
           }
         },
         "fr" : {
@@ -245888,7 +245888,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Contiene el canal «%1$@» con %2$@."
+            "value" : "Contiene el canal “%1$@” con %2$@."
           }
         },
         "fr" : {
@@ -246025,7 +246025,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Contiene el canal «%1$@» con %2$@; el registro contiene %3$@."
+            "value" : "Contiene el canal “%1$@” con %2$@; el registro contiene %3$@."
           }
         },
         "fr" : {
@@ -246412,7 +246412,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Contiene el registro de «%1$@»: %2$@."
+            "value" : "Contiene el registro de “%1$@”: %2$@."
           }
         },
         "fr" : {
@@ -246549,7 +246549,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Contiene el registro de «%1$@»: %2$@; el registro contiene %3$@."
+            "value" : "Contiene el registro de “%1$@”: %2$@; el registro contiene %3$@."
           }
         },
         "fr" : {
@@ -288364,7 +288364,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Movimiento cancelado."
+            "value" : "Se canceló el traslado."
           }
         },
         "fr" : {
@@ -336076,7 +336076,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Archivos originales quitados."
+            "value" : "Se quitaron los archivos originales."
           }
         },
         "fr" : {
@@ -428364,7 +428364,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Evita que la reproducción se reanude cuando se desconectan los audífonos"
+            "value" : "Evita que la reproducción se reanude cuando se desconectan los auriculares"
           }
         },
         "fr" : {
@@ -442704,7 +442704,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth no pudo leer el índice de su biblioteca, el archivo que guarda tus carpetas, los ajustes de orden y el orden de tus libros."
+            "value" : "TextMouth no pudo leer el índice de la biblioteca, el archivo que guarda tus carpetas, los ajustes de orden y el orden de tus libros."
           }
         },
         "fr" : {
@@ -449656,19 +449656,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "TextMouth también está abierto en «%1$@» (activo hace %2$lld de minutos)."
+                  "value" : "TextMouth también está abierto en “%1$@” (activo hace %2$lld de minutos)."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "TextMouth también está abierto en «%1$@» (activo hace %2$lld minuto)."
+                  "value" : "TextMouth también está abierto en “%1$@” (activo hace %2$lld minuto)."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "TextMouth también está abierto en «%1$@» (activo hace %2$lld minutos)."
+                  "value" : "TextMouth también está abierto en “%1$@” (activo hace %2$lld minutos)."
                 }
               }
             }
@@ -450018,7 +450018,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth también está abierto en «%@» (activo hace menos de un minuto)."
+            "value" : "TextMouth también está abierto en “%@” (activo hace menos de un minuto)."
           }
         },
         "fr" : {
@@ -455545,7 +455545,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth necesita que la unidad «%@» esté conectada para abrir la biblioteca."
+            "value" : "TextMouth necesita que la unidad “%@” esté conectada para abrir la biblioteca."
           }
         },
         "fr" : {
@@ -472382,7 +472382,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "El archivo comprimido «%1$@» de su interior se expande a %2$@, pero el disco que contiene la biblioteca de TextMouth solo tiene %3$@ libres, y TextMouth mantiene %4$@ libres."
+            "value" : "El archivo comprimido “%1$@” de su interior se expande a %2$@, pero el disco que contiene la biblioteca de TextMouth solo tiene %3$@ libres, y TextMouth mantiene %4$@ libres."
           }
         },
         "fr" : {
@@ -484332,7 +484332,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "La unidad «%@» no está conectada."
+            "value" : "La unidad “%@” no está conectada."
           }
         },
         "fr" : {
@@ -499044,7 +499044,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "El tiempo máximo que puede durar toda la secuencia. Ventanas más cortas significan menos coincidencias accidentales pero pulsaciones más rápidas."
+            "value" : "El tiempo máximo que puede durar toda la secuencia. Con una ventana más corta hay menos coincidencias accidentales, pero hay que pulsar más rápido."
           }
         },
         "fr" : {
