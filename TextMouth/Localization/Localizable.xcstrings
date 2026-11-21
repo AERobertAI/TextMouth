@@ -23021,7 +23021,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ wartet auf ein Netzwerk ohne Datenlimit, um sich selbst zu aktualisieren."
+            "value" : "%@ wartet mit der automatischen Aktualisierung auf ein Netzwerk ohne Datenlimit."
           }
         },
         "es" : {
@@ -49915,7 +49915,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld Büchern verarbeitet"
+                  "value" : "%lld Bücher verarbeitet"
                 }
               }
             }
@@ -122353,7 +122353,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Audio, das TextMouth beim Import umwandelt, behält nur die umgewandelte Datei."
+            "value" : "Bei Audio, das TextMouth beim Import umwandelt, bleibt nur die umgewandelte Datei erhalten."
           }
         },
         "es" : {
@@ -144417,7 +144417,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Eine erneute Prüfung des Feeds bringt es nicht zurück."
+            "value" : "Eine erneute Prüfung des Feeds ändert daran nichts."
           }
         },
         "es" : {
@@ -165545,7 +165545,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Das Umwandeln von %1$@ wurde gestoppt, weil %2$@."
+            "value" : "Das Umwandeln von %1$@ wurde gestoppt: %2$@."
           }
         },
         "en" : {
@@ -168982,7 +168982,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Konnte nicht in die Bibliothek verschoben werden"
+            "value" : "Verschieben in die Bibliothek nicht möglich"
           }
         },
         "es" : {
@@ -172586,7 +172586,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Aktualisierung fehlgeschlagen für %@."
+            "value" : "Fehler beim Aktualisieren von %@."
           }
         },
         "es" : {
@@ -172723,7 +172723,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Abonnieren nicht möglich für %@."
+            "value" : "Fehler beim Abonnieren von %@."
           }
         },
         "es" : {
@@ -176565,7 +176565,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tage nach Ende einer Folge bis zum Löschen ihres Downloads, von 0 (sofort) bis 365; ein Download, der in einer Leseansicht geöffnet ist, wartet bis zu deren Schließen."
+            "value" : "Tage nach Ende einer Folge bis zum Löschen ihres Downloads, von 0 (sofort) bis 365; ein in einer Leseansicht geöffneter Download wartet, bis sie geschlossen wird."
           }
         },
         "es" : {
@@ -212433,7 +212433,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Alle Artikel aufgelistet, der neueste (%lld) heruntergeladen"
+                  "value" : "Alle Artikel aufgelistet, der neueste heruntergeladen"
                 }
               },
               "other" : {
@@ -213859,7 +213859,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Alle Folgen aufgelistet, die neueste (%lld) heruntergeladen"
+                  "value" : "Alle Folgen aufgelistet, die neueste heruntergeladen"
                 }
               },
               "other" : {
@@ -214743,7 +214743,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Alle Einträge aufgelistet, der neueste (%lld) heruntergeladen"
+                  "value" : "Alle Einträge aufgelistet, der neueste heruntergeladen"
                 }
               },
               "other" : {
@@ -264978,7 +264978,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Gelöscht wird %@: Es landet im Papierkorb, wo du es wiederherstellen kannst, bis er geleert wird."
+            "value" : "Gelöscht wird %@ und kommt in den Papierkorb; bis er geleert wird, lässt sich das rückgängig machen."
           }
         },
         "es" : {
@@ -265115,7 +265115,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Gelöscht wird %@: Es wird endgültig gelöscht und lässt sich nicht wiederherstellen."
+            "value" : "Endgültig gelöscht wird %@; das lässt sich nicht rückgängig machen."
           }
         },
         "es" : {
@@ -265252,7 +265252,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Gelöscht wird %@: Es bleibt im Bibliotheksordner von TextMouth."
+            "value" : "Gelöscht wird %@, bleibt aber im Bibliotheksordner von TextMouth."
           }
         },
         "es" : {
@@ -266815,7 +266815,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Darin sind %@, die TextMouth nicht importiert."
+            "value" : "Es enthält %@, die TextMouth nicht importiert."
           }
         },
         "es" : {
@@ -268358,7 +268358,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sie ist eine Streaming-Playlist für Web-Audio, die TextMouth nicht importiert."
+            "value" : "Es handelt sich um eine Streaming-Playlist für Web-Audio, die TextMouth nicht importiert."
           }
         },
         "es" : {
@@ -268769,7 +268769,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Darin ist kein Audiotrack mit einem Start verzeichnet, den TextMouth lesen kann."
+            "value" : "Darin ist kein Audiotrack mit einer Startzeit verzeichnet, die TextMouth lesen kann."
           }
         },
         "es" : {
@@ -269180,7 +269180,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Möglicherweise ist die Datei beschädigt oder von einer anderen Art."
+            "value" : "Die Datei ist möglicherweise beschädigt oder hat ein anderes Format."
           }
         },
         "es" : {
@@ -291205,7 +291205,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Listet jeden Artikel auf, hält den neuesten (%lld) heruntergeladen und entfernt ältere Downloads, die TextMouth angelegt hat; Stelle, Lesezeichen und Einstellungen bleiben erhalten."
+                  "value" : "Listet jeden Artikel auf, hält den neuesten heruntergeladen und entfernt ältere Downloads, die TextMouth angelegt hat; Stelle, Lesezeichen und Einstellungen bleiben erhalten."
                 }
               },
               "other" : {
@@ -291809,7 +291809,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Listet jede Folge und jeden Artikel auf, hält den neuesten (%lld) heruntergeladen und entfernt ältere Downloads, die TextMouth angelegt hat; Stelle, Lesezeichen und Einstellungen bleiben erhalten."
+                  "value" : "Listet jede Folge und jeden Artikel auf, hält den neuesten Eintrag heruntergeladen und entfernt ältere Downloads, die TextMouth angelegt hat; Stelle, Lesezeichen und Einstellungen bleiben erhalten."
                 }
               },
               "other" : {
@@ -292413,7 +292413,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Listet jede Folge auf, hält die neueste (%lld) heruntergeladen und entfernt ältere Downloads, die TextMouth angelegt hat; Stelle, Lesezeichen und Einstellungen bleiben erhalten."
+                  "value" : "Listet jede Folge auf, hält die neueste heruntergeladen und entfernt ältere Downloads, die TextMouth angelegt hat; Stelle, Lesezeichen und Einstellungen bleiben erhalten."
                 }
               },
               "other" : {
@@ -293291,13 +293291,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Listet die neueste (%lld), die du noch nicht wiedergegeben hast, und alle Downloads. Lädt nur herunter, was du anforderst; die übrigen behalten ihre Einträge und kommen zurück, wenn du mehr auflistest."
+                  "value" : "Listet den neuesten Eintrag, den du noch nicht wiedergegeben hast, und alle Downloads. Lädt nur herunter, was du anforderst; die übrigen bleiben gespeichert und kommen zurück, wenn du mehr auflistest."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Listet die neuesten %lld, die du noch nicht wiedergegeben hast, und alle Downloads. Lädt nur herunter, was du anforderst; die übrigen behalten ihre Einträge und kommen zurück, wenn du mehr auflistest."
+                  "value" : "Listet die neuesten %lld, die du noch nicht wiedergegeben hast, und alle Downloads. Lädt nur herunter, was du anforderst; die übrigen bleiben gespeichert und kommen zurück, wenn du mehr auflistest."
                 }
               }
             }
@@ -293758,13 +293758,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Listet die neueste (%lld), die du noch nicht gelesen hast, und alle Downloads. Lädt nur herunter, was du anforderst; die übrigen behalten ihre Einträge und kommen zurück, wenn du mehr auflistest."
+                  "value" : "Listet den neuesten Artikel, den du noch nicht gelesen hast, und alle Downloads. Lädt nur herunter, was du anforderst; die übrigen bleiben gespeichert und kommen zurück, wenn du mehr auflistest."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Listet die neuesten %lld, die du noch nicht gelesen hast, und alle Downloads. Lädt nur herunter, was du anforderst; die übrigen behalten ihre Einträge und kommen zurück, wenn du mehr auflistest."
+                  "value" : "Listet die neuesten %lld, die du noch nicht gelesen hast, und alle Downloads. Lädt nur herunter, was du anforderst; die übrigen bleiben gespeichert und kommen zurück, wenn du mehr auflistest."
                 }
               }
             }
@@ -321435,7 +321435,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Verschiebt diesen Artikel (%lld) als Buch, das du bearbeiten kannst, in einen Bibliotheksordner; er verlässt den Feed"
+                  "value" : "Verschiebt diesen Artikel als Buch, das du bearbeiten kannst, in einen Bibliotheksordner; er verlässt den Feed"
                 }
               },
               "other" : {
@@ -321902,7 +321902,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Verschiebt diese Folge (%lld) als Buch, das du bearbeiten kannst, in einen Bibliotheksordner; sie verlässt den Feed"
+                  "value" : "Verschiebt diese Folge als Buch, das du bearbeiten kannst, in einen Bibliotheksordner; sie verlässt den Feed"
                 }
               },
               "other" : {
@@ -322369,7 +322369,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Verschiebt diesen Eintrag (%lld) als Buch, das du bearbeiten kannst, in einen Bibliotheksordner; er verlässt den Feed"
+                  "value" : "Verschiebt diesen Eintrag als Buch, das du bearbeiten kannst, in einen Bibliotheksordner; er verlässt den Feed"
                 }
               },
               "other" : {
@@ -344189,7 +344189,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Auf der %lld Seite dieses Comic-Archivs wurde kein Text gefunden."
+                  "value" : "Auf der einzigen Seite dieses Comic-Archivs wurde kein Text gefunden."
                 }
               },
               "other" : {
@@ -344656,7 +344656,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Auf der %lld Seite dieses Bilds wurde kein Text gefunden."
+                  "value" : "Auf der einzigen Seite dieses Bilds wurde kein Text gefunden."
                 }
               },
               "other" : {
@@ -356830,7 +356830,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Nur der neueste (%lld) aufgelistet"
+                  "value" : "Nur der neueste Eintrag aufgelistet"
                 }
               },
               "other" : {
@@ -368405,7 +368405,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ein Teil von %@ konnte nicht decodiert werden und bleibt als Stille erhalten."
+            "value" : "Ein Teil von %@ konnte nicht decodiert werden und wurde durch Stille ersetzt."
           }
         },
         "es" : {
@@ -368730,13 +368730,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Ein Teil von %lld Datei, %@, konnte nicht decodiert werden und bleibt als Stille erhalten."
+                  "value" : "In %lld Datei (%@) konnte ein Teil nicht decodiert werden und wurde durch Stille ersetzt."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Ein Teil von %lld Dateien, %@, konnte nicht decodiert werden und bleibt als Stille erhalten."
+                  "value" : "In %lld Dateien (%@) konnten Teile nicht decodiert werden und wurden durch Stille ersetzt."
                 }
               }
             }
@@ -478182,7 +478182,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth kann den Ton von „%@“ nicht umwandeln: Er liegt in einer Audioart vor, die TextMouth nicht liest."
+            "value" : "TextMouth kann den Ton von „%@“ nicht umwandeln: Er liegt in einem Audioformat vor, das TextMouth nicht liest."
           }
         },
         "es" : {
