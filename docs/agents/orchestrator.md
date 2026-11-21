@@ -232,6 +232,12 @@ An agent waits for its result with `Scripts/agents/wait-for-result.py --agent <s
 Two branches that each pass can fail together; the suite after each merge on the merged tree is what counts.
 A branch started before another merged must rebase before its final suite.
 
+## Intermittent failures are bugs
+<!-- id: intermittent-failures-are-bugs; keys: flaky test, retry, test_iterations, indeterminate; src: Scripts/agents/test_command.py -->
+
+The user's rule: always spend time tracking down and fixing intermittently failing tests.
+A test that passes on a retry is a bug to hunt, not a pass: find the cause, fix it, and prove the fix with many runs (`test_iterations`, see [Tests on GitHub Actions](../developer/testing-github.md)).
+
 ## The orchestrator's own memory
 <!-- id: orchestrator-own-memory; keys: memory directory, report to the user, decisions, unverified; src: -->
 
@@ -271,6 +277,10 @@ For a wave of small tasks, the orchestrator can launch team leads in place of ta
 - Put the rule against reading or copying the user's live library (`AGENTS.md`, The user's standing rules) in every prompt, a reviewer's included: a reviewer copied two books to `/tmp` when its prompt lacked it.
 - A message sent with SendMessage reaches an agent at its next tool call, and a question on the board can go unseen, so send a message for anything urgent.
 - **The Agent tool runs at most 20 subagents at once** in a session ("Concurrent subagent limit reached (20)"), so count the leads, reviewers, and workers before a launch.
+  A finished agent keeps its slot until it is stopped, so stop it, and launch the rest as slots free.
+  Stopping it also ends its leftover background checks and timers.
+- An agent in an isolated worktree cannot write the main checkout, so scratch folders and reports go elsewhere, and the report is the agent's final message.
+- A translator must not run `check`: one run takes about 12 minutes on an eleven-language catalog, and twenty at once pushed the load past 80 (see [Translating TextMouth](../developer/translation.md#translating-at-scale)).
 
 ### Trains and builds
 <!-- id: lessons-trains-and-builds; keys: train base, zsh status, build-train, shared base; src: Scripts/agents/build-train.py -->
