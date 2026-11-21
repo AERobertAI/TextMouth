@@ -1,0 +1,506 @@
+{
+ "language": "ko",
+ "reviews": [
+  {
+   "part": 1,
+   "areas": [
+    "library",
+    "storage and settings"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ also holds %lld books a newer TextMouth added, which are kept.",
+     "english": {
+      "one": "%@ also holds %lld book a newer TextMouth added, which is kept.",
+      "other": "%@ also holds %lld books a newer TextMouth added, which are kept."
+     },
+     "before": {
+      "other": "%@에는 더 새로운 TextMouth가 추가한 책 %lld권도 있으며, 그대로 유지됩니다."
+     },
+     "after": {
+      "other": "%@에는 더 새로운 버전의 TextMouth가 추가한 책 %lld권도 있으며, 그대로 유지됩니다."
+     },
+     "why": "natural: a newer TextMouth is a newer version of TextMouth in Korean"
+    },
+    {
+     "key": "%@ has no transcript text to search now, because %@",
+     "english": "%1$@ has no transcript text to search now, because %2$@",
+     "before": "지금은 %1$@의 검색할 대본 텍스트가 없습니다. 이유: %2$@",
+     "after": "%1$@에는 지금 검색할 대본 텍스트가 없습니다. 이유: %2$@",
+     "why": "natural: the genitive before a relative clause (X의 검색할) is a literal build; Korean says X에는"
+    },
+    {
+     "key": "%@ has no transcript text to search now, because its edited text can't be used: %@",
+     "english": "%1$@ has no transcript text to search now, because its edited text can't be used: %2$@",
+     "before": "지금은 %1$@의 검색할 대본 텍스트가 없습니다. 편집한 텍스트를 사용할 수 없기 때문입니다: %2$@",
+     "after": "%1$@에는 지금 검색할 대본 텍스트가 없습니다. 편집한 텍스트를 사용할 수 없기 때문입니다: %2$@",
+     "why": "natural: X에는 instead of the literal genitive X의 검색할"
+    },
+    {
+     "key": "%@ has no transcript text to search now.",
+     "english": "%@ has no transcript text to search now.",
+     "before": "지금은 %@의 검색할 대본 텍스트가 없습니다.",
+     "after": "%@에는 지금 검색할 대본 텍스트가 없습니다.",
+     "why": "natural: X에는 instead of the literal genitive X의 검색할"
+    },
+    {
+     "key": "%@, %@, in %@",
+     "english": "%1$@, %2$@, in %3$@",
+     "before": "%1$@, %2$@, %3$@ 안",
+     "after": "%1$@, %2$@, %3$@에서",
+     "why": "natural: in the book is 책에서; 책 안 means physically inside it"
+    },
+    {
+     "key": "%@, by %@, %@, in %@, added %@",
+     "english": "%1$@, by %2$@, %3$@, in %4$@, added %5$@",
+     "before": "%1$@, 저자 %2$@, %3$@, %4$@ 위치, 추가일 %5$@",
+     "after": "%1$@, 저자 %2$@, %3$@, 위치 %4$@, 추가일 %5$@",
+     "why": "natural: in a folder is 위치 X, as Speak Info says it; X 위치 reads as the location of X"
+    },
+    {
+     "key": "Add rules to change how text is spoken. They apply top to bottom.",
+     "english": "Add rules to change how text is spoken. They apply top to bottom.",
+     "before": "텍스트를 읽는 방식을 바꾸는 규칙을 추가합니다. 규칙은 위에서 아래로 적용됩니다.",
+     "after": "텍스트를 읽는 방식을 바꾸려면 규칙을 추가하십시오. 규칙은 위에서 아래로 적용됩니다.",
+     "why": "meaning: an instruction under No substitution rules; 규칙을 추가합니다 says something adds them"
+    },
+    {
+     "key": "Always offers a view all the time. When Applicable offers it only while it lists something: the Reading List while it holds a book, episode, or article, and Feeds while there is a feed. Hidden leaves it out. A window keeps its view until you choose another.",
+     "english": "Always offers a view all the time. When Applicable offers it only while it lists something: the Reading List while it holds a book, episode, or article, and Feeds while there is a feed. Hidden leaves it out. A window keeps its view until you choose another.",
+     "before": "항상은 보기를 계속 표시합니다. 해당하는 경우는 목록에 항목이 있을 때만 표시합니다. 읽기 목록은 책, 에피소드 또는 기사가 있을 때, 피드는 피드가 있을 때 표시합니다. 숨김은 보기를 제외합니다. 윈도우는 다른 보기를 선택할 때까지 해당 보기를 유지합니다.",
+     "after": "“항상”은 보기를 계속 표시합니다. “해당하는 경우”는 목록에 항목이 있을 때만 표시합니다. 읽기 목록은 책, 에피소드 또는 기사가 있을 때, 피드는 피드가 있을 때 표시됩니다. “숨김”은 보기를 제외합니다. 윈도우는 다른 보기를 선택할 때까지 해당 보기를 유지합니다.",
+     "why": "grammar: the Reading List and Feeds are shown (passive), not showing; the option names are quoted, since Korean has no capitals to mark them"
+    },
+    {
+     "key": "Backward navigation unit: %@",
+     "english": "Backward navigation unit: %@",
+     "before": "뒤로 이동 단위: %@",
+     "after": "뒤로 탐색 단위: %@",
+     "why": "term: navigation unit is 탐색 단위, as its own label Backward navigation unit and 16 other strings say"
+    },
+    {
+     "key": "But %@ also holds %lld books a newer TextMouth added: they are kept where they are, and so is every folder that holds one.",
+     "english": {
+      "one": "But %@ also holds %lld book a newer TextMouth added: it is kept where it is, and so is every folder that holds it.",
+      "other": "But %@ also holds %lld books a newer TextMouth added: they are kept where they are, and so is every folder that holds one."
+     },
+     "before": {
+      "other": "하지만 %@에는 더 새로운 TextMouth가 추가한 책 %lld권도 있습니다. 그 책은 있던 자리에 유지되며, 그 책이 들어 있는 모든 폴더도 유지됩니다."
+     },
+     "after": {
+      "other": "하지만 %@에는 더 새로운 버전의 TextMouth가 추가한 책 %lld권도 있습니다. 그 책은 있던 자리에 유지되며, 그 책이 들어 있는 모든 폴더도 유지됩니다."
+     },
+     "why": "natural: a newer TextMouth is a newer version of TextMouth in Korean"
+    },
+    {
+     "key": "Choose a folder outside it.",
+     "english": "Choose a folder outside it.",
+     "before": "그 밖의 폴더를 선택하십시오.",
+     "after": "그 바깥에 있는 폴더를 선택하십시오.",
+     "why": "meaning: outside it (the Trash) is 그 바깥; 그 밖의 means other than that"
+    },
+    {
+     "key": "Choose a location outside it.",
+     "english": "Choose a location outside it.",
+     "before": "그 밖의 위치를 선택하십시오.",
+     "after": "그 바깥에 있는 위치를 선택하십시오.",
+     "why": "meaning: outside it (the data directory) is 그 바깥; 그 밖의 means other than that"
+    },
+    {
+     "key": "Chooses a folder with another copy of this library and lists what differs. Neither copy changes.",
+     "english": "Chooses a folder with another copy of this library and lists what differs. Neither copy changes.",
+     "before": "다른 보관함 사본이 있는 폴더를 선택하고 차이점을 나열합니다. 어느 사본도 변경되지 않습니다.",
+     "after": "이 보관함의 다른 사본이 있는 폴더를 선택하고 차이점을 나열합니다. 어느 사본도 변경되지 않습니다.",
+     "why": "meaning: another copy of this library, not a copy of a different library"
+    },
+    {
+     "key": "Closes Search Library; results stay for next time",
+     "english": "Closes Search Library; results stay for next time",
+     "before": "보관함 검색을 닫습니다. 결과는 다음을 위해 유지됩니다.",
+     "after": "보관함 검색을 닫습니다. 결과는 다음에 다시 열 때까지 유지됩니다.",
+     "why": "natural: for next time is not 다음을 위해 (for the following) in Korean"
+    },
+    {
+     "key": "Folders and the Reading List list what they always have. You can move them, and hide the Reading List.",
+     "english": "Folders and the Reading List list what they always have. You can move them, and hide the Reading List.",
+     "before": "폴더와 읽기 목록은 항상 같은 항목을 나열합니다. 위치를 이동할 수 있고, 읽기 목록은 숨길 수 있습니다.",
+     "after": "폴더 보기와 읽기 목록 보기는 그 안에 있는 항목을 항상 나열합니다. 위치를 이동할 수 있고, 읽기 목록은 숨길 수 있습니다.",
+     "why": "meaning: they always list what they hold, not always the same items; named as views"
+    },
+    {
+     "key": "Folders is always shown: every folder and feed opens there.",
+     "english": "Folders is always shown: every folder and feed opens there.",
+     "before": "폴더는 항상 표시됩니다. 모든 폴더와 피드가 여기에서 열립니다.",
+     "after": "폴더 보기는 항상 표시됩니다. 모든 폴더와 피드가 이 보기에서 열립니다.",
+     "why": "meaning: Folders is the view; 폴더는 항상 표시됩니다 says folders are always shown"
+    },
+    {
+     "key": "Forward navigation unit: %@",
+     "english": "Forward navigation unit: %@",
+     "before": "앞으로 이동 단위: %@",
+     "after": "앞으로 탐색 단위: %@",
+     "why": "term: navigation unit is 탐색 단위, as its own label Forward navigation unit and 16 other strings say"
+    },
+    {
+     "key": "Get a fresh copy of the archive, then import it again.",
+     "english": "Get a fresh copy of the archive, then import it again.",
+     "before": "보관 파일의 새 사본을 받은 다음 다시 가져오십시오.",
+     "after": "압축 파일의 새 사본을 받은 다음 다시 가져오십시오.",
+     "why": "term: an archive is 압축 파일, as 18 other strings say; 보관 파일 sounds like 보관함 (library) and 보관 (keep)"
+    },
+    {
+     "key": "Getting Your Library",
+     "english": "Getting Your Library",
+     "before": "보관함 가져오는 중",
+     "after": "보관함을 불러오는 중",
+     "why": "term: getting files from the cloud; 가져오는 중 is the glossary Import and reads as importing the library"
+    },
+    {
+     "key": "Guessed from the book's braille. If it reads wrongly, choose Unified English Braille in Braille Code.",
+     "english": "Guessed from the book's braille. If it reads wrongly, choose Unified English Braille in Braille Code.",
+     "before": "책의 점자에서 추정했습니다. 잘못 읽으면 점자 코드에서 통합 영어 점자를 선택하십시오.",
+     "after": "책의 점자에서 추정했습니다. 잘못 읽히면 점자 코드에서 통합 영어 점자를 선택하십시오.",
+     "why": "grammar: if it reads wrongly is the passive 읽히면; 읽으면 means if you read it wrongly"
+    },
+    {
+     "key": "If the library's own %@ arrives from %@ later, %@ may keep two copies of it, and this Mac and the other would disagree about which library this is.",
+     "english": "If the library's own %1$@ arrives from %2$@ later, %3$@ may keep two copies of it, and this Mac and the other would disagree about which library this is.",
+     "before": "나중에 %2$@에서 보관함 자체의 %1$@이(가) 도착하면 %3$@ 앱이 사본을 두 개 보관할 수 있으며, 이 Mac과 다른 Mac이 어느 쪽이 이 보관함인지 서로 다르게 판단할 수 있습니다.",
+     "after": "나중에 %2$@에서 보관함 자체의 %1$@이(가) 도착하면 %3$@이(가) 사본을 두 개 보관할 수 있으며, 이 Mac과 다른 Mac이 어느 쪽이 이 보관함인지 서로 다르게 판단할 수 있습니다.",
+     "why": "grammar: %3$@ can be the cloud, so %3$@ 앱 reads 클라우드 앱; same build as its sibling sentence"
+    },
+    {
+     "key": "In %@, a feed",
+     "english": "In %@, a feed",
+     "before": "%@ 피드 안",
+     "after": "위치: %@ 피드",
+     "why": "natural: matches In %@ (위치: %@) of the same summary; a trailing 안 reads as physically inside"
+    },
+    {
+     "key": "Keeping %@ on this Mac",
+     "english": "Keeping %@ on this Mac",
+     "before": "%@ 이 Mac에 보관 중",
+     "after": "%@을(를) 이 Mac에 보관하는 중",
+     "why": "grammar: without its particle the title runs into 이 Mac, heard as the subject particle 이"
+    },
+    {
+     "key": "Last opened %@",
+     "english": "Last opened %@",
+     "before": "마지막으로 연 시점 %@",
+     "after": "마지막으로 연 날짜: %@",
+     "why": "natural: %@ is a date such as yesterday; 연 시점 어제 juxtaposes them with no link"
+    },
+    {
+     "key": "Lists",
+     "english": "Lists",
+     "before": "나열",
+     "after": "나열할 항목",
+     "why": "natural: the label of the checkboxes of what a view lists; 나열 alone is the noun enumeration"
+    },
+    {
+     "key": "Minimum pause threshold",
+     "english": "Minimum pause threshold",
+     "before": "최소 정지 구간 기준",
+     "after": "최소 일시 정지 시간",
+     "why": "meaning: the smart rewind minimum paused time (glossary Pause); 정지 구간 is a gap in speech"
+    },
+    {
+     "key": "Minimum pause: %lld seconds",
+     "english": {
+      "one": "Minimum pause: %lld second",
+      "other": "Minimum pause: %lld seconds"
+     },
+     "before": {
+      "other": "최소 정지 구간: %lld초"
+     },
+     "after": {
+      "other": "최소 일시 정지 시간: %lld초"
+     },
+     "why": "meaning: the smart rewind minimum paused time (glossary Pause); 정지 구간 is a gap in speech"
+    },
+    {
+     "key": "Move %@ to Trash",
+     "english": "Move %@ to Trash",
+     "before": "%@ 휴지통으로 이동",
+     "after": "%@을(를) 휴지통으로 이동",
+     "why": "grammar: the object needs its particle before 휴지통으로, as in the VoiceOver label of the same button"
+    },
+    {
+     "key": "New Folder cancelled.",
+     "english": "New Folder cancelled.",
+     "before": "새 폴더가 취소되었습니다.",
+     "after": "새 폴더 만들기가 취소되었습니다.",
+     "why": "meaning: making the folder was cancelled, not a new folder"
+    },
+    {
+     "key": "New Folder cancelled. %@: %@.",
+     "english": "New Folder cancelled. %1$@: %2$@.",
+     "before": "새 폴더가 취소되었습니다. %1$@: %2$@.",
+     "after": "새 폴더 만들기가 취소되었습니다. %1$@: %2$@.",
+     "why": "meaning: making the folder was cancelled, not a new folder"
+    },
+    {
+     "key": "Not Within the Last",
+     "english": "Not Within the Last",
+     "before": "다음 기간 이내가 아님",
+     "after": "최근 기간 이내가 아님",
+     "why": "term: 최근, as the descriptions of the same condition say (최근 %lld일 이내); replaces this review earlier 지난"
+    },
+    {
+     "key": "Nothing checks that this is the right choice. If numbers and punctuation sound wrong, choose another.",
+     "english": "Nothing checks that this is the right choice. If numbers and punctuation sound wrong, choose another.",
+     "before": "이 선택이 올바른지 확인하는 방법은 없습니다. 숫자와 문장 부호가 이상하게 들리면 다른 것을 선택하십시오.",
+     "after": "이 선택이 올바른지는 자동으로 확인되지 않습니다. 숫자와 문장 부호가 이상하게 들리면 다른 것을 선택하십시오.",
+     "why": "meaning: nothing checks it automatically; there is no way to check contradicted the next sentence"
+    },
+    {
+     "key": "Nothing is copied, and nothing is created in %@.",
+     "english": "Nothing is copied, and nothing is created in %@.",
+     "before": "아무것도 복사되거나 %@에 만들어지지 않습니다.",
+     "after": "아무것도 복사되지 않으며, %@에는 아무것도 만들어지지 않습니다.",
+     "why": "grammar: 아무것도 needs a negated verb, and 복사되거나 was not; now built as its sibling sentence"
+    },
+    {
+     "key": "One Unit for Both Directions",
+     "english": "One Unit for Both Directions",
+     "before": "양방향에 하나의 단위",
+     "after": "양방향에 같은 단위 사용",
+     "why": "natural: 양방향에 하나의 단위 is a word-for-word copy; pairs with the choice beside it"
+    },
+    {
+     "key": "Opens the book at this match",
+     "english": "Opens the book at this match",
+     "before": "이 일치 항목이 있는 책을 엽니다.",
+     "after": "이 일치 항목 위치에서 책을 엽니다.",
+     "why": "meaning: opens the book at the match, not the book that holds the match"
+    },
+    {
+     "key": "Re-extracts cached text from all books. Useful after parser fixes or format improvements.",
+     "english": "Re-extracts cached text from all books. Useful after parser fixes or format improvements.",
+     "before": "모든 책의 캐시된 텍스트를 다시 추출합니다. 파서를 수정했거나 포맷이 개선된 후에 유용합니다.",
+     "after": "모든 책의 캐시된 텍스트를 다시 추출합니다. 파서가 수정되었거나 포맷이 개선된 후에 유용합니다.",
+     "why": "meaning: TextMouth parsers are fixed by updates; 파서를 수정했거나/업데이트한 says the listener changed the parser"
+    },
+    {
+     "key": "Separate Forward and Backward Units",
+     "english": "Separate Forward and Backward Units",
+     "before": "앞으로와 뒤로 단위를 따로 사용",
+     "after": "방향별로 단위를 따로 사용",
+     "why": "natural: 앞으로와 뒤로 joins two adverbs with 와; Korean says per direction (방향별로)"
+    },
+    {
+     "key": "Text extraction progress: %lld of %lld",
+     "english": "Text extraction progress: %1$lld of %2$lld",
+     "before": "텍스트 추출 진행률: %2$lld 중 %1$lld",
+     "after": "텍스트 추출 진행률: 책 %2$lld권 중 %1$lld권",
+     "why": "natural: the counts are of books and need their counter"
+    },
+    {
+     "key": "TextMouth could not move %@ to the current library format.",
+     "english": "TextMouth could not move %@ to the current library format.",
+     "before": "TextMouth가 %@을(를) 현재 보관함 포맷으로 이동하지 못했습니다.",
+     "after": "TextMouth가 %@을(를) 현재 보관함 포맷으로 전환하지 못했습니다.",
+     "why": "natural: a book is converted (전환) to the library format; one does not move (이동) something to a format"
+    },
+    {
+     "key": "TextMouth is switching to another library and opening again on it.",
+     "english": "TextMouth is switching to another library and opening again on it.",
+     "before": "TextMouth가 다른 보관함으로 전환하고 그 보관함으로 다시 여는 중입니다.",
+     "after": "TextMouth가 다른 보관함으로 전환하여 그 보관함으로 다시 열리는 중입니다.",
+     "why": "grammar: TextMouth reopens itself (열리다), as its sibling sentences say; 다시 여는 lacks an object"
+    },
+    {
+     "key": "TextMouth moved %@ to the current library format, but with a problem:",
+     "english": "TextMouth moved %@ to the current library format, but with a problem:",
+     "before": "TextMouth가 %@을(를) 현재 보관함 포맷으로 이동했지만 문제가 있었습니다:",
+     "after": "TextMouth가 %@을(를) 현재 보관함 포맷으로 전환했지만 문제가 있었습니다:",
+     "why": "natural: a book is converted (전환) to the library format; one does not move (이동) something to a format"
+    },
+    {
+     "key": "TextMouth moved %@ to the current library format, but with problems:",
+     "english": "TextMouth moved %@ to the current library format, but with problems:",
+     "before": "TextMouth가 %@을(를) 현재 보관함 포맷으로 이동했지만 문제가 있었습니다:",
+     "after": "TextMouth가 %@을(를) 현재 보관함 포맷으로 전환했지만 문제가 있었습니다:",
+     "why": "natural: a book is converted (전환) to the library format; one does not move (이동) something to a format"
+    },
+    {
+     "key": "TextMouth needs the drive “%@” connected to open the library.",
+     "english": "TextMouth needs the drive “%@” connected to open the library.",
+     "before": "보관함을 열려면 TextMouth에 드라이브 “%@”이(가) 연결되어 있어야 합니다.",
+     "after": "TextMouth가 보관함을 열려면 드라이브 “%@”이(가) 연결되어 있어야 합니다.",
+     "why": "meaning: the drive is connected to the Mac; TextMouth에 연결 said connected to TextMouth"
+    },
+    {
+     "key": "TextMouth will open the library in %@ the next time it opens, but it couldn't open again by itself: %@",
+     "english": "TextMouth will open the library in %1$@ the next time it opens, but it couldn't open again by itself: %2$@",
+     "before": "TextMouth는 다음에 열릴 때 %1$@의 보관함을 열지만, 스스로 다시 열 수 없었습니다: %2$@",
+     "after": "TextMouth는 다음에 열릴 때 %1$@의 보관함을 열지만, 스스로 다시 열리지 못했습니다: %2$@",
+     "why": "grammar: TextMouth could not reopen itself (열리다); 다시 열 수 없었습니다 lacks an object"
+    },
+    {
+     "key": "The archive expands to %@, but the disk holding the TextMouth library has only %@ free, and TextMouth keeps %@ of it free.",
+     "english": "The archive expands to %1$@, but the disk holding the TextMouth library has only %2$@ free, and TextMouth keeps %3$@ of it free.",
+     "before": "보관 파일을 풀면 %1$@이(가) 되지만, TextMouth 보관함이 있는 디스크의 여유 공간은 %2$@뿐이며 TextMouth는 그중 %3$@을(를) 비워 둡니다.",
+     "after": "압축 파일을 풀면 %1$@이(가) 되지만, TextMouth 보관함이 있는 디스크의 여유 공간은 %2$@뿐이며 TextMouth는 그중 %3$@을(를) 비워 둡니다.",
+     "why": "term: an archive is 압축 파일, as 18 other strings say; 보관 파일 sounds like 보관함 (library) and 보관 (keep)"
+    },
+    {
+     "key": "The archive expands to %@, more than the %@ TextMouth extracts from archives holding audio or other archives.",
+     "english": "The archive expands to %1$@, more than the %2$@ TextMouth extracts from archives holding audio or other archives.",
+     "before": "보관 파일을 풀면 %1$@이(가) 되며, 이는 오디오 또는 다른 보관 파일이 들어 있는 보관 파일에서 TextMouth가 추출하는 한도인 %2$@을(를) 초과합니다.",
+     "after": "압축 파일을 풀면 %1$@이(가) 되며, 이는 오디오 또는 다른 압축 파일이 들어 있는 압축 파일에서 TextMouth가 추출하는 한도인 %2$@을(를) 초과합니다.",
+     "why": "term: an archive is 압축 파일, as 18 other strings say; 보관 파일 sounds like 보관함 (library) and 보관 (keep)"
+    },
+    {
+     "key": "The archive expands to %@, more than the %@ TextMouth extracts from archives without audio.",
+     "english": "The archive expands to %1$@, more than the %2$@ TextMouth extracts from archives without audio.",
+     "before": "보관 파일을 풀면 %1$@이(가) 되며, 이는 오디오가 없는 보관 파일에서 TextMouth가 추출하는 한도인 %2$@을(를) 초과합니다.",
+     "after": "압축 파일을 풀면 %1$@이(가) 되며, 이는 오디오가 없는 압축 파일에서 TextMouth가 추출하는 한도인 %2$@을(를) 초과합니다.",
+     "why": "term: an archive is 압축 파일, as 18 other strings say; 보관 파일 sounds like 보관함 (library) and 보관 (keep)"
+    },
+    {
+     "key": "The archive holds %@ files and folders, more than the %@ TextMouth extracts in one import.",
+     "english": "The archive holds %1$@ files and folders, more than the %2$@ TextMouth extracts in one import.",
+     "before": "보관 파일에 파일과 폴더가 %1$@개 있으며, 이는 TextMouth가 한 번의 가져오기에서 추출하는 한도인 %2$@개를 초과합니다.",
+     "after": "압축 파일에 파일과 폴더가 %1$@개 있으며, 이는 TextMouth가 한 번의 가져오기에서 추출하는 한도인 %2$@개를 초과합니다.",
+     "why": "term: an archive is 압축 파일, as 18 other strings say; 보관 파일 sounds like 보관함 (library) and 보관 (keep)"
+    },
+    {
+     "key": "The archive holds more than the %@ it declares, so extraction stopped.",
+     "english": "The archive holds more than the %@ it declares, so extraction stopped.",
+     "before": "보관 파일에 선언된 %@보다 많은 내용이 들어 있어 추출을 중단했습니다.",
+     "after": "압축 파일에 선언된 %@보다 많은 내용이 들어 있어 추출을 중단했습니다.",
+     "why": "term: an archive is 압축 파일, as 18 other strings say; 보관 파일 sounds like 보관함 (library) and 보관 (keep)"
+    },
+    {
+     "key": "The archive “%@” inside it expands to %@, but the disk holding the TextMouth library has only %@ free, and TextMouth keeps %@ of it free.",
+     "english": "The archive “%1$@” inside it expands to %2$@, but the disk holding the TextMouth library has only %3$@ free, and TextMouth keeps %4$@ of it free.",
+     "before": "그 안의 보관 파일 “%1$@”을(를) 풀면 %2$@이(가) 되지만, TextMouth 보관함이 있는 디스크의 여유 공간은 %3$@뿐이며 TextMouth는 그중 %4$@을(를) 비워 둡니다.",
+     "after": "그 안의 압축 파일 “%1$@”을(를) 풀면 %2$@이(가) 되지만, TextMouth 보관함이 있는 디스크의 여유 공간은 %3$@뿐이며 TextMouth는 그중 %4$@을(를) 비워 둡니다.",
+     "why": "term: an archive is 압축 파일, as 18 other strings say; 보관 파일 sounds like 보관함 (library) and 보관 (keep)"
+    },
+    {
+     "key": "The book %@ is stored at %@, outside the data directory, so the move cannot carry it.",
+     "english": "The book %1$@ is stored at %2$@, outside the data directory, so the move cannot carry it.",
+     "before": "책 %1$@은(는) 데이터 디렉터리 밖의 %2$@에 저장되어 있어 이동으로 옮길 수 없습니다.",
+     "after": "책 %1$@은(는) 데이터 디렉터리 밖의 %2$@에 저장되어 있어 데이터 디렉터리와 함께 옮길 수 없습니다.",
+     "why": "natural: 이동으로 옮길 수 없습니다 says the moving cannot move it; the move is of the data directory"
+    },
+    {
+     "key": "The braille is translated to print again with this code. Nothing checks that it is the right choice. If words read wrongly, choose another.",
+     "english": "The braille is translated to print again with this code. Nothing checks that it is the right choice. If words read wrongly, choose another.",
+     "before": "점자를 선택한 코드로 다시 인쇄 문자로 번역합니다. 올바른 선택인지 확인하는 방법은 없습니다. 단어가 잘못 읽히면 다른 코드를 선택하십시오.",
+     "after": "점자를 선택한 코드로 다시 인쇄 문자로 번역합니다. 올바른 선택인지는 자동으로 확인되지 않습니다. 단어가 잘못 읽히면 다른 코드를 선택하십시오.",
+     "why": "meaning: nothing checks it automatically; there is no way to check contradicted the next sentence"
+    },
+    {
+     "key": "There is no view %@. Go to View reaches %lld views.",
+     "english": {
+      "one": "There is no view %@. Go to View reaches %lld view.",
+      "other": "There is no view %@. Go to View reaches %lld views."
+     },
+     "before": {
+      "other": "보기 %@번이 없습니다. 보기로 이동으로 이를 수 있는 보기는 %lld개입니다."
+     },
+     "after": {
+      "other": "보기 %@번이 없습니다. “보기로 이동”으로 갈 수 있는 보기는 %lld개입니다."
+     },
+     "why": "natural: 이를 수 있는 is literary, and the command name before 으로 needs quotes to read as a name"
+    },
+    {
+     "key": "This braille looks like English Braille, American Edition. Choose its Braille Code in Book Information.",
+     "english": "This braille looks like English Braille, American Edition. Choose its Braille Code in Book Information.",
+     "before": "이 점자는 영어 점자 미국판과 비슷해 보입니다. 책 정보에서 점자 코드를 선택하십시오.",
+     "after": "이 점자는 영어 점자 미국판과 비슷해 보입니다. 책 정보의 점자 코드에서 이 코드를 선택하십시오.",
+     "why": "meaning: choose that code in the Braille Code pop-up, not choose a braille code"
+    },
+    {
+     "key": "To use another folder, open Settings, Storage, and choose %@ or %@.",
+     "english": "To use another folder, open Settings, Storage, and choose %1$@ or %2$@.",
+     "before": "다른 폴더를 사용하려면 설정, 저장 공간을 열고 %1$@ 또는 %2$@을(를) 선택하십시오.",
+     "after": "다른 폴더를 사용하려면 설정에서 저장 공간을 열고 %1$@ 또는 %2$@을(를) 선택하십시오.",
+     "why": "natural: open Settings, Storage is the Storage tab of Settings (설정에서 저장 공간), not a list of two things"
+    },
+    {
+     "key": "Together with the archives inside it, the archive expands to %@, more than the %@ TextMouth extracts from archives holding audio or other archives.",
+     "english": "Together with the archives inside it, the archive expands to %1$@, more than the %2$@ TextMouth extracts from archives holding audio or other archives.",
+     "before": "그 안의 보관 파일까지 합치면 보관 파일을 풀 때 %1$@이(가) 되며, 이는 오디오 또는 다른 보관 파일이 들어 있는 보관 파일에서 TextMouth가 추출하는 한도인 %2$@을(를) 초과합니다.",
+     "after": "그 안의 압축 파일까지 합치면 압축 파일을 풀 때 %1$@이(가) 되며, 이는 오디오 또는 다른 압축 파일이 들어 있는 압축 파일에서 TextMouth가 추출하는 한도인 %2$@을(를) 초과합니다.",
+     "why": "term: an archive is 압축 파일, as 18 other strings say; 보관 파일 sounds like 보관함 (library) and 보관 (keep)"
+    },
+    {
+     "key": "Together with the archives inside it, the archive expands to %@, more than the %@ TextMouth extracts from archives without audio.",
+     "english": "Together with the archives inside it, the archive expands to %1$@, more than the %2$@ TextMouth extracts from archives without audio.",
+     "before": "그 안의 보관 파일까지 합치면 보관 파일을 풀 때 %1$@이(가) 되며, 이는 오디오가 없는 보관 파일에서 TextMouth가 추출하는 한도인 %2$@을(를) 초과합니다.",
+     "after": "그 안의 압축 파일까지 합치면 압축 파일을 풀 때 %1$@이(가) 되며, 이는 오디오가 없는 압축 파일에서 TextMouth가 추출하는 한도인 %2$@을(를) 초과합니다.",
+     "why": "term: an archive is 압축 파일, as 18 other strings say; 보관 파일 sounds like 보관함 (library) and 보관 (keep)"
+    },
+    {
+     "key": "Together with the archives inside it, the archive holds %@ files and folders, more than the %@ TextMouth extracts in one import.",
+     "english": "Together with the archives inside it, the archive holds %1$@ files and folders, more than the %2$@ TextMouth extracts in one import.",
+     "before": "그 안의 보관 파일까지 합치면 보관 파일에 파일과 폴더가 %1$@개 있으며, 이는 TextMouth가 한 번의 가져오기에서 추출하는 한도인 %2$@개를 초과합니다.",
+     "after": "그 안의 압축 파일까지 합치면 압축 파일에 파일과 폴더가 %1$@개 있으며, 이는 TextMouth가 한 번의 가져오기에서 추출하는 한도인 %2$@개를 초과합니다.",
+     "why": "term: an archive is 압축 파일, as 18 other strings say; 보관 파일 sounds like 보관함 (library) and 보관 (keep)"
+    },
+    {
+     "key": "Use it after parser updates.",
+     "english": "Use it after parser updates.",
+     "before": "파서를 업데이트한 후에 사용하십시오.",
+     "after": "파서가 업데이트된 후에 사용하십시오.",
+     "why": "meaning: TextMouth parsers are fixed by updates; 파서를 수정했거나/업데이트한 says the listener changed the parser"
+    },
+    {
+     "key": "What happens when a book finishes playing",
+     "english": "What happens when a book finishes playing",
+     "before": "책 재생이 끝났을 때 동작합니다.",
+     "after": "책 재생이 끝났을 때의 동작입니다.",
+     "why": "meaning: the hint says what happens (의 동작입니다), as its four sibling hints do; 동작합니다 says it acts"
+    },
+    {
+     "key": "When enabled, use \\b in the pattern for word boundaries",
+     "english": "When enabled, use \\b in the pattern for word boundaries",
+     "before": "활성화하면 패턴에서 단어 경계에 \\b를 사용합니다.",
+     "after": "활성화하면 패턴에서 단어 경계는 \\b로 나타냅니다.",
+     "why": "meaning: tells how to write a word boundary; \\b를 사용합니다 read as something the switch does"
+    },
+    {
+     "key": "Where none of their words are left, %@, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "english": "Where none of their words are left, %@, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "before": "단어가 하나도 남지 않으면 %@, 각 항목은 해당 챕터의 거의 같은 지점이나 두 읽기에서 공통되는 가장 가까운 구절로 이동합니다.",
+     "after": "%@ 단어가 하나도 남지 않으면 각 항목은 해당 챕터의 거의 같은 지점이나 두 읽기 결과에 공통된 가장 가까운 구절로 이동합니다.",
+     "why": "grammar: the example (as when garbled letters become Cyrillic) modified the moving; it now modifies no words left; two readings are 읽기 결과"
+    },
+    {
+     "key": "Where none of their words are left, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "english": "Where none of their words are left, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "before": "단어가 하나도 남지 않으면 각 항목은 해당 챕터의 거의 같은 지점이나 두 읽기에서 공통되는 가장 가까운 구절로 이동합니다.",
+     "after": "단어가 하나도 남지 않으면 각 항목은 해당 챕터의 거의 같은 지점이나 두 읽기 결과에 공통된 가장 가까운 구절로 이동합니다.",
+     "why": "natural: two readings are two re-read results (읽기 결과), not two acts of reading"
+    },
+    {
+     "key": "Within the Last",
+     "english": "Within the Last",
+     "before": "다음 기간 이내",
+     "after": "최근 기간 이내",
+     "why": "meaning: 다음 기간 reads as the next (future) period; the condition looks back, 최근, as its descriptions say"
+    },
+    {
+     "key": "from its byte order mark",
+     "english": "from its byte order mark",
+     "before": "바이트 순서 표식에 따라",
+     "after": "바이트 순서 표시에 따라",
+     "why": "term: byte order mark is 바이트 순서 표시 (BOM) in Korean"
+    },
+    {
+     "key": "in the folder “%@”",
+     "english": "in the folder “%@”",
+     "before": "폴더 “%@” 안",
+     "after": "폴더 “%@” 안에",
+     "why": "grammar: the locative particle, as its pair at the top of the library (보관함 최상위에) has"
+    }
+   ]
+  }
+ ]
+}
