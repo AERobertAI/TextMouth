@@ -1348,6 +1348,559 @@
      "why": "meaning: “o topo” reads as the top of a list; the catalog calls the folder level “o nível superior da biblioteca”"
     }
    ]
+  },
+  {
+   "part": 3,
+   "areas": [
+    "reader, formats, and menus",
+    "export, speech, and the iPhone's screens"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ in",
+     "english": "%@ in",
+     "before": "%@ decorridos",
+     "after": "Tempo decorrido: %@",
+     "why": "grammar: the time can be '1 minuto', which the plural decorridos cannot agree with; matches part 1's Tempo decorrido for elapsed"
+    },
+    {
+     "key": "%@ now waits before %@, in case it is pressed twice.",
+     "english": "%1$@ now waits before %2$@, in case it is pressed twice.",
+     "before": "%1$@ agora espera antes de %2$@, caso seja pressionada duas vezes.",
+     "after": "A tecla %1$@ agora espera antes de %2$@, caso seja pressionada duas vezes.",
+     "why": "grammar: the first placeholder is a key such as J, so the feminine pressionada needs the noun tecla to agree with"
+    },
+    {
+     "key": "%@ remaining",
+     "english": "%@ remaining",
+     "before": "%@ restantes",
+     "after": "Tempo restante: %@",
+     "why": "grammar: the time can be '1 hora' or '1 minuto', which the plural restantes cannot agree with; a label and colon reads right for every time"
+    },
+    {
+     "key": "%@ remaining at current speed",
+     "english": "%@ remaining at current speed",
+     "before": "%@ restantes na velocidade atual",
+     "after": "Tempo restante na velocidade atual: %@",
+     "why": "grammar: the time can be '1 minuto', which the plural restantes cannot agree with; a label and colon reads right for every time, as parts 1 and 2 did"
+    },
+    {
+     "key": "%@ remaining in this heading",
+     "english": "%@ remaining in this heading",
+     "before": "%@ restantes neste cabeçalho",
+     "after": "Tempo restante neste cabeçalho: %@",
+     "why": "grammar: the time can be '1 minuto', which the plural restantes cannot agree with; a label and colon reads right for every time"
+    },
+    {
+     "key": "%@ tries again, %@ quits without saving, %@ keeps TextMouth open.",
+     "english": "%1$@ tries again, %2$@ quits without saving, %3$@ keeps TextMouth open.",
+     "before": "%1$@ tenta novamente, %2$@ sai sem salvar, %3$@ mantém o TextMouth aberto.",
+     "after": "%1$@ tenta novamente, %2$@ encerra sem salvar, %3$@ mantém o TextMouth aberto.",
+     "why": "term: macOS's Portuguese quits an app with Encerrar, as the catalog's Encerrar o TextMouth does; the button is now Encerrar mesmo assim"
+    },
+    {
+     "key": "%@ was not added back: no copy of the text its package held could be kept first, so TextMouth left the text as it was.",
+     "english": "%@ was not added back: no copy of the text its package held could be kept first, so TextMouth left the text as it was.",
+     "before": "Não foi possível adicionar %@ de volta: antes, nenhuma cópia do texto contido no pacote pôde ser guardada, então o TextMouth deixou o texto como estava.",
+     "after": "Não foi possível adicionar %@ de volta: nenhuma cópia do texto do pacote pôde ser guardada antes, então o TextMouth deixou o texto como estava.",
+     "why": "natural: the fronted 'antes,' copied the English 'first'; the adverb goes after the verb"
+    },
+    {
+     "key": "%@ works in %@.",
+     "english": "%1$@ works in %2$@.",
+     "before": "%1$@ funciona em %2$@.",
+     "after": "%1$@ vale para %2$@.",
+     "why": "grammar: em before the window names o editor de áudio and a janela de gravação gave 'em o' and 'em a', which must contract; vale para takes them as they are"
+    },
+    {
+     "key": "%lld WPM",
+     "english": {
+      "one": "%lld WPM",
+      "other": "%lld WPM"
+     },
+     "before": {
+      "many": "%lld de PPM",
+      "one": "%lld PPM",
+      "other": "%lld PPM"
+     },
+     "after": {
+      "one": "%lld PPM",
+      "many": "%lld PPM",
+      "other": "%lld PPM"
+     },
+     "why": "grammar: an abbreviated unit takes no 'de' after a million (1.000.000 PPM, as 1.000.000 km)"
+    },
+    {
+     "key": "Bookmark %@, %@, Note: %@, added %@",
+     "english": "Bookmark %1$@, %2$@, Note: %3$@, added %4$@",
+     "before": "Marcador %1$@, %2$@, Nota: %3$@, adicionado %4$@",
+     "after": "Marcador %1$@, %2$@, Nota: %3$@, adicionado em %4$@",
+     "why": "grammar: the last placeholder is a date such as 9 de outubro de 2026, which takes em after adicionado"
+    },
+    {
+     "key": "Bookmark %@, %@, added %@",
+     "english": "Bookmark %1$@, %2$@, added %3$@",
+     "before": "Marcador %1$@, %2$@, adicionado %3$@",
+     "after": "Marcador %1$@, %2$@, adicionado em %3$@",
+     "why": "grammar: the last placeholder is a date such as 9 de outubro de 2026, which takes em after adicionado"
+    },
+    {
+     "key": "Bookmark %@, Note: %@, added %@",
+     "english": "Bookmark %1$@, Note: %2$@, added %3$@",
+     "before": "Marcador %1$@, Nota: %2$@, adicionado %3$@",
+     "after": "Marcador %1$@, Nota: %2$@, adicionado em %3$@",
+     "why": "grammar: the last placeholder is a date such as 9 de outubro de 2026, which takes em after adicionado"
+    },
+    {
+     "key": "Bookmark %@, added %@",
+     "english": "Bookmark %1$@, added %2$@",
+     "before": "Marcador %1$@, adicionado %2$@",
+     "after": "Marcador %1$@, adicionado em %2$@",
+     "why": "grammar: the last placeholder is a date such as 9 de outubro de 2026, which takes em after adicionado"
+    },
+    {
+     "key": "Braille Ready Format: pages of braille, for braille displays and embossers.",
+     "english": "Braille Ready Format: pages of braille, for braille displays and embossers.",
+     "before": "Braille Ready Format: páginas em braille, para displays braille e impressoras braille.",
+     "after": "Braille Ready Format: páginas em braille, para linhas braille e impressoras braille.",
+     "why": "term: Apple's Brazilian VoiceOver calls a braille display linha braille (Linha braille conectada), not display braille"
+    },
+    {
+     "key": "Break",
+     "english": "Break",
+     "before": "Pausa",
+     "after": "Quebra",
+     "why": "term: AppKit's Brazilian key names (FunctionKeyNames.loctable) call Break Quebra; Pausa also clashed with the Pause key"
+    },
+    {
+     "key": "CR LF suits most braille displays and embossers.",
+     "english": "CR LF suits most braille displays and embossers.",
+     "before": "CR LF serve para a maioria dos displays braille e impressoras braille.",
+     "after": "CR LF serve para a maioria das linhas braille e impressoras braille.",
+     "why": "term: Apple's Brazilian VoiceOver calls a braille display linha braille (Linha braille conectada), not display braille"
+    },
+    {
+     "key": "Change this book's forward and backward navigation unit",
+     "english": "Change this book's forward and backward navigation unit",
+     "before": "Altera a unidade de navegação deste livro para frente e para trás",
+     "after": "Altera a unidade de navegação para frente e para trás deste livro",
+     "why": "natural: 'deste livro' split the term, so it read as changing the unit towards forward and backward"
+    },
+    {
+     "key": "Change this book's forward and backward navigation units",
+     "english": "Change this book's forward and backward navigation units",
+     "before": "Altera as unidades de navegação deste livro para frente e para trás",
+     "after": "Altera as unidades de navegação para frente e para trás deste livro",
+     "why": "natural: 'deste livro' split the term, so it read as changing the units towards forward and backward"
+    },
+    {
+     "key": "Chooses what Play and the skip buttons move by.",
+     "english": "Chooses what Play and the skip buttons move by.",
+     "before": "Escolhe a unidade pela qual Reproduzir e os botões de pular avançam.",
+     "after": "Escolhe a unidade pela qual Reproduzir e os botões Avançar e Retroceder se movem.",
+     "why": "meaning: avançam left out moving backward; the skip buttons are the glossary's Avançar and Retroceder"
+    },
+    {
+     "key": "Clear Display",
+     "english": "Clear Display",
+     "before": "Limpar tela",
+     "after": "Limpar exibição",
+     "why": "term: AppKit's Brazilian key names write Clear Display as LimpExib, Limpar Exibição; tela is the screen"
+    },
+    {
+     "key": "Close All",
+     "english": "Close All",
+     "before": "Fechar tudo",
+     "after": "Fechar todas",
+     "why": "term: SwiftUI's and AppKit's Brazilian menus name the File menu's Close All Fechar Todas (the windows)"
+    },
+    {
+     "key": "Exported %@ to %@.",
+     "english": "Exported %1$@ to %2$@.",
+     "before": "Exportado: %1$@, para %2$@.",
+     "after": "Exportação concluída: %1$@ para %2$@.",
+     "why": "natural: 'Exportado: 3 itens, para Documentos.' broke the sentence with a colon and a comma to dodge agreement"
+    },
+    {
+     "key": "Fading out",
+     "english": "Fading out",
+     "before": "Esmaecendo",
+     "after": "Diminuindo o volume",
+     "why": "meaning: esmaecer is a picture or colour fading; the sleep timer lowers the sound"
+    },
+    {
+     "key": "For trying out with a braille display.",
+     "english": "For trying out with a braille display.",
+     "before": "Para experimentar com um display braille.",
+     "after": "Para experimentar com uma linha braille.",
+     "why": "term: Apple's Brazilian VoiceOver calls a braille display linha braille (Linha braille conectada), not display braille"
+    },
+    {
+     "key": "Forward Delete",
+     "english": "Forward Delete",
+     "before": "Apagar para frente",
+     "after": "Apagar adiante",
+     "why": "term: Brazilian VoiceOver speaks the Forward Delete key as apagar adiante (SCROutputSpeechComponent.loctable)"
+    },
+    {
+     "key": "Heading info display mode",
+     "english": "Heading info display mode",
+     "before": "Modo de informação do cabeçalho",
+     "after": "Informação exibida nos cabeçalhos",
+     "why": "natural: 'Modo de informação' did not say what the picker sets; it chooses the information shown after each heading"
+    },
+    {
+     "key": "How soon a second press must follow the first. A key with different single and double press actions waits this long before its single press acts.",
+     "english": "How soon a second press must follow the first. A key with different single and double press actions waits this long before its single press acts.",
+     "before": "Quão rápido um segundo pressionamento deve seguir o primeiro. Uma tecla com ações diferentes para um e dois pressionamentos espera esse tempo antes de agir no pressionamento simples.",
+     "after": "O tempo máximo entre o primeiro e o segundo pressionamento. Uma tecla com ações diferentes para pressionamento simples e duplo espera esse tempo antes de executar a ação do pressionamento simples.",
+     "why": "natural: 'Quão rápido ... deve seguir' and 'agir no pressionamento simples' were calques; the time is the longest gap between presses"
+    },
+    {
+     "key": "How the BRF writes each braille cell. Most braille displays and embossers read North American Braille ASCII; those set up for German read Eurobraille. To share with a reader elsewhere, export a PEF.",
+     "english": "How the BRF writes each braille cell. Most braille displays and embossers read North American Braille ASCII; those set up for German read Eurobraille. To share with a reader elsewhere, export a PEF.",
+     "before": "Como o BRF grava cada célula braille. A maioria dos displays braille e impressoras braille lê North American Braille ASCII; os configurados para alemão leem Eurobraille. Para compartilhar com um leitor em outro lugar, exporte um PEF.",
+     "after": "Como o BRF grava cada célula braille. A maioria das linhas braille e impressoras braille lê North American Braille ASCII; as configuradas para alemão leem Eurobraille. Para compartilhar com um leitor em outro lugar, exporte um PEF.",
+     "why": "term: Apple's Brazilian VoiceOver calls a braille display linha braille (Linha braille conectada), so the feminine as configuradas follows"
+    },
+    {
+     "key": "Kept %@ of %lld chapters until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To go on from chapter %@, export the same range at the same speed and pitch.",
+     "english": {
+      "one": "Kept %@ of %lld chapter until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To go on from chapter %@, export the same range at the same speed and pitch.",
+      "other": "Kept %@ of %lld chapters until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To go on from chapter %@, export the same range at the same speed and pitch."
+     },
+     "before": {
+      "many": "Foram mantidos %@ de %lld de capítulos até o TextMouth fechar, outra exportação de áudio falado começar ou a voz, o texto, as substituições ou as pausas do livro mudarem. Para continuar a partir do capítulo %@, exporte o mesmo intervalo com a mesma velocidade e o mesmo tom.",
+      "one": "Foram mantidos %@ de %lld capítulo até o TextMouth fechar, outra exportação de áudio falado começar ou a voz, o texto, as substituições ou as pausas do livro mudarem. Para continuar a partir do capítulo %@, exporte o mesmo intervalo com a mesma velocidade e o mesmo tom.",
+      "other": "Foram mantidos %@ de %lld capítulos até o TextMouth fechar, outra exportação de áudio falado começar ou a voz, o texto, as substituições ou as pausas do livro mudarem. Para continuar a partir do capítulo %@, exporte o mesmo intervalo com a mesma velocidade e o mesmo tom."
+     },
+     "after": {
+      "one": "O TextMouth guarda %@ de %lld capítulo até encerrar, outra exportação de áudio falado começar ou a voz, o texto, as substituições ou as pausas do livro mudarem. Para continuar a partir do capítulo %@, exporte o mesmo intervalo com a mesma velocidade e o mesmo tom.",
+      "many": "O TextMouth guarda %@ de %lld de capítulos até encerrar, outra exportação de áudio falado começar ou a voz, o texto, as substituições ou as pausas do livro mudarem. Para continuar a partir do capítulo %@, exporte o mesmo intervalo com a mesma velocidade e o mesmo tom.",
+      "other": "O TextMouth guarda %@ de %lld capítulos até encerrar, outra exportação de áudio falado começar ou a voz, o texto, as substituições ou as pausas do livro mudarem. Para continuar a partir do capítulo %@, exporte o mesmo intervalo com a mesma velocidade e o mesmo tom."
+     },
+     "why": "grammar: the count kept can be 1, which 'Foram mantidos' cannot agree with, so TextMouth is the subject; quitting is encerrar, as in Encerrar o TextMouth"
+    },
+    {
+     "key": "Kept all %lld spoken chapters until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To make the audio file from them, export the same range at the same speed and pitch.",
+     "english": {
+      "one": "Kept all %lld spoken chapter until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To make the audio file from it, export the same range at the same speed and pitch.",
+      "other": "Kept all %lld spoken chapters until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To make the audio file from them, export the same range at the same speed and pitch."
+     },
+     "before": {
+      "many": "Foram mantidos todos os %lld de capítulos falados até o TextMouth fechar, outra exportação de áudio falado começar ou a voz, o texto, as substituições ou as pausas do livro mudarem. Para criar o arquivo de áudio a partir deles, exporte o mesmo intervalo com a mesma velocidade e o mesmo tom.",
+      "one": "Foi mantido todo o %lld capítulo falado até o TextMouth fechar, outra exportação de áudio falado começar ou a voz, o texto, as substituições ou as pausas do livro mudarem. Para criar o arquivo de áudio a partir dele, exporte o mesmo intervalo com a mesma velocidade e o mesmo tom.",
+      "other": "Foram mantidos todos os %lld capítulos falados até o TextMouth fechar, outra exportação de áudio falado começar ou a voz, o texto, as substituições ou as pausas do livro mudarem. Para criar o arquivo de áudio a partir deles, exporte o mesmo intervalo com a mesma velocidade e o mesmo tom."
+     },
+     "after": {
+      "one": "Foi mantido o %lld capítulo falado até o TextMouth encerrar, outra exportação de áudio falado começar ou a voz, o texto, as substituições ou as pausas do livro mudarem. Para criar o arquivo de áudio a partir dele, exporte o mesmo intervalo com a mesma velocidade e o mesmo tom.",
+      "many": "Foram mantidos todos os %lld de capítulos falados até o TextMouth encerrar, outra exportação de áudio falado começar ou a voz, o texto, as substituições ou as pausas do livro mudarem. Para criar o arquivo de áudio a partir deles, exporte o mesmo intervalo com a mesma velocidade e o mesmo tom.",
+      "other": "Foram mantidos todos os %lld capítulos falados até o TextMouth encerrar, outra exportação de áudio falado começar ou a voz, o texto, as substituições ou as pausas do livro mudarem. Para criar o arquivo de áudio a partir deles, exporte o mesmo intervalo com a mesma velocidade e o mesmo tom."
+     },
+     "why": "term: quitting is encerrar, as in the catalog's Encerrar o TextMouth; fechar reads as closing a window"
+    },
+    {
+     "key": "Kept the spoken chapter until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To make the audio file from it, export the same range at the same speed and pitch.",
+     "english": "Kept the spoken chapter until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To make the audio file from it, export the same range at the same speed and pitch.",
+     "before": "Foi mantido o capítulo falado até o TextMouth fechar, outra exportação de áudio falado começar ou a voz, o texto, as substituições ou as pausas do livro mudarem. Para criar o arquivo de áudio a partir dele, exporte o mesmo intervalo com a mesma velocidade e o mesmo tom.",
+     "after": "Foi mantido o capítulo falado até o TextMouth encerrar, outra exportação de áudio falado começar ou a voz, o texto, as substituições ou as pausas do livro mudarem. Para criar o arquivo de áudio a partir dele, exporte o mesmo intervalo com a mesma velocidade e o mesmo tom.",
+     "why": "term: quitting is encerrar, as in the catalog's Encerrar o TextMouth; fechar reads as closing a window"
+    },
+    {
+     "key": "Minimize All",
+     "english": "Minimize All",
+     "before": "Minimizar tudo",
+     "after": "Minimizar todas",
+     "why": "term: AppKit's Brazilian Window menu (MenuCommands.loctable) names Minimize All Minimizar Todas"
+    },
+    {
+     "key": "Mode Switch",
+     "english": "Mode Switch",
+     "before": "Troca de modo",
+     "after": "Alterar modo",
+     "why": "term: AppKit's Brazilian key names (FunctionKeyNames.loctable) call Mode Switch Alterar Modo"
+    },
+    {
+     "key": "Moves back or forward by %lld seconds.",
+     "english": {
+      "one": "Moves back or forward by %lld second.",
+      "other": "Moves back or forward by %lld seconds."
+     },
+     "before": {
+      "many": "Move para trás ou para a frente em %lld de segundos.",
+      "one": "Move para trás ou para a frente em %lld segundo.",
+      "other": "Move para trás ou para a frente em %lld segundos."
+     },
+     "after": {
+      "one": "Retrocede ou avança %lld segundo.",
+      "many": "Retrocede ou avança %lld de segundos.",
+      "other": "Retrocede ou avança %lld segundos."
+     },
+     "why": "natural: 'Move para trás ou para a frente em 10 segundos' reads as moving within 10 seconds; the glossary's verbs say it plainly"
+    },
+    {
+     "key": "Moves back or forward by bookmark.",
+     "english": "Moves back or forward by bookmark.",
+     "before": "Move para trás ou para a frente por marcador.",
+     "after": "Retrocede ou avança por marcador.",
+     "why": "natural: mover needs an object in Portuguese; the glossary's Retroceder and Avançar say back or forward"
+    },
+    {
+     "key": "Moves back or forward by heading.",
+     "english": "Moves back or forward by heading.",
+     "before": "Move para trás ou para a frente por cabeçalho.",
+     "after": "Retrocede ou avança por cabeçalho.",
+     "why": "natural: mover needs an object in Portuguese; the glossary's Retroceder and Avançar say back or forward"
+    },
+    {
+     "key": "Moves back or forward by page.",
+     "english": "Moves back or forward by page.",
+     "before": "Move para trás ou para a frente por página.",
+     "after": "Retrocede ou avança por página.",
+     "why": "natural: mover needs an object in Portuguese; the glossary's Retroceder and Avançar say back or forward"
+    },
+    {
+     "key": "Moves back or forward by paragraph.",
+     "english": "Moves back or forward by paragraph.",
+     "before": "Move para trás ou para a frente por parágrafo.",
+     "after": "Retrocede ou avança por parágrafo.",
+     "why": "natural: mover needs an object in Portuguese; the glossary's Retroceder and Avançar say back or forward"
+    },
+    {
+     "key": "Moves back or forward by sentence.",
+     "english": "Moves back or forward by sentence.",
+     "before": "Move para trás ou para a frente por frase.",
+     "after": "Retrocede ou avança por frase.",
+     "why": "natural: mover needs an object in Portuguese; the glossary's Retroceder and Avançar say back or forward"
+    },
+    {
+     "key": "Moves back or forward by subheading.",
+     "english": "Moves back or forward by subheading.",
+     "before": "Move para trás ou para a frente por subcabeçalho.",
+     "after": "Retrocede ou avança por subcabeçalho.",
+     "why": "natural: mover needs an object in Portuguese; the glossary's Retroceder and Avançar say back or forward"
+    },
+    {
+     "key": "Number Sign",
+     "english": "Number Sign",
+     "before": "Sinal de número",
+     "after": "Cerquilha",
+     "why": "term: 'Sinal de número' is a calque of Number Sign; Brazil names # cerquilha"
+    },
+    {
+     "key": "Page Down",
+     "english": "Page Down",
+     "before": "Página para baixo",
+     "after": "Avançar página",
+     "why": "term: Brazilian VoiceOver speaks the Page Down key as avançar página (SCROutputSpeechComponent.loctable), so the shortcut names it as the listener hears it"
+    },
+    {
+     "key": "Page Up",
+     "english": "Page Up",
+     "before": "Página para cima",
+     "after": "Retroceder página",
+     "why": "term: Brazilian VoiceOver speaks the Page Up key as retroceder página (SCROutputSpeechComponent.loctable), so the shortcut names it as the listener hears it"
+    },
+    {
+     "key": "Paste and Match Style",
+     "english": "Paste and Match Style",
+     "before": "Colar e corresponder ao estilo",
+     "after": "Colar com o mesmo estilo",
+     "why": "term: AppKit's Brazilian Edit menu (MenuCommands.loctable) names this command Colar com o Mesmo Estilo, so the sentence must name it so"
+    },
+    {
+     "key": "Playback stopped: the audio stopped responding. Press Play to try again; if it stops again, quit and reopen TextMouth.",
+     "english": "Playback stopped: the audio stopped responding. Press Play to try again; if it stops again, quit and reopen TextMouth.",
+     "before": "Reprodução interrompida: o áudio parou de responder. Pressione Reproduzir para tentar novamente; se parar outra vez, saia do TextMouth e abra-o novamente.",
+     "after": "Reprodução interrompida: o áudio parou de responder. Pressione Reproduzir para tentar novamente; se parar outra vez, encerre o TextMouth e abra-o de novo.",
+     "why": "term: quitting is encerrar, as in the catalog's Encerre o TextMouth e abra-o de novo, which also ends the doubled novamente"
+    },
+    {
+     "key": "Quit Anyway",
+     "english": "Quit Anyway",
+     "before": "Sair mesmo assim",
+     "after": "Encerrar mesmo assim",
+     "why": "term: macOS's Portuguese quits an app with Encerrar, as the catalog's Encerrar o TextMouth does"
+    },
+    {
+     "key": "Quitting TextMouth",
+     "english": "Quitting TextMouth",
+     "before": "Saindo do TextMouth",
+     "after": "Encerrando o TextMouth",
+     "why": "term: macOS's Portuguese quits an app with Encerrar, as the catalog's Encerrar o TextMouth does"
+    },
+    {
+     "key": "Quitting now leaves these changes unsaved:",
+     "english": "Quitting now leaves these changes unsaved:",
+     "before": "Sair agora deixa estas alterações sem salvar:",
+     "after": "Encerrar agora deixa estas alterações sem salvar:",
+     "why": "term: macOS's Portuguese quits an app with Encerrar, as the catalog's Encerrar o TextMouth does"
+    },
+    {
+     "key": "Refused here: %lld times while this window has been open.",
+     "english": {
+      "one": "Refused here: %lld time while this window has been open.",
+      "other": "Refused here: %lld times while this window has been open."
+     },
+     "before": {
+      "many": "Recusado aqui: %lld de vezes enquanto esta janela esteve aberta.",
+      "one": "Recusado aqui: %lld vez enquanto esta janela esteve aberta.",
+      "other": "Recusado aqui: %lld vezes enquanto esta janela esteve aberta."
+     },
+     "after": {
+      "one": "Recusado aqui: %lld vez desde que esta janela foi aberta.",
+      "many": "Recusado aqui: %lld de vezes desde que esta janela foi aberta.",
+      "other": "Recusado aqui: %lld vezes desde que esta janela foi aberta."
+     },
+     "why": "grammar: 'esteve aberta' says the window was open and is no longer; the report is read while it is still open"
+    },
+    {
+     "key": "Scroll Lock",
+     "english": "Scroll Lock",
+     "before": "Scroll Lock",
+     "after": "Fixar rolagem",
+     "why": "term: AppKit's Brazilian key names (FunctionKeyNames.loctable) call Scroll Lock Fixar Rolagem"
+    },
+    {
+     "key": "Skipped",
+     "english": "Skipped",
+     "before": "Ignorada",
+     "after": "Ignorado",
+     "why": "grammar: the mark is on a heading (cabeçalho, masculine), so skipped is ignorado"
+    },
+    {
+     "key": "Skipped, %@ (current heading) - level %lld",
+     "english": "Skipped, %1$@ (current heading) - level %2$lld",
+     "before": "Ignorada, %1$@ (cabeçalho atual) - nível %2$lld",
+     "after": "Ignorado, %1$@ (cabeçalho atual) - nível %2$lld",
+     "why": "grammar: the row is a heading (cabeçalho, masculine), so skipped is ignorado"
+    },
+    {
+     "key": "Skipped, %@ - level %lld",
+     "english": "Skipped, %1$@ - level %2$lld",
+     "before": "Ignorada, %1$@ - nível %2$lld",
+     "after": "Ignorado, %1$@ - nível %2$lld",
+     "why": "grammar: the row is a heading (cabeçalho, masculine), so skipped is ignorado"
+    },
+    {
+     "key": "Speed: %lld WPM",
+     "english": {
+      "one": "Speed: %lld WPM",
+      "other": "Speed: %lld WPM"
+     },
+     "before": {
+      "many": "Velocidade: %lld de PPM",
+      "one": "Velocidade: %lld PPM",
+      "other": "Velocidade: %lld PPM"
+     },
+     "after": {
+      "one": "Velocidade: %lld PPM",
+      "many": "Velocidade: %lld PPM",
+      "other": "Velocidade: %lld PPM"
+     },
+     "why": "grammar: an abbreviated unit takes no 'de' after a million, as in the other PPM strings"
+    },
+    {
+     "key": "Standard",
+     "english": "Standard",
+     "before": "Padrão",
+     "after": "Normal",
+     "why": "meaning: Padrão is this app's word for Default (a voz padrão do sistema), so a voice marked Padrão read as the default voice"
+    },
+    {
+     "key": "Stops the export and keeps the chapters already spoken until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. Exporting the same range at the same speed and pitch goes on from them.",
+     "english": "Stops the export and keeps the chapters already spoken until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. Exporting the same range at the same speed and pitch goes on from them.",
+     "before": "Interrompe a exportação e mantém os capítulos já falados até o TextMouth fechar, outra exportação de áudio falado começar ou a voz, o texto, as substituições ou as pausas do livro mudarem. Exportar o mesmo intervalo com a mesma velocidade e o mesmo tom continua a partir deles.",
+     "after": "Interrompe a exportação e mantém os capítulos já falados até o TextMouth encerrar, outra exportação de áudio falado começar ou a voz, o texto, as substituições ou as pausas do livro mudarem. Exportar o mesmo intervalo com a mesma velocidade e o mesmo tom continua a partir deles.",
+     "why": "term: quitting is encerrar, as in the catalog's Encerrar o TextMouth; fechar reads as closing a window"
+    },
+    {
+     "key": "TextMouth closed while opening %@, so it wasn't reopened.",
+     "english": "TextMouth closed while opening %@, so it wasn't reopened.",
+     "before": "O TextMouth fechou ao abrir %@, então ele não foi reaberto.",
+     "after": "O TextMouth fechou ao abrir %@, então o livro não foi reaberto.",
+     "why": "meaning: 'ele não foi reaberto' right after O TextMouth read as TextMouth not reopening; it is the book that was not opened again"
+    },
+    {
+     "key": "TextMouth is finishing up before it quits: %@. It quits when that is done.",
+     "english": "TextMouth is finishing up before it quits: %@. It quits when that is done.",
+     "before": "O TextMouth está concluindo antes de sair: %@. Ele sai quando isso terminar.",
+     "after": "O TextMouth está concluindo antes de encerrar: %@. Ele encerra quando isso terminar.",
+     "why": "term: macOS's Portuguese quits an app with Encerrar, as the catalog's O TextMouth vai encerrar does"
+    },
+    {
+     "key": "The original file you imported is not touched.",
+     "english": "The original file you imported is not touched.",
+     "before": "O arquivo original que você importou não é tocado.",
+     "after": "O arquivo original que você importou permanece intacto.",
+     "why": "meaning: 'não é tocado' also says 'is not played' in an audio app; intacto says the file is left as it was"
+    },
+    {
+     "key": "The reading list is empty. To add a book, choose Add to Reading List from its context menu, its VoiceOver actions, or the Library menu.",
+     "english": "The reading list is empty. To add a book, choose Add to Reading List from its context menu, its VoiceOver actions, or the Library menu.",
+     "before": "A lista de leitura está vazia. Para adicionar um livro, escolha Adicionar à lista de leitura no menu de contexto dele, nas ações do VoiceOver ou no menu Biblioteca.",
+     "after": "A lista de leitura está vazia. Para adicionar um livro, escolha Adicionar à lista de leitura no menu de atalho dele, nas ações do VoiceOver ou no menu Biblioteca.",
+     "why": "term: Apple's Brazilian VoiceOver names a context menu Menu de atalho (SCRElement.loctable), the only such string in pt-BR"
+    },
+    {
+     "key": "This file is not a web archive TextMouth can read. It may be damaged, or another kind of file.",
+     "english": "This file is not a web archive TextMouth can read. It may be damaged, or another kind of file.",
+     "before": "Este arquivo não é um arquivo da web que o TextMouth consiga ler. Ele pode estar danificado ou ser de outro tipo.",
+     "after": "Este arquivo não é um arquivo web que o TextMouth consiga ler. Ele pode estar danificado ou ser de outro tipo.",
+     "why": "term: Safari names the format Arquivo Web, and part 1 made Web Archive arquivo web; arquivo da web reads as any file from the web"
+    },
+    {
+     "key": "This web archive holds a file of the type “%@”, not a web page or text, so it has nothing to read.",
+     "english": "This web archive holds a file of the type “%@”, not a web page or text, so it has nothing to read.",
+     "before": "Este arquivo da web contém um arquivo do tipo “%@”, não uma página da web nem texto, então não há nada para ler.",
+     "after": "Este arquivo web contém um arquivo do tipo “%@”, não uma página da web nem texto, então não há nada para ler.",
+     "why": "term: Safari names the format Arquivo Web, and part 1 made Web Archive arquivo web; arquivo da web reads as any file from the web"
+    },
+    {
+     "key": "Type a page as the book numbers it, such as 12 or xii.",
+     "english": "Type a page as the book numbers it, such as 12 or xii.",
+     "before": "Digite uma página como o livro a numera, como 12 ou xii.",
+     "after": "Digite uma página como o livro a numera, por exemplo, 12 ou xii.",
+     "why": "natural: 'como o livro a numera, como 12' doubled como; the example takes por exemplo"
+    },
+    {
+     "key": "What a book of this kind moves by until it has a unit of its own.",
+     "english": "What a book of this kind moves by until it has a unit of its own.",
+     "before": "Pelo que um livro deste tipo se move até ter uma unidade própria.",
+     "after": "A unidade pela qual um livro deste tipo se move até ter uma unidade própria.",
+     "why": "natural: a sentence that opens with 'Pelo que' copied the English 'What ... moves by'; Portuguese names the unit first"
+    },
+    {
+     "key": "Works in %@",
+     "english": "Works in %@",
+     "before": "Funciona em %@",
+     "after": "Vale para %@",
+     "why": "grammar: em before the window names o editor de áudio and a janela de gravação gave 'em o' and 'em a', which must contract; vale para takes them as they are"
+    },
+    {
+     "key": "Writes this and every other too-deeply nested chapter of this export as plain paragraphs of lines, without asking again.",
+     "english": "Writes this and every other too-deeply nested chapter of this export as plain paragraphs of lines, without asking again.",
+     "before": "Grava este e todos os outros capítulos aninhados fundo demais desta exportação como parágrafos simples de linhas, sem perguntar de novo.",
+     "after": "Grava este e todos os outros capítulos com aninhamento profundo demais desta exportação como parágrafos simples de linhas, sem perguntar de novo.",
+     "why": "natural: 'aninhados fundo demais' is a calque; the export's own alert says tem aninhamento profundo demais"
+    },
+    {
+     "key": "fading out",
+     "english": "fading out",
+     "before": "esmaecendo",
+     "after": "diminuindo o volume",
+     "why": "meaning: esmaecer is a picture or colour fading; the sleep timer lowers the sound, as Diminuindo o volume now says"
+    },
+    {
+     "key": "the book's record can't be changed now. TextMouth tries again when you next save or return.",
+     "english": "the book's record can't be changed now. TextMouth tries again when you next save or return.",
+     "before": "o registro do livro não pode ser alterado agora. O TextMouth tenta novamente quando você salvar ou voltar na próxima vez.",
+     "after": "o registro do livro não pode ser alterado agora. O TextMouth tenta novamente na próxima vez que você salvar ou voltar.",
+     "why": "natural: 'quando você salvar ou voltar na próxima vez' put the time after the verbs; Portuguese says na próxima vez que"
+    }
+   ]
   }
  ]
 }
