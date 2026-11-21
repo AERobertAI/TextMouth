@@ -29288,7 +29288,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@, von %2$@, %3$@, in %4$@, hinzugefügt %5$@"
+            "value" : "%1$@, von %2$@, %3$@, in %4$@, hinzugefügt am %5$@"
           }
         },
         "en" : {
@@ -31111,7 +31111,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@, verweist auf %2$@"
+            "value" : "%1$@, der auf %2$@ verweist"
           }
         },
         "en" : {
@@ -112690,7 +112690,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Jedes andere Buch übergeht „The“, „A“ und „An“."
+            "value" : "Bei jedem anderen Buch übergeht TextMouth „The“, „A“ und „An“."
           }
         },
         "es" : {
@@ -117877,7 +117877,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Fragt zuerst nach, erstellt dann einen neuen Index aus den Büchern in diesem Ordner und öffnet die Bibliothek."
+            "value" : "Fragt zuerst nach, erstellt dann einen neuen Bibliotheksindex aus den Büchern in diesem Ordner und öffnet die Bibliothek."
           }
         },
         "es" : {
@@ -123175,7 +123175,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Automatisch wiedergeben nach Navigation"
+            "value" : "Nach Navigation automatisch wiedergeben"
           }
         },
         "es" : {
@@ -150999,7 +150999,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Wähle keine Steuerung pro Buch, eine gemeinsame Auswahl oder ein Menü mit getrennten Auswahlen für vorwärts und rückwärts."
+            "value" : "Wähle zwischen keiner Steuerung pro Buch, einer gemeinsamen Auswahl und einem Menü mit getrennten Auswahlen für vorwärts und rückwärts."
           }
         },
         "es" : {
@@ -178732,7 +178732,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Standard-Tonhöhe für neue Bücher. 1.0 ist normal. Jedes Buch kann sie überschreiben."
+            "value" : "Standard-Tonhöhe für neue Bücher. 1,0 ist normal. Jedes Buch kann sie überschreiben."
           }
         },
         "es" : {
@@ -189349,7 +189349,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nicht zurückspulen, wenn kürzer als dies pausiert wurde."
+            "value" : "Nicht zurückspulen, wenn die Pause kürzer als dieser Wert war."
           }
         },
         "es" : {
@@ -430854,7 +430854,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ von %2$@ durchsucht…"
+            "value" : "%2$@, davon %1$@ durchsucht…"
           }
         },
         "en" : {
@@ -433022,7 +433022,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Alle %lld Bücher auswählen"
+                  "value" : "%lld Buch auswählen"
                 }
               },
               "other" : {
@@ -442387,7 +442387,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Alle %1$lld Treffer in %2$@ anzeigen"
+                  "value" : "%1$lld Treffer in %2$@ anzeigen"
                 }
               },
               "other" : {
@@ -477086,7 +477086,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Text, der in jedem Buch gesucht werden soll"
+            "value" : "Suchtext für alle Bücher"
           }
         },
         "es" : {
@@ -511777,7 +511777,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Das Einblendmenü „Ansicht“ eines Bibliotheksfensters bietet diese Ansichten in dieser Reihenfolge an. Ein neues Fenster öffnet sich bei der ersten angebotenen."
+            "value" : "Das Einblendmenü „Ansicht“ eines Bibliotheksfensters bietet diese Ansichten in dieser Reihenfolge an. Ein neues Fenster öffnet sich mit der ersten angebotenen Ansicht."
           }
         },
         "es" : {
@@ -557175,7 +557175,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Der Text hat sich seit der Suche geändert; es wurde zum nächstgelegenen Treffer gesprungen."
+            "value" : "Der Text hat sich seit der Suche geändert; zum nächstgelegenen Treffer gesprungen."
           }
         },
         "es" : {
@@ -603576,7 +603576,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nicht gelesen: %1$@ wurde nicht erneut angefordert, weil das Laufwerk auf ein früheres Lesen nicht geantwortet hat, %2$@"
+            "value" : "Nicht gelesen: %1$@ wurde nicht erneut angefordert, weil das Laufwerk auf einen früheren Lesezugriff noch nicht reagiert hat, %2$@"
           }
         },
         "en" : {
@@ -620114,7 +620114,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Wenn eingeschaltet, fragt das Entfernen eines Buchs zuerst, ob du %@ oder sie im Bibliotheksordner von TextMouth behalten möchtest."
+            "value" : "Wenn eingeschaltet, fragt TextMouth beim Entfernen eines Buchs zuerst, ob du %@ oder sie im Bibliotheksordner von TextMouth behalten möchtest."
           }
         },
         "es" : {
@@ -639584,7 +639584,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "eigene"
+            "value" : "selbst erstellt"
           }
         },
         "es" : {
@@ -642878,7 +642878,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ordner ist %@, einschließlich Unterordner"
+            "value" : "Ordner ist %@, einschließlich Unterordnern"
           }
         },
         "es" : {
@@ -643152,7 +643152,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ordner ist nicht %@, einschließlich Unterordner"
+            "value" : "Ordner ist nicht %@, einschließlich Unterordnern"
           }
         },
         "es" : {
@@ -666097,7 +666097,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "daher kann TextMouth nicht feststellen, ob die beiden Kopien eine Bibliothek sind, und hat nichts verglichen."
+            "value" : "daher kann TextMouth nicht feststellen, ob die beiden Kopien dieselbe Bibliothek sind, und hat nichts verglichen."
           }
         },
         "es" : {
@@ -682140,7 +682140,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "„%@“, was diese Version von TextMouth nicht lesen kann"
+            "value" : "„%@“, für diese Version von TextMouth nicht lesbar"
           }
         },
         "es" : {
