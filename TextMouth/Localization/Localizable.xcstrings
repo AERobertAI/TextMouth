@@ -124410,7 +124410,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Cancelar traslado"
+            "value" : "Cancelar movimiento"
           }
         },
         "fr" : {
@@ -287102,7 +287102,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sacar el contenido"
+            "value" : "Mover el contenido fuera"
           }
         },
         "fr" : {
@@ -575800,7 +575800,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Con Sacar el contenido, la carpeta del canal se mueve con el resto."
+            "value" : "Con Mover el contenido fuera, la carpeta del canal se mueve con el resto."
           }
         },
         "fr" : {
@@ -575925,7 +575925,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Con Sacar el contenido, sus carpetas se mueven con el resto."
+            "value" : "Con Mover el contenido fuera, sus carpetas se mueven con el resto."
           }
         },
         "fr" : {
@@ -576050,7 +576050,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Con Sacar el contenido, permanecen en la biblioteca y solo se elimina la carpeta."
+            "value" : "Con Mover el contenido fuera, permanecen en la biblioteca y solo se elimina la carpeta."
           }
         },
         "fr" : {
