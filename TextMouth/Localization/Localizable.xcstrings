@@ -249229,7 +249229,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "각 줄이 담는 점자 셀 수입니다. 18에서 80까지."
+            "value" : "각 줄에 들어가는 점자 셀 수로, 18에서 80까지입니다."
           }
         },
         "nl" : {
@@ -249366,7 +249366,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "각 점자 페이지가 담는 줄 수입니다. 4에서 50까지."
+            "value" : "각 점자 페이지에 들어가는 줄 수로, 4에서 50까지입니다."
           }
         },
         "nl" : {
@@ -345120,7 +345120,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "설치된 음성이 없습니다. 시스템 설정, 손쉬운 사용, 말하기 콘텐츠에서 음성을 추가한 다음 다시 내보내십시오."
+            "value" : "설치된 음성이 없습니다. 시스템 설정, 손쉬운 사용, 읽기 및 말하기에서 음성을 추가한 다음 다시 내보내십시오."
           }
         },
         "nl" : {
@@ -373503,7 +373503,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "이 iPhone 기기에서 책과 그 파일을 영구적으로 삭제합니다."
+            "value" : "이 iPhone에서 책과 그 파일을 영구적으로 삭제합니다."
           }
         },
         "nl" : {
@@ -378298,7 +378298,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "재생 동작에 짧은 사운드를 재생합니다."
+            "value" : "재생 동작마다 짧은 사운드를 들려줍니다."
           }
         },
         "nl" : {
