@@ -17125,7 +17125,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ komutu menülerde bunu kullanıyor"
+            "value" : "“%@” komutu menülerde bunu kullanıyor"
           }
         },
         "uk" : {
@@ -108195,7 +108195,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Metni kontrol edin veya dosyayı düzenleyicide UTF-8 olarak kaydedin ve %@ düğmesini yeniden seçin."
+            "value" : "Metni kontrol edin veya dosyayı düzenleyicide UTF-8 olarak kaydedin ve “%@” düğmesini yeniden seçin."
           }
         },
         "uk" : {
@@ -109716,7 +109716,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sırala menüsünde %@ seçeneğini seçin, sonra tekrar deneyin."
+            "value" : "Sırala menüsünde “%@” seçeneğini seçin, sonra tekrar deneyin."
           }
         },
         "uk" : {
@@ -318066,7 +318066,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Dosyayı düzenleyicide kaydedin, sonra %1$@ düğmesini yeniden seçin veya baştan başlamak için %2$@ düğmesini seçin."
+            "value" : "Dosyayı düzenleyicide kaydedin, sonra “%1$@” düğmesini yeniden seçin veya baştan başlamak için “%2$@” düğmesini seçin."
           }
         },
         "uk" : {
@@ -339218,7 +339218,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "“%1$@” kitabının bazı dosyaları yalnızca bulutta ve şimdi değiştirmek onları geride bırakır. Kitabı indirin, sonra %2$@ düğmesini yeniden seçin."
+            "value" : "“%1$@” kitabının bazı dosyaları yalnızca bulutta ve şimdi değiştirmek onları geride bırakır. Kitabı indirin, sonra “%2$@” düğmesini yeniden seçin."
           }
         },
         "uk" : {
@@ -366758,7 +366758,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth kitapları klasörler arasında taşıyor. Bunun bitmesini bekleyin, sonra %@ düğmesini yeniden seçin."
+            "value" : "TextMouth kitapları klasörler arasında taşıyor. Bunun bitmesini bekleyin, sonra “%@” düğmesini yeniden seçin."
           }
         },
         "uk" : {
@@ -367774,7 +367774,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth veri klasörünü yeniden oluşturuyor. Bunun bitmesini bekleyin, sonra %@ düğmesini yeniden seçin."
+            "value" : "TextMouth veri klasörünü yeniden oluşturuyor. Bunun bitmesini bekleyin, sonra “%@” düğmesini yeniden seçin."
           }
         },
         "uk" : {
@@ -386826,7 +386826,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "“%1$@” kitabının sesi düzenleniyor. Ses düzenleyiciyi kapatın veya kaydedilmesini bekleyin, sonra %2$@ düğmesini yeniden seçin."
+            "value" : "“%1$@” kitabının sesi düzenleniyor. Ses düzenleyiciyi kapatın veya kaydedilmesini bekleyin, sonra “%2$@” düğmesini yeniden seçin."
           }
         },
         "uk" : {
@@ -390754,7 +390754,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Kitabın sesi dosyaya kaydedilemiyor. Okuyucudaki %@ düğmesiyle başka bir ses seçin, sonra yeniden dışa aktarın."
+            "value" : "Kitabın sesi dosyaya kaydedilemiyor. Okuyucudaki “%@” düğmesiyle başka bir ses seçin, sonra yeniden dışa aktarın."
           }
         },
         "uk" : {
@@ -440635,7 +440635,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bunu kullanmak için kitabı açın ve Kitap menüsünden %@ öğesini seçin."
+            "value" : "Bunu kullanmak için kitabı açın ve Kitap menüsünden “%@” öğesini seçin."
           }
         },
         "uk" : {
@@ -454198,7 +454198,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Yeniden sıralamak için %1$@ ve %2$@ komutlarını kullanın veya sürükleyin. Kurallar yukarıdan aşağıya uygulanır."
+            "value" : "Yeniden sıralamak için “%1$@” ve “%2$@” komutlarını kullanın veya sürükleyin. Kurallar yukarıdan aşağıya uygulanır."
           }
         },
         "uk" : {
@@ -507942,7 +507942,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "“%1$@” bir Kişisel Ses ve macOS bir Kişisel Sesi dosyaya kaydedemez. Okuyucudaki %2$@ düğmesiyle başka bir ses seçin, sonra yeniden dışa aktarın."
+            "value" : "“%1$@” bir Kişisel Ses ve macOS bir Kişisel Sesi dosyaya kaydedemez. Okuyucudaki “%2$@” düğmesiyle başka bir ses seçin, sonra yeniden dışa aktarın."
           }
         },
         "uk" : {
