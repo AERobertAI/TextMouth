@@ -556878,7 +556878,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "這部 Mac 上還沒有 %@ 的語音模型。請先下載。"
+            "value" : "這部 Mac 上還沒有%@的語音模型。請先下載。"
           }
         }
       }
@@ -592650,7 +592650,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "於 %1$@ 轉錄，語言為 %2$@。"
+            "value" : "於 %1$@ 轉錄，語言為%2$@。"
           }
         }
       }
@@ -594300,7 +594300,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "語音轉文字不支援 %@。"
+            "value" : "語音轉文字不支援%@。"
           }
         }
       }
@@ -646161,7 +646161,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "在章節 %1$@：%2$@"
+            "value" : "在第 %1$@ 章：%2$@"
           }
         }
       }
