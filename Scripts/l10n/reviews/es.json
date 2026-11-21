@@ -1,0 +1,400 @@
+{
+ "language": "es",
+ "reviews": [
+  {
+   "part": 2,
+   "areas": [
+    "feeds and import",
+    "audio and transcripts"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-20",
+   "fixes": [
+    {
+     "key": "%@ are in your library, unsubscribed. Choose %@ on a feed's row, or in its %@, to check it again.",
+     "english": "%1$@ are in your library, unsubscribed. Choose %2$@ on a feed's row, or in its %3$@, to check it again.",
+     "before": "%1$@ ya están en tu biblioteca, sin suscripción. Elige %2$@ en la fila de un canal, o en su %3$@, para volver a revisarlos.",
+     "after": "%1$@ ya están en tu biblioteca, sin suscripción. Elige %2$@ en la fila de un canal, o en su %3$@, para volver a revisarlo.",
+     "why": "meaning: it is the one feed whose row is chosen; revisarlos said that choosing one row checks them all"
+    },
+    {
+     "key": "%@ failed: %@",
+     "english": "%1$@ failed: %2$@",
+     "before": "Falló el paso «%1$@»: %2$@",
+     "after": "Falló el paso “%1$@”: %2$@",
+     "why": "punctuation: the interface quotes with curly double quotes, as the English does; guillemets appeared in this string alone in part 2"
+    },
+    {
+     "key": "%@ of %@ transcribed",
+     "english": "%1$@ of %2$@ transcribed",
+     "before": "%1$@ de %2$@ transcritos",
+     "after": "Transcrito: %1$@ de %2$@",
+     "why": "grammar: transcritos cannot agree with values such as 1 minuto or 1 hora, which the line shows as transcribing starts"
+    },
+    {
+     "key": "%@ use plain http, so others can read or change what they send; TextMouth still loads it.",
+     "english": "%@ use plain http, so others can read or change what they send; TextMouth still loads it.",
+     "before": "%@ usan http simple, así que otras personas pueden leer o cambiar lo que envían; TextMouth los carga de todos modos.",
+     "after": "%@ usan http sin cifrar, así que otras personas pueden leer o cambiar lo que envían; TextMouth los carga de todos modos.",
+     "why": "natural: http simple copies plain http; sin cifrar says why others can read it"
+    },
+    {
+     "key": "%@ uses plain http, so others can read or change what it sends; TextMouth still loads it.",
+     "english": "%@ uses plain http, so others can read or change what it sends; TextMouth still loads it.",
+     "before": "%@ usa http simple, así que otras personas pueden leer o cambiar lo que envía; TextMouth lo carga de todos modos.",
+     "after": "%@ usa http sin cifrar, así que otras personas pueden leer o cambiar lo que envía; TextMouth lo carga de todos modos.",
+     "why": "natural: http simple copies plain http; sin cifrar says why others can read it"
+    },
+    {
+     "key": "About %@ left",
+     "english": "About %@ left",
+     "before": "Quedan unos %@",
+     "after": "Tiempo restante estimado: %@",
+     "why": "grammar: Quedan unos cannot agree with the values it takes, such as 1 minuto or 1 hora"
+    },
+    {
+     "key": "Apply Filter lists these in this order. Each is a chain of filters in ffmpeg's syntax, such as highpass=f=80,volume=3dB. TextMouth runs its own filters, plus every ffmpeg filter when ffmpeg is installed and turned on above.",
+     "english": "Apply Filter lists these in this order. Each is a chain of filters in ffmpeg's syntax, such as highpass=f=80,volume=3dB. TextMouth runs its own filters, plus every ffmpeg filter when ffmpeg is installed and turned on above.",
+     "before": "Aplicar filtro muestra estos en este orden. Cada uno es una cadena de filtros con la sintaxis de ffmpeg, como highpass=f=80,volume=3dB. TextMouth ejecuta sus propios filtros, y también todos los de ffmpeg cuando ffmpeg está instalado y activado arriba.",
+     "after": "Aplicar filtro los muestra en este orden. Cada uno es una cadena de filtros con la sintaxis de ffmpeg, como highpass=f=80,volume=3dB. TextMouth ejecuta sus propios filtros, y también todos los de ffmpeg cuando ffmpeg está instalado y activado arriba.",
+     "why": "natural: muestra estos copies lists these; Spanish puts the pronoun before the verb, los muestra"
+    },
+    {
+     "key": "Cancelling after this book...",
+     "english": "Cancelling after this book...",
+     "before": "Cancelando después de este libro...",
+     "after": "Se cancelará al terminar este libro...",
+     "why": "natural: Cancelando después de este libro copies the English; the import stops once this book is done"
+    },
+    {
+     "key": "Choosing another folder lists the feed's episodes and articles there instead, those already downloaded too.",
+     "english": "Choosing another folder lists the feed's episodes and articles there instead, those already downloaded too.",
+     "before": "Al elegir otra carpeta, se muestran allí los episodios y artículos del canal, también los ya descargados.",
+     "after": "Al elegir otra carpeta, se muestran allí los episodios y artículos del canal, incluidos los ya descargados.",
+     "why": "natural: también los ya descargados tacked on at the end is a calque of those already downloaded too"
+    },
+    {
+     "key": "Copied %@.",
+     "english": "Copied %@.",
+     "before": "Se copió %@.",
+     "after": "Se copió un fragmento de %@.",
+     "why": "grammar: the verb cannot agree with every length (se copió 5 segundos, se copiaron 1 minuto); un fragmento de agrees for all, as Se insertó un silencio de %@ does"
+    },
+    {
+     "key": "Cut %@.",
+     "english": "Cut %@.",
+     "before": "Se cortó %@.",
+     "after": "Se cortó un fragmento de %@.",
+     "why": "grammar: the verb cannot agree with every length (se cortó 5 segundos); un fragmento de agrees for all, as Se insertó un silencio de %@ does"
+    },
+    {
+     "key": "Export Numbers spreadsheets from Numbers as PDF files, then import those.",
+     "english": "Export Numbers spreadsheets from Numbers as PDF files, then import those.",
+     "before": "Exporta las hojas de cálculo de Numbers desde Numbers como archivos PDF y luego impórtalas.",
+     "after": "Exporta las hojas de cálculo de Numbers desde Numbers como archivos PDF y luego impórtalos.",
+     "why": "grammar: what is imported is the PDF files (archivos), so impórtalos, as the Keynote and Pages sentences say"
+    },
+    {
+     "key": "It deletes %@: it goes to the Trash, where you can recover it until the Trash is emptied.",
+     "english": "It deletes %@: it goes to the Trash, where you can recover it until the Trash is emptied.",
+     "before": "Elimina %@: se mueve a la Papelera, donde puedes recuperarlo hasta que la vacíes.",
+     "after": "Elimina %@: se mueve a la Papelera, donde se puede recuperar hasta que la vacíes.",
+     "why": "grammar: recuperarlo cannot agree with a feminine value such as la transcripción conservada; the impersonal form fits every value"
+    },
+    {
+     "key": "It deletes %@: they go to the Trash, where you can recover them until the Trash is emptied.",
+     "english": "It deletes %@: they go to the Trash, where you can recover them until the Trash is emptied.",
+     "before": "Elimina %@: se mueven a la Papelera, donde puedes recuperarlos hasta que la vacíes.",
+     "after": "Elimina %@: se mueven a la Papelera, donde se pueden recuperar hasta que la vacíes.",
+     "why": "grammar: recuperarlos cannot agree with a feminine list such as las transcripciones; the impersonal form fits every value"
+    },
+    {
+     "key": "Its tracks run past the end of the audio it names, so it was made for another copy of that audio.",
+     "english": "Its tracks run past the end of the audio it names, so it was made for another copy of that audio.",
+     "before": "Sus pistas pasan del final del audio que nombra, así que se hizo para otra copia de ese audio.",
+     "after": "Sus pistas van más allá del final del audio que nombra, así que se hizo para otra copia de ese audio.",
+     "why": "natural: pasan del final is a calque of run past the end; van más allá del final is how Spanish says it"
+    },
+    {
+     "key": "Keep for a number of days",
+     "english": "Keep for a number of days",
+     "before": "Conservar durante unos días",
+     "after": "Conservar durante un número de días",
+     "why": "meaning: unos días says a few days; the choice keeps the original for the number of days set beside it"
+    },
+    {
+     "key": "Moved %@ to %@.",
+     "english": "Moved %1$@ to %2$@.",
+     "before": "Se movió %1$@ a %2$@.",
+     "after": "Se movió un fragmento de %1$@ a %2$@.",
+     "why": "grammar: the verb cannot agree with every length (se movió 5 segundos); un fragmento de agrees for all"
+    },
+    {
+     "key": "Offer to transcribe after importing an audiobook",
+     "english": "Offer to transcribe after importing an audiobook",
+     "before": "Ofrecer transcribir después de importar un audiolibro",
+     "after": "Ofrecer la transcripción después de importar un audiolibro",
+     "why": "natural: ofrecer transcribir copies offer to transcribe; Spanish offers a noun, la transcripción"
+    },
+    {
+     "key": "Pasted %@ back where they were cut.",
+     "english": "Pasted %@ back where they were cut.",
+     "before": "Se pegaron %@ donde se habían cortado.",
+     "after": "Se pegó un fragmento de %@ donde se había cortado.",
+     "why": "grammar: se pegaron cannot agree with 1 minuto or 1 segundo; un fragmento de agrees for every length"
+    },
+    {
+     "key": "Pasted %@ over %@.",
+     "english": "Pasted %1$@ over %2$@.",
+     "before": "Se pegaron %1$@ sobre %2$@.",
+     "after": "Se pegó un fragmento de %1$@ sobre %2$@.",
+     "why": "grammar: se pegaron cannot agree with 1 minuto or 1 segundo; un fragmento de agrees for every length"
+    },
+    {
+     "key": "Pasted %@.",
+     "english": "Pasted %@.",
+     "before": "Se pegaron %@.",
+     "after": "Se pegó un fragmento de %@.",
+     "why": "grammar: se pegaron cannot agree with 1 minuto or 1 segundo; un fragmento de agrees for every length"
+    },
+    {
+     "key": "Plain http: others can read or change what this feed sends.",
+     "english": "Plain http: others can read or change what this feed sends.",
+     "before": "http simple: otras personas pueden leer o cambiar lo que envía este canal.",
+     "after": "http sin cifrar: otras personas pueden leer o cambiar lo que envía este canal.",
+     "why": "natural: http simple copies plain http; sin cifrar says why others can read it"
+    },
+    {
+     "key": "Replaced %@ with %@ of new recording, which is selected.",
+     "english": "Replaced %1$@ with %2$@ of new recording, which is selected.",
+     "before": "Se reemplazó %1$@ con %2$@ de grabación nueva, que queda seleccionada.",
+     "after": "Se reemplazó un fragmento de %1$@ por %2$@ de grabación nueva, que queda seleccionada.",
+     "why": "grammar: se reemplazó cannot agree with every length (5 segundos); un fragmento de agrees for all, and reemplazar takes por"
+    },
+    {
+     "key": "Reverted to the original audio. Redo brings back the %lld edits.",
+     "english": {
+      "one": "Reverted to the original audio. Redo brings back the %lld edit.",
+      "other": "Reverted to the original audio. Redo brings back the %lld edits."
+     },
+     "before": {
+      "many": "Se volvió al audio original. Rehacer recupera las %lld de ediciones.",
+      "one": "Se volvió al audio original. Rehacer recupera la %lld edición.",
+      "other": "Se volvió al audio original. Rehacer recupera las %lld ediciones."
+     },
+     "after": {
+      "many": "Se volvió al audio original. Rehacer recupera las %lld de ediciones.",
+      "one": "Se volvió al audio original. Rehacer recupera la edición.",
+      "other": "Se volvió al audio original. Rehacer recupera las %lld ediciones."
+     },
+     "why": "natural: la 1 edición reads as the first edition; the one form is exactly one, so it names the edit alone"
+    },
+    {
+     "key": "Selected chapter %@: %@, %@.",
+     "english": "Selected chapter %1$@: %2$@, %3$@.",
+     "before": "Capítulo seleccionado %1$@: %2$@, %3$@.",
+     "after": "Capítulo %1$@ seleccionado: %2$@, %3$@.",
+     "why": "natural: Capítulo seleccionado 3 puts the number after the participle; Spanish says Capítulo 3 seleccionado"
+    },
+    {
+     "key": "Selected the %@ before chapter 1.",
+     "english": "Selected the %@ before chapter 1.",
+     "before": "Se seleccionaron %@ antes del capítulo 1.",
+     "after": "Se seleccionó el fragmento de %@ antes del capítulo 1.",
+     "why": "grammar: se seleccionaron cannot agree with 1 minuto or 1 segundo; el fragmento de agrees for every length"
+    },
+    {
+     "key": "Sets the transcription language. A language marked needs download downloads only from the Transcribe Audio sheet.",
+     "english": "Sets the transcription language. A language marked needs download downloads only from the Transcribe Audio sheet.",
+     "before": "Define el idioma de la transcripción. Un idioma marcado como necesita descarga solo se descarga desde la hoja Transcribir audio.",
+     "after": "Define el idioma de la transcripción. Si un idioma indica que necesita descarga, solo se descarga desde la hoja Transcribir audio.",
+     "why": "natural: marcado como necesita descarga solo se descarga cannot be parsed aloud; the status word now sits in its own clause"
+    },
+    {
+     "key": "Subscribed to %@. This feed uses plain http, so others can read or change what it sends; TextMouth still loads it.",
+     "english": "Subscribed to %@. This feed uses plain http, so others can read or change what it sends; TextMouth still loads it.",
+     "before": "Te suscribiste a %@. Este canal usa http simple, así que otras personas pueden leer o cambiar lo que envía; TextMouth lo carga de todos modos.",
+     "after": "Te suscribiste a %@. Este canal usa http sin cifrar, así que otras personas pueden leer o cambiar lo que envía; TextMouth lo carga de todos modos.",
+     "why": "natural: http simple copies plain http; sin cifrar says why others can read it"
+    },
+    {
+     "key": "Subscribes to this podcast and fills the address field",
+     "english": "Subscribes to this podcast and fills the address field",
+     "before": "Suscribe a este podcast y completa el campo de dirección",
+     "after": "Te suscribe a este podcast y completa el campo de dirección",
+     "why": "grammar: suscribir without se needs an object; Suscribe a este podcast reads as subscribing someone unnamed"
+    },
+    {
+     "key": "TextMouth moved %lld new copies of duplicate books to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back.",
+     "english": {
+      "one": "TextMouth moved %lld new copy of duplicate books to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back.",
+      "other": "TextMouth moved %lld new copies of duplicate books to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back."
+     },
+     "before": {
+      "many": "TextMouth movió %lld de copias nuevas de libros duplicados a la Papelera, porque no se respondieron las preguntas sobre si conservarlos como duplicados antes de que TextMouth se cerrara. Para recuperarlos, abre la Papelera y elige Volver a colocar.",
+      "one": "TextMouth movió %lld copia nueva de libros duplicados a la Papelera, porque no se respondieron las preguntas sobre si conservarlos como duplicados antes de que TextMouth se cerrara. Para recuperarlos, abre la Papelera y elige Volver a colocar.",
+      "other": "TextMouth movió %lld copias nuevas de libros duplicados a la Papelera, porque no se respondieron las preguntas sobre si conservarlos como duplicados antes de que TextMouth se cerrara. Para recuperarlos, abre la Papelera y elige Volver a colocar."
+     },
+     "after": {
+      "many": "TextMouth movió %lld de copias nuevas de libros duplicados a la Papelera, porque no se respondieron las preguntas sobre si conservarlas como duplicados antes de que TextMouth se cerrara. Para recuperarlas, abre la Papelera y elige Volver a colocar.",
+      "one": "TextMouth movió %lld copia nueva de un libro duplicado a la Papelera, porque no se respondió la pregunta sobre si conservarla como duplicado antes de que TextMouth se cerrara. Para recuperarla, abre la Papelera y elige Volver a colocar.",
+      "other": "TextMouth movió %lld copias nuevas de libros duplicados a la Papelera, porque no se respondieron las preguntas sobre si conservarlas como duplicados antes de que TextMouth se cerrara. Para recuperarlas, abre la Papelera y elige Volver a colocar."
+     },
+     "why": "grammar: the pronouns stand for the copies (copias, feminine), so conservarlas and recuperarlas; the one form speaks of one copy"
+    },
+    {
+     "key": "TextMouth moved the new copies of %@ to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back.",
+     "english": "TextMouth moved the new copies of %@ to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back.",
+     "before": "TextMouth movió a la Papelera las copias nuevas de %@, porque no se respondieron las preguntas sobre si conservarlos como duplicados antes de que TextMouth se cerrara. Para recuperarlos, abre la Papelera y elige Volver a colocar.",
+     "after": "TextMouth movió a la Papelera las copias nuevas de %@, porque no se respondieron las preguntas sobre si conservarlas como duplicados antes de que TextMouth se cerrara. Para recuperarlas, abre la Papelera y elige Volver a colocar.",
+     "why": "grammar: the pronouns stand for las copias nuevas (feminine), so conservarlas and recuperarlas"
+    },
+    {
+     "key": "TextMouth moved the new copy of “%@” to the Trash, because the question whether to keep it as a duplicate was never answered before TextMouth closed. To get it back, open the Trash and choose Put Back.",
+     "english": "TextMouth moved the new copy of “%@” to the Trash, because the question whether to keep it as a duplicate was never answered before TextMouth closed. To get it back, open the Trash and choose Put Back.",
+     "before": "TextMouth movió a la Papelera la copia nueva de “%@”, porque no se respondió la pregunta sobre si conservarlo como duplicado antes de que TextMouth se cerrara. Para recuperarlo, abre la Papelera y elige Volver a colocar.",
+     "after": "TextMouth movió a la Papelera la copia nueva de “%@”, porque no se respondió la pregunta sobre si conservarla como duplicado antes de que TextMouth se cerrara. Para recuperarla, abre la Papelera y elige Volver a colocar.",
+     "why": "grammar: the pronouns stand for la copia nueva (feminine), so conservarla and recuperarla"
+    },
+    {
+     "key": "The bookInfo.json file did not read back as it was written.",
+     "english": "The bookInfo.json file did not read back as it was written.",
+     "before": "El archivo bookInfo.json no se leyó de vuelta tal como se escribió.",
+     "after": "Al volver a leer el archivo bookInfo.json, no coincidía con lo escrito.",
+     "why": "natural: no se leyó de vuelta is a calque of did not read back"
+    },
+    {
+     "key": "The headings from %@ run past the end of the audio, so the tracks were imported without them.",
+     "english": "The headings from %@ run past the end of the audio, so the tracks were imported without them.",
+     "before": "Los encabezados de %@ pasan del final del audio, así que las pistas se importaron sin ellos.",
+     "after": "Los encabezados de %@ van más allá del final del audio, así que las pistas se importaron sin ellos.",
+     "why": "natural: pasan del final is a calque of run past the end; van más allá del final is how Spanish says it"
+    },
+    {
+     "key": "The labels of the label file “%@” run past the end of its audio, so its headings were not used.",
+     "english": "The labels of the label file “%@” run past the end of its audio, so its headings were not used.",
+     "before": "Las etiquetas del archivo de etiquetas “%@” pasan del final de su audio, así que no se usaron sus encabezados.",
+     "after": "Las etiquetas del archivo de etiquetas “%@” van más allá del final de su audio, así que no se usaron sus encabezados.",
+     "why": "natural: pasan del final is a calque of run past the end; van más allá del final is how Spanish says it"
+    },
+    {
+     "key": "The tracks of the cue sheet “%@” run past the end of its audio, so its headings were not used.",
+     "english": "The tracks of the cue sheet “%@” run past the end of its audio, so its headings were not used.",
+     "before": "Las pistas del archivo CUE “%@” pasan del final de su audio, así que no se usaron sus encabezados.",
+     "after": "Las pistas del archivo CUE “%@” van más allá del final de su audio, así que no se usaron sus encabezados.",
+     "why": "natural: pasan del final is a calque of run past the end; van más allá del final is how Spanish says it"
+    },
+    {
+     "key": "The transcript's text didn't read back as one chapter per chapter of the book.",
+     "english": "The transcript's text didn't read back as one chapter per chapter of the book.",
+     "before": "El texto de la transcripción no se leyó de vuelta como un capítulo por cada capítulo del libro.",
+     "after": "Al volver a leer el texto de la transcripción, no tenía un capítulo por cada capítulo del libro.",
+     "why": "natural: no se leyó de vuelta is a calque of did not read back, as in the bookInfo.json reason"
+    },
+    {
+     "key": "This Feed Uses Plain http",
+     "english": "This Feed Uses Plain http",
+     "before": "Este canal usa http simple",
+     "after": "Este canal usa http sin cifrar",
+     "why": "natural: http simple copies plain http; sin cifrar names the risk, as the sentences about it now do"
+    },
+    {
+     "key": "Trimmed to the selection: %@ kept.",
+     "english": "Trimmed to the selection: %@ kept.",
+     "before": "Se recortó a la selección: se conservan %@.",
+     "after": "Se recortó a la selección: se conserva un fragmento de %@.",
+     "why": "grammar: se conservan cannot agree with 1 minuto or 1 segundo; un fragmento de agrees for every length"
+    },
+    {
+     "key": "What was kept for %lld removed downloads was deleted.",
+     "english": {
+      "one": "What was kept for %lld removed download was deleted.",
+      "other": "What was kept for %lld removed downloads was deleted."
+     },
+     "before": {
+      "many": "Se eliminó lo que se conservó para %lld descargas quitadas.",
+      "one": "Se eliminó lo que se conservó para %lld descarga quitada.",
+      "other": "Se eliminó lo que se conservó para %lld descargas quitadas."
+     },
+     "after": {
+      "many": "Se eliminó lo que se conservó para %lld de descargas quitadas.",
+      "one": "Se eliminó lo que se conservó para %lld descarga quitada.",
+      "other": "Se eliminó lo que se conservó para %lld descargas quitadas."
+     },
+     "why": "grammar: the many form (exact millions) needs de before the noun, as every other many form has"
+    },
+    {
+     "key": "You cleaned it up on %@.",
+     "english": "You cleaned it up on %@.",
+     "before": "Lo limpiaste el %@.",
+     "after": "La limpiaste el %@.",
+     "why": "grammar: it is the transcript (la transcripción) the Transcript detail speaks of, so la, as Transcrita before it agrees"
+    },
+    {
+     "key": "You edited it on %@.",
+     "english": "You edited it on %@.",
+     "before": "Lo editaste el %@.",
+     "after": "La editaste el %@.",
+     "why": "grammar: it is the transcript (la transcripción) the Transcript detail speaks of, so la, as Transcrita before it agrees"
+    },
+    {
+     "key": "the %@ kept for %lld removed downloads",
+     "english": {
+      "one": "the %@ kept for %lld removed download",
+      "other": "the %@ kept for %lld removed downloads"
+     },
+     "before": {
+      "many": "lo que se conservó (%@) para %lld descargas quitadas",
+      "one": "lo que se conservó (%@) para %lld descarga quitada",
+      "other": "lo que se conservó (%@) para %lld descargas quitadas"
+     },
+     "after": {
+      "many": "lo que se conservó (%@) para %lld de descargas quitadas",
+      "one": "lo que se conservó (%@) para %lld descarga quitada",
+      "other": "lo que se conservó (%@) para %lld descargas quitadas"
+     },
+     "why": "grammar: the many form (exact millions) needs de before the noun, as every other many form has"
+    },
+    {
+     "key": "today at %@",
+     "english": "today at %@",
+     "before": "hoy a las %@",
+     "after": "hoy, %@",
+     "why": "grammar: a las cannot read right at one o clock (a la 1:05); the comma matches the form for other days, %1$@, %2$@"
+    },
+    {
+     "key": "what was kept for %lld removed downloads",
+     "english": {
+      "one": "what was kept for %lld removed download",
+      "other": "what was kept for %lld removed downloads"
+     },
+     "before": {
+      "many": "lo que se conservó para %lld descargas quitadas",
+      "one": "lo que se conservó para %lld descarga quitada",
+      "other": "lo que se conservó para %lld descargas quitadas"
+     },
+     "after": {
+      "many": "lo que se conservó para %lld de descargas quitadas",
+      "one": "lo que se conservó para %lld descarga quitada",
+      "other": "lo que se conservó para %lld descargas quitadas"
+     },
+     "why": "grammar: the many form (exact millions) needs de before the noun, as every other many form has"
+    },
+    {
+     "key": "yesterday at %@",
+     "english": "yesterday at %@",
+     "before": "ayer a las %@",
+     "after": "ayer, %@",
+     "why": "grammar: a las cannot read right at one o clock (a la 1:05); the comma matches the form for other days, %1$@, %2$@"
+    },
+    {
+     "key": "“%@” is still working. Quit once the change is done.",
+     "english": "“%@” is still working. Quit once the change is done.",
+     "before": "“%@” sigue trabajando. Cierra TextMouth cuando termine el cambio.",
+     "after": "“%@” sigue trabajando. Sal de TextMouth cuando termine el cambio.",
+     "why": "term: Quit is Salir in Apple Spanish (Salir de TextMouth), as the recording sentence beside it says; Cerrar is Close"
+    }
+   ]
+  }
+ ]
+}
