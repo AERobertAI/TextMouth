@@ -224202,7 +224202,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Giảm dần (chọn giây cuối)"
+            "value" : "Giảm dần âm lượng (chọn giây cuối)"
           }
         },
         "zh-Hans" : {
@@ -258710,7 +258710,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Vào tại %@."
+            "value" : "Điểm vào lúc %@."
           }
         },
         "zh-Hans" : {
@@ -262614,7 +262614,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Chèn khoảng lặng có độ dài bạn nhập tại con trỏ."
+            "value" : "Chèn tại con trỏ một khoảng lặng có độ dài bạn nhập."
           }
         },
         "zh-Hans" : {
@@ -283666,7 +283666,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Để sách nói chưa chép lời; Chép lời âm thanh sẽ làm việc đó sau."
+            "value" : "Để sách nói chưa chép lời; bạn có thể dùng lệnh Chép lời âm thanh sau."
           }
         },
         "zh-Hans" : {
@@ -320390,7 +320390,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Di chuyển con trỏ đến thời gian bạn nhập."
+            "value" : "Di chuyển con trỏ đến thời điểm bạn nhập."
           }
         },
         "zh-Hans" : {
@@ -337197,7 +337197,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Chưa có điểm đánh dấu nào. Thêm điểm đánh dấu sẽ thả một điểm tại con trỏ."
+            "value" : "Chưa có điểm đánh dấu nào. Lệnh Thêm điểm đánh dấu sẽ đặt một điểm tại con trỏ."
           }
         },
         "zh-Hans" : {
@@ -339993,7 +339993,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Không giữ bản gốc nào, nên không thể hoàn nguyên. Hoàn tác sẽ lấy lại các chỉnh sửa từ lần lưu gần nhất."
+            "value" : "Không giữ bản gốc nào, nên không thể hoàn nguyên. Hoàn tác sẽ đảo ngược các chỉnh sửa kể từ lần lưu gần nhất."
           }
         },
         "zh-Hans" : {
@@ -349508,7 +349508,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Chưa có trong âm thanh của sách. Bỏ sẽ hoàn tác chúng; lần sau khi bạn sửa sách này, Làm lại sẽ khôi phục chúng cho đến khi bạn sửa lần khác."
+            "value" : "Chưa có trong âm thanh của sách. Nút Bỏ sẽ hoàn tác chúng; lần sau khi bạn sửa sách này, Làm lại sẽ khôi phục chúng cho đến khi bạn sửa lần khác."
           }
         },
         "zh-Hans" : {
@@ -352933,7 +352933,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Giờ dài %@."
+            "value" : "Độ dài mới: %@."
           }
         },
         "zh-Hans" : {
@@ -360910,7 +360910,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Mở Chép lời âm thanh, sẽ bắt đầu ngay nếu mô hình của ngôn ngữ đã có trên máy Mac này; nếu không, hãy tải về ở đó, rồi chọn Chép lời."
+            "value" : "Mở Chép lời âm thanh; việc chép lời bắt đầu ngay nếu mô hình của ngôn ngữ đã có trên máy Mac này, nếu không, hãy tải mô hình về ở đó, rồi chọn Chép lời."
           }
         },
         "zh-Hans" : {
@@ -364746,7 +364746,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Mở bản sao các quy tắc của bạn, transcript-cleanup.json, trong trình soạn thảo văn bản của bạn, được tạo từ các quy tắc riêng của TextMouth lần đầu tiên. Các thay đổi có hiệu lực khi bạn quay lại TextMouth."
+            "value" : "Mở bản sao các quy tắc của bạn, transcript-cleanup.json, trong trình soạn thảo văn bản của bạn; lần đầu, bản sao này được tạo từ các quy tắc riêng của TextMouth. Các thay đổi có hiệu lực khi bạn quay lại TextMouth."
           }
         },
         "zh-Hans" : {
@@ -366720,7 +366720,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ra tại %@."
+            "value" : "Điểm ra lúc %@."
           }
         },
         "zh-Hans" : {
@@ -386914,7 +386914,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Khôi phục các giá trị đặt sẵn có sẵn của TextMouth, gỡ những giá trị bạn đã thêm."
+            "value" : "Khôi phục các giá trị đặt sẵn mặc định của TextMouth, gỡ những giá trị bạn đã thêm."
           }
         },
         "zh-Hans" : {
@@ -426236,7 +426236,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Lưu dưới dạng"
+            "value" : "Được lưu dưới dạng"
           }
         },
         "zh-Hans" : {
@@ -426510,7 +426510,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Đã lưu. Âm thanh của sách giờ dài %@."
+            "value" : "Đã lưu. Âm thanh của sách bây giờ dài %@."
           }
         },
         "zh-Hans" : {
@@ -437861,7 +437861,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Đặt ngôn ngữ chép lời. Ngôn ngữ được đánh dấu cần tải về chỉ tải về được từ hộp thoại Chép lời âm thanh."
+            "value" : "Đặt ngôn ngữ chép lời. Mô hình của ngôn ngữ có ghi chú “cần tải về” chỉ tải về được từ hộp thoại Chép lời âm thanh."
           }
         },
         "zh-Hans" : {
@@ -447276,7 +447276,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Khoảng lặng phải dài hơn không."
+            "value" : "Khoảng lặng phải dài hơn 0."
           }
         },
         "zh-Hans" : {
@@ -465240,7 +465240,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Đã dừng. Quay lại %@."
+            "value" : "Đã dừng. Đã quay lại %@."
           }
         },
         "zh-Hans" : {
@@ -488239,7 +488239,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth không có quy tắc riêng: không quy tắc nào đúng trong mọi sách đã thử. Sửa quy tắc… mở bản sao của bạn, nơi bạn có thể thêm quy tắc, chẳng hạn một tên mà trình nhận dạng luôn viết khác."
+            "value" : "TextMouth không có quy tắc riêng: không quy tắc nào đúng trong mọi sách đã thử. Nút Sửa quy tắc… mở bản sao của bạn, nơi bạn có thể thêm quy tắc, chẳng hạn một tên mà trình nhận dạng luôn viết khác."
           }
         },
         "zh-Hans" : {
@@ -490624,7 +490624,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth đang thoát và âm thanh của sách chưa có các chỉnh sửa này. Bỏ sẽ hoàn tác chúng; lần sau khi bạn sửa sách này, Làm lại sẽ khôi phục chúng cho đến khi bạn sửa lần khác. Hủy giữ TextMouth đang mở."
+            "value" : "TextMouth đang thoát và âm thanh của sách chưa có các chỉnh sửa này. Nút Bỏ sẽ hoàn tác chúng; lần sau khi bạn sửa sách này, Làm lại sẽ khôi phục chúng cho đến khi bạn sửa lần khác. Nút Hủy sẽ giữ TextMouth mở."
           }
         },
         "zh-Hans" : {
@@ -503655,7 +503655,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tệp %@ không có văn bản có thời gian nào mà TextMouth dùng được."
+            "value" : "Tệp %@ không có văn bản có mốc thời gian nào mà TextMouth dùng được."
           }
         },
         "zh-Hans" : {
