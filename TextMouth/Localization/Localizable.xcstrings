@@ -40280,7 +40280,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Escolha Tentar salvar novamente e tente novamente."
+            "value" : "Escolha Tentar salvar novamente e depois tente outra vez."
           }
         }
       }
@@ -114442,7 +114442,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Define quando o menu Visualização oferece esta visualização."
+            "value" : "Define quando o menu local Visualização oferece esta visualização."
           }
         }
       }
@@ -133573,7 +133573,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "O menu Visualização de uma janela da biblioteca oferece estas visualizações nesta ordem. Uma nova janela abre na primeira oferecida."
+            "value" : "O menu local Visualização de uma janela da biblioteca oferece estas visualizações nesta ordem. Uma nova janela abre na primeira oferecida."
           }
         }
       }
@@ -166131,7 +166131,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "escolhida"
+            "value" : "por sua escolha"
           }
         }
       }
@@ -166440,7 +166440,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "declarada no arquivo"
+            "value" : "conforme o arquivo"
           }
         }
       }
@@ -167752,7 +167752,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "deduzida"
+            "value" : "por dedução"
           }
         }
       }
@@ -172735,7 +172735,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "reconhecida pelos bytes"
+            "value" : "pelos bytes"
           }
         }
       }
@@ -174241,7 +174241,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "a padrão"
+            "value" : "o padrão"
           }
         }
       }
