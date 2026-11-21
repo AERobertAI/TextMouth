@@ -33169,7 +33169,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Fragt zuerst nach, erstellt dann einen neuen Suchindex aus den Büchern in diesem Ordner und öffnet die Bibliothek."
+            "value" : "Fragt zuerst nach, erstellt dann einen neuen Index aus den Büchern in diesem Ordner und öffnet die Bibliothek."
           }
         },
         "es" : {
@@ -63470,7 +63470,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ordnerzuordnung und manuelle Reihenfolge, die nur im unlesbaren Suchindex gespeichert waren, gehen aus der Bibliothek verloren."
+            "value" : "Ordnerzuordnung und manuelle Reihenfolge, die nur im unlesbaren Index gespeichert waren, gehen aus der Bibliothek verloren."
           }
         },
         "es" : {
@@ -72262,7 +72262,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sie enthält %1$@; der Suchindex enthält %2$@."
+            "value" : "Sie enthält %1$@; der Index enthält %2$@."
           }
         },
         "en" : {
@@ -77236,7 +77236,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Suchindex der Bibliothek konnte nicht gelesen werden"
+            "value" : "Bibliotheksindex konnte nicht gelesen werden"
           }
         },
         "es" : {
@@ -77481,7 +77481,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Wiederherstellung des Suchindex der Bibliothek"
+            "value" : "Wiederherstellung des Bibliotheksindex"
           }
         },
         "es" : {
@@ -77516,7 +77516,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Suchindex der Bibliothek nicht lesbar"
+            "value" : "Bibliotheksindex nicht lesbar"
           }
         },
         "es" : {
@@ -80205,7 +80205,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Neuen Suchindex erstellen"
+            "value" : "Neuen Index erstellen"
           }
         },
         "es" : {
@@ -96284,7 +96284,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ohne Suchindex öffnen …"
+            "value" : "Ohne Index öffnen …"
           }
         },
         "es" : {
@@ -96634,7 +96634,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bibliothek ohne Suchindex öffnen?"
+            "value" : "Bibliothek ohne Index öffnen?"
           }
         },
         "es" : {
@@ -104206,7 +104206,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Beendet TextMouth, ohne den Suchindex der Bibliothek zu schreiben, damit du die Datei wiederherstellen und TextMouth erneut öffnen kannst."
+            "value" : "Beendet TextMouth, ohne den Bibliotheksindex zu schreiben, damit du die Datei wiederherstellen und TextMouth erneut öffnen kannst."
           }
         },
         "es" : {
@@ -105869,7 +105869,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Suchindex der Bibliothek neu aufbauen"
+            "value" : "Bibliotheksindex neu aufbauen"
           }
         },
         "es" : {
@@ -114220,7 +114220,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sichert die temporäre Bibliothek als neuen Suchindex, mit der Leseliste und den Sortiereinstellungen, die TextMouth lesen konnte."
+            "value" : "Sichert die temporäre Bibliothek als neuen Index, mit der Leseliste und den Sortiereinstellungen, die TextMouth lesen konnte."
           }
         },
         "es" : {
@@ -119453,7 +119453,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Zeigt die Optionen zur Wiederherstellung des Suchindex der Bibliothek an"
+            "value" : "Zeigt die Optionen zur Wiederherstellung des Bibliotheksindex an"
           }
         },
         "es" : {
@@ -128670,7 +128670,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth konnte den Suchindex der Bibliothek nicht lesen, die Datei mit deinen Ordnern, Sortiereinstellungen und der Reihenfolge deiner Bücher."
+            "value" : "TextMouth konnte den Bibliotheksindex nicht lesen, die Datei mit deinen Ordnern, Sortiereinstellungen und der Reihenfolge deiner Bücher."
           }
         },
         "es" : {
@@ -128775,7 +128775,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth konnte die Leseliste im vorherigen Suchindex nicht lesen."
+            "value" : "TextMouth konnte die Leseliste im vorherigen Index nicht lesen."
           }
         },
         "es" : {
@@ -128810,7 +128810,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth konnte die Leseliste im nicht lesbaren Suchindex nicht lesen."
+            "value" : "TextMouth konnte die Leseliste im nicht lesbaren Index nicht lesen."
           }
         },
         "es" : {
@@ -128845,7 +128845,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth konnte die Leseliste und die Sortiereinstellungen im vorherigen Suchindex nicht lesen."
+            "value" : "TextMouth konnte die Leseliste und die Sortiereinstellungen im vorherigen Index nicht lesen."
           }
         },
         "es" : {
@@ -128880,7 +128880,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth konnte die Leseliste und die Sortiereinstellungen im nicht lesbaren Suchindex nicht lesen."
+            "value" : "TextMouth konnte die Leseliste und die Sortiereinstellungen im nicht lesbaren Index nicht lesen."
           }
         },
         "es" : {
@@ -128915,7 +128915,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth konnte die Sortiereinstellungen im vorherigen Suchindex nicht lesen."
+            "value" : "TextMouth konnte die Sortiereinstellungen im vorherigen Index nicht lesen."
           }
         },
         "es" : {
@@ -128950,7 +128950,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth konnte die Sortiereinstellungen im nicht lesbaren Suchindex nicht lesen."
+            "value" : "TextMouth konnte die Sortiereinstellungen im nicht lesbaren Index nicht lesen."
           }
         },
         "es" : {
@@ -129723,7 +129723,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth konnte den Index der Bibliothek nicht sichern und hat beide Kopien unverändert gelassen."
+            "value" : "TextMouth konnte den Bibliotheksindex nicht sichern und hat beide Kopien unverändert gelassen."
           }
         },
         "es" : {
@@ -131884,7 +131884,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth erstellt aus den Büchern in diesem Ordner einen neuen Suchindex der Bibliothek."
+            "value" : "TextMouth erstellt aus den Büchern in diesem Ordner einen neuen Bibliotheksindex."
           }
         },
         "es" : {
@@ -143504,7 +143504,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Der Suchindex wird erst geändert, wenn du %1$@ oder %2$@ wählst; beides bleibt über %3$@ oben in der Bibliothek verfügbar."
+            "value" : "Der Index wird erst geändert, wenn du %1$@ oder %2$@ wählst; beides bleibt über %3$@ oben in der Bibliothek verfügbar."
           }
         },
         "en" : {
@@ -143971,7 +143971,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Der Suchindex der Bibliothek kann nicht gelesen werden. Wähle zuerst „Erneut versuchen“ oder „Suchindex der Bibliothek neu aufbauen“ im Bibliotheksfenster."
+            "value" : "Der Bibliotheksindex kann nicht gelesen werden. Wähle zuerst „Erneut versuchen“ oder „Bibliotheksindex neu aufbauen“ im Bibliotheksfenster."
           }
         },
         "es" : {
@@ -144006,7 +144006,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Der Suchindex der Bibliothek konnte nicht gelesen werden, daher werden Änderungen an der Bibliothek nicht gesichert."
+            "value" : "Der Bibliotheksindex konnte nicht gelesen werden, daher werden Änderungen an der Bibliothek nicht gesichert."
           }
         },
         "es" : {
@@ -144041,7 +144041,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Der Suchindex der Bibliothek konnte nicht gelesen werden."
+            "value" : "Der Bibliotheksindex konnte nicht gelesen werden."
           }
         },
         "es" : {
@@ -144076,7 +144076,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Der Suchindex der Bibliothek ist bereits lesbar."
+            "value" : "Der Bibliotheksindex ist bereits lesbar."
           }
         },
         "es" : {
@@ -144111,7 +144111,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Der Suchindex der Bibliothek konnte weiterhin nicht gelesen werden."
+            "value" : "Der Bibliotheksindex konnte weiterhin nicht gelesen werden."
           }
         },
         "es" : {
@@ -144146,7 +144146,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Der Suchindex der Bibliothek wurde nicht neu aufgebaut."
+            "value" : "Der Bibliotheksindex wurde nicht neu aufgebaut."
           }
         },
         "es" : {
@@ -144181,7 +144181,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Der Suchindex der Bibliothek wurde erfolgreich gelesen. Deine Bibliothek enthält %@, und Änderungen werden wieder gesichert."
+            "value" : "Der Bibliotheksindex wurde erfolgreich gelesen. Deine Bibliothek enthält %@, und Änderungen werden wieder gesichert."
           }
         },
         "es" : {
@@ -144216,7 +144216,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Der Suchindex der Bibliothek wurde mit %@ neu aufgebaut."
+            "value" : "Der Bibliotheksindex wurde mit %@ neu aufgebaut."
           }
         },
         "es" : {
@@ -144531,7 +144531,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Die Identitätsdatei der Bibliothek ist auf diesem Mac, aber ihr Suchindex %1$@ ist von %2$@ noch nicht angekommen."
+            "value" : "Die Identitätsdatei der Bibliothek ist auf diesem Mac, aber ihr Index %1$@ ist von %2$@ noch nicht angekommen."
           }
         },
         "en" : {
@@ -144572,7 +144572,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Der Suchindex der Bibliothek ist auf diesem Mac, aber ihre Identitätsdatei %1$@ ist von %2$@ noch nicht angekommen."
+            "value" : "Der Bibliotheksindex ist auf diesem Mac, aber ihre Identitätsdatei %1$@ ist von %2$@ noch nicht angekommen."
           }
         },
         "en" : {
@@ -144829,7 +144829,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Der migrierte Suchindex der Bibliothek konnte nicht geprüft werden."
+            "value" : "Der migrierte Bibliotheksindex konnte nicht geprüft werden."
           }
         },
         "es" : {
@@ -147410,7 +147410,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Der vorherige Suchindex wird unter %@ aufbewahrt."
+            "value" : "Der vorherige Index wird unter %@ aufbewahrt."
           }
         },
         "es" : {
@@ -149805,7 +149805,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Der nicht lesbare Suchindex der Bibliothek ist nicht mehr vorhanden, daher hat TextMouth die aus deinen Büchern neu aufgebaute Bibliothek als neuen Suchindex gesichert, mit %@."
+            "value" : "Der nicht lesbare Bibliotheksindex ist nicht mehr vorhanden, daher hat TextMouth die aus deinen Büchern neu aufgebaute Bibliothek als neuen Index gesichert, mit %@."
           }
         },
         "es" : {
@@ -168291,7 +168291,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "der Suchindex der Folgen eines Feeds, %@"
+            "value" : "der Index der Folgen eines Feeds, %@"
           }
         },
         "es" : {
@@ -179025,7 +179025,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "der Suchindex der Bibliothek, %@"
+            "value" : "der Bibliotheksindex, %@"
           }
         },
         "es" : {
