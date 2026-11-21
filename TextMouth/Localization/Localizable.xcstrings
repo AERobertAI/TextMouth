@@ -207368,7 +207368,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Aktifkan gestur timer ulang"
+            "value" : "Aktifkan gerakan mulai ulang timer"
           }
         },
         "it" : {
@@ -238600,7 +238600,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Pola gestur"
+            "value" : "Pola gerakan"
           }
         },
         "it" : {
@@ -238737,7 +238737,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Jendela waktu gestur"
+            "value" : "Jangka waktu gerakan"
           }
         },
         "it" : {
@@ -248252,7 +248252,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tahan Shift saat melompati untuk memakai jumlah lompatan kedua."
+            "value" : "Tahan Shift saat melompat untuk memakai jumlah lompatan kedua."
           }
         },
         "it" : {
@@ -249074,7 +249074,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Berapa lama perintah media diblokir setelah perangkat Bluetooth terputus. Naikkan jika pemutaran lanjut setelah headphone dilepas."
+            "value" : "Berapa lama perintah media diblokir setelah perangkat Bluetooth terputus. Naikkan jika pemutaran berlanjut setelah headphone dilepas."
           }
         },
         "it" : {
@@ -252231,7 +252231,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Jika file tiba dari %@ nanti, file itu menamai pustaka yang sama."
+            "value" : "Jika file tiba dari %@ nanti, file itu merujuk ke pustaka yang sama."
           }
         },
         "it" : {
@@ -269347,7 +269347,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Mungkin dijeda, sudah keluar, atau tidak berjalan."
+            "value" : "Mungkin dijeda, sudah keluar dari akun, atau tidak berjalan."
           }
         },
         "it" : {
@@ -283320,7 +283320,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Artikel di awal"
+            "value" : "Kata sandang di awal"
           }
         },
         "it" : {
@@ -304546,7 +304546,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Peristiwa kontrol media yang memicu pengulangan. Yang terakhir dikonsumsi, tidak diteruskan ke pemutaran, jadi tidak dapat memulai audio."
+            "value" : "Peristiwa kontrol media yang memicu mulai ulang. Yang terakhir ditahan dan tidak diteruskan ke pemutaran, jadi tidak dapat memulai audio."
           }
         },
         "it" : {
@@ -413660,7 +413660,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Gestur Mulai Ulang Timer Tidur"
+            "value" : "Gerakan Mulai Ulang Timer Tidur"
           }
         },
         "it" : {
@@ -431027,7 +431027,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Mencari di seluruh pustaka buku yang cocok dengan kriteria terpilih."
+            "value" : "Mencari buku yang cocok dengan kriteria terpilih di seluruh pustaka."
           }
         },
         "it" : {
