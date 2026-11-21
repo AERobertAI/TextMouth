@@ -64948,7 +64948,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "章节标记已重命名为“%@”。"
+            "value" : "章节标记已重新命名为“%@”。"
           }
         }
       }
@@ -110760,7 +110760,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "隐藏跳转到页面的控制。"
+            "value" : "隐藏跳到页码的控制。"
           }
         }
       }
@@ -110819,7 +110819,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "隐藏跳转到百分比的控制。"
+            "value" : "隐藏跳到百分比的控制。"
           }
         }
       }
@@ -110878,7 +110878,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "隐藏跳转到时间的控制。"
+            "value" : "隐藏跳到时间的控制。"
           }
         }
       }
@@ -132094,7 +132094,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "无法写入 MP3：TextMouth 的编码器无法启动，并且 ffmpeg 缺失或在“存储”设置中已关闭。"
+            "value" : "无法写入 MP3：TextMouth 的编码器无法启动，并且 ffmpeg 缺失或在“设置”>“存储”中已关闭。"
           }
         }
       }
@@ -161113,7 +161113,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "打开跳转到页面的控制。"
+            "value" : "打开跳到页码的控制。"
           }
         }
       }
@@ -161172,7 +161172,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "打开跳转到百分比的控制。"
+            "value" : "打开跳到百分比的控制。"
           }
         }
       }
@@ -161231,7 +161231,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "打开跳转到时间的控制。"
+            "value" : "打开跳到时间的控制。"
           }
         }
       }
@@ -208447,7 +208447,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "切换到跳转到页面的控制。"
+            "value" : "切换到跳到页码的控制。"
           }
         }
       }
@@ -208506,7 +208506,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "切换到跳转到百分比的控制。"
+            "value" : "切换到跳到百分比的控制。"
           }
         }
       }
@@ -208565,7 +208565,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "切换到跳转到时间的控制。"
+            "value" : "切换到跳到时间的控制。"
           }
         }
       }
@@ -218150,7 +218150,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth 无权使用麦克风。请在“系统设置”的“隐私与安全性”下的“麦克风”中打开。"
+            "value" : "TextMouth 无权使用麦克风。请在“系统设置”>“隐私与安全性”>“麦克风”中打开。"
           }
         }
       }
@@ -283666,7 +283666,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "无法启动 ffmpeg。请检查是否已安装，或在“存储”设置中关闭“使用 ffmpeg”。"
+            "value" : "无法启动 ffmpeg。请检查是否已安装，或在“设置”>“存储”中关闭“使用 ffmpeg”。"
           }
         }
       }
