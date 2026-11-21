@@ -644993,7 +644993,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "적절"
+            "value" : "적절함"
           }
         },
         "nl" : {
@@ -646095,7 +646095,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "챕터 %1$@: %2$@ 안"
+            "value" : "챕터 %1$@: %2$@"
           }
         },
         "nl" : {
