@@ -33,8 +33,16 @@ import catalog
 sys.dont_write_bytecode = True
 
 GLOSSARY_PATH = Path(__file__).resolve().parent / "glossary.json"
-# What may follow a name or term in a text without making it another word: an optional plural `s`, then a non-word.
-_WORD_END = r"(?:s)?(?!\w)"
+# The scripts that write words without spaces between them: Hangul (jamo, compatibility jamo, and syllables), the kana,
+# the CJK ideographs with their extension A and compatibility forms, and the halfwidth and fullwidth forms. Japanese,
+# Chinese, and Korean put a particle or the next word straight against a name ("TextMouthは", "TextMouth가", "在Mac上"),
+# so a letter of these scripts beside a name never makes it part of another word.
+_SPACELESS = "ᄀ-ᇿ぀-ヿ㄰-㆏㐀-䶿一-鿿가-힯豈-﫿＀-￯"
+# A word character that would join a name into a longer word: any but those of the scripts above.
+_JOINING = r"[^\W" + _SPACELESS + r"]"
+# What may follow a name or term in a text without making it another word: an optional plural `s`, then no joining
+# word character.
+_WORD_END = r"(?:s)?(?!" + _JOINING + r")"
 
 
 class GlossaryError(ValueError):
@@ -48,8 +56,9 @@ def _fold(text):
 
 
 def _word_pattern(text, flags=0):
-    """A regular expression for `text` standing as a word of its own (with an optional plural `s` after it)."""
-    return re.compile(r"(?<!\w)" + re.escape(text) + _WORD_END, flags)
+    """A regular expression for `text` standing as a word of its own (with an optional plural `s` after it). Japanese,
+    Chinese, or Korean text right beside it counts as a word edge (see _SPACELESS); a Latin or Cyrillic letter does not."""
+    return re.compile(r"(?<!" + _JOINING + r")" + re.escape(text) + _WORD_END, flags)
 
 
 # The words a title-case phrase leaves in lower case ("Open Without the Index", "Open %@ in TextMouth").
