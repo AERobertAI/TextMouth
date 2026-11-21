@@ -1,0 +1,203 @@
+import Compression
+import Foundation
+
+/// The reader of `Strings.pack`, format version 1 (FR39): the IDs, the English, the translators' notes, and one
+/// LZMA-compressed blob of entries for each language, in one file.
+///
+/// The layout, little-endian:
+/// - header, 48 bytes: the magic `TMSP`, the version (u16), flags (u16, zero), the SHA-256 of the catalog it was built
+///   from (32 bytes), the number of IDs (u32), and the number of blobs (u32);
+/// - directory, straight after the header, one 28-byte record for each blob: its name (12 bytes of ASCII, padded with
+///   NULs: `ids`, `notes`, `en`, `es`, ...), its offset from the start of the file, its compressed size, its raw size,
+///   and its entry count (u32 each);
+/// - the blobs, each an xz stream that Apple's `COMPRESSION_LZMA` decodes.
+///
+/// The pack is untrusted bytes: a damaged or hostile file must give English, never a trap. So the file is mapped, and
+/// nothing is read before it is checked: the magic, the version, the flags, the directory's bounds, each blob's
+/// bounds, its raw size (a limit that stops a decompression bomb), and its entry count. Reads go through bounds-checked
+/// loads (`loadUnaligned` on a checked range), never a pointer cast or a force unwrap on file data, and a decoded blob
+/// is checked again for its size, its entry count, and UTF-8 before a byte of it is used.
+///
+/// Foundation and the Compression framework only; no stored state beyond the mapped bytes and the directory.
+struct InterfaceTextPack: InterfaceTextTables {
+    /// A blob's place and sizes, from the directory.
+    private struct Blob: Sendable {
+        let offset: Int
+        let compressedSize: Int
+        let rawSize: Int
+        let count: Int
+    }
+
+    /// The bytes of the whole file, memory-mapped when read from a URL.
+    private let data: Data
+    /// The directory by blob name.
+    private let blobs: [String: Blob]
+    /// How many IDs the header says there are; every blob holds that many entries.
+    let idCount: Int
+
+    // MARK: - Limits
+
+    /// The file's name inside an app's resources.
+    static let resourceName = "Strings"
+    static let resourceExtension = "pack"
+
+    private static let magic: [UInt8] = Array("TMSP".utf8)
+    private static let supportedVersion: UInt16 = 1
+    private static let headerSize = 48
+    private static let recordSize = 28
+    private static let nameSize = 12
+    /// The most blobs a directory may name: 25 languages, English, the IDs, and the notes come to 28, so this leaves
+    /// room and stops a header that claims millions of records.
+    private static let largestBlobCount = 256
+    /// The most IDs the header may claim, far above the thousands the app has.
+    private static let largestIDCount = 1_000_000
+    /// The largest raw size of any blob: the biggest real one is under 300 KB, so this keeps a hostile size from
+    /// asking for gigabytes.
+    private static let largestRawSize = 16 * 1024 * 1024
+
+    // MARK: - Opening
+
+    /// The pack in the main bundle, or nil when the bundle has none (`Strings.pack` is added to the apps by a later
+    /// phase). Throws when it is there and cannot be read.
+    static func inMainBundle() throws -> InterfaceTextPack? {
+        guard let url = Bundle.main.url(forResource: resourceName, withExtension: resourceExtension) else { return nil }
+        return try InterfaceTextPack(contentsOf: url)
+    }
+
+    /// The pack in the file at `url`, mapped rather than read, so the 1.3 MB costs address space, not memory, until a
+    /// blob is decoded.
+    init(contentsOf url: URL) throws {
+        let mapped: Data
+        do {
+            mapped = try Data(contentsOf: url, options: .alwaysMapped)
+        } catch {
+            throw InterfaceTextFailure("the pack cannot be read: \(error.localizedDescription)")
+        }
+        try self.init(data: mapped)
+    }
+
+    /// The pack in `data`, whose header and directory are checked here; a blob is checked when it is decoded.
+    init(data: Data) throws {
+        let parsed = try data.withUnsafeBytes { bytes in try Self.parseDirectory(bytes) }
+        self.data = data
+        self.blobs = parsed.blobs
+        self.idCount = parsed.idCount
+    }
+
+    /// Checks the header, and reads and checks the directory of the pack in `bytes`.
+    private static func parseDirectory(_ bytes: UnsafeRawBufferPointer) throws -> (idCount: Int, blobs: [String: Blob]) {
+        guard bytes.count >= headerSize else { throw InterfaceTextFailure("the pack is shorter than its header") }
+        guard Array(bytes[0..<magic.count]) == magic else { throw InterfaceTextFailure("the pack's magic is wrong") }
+        guard let version = bytes.littleEndian(UInt16.self, at: 4), version == supportedVersion else {
+            throw InterfaceTextFailure("the pack's format version is not \(supportedVersion)")
+        }
+        guard bytes.littleEndian(UInt16.self, at: 6) == 0 else { throw InterfaceTextFailure("the pack sets flags this reader does not know") }
+        guard let idCount = bytes.littleEndian(UInt32.self, at: 40).map(Int.init), idCount <= largestIDCount,
+              let blobCount = bytes.littleEndian(UInt32.self, at: 44).map(Int.init), blobCount <= largestBlobCount
+        else { throw InterfaceTextFailure("the pack's counts are out of range") }
+        let directoryEnd = headerSize + blobCount * recordSize
+        guard directoryEnd <= bytes.count else { throw InterfaceTextFailure("the pack's directory is cut short") }
+
+        var blobs: [String: Blob] = [:]
+        for record in 0..<blobCount {
+            let at = headerSize + record * recordSize
+            let name = try blobName(bytes, at: at)
+            guard let offset = bytes.littleEndian(UInt32.self, at: at + nameSize).map(Int.init),
+                  let compressedSize = bytes.littleEndian(UInt32.self, at: at + nameSize + 4).map(Int.init),
+                  let rawSize = bytes.littleEndian(UInt32.self, at: at + nameSize + 8).map(Int.init),
+                  let count = bytes.littleEndian(UInt32.self, at: at + nameSize + 12).map(Int.init)
+            else { throw InterfaceTextFailure("the directory record of \(name) is cut short") }
+            // Each blob lies wholly inside the file, after the directory; a u32 offset and size cannot overflow an Int.
+            guard offset >= directoryEnd, offset + compressedSize <= bytes.count else {
+                throw InterfaceTextFailure("the blob \(name) lies outside the pack")
+            }
+            guard rawSize <= largestRawSize else { throw InterfaceTextFailure("the blob \(name) claims \(rawSize) bytes") }
+            guard count == idCount else { throw InterfaceTextFailure("the blob \(name) has \(count) entries, not \(idCount)") }
+            guard blobs[name] == nil else { throw InterfaceTextFailure("the blob \(name) is listed twice") }
+            blobs[name] = Blob(offset: offset, compressedSize: compressedSize, rawSize: rawSize, count: count)
+        }
+        guard blobs["ids"] != nil else { throw InterfaceTextFailure("the pack has no ids blob") }
+        return (idCount, blobs)
+    }
+
+    /// The name in the directory record at `offset`: ASCII letters, digits, and hyphens up to the first NUL, the rest
+    /// NULs.
+    private static func blobName(_ bytes: UnsafeRawBufferPointer, at offset: Int) throws -> String {
+        let field = Array(bytes[offset..<(offset + nameSize)])
+        let length = field.firstIndex(of: 0) ?? field.count
+        guard length > 0, field[length...].allSatisfy({ $0 == 0 }), field[..<length].allSatisfy(isNameByte) else {
+            throw InterfaceTextFailure("a directory record has no valid name")
+        }
+        return String(decoding: field[..<length], as: UTF8.self)
+    }
+
+    /// Whether `byte` may appear in a blob's name: an ASCII letter, digit, or hyphen.
+    private static func isNameByte(_ byte: UInt8) -> Bool {
+        (UInt8(ascii: "a")...UInt8(ascii: "z")).contains(byte) || (UInt8(ascii: "A")...UInt8(ascii: "Z")).contains(byte)
+            || (UInt8(ascii: "0")...UInt8(ascii: "9")).contains(byte) || byte == UInt8(ascii: "-")
+    }
+
+    // MARK: - Reading
+
+    /// Whether the pack has a blob for `language`.
+    func hasLanguage(_ language: String) -> Bool {
+        language != "ids" && language != "notes" && blobs[language] != nil
+    }
+
+    func idList() throws -> InterfaceTextIDList {
+        let bytes = try decodedBlob(named: "ids")
+        guard let list = InterfaceTextIDList(blob: bytes, count: idCount) else {
+            throw InterfaceTextFailure("the ids blob is not \(idCount) valid IDs in order")
+        }
+        return list
+    }
+
+    func entries(language: String) throws -> [InterfaceTextEntry] {
+        guard hasLanguage(language) else { throw InterfaceTextFailure("the pack has no \(language) blob") }
+        let bytes = try decodedBlob(named: language)
+        do {
+            return try InterfaceTextEntry.decodeAll(bytes, count: idCount, formCount: PluralRules.categories[language]?.count)
+        } catch let failure as InterfaceTextFailure {
+            throw InterfaceTextFailure("the \(language) blob: \(failure.description)")
+        }
+    }
+
+    /// The decoded bytes of the blob `name`: one `compression_decode_buffer` into a buffer of the directory's raw size
+    /// plus one byte. The extra byte tells a stream that is longer than its raw size (the decoder would stop at the
+    /// buffer's end and look exact) from a right one; the size written must be the raw size, to the byte.
+    private func decodedBlob(named name: String) throws -> [UInt8] {
+        guard let blob = blobs[name] else { throw InterfaceTextFailure("the pack has no \(name) blob") }
+        return try data.withUnsafeBytes { bytes -> [UInt8] in
+            // Re-checked here, against the bytes actually in hand, though the directory was checked on opening.
+            guard blob.offset >= 0, blob.compressedSize >= 0, blob.offset + blob.compressedSize <= bytes.count else {
+                throw InterfaceTextFailure("the blob \(name) lies outside the pack")
+            }
+            if blob.rawSize == 0 { return [] }
+            let source = UnsafeRawBufferPointer(rebasing: bytes[blob.offset..<(blob.offset + blob.compressedSize)])
+            guard let sourceStart = source.baseAddress, source.count > 0 else {
+                throw InterfaceTextFailure("the blob \(name) is empty but claims \(blob.rawSize) bytes")
+            }
+            var written = 0
+            let decoded = [UInt8](unsafeUninitializedCapacity: blob.rawSize + 1) { buffer, count in
+                guard let destination = buffer.baseAddress else { count = 0; return }
+                written = compression_decode_buffer(
+                    destination, buffer.count, sourceStart.assumingMemoryBound(to: UInt8.self), source.count, nil, COMPRESSION_LZMA
+                )
+                count = written
+            }
+            guard written == blob.rawSize else {
+                throw InterfaceTextFailure("the blob \(name) decodes to \(written) bytes, not \(blob.rawSize)")
+            }
+            return decoded
+        }
+    }
+}
+
+extension UnsafeRawBufferPointer {
+    /// The little-endian integer of type `type` at `offset`, or nil when the whole of it is not inside the buffer. The
+    /// only way the pack reader reads a number from the file.
+    fileprivate func littleEndian<T: FixedWidthInteger>(_ type: T.Type, at offset: Int) -> T? {
+        guard offset >= 0, offset <= count - MemoryLayout<T>.size else { return nil }
+        return T(littleEndian: loadUnaligned(fromByteOffset: offset, as: T.self))
+    }
+}
