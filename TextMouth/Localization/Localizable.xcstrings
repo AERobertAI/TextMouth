@@ -8855,7 +8855,7 @@
         "he" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ עדיין לא הגיע ל-Mac הזה. ייתכן ש-%2$@ עדיין מסנכרן אותו."
+            "value" : "%1$@ עדיין לא הגיע ל-Mac הזה. %2$@ אולי עדיין מסנכרן אותו."
           }
         },
         "hi" : {
@@ -14447,7 +14447,7 @@
         "he" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ייתכן ש-%@ מנותק או לא פועל."
+            "value" : "%@ אולי מנותק או לא פועל."
           }
         },
         "hi" : {
@@ -80229,7 +80229,7 @@
         "he" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ספר שנמצא רק ב-%@ דורש חיבור לאינטרנט כדי להיפתח."
+            "value" : "ספר שנמצא רק אצל %@ דורש חיבור לאינטרנט כדי להיפתח."
           }
         },
         "hi" : {
@@ -121326,7 +121326,7 @@
         "he" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ודא ש-%@ פועל ושה-Mac הזה מחובר לאינטרנט, ואז בחר “נסה שוב”."
+            "value" : "בדוק אם %@ פועל ואם ה-Mac הזה מחובר לאינטרנט, ואז בחר “נסה שוב”."
           }
         },
         "hi" : {
@@ -212975,7 +212975,7 @@
         "he" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "אם %1$@ יגיע בהמשך דרך %2$@, ייתכן ש-%3$@ ישמור שני עותקים שלו."
+            "value" : "אם %1$@ יגיע בהמשך דרך %2$@, %3$@ עשוי לשמור שני עותקים שלו."
           }
         },
         "hi" : {
@@ -213475,7 +213475,7 @@
         "he" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "אם %1$@ של הספרייה עצמה יגיע בהמשך דרך %2$@, ייתכן ש-%3$@ ישמור שני עותקים שלו, וה-Mac הזה והאחר לא יסכימו איזו ספרייה זו."
+            "value" : "אם %1$@ של הספרייה עצמה יגיע בהמשך דרך %2$@, %3$@ עשוי לשמור שני עותקים שלו, וה-Mac הזה והאחר לא יסכימו איזו ספרייה זו."
           }
         },
         "hi" : {
@@ -227718,7 +227718,7 @@
         "he" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ייתכן שהוא הועבר או שונה שמו, או ש-%@ עדיין לא סנכרן אותו ל-Mac הזה."
+            "value" : "ייתכן שהוא הועבר או שונה שמו, או שהסנכרון של %@ עדיין לא העביר אותו ל-Mac הזה."
           }
         },
         "hi" : {
@@ -399039,6 +399039,12 @@
             "value" : "Texte d’entrée du test"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "טקסט קלט לבדיקה"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -399156,6 +399162,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Résultat du test : %@"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "תוצאת הבדיקה: %@"
           }
         },
         "hi" : {
@@ -399277,6 +399289,12 @@
             "value" : "Tester cette règle sur le texte d’entrée"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "בדוק את הכלל הזה מול הקלט"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -399394,6 +399412,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Texte"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "טקסט"
           }
         },
         "hi" : {
@@ -400304,6 +400328,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Progression de l’extraction du texte : %1$lld sur %2$lld"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "התקדמות חילוץ הטקסט: %1$lld מתוך %2$lld"
           }
         },
         "hi" : {
@@ -402313,6 +402343,12 @@
             "value" : "Les règles de substitution de texte n’ont pas pu être enregistrées : %@"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "לא ניתן לשמור את כללי החלפת הטקסט: %@"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -402430,6 +402466,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Règles de substitution de texte enregistrées."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "כללי החלפת הטקסט נשמרו."
           }
         },
         "hi" : {
@@ -402894,6 +402936,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth est ouvert sur un autre Mac"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth פתוח ב-Mac אחר"
           }
         },
         "hi" : {
@@ -404036,6 +404084,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth ne peut pas lire le dossier %1$@ : %2$@."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth לא מצליח לקרוא את התיקייה %1$@: %2$@."
           }
         },
         "hi" : {
@@ -405751,6 +405805,12 @@
             "value" : "TextMouth n’a pas pu vérifier s’il fallait le placer dans la corbeille."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth לא הצליח לבדוק אם להעביר אותו לאשפה."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -406090,6 +406150,12 @@
             "value" : "TextMouth n’a pas pu migrer %@ vers le format actuel de la bibliothèque."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth לא הצליח להעביר את %@ לפורמט הספרייה הנוכחי."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -406207,6 +406273,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth n’a pas pu lire l’index de sa bibliothèque, le fichier qui enregistre vos dossiers, vos réglages de tri et l’ordre de vos livres."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth לא הצליח לקרוא את אינדקס הספרייה שלו, הקובץ ששומר את התיקיות, הגדרות המיון וסדר הספרים שלך."
           }
         },
         "hi" : {
@@ -406554,6 +406626,12 @@
             "value" : "TextMouth n’a pas pu lire la liste de lecture dans l’index précédent."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth לא הצליח לקרוא את רשימת הקריאה באינדקס הקודם."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -406671,6 +406749,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth n’a pas pu lire la liste de lecture dans l’index illisible."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth לא הצליח לקרוא את רשימת הקריאה באינדקס הלא קריא."
           }
         },
         "hi" : {
@@ -406792,6 +406876,12 @@
             "value" : "TextMouth n’a pas pu lire la liste de lecture ni les réglages de tri dans l’index précédent."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth לא הצליח לקרוא את רשימת הקריאה או את הגדרות המיון באינדקס הקודם."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -406909,6 +406999,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth n’a pas pu lire la liste de lecture ni les réglages de tri dans l’index illisible."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth לא הצליח לקרוא את רשימת הקריאה או את הגדרות המיון באינדקס הלא קריא."
           }
         },
         "hi" : {
@@ -407030,6 +407126,12 @@
             "value" : "TextMouth n’a pas pu lire les réglages de tri dans l’index précédent."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth לא הצליח לקרוא את הגדרות המיון באינדקס הקודם."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -407147,6 +407249,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth n’a pas pu lire les réglages de tri dans l’index illisible."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth לא הצליח לקרוא את הגדרות המיון באינדקס הלא קריא."
           }
         },
         "hi" : {
@@ -407494,6 +407602,12 @@
             "value" : "TextMouth n’a pas pu enregistrer une copie de %@, il a donc laissé ce fichier inchangé."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth לא הצליח לשמור עותק של %@, ולכן השאיר את הקובץ ללא שינוי."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -407611,6 +407725,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth n’a pas pu enregistrer une copie du fichier illisible."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth לא הצליח לשמור עותק של הקובץ הלא קריא."
           }
         },
         "hi" : {
@@ -407944,6 +408064,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth n’a pas pu obtenir les fichiers de la bibliothèque depuis %@."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth לא הצליח להשיג את קבצי הספרייה דרך %@."
           }
         },
         "hi" : {
@@ -408527,6 +408653,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth n’a pas pu ouvrir %@ dans le Finder."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth לא הצליח לפתוח את %@ ב-Finder."
           }
         },
         "hi" : {
@@ -410108,6 +410240,12 @@
             "value" : "TextMouth n’a pas l’autorisation de lire le fichier."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ל-TextMouth אין הרשאה לקרוא את הקובץ."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -411463,6 +411601,12 @@
             "value" : "TextMouth enregistre d’abord une copie de l’ancien fichier, et ne reconstruit rien s’il n’y arrive pas."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth שומר תחילה עותק של הקובץ הישן, ואינו בונה מחדש אם הדבר נכשל."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -411909,6 +412053,12 @@
             "value" : "TextMouth ne l’a ni fusionnée ni retirée."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth לא מיזג אותו ולא הסיר אותו."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -412246,6 +412396,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth déplace déjà son dossier de données."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth כבר מעביר את תיקיית הנתונים שלו."
           }
         },
         "hi" : {
@@ -412594,6 +412750,30 @@
             }
           }
         },
+        "he" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "TextMouth פתוח גם ב-“%@” (פעיל לפני %lld דקה)."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "TextMouth פתוח גם ב-“%@” (פעיל לפני %lld דקות)."
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "TextMouth פתוח גם ב-“%@” (פעיל לפני %lld דקות)."
+                }
+              }
+            }
+          }
+        },
         "hi" : {
           "variations" : {
             "plural" : {
@@ -412887,6 +413067,12 @@
             "value" : "TextMouth est aussi ouvert sur « %@ » (actif il y a moins d’une minute)."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth פתוח גם ב-“%@” (פעיל לפני פחות מדקה)."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -413119,6 +413305,12 @@
             "value" : "TextMouth les obtient maintenant, et la bibliothèque s’ouvre quand ils arrivent."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth מוריד אותם כעת, והספרייה תיפתח כשיגיעו."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -413236,6 +413428,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth déplace des livres entre des dossiers."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth מעביר ספרים בין תיקיות."
           }
         },
         "hi" : {
@@ -413583,6 +413781,12 @@
             "value" : "TextMouth se rouvre sur une autre bibliothèque ; elles restent donc non enregistrées dans celle-ci."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth נפתח שוב על ספרייה אחרת, ולכן הם נשארים לא שמורים בזו."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -413700,6 +413904,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth se rouvre sur une autre bibliothèque ; ils restent donc là où ils sont dans celle-ci."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth נפתח שוב על ספרייה אחרת, ולכן הם נשארים במקומם בזו."
           }
         },
         "hi" : {
@@ -414410,6 +414620,12 @@
             "value" : "TextMouth reconstruit son dossier de données."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth בונה מחדש את תיקיית הנתונים שלו."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -414987,6 +415203,12 @@
             "value" : "TextMouth utilise toujours %@."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth עדיין משתמש ב-%@."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -415106,6 +415328,12 @@
             "value" : "TextMouth passe à une autre bibliothèque et se rouvre dessus."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth עובר לספרייה אחרת ונפתח שוב עליה."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -415223,6 +415451,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth n’est pas autorisé à apporter des modifications dans %@."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ל-TextMouth אין אישור לבצע שינויים ב-%@."
           }
         },
         "hi" : {
@@ -415796,6 +416030,12 @@
             "value" : "TextMouth l’a laissé là et utilise toujours %@."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth השאיר אותו שם ועדיין משתמש ב-%@."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -416367,6 +416607,12 @@
             "value" : "TextMouth les a laissés là et utilise toujours %@."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth השאיר אותם שם ועדיין משתמש ב-%@."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -416599,6 +416845,12 @@
             "value" : "TextMouth crée un nouvel index de bibliothèque à partir des livres de ce dossier."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth יוצר אינדקס ספרייה חדש מהספרים שבתיקייה הזו."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -416718,6 +416970,12 @@
             "value" : "TextMouth a migré %@ vers le format actuel de la bibliothèque, mais avec un problème :"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth העביר את %@ לפורמט הספרייה הנוכחי, אך עם בעיה:"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -416835,6 +417093,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth a migré %@ vers le format actuel de la bibliothèque, mais avec des problèmes :"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth העביר את %@ לפורמט הספרייה הנוכחי, אך עם בעיות:"
           }
         },
         "hi" : {
@@ -417577,6 +417841,12 @@
             "value" : "TextMouth les remet en place dès qu’il a fini de déplacer des livres entre des dossiers."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth מחזיר אותם למקומם כשיסיים להעביר ספרים בין תיקיות."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -417694,6 +417964,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth les remet en place dès qu’il a fini de reconstruire son dossier de données."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth מחזיר אותם למקומם כשיסיים לבנות מחדש את תיקיית הנתונים שלו."
           }
         },
         "hi" : {
@@ -417815,6 +418091,12 @@
             "value" : "TextMouth les remet en place dès que le déplacement de son dossier de données est terminé."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth מחזיר אותם למקומם כשהעברת תיקיית הנתונים שלו תסתיים."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -417932,6 +418214,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth a besoin que le disque « %@ » soit connecté pour ouvrir la bibliothèque."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth זקוק לכונן “%@” מחובר כדי לפתוח את הספרייה."
           }
         },
         "hi" : {
@@ -418951,6 +419239,12 @@
             "value" : "TextMouth les enregistre dès qu’il a fini de déplacer des livres entre des dossiers."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth שומר אותם כשיסיים להעביר ספרים בין תיקיות."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -419070,6 +419364,12 @@
             "value" : "TextMouth les enregistre dès qu’il a fini de reconstruire son dossier de données."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth שומר אותם כשיסיים לבנות מחדש את תיקיית הנתונים שלו."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -419187,6 +419487,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth les enregistre dès que le déplacement de son dossier de données est terminé."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth שומר אותם כשהעברת תיקיית הנתונים שלו תסתיים."
           }
         },
         "hi" : {
@@ -420482,6 +420788,12 @@
             "value" : "TextMouth l’a attendu."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth המתין לו."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -420605,6 +420917,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth ouvrira la bibliothèque dans %1$@ au lieu de celle dans %2$@, qui n’est pas disponible."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth יפתח את הספרייה שבתיקייה %1$@ במקום הספרייה שבתיקייה %2$@, שאינה זמינה."
           }
         },
         "hi" : {
@@ -420732,6 +421050,12 @@
             "value" : "TextMouth ouvrira la bibliothèque dans %1$@ à sa prochaine ouverture, mais il n’a pas pu se rouvrir de lui-même : %2$@"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth יפתח את הספרייה שבתיקייה %1$@ בפעם הבאה שייפתח, אך לא הצליח להיפתח שוב מעצמו: %2$@"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -420851,6 +421175,12 @@
             "value" : "TextMouth va quitter puis se rouvrir pour la charger."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth ייסגר ויפתח שוב כדי לטעון אותה."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -420968,6 +421298,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth va quitter puis se rouvrir pour la démarrer."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth ייסגר ויפתח שוב כדי להתחיל אותה."
           }
         },
         "hi" : {
@@ -421095,6 +421431,12 @@
             "value" : "TextMouth va démarrer une nouvelle bibliothèque vide à l’emplacement par défaut, %1$@, au lieu de la bibliothèque dans %2$@, qui n’est pas disponible."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth יתחיל ספרייה חדשה וריקה במיקום ברירת המחדל, %1$@, במקום הספרייה שבתיקייה %2$@, שאינה זמינה."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -421220,6 +421562,12 @@
             "value" : "TextMouth va cesser d’utiliser la bibliothèque dans %1$@ (%2$@) et ouvrir à la place la bibliothèque dans %3$@."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth יפסיק להשתמש בספרייה שבתיקייה %1$@ (%2$@) ויפתח במקומה את הספרייה שבתיקייה %3$@."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -421339,6 +421687,12 @@
             "value" : "TextMouth écrit %@ avec une nouvelle identité pour la bibliothèque, puis l’ouvre."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth כותב את %@ עם זהות חדשה לספרייה, ופותח אותה."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -421456,6 +421810,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth écrit %@ avec l’identité que ce Mac connaît pour la bibliothèque, puis l’ouvre."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth כותב את %@ עם הזהות ש-Mac הזה מכיר עבור הספרייה, ופותח אותה."
           }
         },
         "hi" : {
@@ -423389,6 +423749,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Cela conserve la copie du livre dans le cloud."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "כך נשמר עותק הספר בענן."
           }
         },
         "hi" : {
@@ -425363,6 +425729,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Les %1$@ de la liste seront remplacées par les %2$@ de TextMouth."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ שברשימה יוחלפו ב-%2$@ של TextMouth."
           }
         },
         "hi" : {
@@ -428394,6 +428766,30 @@
             }
           }
         },
+        "he" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld ספר נבחר, והוא כבר נשמר ב-Mac הזה."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld הספרים שנבחרו כבר נשמרו ב-Mac הזה."
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld הספרים שנבחרו כבר נשמרו ב-Mac הזה."
+                }
+              }
+            }
+          }
+        },
         "hi" : {
           "variations" : {
             "plural" : {
@@ -428796,6 +429192,30 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Les %lld livres sélectionnés sont conservés sur ce Mac pour la liste de lecture."
+                }
+              }
+            }
+          }
+        },
+        "he" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld ספר נבחר, והוא נשמר ב-Mac הזה בשביל רשימת הקריאה."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld הספרים שנבחרו נשמרו ב-Mac הזה בשביל רשימת הקריאה."
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld הספרים שנבחרו נשמרו ב-Mac הזה בשביל רשימת הקריאה."
                 }
               }
             }
@@ -430432,6 +430852,12 @@
             "value" : "The Hobbit compte pour un H à la saisie. La liste garde son ordre et affiche chaque titre tel qu’il est écrit."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "The Hobbit נחשב ל-H בעת ההקלדה. הרשימה שומרת על סדרה ומציגה כל שם יצירה כפי שהוא כתוב."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -430549,6 +430975,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "The Hobbit est classé parmi les H et s’affiche comme Hobbit, The. Taper H le trouve parmi les H."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "The Hobbit ממוין בין ה-H ומוצג כ-Hobbit, The. הקלדת H מוצאת אותו בין ה-H."
           }
         },
         "hi" : {
@@ -432295,6 +432727,12 @@
             "value" : "L’archive se développe à %1$@, mais le disque contenant la bibliothèque TextMouth n’a que %2$@ libres, et TextMouth en garde %3$@ de libre."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הארכיון מתרחב ל-%1$@, אך בדיסק שמכיל את ספריית TextMouth יש רק %2$@ פנויים, ו-TextMouth משאיר מהם %3$@ פנויים."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -432418,6 +432856,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "L’archive se développe à %1$@, soit plus que les %2$@ que TextMouth extrait des archives contenant de l’audio ou d’autres archives."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הארכיון מתרחב ל-%1$@, יותר מה-%2$@ ש-TextMouth מחלץ מארכיונים שמכילים שמע או ארכיונים אחרים."
           }
         },
         "hi" : {
@@ -432545,6 +432989,12 @@
             "value" : "L’archive se développe à %1$@, soit plus que les %2$@ que TextMouth extrait des archives sans audio."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הארכיון מתרחב ל-%1$@, יותר מה-%2$@ ש-TextMouth מחלץ מארכיונים ללא שמע."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -432668,6 +433118,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "L’archive contient %1$@ fichiers et dossiers, soit plus que les %2$@ que TextMouth extrait en une seule importation."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הארכיון מכיל %1$@ קבצים ותיקיות, יותר מה-%2$@ ש-TextMouth מחלץ בייבוא אחד."
           }
         },
         "hi" : {
@@ -433015,6 +433471,12 @@
             "value" : "L’archive contient plus que les %@ qu’elle déclare ; l’extraction s’est donc arrêtée."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הארכיון מכיל יותר מה-%@ שהוא מצהיר עליו, ולכן החילוץ נעצר."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -433251,6 +433713,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "L’archive « %1$@ » qu’elle contient se développe à %2$@, mais le disque contenant la bibliothèque TextMouth n’a que %3$@ libres, et TextMouth en garde %4$@ de libre."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הארכיון “%1$@” שבתוכו מתרחב ל-%2$@, אך בדיסק שמכיל את ספריית TextMouth יש רק %3$@ פנויים, ו-TextMouth משאיר מהם %4$@ פנויים."
           }
         },
         "hi" : {
@@ -436289,6 +436757,12 @@
             "value" : "Le livre %1$@ est stocké dans %2$@, en dehors du dossier de données, donc le déplacement ne peut pas l’emporter."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הספר %1$@ מאוחסן בנתיב %2$@, מחוץ לתיקיית הנתונים, ולכן ההעברה לא יכולה לשאת אותו."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -437074,6 +437548,12 @@
             "value" : "Le livre est conservé sur ce Mac et figure dans la liste de lecture, que ce Mac garde téléchargée ; son téléchargement ne peut donc pas être retiré."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הספר נשמר ב-Mac הזה, וגם נמצא ברשימת הקריאה, ש-Mac הזה שומר מורדת, ולכן לא ניתן להסיר את ההורדה שלו."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -437191,6 +437671,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le livre est conservé sur ce Mac ; son téléchargement ne peut donc pas être retiré."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הספר נשמר ב-Mac הזה, ולכן לא ניתן להסיר את ההורדה שלו."
           }
         },
         "hi" : {
@@ -437544,6 +438030,12 @@
             "value" : "Le livre figure dans la liste de lecture, que ce Mac garde téléchargée ; son téléchargement ne peut donc pas être retiré."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הספר נמצא ברשימת הקריאה, ש-Mac הזה שומר מורדת, ולכן לא ניתן להסיר את ההורדה שלו."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -437774,6 +438266,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le livre est ouvert ; son téléchargement ne peut donc pas être retiré. Fermez-le d’abord."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הספר פתוח, ולכן לא ניתן להסיר את ההורדה שלו. סגור אותו תחילה."
           }
         },
         "hi" : {
@@ -438898,6 +439396,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Les fichiers du livre ne sont pas encore sur ce Mac. %@ est peut-être en train de les synchroniser."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "קבצי הספר עדיין לא נמצאים ב-Mac הזה. %@ אולי עדיין מסנכרן אותם."
           }
         },
         "hi" : {
@@ -441433,6 +441937,12 @@
             "value" : "Le service cloud"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "שירות הענן"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -441665,6 +442175,12 @@
             "value" : "La copie faite dans la bibliothèque ne correspondait pas à l’original ; elle a donc été abandonnée."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "העותק שנוצר בספרייה לא תאם למקור, ולכן העותק נמחק."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -441782,6 +442298,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "La copie était déjà terminée quand vous avez choisi Annuler ; le déplacement a donc eu lieu."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "העותק כבר היה שלם כשנלחץ ביטול, ולכן ההעברה נמשכה."
           }
         },
         "hi" : {
@@ -442248,6 +442770,12 @@
             "value" : "Le dossier de données actuel n’existe pas."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "תיקיית הנתונים הנוכחית אינה קיימת."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -442365,6 +442893,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le dossier actuel sera conservé comme données de récupération."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "התיקייה הנוכחית תישמר כנתוני שחזור."
           }
         },
         "hi" : {
@@ -442599,6 +443133,12 @@
             "value" : "Le dossier de données n’a pas de dossier Journaux ; les journaux vont donc dans %@ jusqu’à ce qu’il en ait un."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "בתיקיית הנתונים אין תיקיית יומנים, ולכן היומנים נכתבים אל %@ עד שתהיה תיקייה כזו."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -442716,6 +443256,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le dossier de données est introuvable ; les journaux vont donc dans %@ jusqu’à son retour."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "תיקיית הנתונים חסרה, ולכן היומנים נכתבים אל %@ עד שתחזור."
           }
         },
         "hi" : {
@@ -442841,6 +443387,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le dossier Journaux du dossier de données n’est pas accessible en écriture (%1$@) ; les journaux vont donc dans %2$@ jusqu’à ce qu’il le soit."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "לא ניתן לכתוב בתיקיית היומנים של תיקיית הנתונים (%1$@), ולכן היומנים נכתבים אל %2$@ עד שיהיה אפשר."
           }
         },
         "hi" : {
@@ -443527,6 +444079,12 @@
             "value" : "Le téléchargement de %@ n’a pas été retiré"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ההורדה של %@ לא הוסרה"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -443884,6 +444442,12 @@
             "value" : "Les téléchargements de %1$@ n’ont pas été retirés : %2$@"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ההורדות של %1$@ לא הוסרו: %2$@"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -444001,6 +444565,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le disque « %@ » n’est pas connecté."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הכונן “%@” אינו מחובר."
           }
         },
         "hi" : {
@@ -447663,6 +448233,12 @@
             "value" : "Le fichier n’a pas pu être lu. %@"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "לא ניתן היה לקרוא את הקובץ. %@"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -447780,6 +448356,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le fichier a disparu pendant que TextMouth le lisait."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הקובץ נעלם בזמן ש-TextMouth קרא אותו."
           }
         },
         "hi" : {
@@ -448244,6 +448826,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le fichier lui-même n’a pas été modifié."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הקובץ עצמו לא שונה."
           }
         },
         "hi" : {
@@ -449882,6 +450470,12 @@
             "value" : "Le dossier %@ est introuvable."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "התיקייה %@ לא נמצאה."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -450110,6 +450704,30 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Le dossier %@ contient %lld autres éléments : %@."
+                }
+              }
+            }
+          }
+        },
+        "he" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "בתיקייה %@ יש עוד %lld פריט: %@."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "בתיקייה %@ יש עוד %lld פריטים: %@."
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "בתיקייה %@ יש עוד %lld פריטים: %@."
                 }
               }
             }
@@ -450533,6 +451151,12 @@
             "value" : "Le dossier %1$@ se trouve dans %2$@ et n’est pas encore sur ce Mac."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "התיקייה %1$@ נמצאת אצל %2$@ ועדיין לא ב-Mac הזה."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -450650,6 +451274,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le dossier %@ se trouve dans la corbeille."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "התיקייה %@ נמצאת באשפה."
           }
         },
         "hi" : {
@@ -451969,6 +452599,12 @@
             "value" : "Le dossier est là, mais TextMouth ne peut pas lire le fichier d’identité de sa bibliothèque : %@"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "התיקייה קיימת, אך TextMouth לא מצליח לקרוא את קובץ הזהות של הספרייה: %@"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -452088,6 +452724,12 @@
             "value" : "Le dossier est là, mais il contient une autre bibliothèque TextMouth."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "התיקייה קיימת, אך היא מכילה ספריית TextMouth אחרת."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -452205,6 +452847,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le dossier est là, mais la bibliothèque n’y est pas."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "התיקייה קיימת, אך הספרייה אינה בתוכה."
           }
         },
         "hi" : {
@@ -452903,6 +453551,12 @@
             "value" : "L’index n’est pas modifié tant que vous ne choisissez pas %1$@ ou %2$@, qui restent disponibles depuis %3$@ en haut de la bibliothèque."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "האינדקס לא משתנה עד לבחירת %1$@ או %2$@, שנשארים זמינים מתוך %3$@ בראש הספרייה."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -453468,6 +454122,12 @@
             "value" : "La bibliothèque contenait déjà un contenu différent sous le nom de paquet %1$@ ; il a donc été stocké dans un nouveau paquet, %2$@, et son fichier d’origine a été conservé dans %3$@."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "בספרייה כבר היה תוכן אחר תחת שם החבילה שלו, %1$@, ולכן הוא נשמר בחבילה חדשה, %2$@, וקובץ המקור שלו נשמר בנתיב %3$@."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -453585,6 +454245,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "La bibliothèque dans %@ n’est pas disponible."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הספרייה שבנתיב %@ אינה זמינה."
           }
         },
         "hi" : {
@@ -453932,6 +454598,12 @@
             "value" : "La bibliothèque ne peut pas être déplacée tant qu’un livre est ouvert. Fermez d’abord %@."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "לא ניתן להעביר את הספרייה כשספר פתוח. סגור קודם את %@."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -454051,6 +454723,12 @@
             "value" : "La bibliothèque ne peut pas être déplacée tant qu’un livre est ouvert. Fermez-le d’abord."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "לא ניתן להעביר את הספרייה כשספר פתוח. סגור אותו קודם."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -454168,6 +454846,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "La bibliothèque ne peut pas être déplacée tant que des livres sont ouverts."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "לא ניתן להעביר את הספרייה כשספרים פתוחים."
           }
         },
         "hi" : {
@@ -454402,6 +455086,12 @@
             "value" : "L’index de la bibliothèque est illisible. Choisissez d’abord Réessayer ou Reconstruire l’index de la bibliothèque dans la fenêtre de la bibliothèque."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "לא ניתן לקרוא את אינדקס הספרייה. בחר תחילה “נסה שוב” או “בנה מחדש את אינדקס הספרייה” בחלון הספרייה."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -454519,6 +455209,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "L’index de la bibliothèque n’a pas pu être lu ; les modifications de la bibliothèque ne sont donc pas enregistrées."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "לא ניתן היה לקרוא את אינדקס הספרייה, ולכן שינויים בספרייה אינם נשמרים."
           }
         },
         "hi" : {
@@ -454640,6 +455336,12 @@
             "value" : "L’index de la bibliothèque n’a pas pu être lu."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "לא ניתן היה לקרוא את אינדקס הספרייה."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -454757,6 +455459,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "L’index de la bibliothèque est déjà lisible."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "אינדקס הספרייה כבר קריא."
           }
         },
         "hi" : {
@@ -454878,6 +455586,12 @@
             "value" : "L’index de la bibliothèque n’a toujours pas pu être lu."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "עדיין לא ניתן היה לקרוא את אינדקס הספרייה."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -454995,6 +455709,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "L’index de la bibliothèque n’a pas été reconstruit."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "אינדקס הספרייה לא נבנה מחדש."
           }
         },
         "hi" : {
@@ -455116,6 +455836,12 @@
             "value" : "L’index de la bibliothèque a été lu avec succès. Votre bibliothèque contient %@, et les modifications sont de nouveau enregistrées."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "אינדקס הספרייה נקרא בהצלחה. בספרייה שלך יש %@, והשינויים נשמרים שוב."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -455233,6 +455959,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "L’index de la bibliothèque a été reconstruit avec %@."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "אינדקס הספרייה נבנה מחדש עם %@."
           }
         },
         "hi" : {
@@ -455473,6 +456205,12 @@
             "value" : "La bibliothèque est toujours dans %@."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הספרייה עדיין נמצאת בנתיב %@."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -455709,6 +456447,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "La bibliothèque n’est pas disponible ; les journaux vont donc dans %@ jusqu’à son retour."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הספרייה אינה זמינה, ולכן היומנים נכתבים אל %@ עד שתהיה זמינה."
           }
         },
         "hi" : {
@@ -456056,6 +456800,12 @@
             "value" : "La bibliothèque n’est pas dans un dossier cloud ; ses livres sont donc toujours sur ce Mac."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הספרייה אינה בתיקיית ענן, ולכן הספרים שלה תמיד נמצאים ב-Mac הזה."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -456173,6 +456923,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "La bibliothèque affiche maintenant une liste temporaire reconstruite à partir des livres présents sur le disque."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הספרייה מציגה כעת רשימה זמנית שנבנתה מהספרים שבדיסק."
           }
         },
         "hi" : {
@@ -456300,6 +457056,12 @@
             "value" : "Le fichier d’identité de la bibliothèque est sur ce Mac, mais son index, %1$@, n’est pas arrivé depuis %2$@."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "קובץ הזהות של הספרייה נמצא ב-Mac הזה, אך האינדקס שלה, %1$@, עדיין לא הגיע דרך %2$@."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -456423,6 +457185,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "L’index de la bibliothèque est sur ce Mac, mais son fichier d’identité, %1$@, n’est pas arrivé depuis %2$@."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "האינדקס של הספרייה נמצא ב-Mac הזה, אך קובץ הזהות שלה, %1$@, עדיין לא הגיע דרך %2$@."
           }
         },
         "hi" : {
@@ -457115,6 +457883,12 @@
             "value" : "Il manque à la copie migrée le contenu de %@."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "בעותק שהועבר חסר התוכן של %@."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -457232,6 +458006,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "L’index de bibliothèque migré n’a pas pu être validé."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "לא ניתן היה לאמת את אינדקס הספרייה שהועבר."
           }
         },
         "hi" : {
@@ -457353,6 +458133,12 @@
             "value" : "Le temps maximal que la séquence entière peut prendre. Des fenêtres plus courtes donnent moins de correspondances accidentelles, mais exigent des appuis plus rapides."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הזמן המרבי שהרצף כולו יכול להימשך. חלונות קצרים יותר פירושם פחות התאמות מקריות אך לחיצות מהירות יותר."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -457470,6 +458256,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le déplacement a été annulé ; rien n’a donc changé."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ההעברה בוטלה, ולכן דבר לא השתנה."
           }
         },
         "hi" : {
@@ -457847,6 +458639,12 @@
             "value" : "Le nouvel emplacement, %1$@, contient le dossier de données actuel, %2$@."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "המיקום החדש, %1$@, מכיל את תיקיית הנתונים הנוכחית, %2$@."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -457964,6 +458762,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le nouvel emplacement, %@, est un fichier, pas un dossier."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "המיקום החדש, %@, הוא קובץ ולא תיקייה."
           }
         },
         "hi" : {
@@ -458091,6 +458895,12 @@
             "value" : "Le nouvel emplacement, %1$@, est un lien vers %2$@, qui est introuvable."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "המיקום החדש, %1$@, הוא קישור אל %2$@, שלא נמצא."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -458214,6 +459024,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le nouvel emplacement, %1$@, se trouve dans le dossier de données actuel, %2$@."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "המיקום החדש, %1$@, נמצא בתוך תיקיית הנתונים הנוכחית, %2$@."
           }
         },
         "hi" : {
@@ -458341,6 +459157,12 @@
             "value" : "Le nouvel emplacement, %1$@, est le dossier de données actuel, où mène %2$@."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "המיקום החדש, %1$@, הוא תיקיית הנתונים הנוכחית, שאליה מוביל %2$@."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -458458,6 +459280,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le nouvel emplacement, %@, est le dossier de données actuel."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "המיקום החדש, %@, הוא תיקיית הנתונים הנוכחית."
           }
         },
         "hi" : {
@@ -458585,6 +459413,12 @@
             "value" : "Le nouvel emplacement, %1$@, mène à %2$@, qui contient le dossier de données actuel, %3$@."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "המיקום החדש, %1$@, מוביל אל %2$@, שמכיל את תיקיית הנתונים הנוכחית, %3$@."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -458708,6 +459542,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le nouvel emplacement, %1$@, mène à %2$@, qui se trouve dans le dossier de données actuel, %3$@."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "המיקום החדש, %1$@, מוביל אל %2$@, שנמצא בתוך תיקיית הנתונים הנוכחית, %3$@."
           }
         },
         "hi" : {
@@ -458835,6 +459675,12 @@
             "value" : "Le nouvel emplacement, %1$@, mène à %2$@, qui est le dossier de données actuel, où mène %3$@."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "המיקום החדש, %1$@, מוביל אל %2$@, שהוא תיקיית הנתונים הנוכחית, שאליה מוביל %3$@."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -458958,6 +459804,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le nouvel emplacement, %1$@, mène à %2$@, qui est le dossier de données actuel."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "המיקום החדש, %1$@, מוביל אל %2$@, שהוא תיקיית הנתונים הנוכחית."
           }
         },
         "hi" : {
@@ -459882,6 +460734,12 @@
             "value" : "L’original dans %@ est un dossier ou un lien ; une copie ne peut donc pas être vérifiée."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "המקור בנתיב %@ הוא תיקייה או קישור, ולכן אי אפשר לבדוק עותק שלו."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -460112,6 +460970,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le fichier d’origine dans %@ n’a pas pu être lu pour vérifier une copie."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "לא ניתן היה לקרוא את קובץ המקור בנתיב %@ כדי לבדוק עותק שלו."
           }
         },
         "hi" : {
@@ -460457,6 +461321,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le fichier d’origine est introuvable dans %@."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "קובץ המקור חסר בנתיב %@."
           }
         },
         "hi" : {
@@ -461266,6 +462136,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le fichier d’origine restera intact après l’importation."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "קובץ המקור יישאר ללא שינוי לאחר הייבוא."
           }
         },
         "hi" : {
@@ -465383,6 +466259,12 @@
             "value" : "L’index précédent est conservé dans %@."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "האינדקס הקודם נשמר בנתיב %@."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -466163,6 +467045,30 @@
             }
           }
         },
+        "he" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "רשימת הקריאה עדיין שומרת %lld מהם מורדים"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "רשימת הקריאה עדיין שומרת %lld מהם מורדים"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "רשימת הקריאה עדיין שומרת %lld מהם מורדים"
+                }
+              }
+            }
+          }
+        },
         "hi" : {
           "variations" : {
             "plural" : {
@@ -466456,6 +467362,12 @@
             "value" : "La liste de lecture le garde toujours téléchargé"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "רשימת הקריאה עדיין שומרת אותו מורד"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -466575,6 +467487,12 @@
             "value" : "La liste de lecture les garde toujours téléchargés"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "רשימת הקריאה עדיין שומרת אותם מורדים"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -466692,6 +467610,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "La liste de lecture, les tris et les options d’écoute des dossiers, ainsi que tout livre dont les fichiers ne sont pas encore dans ce dossier, n’y figureront pas."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "רשימת הקריאה, המיונים ואפשרויות ההאזנה של התיקיות, וכל ספר שקבציו עדיין לא בתיקייה הזו לא יהיו בו."
           }
         },
         "hi" : {
@@ -468258,6 +469182,12 @@
             "value" : "La copie enregistrée dans %@ conserve les anciennes données."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "העותק השמור בנתיב %@ שומר את הנתונים הישנים."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -468601,6 +469531,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le dossier de données sélectionné n’est pas vide."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "תיקיית הנתונים שנבחרה אינה ריקה."
           }
         },
         "hi" : {
@@ -472992,6 +473928,12 @@
             "value" : "L’index illisible de la bibliothèque n’existe plus ; TextMouth a donc enregistré la bibliothèque reconstruite à partir de vos livres comme nouvel index, avec %@."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "אינדקס הספרייה הלא קריא כבר לא שם, ולכן TextMouth שמר את הספרייה שנבנתה מהספרים שלך כאינדקס החדש, עם %@."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -474015,6 +474957,12 @@
             "value" : "Leurs fichiers d’origine n’ont pas été modifiés."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "קבצי המקור שלהם לא שונו."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -474251,6 +475199,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Retirez-le ensuite de la liste de lecture, ou décochez %@ dans les options de la liste de lecture."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ואז הסר אותו מרשימת הקריאה, או נקה את %@ באפשרויות של רשימת הקריאה."
           }
         },
         "hi" : {
@@ -474709,6 +475663,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Il y a un fichier dans %@, pas un dossier."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "בנתיב %@ יש קובץ, לא תיקייה."
           }
         },
         "hi" : {
@@ -475690,6 +476650,30 @@
             }
           }
         },
+        "he" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "אין מספיק מקום פנוי עבור עוד %lld ספר"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "אין מספיק מקום פנוי עבור עוד %lld ספרים"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "אין מספיק מקום פנוי עבור עוד %lld ספרים"
+                }
+              }
+            }
+          }
+        },
         "hi" : {
           "variations" : {
             "plural" : {
@@ -475989,6 +476973,12 @@
             "value" : "Il n’y a pas assez d’espace libre pour la bibliothèque à cet endroit : elle nécessite %1$@, et %2$@ sont libres."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "אין מספיק מקום פנוי לספרייה שם: היא זקוקה ל-%1$@, ויש %2$@ פנויים."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -476217,6 +477207,30 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Il n’y a pas assez d’espace libre pour télécharger %lld livres de la liste de lecture"
+                }
+              }
+            }
+          }
+        },
+        "he" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "אין מספיק מקום פנוי להורדת %lld ספר מרשימת הקריאה"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "אין מספיק מקום פנוי להורדת %lld ספרים מרשימת הקריאה"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "אין מספיק מקום פנוי להורדת %lld ספרים מרשימת הקריאה"
                 }
               }
             }
@@ -477078,6 +478092,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Il n’y a pas de bibliothèque à utiliser dans %@, ni de bibliothèque à y déplacer tant que la bibliothèque n’est pas disponible."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "אין ספרייה בתיקייה %@ שאפשר להשתמש בה, ואין ספרייה להעביר לשם כל עוד הספרייה אינה זמינה."
           }
         },
         "hi" : {
@@ -478603,6 +479623,12 @@
             "value" : "Ils restent dans %@"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הם נשארים זמינים דרך %@"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -479959,6 +480985,12 @@
             "value" : "Ce Mac ne connaît pas l’identité de la bibliothèque et ne peut donc pas la restaurer."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ה-Mac הזה לא מכיר את זהות הספרייה, ולכן לא יכול לשחזר אותה."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -480189,6 +481221,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Ce Mac est hors ligne ; le livre ne peut donc pas être téléchargé depuis %@."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ה-Mac הזה לא מחובר לאינטרנט, ולכן אי אפשר להוריד את הספר דרך %@."
           }
         },
         "hi" : {
@@ -488427,6 +489465,12 @@
             "value" : "Il s’agit d’une bibliothèque temporaire, et les modifications de la bibliothèque ne sont pas enregistrées."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "זו ספרייה זמנית, ושינויים בספרייה אינם נשמרים."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -488544,6 +489588,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Il s’agit de la bibliothèque que TextMouth utilise : %@."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "זו הספרייה ש-TextMouth משתמש בה: %@."
           }
         },
         "hi" : {
@@ -489026,6 +490076,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Cela déplace toutes les données de %1$@ vers l’emplacement par défaut, %2$@."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "פעולה זו מעבירה את כל הנתונים מהתיקייה %1$@ בחזרה למיקום ברירת המחדל, %2$@."
           }
         },
         "hi" : {
@@ -490415,6 +491471,12 @@
             "value" : "Cela réextrait le texte en cache de chaque livre, ce qui peut prendre du temps pour une grande bibliothèque."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "פעולה זו מחלצת מחדש את הטקסט השמור של כל ספר, מה שעשוי לקחת זמן בספרייה גדולה."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -490651,6 +491713,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Cela recrée la structure de dossiers et migre les livres qui utilisent l’ancien stockage."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "פעולה זו יוצרת מחדש את מבנה התיקיות ומעבירה ספרים שמשתמשים באחסון ישן."
           }
         },
         "hi" : {
@@ -492140,6 +493208,12 @@
             "value" : "Fenêtre de temps"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "חלון זמן"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -492257,6 +493331,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Fenêtre de temps : %@"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "חלון זמן: %@"
           }
         },
         "hi" : {
@@ -493647,6 +494727,12 @@
             "value" : "Titres"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "שמות יצירה"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -493764,6 +494850,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Les titres sont triés, et trouvés à la saisie, tels qu’ils sont écrits : The Hobbit se trouve parmi les T."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "שמות היצירה ממוינים ונמצאים בהקלדה כפי שהם כתובים: The Hobbit נמצא בין ה-T."
           }
         },
         "hi" : {
@@ -493990,6 +495082,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Vers %@"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "יעד: %@"
           }
         },
         "hi" : {
@@ -494845,6 +495943,12 @@
             "value" : "Pour libérer quand même l’espace, choisissez Afficher dans le Finder, puis %@."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "כדי לפנות את המקום בכל זאת, בחר “הצג ב-Finder”, ואז %@."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -495303,6 +496407,12 @@
             "value" : "Pour le laisser partir, retirez-le de la liste de lecture, ou décochez %@ dans les options de la liste de lecture."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "כדי לשחרר אותו, הסר אותו מרשימת הקריאה, או נקה את %@ באפשרויות של רשימת הקריאה."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -495422,6 +496532,12 @@
             "value" : "Pour les laisser partir, retirez-les de la liste de lecture, ou décochez %@ dans les options de la liste de lecture."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "כדי לשחרר אותם, הסר אותם מרשימת הקריאה, או נקה את %@ באפשרויות של רשימת הקריאה."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -495539,6 +496655,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Vers l’emplacement par défaut, %@"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "אל מיקום ברירת המחדל, %@"
           }
         },
         "hi" : {
@@ -495664,6 +496786,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Pour utiliser un autre dossier, ouvrez Réglages, Stockage, et choisissez %1$@ ou %2$@."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "כדי להשתמש בתיקייה אחרת, פתח את ההגדרות, בחר באחסון, ואז בחר %1$@ או %2$@."
           }
         },
         "hi" : {
@@ -496124,6 +497252,12 @@
             "value" : "Avec les archives qu’elle contient, l’archive se développe à %1$@, soit plus que les %2$@ que TextMouth extrait des archives contenant de l’audio ou d’autres archives."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "יחד עם הארכיונים שבתוכו, הארכיון מתרחב ל-%1$@, יותר מה-%2$@ ש-TextMouth מחלץ מארכיונים שמכילים שמע או ארכיונים אחרים."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -496249,6 +497383,12 @@
             "value" : "Avec les archives qu’elle contient, l’archive se développe à %1$@, soit plus que les %2$@ que TextMouth extrait des archives sans audio."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "יחד עם הארכיונים שבתוכו, הארכיון מתרחב ל-%1$@, יותר מה-%2$@ ש-TextMouth מחלץ מארכיונים ללא שמע."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -496372,6 +497512,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Avec les archives qu’elle contient, l’archive contient %1$@ fichiers et dossiers, soit plus que les %2$@ que TextMouth extrait en une seule importation."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "יחד עם הארכיונים שבתוכו, הארכיון מכיל %1$@ קבצים ותיקיות, יותר מה-%2$@ ש-TextMouth מחלץ בייבוא אחד."
           }
         },
         "hi" : {
@@ -501420,6 +502566,12 @@
             "value" : "Réessaie d’enregistrer chaque modification qui n’a pas pu être enregistrée."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "מנסה לשמור שוב כל שינוי שלא ניתן היה לשמור"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -502669,6 +503821,12 @@
             "value" : "Réessayez dans un instant."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "נסה שוב בעוד רגע."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -502786,6 +503944,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Réessayez une fois ce déplacement terminé."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "נסה שוב אחרי שההעברה הזו תסתיים."
           }
         },
         "hi" : {
@@ -503020,6 +504184,12 @@
             "value" : "Réessayez quand ce sera terminé."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "נסה שוב כשזה יסתיים."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -503137,6 +504307,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Réessayez."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "נסה שוב."
           }
         },
         "hi" : {
@@ -508795,6 +509971,12 @@
             "value" : "Fichier illisible"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "קובץ לא קריא"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -510062,6 +511244,12 @@
             "value" : "D’ici là, le changement d’emplacement et la reconstruction du dossier de données sont indisponibles."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "עד אז, שינוי המיקום ובנייה מחדש של התיקייה אינם זמינים."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -510286,6 +511474,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Règle sans nom"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "כלל ללא שם"
           }
         },
         "hi" : {
@@ -510752,6 +511946,12 @@
             "value" : "Mise à jour du cache de texte"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "מעדכן את מטמון הטקסט"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -510877,6 +512077,12 @@
             "value" : "Utilisez %1$@ et %2$@, ou faites glisser, pour réorganiser. Les règles s’appliquent de haut en bas."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "לסידור מחדש: %1$@, %2$@, או גרירה. הכללים חלים מלמעלה למטה."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -510994,6 +512200,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Utiliser l’emplacement par défaut…"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "השתמש במיקום ברירת המחדל..."
           }
         },
         "hi" : {
@@ -511347,6 +512559,12 @@
             "value" : "Utiliser cette bibliothèque"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "השתמש בספרייה הזו"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -511464,6 +512682,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Utiliser cette bibliothèque ?"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "להשתמש בספרייה הזו?"
           }
         },
         "hi" : {
@@ -511696,6 +512920,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "À utiliser après les mises à jour de l’analyseur."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "מומלץ לאחר עדכוני מנתח."
           }
         },
         "hi" : {
@@ -511936,6 +513166,12 @@
             "value" : "Utiliser la correspondance par expression régulière"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "השתמש בהתאמת ביטויים רגולריים"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -512053,6 +513289,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Utiliser l’emplacement par défaut"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "השתמש במיקום ברירת המחדל"
           }
         },
         "hi" : {
@@ -512279,6 +513521,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "À utiliser après avoir restauré le fichier depuis une sauvegarde, corrigé ses autorisations ou mis à jour TextMouth vers la version qui l’a enregistré."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "השתמש בזה אחרי שחזור הקובץ מגיבוי, תיקון ההרשאות שלו או עדכון TextMouth לגרסה ששמרה אותו."
           }
         },
         "hi" : {
@@ -512624,6 +513872,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Utiliser une même bibliothèque sur deux Mac en même temps peut faire perdre des positions de lecture et des modifications."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "שימוש בספרייה אחת בשני מחשבי Mac בו-זמנית עלול לגרום לאובדן מיקומי קריאה ושינויים."
           }
         },
         "hi" : {
@@ -513873,6 +515127,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Langue de la voix"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "שפת הקול"
           }
         },
         "hi" : {
@@ -515213,6 +516473,12 @@
             "value" : "En attente de synchronisation"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ממתין לסנכרון"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -515330,6 +516596,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "En attente de la fin de la modification audio…"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ממתין לסיום עריכת השמע..."
           }
         },
         "hi" : {
@@ -515451,6 +516723,12 @@
             "value" : "En attente de la fin de l’analyse des livres…"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ממתין לסיום ניתוח הספרים..."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -515568,6 +516846,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "En attente de la lecture des métadonnées des livres…"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ממתין לקריאת המטא-נתונים של הספרים..."
           }
         },
         "hi" : {
@@ -515689,6 +516973,12 @@
             "value" : "En attente de la suppression des téléchargements de flux…"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ממתין למחיקת הורדות הערוצים..."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -515806,6 +517096,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "En attente de la sauvegarde des fiches de flux…"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ממתין לשמירת רשומות הערוצים..."
           }
         },
         "hi" : {
@@ -515927,6 +517223,12 @@
             "value" : "En attente de la fin de l’extraction du texte…"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ממתין לסיום חילוץ הטקסט..."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -516044,6 +517346,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "En attente de la fin de l’importation en cours…"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ממתין לסיום הייבוא הנוכחי..."
           }
         },
         "hi" : {
@@ -517069,6 +518377,12 @@
             "value" : "Ce qui se passe quand la lecture d’un livre se termine."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "מה קורה כשספר מסיים לנגן"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -517186,6 +518500,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Ce qui se passe quand vous reculez en maintenant Maj."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "מה קורה כשמחזיקים את Shift ומדלגים אחורה"
           }
         },
         "hi" : {
@@ -517307,6 +518627,12 @@
             "value" : "Ce qui se passe quand vous avancez en maintenant Maj."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "מה קורה כשמחזיקים את Shift ומדלגים קדימה"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -517424,6 +518750,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Ce qui se passe quand vous reculez."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "מה קורה כשמדלגים אחורה"
           }
         },
         "hi" : {
@@ -517545,6 +518877,12 @@
             "value" : "Ce qui se passe quand vous avancez."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "מה קורה כשמדלגים קדימה"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -517662,6 +519000,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Que faire du fichier d’origine après l’importation d’un livre."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "מה לעשות עם קובץ המקור לאחר ייבוא ספר"
           }
         },
         "hi" : {
@@ -520524,6 +521868,12 @@
             "value" : "Quand les articles sont ignorés, un livre dont les métadonnées indiquent le français, l’allemand, l’espagnol, l’italien, le portugais, le néerlandais, le catalan, le suédois, le danois ou le norvégien ignore les articles de cette langue, comme Le et Die, ainsi que The."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "כאשר מתעלמים ממילות יידוע, ספר שהמטא-נתונים שלו מציינים צרפתית, גרמנית, ספרדית, איטלקית, פורטוגזית, הולנדית, קטלאנית, שוודית, דנית או נורווגית מדלג על מילות היידוע של אותה שפה, כמו Le ו-Die, ועל The."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -520641,6 +521991,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "À la fin du livre"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "כשספר מסתיים"
           }
         },
         "hi" : {
@@ -521113,6 +522469,12 @@
             "value" : "Si activé, la lecture démarre automatiquement après un saut vers un en-tête, un signet ou un résultat de recherche."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "כשמופעל, הניגון מתחיל אוטומטית לאחר מעבר לכותרת, לסימנייה או לתוצאת חיפוש"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -521349,6 +522711,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Si activé, utilisez \\b dans le motif pour les limites de mot."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "כשמופעל, השתמש ב-\\b בתבנית לגבולות מילים"
           }
         },
         "hi" : {
@@ -521706,6 +523074,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Si désactivé, la feuille reste ouverte avec le temps restant et un bouton de réinitialisation."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "כשכבוי, הגיליון נשאר פתוח ומציג את הזמן שנותר ולחצן איפוס"
           }
         },
         "hi" : {
@@ -522170,6 +523544,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "À la reprise de la lecture, revient au début de cette unité."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "בעת חידוש הניגון, חוזר לתחילת היחידה הזו"
           }
         },
         "hi" : {
@@ -523296,6 +524676,12 @@
             "value" : "Où TextMouth écrit ses journaux de diagnostic. %1$@ les conserve avec vos livres : ils se déplacent et se synchronisent avec la bibliothèque. %2$@ les conserve dans %3$@, qui ne se synchronise jamais. Un changement s’applique à partir de la ligne suivante ; les journaux existants restent."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "המקום שבו TextMouth כותב את יומני האבחון שלו. האפשרות “%1$@” שומרת אותם עם הספרים שלך, כך שהם עוברים ומסתנכרנים עם הספרייה. האפשרות “%2$@” שומרת אותם בנתיב %3$@, שאינו מסתנכרן לעולם. שינוי חל מהשורה הבאה; יומנים קיימים נשארים."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -524200,6 +525586,12 @@
             "value" : "Pendant que TextMouth copiait ses données, %1$@ a été modifié pour mener à %2$@ au lieu de %3$@."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "בזמן ש-TextMouth העתיק את הנתונים שלו, %1$@ שונה כך שיוביל אל %2$@ במקום אל %3$@."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -524428,6 +525820,30 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Pendant que TextMouth copiait ses données, %lld éléments sont apparus dans %@ : %@."
+                }
+              }
+            }
+          }
+        },
+        "he" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "בזמן ש-TextMouth העתיק את הנתונים שלו, הופיע %lld פריט ב-%@: %@."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "בזמן ש-TextMouth העתיק את הנתונים שלו, הופיעו %lld פריטים ב-%@: %@."
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "בזמן ש-TextMouth העתיק את הנתונים שלו, הופיעו %lld פריטים ב-%@: %@."
                 }
               }
             }
@@ -524724,6 +526140,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Pendant que TextMouth copiait ses données, autre chose a été placé dans %@."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "בזמן ש-TextMouth העתיק את הנתונים שלו, משהו אחר הונח ב-%@."
           }
         },
         "hi" : {
@@ -525063,6 +526485,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Mot entier uniquement"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "מילה שלמה בלבד"
           }
         },
         "hi" : {
@@ -528979,6 +530407,12 @@
             "value" : "Vous pouvez créer un nouveau dossier ici."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "אפשר ליצור כאן תיקייה חדשה."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -529096,6 +530530,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Vous pouvez ouvrir et lire des livres, et les positions de lecture sont toujours enregistrées avec chaque livre, mais les modifications de la bibliothèque elle-même ne sont pas enregistrées tant que vous n’avez pas choisi l’une des options ci-dessous."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "אפשר לפתוח ולקרוא ספרים, ומיקומי הקריאה עדיין נשמרים עם כל ספר, אך שינויים בספרייה עצמה לא יישמרו עד לבחירת אחת מהאפשרויות שלהלן."
           }
         },
         "hi" : {
@@ -530341,6 +531781,12 @@
             "value" : "Vos livres et vos positions de lecture sont conservés."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הספרים ומיקומי הקריאה שלך נשמרים."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -531031,6 +532477,12 @@
             "value" : "Votre bibliothèque (%1$@) sera envoyée vers %2$@ en arrière-plan."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הספרייה שלך (%1$@) תועלה אל %2$@ ברקע."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -531255,6 +532707,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Votre bibliothèque sera envoyée vers %@ en arrière-plan."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הספרייה שלך תועלה אל %@ ברקע."
           }
         },
         "hi" : {
@@ -531727,6 +533185,12 @@
             "value" : "la fiche d’un livre, %@"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הרשומה של ספר, %@"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -531846,6 +533310,12 @@
             "value" : "l’index des épisodes d’un flux, %@"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "אינדקס האפיזודות של ערוץ, %@"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -531963,6 +533433,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "la fiche d’un flux, %@"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הרשומה של ערוץ, %@"
           }
         },
         "hi" : {
@@ -534260,6 +535736,12 @@
             "value" : "un autre Mac"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mac אחר"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -536285,6 +537767,12 @@
             "value" : "modifications des livres"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "שינויים בספרים"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -536652,6 +538140,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "chapitre %1$@, enregistré le %2$@, et %3$@"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "פרק %1$@, נשמר %2$@, ו-%3$@"
           }
         },
         "hi" : {
@@ -537356,6 +538850,12 @@
             "value" : "choisissez Passer en ligne uniquement"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "בחר “Make online-only”"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -537473,6 +538973,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "choisissez Retirer le téléchargement"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "בחר “הסר הורדה”"
           }
         },
         "hi" : {
@@ -539977,6 +541483,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "abonnements aux flux"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "מינויי ערוצים"
           }
         },
         "hi" : {
@@ -543584,6 +545096,12 @@
             "value" : "iCloud Drive est peut-être désactivé ou déconnecté, ou ce Mac est peut-être hors ligne. Vérifiez-le, puis choisissez Réessayer."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ייתכן ש-iCloud Drive כבוי או שהחשבון מנותק, או שה-Mac הזה לא מחובר לאינטרנט. בדוק זאת, ואז בחר “נסה שוב”."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -543701,6 +545219,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "iCloud Drive est peut-être désactivé ou déconnecté."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ייתכן ש-iCloud Drive כבוי או שהחשבון מנותק."
           }
         },
         "hi" : {
@@ -550575,6 +552099,12 @@
             "value" : "modifications de la bibliothèque"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "שינויים בספרייה"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -550692,6 +552222,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "statistiques d’écoute"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "סטטיסטיקת ההאזנה"
           }
         },
         "hi" : {
@@ -553765,6 +555301,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "aucune position enregistrée, et %@"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "אין מקום שמור, ו-%@"
           }
         },
         "hi" : {
@@ -556856,6 +558398,12 @@
             "value" : "fichiers d’origine"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "קבצי המקור"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -557312,6 +558860,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "autorisation refusée"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הרשאה נדחתה"
           }
         },
         "hi" : {
@@ -559089,6 +560643,12 @@
             "value" : "regex"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "regex"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -559777,6 +561337,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "réglages"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הגדרות"
           }
         },
         "hi" : {
@@ -562139,6 +563705,12 @@
             "value" : "règles de substitution de texte"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "כללי החלפת טקסט"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -563545,6 +565117,12 @@
             "value" : "le cloud"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הענן"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -563662,6 +565240,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "le service cloud"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "שירות הענן"
           }
         },
         "hi" : {
@@ -565714,6 +567298,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "l’index de la bibliothèque, %@"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "אינדקס הספרייה, %@"
           }
         },
         "hi" : {
@@ -568488,6 +570078,12 @@
             "value" : "utilisez le menu Disponible hors connexion de Google Drive"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "השתמש בתפריט Offline Access של Google Drive"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -568605,6 +570201,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "utilisez la commande propre au disque pour garder le livre uniquement en ligne"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "השתמש בפקודה של הכונן עצמו כדי להשאיר את הספר מקוון בלבד"
           }
         },
         "hi" : {
@@ -569347,6 +570949,12 @@
             "value" : "mot"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "מילה"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -569577,6 +571185,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "vous avez arrêté la comparaison"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ההשוואה בוטלה"
           }
         },
         "hi" : {
@@ -570535,6 +572149,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "« %1$@ » n’a pas pu être remis à sa place après l’échec d’un déplacement ; ses fichiers sont dans %2$@ au lieu de %3$@ : %4$@"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "לא ניתן היה להחזיר את “%1$@” למקומו לאחר העברה שנכשלה, ולכן הקבצים שלו נמצאים בנתיב %2$@ במקום בנתיב %3$@: %4$@"
           }
         },
         "hi" : {
