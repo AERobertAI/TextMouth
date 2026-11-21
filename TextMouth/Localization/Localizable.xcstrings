@@ -240,7 +240,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "「%@」會依排序順序播放同一檔案夾中的下一本書籍。"
+            "value" : "「%@」會依排序順序播放同一檔案夾中的下一本書。"
           }
         }
       }
@@ -2644,7 +2644,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%@ 還包含較新版 TextMouth 加入的 %lld 本書籍，這些書籍會保留。"
+                  "value" : "%@ 還包含較新版 TextMouth 加入的 %lld 本書，這些書會保留。"
                 }
               }
             }
@@ -4462,7 +4462,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%@ 內有 %lld 本書籍，可能還有子檔案夾。"
+                  "value" : "%@ 內有 %lld 本書，可能還有子檔案夾。"
                 }
               }
             }
@@ -4852,7 +4852,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ 無法下載這本書籍：%2$@"
+            "value" : "%1$@ 無法下載這本書：%2$@"
           }
         }
       }
@@ -4983,7 +4983,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ 無法移除這本書籍的下載項目：%2$@"
+            "value" : "%1$@ 無法移除這本書的下載項目：%2$@"
           }
         }
       }
@@ -5364,7 +5364,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ 無法上傳這本書籍：%2$@"
+            "value" : "%1$@ 無法上傳這本書：%2$@"
           }
         }
       }
@@ -6253,7 +6253,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ 沒有說明這部 Mac 上的這本書籍副本是否為最新，因此無法移除其下載項目，而且再等也不會改變這一點。"
+            "value" : "%@ 沒有說明這部 Mac 上的這本書副本是否為最新，因此無法移除其下載項目，而且再等也不會改變這一點。"
           }
         }
       }
@@ -7404,7 +7404,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "此書籍的 %@"
+            "value" : "此書的 %@"
           }
         }
       }
@@ -9903,7 +9903,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ 尚未表示這本書籍的所有檔案都已上傳，因此無法移除其下載項目：唯一的副本可能在這部 Mac 上。"
+            "value" : "%@ 尚未表示這本書的所有檔案都已上傳，因此無法移除其下載項目：唯一的副本可能在這部 Mac 上。"
           }
         }
       }
@@ -10028,7 +10028,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ 尚未表示這部 Mac 上的這本書籍副本是最新的，因此無法移除其下載項目。"
+            "value" : "%@ 尚未表示這部 Mac 上的這本書副本是最新的，因此無法移除其下載項目。"
           }
         }
       }
@@ -10677,7 +10677,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ 保有這本書籍某個檔案的兩個版本，因此無法移除其下載項目。"
+            "value" : "%@ 保有這本書某個檔案的兩個版本，因此無法移除其下載項目。"
           }
         }
       }
@@ -25165,7 +25165,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%@、所有子檔案夾及其中的 %lld 本書籍將從書庫中移除。"
+                  "value" : "%@、所有子檔案夾及其中的 %lld 本書將從書庫中移除。"
                 }
               }
             }
@@ -34640,7 +34640,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld 本書籍"
+                  "value" : "%lld 本書"
                 }
               }
             }
@@ -37579,7 +37579,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld 本書籍"
+                  "value" : "%lld 本書"
                 }
               }
             }
@@ -38004,7 +38004,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "有 %lld 本書籍僅在雲端"
+                  "value" : "有 %lld 本書僅在雲端"
                 }
               }
             }
@@ -38429,7 +38429,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "有 %lld 本書籍保留在這部 Mac 上"
+                  "value" : "有 %lld 本書保留在這部 Mac 上"
                 }
               }
             }
@@ -38836,7 +38836,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld 本書籍缺少章節："
+                  "value" : "%lld 本書缺少章節："
                 }
               }
             }
@@ -39261,7 +39261,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld 本書籍尚未下載。"
+                  "value" : "%lld 本書尚未下載。"
                 }
               }
             }
@@ -39686,7 +39686,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "有 %lld 本書籍無法讀取"
+                  "value" : "有 %lld 本書無法讀取"
                 }
               }
             }
@@ -40925,7 +40925,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "書庫中的 %lld 本書籍"
+                  "value" : "書庫中的 %lld 本書"
                 }
               }
             }
@@ -41350,7 +41350,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "有 %lld 本書籍尚未打開"
+                  "value" : "有 %lld 本書尚未打開"
                 }
               }
             }
@@ -41757,7 +41757,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld 本書籍有無法讀取的頁面："
+                  "value" : "%lld 本書有無法讀取的頁面："
                 }
               }
             }
@@ -42164,7 +42164,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "已輸入 %lld 本書籍"
+                  "value" : "已輸入 %lld 本書"
                 }
               }
             }
@@ -42589,7 +42589,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld 本書籍在雲端"
+                  "value" : "%lld 本書在雲端"
                 }
               }
             }
@@ -43439,7 +43439,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "雲端上的 %lld 本書籍未被搜尋"
+                  "value" : "雲端上的 %lld 本書未被搜尋"
                 }
               }
             }
@@ -43567,7 +43567,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "此書庫中有 %lld 本書籍需要較新版本的 TextMouth。它們會保持原樣，但不會顯示。"
+            "value" : "此書庫中有 %lld 本書需要較新版本的 TextMouth。它們會保持原樣，但不會顯示。"
           }
         }
       }
@@ -43989,7 +43989,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld 本書籍保留在這部 Mac 上"
+                  "value" : "%lld 本書保留在這部 Mac 上"
                 }
               }
             }
@@ -44414,7 +44414,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "閱讀列表上有 %lld 本書籍"
+                  "value" : "閱讀列表上有 %lld 本書"
                 }
               }
             }
@@ -44821,7 +44821,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld 本書籍已處理"
+                  "value" : "%lld 本書已處理"
                 }
               }
             }
@@ -45246,7 +45246,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "另一份沒有的 %lld 本書籍"
+                  "value" : "另一份沒有的 %lld 本書"
                 }
               }
             }
@@ -46060,7 +46060,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "已從「%2$@」輸入 %1$lld 本書籍。"
+                  "value" : "已從「%2$@」輸入 %1$lld 本書。"
                 }
               }
             }
@@ -46892,7 +46892,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld 本書籍未能下載：%@"
+                  "value" : "%lld 本書未能下載：%@"
                 }
               }
             }
@@ -81255,7 +81255,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "每分鐘 %lld 字，此書籍專屬速度"
+                  "value" : "每分鐘 %lld 字，此書專屬速度"
                 }
               }
             }
@@ -82337,7 +82337,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "（%lld 本書籍尚未打開）"
+                  "value" : "（%lld 本書尚未打開）"
                 }
               }
             }
@@ -82846,7 +82846,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "此書庫中有 1 本書籍需要較新版本的 TextMouth。它會保持原樣，但不會顯示。"
+            "value" : "此書庫中有 1 本書需要較新版本的 TextMouth。它會保持原樣，但不會顯示。"
           }
         }
       }
@@ -85417,7 +85417,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "一次只能移動一本書籍，但目前選取了多本。請選取一本書籍，然後再試一次。"
+            "value" : "一次只能移動一本書，但目前選取了多本。請選取一本書，然後再試一次。"
           }
         }
       }
@@ -93552,7 +93552,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "將新的副本作為另一本書籍加入書庫。"
+            "value" : "將新的副本作為另一本書加入書庫。"
           }
         }
       }
@@ -116000,7 +116000,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "已輸入多本書籍"
+            "value" : "已輸入多本書"
           }
         }
       }
@@ -118755,7 +118755,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "但 %@ 還包含較新版 TextMouth 加入的 %lld 本書籍：這些書籍會保留在原處，包含它們的每個檔案夾也會保留。"
+                  "value" : "但 %@ 還包含較新版 TextMouth 加入的 %lld 本書：這些書會保留在原處，包含它們的每個檔案夾也會保留。"
                 }
               }
             }
@@ -122269,7 +122269,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "更改此書籍向前與向後的導覽單位"
+            "value" : "更改此書向前與向後的導覽單位"
           }
         }
       }
@@ -122388,7 +122388,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "更改此書籍向前與向後各自的導覽單位"
+            "value" : "更改此書向前與向後各自的導覽單位"
           }
         }
       }
@@ -122507,7 +122507,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "更改此書籍的語音"
+            "value" : "更改此書的語音"
           }
         }
       }
@@ -123943,7 +123943,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "另外 %lld 本書籍的更改也無法儲存。"
+                  "value" : "另外 %lld 本書的更改也無法儲存。"
                 }
               }
             }
@@ -134233,7 +134233,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "為此書籍選擇各自獨立的向前與向後導覽單位"
+            "value" : "為此書選擇各自獨立的向前與向後導覽單位"
           }
         }
       }
@@ -139660,7 +139660,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "請先關閉這些書籍：%@。"
+            "value" : "請先關閉這些書：%@。"
           }
         }
       }
@@ -140154,7 +140154,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "關閉此書籍的視窗"
+            "value" : "關閉此書的視窗"
           }
         }
       }
@@ -145094,7 +145094,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "繼續播放下一本書籍"
+            "value" : "繼續播放下一本書"
           }
         }
       }
@@ -158572,7 +158572,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "新書籍的預設音調。1.0 為正常。每本書籍都可以覆寫此設定。"
+            "value" : "新書籍的預設音調。1.0 為正常。每本書都可以覆寫此設定。"
           }
         }
       }
@@ -158822,7 +158822,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "新書籍的預設速度。每本書籍都可以用自己的速度覆寫。"
+            "value" : "新書籍的預設速度。每本書都可以用自己的速度覆寫。"
           }
         }
       }
@@ -164954,7 +164954,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "取消選取這本書籍。"
+            "value" : "取消選取這本書。"
           }
         }
       }
@@ -168804,7 +168804,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "完成。已移動 %lld 本書籍。"
+                  "value" : "完成。已移動 %lld 本書。"
                 }
               }
             }
@@ -169705,7 +169705,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "下載 %lld 本書籍"
+                  "value" : "下載 %lld 本書"
                 }
               }
             }
@@ -181290,7 +181290,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "此書籍的「編輯文字」會停止；請再次選擇「編輯文字」來編輯新的閱讀結果。"
+            "value" : "此書的「編輯文字」會停止；請再次選擇「編輯文字」來編輯新的閱讀結果。"
           }
         }
       }
@@ -181659,7 +181659,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "編輯模式，已選取 %1$lld 本，共 %2$lld 本書籍"
+            "value" : "編輯模式，已選取 %1$lld 本，共 %2$lld 本書"
           }
         }
       }
@@ -181790,7 +181790,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "編輯模式，已選取 %1$lld 本，共 %2$lld 本書籍"
+            "value" : "編輯模式，已選取 %1$lld 本，共 %2$lld 本書"
           }
         }
       }
@@ -184813,7 +184813,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "此書籍的結尾行為"
+            "value" : "此書的結尾行為"
           }
         }
       }
@@ -186509,7 +186509,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "進入編輯模式，以選取多本書籍來移動或移除。"
+            "value" : "進入編輯模式，以選取多本書來移動或移除。"
           }
         }
       }
@@ -192334,7 +192334,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "結束編輯模式。已選取 %lld 本書籍。"
+                  "value" : "結束編輯模式。已選取 %lld 本書。"
                 }
               }
             }
@@ -225294,7 +225294,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "請分別輸入每本書籍的 .opf 檔案。"
+            "value" : "請分別輸入每本書的 .opf 檔案。"
           }
         }
       }
@@ -226186,7 +226186,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "已輸入 %lld 本書籍，但%@"
+                  "value" : "已輸入 %lld 本書，但%@"
                 }
               }
             }
@@ -226593,7 +226593,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "已輸入 %lld 本書籍。"
+                  "value" : "已輸入 %lld 本書。"
                 }
               }
             }
@@ -228136,7 +228136,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "將包含 DAISY 書籍或音軌的檔案夾輸入為一本書籍。"
+            "value" : "將包含 DAISY 書籍或音軌的檔案夾輸入為一本書。"
           }
         }
       }
@@ -246211,7 +246211,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "將 %lld 本書籍保留在這部 Mac 上"
+                  "value" : "將 %lld 本書保留在這部 Mac 上"
                 }
               }
             }
@@ -260580,7 +260580,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "此處最多列出此書籍的 500 筆符合項目"
+            "value" : "此處最多列出此書的 500 筆符合項目"
           }
         }
       }
@@ -274525,7 +274525,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "移動 %lld 本書籍"
+                  "value" : "移動 %lld 本書"
                 }
               }
             }
@@ -274950,7 +274950,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "將 %lld 本書籍移到檔案夾…"
+                  "value" : "將 %lld 本書移到檔案夾…"
                 }
               }
             }
@@ -276189,7 +276189,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "將 %lld 本書籍移到檔案夾"
+                  "value" : "將 %lld 本書移到檔案夾"
                 }
               }
             }
@@ -286783,7 +286783,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "正在移動 %lld 本書籍…"
+                  "value" : "正在移動 %lld 本書…"
                 }
               }
             }
@@ -306311,7 +306311,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "在你選取的 %@ 本書籍中，沒有任何一本是依你的選擇保留在這部 Mac 上，另有 %lld 本因閱讀列表而保留。"
+                  "value" : "在你選取的 %@ 本書中，沒有任何一本是依你的選擇保留在這部 Mac 上，另有 %lld 本因閱讀列表而保留。"
                 }
               }
             }
@@ -307262,7 +307262,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "在你選取的 %lld 本書籍中，沒有任何一本保留在這部 Mac 上。"
+                  "value" : "在你選取的 %lld 本書中，沒有任何一本保留在這部 Mac 上。"
                 }
               }
             }
@@ -321842,7 +321842,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "打開檔案夾的設定：它包含的內容，以及其中一本書籍結束時的處理方式"
+            "value" : "打開檔案夾的設定：它包含的內容，以及其中一本書結束時的處理方式"
           }
         }
       }
@@ -336713,7 +336713,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "另有 %lld 本書籍，全都列在位於 %@ 的除錯記錄中。"
+                  "value" : "另有 %lld 本書，全都列在位於 %@ 的除錯記錄中。"
                 }
               }
             }
@@ -344565,7 +344565,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "重新擷取每本書籍的快取文字。"
+            "value" : "重新擷取每本書的快取文字。"
           }
         }
       }
@@ -356004,7 +356004,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "從書庫移除 %lld 本書籍…"
+                  "value" : "從書庫移除 %lld 本書…"
                 }
               }
             }
@@ -356836,7 +356836,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "要移除 %lld 本書籍嗎？"
+                  "value" : "要移除 %lld 本書嗎？"
                 }
               }
             }
@@ -358156,7 +358156,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "移除 %lld 本書籍的下載項目"
+                  "value" : "移除 %lld 本書的下載項目"
                 }
               }
             }
@@ -360355,7 +360355,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "移除此書籍專屬的語音、速度與音調，讓它使用全域預設值。"
+            "value" : "移除此書專屬的語音、速度與音調，讓它使用全域預設值。"
           }
         }
       }
@@ -364711,7 +364711,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "將此書籍的語音、速度與音調重置為全域預設值"
+            "value" : "將此書的語音、速度與音調重置為全域預設值"
           }
         }
       }
@@ -365800,7 +365800,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "將此書籍重置為 %@"
+            "value" : "將此書重置為 %@"
           }
         }
       }
@@ -376126,7 +376126,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "將此書籍的語音、速度與音調儲存為全域預設值"
+            "value" : "將此書的語音、速度與音調儲存為全域預設值"
           }
         }
       }
@@ -381823,7 +381823,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "正在搜尋 %lld 本書籍…"
+                  "value" : "正在搜尋 %lld 本書…"
                 }
               }
             }
@@ -383444,7 +383444,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "選取全部 %lld 本書籍"
+                  "value" : "選取全部 %lld 本書"
                 }
               }
             }
@@ -384292,7 +384292,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "為此書籍選擇語音"
+            "value" : "為此書選擇語音"
           }
         }
       }
@@ -385863,7 +385863,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "選取這本書籍。"
+            "value" : "選取這本書。"
           }
         }
       }
@@ -390227,7 +390227,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "在 Finder 中顯示 %lld 本書籍"
+                  "value" : "在 Finder 中顯示 %lld 本書"
                 }
               }
             }
@@ -400666,7 +400666,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "這本書籍的部分更改尚未上傳到 %@，因此無法移除其下載項目。"
+            "value" : "這本書的部分更改尚未上傳到 %@，因此無法移除其下載項目。"
           }
         }
       }
@@ -409637,7 +409637,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "停止將 %lld 本書籍保留在這部 Mac 上"
+                  "value" : "停止將 %lld 本書保留在這部 Mac 上"
                 }
               }
             }
@@ -422186,7 +422186,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "要在每本書籍中尋找的文字"
+            "value" : "要在每本書中尋找的文字"
           }
         }
       }
@@ -424120,7 +424120,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth 無法安全讀取此書籍中的檔案「%@」，因為它定義了自己的實體。"
+            "value" : "TextMouth 無法安全讀取此書中的檔案「%@」，因為它定義了自己的實體。"
           }
         }
       }
@@ -424245,7 +424245,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth 無法安全讀取此書籍中的檔案「%1$@」，因為它以 %2$@ 編碼寫成。"
+            "value" : "TextMouth 無法安全讀取此書中的檔案「%1$@」，因為它以 %2$@ 編碼寫成。"
           }
         }
       }
@@ -444214,7 +444214,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "那樣會保留這本書籍在雲端的副本。"
+            "value" : "那樣會保留這本書在雲端的副本。"
           }
         }
       }
@@ -449610,7 +449610,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "所選的 %lld 本書籍已保留在這部 Mac 上。"
+                  "value" : "所選的 %lld 本書已保留在這部 Mac 上。"
                 }
               }
             }
@@ -450035,7 +450035,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "所選的 %lld 本書籍因閱讀列表而保留在這部 Mac 上。"
+                  "value" : "所選的 %lld 本書因閱讀列表而保留在這部 Mac 上。"
                 }
               }
             }
@@ -457629,7 +457629,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "這本書籍"
+            "value" : "這本書"
           }
         }
       }
@@ -458599,7 +458599,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "這本書籍已保留在這部 Mac 上，也在閱讀列表上，而這部 Mac 會保持閱讀列表的下載，因此無法移除它的下載項目。"
+            "value" : "這本書已保留在這部 Mac 上，也在閱讀列表上，而這部 Mac 會保持閱讀列表的下載，因此無法移除它的下載項目。"
           }
         }
       }
@@ -458724,7 +458724,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "這本書籍已保留在這部 Mac 上，因此無法移除其下載項目。"
+            "value" : "這本書已保留在這部 Mac 上，因此無法移除其下載項目。"
           }
         }
       }
@@ -459093,7 +459093,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "這本書籍在閱讀列表上，而這部 Mac 會保持閱讀列表的下載，因此無法移除其下載項目。"
+            "value" : "這本書在閱讀列表上，而這部 Mac 會保持閱讀列表的下載，因此無法移除其下載項目。"
           }
         }
       }
@@ -459337,7 +459337,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "這本書籍已打開，因此無法移除其下載項目。請先關閉它。"
+            "value" : "這本書已打開，因此無法移除其下載項目。請先關閉它。"
           }
         }
       }
@@ -460539,7 +460539,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "這本書籍的檔案尚未在這部 Mac 上。%@ 可能仍在同步。"
+            "value" : "這本書的檔案尚未在這部 Mac 上。%@ 可能仍在同步。"
           }
         }
       }
@@ -471253,7 +471253,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "此書籍中的檔案「%1$@」已損毀或不完整：%2$@。請取得書籍的新副本，然後再次輸入。"
+            "value" : "此書中的檔案「%1$@」已損毀或不完整：%2$@。請取得書籍的新副本，然後再次輸入。"
           }
         }
       }
@@ -498599,7 +498599,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "此書籍中沒有第 %@ 頁。"
+            "value" : "此書中沒有第 %@ 頁。"
           }
         }
       }
@@ -499690,7 +499690,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "可用空間不足以容納另外 %lld 本書籍"
+                  "value" : "可用空間不足以容納另外 %lld 本書"
                 }
               }
             }
@@ -501332,7 +501332,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "這些書籍無法刪除，仍留在書庫中："
+            "value" : "這些書無法刪除，仍留在書庫中："
           }
         }
       }
@@ -501457,7 +501457,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "這些書籍無法移到垃圾桶，仍留在書庫中："
+            "value" : "這些書無法移到垃圾桶，仍留在書庫中："
           }
         }
       }
@@ -501582,7 +501582,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "這些書籍無法從書庫移除，仍留在書庫中："
+            "value" : "這些書無法從書庫移除，仍留在書庫中："
           }
         }
       }
@@ -501707,7 +501707,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "這些書籍已從書庫移除，但它們的 bookInfo.json 檔案無法刪除。它們仍不在書庫中："
+            "value" : "這些書已從書庫移除，但它們的 bookInfo.json 檔案無法刪除。它們仍不在書庫中："
           }
         }
       }
@@ -504248,7 +504248,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "這部 Mac 處於離線狀態，因此無法從 %@ 下載這本書籍。"
+            "value" : "這部 Mac 處於離線狀態，因此無法從 %@ 下載這本書。"
           }
         }
       }
@@ -506051,7 +506051,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "這本書籍無法刪除，仍留在書庫中："
+            "value" : "這本書無法刪除，仍留在書庫中："
           }
         }
       }
@@ -506176,7 +506176,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "這本書籍無法移到垃圾桶，仍留在書庫中："
+            "value" : "這本書無法移到垃圾桶，仍留在書庫中："
           }
         }
       }
@@ -506301,7 +506301,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "這本書籍無法從書庫移除，仍留在書庫中："
+            "value" : "這本書無法從書庫移除，仍留在書庫中："
           }
         }
       }
@@ -506824,7 +506824,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "此書籍共有 %1$lld 頁，從 %2$@ 到 %3$@。"
+                  "value" : "此書共有 %1$lld 頁，從 %2$@ 到 %3$@。"
                 }
               }
             }
@@ -507184,7 +507184,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "此書籍沒有頁面。"
+            "value" : "此書沒有頁面。"
           }
         }
       }
@@ -507422,7 +507422,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "此書籍只有一頁。"
+            "value" : "此書只有一頁。"
           }
         }
       }
@@ -508430,7 +508430,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "這本書籍已從書庫移除，但它的 bookInfo.json 檔案無法刪除。它仍不在書庫中："
+            "value" : "這本書已從書庫移除，但它的 bookInfo.json 檔案無法刪除。它仍不在書庫中："
           }
         }
       }
@@ -508906,7 +508906,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "此書籍唯一的一頁是 %@。"
+            "value" : "此書唯一的一頁是 %@。"
           }
         }
       }
@@ -515078,7 +515078,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "這會重新擷取每本書籍的快取文字，書庫很大時可能需要一些時間。"
+            "value" : "這會重新擷取每本書的快取文字，書庫很大時可能需要一些時間。"
           }
         }
       }
@@ -530325,7 +530325,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "輸入要在書庫每本書籍中尋找的文字。"
+            "value" : "輸入要在書庫每本書中尋找的文字。"
           }
         }
       }
@@ -530575,7 +530575,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "輸入以搜尋書庫中每本書籍的文字"
+            "value" : "輸入以搜尋書庫中每本書的文字"
           }
         }
       }
@@ -536412,7 +536412,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "為沒有專屬設定的每本書籍，更新預設的語音、速度與音調。"
+            "value" : "為沒有專屬設定的每本書，更新預設的語音、速度與音調。"
           }
         }
       }
@@ -548856,7 +548856,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "此書籍結束時"
+            "value" : "此書結束時"
           }
         }
       }
@@ -555488,7 +555488,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "將書名、作者、出版者與日期寫入書庫中此書籍的副本。"
+            "value" : "將書名、作者、出版者與日期寫入書庫中此書的副本。"
           }
         }
       }
@@ -556095,7 +556095,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "你可以打開並閱讀書籍，閱讀位置也仍會與每本書籍一起儲存，但在你選擇以下其中一個選項之前，不會儲存書庫本身的更改。"
+            "value" : "你可以打開並閱讀書籍，閱讀位置也仍會與每本書一起儲存，但在你選擇以下其中一個選項之前，不會儲存書庫本身的更改。"
           }
         }
       }
@@ -581504,7 +581504,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld 本書籍中有較新的位置"
+                  "value" : "%lld 本書中有較新的位置"
                 }
               }
             }
@@ -587435,7 +587435,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "重新以其他編碼讀取 %lld 本書籍的文字"
+                  "value" : "重新以其他編碼讀取 %lld 本書的文字"
                 }
               }
             }
@@ -588955,7 +588955,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "每本書籍最多顯示 %lld 筆"
+                  "value" : "每本書最多顯示 %lld 筆"
                 }
               }
             }
