@@ -4164,7 +4164,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@에는 단어가 없으므로 커서는 %2$@입니다."
+            "value" : "%1$@에는 단어가 없으므로 커서가 %2$@에 있습니다."
           }
         },
         "pt-BR" : {
@@ -5527,7 +5527,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@은(는) 건너뛴 섹션에 있으므로 커서는 %2$@입니다."
+            "value" : "%1$@은(는) 건너뛴 섹션에 있으므로 커서가 %2$@에 있습니다."
           }
         },
         "pt-BR" : {
@@ -187532,6 +187532,12 @@
             "value" : "TextMouth sta ultimando le operazioni prima di uscire: %@. Uscirà al termine."
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 앱이 종료 전에 작업을 마무리하는 중입니다: %@. 완료되면 종료됩니다."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -188721,6 +188727,12 @@
             "value" : "TextMouth ha conservato il testo modificato in %@."
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 앱이 %@에서 변경한 텍스트를 그대로 두었습니다."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -189771,6 +189783,12 @@
             "value" : "TextMouth apre il manifest.json del libro nel tuo editor di testo."
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 앱이 책의 manifest.json을 사용자의 텍스트 편집기에서 엽니다."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -189816,6 +189834,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth apre il testo del libro nel tuo editor di testo, come file Markdown."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 앱이 책의 텍스트를 Markdown 파일로 사용자의 텍스트 편집기에서 엽니다."
           }
         },
         "pt-BR" : {
@@ -192727,6 +192751,12 @@
             "value" : "L’%@ termina a %@ dall’inizio di “%@”, che dura solo %@."
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@은(는) “%3$@”의 %2$@ 지점에서 끝나지만, 이 파일은 길이가 %4$@뿐입니다."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -193806,6 +193836,12 @@
             "value" : "La %@ pagina con l’etichetta %@"
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "레이블이 %2$@인 %1$@ 페이지"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -193859,6 +193895,12 @@
             "value" : "L’%@ inizia a %@ dall’inizio di “%@”, prima dell’%@ precedente, che inizia a %@."
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@은(는) “%3$@”의 %2$@ 지점에서 시작하는데, 그보다 앞에 있는 %4$@은(는) %5$@ 지점에서 시작합니다."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -193910,6 +193952,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "L’%@ inizia a %@ dall’inizio di “%@”, che dura solo %@."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@은(는) “%3$@”의 %2$@ 지점에서 시작하지만, 이 파일은 길이가 %4$@뿐입니다."
           }
         },
         "pt-BR" : {
@@ -194758,6 +194806,12 @@
             "value" : "Non è stato possibile aprire il file DAISY come archivio ZIP."
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "DAISY 파일을 ZIP 압축 파일로 열 수 없습니다."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -194803,6 +194857,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Non è stato possibile aprire il file DOCX come archivio ZIP."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "DOCX 파일을 ZIP 압축 파일로 열 수 없습니다."
           }
         },
         "pt-BR" : {
@@ -194852,6 +194912,12 @@
             "value" : "Nel file DOCX manca una voce obbligatoria: %@"
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "DOCX 파일에 필요한 항목이 없음: %@"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -194897,6 +194963,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Non è stato possibile aprire il file EPUB come archivio ZIP."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "EPUB 파일을 ZIP 압축 파일로 열 수 없습니다."
           }
         },
         "pt-BR" : {
@@ -195087,6 +195159,12 @@
             "value" : "File EPUB non trovato in: %@"
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "다음 위치에서 EPUB 파일을 찾을 수 없음: %@"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -195132,6 +195210,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "L’EPUB non ha un ordine di lettura (spine)."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "EPUB 파일에 읽기 순서(spine)가 없습니다."
           }
         },
         "pt-BR" : {
@@ -195181,6 +195265,12 @@
             "value" : "All’EPUB manca META-INF/container.xml."
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "EPUB 파일에 META-INF/container.xml이 없습니다."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -195228,6 +195318,12 @@
             "value" : "All’EPUB manca il documento del pacchetto (file OPF)."
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "EPUB 파일에 패키지 문서(OPF 파일)가 없습니다."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -195273,6 +195369,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Non è stato possibile analizzare il documento del pacchetto dell’EPUB."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "EPUB 패키지 문서를 구문 분석할 수 없습니다."
           }
         },
         "pt-BR" : {
@@ -195873,6 +195975,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Non è stato possibile aprire il file PDF."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "PDF 파일을 열 수 없습니다."
           }
         },
         "pt-BR" : {
@@ -197084,6 +197192,12 @@
             "value" : "Editor audio"
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "오디오 편집기"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -197217,6 +197331,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Il file audio %@ termina prima del suo audio, quindi non è stato possibile convertirlo."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "오디오 파일 %@의 오디오가 끝나기 전에 파일이 끝나 변환할 수 없습니다."
           }
         },
         "pt-BR" : {
@@ -197463,6 +197583,12 @@
             "value" : "Il file audio %@ è danneggiato, quindi non è stato possibile convertirlo."
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "오디오 파일 %@이(가) 손상되어 변환할 수 없습니다."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -197508,6 +197634,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Il file audio %@ non è del tipo indicato dal suo nome."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "오디오 파일 %@은(는) 이름이 나타내는 종류의 파일이 아닙니다."
           }
         },
         "pt-BR" : {
@@ -199114,6 +199246,12 @@
             "value" : "La navigazione del libro non corrisponde al suo audio; procurati una copia nuova e importalo di nuovo."
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "책의 탐색 정보가 오디오와 맞지 않습니다. 새 사본을 구한 다음 다시 가져오십시오."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -200319,6 +200457,12 @@
             "value" : "Il file di correzione %@ è danneggiato o appartiene a un’altra registrazione, quindi non è stato possibile convertire %@."
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "보정 파일 %1$@이(가) 손상되었거나 다른 녹음의 것이어서 %2$@을(를) 변환할 수 없습니다."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -200564,6 +200708,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Il cursore è %@."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "커서가 %@에 있습니다."
           }
         },
         "pt-BR" : {
@@ -203091,6 +203241,12 @@
             "value" : "Il file “%@”"
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” 파일은(는)"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -203142,6 +203298,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Il file “%@” dichiara la codifica del testo “%@”, ma contiene byte non validi in quella codifica."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%1$@” 파일이 텍스트 인코딩 “%2$@”을(를) 선언하지만, 그 인코딩에서 유효하지 않은 바이트가 들어 있습니다."
           }
         },
         "pt-BR" : {
@@ -203197,6 +203359,12 @@
             "value" : "Il file “%@” dichiara la codifica del testo “%@”, che TextMouth non può leggere."
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%1$@” 파일이 텍스트 인코딩 “%2$@”을(를) 선언하지만, TextMouth 앱이 읽을 수 없는 인코딩입니다."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -203248,6 +203416,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Il file “%@” in questo libro DAISY fa riferimento a “%@”, fuori dalla cartella del libro."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이 DAISY 책의 파일 “%1$@”이(가) 책 폴더 밖의 “%2$@”을(를) 참조합니다."
           }
         },
         "pt-BR" : {
@@ -203303,6 +203477,12 @@
             "value" : "Il file “%@” in questo archivio è danneggiato o incompleto: %@. Procurati una copia nuova dell’archivio, poi importalo di nuovo."
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이 압축 파일의 파일 “%1$@”이(가) 손상되었거나 불완전합니다: %2$@. 압축 파일의 새 사본을 구한 다음 다시 가져오십시오."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -203354,6 +203534,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Il file “%@” in questo libro è danneggiato o incompleto: %@. Procurati una copia nuova del libro, poi importalo di nuovo."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이 책의 파일 “%1$@”이(가) 손상되었거나 불완전합니다: %2$@. 책의 새 사본을 구한 다음 다시 가져오십시오."
           }
         },
         "pt-BR" : {
@@ -203409,6 +203595,12 @@
             "value" : "Il file “%@” in questo documento è danneggiato o incompleto: %@. Procurati una copia nuova del documento, poi importalo di nuovo."
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이 문서의 파일 “%1$@”이(가) 손상되었거나 불완전합니다: %2$@. 문서의 새 사본을 구한 다음 다시 가져오십시오."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -203460,6 +203652,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Il file “%@” è danneggiato o incompleto: inizia con un indicatore dell’ordine dei byte %@, ma il resto non è testo %@ valido."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "파일 “%1$@”이(가) 손상되었거나 불완전합니다. %2$@ 바이트 순서 표시로 시작하지만 나머지는 유효한 %3$@ 텍스트가 아닙니다."
           }
         },
         "pt-BR" : {
@@ -204508,6 +204706,18 @@
             }
           }
         },
+        "ko" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "폴더에 DAISY 책이 %1$lld권 있습니다(%2$@)."
+                }
+              }
+            }
+          }
+        },
         "pt-BR" : {
           "variations" : {
             "plural" : {
@@ -204660,6 +204870,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "La cartella non è un libro DAISY: al suo livello superiore non ha un file ncc.html o .opf."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "폴더가 DAISY 책이 아닙니다. 최상위 수준에 ncc.html 또는 .opf 파일이 없습니다."
           }
         },
         "pt-BR" : {
@@ -206781,6 +206997,12 @@
             "value" : "Impossibile modificare il manifest di %@: %@"
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@의 매니페스트를 편집할 수 없습니다: %2$@"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -208201,6 +208423,12 @@
             "value" : "Non è stato possibile leggere l’unico capitolo"
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "유일한 챕터를 읽을 수 없었습니다"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -208889,6 +209117,12 @@
             "value" : "Il file originale che hai importato non viene modificato."
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "가져온 원본 파일은 변경되지 않습니다."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -208934,6 +209168,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Il file originale che hai importato non viene toccato."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "가져온 원본 파일은 건드리지 않습니다."
           }
         },
         "pt-BR" : {
@@ -209214,6 +209454,18 @@
             }
           }
         },
+        "ko" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "나머지 챕터 %lld개에는 텍스트가 없습니다."
+                }
+              }
+            }
+          }
+        },
         "pt-BR" : {
           "variations" : {
             "plural" : {
@@ -209307,6 +209559,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "L’altro capitolo non ha testo."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "나머지 챕터에는 텍스트가 없습니다."
           }
         },
         "pt-BR" : {
@@ -209636,6 +209894,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "La playlist “%@” è troppo grande per essere letta."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "재생 목록 “%@”이(가) 너무 커서 읽을 수 없습니다."
           }
         },
         "pt-BR" : {
@@ -211467,6 +211731,12 @@
             "value" : "La registrazione dura %@."
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "녹음 길이는 %@입니다."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -211553,6 +211823,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Finestra di registrazione"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "녹음 윈도우"
           }
         },
         "pt-BR" : {
@@ -212495,6 +212771,12 @@
             "value" : "Il testo che content.md conteneva prima è stato conservato come %@, nel pacchetto del libro."
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이전에 있던 content.md 텍스트는 책의 패키지에 %@(으)로 보관되었습니다."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -212642,6 +212924,12 @@
             "value" : "Il testo di %@ non può essere letto, quindi non può essere modificato."
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@의 텍스트를 읽을 수 없어 편집할 수 없습니다."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -212689,6 +212977,12 @@
             "value" : "Il testo di %@ non è ancora pronto per essere modificato."
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@의 텍스트를 아직 편집할 수 없습니다."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -212734,6 +213028,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Il testo di %@ è stato letto di nuovo dal suo file."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@의 텍스트를 원본 파일에서 다시 읽었습니다."
           }
         },
         "pt-BR" : {
@@ -214628,6 +214928,12 @@
             "value" : "Il libro non ha la pagina %@."
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이 책에는 페이지 %@이(가) 없습니다."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -216438,6 +216744,12 @@
             "value" : "Questo libro EPUB non ha testo da leggere."
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이 EPUB 책에는 읽을 텍스트가 없습니다."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -216579,6 +216891,12 @@
             "value" : "Questo libro Kindle non ha testo scorrevole, come in un fumetto o in una replica della stampa, quindi TextMouth non può leggerlo."
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이 Kindle 책은 만화나 인쇄본 복제본처럼 흐르는 텍스트가 없어 TextMouth 앱이 읽을 수 없습니다."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -216624,6 +216942,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Questo libro Kindle è compresso in un modo che TextMouth non sa ancora leggere."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이 Kindle 책은 TextMouth 앱이 아직 읽을 수 없는 방식으로 압축되어 있습니다."
           }
         },
         "pt-BR" : {
@@ -216673,6 +216997,12 @@
             "value" : "Questo libro Kindle è protetto da copia e TextMouth non può leggere i libri protetti da copia."
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이 Kindle 책은 복사 방지가 되어 있으며, TextMouth 앱은 복사 방지된 책을 읽을 수 없습니다."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -216720,6 +217050,12 @@
             "value" : "Questo libro Kindle è danneggiato o incompleto. Procurati una copia nuova, poi importalo di nuovo."
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이 Kindle 책이 손상되었거나 불완전합니다. 새 사본을 구한 다음 다시 가져오십시오."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -216765,6 +217101,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Questo libro Kindle è danneggiato o incompleto: %@. Procurati una copia nuova, poi importalo di nuovo."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이 Kindle 책이 손상되었거나 불완전합니다: %@. 새 사본을 구한 다음 다시 가져오십시오."
           }
         },
         "pt-BR" : {
@@ -217343,6 +217685,12 @@
             "value" : "Questo PDF richiede una password per essere aperto."
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이 PDF 문서를 열려면 비밀번호가 필요합니다."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -217388,6 +217736,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Questo file SSML è danneggiato o incompleto: %@."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이 SSML 파일이 손상되었거나 불완전합니다: %@."
           }
         },
         "pt-BR" : {
@@ -218056,6 +218410,18 @@
             }
           }
         },
+        "ko" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "이 책은 %2$@부터 %3$@까지 %1$lld페이지입니다."
+                }
+              }
+            }
+          }
+        },
         "pt-BR" : {
           "variations" : {
             "plural" : {
@@ -218239,6 +218605,12 @@
             "value" : "Questo libro non ha pagine."
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이 책에는 페이지가 없습니다."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -218331,6 +218703,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Questo libro ha una sola pagina."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이 책에는 페이지가 하나뿐입니다."
           }
         },
         "pt-BR" : {
@@ -218923,6 +219301,12 @@
             "value" : "L’unica pagina di questo libro è %@."
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이 책의 유일한 페이지는 %@입니다."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -219170,6 +219554,12 @@
             "value" : "Questo documento contiene più di %@, il massimo che TextMouth legge da un documento."
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이 문서는 %@보다 큽니다. TextMouth 앱은 문서 하나에서 이보다 많이 읽지 않습니다."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -219215,6 +219605,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Questo documento è protetto da password."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이 문서는 비밀번호로 보호되어 있습니다."
           }
         },
         "pt-BR" : {
@@ -219356,6 +219752,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Questa spiegazione compare una sola volta."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이 설명은 한 번만 표시됩니다."
           }
         },
         "pt-BR" : {
@@ -219922,6 +220324,12 @@
             "value" : "Questo file contiene solo una parte di un libro Kindle. Apri il file .kfx principale del libro."
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이 파일에는 Kindle 책의 일부만 들어 있습니다. 책의 주 .kfx 파일을 여십시오."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -219967,6 +220375,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Questo file è un pacchetto Kindle Create, che TextMouth non sa ancora leggere."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이 파일은 TextMouth 앱이 아직 읽을 수 없는 Kindle Create 패키지입니다."
           }
         },
         "pt-BR" : {
@@ -220016,6 +220430,12 @@
             "value" : "Questo file non è SSML: inizia con l’elemento “%@”, non “speak”."
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이 파일은 SSML 파일이 아닙니다. 첫 요소가 “speak”가 아니라 “%@”입니다."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -220063,6 +220483,12 @@
             "value" : "Questo file non è un libro Kindle che TextMouth possa leggere."
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이 파일은 TextMouth 앱이 읽을 수 있는 Kindle 책이 아닙니다."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -220108,6 +220534,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Questo file non è un archivio web che TextMouth possa leggere. Potrebbe essere danneggiato o di un altro tipo."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이 파일은 TextMouth 앱이 읽을 수 있는 웹 아카이브가 아닙니다. 손상되었거나 다른 종류의 파일일 수 있습니다."
           }
         },
         "pt-BR" : {
@@ -220204,6 +220636,12 @@
             "value" : "Il markup di questo file è annidato per più di %@ livelli, e TextMouth non può leggerlo in sicurezza."
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이 파일의 마크업이 %@단계를 넘게 중첩되어 TextMouth 앱이 안전하게 읽을 수 없습니다."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -220249,6 +220687,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Il markup di questo file richiederebbe a TextMouth un tempo di lettura eccessivo."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이 파일의 마크업은 TextMouth 앱이 읽는 데 시간이 너무 오래 걸립니다."
           }
         },
         "pt-BR" : {
@@ -221743,6 +222187,12 @@
             "value" : "Questo archivio web contiene un file di tipo “%@”, non una pagina web o testo, quindi non c’è nulla da leggere."
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이 웹 아카이브에는 웹 페이지나 텍스트가 아닌 “%@” 유형의 파일이 들어 있어 읽을 내용이 없습니다."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -221788,6 +222238,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Tilde"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "물결표"
           }
         },
         "pt-BR" : {
@@ -221878,6 +222334,12 @@
             "value" : "Tempo dall’inizio"
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "시작 시간"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -221923,6 +222385,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Tempo a %@"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ 기준 시간"
           }
         },
         "pt-BR" : {
@@ -221972,6 +222440,12 @@
             "value" : "Il tempo supera la durata del libro."
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "시간이 책 길이를 초과합니다."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -222019,6 +222493,12 @@
             "value" : "Il tempo supera la durata della registrazione."
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "시간이 녹음 길이를 초과합니다."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -222064,6 +222544,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Tempo nella registrazione"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "녹음 내 시간"
           }
         },
         "pt-BR" : {
@@ -222678,6 +223164,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Tempi"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "시간"
           }
         },
         "pt-BR" : {
@@ -224213,6 +224705,12 @@
             "value" : "Attiva o disattiva segnalibro"
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "북마크 전환"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -224468,6 +224966,12 @@
             "value" : "Durata totale del libro: %@"
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "책 전체 시간: %@"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -224562,6 +225066,12 @@
             "value" : "Tempo totale: %@"
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "전체 시간: %@"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -224607,6 +225117,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Totale: %@"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "전체: %@"
           }
         },
         "pt-BR" : {
@@ -224908,6 +225424,12 @@
             "value" : "Trascrivilo di nuovo, poi modifica la nuova trascrizione."
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "대본을 다시 만든 다음 새 대본을 편집하십시오."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -225012,6 +225534,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Trascrivilo prima, con Trascrivi audio."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "먼저 오디오 대본 만들기로 대본을 만드십시오."
           }
         },
         "pt-BR" : {
@@ -226204,6 +226732,12 @@
             "value" : "Prova a recuperare di nuovo il libro."
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "책을 다시 가져오려고 시도합니다"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -226456,6 +226990,12 @@
             "value" : "True Audio"
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "True Audio"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -226503,6 +227043,12 @@
             "value" : "Riprova"
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "다시 시도"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -226548,6 +227094,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Prova una doppia pressione"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "두 번 누르기 시험하기"
           }
         },
         "pt-BR" : {
@@ -226909,6 +227461,12 @@
             "value" : "Disattiva “%@” per salvare i metadati solo nella libreria."
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "메타데이터를 보관함에만 저장하려면 “%@”을(를) 끄십시오."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -226954,6 +227512,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Due tasti diversi, non una doppia pressione."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "서로 다른 두 키이며 두 번 누르기가 아닙니다."
           }
         },
         "pt-BR" : {
@@ -227009,6 +227573,12 @@
             "value" : "Due pressioni a distanza di %@. Imposta un tempo superiore a %@ per contarle come una sola."
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "두 번 누른 간격은 %1$@입니다. 한 번으로 인식하려면 시간을 %2$@보다 크게 설정하십시오."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -227060,6 +227630,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Due pressioni a distanza di %@. Il tempo di doppia pressione arriva fino a %@."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "두 번 누른 간격은 %1$@입니다. 두 번 누르기 간격은 최대 %2$@까지 설정할 수 있습니다."
           }
         },
         "pt-BR" : {
@@ -227150,6 +227726,12 @@
             "value" : "Digita una pagina come la numera il libro, ad esempio 12 o xii."
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "책에서 매기는 대로 페이지를 입력하십시오(예: 12 또는 xii)."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -227197,6 +227779,12 @@
             "value" : "Digita un numero di pagina."
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "페이지 번호를 입력하십시오."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -227242,6 +227830,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Digita una percentuale da 0 a 100, ad esempio 47,5."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "0에서 100 사이의 퍼센트를 입력하십시오(예: 47.5)."
           }
         },
         "pt-BR" : {
@@ -227379,6 +227973,12 @@
             "value" : "Digita un titolo, poi salva di nuovo."
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "제목을 입력한 다음 다시 저장하십시오."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -227471,6 +228071,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Digita virgolette dritte: in TextEdit, disattiva Virgolette intelligenti in Modifica, Sostituzioni."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "직선 따옴표를 입력하십시오. TextEdit에서는 편집, 대체에서 스마트 인용 부호를 끄십시오."
           }
         },
         "pt-BR" : {
@@ -228145,6 +228751,12 @@
             "value" : "Trattino basso"
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "밑줄"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -228272,6 +228884,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Annulla"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "실행 취소"
           }
         },
         "pt-BR" : {
@@ -228565,6 +229183,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Sconosciuto"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "알 수 없음"
           }
         },
         "pt-BR" : {
@@ -229733,6 +230357,12 @@
             "value" : "Formato audio non supportato."
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "지원되지 않는 오디오 포맷입니다."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -230027,6 +230657,12 @@
             "value" : "Freccia su"
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "위쪽 화살표"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -230131,6 +230767,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Aggiorna voce, velocità e tono predefiniti per ogni libro senza impostazioni proprie."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "자체 설정이 없는 모든 책의 기본 음성, 속도, 음높이를 업데이트합니다."
           }
         },
         "pt-BR" : {
@@ -230343,6 +230985,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Usa predefinito globale"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "전역 기본값 사용"
           }
         },
         "pt-BR" : {
@@ -230916,6 +231564,12 @@
             "value" : "Utente"
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "사용자"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -230961,6 +231615,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Uso delle impostazioni globali di voce, velocità e tono"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "전역 음성, 속도, 음높이 설정 사용 중"
           }
         },
         "pt-BR" : {
@@ -231108,6 +231768,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Barra verticale"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "세로 막대"
           }
         },
         "pt-BR" : {
@@ -231440,6 +232106,12 @@
             "value" : "Voce e velocità"
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "음성 및 속도"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -231632,6 +232304,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Filtro lingua delle voci"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "음성 언어 필터"
           }
         },
         "pt-BR" : {
@@ -232667,6 +233345,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Attenzione: la copia del file EPUB nella libreria verrà riscritta e il suo hash MD5 ricalcolato."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "경고: 보관함에 있는 EPUB 파일 사본을 다시 쓰며 MD5 해시를 다시 계산합니다."
           }
         },
         "pt-BR" : {
@@ -235419,6 +236103,12 @@
             "value" : "Alla fine di questo libro"
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이 책이 끝나면"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -235466,6 +236156,12 @@
             "value" : "Quando salvi, TextMouth controlla il manifest e riorganizza il libro, mantenendo la tua posizione nella traccia."
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "저장하면 TextMouth 앱이 매니페스트를 확인하고 책을 재배열하며, 현재 트랙의 위치를 유지합니다."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -235511,6 +236207,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Quando salvi, il libro si aggiorna e mantiene la tua posizione il più vicino possibile."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "저장하면 책이 업데이트되고 가능한 한 현재 위치를 유지합니다."
           }
         },
         "pt-BR" : {
@@ -235701,6 +236403,12 @@
             "value" : "Dove sono?"
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "내 위치는?"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -235748,6 +236456,12 @@
             "value" : "Dove sono? Annuncia la posizione corrente nel libro"
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "내 위치는? 책의 현재 위치를 안내합니다"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -235793,6 +236507,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Dove sono? Riepilogo completo"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "내 위치는? 전체 요약"
           }
         },
         "pt-BR" : {
@@ -236757,6 +237477,12 @@
             "value" : "Windows-1250 (Europa centrale)"
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Windows-1250(중부 유럽어)"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -236802,6 +237528,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Windows-1251 (cirillico)"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Windows-1251(키릴 문자)"
           }
         },
         "pt-BR" : {
@@ -236851,6 +237583,12 @@
             "value" : "Windows-1252 (Europa occidentale)"
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Windows-1252(서유럽어)"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -236896,6 +237634,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Windows-1253 (greco)"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Windows-1253(그리스어)"
           }
         },
         "pt-BR" : {
@@ -236945,6 +237689,12 @@
             "value" : "Windows-1254 (turco)"
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Windows-1254(터키어)"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -236990,6 +237740,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Windows-1255 (ebraico)"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Windows-1255(히브리어)"
           }
         },
         "pt-BR" : {
@@ -237039,6 +237795,12 @@
             "value" : "Windows-1256 (arabo)"
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Windows-1256(아랍어)"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -237086,6 +237848,12 @@
             "value" : "Windows-1257 (baltico)"
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Windows-1257(발트어)"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -237131,6 +237899,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Windows-874 (thai)"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Windows-874(태국어)"
           }
         },
         "pt-BR" : {
@@ -238047,6 +238821,12 @@
             "value" : "Parole al minuto"
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "분당 단어 수"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -238094,6 +238874,12 @@
             "value" : "Funziona in"
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "작동 범위"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -238139,6 +238925,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Funziona in: %@"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@에서 작동합니다"
           }
         },
         "pt-BR" : {
@@ -238227,6 +239019,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Scrive titolo, autore, editore e data nella copia di questo libro nella libreria."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "제목, 저자, 출판사, 날짜를 이 책의 보관함 사본에 씁니다."
           }
         },
         "pt-BR" : {
@@ -238368,6 +239166,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Anno"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "연도"
           }
         },
         "pt-BR" : {
@@ -239098,6 +239902,12 @@
             "value" : "Il tuo testo modificato è stato conservato anche come %@, nel pacchetto del libro."
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "편집한 텍스트도 책의 패키지에 %@(으)로 보관되었습니다."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -239810,6 +240620,12 @@
             "value" : "una voce di menu ha una sola scorciatoia"
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "메뉴 명령에는 단축키가 하나만 지정됩니다"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -239855,6 +240671,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "la scorciatoia di una voce di menu è la pressione di un tasto con Comando o Control"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "메뉴 명령의 단축키는 Command 또는 Control과 함께 누르는 키 한 번이어야 합니다"
           }
         },
         "pt-BR" : {
@@ -240875,6 +241697,12 @@
             "value" : "a %@ di %@ a %@"
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%2$@ 중 %1$@ 지점, 분당 %3$@ 기준"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -240926,6 +241754,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "a %@ di %@ nella registrazione"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "녹음 %2$@ 중 %1$@ 지점"
           }
         },
         "pt-BR" : {
@@ -241300,6 +242134,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "prima della pagina %@"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "페이지 %@ 앞"
           }
         },
         "pt-BR" : {
@@ -242368,6 +243208,12 @@
             "value" : "content.md è solo nel cloud, quindi TextMouth lo lascia com’è."
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "content.md가 클라우드에만 있어 TextMouth 앱이 그대로 둡니다."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -243021,6 +243867,12 @@
             "value" : "modificato manualmente"
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "직접 편집함"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -243066,6 +243918,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "ottava"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "여덟 번째"
           }
         },
         "pt-BR" : {
@@ -243172,6 +244030,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "tutte le finestre"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "모든 윈도우"
           }
         },
         "pt-BR" : {
@@ -243550,6 +244414,12 @@
             "value" : "quinta"
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "다섯 번째"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -243642,6 +244512,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "prima"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "첫 번째"
           }
         },
         "pt-BR" : {
@@ -244102,6 +244978,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "quarta"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "네 번째"
           }
         },
         "pt-BR" : {
@@ -244768,6 +245650,12 @@
             "value" : "intestazione “%@”"
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "표제 “%@”"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -245374,6 +246262,12 @@
             "value" : "il testo %@, e TextMouth non può leggerlo in sicurezza. Appiattiscilo e salva di nuovo, oppure annulla la modifica, e il libro si apre."
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "텍스트가 TextMouth 앱이 안전하게 읽을 수 없는 구조입니다(%@). 구조를 단순하게 만들고 다시 저장하거나 변경을 실행 취소하면 책이 열립니다."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -245419,6 +246313,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "il testo %@, e TextMouth non può leggerlo in sicurezza. Appiattiscilo e salva di nuovo, oppure annulla la modifica, e il testo viene mostrato."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "텍스트가 TextMouth 앱이 안전하게 읽을 수 없는 구조입니다(%@). 구조를 단순하게 만들고 다시 저장하거나 변경을 실행 취소하면 텍스트가 표시됩니다."
           }
         },
         "pt-BR" : {
@@ -245468,6 +246368,12 @@
             "value" : "la trascrizione aggiunge parole a un capitolo senza parlato, dove non possono essere conservate. Rimuovile e salva di nuovo, e il testo viene mostrato."
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "음성이 없는 챕터에 단어가 추가되었으며, 이 단어는 보관할 수 없습니다. 제거하고 다시 저장하면 텍스트가 표시됩니다."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -245513,6 +246419,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "la trascrizione cambia l’intestazione di un capitolo, che deriva dall’audio. Rimettila com’era e salva di nuovo, e il testo viene mostrato."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "챕터의 표제가 변경되었으며, 표제는 오디오에서 가져옵니다. 원래대로 되돌리고 다시 저장하면 텍스트가 표시됩니다."
           }
         },
         "pt-BR" : {
@@ -245662,6 +246574,12 @@
             "value" : "la trascrizione ha %@, ma l’audiolibro ne ha %@. Conserva ogni riga di capitolo che inizia con <!-- chapter: e salva di nuovo, e il testo viene mostrato."
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "챕터가 %1$@인데 오디오북은 %2$@입니다. <!-- chapter: 로 시작하는 줄을 모두 그대로 두고 다시 저장하면 텍스트가 표시됩니다."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -245709,6 +246627,12 @@
             "value" : "nessun capitolo ha del testo. Annulla la modifica e salva di nuovo, e il libro si apre."
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "텍스트가 있는 챕터가 없습니다. 변경을 실행 취소하고 다시 저장하면 책이 열립니다."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -245754,6 +246678,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "nessun capitolo ha del testo. Annulla la modifica e salva di nuovo, e il testo viene mostrato."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "텍스트가 있는 챕터가 없습니다. 변경을 실행 취소하고 다시 저장하면 텍스트가 표시됩니다."
           }
         },
         "pt-BR" : {
@@ -246047,6 +246977,12 @@
             "value" : "il testo non è UTF-8. Salvalo come UTF-8, e il libro si apre."
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "UTF-8 텍스트가 아닙니다. UTF-8 형식으로 저장하면 책이 열립니다."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -246092,6 +247028,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "il testo non è UTF-8. Salvalo come UTF-8, e il testo viene mostrato."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "UTF-8 텍스트가 아닙니다. UTF-8 형식으로 저장하면 텍스트가 표시됩니다."
           }
         },
         "pt-BR" : {
@@ -247237,6 +248179,12 @@
             "value" : "il suo capitolo %@ %@, e TextMouth non può leggerlo in sicurezza. Appiattiscilo e salva di nuovo, oppure annulla la modifica, e il libro si apre."
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "챕터 %1$@이(가) TextMouth 앱이 안전하게 읽을 수 없는 구조입니다(%2$@). 구조를 단순하게 만들고 다시 저장하거나 변경을 실행 취소하면 책이 열립니다."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -247288,6 +248236,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "il suo capitolo %@ %@, e TextMouth non può leggerlo in sicurezza. Appiattiscilo e salva di nuovo, oppure annulla la modifica, e il testo viene mostrato."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "챕터 %1$@이(가) TextMouth 앱이 안전하게 읽을 수 없는 구조입니다(%2$@). 구조를 단순하게 만들고 다시 저장하거나 변경을 실행 취소하면 텍스트가 표시됩니다."
           }
         },
         "pt-BR" : {
@@ -248172,6 +249126,12 @@
             "value" : "Non è stato possibile leggere manifest.json."
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "manifest.json을 읽을 수 없습니다."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -248217,6 +249177,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "manifest.json contiene segmenti, che TextMouth scrive solo per un libro DAISY che converte."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "manifest.json에 세그먼트가 있는데, TextMouth 앱은 변환한 DAISY 책에만 세그먼트를 씁니다."
           }
         },
         "pt-BR" : {
@@ -249313,6 +250279,12 @@
             "value" : "nona"
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "아홉 번째"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -249358,6 +250330,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "non è stato possibile conservare una copia del testo modificato, quindi TextMouth lascia content.md com’è."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "편집한 텍스트의 사본을 보관할 수 없어 TextMouth 앱이 content.md를 그대로 둡니다."
           }
         },
         "pt-BR" : {
@@ -249452,6 +250430,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "nessuna pagina"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "페이지 없음"
           }
         },
         "pt-BR" : {
@@ -250467,6 +251451,12 @@
             "value" : "a pagina %@"
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "페이지 %@"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -250518,6 +251508,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "sulla %@ pagina con l’etichetta %@"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "레이블이 %2$@인 %1$@ 페이지"
           }
         },
         "pt-BR" : {
@@ -251112,6 +252108,12 @@
             "value" : "pagina %@"
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "페이지 %@"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -251157,6 +252159,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "pagine %@"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "페이지 %@"
           }
         },
         "pt-BR" : {
@@ -251392,6 +252400,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "finestre del lettore"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "리더 윈도우"
           }
         },
         "pt-BR" : {
@@ -251831,6 +252845,18 @@
             }
           }
         },
+        "ko" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "책 %lld권의 텍스트를 다른 인코딩으로 다시 읽는 중"
+                }
+              }
+            }
+          }
+        },
         "pt-BR" : {
           "variations" : {
             "plural" : {
@@ -252179,6 +253205,12 @@
             "value" : "seconda"
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "두 번째"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -252324,6 +253356,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "settima"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "일곱 번째"
           }
         },
         "pt-BR" : {
@@ -252633,6 +253671,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "sesta"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "여섯 번째"
           }
         },
         "pt-BR" : {
@@ -253285,6 +254329,12 @@
             "value" : "decima"
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "열 번째"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -253330,6 +254380,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "i campi di testo lo usano per modificare"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "텍스트 필드가 텍스트 편집에 이 키를 사용합니다"
           }
         },
         "pt-BR" : {
@@ -253629,6 +254685,12 @@
             "value" : "editor audio"
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "오디오 편집기"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -253674,6 +254736,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "l’audio dell’audiolibro è cambiato dopo la trascrizione, quindi la sua trascrizione non gli corrisponde più."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "오디오북의 오디오가 대본을 만든 이후 변경되어 대본이 더 이상 맞지 않습니다."
           }
         },
         "pt-BR" : {
@@ -253723,6 +254791,12 @@
             "value" : "la trascrizione dell’audiolibro non può essere letta ora, quindi la modifica non può essere applicata."
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "오디오북의 대본을 지금 읽을 수 없어 편집 내용을 반영할 수 없습니다."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -253768,6 +254842,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "anche il file del libro è cambiato. Apri di nuovo il libro per leggerne il testo da quel file."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "책의 원본 파일도 변경되었습니다. 그 파일에서 텍스트를 읽으려면 책을 다시 여십시오."
           }
         },
         "pt-BR" : {
@@ -253817,6 +254897,12 @@
             "value" : "il record del libro non può essere modificato ora. TextMouth riprova al prossimo salvataggio o ritorno."
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "책의 레코드를 지금 변경할 수 없습니다. 다음에 저장하거나 돌아올 때 TextMouth 앱이 다시 시도합니다."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -253862,6 +254948,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "anche la trascrizione del libro è cambiata. Apri di nuovo il libro per leggerne il testo da quella trascrizione."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "책의 대본도 변경되었습니다. 그 대본에서 텍스트를 읽으려면 책을 다시 여십시오."
           }
         },
         "pt-BR" : {
@@ -254333,6 +255425,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "la trascrizione modificata non può essere sovrapposta all’audio dell’audiolibro."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "편집한 대본을 오디오북의 오디오에 맞출 수 없습니다."
           }
         },
         "pt-BR" : {
@@ -255183,6 +256281,12 @@
             "value" : "finestra di registrazione"
           }
         },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "녹음 윈도우"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -255546,6 +256650,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "terza"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "세 번째"
           }
         },
         "pt-BR" : {
@@ -256193,6 +257303,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "intestazione senza titolo %@"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "제목 없는 표제 %@"
           }
         },
         "pt-BR" : {
