@@ -620,6 +620,563 @@
      "why": "grammar: the relative clause was split around the place"
     }
    ]
+  },
+  {
+   "part": 2,
+   "areas": [
+    "feeds and import",
+    "audio and transcripts"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ are in your library, unsubscribed. Choose %@ on a feed's row, or in its %@, to check it again.",
+     "english": "%1$@ are in your library, unsubscribed. Choose %2$@ on a feed's row, or in its %3$@, to check it again.",
+     "before": "%1$@ ada di pustaka Anda, tetapi tidak berlangganan. Pilih %2$@ pada baris feed, atau di %3$@, untuk memeriksanya lagi.",
+     "after": "%1$@ ada di pustaka Anda, tetapi tidak lagi dilanggan. Pilih %2$@ pada baris feed, atau di %3$@, untuk memeriksanya lagi.",
+     "why": "grammar: a feed is subscribed to, not a subscriber; tidak berlangganan made the feed the one subscribing"
+    },
+    {
+     "key": "%@ couldn't send the feed (error %@). Try again later.",
+     "english": "%1$@ couldn't send the feed (error %2$@). Try again later.",
+     "before": "%1$@ tidak dapat mengirim feed (galat %2$@). Coba lagi nanti.",
+     "after": "%1$@ tidak dapat mengirim feed (kesalahan %2$@). Coba lagi nanti.",
+     "why": "term: Apple and the rest of this catalog say kesalahan for error; galat is used nowhere else"
+    },
+    {
+     "key": "%@ couldn't send the file (error %@). Try again later.",
+     "english": "%1$@ couldn't send the file (error %2$@). Try again later.",
+     "before": "%1$@ tidak dapat mengirim file (galat %2$@). Coba lagi nanti.",
+     "after": "%1$@ tidak dapat mengirim file (kesalahan %2$@). Coba lagi nanti.",
+     "why": "term: Apple and the rest of this catalog say kesalahan for error; galat is used nowhere else"
+    },
+    {
+     "key": "%@ didn't answer for %lld seconds.",
+     "english": {
+      "one": "%@ didn't answer for %lld second.",
+      "other": "%@ didn't answer for %lld seconds."
+     },
+     "before": {
+      "other": "%@ tidak menjawab selama %lld detik."
+     },
+     "after": {
+      "other": "%@ tidak merespons selama %lld detik."
+     },
+     "why": "natural: a server that times out tidak merespons; menjawab is a person answering"
+    },
+    {
+     "key": "%@ is in your library, unsubscribed. Choose %@ on its row, or in its %@, to check it again.",
+     "english": "%1$@ is in your library, unsubscribed. Choose %2$@ on its row, or in its %3$@, to check it again.",
+     "before": "%1$@ ada di pustaka Anda, tetapi tidak berlangganan. Pilih %2$@ pada barisnya, atau di %3$@, untuk memeriksanya lagi.",
+     "after": "%1$@ ada di pustaka Anda, tetapi tidak lagi dilanggan. Pilih %2$@ pada barisnya, atau di %3$@, untuk memeriksanya lagi.",
+     "why": "grammar: a feed is subscribed to, not a subscriber; tidak berlangganan made the feed the one subscribing"
+    },
+    {
+     "key": "%@ is unsubscribed, so TextMouth doesn't check it. Choose %@ to check it again.",
+     "english": "%1$@ is unsubscribed, so TextMouth doesn't check it. Choose %2$@ to check it again.",
+     "before": "%1$@ tidak berlangganan, jadi TextMouth tidak memeriksanya. Pilih %2$@ untuk memeriksanya lagi.",
+     "after": "%1$@ tidak lagi dilanggan, jadi TextMouth tidak memeriksanya. Pilih %2$@ untuk memeriksanya lagi.",
+     "why": "grammar: a feed is subscribed to, not a subscriber; tidak berlangganan made the feed the one subscribing"
+    },
+    {
+     "key": "%@ plays sections that are stretches of its tracks, so its tracks can't be edited yet.",
+     "english": "%@ plays sections that are stretches of its tracks, so its tracks can't be edited yet.",
+     "before": "%@ memutar bagian yang merupakan potongan dari trek-nya, sehingga trek-nya belum dapat diedit.",
+     "after": "%@ memutar bagian yang merupakan potongan dari treknya, sehingga treknya belum dapat diedit.",
+     "why": "punctuation: trek is an Indonesian word, so -nya joins it without a hyphen"
+    },
+    {
+     "key": "%@ waits for a network without data limits to refresh by itself.",
+     "english": "%@ waits for a network without data limits to refresh by itself.",
+     "before": "%@ menunggu jaringan tanpa batas data untuk menyegarkan sendiri.",
+     "after": "%@ menunggu jaringan tanpa batas data untuk menyegarkan secara otomatis.",
+     "why": "natural: menyegarkan sendiri reads as refreshing oneself; by itself here means automatically"
+    },
+    {
+     "key": "%lld edits are undone. Redo brings them back until you make another edit.",
+     "english": {
+      "one": "%lld edit is undone. Redo brings them back until you make another edit.",
+      "other": "%lld edits are undone. Redo brings them back until you make another edit."
+     },
+     "before": {
+      "other": "%lld edit diurungkan. Ulangi mengembalikannya sampai Anda melakukan edit lain."
+     },
+     "after": {
+      "other": "%lld edit diurungkan. Pilih Ulangi untuk mengembalikannya sebelum Anda melakukan edit lain."
+     },
+     "why": "natural: Ulangi as a subject reads as the command Repeat; the sentence says choosing Redo brings the edits back"
+    },
+    {
+     "key": "%lld were subscribed already.",
+     "english": {
+      "one": "%lld was subscribed already.",
+      "other": "%lld were subscribed already."
+     },
+     "before": {
+      "other": "%lld sudah berlangganan."
+     },
+     "after": {
+      "other": "%lld sudah dilanggan."
+     },
+     "why": "grammar: the feeds were already subscribed to; sudah berlangganan made them the subscribers"
+    },
+    {
+     "key": "Checks this feed again from now on, and at once",
+     "english": "Checks this feed again from now on, and at once",
+     "before": "Memeriksa feed ini lagi mulai sekarang, dan langsung saat ini.",
+     "after": "Memeriksa feed ini lagi mulai sekarang, dan langsung memeriksanya.",
+     "why": "natural: dan langsung saat ini dangled without a verb; at once means it checks the feed right away"
+    },
+    {
+     "key": "Close it",
+     "english": "Close it",
+     "before": "Tutup",
+     "after": "Tutup bukunya",
+     "why": "natural: a bare Tutup reads as the Close button; the request needs its object, the book"
+    },
+    {
+     "key": "Converting %@ failed (the converter ended with code %@).",
+     "english": "Converting %1$@ failed (the converter ended with code %2$@).",
+     "before": "Mengonversi %1$@ gagal (konverter berakhir dengan kode %2$@).",
+     "after": "Gagal mengonversi %1$@ (konverter berakhir dengan kode %2$@).",
+     "why": "natural: Indonesian puts gagal first; Mengonversi X gagal copies the English order"
+    },
+    {
+     "key": "Elapsed",
+     "english": "Elapsed",
+     "before": "Berlalu",
+     "after": "Waktu berlalu",
+     "why": "natural: a bare Berlalu reads as the verb passed; the label names the time elapsed"
+    },
+    {
+     "key": "Elapsed: %@",
+     "english": "Elapsed: %@",
+     "before": "Berlalu: %@",
+     "after": "Waktu berlalu: %@",
+     "why": "natural: a bare Berlalu reads as the verb passed; the label names the time elapsed"
+    },
+    {
+     "key": "Every article listed, downloads by hand",
+     "english": "Every article listed, downloads by hand",
+     "before": "Semua artikel tercantum, unduh manual",
+     "after": "Semua artikel tercantum, diunduh manual",
+     "why": "natural: unduh manual reads as a command; the choice names a state, as its sibling %lld terbaru diunduh does"
+    },
+    {
+     "key": "Every episode listed, downloads by hand",
+     "english": "Every episode listed, downloads by hand",
+     "before": "Semua episode tercantum, unduh manual",
+     "after": "Semua episode tercantum, diunduh manual",
+     "why": "natural: unduh manual reads as a command; the choice names a state, as its sibling %lld terbaru diunduh does"
+    },
+    {
+     "key": "Every feed is unsubscribed, so none was checked. Choose %@ on a feed's row, or in its %@, to check it again.",
+     "english": "Every feed is unsubscribed, so none was checked. Choose %1$@ on a feed's row, or in its %2$@, to check it again.",
+     "before": "Semua feed tidak berlangganan, jadi tidak ada yang diperiksa. Pilih %1$@ pada baris feed, atau di %2$@-nya, untuk memeriksanya lagi.",
+     "after": "Semua feed tidak lagi dilanggan, jadi tidak ada yang diperiksa. Pilih %1$@ pada baris feed, atau di %2$@-nya, untuk memeriksanya lagi.",
+     "why": "grammar: a feed is subscribed to, not a subscriber; tidak berlangganan made the feed the one subscribing"
+    },
+    {
+     "key": "Every item listed, downloads by hand",
+     "english": "Every item listed, downloads by hand",
+     "before": "Semua item tercantum, unduh manual",
+     "after": "Semua item tercantum, diunduh manual",
+     "why": "natural: unduh manual reads as a command; the choice names a state, as its sibling %lld terbaru diunduh does"
+    },
+    {
+     "key": "Inserted %@ of new recording, which is selected.",
+     "english": "Inserted %@ of new recording, which is selected.",
+     "before": "Rekaman baru berdurasi %@ disisipkan, dan sedang dipilih.",
+     "after": "Rekaman baru berdurasi %@ disisipkan dan kini terpilih.",
+     "why": "meaning: sedang dipilih says it is being chosen; the new recording is now selected"
+    },
+    {
+     "key": "It",
+     "english": "It",
+     "before": "Itu",
+     "after": "Buku ini",
+     "why": "natural: a bare Itu as a sentence subject reads oddly; the note says it is always the book"
+    },
+    {
+     "key": "It belongs to its feed while it is downloaded. %@ removes its file and keeps its place and bookmarks.",
+     "english": "It belongs to its feed while it is downloaded. %@ removes its file and keeps its place and bookmarks.",
+     "before": "Ini milik feed-nya selama masih diunduh. %@ membuang file-nya dan mempertahankan posisi serta markahnya.",
+     "after": "Ini milik feed-nya selama masih berupa unduhan. %@ membuang file-nya dan mempertahankan posisi serta markahnya.",
+     "why": "meaning: selama masih diunduh reads as while it is still downloading; it means while it is a download"
+    },
+    {
+     "key": "Its %@ are kept for when you download it again.",
+     "english": "Its %@ are kept for when you download it again.",
+     "before": "%@ disimpan untuk saat Anda mengunduhnya lagi.",
+     "after": "%@ disimpan untuk dipakai saat Anda mengunduhnya lagi.",
+     "why": "natural: untuk saat Anda copies the English for when; kept to be used when reads as Indonesian"
+    },
+    {
+     "key": "Its %@ is kept for when you download it again.",
+     "english": "Its %@ is kept for when you download it again.",
+     "before": "%@ disimpan untuk saat Anda mengunduhnya lagi.",
+     "after": "%@ disimpan untuk dipakai saat Anda mengunduhnya lagi.",
+     "why": "natural: untuk saat Anda copies the English for when; kept to be used when reads as Indonesian"
+    },
+    {
+     "key": "Its tracks run past the end of the audio it names, so it was made for another copy of that audio.",
+     "english": "Its tracks run past the end of the audio it names, so it was made for another copy of that audio.",
+     "before": "Trek-nya melewati akhir audio yang disebutkan, jadi file ini dibuat untuk salinan audio yang lain.",
+     "after": "Treknya melewati akhir audio yang disebutkan, jadi file ini dibuat untuk salinan audio yang lain.",
+     "why": "punctuation: trek is an Indonesian word, so -nya joins it without a hyphen"
+    },
+    {
+     "key": "Lists every article; nothing downloads by itself, and a download stays until you delete it or its days after playing pass.",
+     "english": "Lists every article; nothing downloads by itself, and a download stays until you delete it or its days after playing pass.",
+     "before": "Mencantumkan setiap artikel; tidak ada yang diunduh otomatis, dan unduhan tetap ada sampai Anda menghapusnya atau hari setelah diputarnya berlalu.",
+     "after": "Mencantumkan setiap artikel; tidak ada yang diunduh otomatis, dan unduhan tetap ada sampai Anda menghapusnya atau batas harinya setelah diputar terlewati.",
+     "why": "natural: hari setelah diputarnya reads as the day after it played it; batas harinya names the setting of days"
+    },
+    {
+     "key": "Lists every episode and article; nothing downloads by itself, and a download stays until you delete it or its days after playing pass.",
+     "english": "Lists every episode and article; nothing downloads by itself, and a download stays until you delete it or its days after playing pass.",
+     "before": "Mencantumkan setiap episode dan artikel; tidak ada yang diunduh otomatis, dan unduhan tetap ada sampai Anda menghapusnya atau hari setelah diputarnya berlalu.",
+     "after": "Mencantumkan setiap episode dan artikel; tidak ada yang diunduh otomatis, dan unduhan tetap ada sampai Anda menghapusnya atau batas harinya setelah diputar terlewati.",
+     "why": "natural: hari setelah diputarnya reads as the day after it played it; batas harinya names the setting of days"
+    },
+    {
+     "key": "Lists every episode; nothing downloads by itself, and a download stays until you delete it or its days after playing pass.",
+     "english": "Lists every episode; nothing downloads by itself, and a download stays until you delete it or its days after playing pass.",
+     "before": "Mencantumkan setiap episode; tidak ada yang diunduh otomatis, dan unduhan tetap ada sampai Anda menghapusnya atau hari setelah diputarnya berlalu.",
+     "after": "Mencantumkan setiap episode; tidak ada yang diunduh otomatis, dan unduhan tetap ada sampai Anda menghapusnya atau batas harinya setelah diputar terlewati.",
+     "why": "natural: hari setelah diputarnya reads as the day after it played it; batas harinya names the setting of days"
+    },
+    {
+     "key": "No markers yet. Add Marker drops one at the cursor.",
+     "english": "No markers yet. Add Marker drops one at the cursor.",
+     "before": "Belum ada penanda. Tambah Penanda menaruh satu di posisi kursor.",
+     "after": "Belum ada penanda. Pilih Tambah Penanda untuk memasang satu di posisi kursor.",
+     "why": "natural: a one-word command name as the subject reads as the command itself; the sentence says what choosing it does"
+    },
+    {
+     "key": "No original is kept, so it can't be reverted. Undo takes back edits since the last save.",
+     "english": "No original is kept, so it can't be reverted. Undo takes back edits since the last save.",
+     "before": "Audio asli tidak disimpan, sehingga tidak dapat dikembalikan ke semula. Urungkan menarik kembali edit sejak penyimpanan terakhir.",
+     "after": "Audio asli tidak disimpan, sehingga tidak dapat dikembalikan ke semula. Pilih Urungkan untuk menarik kembali edit sejak penyimpanan terakhir.",
+     "why": "natural: a one-word command name as the subject reads as the command itself; the sentence says what choosing it does"
+    },
+    {
+     "key": "Not Now",
+     "english": "Not Now",
+     "before": "Nanti Saja",
+     "after": "Jangan Sekarang",
+     "why": "term: Apple names the Not Now button Jangan Sekarang"
+    },
+    {
+     "key": "Not in the book's audio yet. Discard undoes them; next time you edit this book, Redo brings them back until you make another edit.",
+     "english": "Not in the book's audio yet. Discard undoes them; next time you edit this book, Redo brings them back until you make another edit.",
+     "before": "Belum ada di audio buku. Buang mengurungkannya; saat Anda mengedit buku ini lagi, Ulangi mengembalikannya sampai Anda melakukan edit lain.",
+     "after": "Belum ada di audio buku. Pilih Buang untuk mengurungkannya; saat Anda mengedit buku ini lagi, pilih Ulangi untuk mengembalikannya sebelum Anda melakukan edit lain.",
+     "why": "natural: a one-word command name as the subject reads as the command itself; the sentence says what choosing it does"
+    },
+    {
+     "key": "Put the feed's folder in",
+     "english": "Put the feed's folder in",
+     "before": "Taruh folder feed di",
+     "after": "Tempatkan folder feed di",
+     "why": "register: taruh is casual speech; Apple-style captions say tempatkan"
+    },
+    {
+     "key": "Put the feeds' folders in",
+     "english": "Put the feeds' folders in",
+     "before": "Taruh folder feed di",
+     "after": "Tempatkan folder feed di",
+     "why": "register: taruh is casual speech; Apple-style captions say tempatkan"
+    },
+    {
+     "key": "Puts the new copy in place of the one already in the library, keeping only the existing copy's folder and place on the reading list.",
+     "english": "Puts the new copy in place of the one already in the library, keeping only the existing copy's folder and place on the reading list.",
+     "before": "Menaruh salinan baru menggantikan yang sudah ada di pustaka, dengan hanya mempertahankan folder dan posisi salinan yang ada di Daftar Bacaan.",
+     "after": "Mengganti salinan yang sudah ada di pustaka dengan salinan baru, dan hanya mempertahankan folder serta posisi salinan yang ada di Daftar Bacaan.",
+     "why": "natural: menaruh X menggantikan Y copies puts X in place of Y; Indonesian says mengganti Y dengan X"
+    },
+    {
+     "key": "Puts the new copy in place of the one already in the library, keeping the existing copy's reading position, bookmarks, and settings.",
+     "english": "Puts the new copy in place of the one already in the library, keeping the existing copy's reading position, bookmarks, and settings.",
+     "before": "Menaruh salinan baru menggantikan yang sudah ada di pustaka, dengan mempertahankan posisi baca, markah, dan pengaturan salinan yang ada.",
+     "after": "Mengganti salinan yang sudah ada di pustaka dengan salinan baru, dan mempertahankan posisi baca, markah, serta pengaturan salinan yang ada.",
+     "why": "natural: menaruh X menggantikan Y copies puts X in place of Y; Indonesian says mengganti Y dengan X"
+    },
+    {
+     "key": "Recording over %@ at %@, from %@, after the beep. Punch In or Stop ends it; Clear Selection discards it.",
+     "english": "Recording over %1$@ at %2$@, from %3$@, after the beep. Punch In or Stop ends it; Clear Selection discards it.",
+     "before": "Merekam menimpa %1$@ pada %2$@, dari %3$@, setelah bunyi bip. Rekam Menimpa atau Berhenti mengakhirinya; Kosongkan Pilihan membuangnya.",
+     "after": "Merekam menimpa %1$@ pada %2$@, dari %3$@, setelah bunyi bip. Rekam Menimpa atau Berhenti untuk mengakhirinya; Kosongkan Pilihan untuk membuangnya.",
+     "why": "natural: Berhenti mengakhirinya reads as stop ending it; X untuk Y names each command and what it does"
+    },
+    {
+     "key": "Recording to insert at %@, from %@, after the beep. Punch In or Stop ends it; Clear Selection discards it.",
+     "english": "Recording to insert at %1$@, from %2$@, after the beep. Punch In or Stop ends it; Clear Selection discards it.",
+     "before": "Merekam untuk disisipkan pada %1$@, dari %2$@, setelah bunyi bip. Rekam Menimpa atau Berhenti mengakhirinya; Kosongkan Pilihan membuangnya.",
+     "after": "Merekam untuk disisipkan pada %1$@, dari %2$@, setelah bunyi bip. Rekam Menimpa atau Berhenti untuk mengakhirinya; Kosongkan Pilihan untuk membuangnya.",
+     "why": "natural: Berhenti mengakhirinya reads as stop ending it; X untuk Y names each command and what it does"
+    },
+    {
+     "key": "Records over the selection, or at the cursor, after a beep. Again, or Stop, ends it.",
+     "english": "Records over the selection, or at the cursor, after a beep. Again, or Stop, ends it.",
+     "before": "Merekam menimpa pilihan, atau di posisi kursor, setelah bunyi bip. Tekan lagi, atau Berhenti, untuk mengakhirinya.",
+     "after": "Merekam menimpa pilihan, atau di posisi kursor, setelah bunyi bip. Pilih lagi, atau Berhenti, untuk mengakhirinya.",
+     "why": "voiceover: tekan names a press; the English says choosing it again, or Stop, ends it"
+    },
+    {
+     "key": "Replaced %@ with %@ of new recording, which is selected.",
+     "english": "Replaced %1$@ with %2$@ of new recording, which is selected.",
+     "before": "%1$@ diganti dengan rekaman baru berdurasi %2$@, dan sedang dipilih.",
+     "after": "%1$@ diganti dengan rekaman baru berdurasi %2$@ yang kini terpilih.",
+     "why": "meaning: sedang dipilih says it is being chosen; the new recording is now selected"
+    },
+    {
+     "key": "Resubscribed to %@. Checking it now…",
+     "english": "Resubscribed to %@. Checking it now…",
+     "before": "Berlangganan lagi ke %@. Memeriksanya sekarang…",
+     "after": "Berhasil berlangganan %@ lagi. Memeriksanya sekarang…",
+     "why": "meaning: Berlangganan %@ is the Subscribe button label word for word; the announcement says the subscription is made"
+    },
+    {
+     "key": "Reverted to the original audio. Redo brings back the %lld edits.",
+     "english": {
+      "one": "Reverted to the original audio. Redo brings back the %lld edit.",
+      "other": "Reverted to the original audio. Redo brings back the %lld edits."
+     },
+     "before": {
+      "other": "Dikembalikan ke audio asli semula. Ulangi mengembalikan %lld edit."
+     },
+     "after": {
+      "other": "Dikembalikan ke audio asli semula. Pilih Ulangi untuk mengembalikan %lld edit."
+     },
+     "why": "natural: a one-word command name as the subject reads as the command itself; the sentence says what choosing it does"
+    },
+    {
+     "key": "Seconds between level announcements",
+     "english": "Seconds between level announcements",
+     "before": "Detik antar pengumuman level",
+     "after": "Detik antarpengumuman level",
+     "why": "punctuation: antar is a bound form and joins its noun, as antarpenyegaran does elsewhere"
+    },
+    {
+     "key": "Sets the transcription language. A language marked needs download downloads only from the Transcribe Audio sheet.",
+     "english": "Sets the transcription language. A language marked needs download downloads only from the Transcribe Audio sheet.",
+     "before": "Mengatur bahasa transkripsi. Bahasa yang ditandai perlu diunduh hanya dapat diunduh dari lembar Transkripsikan Audio.",
+     "after": "Mengatur bahasa transkripsi. Bahasa yang ditandai “perlu diunduh” hanya dapat diunduh dari lembar Transkripsikan Audio.",
+     "why": "meaning: without quotation marks the status word perlu diunduh ran into the sentence and garbled it"
+    },
+    {
+     "key": "Still working. Close once the change is done.",
+     "english": "Still working. Close once the change is done.",
+     "before": "Masih bekerja. Tutup setelah perubahan selesai.",
+     "after": "Masih memproses. Tutup setelah perubahan selesai.",
+     "why": "natural: masih bekerja is a person at work; the app says masih memproses, as the line before does"
+    },
+    {
+     "key": "Subscribed to %@. This feed uses plain http, so others can read or change what it sends; TextMouth still loads it.",
+     "english": "Subscribed to %@. This feed uses plain http, so others can read or change what it sends; TextMouth still loads it.",
+     "before": "Berlangganan %@. Feed ini memakai http biasa, sehingga orang lain dapat membaca atau mengubah apa yang dikirimnya; TextMouth tetap memuatnya.",
+     "after": "Berhasil berlangganan %@. Feed ini memakai http biasa, sehingga orang lain dapat membaca atau mengubah apa yang dikirimnya; TextMouth tetap memuatnya.",
+     "why": "meaning: Berlangganan %@ is the Subscribe button label word for word; the announcement says the subscription is made"
+    },
+    {
+     "key": "Subscribed to %@: %@.",
+     "english": "Subscribed to %1$@: %2$@.",
+     "before": "Berlangganan %1$@: %2$@.",
+     "after": "Berhasil berlangganan %1$@: %2$@.",
+     "why": "meaning: Berlangganan %@ is the Subscribe button label word for word; the announcement says the subscription is made"
+    },
+    {
+     "key": "Subscribed to %lld feeds.",
+     "english": {
+      "one": "Subscribed to %lld feed.",
+      "other": "Subscribed to %lld feeds."
+     },
+     "before": {
+      "other": "Berlangganan %lld feed."
+     },
+     "after": {
+      "other": "Berhasil berlangganan %lld feed."
+     },
+     "why": "meaning: Berlangganan %@ is the Subscribe button label word for word; the announcement says the subscription is made"
+    },
+    {
+     "key": "TextMouth cannot open copy-protected files.",
+     "english": "TextMouth cannot open copy-protected files.",
+     "before": "TextMouth tidak dapat membuka file yang dilindungi hak cipta.",
+     "after": "TextMouth tidak dapat membuka file yang dilindungi dari penyalinan.",
+     "why": "meaning: dilindungi hak cipta means copyrighted, which nearly every book is; copy-protected is dilindungi dari penyalinan"
+    },
+    {
+     "key": "TextMouth downloads %lld of them again at their feeds' next checks, or the next time it opens.",
+     "english": {
+      "one": "TextMouth downloads %lld of them again at their feeds' next checks, or the next time it opens.",
+      "other": "TextMouth downloads %lld of them again at their feeds' next checks, or the next time it opens."
+     },
+     "before": {
+      "other": "TextMouth mengunduh ulang %lld di antaranya pada pemeriksaan berikutnya feed-nya, atau saat TextMouth dibuka lagi."
+     },
+     "after": {
+      "other": "TextMouth mengunduh ulang %lld di antaranya pada pemeriksaan feed-nya yang berikutnya, atau saat TextMouth dibuka lagi."
+     },
+     "why": "grammar: the possessor goes before berikutnya; pemeriksaan berikutnya feed-nya is out of order"
+    },
+    {
+     "key": "TextMouth downloads 1 of them again at its feed's next check, or the next time it opens.",
+     "english": "TextMouth downloads 1 of them again at its feed's next check, or the next time it opens.",
+     "before": "TextMouth mengunduh ulang 1 di antaranya pada pemeriksaan berikutnya feed-nya, atau saat TextMouth dibuka lagi.",
+     "after": "TextMouth mengunduh ulang 1 di antaranya pada pemeriksaan feed-nya yang berikutnya, atau saat TextMouth dibuka lagi.",
+     "why": "grammar: the possessor goes before berikutnya; pemeriksaan berikutnya feed-nya is out of order"
+    },
+    {
+     "key": "TextMouth is quitting and the book's audio doesn't hold these edits yet. Discard undoes them; next time you edit this book, Redo brings them back until you make another edit. Cancel keeps TextMouth open.",
+     "english": "TextMouth is quitting and the book's audio doesn't hold these edits yet. Discard undoes them; next time you edit this book, Redo brings them back until you make another edit. Cancel keeps TextMouth open.",
+     "before": "TextMouth akan keluar dan audio buku belum memuat edit ini. Buang mengurungkannya; saat Anda mengedit buku ini lagi, Ulangi mengembalikannya sampai Anda melakukan edit lain. Batal membiarkan TextMouth tetap terbuka.",
+     "after": "TextMouth akan keluar dan audio buku belum memuat edit ini. Pilih Buang untuk mengurungkannya; saat Anda mengedit buku ini lagi, pilih Ulangi untuk mengembalikannya sebelum Anda melakukan edit lain. Pilih Batal agar TextMouth tetap terbuka.",
+     "why": "natural: a one-word command name as the subject reads as the command itself; the sentence says what choosing it does"
+    },
+    {
+     "key": "TextMouth isn't allowed to post notifications. Turn them on in System Settings, Notifications, TextMouth.",
+     "english": "TextMouth isn't allowed to post notifications. Turn them on in System Settings, Notifications, TextMouth.",
+     "before": "TextMouth tidak diizinkan menampilkan notifikasi. Aktifkan di Pengaturan Sistem, Notifikasi, TextMouth.",
+     "after": "TextMouth tidak diizinkan menampilkan notifikasi. Aktifkan di Pengaturan Sistem, Pemberitahuan, TextMouth.",
+     "why": "term: Apple names the System Settings pane Pemberitahuan; a listener looking for Notifikasi will not find it"
+    },
+    {
+     "key": "The disk is too full to keep this audio for pasting.",
+     "english": "The disk is too full to keep this audio for pasting.",
+     "before": "Disk terlalu penuh untuk menyimpan audio ini untuk ditempel.",
+     "after": "Disk terlalu penuh untuk menyimpan audio ini agar dapat ditempel.",
+     "why": "natural: two untuk in a row; agar dapat ditempel, as the catalog says elsewhere"
+    },
+    {
+     "key": "The original is the lossless take a recording is saved from, or a copy of an audiobook's file from before its first edit. Keeping it lets every edit be undone without loss; a recording's costs about 345 MB an hour. A change also applies to originals already kept, and in a cloud library an original syncs with its book.",
+     "english": "The original is the lossless take a recording is saved from, or a copy of an audiobook's file from before its first edit. Keeping it lets every edit be undone without loss; a recording's costs about 345 MB an hour. A change also applies to originals already kept, and in a cloud library an original syncs with its book.",
+     "before": "Audio asli adalah hasil rekaman tanpa kehilangan kualitas tempat sebuah rekaman disimpan, atau salinan file buku audio dari sebelum edit pertamanya. Dengan mempertahankannya, setiap edit dapat diurungkan tanpa kehilangan kualitas; audio asli rekaman memakan sekitar 345 MB per jam. Perubahan juga berlaku untuk audio asli yang sudah dipertahankan, dan di pustaka cloud, audio asli ikut tersinkron dengan bukunya.",
+     "after": "Audio asli adalah rekaman mentah tanpa kehilangan kualitas yang menjadi sumber rekaman saat disimpan, atau salinan file buku audio dari sebelum edit pertamanya. Dengan mempertahankannya, setiap edit dapat diurungkan tanpa kehilangan kualitas; audio asli rekaman memakan sekitar 345 MB per jam. Perubahan juga berlaku untuk audio asli yang sudah dipertahankan, dan di pustaka cloud, audio asli ikut tersinkron dengan bukunya.",
+     "why": "meaning: tempat sebuah rekaman disimpan said where a recording is stored; the take is what the recording is saved from"
+    },
+    {
+     "key": "The podcast directory at %@ couldn't answer the search (error %@). Try again later.",
+     "english": "The podcast directory at %1$@ couldn't answer the search (error %2$@). Try again later.",
+     "before": "Direktori podcast di %1$@ tidak dapat menjawab pencarian (galat %2$@). Coba lagi nanti.",
+     "after": "Direktori podcast di %1$@ tidak dapat memproses pencarian (kesalahan %2$@). Coba lagi nanti.",
+     "why": "term: kesalahan for error as everywhere else, and a server memproses a search rather than menjawab it"
+    },
+    {
+     "key": "The podcast directory at %@ didn't answer for %lld seconds.",
+     "english": {
+      "one": "The podcast directory at %@ didn't answer for %lld second.",
+      "other": "The podcast directory at %@ didn't answer for %lld seconds."
+     },
+     "before": {
+      "other": "Direktori podcast di %1$@ tidak menjawab selama %2$lld detik."
+     },
+     "after": {
+      "other": "Direktori podcast di %1$@ tidak merespons selama %2$lld detik."
+     },
+     "why": "natural: a server that times out tidak merespons; menjawab is a person answering"
+    },
+    {
+     "key": "The podcast directory couldn't answer the search. Try again later.",
+     "english": "The podcast directory couldn't answer the search. Try again later.",
+     "before": "Direktori podcast tidak dapat menjawab pencarian. Coba lagi nanti.",
+     "after": "Direktori podcast tidak dapat memproses pencarian. Coba lagi nanti.",
+     "why": "natural: a server memproses a search; menjawab pencarian reads as a person answering"
+    },
+    {
+     "key": "The podcast directory sent an answer TextMouth can't read. Try again later.",
+     "english": "The podcast directory sent an answer TextMouth can't read. Try again later.",
+     "before": "Direktori podcast mengirim jawaban yang tidak dapat dibaca TextMouth. Coba lagi nanti.",
+     "after": "Direktori podcast mengirim respons yang tidak dapat dibaca TextMouth. Coba lagi nanti.",
+     "why": "natural: a server sends a respons; jawaban is a person answering, and merespons is used elsewhere"
+    },
+    {
+     "key": "The podcast directory's answer is larger than TextMouth reads.",
+     "english": "The podcast directory's answer is larger than TextMouth reads.",
+     "before": "Jawaban direktori podcast lebih besar dari yang dibaca TextMouth.",
+     "after": "Respons direktori podcast lebih besar dari yang dibaca TextMouth.",
+     "why": "natural: a server sends a respons; jawaban is a person answering, and merespons is used elsewhere"
+    },
+    {
+     "key": "The recording couldn't be saved: %@ It is kept; choose %@ or %@.",
+     "english": "The recording couldn't be saved: %1$@ It is kept; choose %2$@ or %3$@.",
+     "before": "Rekaman tidak dapat disimpan: %1$@ Rekaman tetap disimpan; pilih %2$@ atau %3$@.",
+     "after": "Rekaman tidak dapat disimpan: %1$@ Rekaman masih ada; pilih %2$@ atau %3$@.",
+     "why": "meaning: tetap disimpan right after tidak dapat disimpan read as a contradiction; the recording is still there"
+    },
+    {
+     "key": "There are no subscriptions to export: every feed in your library is unsubscribed.",
+     "english": "There are no subscriptions to export: every feed in your library is unsubscribed.",
+     "before": "Tidak ada langganan untuk diekspor: semua feed di pustaka Anda tidak berlangganan.",
+     "after": "Tidak ada langganan untuk diekspor: semua feed di pustaka Anda tidak lagi dilanggan.",
+     "why": "grammar: a feed is subscribed to, not a subscriber; tidak berlangganan made the feed the one subscribing"
+    },
+    {
+     "key": "This book's audio could not be converted from Ogg to AAC. TextMouth tries again the next time it starts.",
+     "english": "This book's audio could not be converted from Ogg to AAC. TextMouth tries again the next time it starts.",
+     "before": "Audio buku ini tidak dapat dikonversi dari Ogg ke AAC. TextMouth akan mencoba lagi saat dimulai berikutnya.",
+     "after": "Audio buku ini tidak dapat dikonversi dari Ogg ke AAC. TextMouth akan mencoba lagi saat peluncuran berikutnya.",
+     "why": "natural: saat dimulai berikutnya is a calque; the catalog says saat peluncuran berikutnya"
+    },
+    {
+     "key": "This comic book archive holds more than the %@ pictures TextMouth reads.",
+     "english": "This comic book archive holds more than the %@ pictures TextMouth reads.",
+     "before": "Arsip buku komik ini berisi lebih dari %@ gambar yang dibaca TextMouth.",
+     "after": "Arsip buku komik ini berisi lebih dari %@ gambar, batas yang dapat dibaca TextMouth.",
+     "why": "meaning: the old text read as more than N pictures TextMouth did read; N is the most it reads"
+    },
+    {
+     "key": "Type a podcast's title or publisher, then press Return to search Apple's directory",
+     "english": "Type a podcast's title or publisher, then press Return to search Apple's directory",
+     "before": "Mengetik judul atau penerbit podcast, lalu menekan Return untuk mencari di direktori Apple.",
+     "after": "Ketik judul atau penerbit podcast, lalu tekan Return untuk mencari di direktori Apple.",
+     "why": "meaning: the hint tells the listener what to do; the third-person form said the field itself types and presses Return"
+    },
+    {
+     "key": "Type or paste a feed or web page address, then press Return",
+     "english": "Type or paste a feed or web page address, then press Return",
+     "before": "Mengetik atau menempel alamat feed atau halaman web, lalu menekan Return.",
+     "after": "Ketik atau tempel alamat feed atau halaman web, lalu tekan Return.",
+     "why": "meaning: the hint tells the listener what to do; the third-person form said the field itself types and presses Return"
+    },
+    {
+     "key": "Undoes every edit, back to the original; Redo brings them back.",
+     "english": "Undoes every edit, back to the original; Redo brings them back.",
+     "before": "Mengurungkan setiap edit, kembali ke audio asli; Ulangi mengembalikannya.",
+     "after": "Mengurungkan setiap edit, kembali ke audio asli; pilih Ulangi untuk mengembalikannya.",
+     "why": "natural: a one-word command name as the subject reads as the command itself; the sentence says what choosing it does"
+    },
+    {
+     "key": "the server sent no answer",
+     "english": "the server sent no answer",
+     "before": "server tidak mengirim jawaban",
+     "after": "server tidak mengirim respons",
+     "why": "natural: a server sends a respons; jawaban is a person answering, and merespons is used elsewhere"
+    },
+    {
+     "key": "the top of your library",
+     "english": "the top of your library",
+     "before": "bagian teratas pustaka Anda",
+     "after": "tingkat atas pustaka Anda",
+     "why": "term: the glossary calls the library root Tingkat Atas Pustaka; bagian teratas reads as the top of a list"
+    },
+    {
+     "key": "“%@” is already being added to the library.",
+     "english": "“%@” is already being added to the library.",
+     "before": "“%@” sudah sedang ditambahkan ke pustaka.",
+     "after": "“%@” sedang ditambahkan ke pustaka.",
+     "why": "grammar: sudah and sedang do not combine; sedang alone says the adding is under way"
+    },
+    {
+     "key": "“%@” is still working. Quit once the change is done.",
+     "english": "“%@” is still working. Quit once the change is done.",
+     "before": "“%@” masih bekerja. Keluar setelah perubahan selesai.",
+     "after": "“%@” masih memproses. Keluar setelah perubahan selesai.",
+     "why": "natural: masih bekerja is a person at work; the app says masih memproses, as its other busy lines do"
+    }
+   ]
   }
  ]
 }
