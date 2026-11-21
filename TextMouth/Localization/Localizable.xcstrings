@@ -336238,7 +336238,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Không có bản tải về nào của nguồn cấp đang diễn ra."
+            "value" : "Không có nguồn cấp nào đang tải về."
           }
         },
         "zh-Hans" : {
@@ -343692,7 +343692,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Không đọc được văn bản nào từ kho lưu trữ truyện tranh này: không chạy được OCR (%@)."
+            "value" : "Không đọc được văn bản nào từ tệp lưu trữ truyện tranh này: không chạy được OCR (%@)."
           }
         },
         "zh-Hans" : {
@@ -343966,7 +343966,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Không tìm thấy văn bản nào trong ảnh duy nhất của kho lưu trữ truyện tranh này."
+            "value" : "Không tìm thấy văn bản nào trong ảnh duy nhất của tệp lưu trữ truyện tranh này."
           }
         },
         "zh-Hans" : {
@@ -344555,7 +344555,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Không tìm thấy văn bản nào trên cả %lld trang của kho lưu trữ truyện tranh này."
+                  "value" : "Không tìm thấy văn bản nào trên cả %lld trang của tệp lưu trữ truyện tranh này."
                 }
               }
             }
@@ -348219,7 +348219,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Không có trong cửa sổ này."
+            "value" : "Không khả dụng trong cửa sổ này."
           }
         },
         "zh-Hans" : {
@@ -349082,7 +349082,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Không giải nén: TextMouth chỉ giải nén kho lưu trữ nằm trong kho lưu trữ khác sâu đến %lld cấp."
+                  "value" : "Không giải nén: TextMouth chỉ giải nén các tệp lưu trữ lồng nhau sâu tối đa %lld cấp."
                 }
               }
             }
@@ -350741,7 +350741,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Chưa nhập gì"
+            "value" : "Không có gì được nhập"
           }
         },
         "zh-Hans" : {
@@ -368507,7 +368507,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Một phần của %@ không giải mã được và được giữ lại dưới dạng khoảng lặng."
+            "value" : "Một phần của %@ không giải mã được nên được thay bằng khoảng lặng."
           }
         },
         "zh-Hans" : {
@@ -369096,7 +369096,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Một phần của %lld tệp, %@, không giải mã được và được giữ lại dưới dạng khoảng lặng."
+                  "value" : "Một phần của %lld tệp, %@, không giải mã được nên được thay bằng khoảng lặng."
                 }
               }
             }
@@ -381428,7 +381428,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Gửi thông báo cho từng nguồn cấp có tập mới"
+            "value" : "Gửi thông báo về từng nguồn cấp có tập mới"
           }
         },
         "zh-Hans" : {
@@ -479261,7 +479261,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth không đọc được “%1$@” như %2$@. Tệp có thể bị hỏng, hoặc được đặt tên theo định dạng khác."
+            "value" : "TextMouth không đọc được “%1$@” dưới dạng %2$@. Tệp có thể bị hỏng, hoặc được đặt tên theo định dạng khác."
           }
         },
         "zh-Hans" : {
@@ -486346,7 +486346,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth không mở kho lưu trữ RAR. Hãy giải nén chúng, rồi nhập những gì chúng chứa."
+            "value" : "TextMouth không mở các tệp lưu trữ RAR. Hãy giải nén chúng, rồi nhập những gì chúng chứa."
           }
         },
         "zh-Hans" : {
@@ -491720,7 +491720,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth vẫn đang thực hiện câu trả lời trước của bạn. Hãy chờ đến khi xong."
+            "value" : "TextMouth vẫn đang xử lý câu trả lời trước của bạn. Hãy chờ đến khi xong."
           }
         },
         "zh-Hans" : {
@@ -492679,7 +492679,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth giữ tệp gốc của âm thanh mà nó chuyển đổi khi nhập. Bản gốc chiếm dung lượng đĩa gần bằng tệp đã chuyển đổi, hoặc gấp đôi nếu chưa nén. Xuất cung cấp nó dưới tên Tệp gốc. Bản gốc của một tập từ nguồn cấp không được giữ: có thể tải về lại."
+            "value" : "TextMouth giữ tệp gốc của âm thanh mà nó chuyển đổi khi nhập. Bản gốc chiếm dung lượng đĩa gần bằng tệp đã chuyển đổi, hoặc gấp đôi nếu chưa nén. Lệnh Xuất cung cấp bản gốc dưới tên Tệp gốc. Bản gốc của một tập từ nguồn cấp không được giữ: có thể tải về lại."
           }
         },
         "zh-Hans" : {
@@ -501756,7 +501756,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Đó không phải địa chỉ web. Hãy nhập địa chỉ của một nguồn cấp, hoặc địa chỉ của một trang nêu tên nguồn cấp."
+            "value" : "Đó không phải địa chỉ web. Hãy nhập địa chỉ của một nguồn cấp, hoặc địa chỉ của một trang có liên kết đến nguồn cấp."
           }
         },
         "zh-Hans" : {
@@ -502304,7 +502304,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Trang đó không nêu tên nguồn cấp nào."
+            "value" : "Trang đó không có liên kết đến nguồn cấp nào."
           }
         },
         "zh-Hans" : {
@@ -502756,7 +502756,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Trang đó nêu tên %lld nguồn cấp. Hãy chọn một nguồn, rồi chọn Đăng ký."
+                  "value" : "Trang đó có liên kết đến %lld nguồn cấp. Hãy chọn một nguồn cấp, rồi chọn Đăng ký."
                 }
               }
             }
@@ -504816,7 +504816,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%1$@ được giữ lại cho %2$lld bản tải về đã gỡ đã bị xóa."
+                  "value" : "Đã xóa %1$@ được giữ lại cho %2$lld bản tải về đã gỡ."
                 }
               }
             }
@@ -505283,7 +505283,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%1$@ được giữ lại cho %2$lld bản tải về đã gỡ đã bị xóa."
+                  "value" : "Đã xóa %1$@ được giữ lại cho %2$lld bản tải về đã gỡ."
                 }
               }
             }
@@ -512468,7 +512468,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Kho lưu trữ còn chứa %lld sách khác chưa được nhập; hãy giải nén nó để nhập chúng."
+                  "value" : "Tệp lưu trữ còn chứa %lld sách khác chưa được nhập; hãy giải nén nó để nhập chúng."
                 }
               }
             }
@@ -513192,7 +513192,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Kho lưu trữ chứa một tệp có đường dẫn trỏ ra ngoài nó; tệp này không bao giờ được giải nén."
+            "value" : "Tệp lưu trữ chứa một tệp có đường dẫn trỏ ra ngoài nó; tệp này không bao giờ được giải nén."
           }
         },
         "zh-Hans" : {
@@ -513329,7 +513329,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Kho lưu trữ chứa một liên kết đến tệp bên ngoài nó; liên kết này không bao giờ được giải nén."
+            "value" : "Tệp lưu trữ chứa một liên kết đến tệp bên ngoài nó; liên kết này không bao giờ được giải nén."
           }
         },
         "zh-Hans" : {
@@ -513603,7 +513603,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Kho lưu trữ bị hỏng, chưa đầy đủ, hoặc không phải kho lưu trữ ZIP."
+            "value" : "Tệp lưu trữ bị hỏng, chưa đầy đủ, hoặc không phải tệp lưu trữ ZIP."
           }
         },
         "zh-Hans" : {
@@ -514020,7 +514020,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bài viết rời khỏi danh sách vĩnh viễn; sách mà nó đã trở thành trong thư viện của bạn vẫn còn."
+            "value" : "Bài viết rời khỏi danh sách vĩnh viễn; sách được tạo từ bài viết này trong thư viện của bạn vẫn còn."
           }
         },
         "zh-Hans" : {
@@ -527824,7 +527824,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tập rời khỏi danh sách vĩnh viễn; sách mà nó đã trở thành trong thư viện của bạn vẫn còn."
+            "value" : "Tập rời khỏi danh sách vĩnh viễn; sách được tạo từ tập này trong thư viện của bạn vẫn còn."
           }
         },
         "zh-Hans" : {
@@ -546518,7 +546518,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tệp gốc đã được giữ lại: TextMouth chỉ nhập sách DAISY “%1$@” từ kho lưu trữ “%2$@”."
+            "value" : "Tệp gốc đã được giữ lại: TextMouth chỉ nhập sách DAISY “%1$@” từ tệp lưu trữ “%2$@”."
           }
         },
         "zh-Hans" : {
@@ -546661,7 +546661,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tệp gốc đã được giữ lại: TextMouth đã nhập âm thanh của “%1$@” từ kho lưu trữ “%2$@”, và kho lưu trữ là bản duy nhất của văn bản đó."
+            "value" : "Tệp gốc đã được giữ lại: TextMouth đã nhập âm thanh của “%1$@” từ tệp lưu trữ “%2$@”, và tệp lưu trữ là bản duy nhất của văn bản đó."
           }
         },
         "zh-Hans" : {
@@ -573429,7 +573429,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sách này không có gói được quản lý hợp lệ. Chỉ gỡ nó khỏi thư viện, hoặc sửa chữa bộ nhớ của nó trước khi xóa."
+            "value" : "Sách này không có gói được quản lý hợp lệ. Hãy chỉ gỡ sách khỏi thư viện, hoặc sửa lại dữ liệu lưu trữ của sách trước khi xóa."
           }
         },
         "zh-Hans" : {
@@ -575677,7 +575677,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Kho lưu trữ truyện tranh này chứa nhiều hơn %@ ảnh mà TextMouth đọc."
+            "value" : "Tệp lưu trữ truyện tranh này chứa hơn %@ ảnh, vượt mức TextMouth đọc được."
           }
         },
         "zh-Hans" : {
@@ -575814,7 +575814,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Kho lưu trữ truyện tranh này không chứa ảnh nào mà TextMouth đọc được."
+            "value" : "Tệp lưu trữ truyện tranh này không chứa ảnh nào mà TextMouth đọc được."
           }
         },
         "zh-Hans" : {
@@ -577047,7 +577047,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Không đọc được tệp này như một tài liệu XML Word 2003."
+            "value" : "Không đọc được tệp này dưới dạng tài liệu XML Word 2003."
           }
         },
         "zh-Hans" : {
@@ -577184,7 +577184,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Không đọc được tệp này như một tài liệu Word 97-2003."
+            "value" : "Không đọc được tệp này dưới dạng tài liệu Word 97-2003."
           }
         },
         "zh-Hans" : {
@@ -577321,7 +577321,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Không đọc được tệp này như một kho lưu trữ truyện tranh. Tệp có thể bị hỏng, hoặc là một loại tệp khác."
+            "value" : "Không đọc được tệp này dưới dạng tệp lưu trữ truyện tranh. Tệp có thể bị hỏng, hoặc là một loại tệp khác."
           }
         },
         "zh-Hans" : {
@@ -577458,7 +577458,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Không đọc được tệp này như một ảnh. Tệp có thể bị hỏng, hoặc là một loại tệp khác."
+            "value" : "Không đọc được tệp này dưới dạng ảnh. Tệp có thể bị hỏng, hoặc là một loại tệp khác."
           }
         },
         "zh-Hans" : {
@@ -577595,7 +577595,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Không đọc được tệp này như một tài liệu văn bản có định dạng kèm tệp đính kèm."
+            "value" : "Không đọc được tệp này dưới dạng tài liệu văn bản có định dạng kèm tệp đính kèm."
           }
         },
         "zh-Hans" : {
@@ -577732,7 +577732,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Không đọc được tệp này như một tài liệu văn bản có định dạng."
+            "value" : "Không đọc được tệp này dưới dạng tài liệu văn bản có định dạng."
           }
         },
         "zh-Hans" : {
@@ -577869,7 +577869,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Không đọc được tệp này như một tài liệu văn bản OpenDocument."
+            "value" : "Không đọc được tệp này dưới dạng tài liệu văn bản OpenDocument."
           }
         },
         "zh-Hans" : {
