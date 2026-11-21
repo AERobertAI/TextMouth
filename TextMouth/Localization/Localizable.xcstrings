@@ -90779,7 +90779,7 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Nenhum texto foi encontrado em nenhuma das %lld páginas deste arquivo de quadrinhos."
+                  "value" : "Nenhum texto foi encontrado em nenhuma das %lld de páginas deste arquivo de quadrinhos."
                 }
               },
               "one" : {
@@ -90916,7 +90916,7 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Nenhum texto foi encontrado em nenhuma das %lld páginas desta imagem."
+                  "value" : "Nenhum texto foi encontrado em nenhuma das %lld de páginas desta imagem."
                 }
               },
               "one" : {
@@ -91484,7 +91484,7 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Nenhum dos %lld livros selecionados é mantido neste Mac."
+                  "value" : "Nenhum dos %lld de livros selecionados é mantido neste Mac."
                 }
               },
               "one" : {
@@ -116432,7 +116432,7 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Mostrando as primeiras %lld correspondências; refine a busca"
+                  "value" : "Mostrando as primeiras %lld de correspondências; refine a busca"
                 }
               },
               "one" : {
@@ -124293,7 +124293,7 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "O reconhecimento de texto não conseguiu ler nenhuma das %lld páginas: %@."
+                  "value" : "O reconhecimento de texto não conseguiu ler nenhuma das %lld de páginas: %@."
                 }
               },
               "one" : {
@@ -131235,7 +131235,7 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Isso colocaria %1$@ a %2$lld de níveis de profundidade, mas as pastas se aninham no máximo em %3$lld níveis."
+                  "value" : "Isso colocaria %1$@ a %2$lld de níveis de profundidade, mas as pastas se aninham no máximo em %3$lld de níveis."
                 }
               },
               "one" : {
@@ -151549,7 +151549,7 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Esta imagem tem %@, mais do que os %lld megapixels que o TextMouth lê."
+                  "value" : "Esta imagem tem %@, mais do que os %lld de megapixels que o TextMouth lê."
                 }
               },
               "one" : {
@@ -168643,7 +168643,7 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "ela tem %@, mais de %lld megapixels"
+                  "value" : "ela tem %@, mais de %lld de megapixels"
                 }
               },
               "one" : {
