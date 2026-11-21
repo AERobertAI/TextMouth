@@ -555585,7 +555585,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "De bewaarde kopie op %@ bewaart de oude gegevens."
+            "value" : "De bewaarde kopie op %@ bevat de oude gegevens."
           }
         },
         "pl" : {
@@ -587566,7 +587566,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Om de ruimte toch vrij te maken, kies je Toon in Finder en %@."
+            "value" : "Wil je de ruimte toch vrijmaken, kies dan Toon in Finder en %@."
           }
         },
         "pl" : {
@@ -588531,7 +588531,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Om een andere map te gebruiken, open je Instellingen en Opslag en kies je %1$@ of %2$@."
+            "value" : "Om een andere map te gebruiken, open je Opslag in Instellingen en kies je %1$@ of %2$@."
           }
         },
         "pl" : {
@@ -607963,7 +607963,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Gebruik overeenkomst met reguliere expressie"
+            "value" : "Gebruik reguliere expressies"
           }
         },
         "pl" : {
@@ -618387,7 +618387,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Als lidwoorden worden genegeerd, slaat een boek waarvan de metadata Frans, Duits, Spaans, Italiaans, Portugees, Nederlands, Catalaans, Zweeds, Deens of Noors noemt de lidwoorden van die taal over, zoals Le en Die, en The."
+            "value" : "Als lidwoorden worden genegeerd, worden bij een boek waarvan de metadata Frans, Duits, Spaans, Italiaans, Portugees, Nederlands, Catalaans, Zweeds, Deens of Noors noemt, de lidwoorden van die taal overgeslagen, zoals Le en Die, en ook The."
           }
         },
         "pl" : {
@@ -618524,7 +618524,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Als boek eindigt"
+            "value" : "Wanneer een boek eindigt"
           }
         },
         "pl" : {
@@ -621681,7 +621681,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Waar TextMouth zijn diagnostische logboeken schrijft. %1$@ houdt ze bij je boeken, zodat ze met de bibliotheek meeverhuizen en synchroniseren. %2$@ houdt ze in %3$@, die nooit synchroniseert. Een wijziging geldt vanaf de volgende regel; bestaande logboeken blijven."
+            "value" : "Waar TextMouth zijn diagnostische logboeken schrijft. Met “%1$@” staan ze bij je boeken, zodat ze met de bibliotheek meeverhuizen en synchroniseren. Met “%2$@” staan ze in %3$@, die nooit synchroniseert. Een wijziging geldt vanaf de volgende regel; bestaande logboeken blijven waar ze zijn."
           }
         },
         "pl" : {
@@ -637577,7 +637577,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "hoofdstuk %1$@, bewaard %2$@ en %3$@"
+            "value" : "hoofdstuk %1$@, bewaard op %2$@ en %3$@"
           }
         },
         "pl" : {
@@ -658050,7 +658050,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "geen plek bewaard en %@"
+            "value" : "geen leespositie bewaard en %@"
           }
         },
         "pl" : {
