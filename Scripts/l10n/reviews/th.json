@@ -942,6 +942,668 @@
      "why": "term: the glossary's Download (noun), as the Delete Download command says it"
     }
    ]
+  },
+  {
+   "part": 3,
+   "areas": [
+    "reader, formats, and menus",
+    "export, speech, and the iPhone's screens"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ can't open while its edited text can't be used: %@",
+     "english": "%1$@ can't open while its edited text can't be used: %2$@",
+     "before": "เปิด %1$@ ไม่ได้ เพราะใช้ข้อความที่แก้ไขไม่ได้: %2$@",
+     "after": "เปิด %1$@ ไม่ได้ เพราะข้อความที่แก้ไขแล้วใช้ไม่ได้: %2$@",
+     "why": "meaning: ใช้ข้อความที่แก้ไขไม่ได้ also reads as using text that cannot be edited; now the edited text is what cannot be used"
+    },
+    {
+     "key": "%@ has its default, %@",
+     "english": "%1$@ has its default, %2$@",
+     "before": "%1$@ ใช้ค่าเริ่มต้น %2$@",
+     "after": "%1$@ ใช้ %2$@ ซึ่งเป็นค่าเริ่มต้นของการดำเนินการนี้",
+     "why": "meaning: said the other action uses its own default; it is this action default key that the other action now holds"
+    },
+    {
+     "key": "%@ tries again, %@ quits without saving, %@ keeps TextMouth open.",
+     "english": "%1$@ tries again, %2$@ quits without saving, %3$@ keeps TextMouth open.",
+     "before": "%1$@ ลองอีกครั้ง %2$@ ออกโดยไม่บันทึก %3$@ เปิด TextMouth ต่อไป",
+     "after": "%1$@ จะลองบันทึกอีกครั้ง %2$@ จะออกโดยไม่บันทึก %3$@ จะให้ TextMouth เปิดอยู่ต่อ",
+     "why": "grammar: each button name ran into its verb (ลองอีกครั้ง ลองอีกครั้ง); จะ joins name and result, and the first button retries saving"
+    },
+    {
+     "key": "%lld audiobooks",
+     "english": {
+      "one": "%lld audiobook",
+      "other": "%lld audiobooks"
+     },
+     "before": {
+      "other": "%lld หนังสือเสียง"
+     },
+     "after": {
+      "other": "หนังสือเสียง %lld เล่ม"
+     },
+     "why": "grammar: a count needs its classifier after the number, as its sibling หนังสือข้อความ %lld เล่ม has"
+    },
+    {
+     "key": "Afterwards, Play tries the passage again",
+     "english": "Afterwards, Play tries the passage again",
+     "before": "หลังจากนั้น การเล่นจะลองอ่านตอนนั้นอีกครั้ง",
+     "after": "หลังจากนั้น เล่น จะลองอ่านข้อความช่วงนั้นอีกครั้ง",
+     "why": "meaning: Play is the button, not playback (การเล่น), and ตอน is the glossary word for an episode; it is the passage"
+    },
+    {
+     "key": "Ampersand",
+     "english": "Ampersand",
+     "before": "Ampersand",
+     "after": "เครื่องหมายแอมเพอร์แซนด์",
+     "why": "term: English key name; Apple Thai shortcuts style, เครื่องหมาย plus the Thai VoiceOver name"
+    },
+    {
+     "key": "Apostrophe",
+     "english": "Apostrophe",
+     "before": "Apostrophe",
+     "after": "เครื่องหมายอัญประกาศเดี่ยว",
+     "why": "term: English key name; Apple Thai shortcuts style, เครื่องหมาย plus the Thai VoiceOver name"
+    },
+    {
+     "key": "Asks for an optional note, then marks the reading position.",
+     "english": "Asks for an optional note, then marks the reading position.",
+     "before": "ถามหาโน้ตซึ่งไม่บังคับ แล้วคั่นตำแหน่งการอ่าน",
+     "after": "ให้ใส่โน้ตได้หากต้องการ แล้วคั่นตำแหน่งการอ่าน",
+     "why": "meaning: ถามหาโน้ต means asking where a note is; the command offers an optional note"
+    },
+    {
+     "key": "Asterisk",
+     "english": "Asterisk",
+     "before": "Asterisk",
+     "after": "เครื่องหมายดอกจัน",
+     "why": "term: English key name; Apple Thai shortcuts style, เครื่องหมาย plus ดอกจัน, the Thai name of the asterisk"
+    },
+    {
+     "key": "At Sign",
+     "english": "At Sign",
+     "before": "At Sign",
+     "after": "เครื่องหมายแอท",
+     "why": "term: English key name; Thai name of the @ sign (VoiceOver says ที่, which cannot stand alone as a key)"
+    },
+    {
+     "key": "Backslash",
+     "english": "Backslash",
+     "before": "Backslash",
+     "after": "เครื่องหมายทับขวา",
+     "why": "term: English key name; Thai VoiceOver name for the backslash"
+    },
+    {
+     "key": "Begin",
+     "english": "Begin",
+     "before": "Begin",
+     "after": "เริ่ม",
+     "why": "term: English key name; AppKit Thai names the Begin key เริ่ม"
+    },
+    {
+     "key": "Break",
+     "english": "Break",
+     "before": "Break",
+     "after": "ตัวแบ่ง",
+     "why": "term: English key name; AppKit Thai names the Break key ตัวแบ่ง"
+    },
+    {
+     "key": "Caret",
+     "english": "Caret",
+     "before": "Caret",
+     "after": "เครื่องหมายตก",
+     "why": "term: English key name; Thai VoiceOver name for the caret"
+    },
+    {
+     "key": "Chapter %@ could not be played: %@ from the book's package.",
+     "english": "Chapter %1$@ could not be played: %2$@ from the book's package.",
+     "before": "เล่นบทที่ %1$@ ไม่ได้: %2$@จากแพ็กเกจของหนังสือ",
+     "after": "เล่นบทที่ %1$@ ไม่ได้: %2$@ ในแพ็กเกจของหนังสือ",
+     "why": "grammar: the reason (ไม่พบไฟล์ chapter3.mp3) ran into จาก with no space, and a file is missing in a package, not from it"
+    },
+    {
+     "key": "Choose the folder to export to. New Folder makes one.",
+     "english": "Choose the folder to export to. New Folder makes one.",
+     "before": "เลือกโฟลเดอร์ที่จะส่งออก โฟลเดอร์ใหม่ จะสร้างโฟลเดอร์ให้",
+     "after": "เลือกโฟลเดอร์ที่จะส่งออกไป โฟลเดอร์ใหม่ จะสร้างโฟลเดอร์ให้",
+     "why": "meaning: โฟลเดอร์ที่จะส่งออก reads as a folder to be exported; ไป makes it the destination"
+    },
+    {
+     "key": "Chooses the file format. M4B is an audiobook; M4A and MP3 play in more apps. M4B and M4A have a chapter for each heading; an MP3, for the first %@.",
+     "english": "Chooses the file format. M4B is an audiobook; M4A and MP3 play in more apps. M4B and M4A have a chapter for each heading; an MP3, for the first %@.",
+     "before": "เลือกรูปแบบไฟล์ M4B เป็นหนังสือเสียง ส่วน M4A และ MP3 เล่นได้ในแอปมากกว่า M4B และ M4A มีหนึ่งบทต่อหนึ่งหัวข้อ ส่วน MP3 มีสำหรับ %@ หัวข้อแรก",
+     "after": "เลือกรูปแบบของไฟล์ที่ส่งออก โดย M4B เป็นหนังสือเสียง ส่วน M4A และ MP3 เป็นรูปแบบที่แอปส่วนใหญ่เล่นได้ M4B และ M4A มีหนึ่งบทต่อหนึ่งหัวข้อ ส่วน MP3 มีบทเฉพาะ %@ หัวข้อแรก",
+     "why": "meaning: with no full stops it read as choosing M4B and as more apps than M4B, and MP3 lost its chapters"
+    },
+    {
+     "key": "Chooses the folder the checked items are exported to.",
+     "english": "Chooses the folder the checked items are exported to.",
+     "before": "เลือกโฟลเดอร์ที่จะส่งออกรายการที่เลือกไว้",
+     "after": "เลือกโฟลเดอร์ที่จะเก็บรายการที่เลือกไว้เมื่อส่งออก",
+     "why": "meaning: โฟลเดอร์ที่จะส่งออกรายการ reads as a folder that exports the items; it is where they go"
+    },
+    {
+     "key": "Choosing makes the shortcut yours; Reset to Default restores where it works by default.",
+     "english": "Choosing makes the shortcut yours; Reset to Default restores where it works by default.",
+     "before": "การเลือกจะทำให้ทางลัดเป็นของคุณ รีเซ็ตเป็นค่าเริ่มต้น จะคืนที่ที่ใช้งานตามค่าเริ่มต้น",
+     "after": "การเลือกจะทำให้ทางลัดนี้เป็นแบบกำหนดเอง ส่วน รีเซ็ตเป็นค่าเริ่มต้น จะคืนหน้าต่างที่ใช้งานได้ตามค่าเริ่มต้น",
+     "why": "natural: เป็นของคุณ and คืนที่ที่ใช้งาน were word-for-word; now a custom shortcut and the default windows it works in"
+    },
+    {
+     "key": "Colon",
+     "english": "Colon",
+     "before": "Colon",
+     "after": "เครื่องหมายทวิภาค",
+     "why": "term: English key name; Apple Thai keyboard shortcuts page writes a punctuation key as เครื่องหมาย plus its name"
+    },
+    {
+     "key": "Comma",
+     "english": "Comma",
+     "before": "Comma",
+     "after": "เครื่องหมายจุลภาค",
+     "why": "term: English key name; Apple Thai keyboard shortcuts page writes a punctuation key as เครื่องหมาย plus its name"
+    },
+    {
+     "key": "Dollar Sign",
+     "english": "Dollar Sign",
+     "before": "Dollar Sign",
+     "after": "เครื่องหมายดอลลาร์",
+     "why": "term: English key name; Thai name of the dollar sign"
+    },
+    {
+     "key": "Down Arrow",
+     "english": "Down Arrow",
+     "before": "Down Arrow",
+     "after": "ลูกศรลง",
+     "why": "term: English key name; Apple Thai keyboard shortcuts page names the key ลูกศรลง"
+    },
+    {
+     "key": "Each <!-- page: … --> marks where a page begins.",
+     "english": "Each <!-- page: … --> marks where a page begins.",
+     "before": "แต่ละ <!-- page: … --> ระบุจุดที่หน้าเริ่มต้น",
+     "after": "เครื่องหมาย <!-- page: … --> แต่ละตัวระบุจุดเริ่มต้นของหน้า",
+     "why": "grammar: แต่ละ needs a noun after it; the marker now carries it"
+    },
+    {
+     "key": "Each heading's title and start, as a CUE sheet naming the audio as Audio exports it.",
+     "english": "Each heading's title and start, as a CUE sheet naming the audio as Audio exports it.",
+     "before": "ชื่อและจุดเริ่มต้นของแต่ละหัวข้อ เป็นไฟล์ CUE ที่ตั้งชื่อเสียงตามที่ส่งออกด้วยเสียง",
+     "after": "ชื่อและจุดเริ่มต้นของแต่ละหัวข้อ เป็นไฟล์ CUE ที่อ้างถึงไฟล์เสียงตามชื่อที่ เสียง ส่งออก",
+     "why": "meaning: Audio is the name of the Audio checkbox; the CUE file names the audio file the way that export names it"
+    },
+    {
+     "key": "Equals",
+     "english": "Equals",
+     "before": "Equals",
+     "after": "เครื่องหมายเท่ากับ",
+     "why": "term: English key name; Apple Thai keyboard shortcuts page writes a punctuation key as เครื่องหมาย plus its name"
+    },
+    {
+     "key": "Every book above it in the reading list is finished",
+     "english": "Every book above it in the reading list is finished",
+     "before": "หนังสือทุกเล่มเหนือเล่มนี้ในรายการอ่านอ่านจบแล้ว",
+     "after": "อ่านจบแล้วทุกเล่มที่อยู่เหนือเล่มนี้ในรายการอ่าน",
+     "why": "natural: รายการอ่านอ่านจบแล้ว doubled อ่าน and read as the reading list being finished"
+    },
+    {
+     "key": "Every book below it in the reading list is finished",
+     "english": "Every book below it in the reading list is finished",
+     "before": "หนังสือทุกเล่มใต้เล่มนี้ในรายการอ่านอ่านจบแล้ว",
+     "after": "อ่านจบแล้วทุกเล่มที่อยู่ใต้เล่มนี้ในรายการอ่าน",
+     "why": "natural: รายการอ่านอ่านจบแล้ว doubled อ่าน and read as the reading list being finished"
+    },
+    {
+     "key": "Every shortcut and where it works go back to the defaults. Your own keys are lost.",
+     "english": "Every shortcut and where it works go back to the defaults. Your own keys are lost.",
+     "before": "ทางลัดทั้งหมดและที่ที่ใช้งานจะกลับเป็นค่าเริ่มต้น แป้นที่คุณตั้งเองจะหายไป",
+     "after": "ทางลัดทั้งหมดและหน้าต่างที่ใช้งานได้จะกลับเป็นค่าเริ่มต้น แป้นที่คุณตั้งเองจะหายไป",
+     "why": "natural: ที่ที่ใช้งาน was word-for-word for where it works; it is the windows a shortcut works in"
+    },
+    {
+     "key": "Exclamation Mark",
+     "english": "Exclamation Mark",
+     "before": "Exclamation Mark",
+     "after": "เครื่องหมายอัศเจรีย์",
+     "why": "term: English key name; Thai VoiceOver name for !"
+    },
+    {
+     "key": "Find",
+     "english": "Find",
+     "before": "Find",
+     "after": "ค้นหา",
+     "why": "term: English key name; AppKit Thai names the Find key ค้นหา"
+    },
+    {
+     "key": "Forward Delete",
+     "english": "Forward Delete",
+     "before": "Forward Delete",
+     "after": "ลบไปข้างหน้า",
+     "why": "term: English key name; Thai VoiceOver name for the forward delete key"
+    },
+    {
+     "key": "Go to bookmark %@",
+     "english": "Go to bookmark %@",
+     "before": "ไปที่ที่คั่นหน้า %@",
+     "after": "ไปยังที่คั่นหน้า %@",
+     "why": "natural: ไปที่ที่คั่นหน้า doubled ที่ aloud; ไปยัง says the same without the stutter"
+    },
+    {
+     "key": "Goes to this bookmark and closes the list.",
+     "english": "Goes to this bookmark and closes the list.",
+     "before": "ไปที่ที่คั่นหน้านี้และปิดรายการ",
+     "after": "ไปยังที่คั่นหน้านี้และปิดรายการ",
+     "why": "natural: ไปที่ที่คั่นหน้า doubled ที่ aloud; ไปยัง says the same without the stutter"
+    },
+    {
+     "key": "Grave Accent",
+     "english": "Grave Accent",
+     "before": "Grave Accent",
+     "after": "เครื่องหมายเกรฟ",
+     "why": "term: English key name; Thai VoiceOver name for the grave accent"
+    },
+    {
+     "key": "Greater Than",
+     "english": "Greater Than",
+     "before": "Greater Than",
+     "after": "เครื่องหมายมากกว่า",
+     "why": "term: English key name; Apple Thai shortcuts style, เครื่องหมาย plus the Thai VoiceOver name"
+    },
+    {
+     "key": "Help",
+     "english": "Help",
+     "before": "Help",
+     "after": "วิธีใช้",
+     "why": "term: English key name; AppKit Thai names the Help key วิธีใช้"
+    },
+    {
+     "key": "Include the speed with time left and total time",
+     "english": "Include the speed with time left and total time",
+     "before": "รวมความเร็วกับเวลาที่เหลือและเวลาทั้งหมด",
+     "after": "แสดงความเร็วพร้อมเวลาที่เหลือและเวลาทั้งหมด",
+     "why": "meaning: รวม...กับ read as adding the speed and the times together; the checkbox names the speed beside the times"
+    },
+    {
+     "key": "Jumped to page %@, the %@ page labelled %@.",
+     "english": "Jumped to page %1$@, the %2$@ page labelled %3$@.",
+     "before": "ข้ามไปที่หน้า %1$@ ซึ่งเป็นหน้า%2$@ที่มีป้ายกำกับ %3$@ แล้ว",
+     "after": "ข้ามไปที่หน้า %1$@ ซึ่งเป็นหน้า%2$@ ที่มีป้ายกำกับ %3$@ แล้ว",
+     "why": "punctuation: a numeric ordinal (ที่ 11) ran into ที่มีป้ายกำกับ with no space"
+    },
+    {
+     "key": "Keeps the list's books downloaded on this Mac; each Mac chooses for itself. Clearing it removes no download.",
+     "english": "Keeps the list's books downloaded on this Mac; each Mac chooses for itself. Clearing it removes no download.",
+     "before": "เก็บหนังสือของรายการไว้ที่ดาวน์โหลดแล้วใน Mac เครื่องนี้ แต่ละเครื่องเลือกเอง การล้างตัวเลือกนี้ไม่นำรายการดาวน์โหลดออก",
+     "after": "ให้หนังสือในรายการนี้ดาวน์โหลดไว้ใน Mac เครื่องนี้ Mac แต่ละเครื่องเลือกได้เอง การยกเลิกการเลือกจะไม่นำรายการดาวน์โหลดออก",
+     "why": "meaning: เก็บ...ไว้ที่ดาวน์โหลดแล้ว read as keeping books at the downloaded; the books stay downloaded here"
+    },
+    {
+     "key": "Left Arrow",
+     "english": "Left Arrow",
+     "before": "Left Arrow",
+     "after": "ลูกศรซ้าย",
+     "why": "term: English key name; Apple Thai keyboard shortcuts page names the key ลูกศรซ้าย"
+    },
+    {
+     "key": "Left Brace",
+     "english": "Left Brace",
+     "before": "Left Brace",
+     "after": "วงเล็บปีกกาด้านซ้าย",
+     "why": "term: English key name; Apple Thai keyboard shortcuts page names the key วงเล็บปีกกาด้านซ้าย"
+    },
+    {
+     "key": "Left Bracket",
+     "english": "Left Bracket",
+     "before": "Left Bracket",
+     "after": "วงเล็บก้ามปูซ้าย",
+     "why": "term: English key name; Apple Thai keyboard shortcuts page names the key วงเล็บก้ามปูซ้าย"
+    },
+    {
+     "key": "Left Parenthesis",
+     "english": "Left Parenthesis",
+     "before": "Left Parenthesis",
+     "after": "วงเล็บเปิด",
+     "why": "term: English key name; Thai VoiceOver name for ("
+    },
+    {
+     "key": "Less Than",
+     "english": "Less Than",
+     "before": "Less Than",
+     "after": "เครื่องหมายน้อยกว่า",
+     "why": "term: English key name; Apple Thai shortcuts style, เครื่องหมาย plus the Thai VoiceOver name"
+    },
+    {
+     "key": "Media controls not released: this book does not hold them.",
+     "english": "Media controls not released: this book does not hold them.",
+     "before": "ไม่ได้ปล่อยตัวควบคุมสื่อ: หนังสือเล่มนี้ไม่ได้ถือตัวควบคุมสื่ออยู่",
+     "after": "ไม่ได้ปล่อยตัวควบคุมสื่อ: หนังสือเล่มนี้ไม่ได้ใช้ตัวควบคุมสื่ออยู่",
+     "why": "natural: ถือ is holding in the hand, a word-for-word hold; the book is not using the media controls"
+    },
+    {
+     "key": "Minus",
+     "english": "Minus",
+     "before": "Minus",
+     "after": "เครื่องหมายลบ",
+     "why": "term: English key name; Apple Thai shortcuts page name; bare ลบ would read as the Delete key"
+    },
+    {
+     "key": "Mode Switch",
+     "english": "Mode Switch",
+     "before": "Mode Switch",
+     "after": "สวิตช์โหมด",
+     "why": "term: English key name; AppKit Thai names the Mode Switch key สวิตช์โหมด"
+    },
+    {
+     "key": "Number Sign",
+     "english": "Number Sign",
+     "before": "Number Sign",
+     "after": "เครื่องหมายแฮช",
+     "why": "term: English key name; Apple Thai shortcuts style, เครื่องหมาย plus the Thai VoiceOver name"
+    },
+    {
+     "key": "Open the book in the program that made it, save it again, then import it again.",
+     "english": "Open the book in the program that made it, save it again, then import it again.",
+     "before": "เปิดหนังสือในโปรแกรมที่สร้างขึ้น บันทึกอีกครั้ง แล้วนำเข้าอีกครั้ง",
+     "after": "เปิดหนังสือในโปรแกรมที่ใช้สร้าง บันทึกอีกครั้ง แล้วนำเข้าอีกครั้ง",
+     "why": "meaning: โปรแกรมที่สร้างขึ้น reads as a program that was made; it is the program used to make the book"
+    },
+    {
+     "key": "Open the document in the program that made it, save it again, then import it again.",
+     "english": "Open the document in the program that made it, save it again, then import it again.",
+     "before": "เปิดเอกสารในโปรแกรมที่สร้างขึ้น บันทึกอีกครั้ง แล้วนำเข้าอีกครั้ง",
+     "after": "เปิดเอกสารในโปรแกรมที่ใช้สร้าง บันทึกอีกครั้ง แล้วนำเข้าอีกครั้ง",
+     "why": "meaning: โปรแกรมที่สร้างขึ้น reads as a program that was made; it is the program used to make the document"
+    },
+    {
+     "key": "Paste and Match Style",
+     "english": "Paste and Match Style",
+     "before": "วางและจับคู่ลักษณะ",
+     "after": "วางและปรับลักษณะให้ตรงกัน",
+     "why": "term: names the Edit menu command, which Apple Thai (AppKit) calls วางและปรับลักษณะให้ตรงกัน"
+    },
+    {
+     "key": "Percent Sign",
+     "english": "Percent Sign",
+     "before": "Percent Sign",
+     "after": "เครื่องหมายเปอร์เซ็นต์",
+     "why": "term: English key name; Apple Thai shortcuts style, เครื่องหมาย plus the Thai VoiceOver name"
+    },
+    {
+     "key": "Period",
+     "english": "Period",
+     "before": "Period",
+     "after": "เครื่องหมายจุด",
+     "why": "term: English key name; Apple Thai keyboard shortcuts page writes a punctuation key as เครื่องหมาย plus its name"
+    },
+    {
+     "key": "Plays short sounds for playback actions",
+     "english": "Plays short sounds for playback actions",
+     "before": "เล่นเสียงสั้น ๆ สำหรับการทำงานของการเล่น",
+     "after": "เล่นเสียงสั้น ๆ เมื่อสั่งการเล่น",
+     "why": "natural: การทำงานของการเล่น was word-for-word for playback actions"
+    },
+    {
+     "key": "Plus",
+     "english": "Plus",
+     "before": "Plus",
+     "after": "เครื่องหมายบวก",
+     "why": "term: English key name; Apple Thai keyboard shortcuts page writes a punctuation key as เครื่องหมาย plus its name"
+    },
+    {
+     "key": "Print",
+     "english": "Print",
+     "before": "Print",
+     "after": "พิมพ์",
+     "why": "term: English key name; AppKit Thai names the Print key พิมพ์"
+    },
+    {
+     "key": "Question Mark",
+     "english": "Question Mark",
+     "before": "Question Mark",
+     "after": "เครื่องหมายคำถาม",
+     "why": "term: English key name; Apple Thai keyboard shortcuts page writes a punctuation key as เครื่องหมาย plus its name"
+    },
+    {
+     "key": "Quit Anyway",
+     "english": "Quit Anyway",
+     "before": "ออกต่อไป",
+     "after": "ยืนยันจะออก",
+     "why": "term: ออกต่อไป is not a Thai button; AppKit Thai calls the unsaved-changes Quit Anyway button ยืนยันจะออก"
+    },
+    {
+     "key": "Quotation Mark",
+     "english": "Quotation Mark",
+     "before": "Quotation Mark",
+     "after": "เครื่องหมายคำพูด",
+     "why": "term: English key name; the glossary word for quotation marks, in Apple Thai shortcuts style"
+    },
+    {
+     "key": "Remove them: an audiobook of tracks is arranged with tracks.",
+     "english": "Remove them: an audiobook of tracks is arranged with tracks.",
+     "before": "นำออก เพราะหนังสือเสียงที่แบ่งเป็นแทร็กจัดเรียงด้วยแทร็ก",
+     "after": "ให้นำเซกเมนต์ออก เพราะหนังสือเสียงที่แบ่งเป็นแทร็กใช้แทร็กในการจัดเรียง",
+     "why": "meaning: นำออก lost its object, the segments, and จัดเรียงด้วยแทร็ก was word-for-word"
+    },
+    {
+     "key": "Reset to global end-of-book setting",
+     "english": "Reset to global end-of-book setting",
+     "before": "รีเซ็ตเป็นการตั้งค่าเมื่อจบหนังสือส่วนกลาง",
+     "after": "รีเซ็ตเป็นการตั้งค่าส่วนกลางสำหรับเมื่อจบหนังสือ",
+     "why": "natural: ส่วนกลาง at the end attached to หนังสือ; it is the global setting for the end of a book"
+    },
+    {
+     "key": "Right Arrow",
+     "english": "Right Arrow",
+     "before": "Right Arrow",
+     "after": "ลูกศรขวา",
+     "why": "term: English key name; Apple Thai keyboard shortcuts page names the key ลูกศรขวา"
+    },
+    {
+     "key": "Right Brace",
+     "english": "Right Brace",
+     "before": "Right Brace",
+     "after": "วงเล็บปีกกาด้านขวา",
+     "why": "term: English key name; Apple Thai keyboard shortcuts page names the key วงเล็บปีกกาด้านขวา"
+    },
+    {
+     "key": "Right Bracket",
+     "english": "Right Bracket",
+     "before": "Right Bracket",
+     "after": "วงเล็บก้ามปูขวา",
+     "why": "term: English key name; Apple Thai keyboard shortcuts page names the key วงเล็บก้ามปูขวา"
+    },
+    {
+     "key": "Right Parenthesis",
+     "english": "Right Parenthesis",
+     "before": "Right Parenthesis",
+     "after": "วงเล็บปิด",
+     "why": "term: English key name; Thai VoiceOver name for )"
+    },
+    {
+     "key": "Semicolon",
+     "english": "Semicolon",
+     "before": "Semicolon",
+     "after": "เครื่องหมายอัฒภาค",
+     "why": "term: English key name; Apple Thai keyboard shortcuts page writes a punctuation key as เครื่องหมาย plus its name"
+    },
+    {
+     "key": "Slash",
+     "english": "Slash",
+     "before": "Slash",
+     "after": "เครื่องหมายทับ",
+     "why": "term: English key name; Apple Thai keyboard shortcuts page names the key เครื่องหมายทับ"
+    },
+    {
+     "key": "Sleep timer expired at the end of the heading. Playback paused.",
+     "english": "Sleep timer expired at the end of the heading. Playback paused.",
+     "before": "ตัวตั้งเวลาปิดหมดเวลาที่จบหัวข้อ หยุดการเล่นชั่วคราว",
+     "after": "ตัวตั้งเวลาปิดหมดเวลาที่จบหัวข้อ หยุดการเล่นชั่วคราวแล้ว",
+     "why": "grammar: หยุดการเล่นชั่วคราว alone is the Pause command; the announcement says playback has paused"
+    },
+    {
+     "key": "Sleep timer expired. Playback paused.",
+     "english": "Sleep timer expired. Playback paused.",
+     "before": "ตัวตั้งเวลาปิดหมดเวลา หยุดการเล่นชั่วคราว",
+     "after": "ตัวตั้งเวลาปิดหมดเวลา หยุดการเล่นชั่วคราวแล้ว",
+     "why": "grammar: หยุดการเล่นชั่วคราว alone is the Pause command; the announcement says playback has paused"
+    },
+    {
+     "key": "Speech stopped: the speech engine refused this passage. Details are in the book's window.",
+     "english": "Speech stopped: the speech engine refused this passage. Details are in the book's window.",
+     "before": "การอ่านออกเสียงหยุดลง: เครื่องมืออ่านออกเสียงปฏิเสธข้อความตอนนี้ ดูรายละเอียดในหน้าต่างของหนังสือ",
+     "after": "การอ่านออกเสียงหยุดลง: เครื่องมืออ่านออกเสียงปฏิเสธข้อความช่วงนี้ ดูรายละเอียดในหน้าต่างของหนังสือ",
+     "why": "meaning: ข้อความตอนนี้ reads as the text now; it is this passage"
+    },
+    {
+     "key": "System",
+     "english": "System",
+     "before": "System",
+     "after": "ระบบ",
+     "why": "term: English key name; AppKit Thai names the System key ระบบ"
+    },
+    {
+     "key": "Takes %lld to %lld minutes.",
+     "english": "Takes %1$lld to %2$lld minutes.",
+     "before": "ใช้เวลา %1$lld ถึง %2$lld นาที",
+     "after": "รับค่า %1$lld ถึง %2$lld นาที",
+     "why": "meaning: ใช้เวลา says the timer lasts 1 to 480 minutes; the field accepts that many minutes"
+    },
+    {
+     "key": "Takes %lld to %lld minutes. Return sets the timer and plays the book.",
+     "english": "Takes %1$lld to %2$lld minutes. Return sets the timer and plays the book.",
+     "before": "ใช้เวลา %1$lld ถึง %2$lld นาที กด Return เพื่อตั้งตัวจับเวลาและเล่นหนังสือ",
+     "after": "รับค่า %1$lld ถึง %2$lld นาที กด Return เพื่อตั้งตัวจับเวลาและเล่นหนังสือ",
+     "why": "meaning: ใช้เวลา says the timer lasts 1 to 480 minutes; the field accepts that many minutes"
+    },
+    {
+     "key": "Takes each finished book off the list when its window moves on or closes. Books finished before you turn it on stay.",
+     "english": "Takes each finished book off the list when its window moves on or closes. Books finished before you turn it on stay.",
+     "before": "นำหนังสือที่อ่านจบแล้วออกจากรายการเมื่อหน้าต่างของรายการไปต่อหรือปิด หนังสือที่อ่านจบก่อนเปิดตัวเลือกนี้จะยังอยู่",
+     "after": "นำหนังสือที่อ่านจบแล้วออกจากรายการเมื่อหน้าต่างของหนังสือไปต่อหรือปิดลง หนังสือที่อ่านจบก่อนเปิดตัวเลือกนี้จะยังอยู่",
+     "why": "meaning: หน้าต่างของรายการ made it the list window; it is the finished book window that moves on or closes"
+    },
+    {
+     "key": "TextMouth hasn't read the latest save yet.",
+     "english": "TextMouth hasn't read the latest save yet.",
+     "before": "TextMouth ยังไม่ได้อ่านการบันทึกล่าสุด",
+     "after": "TextMouth ยังไม่ได้อ่านข้อความที่บันทึกไว้ล่าสุด",
+     "why": "meaning: การบันทึกล่าสุด also reads as the latest recording; it is the text saved last"
+    },
+    {
+     "key": "The %@ page labelled %@",
+     "english": "The %1$@ page labelled %2$@",
+     "before": "หน้า%1$@ซึ่งมีป้ายกำกับ %2$@",
+     "after": "หน้า%1$@ ซึ่งมีป้ายกำกับ %2$@",
+     "why": "punctuation: a numeric ordinal (ที่ 11) ran into ซึ่ง with no space"
+    },
+    {
+     "key": "The refused text began before this passage, at character %@.",
+     "english": "The refused text began before this passage, at character %@.",
+     "before": "ข้อความที่ถูกปฏิเสธเริ่มก่อนข้อความตอนนี้ ที่อักขระ %@",
+     "after": "ข้อความที่ถูกปฏิเสธเริ่มก่อนข้อความช่วงนี้ ที่อักขระ %@",
+     "why": "meaning: ข้อความตอนนี้ reads as the text now; it is this passage"
+    },
+    {
+     "key": "The refused text goes on past this passage, to character %@.",
+     "english": "The refused text goes on past this passage, to character %@.",
+     "before": "ข้อความที่ถูกปฏิเสธต่อไปเกินข้อความตอนนี้ จนถึงอักขระ %@",
+     "after": "ข้อความที่ถูกปฏิเสธต่อไปเกินข้อความช่วงนี้ จนถึงอักขระ %@",
+     "why": "meaning: ข้อความตอนนี้ reads as the text now; it is this passage"
+    },
+    {
+     "key": "Tilde",
+     "english": "Tilde",
+     "before": "Tilde",
+     "after": "เครื่องหมายตัวหนอน",
+     "why": "term: English key name; Thai VoiceOver name for ~"
+    },
+    {
+     "key": "Toggle Bookmark",
+     "english": "Toggle Bookmark",
+     "before": "สลับที่คั่นหน้า",
+     "after": "เพิ่มหรือนำที่คั่นหน้าออก",
+     "why": "meaning: สลับที่คั่นหน้า reads as swapping bookmarks (สลับที่ is to swap places); the command adds or removes one"
+    },
+    {
+     "key": "Type straight quotation marks: in TextEdit, turn off Smart Quotes under Edit, Substitutions.",
+     "english": "Type straight quotation marks: in TextEdit, turn off Smart Quotes under Edit, Substitutions.",
+     "before": "พิมพ์เครื่องหมายคำพูดแบบตรง: ใน TextEdit ให้ปิดเครื่องหมายคำพูดอัจฉริยะภายใต้ แก้ไข > การแทนที่",
+     "after": "พิมพ์เครื่องหมายคำพูดแบบตรง: ใน TextEdit ให้ปิด อัญประกาศอัจฉริยะ ใน แก้ไข > การเปลี่ยนแทนที่",
+     "why": "term: the comment asks for the menu names macOS shows; Apple Thai says อัญประกาศอัจฉริยะ and การเปลี่ยนแทนที่"
+    },
+    {
+     "key": "Underscore",
+     "english": "Underscore",
+     "before": "Underscore",
+     "after": "เครื่องหมายขีดล่าง",
+     "why": "term: English key name; Apple Thai shortcuts style, เครื่องหมาย plus the Thai VoiceOver name"
+    },
+    {
+     "key": "Up Arrow",
+     "english": "Up Arrow",
+     "before": "Up Arrow",
+     "after": "ลูกศรขึ้น",
+     "why": "term: English key name; Apple Thai keyboard shortcuts page names the key ลูกศรขึ้น"
+    },
+    {
+     "key": "Updates the default voice, speed, and pitch for every book without settings of its own.",
+     "english": "Updates the default voice, speed, and pitch for every book without settings of its own.",
+     "before": "อัปเดตเสียง ความเร็ว และความสูงต่ำของเสียงเริ่มต้นสำหรับทุกหนังสือที่ไม่มีการตั้งค่าของตัวเอง",
+     "after": "อัปเดตเสียง ความเร็ว และความสูงต่ำของเสียงเริ่มต้นสำหรับหนังสือทุกเล่มที่ไม่มีการตั้งค่าของตัวเอง",
+     "why": "grammar: ทุกหนังสือ lacks its classifier; Thai says หนังสือทุกเล่ม"
+    },
+    {
+     "key": "User",
+     "english": "User",
+     "before": "User",
+     "after": "ผู้ใช้",
+     "why": "term: English key name; AppKit Thai names the User key ผู้ใช้"
+    },
+    {
+     "key": "Vertical Bar",
+     "english": "Vertical Bar",
+     "before": "Vertical Bar",
+     "after": "เครื่องหมายเส้นแนวตั้ง",
+     "why": "term: English key name; Apple Thai shortcuts style, เครื่องหมาย plus the Thai VoiceOver name"
+    },
+    {
+     "key": "What a book of this kind moves by until it has a unit of its own.",
+     "english": "What a book of this kind moves by until it has a unit of its own.",
+     "before": "สิ่งที่หนังสือประเภทนี้เลื่อนไปทีละหน่วย จนกว่าจะมีหน่วยของตัวเอง",
+     "after": "หน่วยที่หนังสือประเภทนี้ใช้เลื่อน จนกว่าหนังสือจะมีหน่วยของตัวเอง",
+     "why": "natural: สิ่งที่...เลื่อนไปทีละหน่วย was word-for-word and hard to follow; it is the unit such a book moves by"
+    },
+    {
+     "key": "Where",
+     "english": "Where",
+     "before": "ที่ไหน",
+     "after": "ตำแหน่ง",
+     "why": "natural: the report heading read as the question ที่ไหน; ตำแหน่ง names where speech stopped"
+    },
+    {
+     "key": "Writes this and every other too-deeply nested chapter of this export as plain paragraphs of lines, without asking again.",
+     "english": "Writes this and every other too-deeply nested chapter of this export as plain paragraphs of lines, without asking again.",
+     "before": "เขียนบทนี้และบททุกบทที่ซ้อนกันลึกเกินไปอื่น ๆ ในการส่งออกนี้เป็นย่อหน้าธรรมดาของบรรทัด โดยไม่ถามอีก",
+     "after": "เขียนบทนี้และบทอื่น ๆ ทุกบทที่ซ้อนกันลึกเกินไปในการส่งออกนี้เป็นย่อหน้าธรรมดาตามบรรทัด โดยไม่ถามอีก",
+     "why": "natural: อื่น ๆ trailed the long relative clause; it now follows บท, and ตามบรรทัด matches the sibling hints"
+    },
+    {
+     "key": "Your library is empty. Add to Library adds a book.",
+     "english": "Your library is empty. Add to Library adds a book.",
+     "before": "ไลบรารีของคุณว่างเปล่า เพิ่มไปยังไลบรารี เพิ่มหนังสือได้",
+     "after": "ไลบรารีของคุณว่างเปล่า ใช้ เพิ่มไปยังไลบรารี เพื่อเพิ่มหนังสือ",
+     "why": "grammar: the command name ran into its verb (เพิ่มไปยังไลบรารี เพิ่ม); ใช้...เพื่อ joins them"
+    },
+    {
+     "key": "on the %@ page labelled %@",
+     "english": "on the %1$@ page labelled %2$@",
+     "before": "ที่หน้า%1$@ซึ่งมีป้ายกำกับ %2$@",
+     "after": "ที่หน้า%1$@ ซึ่งมีป้ายกำกับ %2$@",
+     "why": "punctuation: a numeric ordinal (ที่ 11) ran into ซึ่ง with no space"
+    }
+   ]
   }
  ]
 }
