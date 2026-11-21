@@ -162,7 +162,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "«%@» reproduce el siguiente libro de la misma carpeta, en orden de clasificación."
+            "value" : "“%@” reproduce el siguiente libro de la misma carpeta, en orden de clasificación."
           }
         },
         "fr" : {
@@ -3012,7 +3012,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ y cualquier subcarpeta se quitarán de la biblioteca."
+            "value" : "%@ y sus subcarpetas se quitarán de la biblioteca."
           }
         },
         "fr" : {
@@ -11251,7 +11251,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ guarda una versión en conflicto de %2$@, guardada en otro momento."
+            "value" : "%1$@ tiene una versión en conflicto de %2$@, guardada en otro momento."
           }
         },
         "fr" : {
@@ -11394,7 +11394,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ guarda una versión en conflicto de %2$@, guardada el %3$@."
+            "value" : "%1$@ tiene una versión en conflicto de %2$@, guardada el %3$@."
           }
         },
         "fr" : {
@@ -11537,7 +11537,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ guarda una versión en conflicto de %2$@, guardada en «%3$@» el %4$@."
+            "value" : "%1$@ tiene una versión en conflicto de %2$@, guardada en “%3$@” el %4$@."
           }
         },
         "fr" : {
@@ -11680,7 +11680,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ guarda una versión en conflicto de %2$@, guardada en «%3$@»."
+            "value" : "%1$@ tiene una versión en conflicto de %2$@, guardada en “%3$@”."
           }
         },
         "fr" : {
@@ -20537,7 +20537,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ apartó una copia en conflicto de %2$@: «%3$@», en %4$@."
+            "value" : "%1$@ apartó una copia en conflicto de %2$@: “%3$@”, en %4$@."
           }
         },
         "fr" : {
@@ -27452,19 +27452,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%1$@, y %2$lld más"
+                  "value" : "%1$@ y %2$lld más"
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%1$@, y %2$lld más"
+                  "value" : "%1$@ y %2$lld más"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%1$@, y %2$lld más"
+                  "value" : "%1$@ y %2$lld más"
                 }
               }
             }
@@ -27919,19 +27919,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%1$@, cualquier subcarpeta y los %2$lld de libros que contiene se quitarán de la biblioteca."
+                  "value" : "%1$@, sus subcarpetas y los %2$lld de libros que contiene se quitarán de la biblioteca."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%1$@, cualquier subcarpeta y el libro que contiene se quitarán de la biblioteca."
+                  "value" : "%1$@, sus subcarpetas y el libro que contiene se quitarán de la biblioteca."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%1$@, cualquier subcarpeta y los %2$lld libros que contiene se quitarán de la biblioteca."
+                  "value" : "%1$@, sus subcarpetas y los %2$lld libros que contiene se quitarán de la biblioteca."
                 }
               }
             }
@@ -28305,7 +28305,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@, cualquier subcarpeta y el libro que contiene se quitarán de la biblioteca."
+            "value" : "%@, sus subcarpetas y el libro que contiene se quitarán de la biblioteca."
           }
         },
         "fr" : {
@@ -35001,7 +35001,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@: Hay cambios sin guardar, y cambiar de biblioteca los perdería."
+            "value" : "%@: hay cambios sin guardar, y se perderían al cambiar de biblioteca."
           }
         },
         "fr" : {
@@ -80971,19 +80971,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%1$lld de reglas (%2$@ activadas)"
+                  "value" : "%1$lld de reglas (activadas: %2$@)"
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%1$lld regla (%2$@ activadas)"
+                  "value" : "%1$lld regla (activadas: %2$@)"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%1$lld reglas (%2$@ activadas)"
+                  "value" : "%1$lld reglas (activadas: %2$@)"
                 }
               }
             }
@@ -96151,7 +96151,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Un movimiento desplaza un libro a la vez, y hay varios seleccionados. Selecciona un solo libro e inténtalo de nuevo."
+            "value" : "Solo se puede mover un libro a la vez, y hay varios seleccionados. Selecciona uno solo e inténtalo de nuevo."
           }
         },
         "fr" : {
@@ -109377,7 +109377,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Siempre ofrece una vista en todo momento. Cuando corresponda la ofrece solo mientras muestra algo: la Lista de lectura mientras contiene un libro, episodio o artículo, y Canales mientras hay un canal. Oculta la deja fuera. Una ventana conserva su vista hasta que elijas otra."
+            "value" : "Con “Siempre”, la vista se ofrece en todo momento. Con “Cuando corresponda”, se ofrece solo mientras muestra algo: la Lista de lectura mientras contiene un libro, episodio o artículo, y Canales mientras hay un canal. Con “Oculta”, no se ofrece. Una ventana conserva su vista hasta que elijas otra."
           }
         },
         "fr" : {
@@ -112422,7 +112422,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Responde esta cuando termine el traslado."
+            "value" : "Responde a esta cuando termine el traslado."
           }
         },
         "fr" : {
@@ -126338,7 +126338,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bloquea la orden de reproducir falsa que macOS envía al quitarse unos audífonos Bluetooth."
+            "value" : "Bloquea la falsa orden de reproducción que macOS envía al quitarse unos auriculares Bluetooth."
           }
         },
         "fr" : {
@@ -137196,7 +137196,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Coincidencia que distingue mayúsculas y minúsculas"
+            "value" : "Distinguir mayúsculas y minúsculas"
           }
         },
         "fr" : {
@@ -140378,7 +140378,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Cambios en los libros guardados."
+            "value" : "Se guardaron los cambios de los libros."
           }
         },
         "fr" : {
@@ -140521,7 +140521,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "No se pudieron guardar los cambios del canal «%1$@»: %2$@"
+            "value" : "No se pudieron guardar los cambios del canal “%1$@”: %2$@"
           }
         },
         "fr" : {
@@ -140664,7 +140664,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "No se pudieron guardar los cambios de «%1$@»: %2$@"
+            "value" : "No se pudieron guardar los cambios de “%1$@”: %2$@"
           }
         },
         "fr" : {
@@ -149498,7 +149498,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Elige una ubicación vacía e intenta de nuevo."
+            "value" : "Elige una ubicación vacía e inténtalo de nuevo."
           }
         },
         "fr" : {
@@ -151005,7 +151005,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Elige ningún control por libro, un selector compartido o un menú con selectores separados para avanzar y retroceder"
+            "value" : "Elige entre no tener control por libro, un selector compartido o un menú con selectores separados para avanzar y retroceder"
           }
         },
         "fr" : {
@@ -160613,7 +160613,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Comparando esta biblioteca con la copia de la carpeta que elegiste, para decir cuál es más reciente. Puede tardar hasta un minuto; elige Detener comparación para omitirla."
+            "value" : "Comparando esta biblioteca con la copia de la carpeta que elegiste, para saber cuál es más reciente. Puede tardar hasta un minuto; elige Detener comparación para omitirla."
           }
         },
         "fr" : {
@@ -162668,7 +162668,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Conéctate a internet e intenta de nuevo."
+            "value" : "Conéctate a internet e inténtalo de nuevo."
           }
         },
         "fr" : {
@@ -176297,7 +176297,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Fecha de incorporación"
+            "value" : "Fecha de agregación"
           }
         },
         "fr" : {
@@ -191665,7 +191665,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Descarga no quitada"
+            "value" : "No se quitó la descarga"
           }
         },
         "fr" : {
@@ -194548,7 +194548,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Se descargó %@"
+            "value" : "Se descargaron %@"
           }
         },
         "fr" : {
@@ -198558,7 +198558,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Descargas no quitadas"
+            "value" : "No se quitaron las descargas"
           }
         },
         "fr" : {
@@ -217002,7 +217002,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Experimental. Una secuencia de teclas multimedia o controles de AirPods dentro de una ventana de tiempo corta vuelve a armar el último temporizador de apagado, útil cuando uno acaba de expirar."
+            "value" : "Experimental. Una secuencia de teclas multimedia o controles de AirPods dentro de una ventana de tiempo corta reactiva el último temporizador de apagado, útil cuando uno acaba de expirar."
           }
         },
         "fr" : {
@@ -233570,7 +233570,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "La ubicación en carpetas y el orden manual que estaban guardados solo en el índice ilegible se pierden de la biblioteca."
+            "value" : "La ubicación en carpetas y el orden manual que estaban guardados solo en el índice ilegible desaparecen de la biblioteca."
           }
         },
         "fr" : {
@@ -234952,7 +234952,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Carpetas siempre se muestra: todas las carpetas y los canales se abren allí."
+            "value" : "La vista Carpetas siempre se muestra: todas las carpetas y los canales se abren allí."
           }
         },
         "fr" : {
@@ -240083,7 +240083,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Dar identidad nueva"
+            "value" : "Dar una identidad nueva"
           }
         },
         "fr" : {
@@ -242138,7 +242138,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ir a vista"
+            "value" : "Ir a la vista"
           }
         },
         "fr" : {
@@ -244467,7 +244467,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Reduce el volumen poco a poco antes de pausar cuando expira el temporizador de apagado. 0 pausa al instante."
+            "value" : "Reduce el volumen poco a poco antes de pausar cuando expira el temporizador de apagado. Con 0, se pausa al instante."
           }
         },
         "fr" : {
@@ -249050,7 +249050,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Cuánto tiempo se bloquean las órdenes multimedia después de que se desconecta un dispositivo Bluetooth. Auméntalo si la reproducción se reanuda al quitarte los audífonos."
+            "value" : "Cuánto tiempo se bloquean las órdenes multimedia después de que se desconecta un dispositivo Bluetooth. Auméntalo si la reproducción se reanuda al quitarte los auriculares."
           }
         },
         "fr" : {
@@ -252207,7 +252207,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Si el archivo llega más tarde desde %@, nombra la misma biblioteca."
+            "value" : "Si el archivo llega más tarde desde %@, identifica la misma biblioteca."
           }
         },
         "fr" : {
@@ -267524,7 +267524,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Contiene el canal «%1$@» con %2$@."
+            "value" : "Contiene el canal “%1$@” con %2$@."
           }
         },
         "fr" : {
@@ -267667,7 +267667,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Contiene el canal «%1$@» con %2$@; el registro contiene %3$@."
+            "value" : "Contiene el canal “%1$@” con %2$@; el registro contiene %3$@."
           }
         },
         "fr" : {
@@ -268084,7 +268084,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Contiene el registro de «%1$@»: %2$@."
+            "value" : "Contiene el registro de “%1$@”: %2$@."
           }
         },
         "fr" : {
@@ -268227,7 +268227,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Contiene el registro de «%1$@»: %2$@; el registro contiene %3$@."
+            "value" : "Contiene el registro de “%1$@”: %2$@; el registro contiene %3$@."
           }
         },
         "fr" : {
@@ -275444,7 +275444,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Aún no se pudo preparar su texto para la lectura; TextMouth intentará de nuevo más tarde."
+            "value" : "Aún no se pudo preparar su texto para la lectura; TextMouth lo intentará de nuevo más tarde."
           }
         },
         "fr" : {
@@ -297200,7 +297200,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Comprueba que se pueda escribir en su carpeta e intenta de nuevo."
+            "value" : "Comprueba que se pueda escribir en su carpeta e inténtalo de nuevo."
           }
         },
         "fr" : {
@@ -313738,7 +313738,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Movimiento cancelado."
+            "value" : "Se canceló el traslado."
           }
         },
         "fr" : {
@@ -327368,7 +327368,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ninguna tiene lugares o libros más recientes que la otra no tenga, pero difieren en otros aspectos."
+            "value" : "Ninguna tiene lugares más recientes ni libros que falten en la otra, pero difieren en otros aspectos."
           }
         },
         "fr" : {
@@ -347849,7 +347849,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "No dentro de los últimos"
+            "value" : "Fuera de los últimos"
           }
         },
         "fr" : {
@@ -358074,7 +358074,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Abrir en editor"
+            "value" : "Abrir en el editor"
           }
         },
         "fr" : {
@@ -365746,7 +365746,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Archivos originales quitados."
+            "value" : "Se quitaron los archivos originales."
           }
         },
         "fr" : {
@@ -380915,7 +380915,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Modo de mostrar la posición"
+            "value" : "Mostrar la posición como"
           }
         },
         "fr" : {
@@ -392048,7 +392048,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Lista de lectura: “%1$@” es %2$@ en %3$@ y %4$@ en %5$@."
+            "value" : "Lista de lectura: “%1$@” está %2$@ en %3$@ y %4$@ en %5$@."
           }
         },
         "fr" : {
@@ -430866,7 +430866,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Buscados %1$@ de %2$@…"
+            "value" : "Buscado en %1$@ de %2$@…"
           }
         },
         "fr" : {
@@ -446358,7 +446358,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Muestra los libros en el orden que tú organizas"
+            "value" : "Muestra los libros en el orden que les das"
           }
         },
         "fr" : {
@@ -453419,7 +453419,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ordenar ascendente"
+            "value" : "Ordenar de forma ascendente"
           }
         },
         "fr" : {
@@ -453693,7 +453693,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ordenar descendente"
+            "value" : "Ordenar de forma descendente"
           }
         },
         "fr" : {
@@ -465966,7 +465966,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Evita que la reproducción se reanude cuando se desconectan los audífonos"
+            "value" : "Evita que la reproducción se reanude cuando se desconectan los auriculares"
           }
         },
         "fr" : {
@@ -481530,7 +481530,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth no pudo leer el índice de su biblioteca, el archivo que guarda tus carpetas, los ajustes de orden y el orden de tus libros."
+            "value" : "TextMouth no pudo leer el índice de la biblioteca, el archivo que guarda tus carpetas, los ajustes de orden y el orden de tus libros."
           }
         },
         "fr" : {
@@ -489046,19 +489046,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "TextMouth también está abierto en «%1$@» (activo hace %2$lld de minutos)."
+                  "value" : "TextMouth también está abierto en “%1$@” (activo hace %2$lld de minutos)."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "TextMouth también está abierto en «%1$@» (activo hace %2$lld minuto)."
+                  "value" : "TextMouth también está abierto en “%1$@” (activo hace %2$lld minuto)."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "TextMouth también está abierto en «%1$@» (activo hace %2$lld minutos)."
+                  "value" : "TextMouth también está abierto en “%1$@” (activo hace %2$lld minutos)."
                 }
               }
             }
@@ -489432,7 +489432,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth también está abierto en «%@» (activo hace menos de un minuto)."
+            "value" : "TextMouth también está abierto en “%@” (activo hace menos de un minuto)."
           }
         },
         "fr" : {
@@ -495379,7 +495379,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth necesita que la unidad «%@» esté conectada para abrir la biblioteca."
+            "value" : "TextMouth necesita que la unidad “%@” esté conectada para abrir la biblioteca."
           }
         },
         "fr" : {
@@ -505837,19 +505837,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Los %1$@ de %2$lld de ellas se conservan."
+                  "value" : "De %2$lld de ellas se conservan: %1$@."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Los %1$@ de %2$lld de ellas se conservan."
+                  "value" : "De %2$lld de ellas se conservan: %1$@."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Los %1$@ de %2$lld de ellas se conservan."
+                  "value" : "De %2$lld de ellas se conservan: %1$@."
                 }
               }
             }
@@ -513650,7 +513650,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "El archivo comprimido «%1$@» de su interior se expande a %2$@, pero el disco que contiene la biblioteca de TextMouth solo tiene %3$@ libres, y TextMouth mantiene %4$@ libres."
+            "value" : "El archivo comprimido “%1$@” de su interior se expande a %2$@, pero el disco que contiene la biblioteca de TextMouth solo tiene %3$@ libres, y TextMouth mantiene %4$@ libres."
           }
         },
         "fr" : {
@@ -526632,7 +526632,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "La unidad «%@» no está conectada."
+            "value" : "La unidad “%@” no está conectada."
           }
         },
         "fr" : {
@@ -536736,7 +536736,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Las carpetas %1$@ y %2$@ no pueden moverse juntas a %3$@: sus nombres significan la misma carpeta en este disco."
+            "value" : "Las carpetas %1$@ y %2$@ no pueden moverse juntas a %3$@: sus nombres se refieren a la misma carpeta en este disco."
           }
         },
         "fr" : {
@@ -542520,7 +542520,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "El tiempo máximo que puede durar toda la secuencia. Ventanas más cortas significan menos coincidencias accidentales pero pulsaciones más rápidas."
+            "value" : "El tiempo máximo que puede durar toda la secuencia. Con una ventana más corta hay menos coincidencias accidentales, pero hay que pulsar más rápido."
           }
         },
         "fr" : {
@@ -563713,19 +563713,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "No hay vista %1$@. Ir a vista llega a %2$lld de vistas."
+                  "value" : "No existe la vista %1$@. Ir a la vista llega hasta %2$lld de vistas."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "No hay vista %1$@. Ir a vista llega a %2$lld vista."
+                  "value" : "No existe la vista %1$@. Ir a la vista llega hasta %2$lld vista."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "No hay vista %1$@. Ir a vista llega a %2$lld vistas."
+                  "value" : "No existe la vista %1$@. Ir a la vista llega hasta %2$lld vistas."
                 }
               }
             }
@@ -575444,7 +575444,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Este braille parece braille inglés, edición estadounidense. Elige su código braille en Información del libro."
+            "value" : "Este braille parece English Braille, American Edition. Elige su código braille en Información del libro."
           }
         },
         "fr" : {
@@ -588066,7 +588066,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Para soltarlo, quítalo de la lista de lectura, o desactiva %@ en las opciones de la lista de lectura."
+            "value" : "Para liberarlo, quítalo de la lista de lectura, o desactiva %@ en las opciones de la lista de lectura."
           }
         },
         "fr" : {
@@ -588203,7 +588203,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Para soltarlos, quítalos de la lista de lectura, o desactiva %@ en las opciones de la lista de lectura."
+            "value" : "Para liberarlos, quítalos de la lista de lectura, o desactiva %@ en las opciones de la lista de lectura."
           }
         },
         "fr" : {
@@ -588483,7 +588483,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Para usar otra carpeta, abre Ajustes, Almacenamiento y elige %1$@ o %2$@."
+            "value" : "Para usar otra carpeta, abre Almacenamiento en Ajustes y elige %1$@ o %2$@."
           }
         },
         "fr" : {
@@ -596932,7 +596932,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Intenta de nuevo en un momento."
+            "value" : "Inténtalo de nuevo en un momento."
           }
         },
         "fr" : {
@@ -597069,7 +597069,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Intenta de nuevo cuando termine ese traslado."
+            "value" : "Inténtalo de nuevo cuando termine ese traslado."
           }
         },
         "fr" : {
@@ -597343,7 +597343,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Intenta de nuevo cuando eso termine."
+            "value" : "Inténtalo de nuevo cuando eso termine."
           }
         },
         "fr" : {
@@ -597480,7 +597480,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Intenta de nuevo."
+            "value" : "Inténtalo de nuevo."
           }
         },
         "fr" : {
@@ -607641,7 +607641,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Úsalo después de actualizar el analizador."
+            "value" : "Úsalo después de una actualización del analizador."
           }
         },
         "fr" : {
@@ -626919,7 +626919,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Cantidad de palabras"
+            "value" : "Recuento de palabras"
           }
         },
         "fr" : {
@@ -637529,7 +637529,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "capítulo %1$@, guardado %2$@, y %3$@"
+            "value" : "capítulo %1$@, guardado el %2$@, y %3$@"
           }
         },
         "fr" : {
@@ -672243,7 +672243,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "un índice de la biblioteca, %@"
+            "value" : "el índice de la biblioteca, %@"
           }
         },
         "fr" : {
@@ -677958,7 +677958,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "No se pudo devolver «%1$@» a su sitio tras un traslado fallido, así que sus archivos están en %2$@ en lugar de %3$@: %4$@"
+            "value" : "No se pudo devolver “%1$@” a su sitio tras un traslado fallido, así que sus archivos están en %2$@ en lugar de %3$@: %4$@"
           }
         },
         "fr" : {
