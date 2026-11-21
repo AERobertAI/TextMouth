@@ -150403,13 +150403,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Es gibt keine Ansicht %1$@. „Zur Ansicht gehen“ erreicht %2$lld Ansicht."
+                  "value" : "Es gibt keine Ansicht %1$@. „Zur Ansicht wechseln“ erreicht %2$lld Ansicht."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Es gibt keine Ansicht %1$@. „Zur Ansicht gehen“ erreicht %2$lld Ansichten."
+                  "value" : "Es gibt keine Ansicht %1$@. „Zur Ansicht wechseln“ erreicht %2$lld Ansichten."
                 }
               }
             }
