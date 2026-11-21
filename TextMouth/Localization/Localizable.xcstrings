@@ -1144,7 +1144,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ lässt sich nicht weiter nach unten bewegen."
+            "value" : "%@ lässt sich nicht weiter nach unten verschieben."
           }
         },
         "es" : {
@@ -1179,7 +1179,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ lässt sich nicht weiter nach oben bewegen."
+            "value" : "%@ lässt sich nicht weiter nach oben verschieben."
           }
         },
         "es" : {
@@ -3577,7 +3577,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ ist ein Element eines Feeds, und die Elemente eines Feeds lassen sich nicht bewegen."
+            "value" : "%@ ist ein Element eines Feeds, und die Elemente eines Feeds lassen sich nicht verschieben."
           }
         },
         "es" : {
@@ -36619,7 +36619,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bücher lassen sich nur in einem Ordner bewegen, der nach %@ sortiert ist, und dieser Ordner ist es nicht."
+            "value" : "Bücher lassen sich nur in einem Ordner verschieben, der nach %@ sortiert ist, und dieser Ordner ist es nicht."
           }
         },
         "es" : {
@@ -36724,7 +36724,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bücher lassen sich in dieser Ansicht nicht bewegen. Gehe in „Ordner“ zu einem Ordner oder zur Leseliste und versuche es erneut."
+            "value" : "Bücher lassen sich in dieser Ansicht nicht verschieben. Gehe in „Ordner“ zu einem Ordner oder zur Leseliste und versuche es erneut."
           }
         },
         "es" : {
@@ -75544,7 +75544,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Behält die Reihenfolge bei, die du mit „Buch nach oben bewegen“, „Buch nach unten bewegen“ oder durch Ziehen festgelegt hast."
+            "value" : "Behält die Reihenfolge bei, die du mit „Buch nach oben verschieben“, „Buch nach unten verschieben“ oder durch Ziehen festgelegt hast."
           }
         },
         "es" : {
@@ -83265,7 +83265,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ nach unten bewegen"
+            "value" : "%@ nach unten verschieben"
           }
         },
         "es" : {
@@ -83300,7 +83300,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ nach oben bewegen"
+            "value" : "%@ nach oben verschieben"
           }
         },
         "es" : {
@@ -84437,7 +84437,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nach unten bewegen"
+            "value" : "Nach unten verschieben"
           }
         },
         "es" : {
@@ -84647,7 +84647,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nach oben bewegen"
+            "value" : "Nach oben verschieben"
           }
         },
         "es" : {
@@ -85032,7 +85032,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ über %2$@ bewegt"
+            "value" : "%1$@ über %2$@ verschoben"
           }
         },
         "en" : {
@@ -85073,7 +85073,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ unter %2$@ bewegt"
+            "value" : "%1$@ unter %2$@ verschoben"
           }
         },
         "en" : {
@@ -86170,7 +86170,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bewegt sie eine Stelle nach unten"
+            "value" : "Verschiebt sie eine Stelle nach unten."
           }
         },
         "es" : {
@@ -86205,7 +86205,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bewegt sie eine Stelle nach oben"
+            "value" : "Verschiebt sie eine Stelle nach oben."
           }
         },
         "es" : {
@@ -90014,7 +90014,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Kein Buch ausgewählt. Wähle das Buch zum Bewegen aus und versuche es erneut."
+            "value" : "Kein Buch ausgewählt. Wähle das Buch zum Verschieben aus und versuche es erneut."
           }
         },
         "es" : {
