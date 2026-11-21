@@ -132080,6 +132080,12 @@
     "It deletes %@: it is deleted permanently and cannot be recovered." : {
       "comment" : "A sentence of the confirmation before Delete Feed, when files are deleted permanently: what the feed deletes, one thing. %@ is what is deleted.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এটি %@ মুছে ফেলে: তা স্থায়ীভাবে মুছে যায় এবং ফিরে পাওয়া যায় না।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -132145,6 +132151,12 @@
     "It deletes %@: it stays in the TextMouth library folder." : {
       "comment" : "A sentence of the confirmation before Delete Feed, when the setting keeps files: what the feed deletes, one thing, which stays in the library folder. %@ is what is deleted.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এটি %@ মুছে ফেলে: তা TextMouth লাইব্রেরি ফোল্ডারে থেকে যায়।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -132210,6 +132222,12 @@
     "It deletes %@: they are deleted permanently and cannot be recovered." : {
       "comment" : "A sentence of the confirmation before Delete Feed, when files are deleted permanently: what the feed deletes, several things. %@ is a list of what is deleted.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এটি %@ মুছে ফেলে: সেগুলো স্থায়ীভাবে মুছে যায় এবং ফিরে পাওয়া যায় না।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -132275,6 +132293,12 @@
     "It deletes %@: they go to the Trash, where you can recover them until the Trash is emptied." : {
       "comment" : "A sentence of the confirmation before Delete Feed, when files go to the Trash: what the feed deletes, several things. %@ is a list of what is deleted.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এটি %@ মুছে ফেলে: সেগুলো ট্র্যাশে যায়, ট্র্যাশ খালি না করা পর্যন্ত সেখান থেকে ফিরিয়ে আনা যায়।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -132340,6 +132364,12 @@
     "It deletes %@: they stay in the TextMouth library folder." : {
       "comment" : "A sentence of the confirmation before Delete Feed, when the setting keeps files: what the feed deletes, several things, which stay in the library folder. %@ is a list of what is deleted.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এটি %@ মুছে ফেলে: সেগুলো TextMouth লাইব্রেরি ফোল্ডারে থেকে যায়।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -132898,6 +132928,12 @@
     "It holds %@, which TextMouth does not import." : {
       "comment" : "Sentence of the alert about an archive that holds no book: what it holds instead. %@ is the kinds of files it holds with their counts, such as \"176 .ogg files\" or \"10 .jpg files, 3 .png files, and 4 other files\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এতে %@ আছে, যা TextMouth আমদানি করে না।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -133170,6 +133206,12 @@
     "It holds no files." : {
       "comment" : "Sentence of the alert about an archive or folder that holds no book: it holds no files at all.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এতে কোনো ফাইল নেই।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -133649,6 +133691,12 @@
     "It is a streaming playlist for web audio, which TextMouth does not import." : {
       "comment" : "Refusal of a playlist that is an HLS stream, a list of pieces of one broadcast on the web. \"It\" is the playlist. Follows the sentence naming the file.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এটি ওয়েব অডিওর একটি স্ট্রিমিং প্লেলিস্ট, যা TextMouth আমদানি করে না।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -133844,6 +133892,12 @@
     "It lists no audio track with a start that TextMouth can read." : {
       "comment" : "Refusal of a cue sheet chosen on its own that places no track. \"It\" is the cue sheet. Follows the sentence naming the file.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এতে এমন কোনো অডিও ট্র্যাক নেই যার শুরুর সময় TextMouth পড়তে পারে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -133909,6 +133963,12 @@
     "It lists only web addresses, and TextMouth imports only files on this Mac." : {
       "comment" : "Refusal of a playlist that lists only web addresses. \"It\" is the playlist. Follows the sentence naming the file.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এতে শুধু ওয়েব ঠিকানা আছে, আর TextMouth শুধু এই Mac-এর ফাইল আমদানি করে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -134045,6 +134105,12 @@
     "It may be damaged, or another kind of file." : {
       "comment" : "Second sentence of the refusal of a document that could not be read: the file may be damaged or of another kind.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এটি ক্ষতিগ্রস্ত হতে পারে, বা অন্য ধরনের ফাইল।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -134240,6 +134306,12 @@
     "It names no audio file in its own folder that TextMouth can import." : {
       "comment" : "Refusal of a playlist or cue sheet with no track left to import. \"It\" is the playlist. A sentence about the skipped entries may follow.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এর নিজের ফোল্ডারে এমন কোনো অডিও ফাইলের নাম নেই যা TextMouth আমদানি করতে পারে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -134370,6 +134442,24 @@
     "It skipped %lld entries: %@." : {
       "comment" : "Sentence after the refusal of a playlist: how many entries it skipped, and which. %1$lld is the number of entries and %2$@ the list of them, each with its reason in parentheses.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "এটি %lld টি এন্ট্রি বাদ দিয়েছে: %@।"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "এটি %lld টি এন্ট্রি বাদ দিয়েছে: %@।"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -134733,6 +134823,12 @@
     "Items" : {
       "comment" : "Label of the count of a feed's items, episodes and articles, in Feed Info. Title case.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "আইটেম"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -134798,6 +134894,24 @@
     "Items (%lld of %@ listed)" : {
       "comment" : "The heading of a feed's items when the library lists fewer than the feed has. %lld is how many are listed; %@ is the feed's size, such as \"381\" or \"more than 2000\". Title case.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "আইটেম (%2$@-এর মধ্যে %1$lld টি তালিকাভুক্ত)"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "আইটেম (%2$@-এর মধ্যে %1$lld টি তালিকাভুক্ত)"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -135031,6 +135145,24 @@
     "Items (%lld)" : {
       "comment" : "The heading of a feed's items, episodes and articles, which counts the rows under it. %lld is how many. Title case.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "আইটেম (%lld)"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "আইটেম (%lld)"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -135264,6 +135396,12 @@
     "Its %@ are kept for when you download it again." : {
       "comment" : "What VoiceOver says after Delete Download deleted a download whose package kept parts of the listener's. %@ is a list of what is kept, such as \"place and bookmarks\". The verb agrees with a list of several parts.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "আবার ডাউনলোড করলে ব্যবহারের জন্য এর %@ রাখা হয়েছে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -135329,6 +135467,12 @@
     "Its %@ are kept." : {
       "comment" : "Sentence that says what is kept of one deleted download. %@ is a list of what is kept, such as \"place and bookmarks\". The verb agrees with a list of several parts.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এর %@ রাখা হয়েছে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -135394,6 +135538,12 @@
     "Its %@ is kept for when you download it again." : {
       "comment" : "What VoiceOver says after Delete Download deleted a download whose package kept one part of the listener's. %@ is what is kept, such as \"place\" or \"transcript\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "আবার ডাউনলোড করলে ব্যবহারের জন্য এর %@ রাখা হয়েছে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -135459,6 +135609,12 @@
     "Its %@ is kept." : {
       "comment" : "Sentence that says what is kept of one deleted download. %@ is one part that is kept, such as \"place\" or \"transcript\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এর %@ রাখা হয়েছে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -136218,6 +136374,12 @@
     "Its folder “%@” goes too when nothing else is in it." : {
       "comment" : "A sentence of the confirmation before Delete Feed: the feed's library folder is deleted too when it holds nothing else. %@ is the folder's path.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এর ফোল্ডার “%@” অন্য কিছু না থাকলে সেটিও মুছে যায়।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -136283,6 +136445,12 @@
     "Its folder “%@” is empty, but could not be deleted." : {
       "comment" : "A sentence of the announcement after Delete Feed: the feed's library folder is empty but could not be deleted. %@ is the folder's path.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এর ফোল্ডার “%@” খালি, কিন্তু মোছা যায়নি।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -136348,6 +136516,12 @@
     "Its folder “%@” is gone too." : {
       "comment" : "A sentence of the announcement after Delete Feed: the feed's library folder was deleted too. %@ is the folder's path.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এর ফোল্ডার “%@”-ও মুছে গেছে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -136413,6 +136587,12 @@
     "Its folder “%@” stays, as something else is in it." : {
       "comment" : "A sentence of the announcement after Delete Feed: the feed's library folder stays because it holds other things. %@ is the folder's path.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এর ফোল্ডার “%@” থেকে যায়, কারণ এতে অন্য কিছু আছে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -137211,6 +137391,12 @@
     "Its tracks run past the end of the audio it names, so it was made for another copy of that audio." : {
       "comment" : "Refusal of a cue sheet chosen on its own whose tracks begin or end past the end of the audio it names. \"Its\" and \"it\" are the cue sheet.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এর ট্র্যাক যে অডিওর নাম দেয় তার শেষ ছাড়িয়ে যায়, তাই এটি সেই অডিওর অন্য কপির জন্য বানানো হয়েছিল।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -138408,6 +138594,12 @@
     "Keep Both" : {
       "comment" : "Title and VoiceOver label of the button of the duplicate-book question that keeps both copies. Title case.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "দুটিই রাখুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -138733,6 +138925,12 @@
     "Keep originals of converted audio" : {
       "comment" : "Label of the Storage settings switch that keeps the original file of each audio file an import converts.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "রূপান্তরিত অডিওর মূল ফাইল রাখুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -138928,6 +139126,12 @@
     "Keeps each audio file an import converts, such as Ogg or AC-3, inside the book's package." : {
       "comment" : "VoiceOver hint of the switch that keeps the originals of converted audio.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "আমদানি যে অডিও ফাইল রূপান্তর করে, যেমন Ogg বা AC-3, তার প্রতিটি বইয়ের প্যাকেজের ভেতরে রাখে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -140044,6 +140248,12 @@
     "Label %@" : {
       "comment" : "Heading made at import for an Audacity label that has no text. %@ is the label's place among the file's labels, from 1, an identifier written without digit grouping.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "লেবেল %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -140517,6 +140727,12 @@
     "Last check" : {
       "comment" : "Label of when the feed was last checked, in Feed Info.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সর্বশেষ চেক"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -140582,6 +140798,12 @@
     "Last check failed: %@" : {
       "comment" : "How a feed's last check reads when it failed. %@ is the reason, a sentence, such as \"This Mac is offline, so Planet Money can't be refreshed.\" Spoken after a comma with its first letter in lower case.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সর্বশেষ চেক ব্যর্থ হয়েছে: %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -140712,6 +140934,12 @@
     "Last opened" : {
       "comment" : "Label of when a book was last opened, in its read-only Book Information sheet.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সর্বশেষ খোলা হয়েছে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -141108,6 +141336,12 @@
     "Leaves the imported books where they are." : {
       "comment" : "VoiceOver hint of the No Thanks button of the ZIP archive question.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "আমদানি করা বইগুলো যেখানে আছে সেখানেই রাখে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -141173,6 +141407,12 @@
     "Leaves the original file where it is." : {
       "comment" : "VoiceOver hint of the Keep button of the question about the original file.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "মূল ফাইলটি যেখানে আছে সেখানেই রাখে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -141865,6 +142105,12 @@
     "Less than a minute left" : {
       "comment" : "Line of the import overlay and the feed downloads: the time left is under a minute.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এক মিনিটেরও কম বাকি"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -143254,6 +143500,12 @@
     "List and download" : {
       "comment" : "Label of the pop-up menu that chooses how many of a feed's items are listed and downloaded, in Settings and Feed Info. Sentences name it.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "তালিকা ও ডাউনলোড"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -144739,6 +144991,24 @@
     "Lists every article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings." : {
       "comment" : "VoiceOver hint of the List and download choice for a feed of articles: every article is listed, the newest are downloaded, older downloads TextMouth made are removed. %lld is how many of the newest.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "সব আর্টিকেল তালিকাভুক্ত করে, সবচেয়ে নতুন %lld টি ডাউনলোড করা রাখে, এবং এর তৈরি করা পুরোনো ডাউনলোড সরায়, তাদের অবস্থান, বুকমার্ক ও সেটিংস রেখে দিয়ে।"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "সব আর্টিকেল তালিকাভুক্ত করে, সবচেয়ে নতুন %lld টি ডাউনলোড করা রাখে, এবং এর তৈরি করা পুরোনো ডাউনলোড সরায়, তাদের অবস্থান, বুকমার্ক ও সেটিংস রেখে দিয়ে।"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -144972,6 +145242,12 @@
     "Lists every article; nothing downloads by itself, and a download stays until you delete it or its days after playing pass." : {
       "comment" : "VoiceOver hint of the List and download choice for a feed of articles when the listener downloads by hand.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সব আর্টিকেল তালিকাভুক্ত করে; কিছুই নিজে থেকে ডাউনলোড হয় না, এবং আপনি না মোছা পর্যন্ত বা চালানোর পরের দিনগুলো না পেরোনো পর্যন্ত ডাউনলোড থাকে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -145037,6 +145313,24 @@
     "Lists every episode and article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings." : {
       "comment" : "VoiceOver hint of the List and download choice in Settings or for a feed of both kinds: every episode and article is listed, the newest are downloaded, older downloads TextMouth made are removed. %lld is how many of the newest.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "সব পর্ব ও আর্টিকেল তালিকাভুক্ত করে, সবচেয়ে নতুন %lld টি ডাউনলোড করা রাখে, এবং এর তৈরি করা পুরোনো ডাউনলোড সরায়, তাদের অবস্থান, বুকমার্ক ও সেটিংস রেখে দিয়ে।"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "সব পর্ব ও আর্টিকেল তালিকাভুক্ত করে, সবচেয়ে নতুন %lld টি ডাউনলোড করা রাখে, এবং এর তৈরি করা পুরোনো ডাউনলোড সরায়, তাদের অবস্থান, বুকমার্ক ও সেটিংস রেখে দিয়ে।"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -145270,6 +145564,12 @@
     "Lists every episode and article; nothing downloads by itself, and a download stays until you delete it or its days after playing pass." : {
       "comment" : "VoiceOver hint of the List and download choice in Settings or for a feed of both kinds when the listener downloads by hand.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সব পর্ব ও আর্টিকেল তালিকাভুক্ত করে; কিছুই নিজে থেকে ডাউনলোড হয় না, এবং আপনি না মোছা পর্যন্ত বা চালানোর পরের দিনগুলো না পেরোনো পর্যন্ত ডাউনলোড থাকে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -145335,6 +145635,24 @@
     "Lists every episode, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings." : {
       "comment" : "VoiceOver hint of the List and download choice for a feed of episodes: every episode is listed, the newest are downloaded, older downloads TextMouth made are removed. %lld is how many of the newest.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "সব পর্ব তালিকাভুক্ত করে, সবচেয়ে নতুন %lld টি ডাউনলোড করা রাখে, এবং এর তৈরি করা পুরোনো ডাউনলোড সরায়, তাদের অবস্থান, বুকমার্ক ও সেটিংস রেখে দিয়ে।"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "সব পর্ব তালিকাভুক্ত করে, সবচেয়ে নতুন %lld টি ডাউনলোড করা রাখে, এবং এর তৈরি করা পুরোনো ডাউনলোড সরায়, তাদের অবস্থান, বুকমার্ক ও সেটিংস রেখে দিয়ে।"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -145568,6 +145886,12 @@
     "Lists every episode; nothing downloads by itself, and a download stays until you delete it or its days after playing pass." : {
       "comment" : "VoiceOver hint of the List and download choice for a feed of episodes when the listener downloads by hand.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সব পর্ব তালিকাভুক্ত করে; কিছুই নিজে থেকে ডাউনলোড হয় না, এবং আপনি না মোছা পর্যন্ত বা চালানোর পরের দিনগুলো না পেরোনো পর্যন্ত ডাউনলোড থাকে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -145763,6 +146087,24 @@
     "Lists the newest %lld you haven't played, and every download. Downloads only what you ask for; the others keep their records and return when you list more." : {
       "comment" : "VoiceOver hint of the List and download choice for a feed of episodes, in Settings, or for a feed of both kinds when only the newest are listed. %lld is how many of the newest.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "আপনি চালাননি এমন সবচেয়ে নতুন %lld টি পর্ব এবং সব ডাউনলোড তালিকাভুক্ত করে। শুধু আপনি যা চান তা ডাউনলোড করে; বাকিগুলোর রেকর্ড থেকে যায়, আর আপনি বেশি তালিকাভুক্ত করলে সেগুলো ফিরে আসে।"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "আপনি চালাননি এমন সবচেয়ে নতুন %lld টি পর্ব এবং সব ডাউনলোড তালিকাভুক্ত করে। শুধু আপনি যা চান তা ডাউনলোড করে; বাকিগুলোর রেকর্ড থেকে যায়, আর আপনি বেশি তালিকাভুক্ত করলে সেগুলো ফিরে আসে।"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -145996,6 +146338,24 @@
     "Lists the newest %lld you haven't read, and every download. Downloads only what you ask for; the others keep their records and return when you list more." : {
       "comment" : "VoiceOver hint of the List and download choice for a feed of articles when only the newest are listed. %lld is how many of the newest.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "আপনি পড়েননি এমন সবচেয়ে নতুন %lld টি আর্টিকেল এবং সব ডাউনলোড তালিকাভুক্ত করে। শুধু আপনি যা চান তা ডাউনলোড করে; বাকিগুলোর রেকর্ড থেকে যায়, আর আপনি বেশি তালিকাভুক্ত করলে সেগুলো ফিরে আসে।"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "আপনি পড়েননি এমন সবচেয়ে নতুন %lld টি আর্টিকেল এবং সব ডাউনলোড তালিকাভুক্ত করে। শুধু আপনি যা চান তা ডাউনলোড করে; বাকিগুলোর রেকর্ড থেকে যায়, আর আপনি বেশি তালিকাভুক্ত করলে সেগুলো ফিরে আসে।"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -147778,6 +148138,12 @@
     "Makes a book from text you paste or type." : {
       "comment" : "One-line summary and VoiceOver hint of the New from Text choice of the Add to Library sheet.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পেস্ট করা বা টাইপ করা টেক্সট থেকে একটি বই বানায়।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -148316,6 +148682,12 @@
     "Mark All Played" : {
       "comment" : "Title of the command that marks every episode of a feed played. Title case.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সব শোনা হয়েছে চিহ্নিত করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -148381,6 +148753,12 @@
     "Mark All Read" : {
       "comment" : "Title of the command that marks every article of a feed read. Title case.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সব পড়া হয়েছে চিহ্নিত করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -148588,6 +148966,12 @@
     "Mark Played" : {
       "comment" : "Title of the command that marks a feed's episode played. Title case.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "শোনা হয়েছে চিহ্নিত করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -148653,6 +149037,12 @@
     "Mark Read" : {
       "comment" : "Title of the command that marks a feed's article read. Title case.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পড়া হয়েছে চিহ্নিত করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -148718,6 +149108,12 @@
     "Mark Unplayed" : {
       "comment" : "Title of the command that marks a feed's episode unplayed. Title case.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "শোনা হয়নি চিহ্নিত করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -148783,6 +149179,12 @@
     "Mark Unread" : {
       "comment" : "Title of the command that marks a feed's article unread. Title case.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পড়া হয়নি চিহ্নিত করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -148913,6 +149315,24 @@
     "Marked %lld articles of %@ read." : {
       "comment" : "What VoiceOver says once Mark All Read marked articles read. %lld is how many; %@ is the feed's title.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%2$@-এর %1$lld টি আর্টিকেল পড়া হয়েছে চিহ্নিত করা হয়েছে।"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%2$@-এর %1$lld টি আর্টিকেল পড়া হয়েছে চিহ্নিত করা হয়েছে।"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -149146,6 +149566,24 @@
     "Marked %lld episodes of %@ played." : {
       "comment" : "What VoiceOver says once Mark All Played marked episodes played. %lld is how many; %@ is the feed's title.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%2$@-এর %1$lld টি পর্ব শোনা হয়েছে চিহ্নিত করা হয়েছে।"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%2$@-এর %1$lld টি পর্ব শোনা হয়েছে চিহ্নিত করা হয়েছে।"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -149379,6 +149817,24 @@
     "Marked %lld items of %@ played." : {
       "comment" : "What VoiceOver says once Mark All Played marked items played, in a feed of episodes and articles. %lld is how many; %@ is the feed's title.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%2$@-এর %1$lld টি আইটেম শোনা হয়েছে চিহ্নিত করা হয়েছে।"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%2$@-এর %1$lld টি আইটেম শোনা হয়েছে চিহ্নিত করা হয়েছে।"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -149612,6 +150068,12 @@
     "Marked “%@” played." : {
       "comment" : "What VoiceOver says once an episode is marked played. %@ is the episode's title.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” শোনা হয়েছে চিহ্নিত করা হয়েছে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -149677,6 +150139,12 @@
     "Marked “%@” read." : {
       "comment" : "What VoiceOver says once an article is marked read. %@ is the article's title.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” পড়া হয়েছে চিহ্নিত করা হয়েছে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -149742,6 +150210,12 @@
     "Marked “%@” unplayed." : {
       "comment" : "What VoiceOver says once an episode is marked unplayed. %@ is the episode's title.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” শোনা হয়নি চিহ্নিত করা হয়েছে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -149807,6 +150281,12 @@
     "Marked “%@” unread." : {
       "comment" : "What VoiceOver says once an article is marked unread. %@ is the article's title.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” পড়া হয়নি চিহ্নিত করা হয়েছে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -151007,6 +151487,12 @@
     "Matroska" : {
       "comment" : "The name of the Matroska container format, as people say it. Inside sentences about importing a file of that format.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Matroska"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -153548,6 +154034,24 @@
     "Move %lld Articles to Library" : {
       "comment" : "Heading of the sheet that moves several feed articles into the library. %lld is how many. Title case.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld টি আর্টিকেল লাইব্রেরিতে স্থানান্তর করুন"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld টি আর্টিকেল লাইব্রেরিতে স্থানান্তর করুন"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -154247,6 +154751,24 @@
     "Move %lld Episodes to Library" : {
       "comment" : "Heading of the sheet that moves several feed episodes into the library. %lld is how many. Title case.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld টি পর্ব লাইব্রেরিতে স্থানান্তর করুন"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld টি পর্ব লাইব্রেরিতে স্থানান্তর করুন"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -154480,6 +155002,24 @@
     "Move %lld Items to Library" : {
       "comment" : "Heading of the sheet that moves several feed items, episodes and articles, into the library. %lld is how many. Title case.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld টি আইটেম লাইব্রেরিতে স্থানান্তর করুন"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld টি আইটেম লাইব্রেরিতে স্থানান্তর করুন"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -155673,6 +156213,12 @@
     "Move Original File to Trash?" : {
       "comment" : "Title of the confirmation that asks whether to move the original file of a book just imported to the Trash. Title case.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "মূল ফাইল ট্র্যাশে সরাবেন?"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -155933,6 +156479,12 @@
     "Move the original file to the Trash?" : {
       "comment" : "Question of the confirmation about the original file of a book just imported, when the file's name is not known.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "মূল ফাইলটি ট্র্যাশে সরাবেন?"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -155998,6 +156550,12 @@
     "Move the original file “%@” to the Trash?" : {
       "comment" : "Question of the confirmation about the original file of a book just imported. %@ is the file's name.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "মূল ফাইল “%@” ট্র্যাশে সরাবেন?"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -156400,6 +156958,12 @@
     "Move “%@” to Library" : {
       "comment" : "Heading of the sheet that moves one feed item's download into the library. %@ is the item's title. Title case.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” লাইব্রেরিতে স্থানান্তর করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -156743,6 +157307,24 @@
     "Moved %lld articles into %@. They're library books now, and their feeds list them %@." : {
       "comment" : "What VoiceOver says once Move to Library moved several articles into the library. %lld is how many; the first %@ is the library folder, or \"the top of your library\"; the second is the note their feeds' rows show, \"In Library\".",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%2$@-এ %1$lld টি আর্টিকেল সরানো হয়েছে। এটি এখন লাইব্রেরির বই, আর এর ফিডে এটি %3$@ হিসেবে দেখানো হয়।"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%2$@-এ %1$lld টি আর্টিকেল সরানো হয়েছে। এগুলো এখন লাইব্রেরির বই, আর এদের ফিডে এগুলো %3$@ হিসেবে দেখানো হয়।"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -156976,6 +157558,24 @@
     "Moved %lld episodes into %@. They're library books now, and their feeds list them %@." : {
       "comment" : "What VoiceOver says once Move to Library moved several episodes into the library. %lld is how many; the first %@ is the library folder, or \"the top of your library\"; the second is the note their feeds' rows show, \"In Library\".",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%2$@-এ %1$lld টি পর্ব সরানো হয়েছে। এটি এখন লাইব্রেরির বই, আর এর ফিডে এটি %3$@ হিসেবে দেখানো হয়।"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%2$@-এ %1$lld টি পর্ব সরানো হয়েছে। এগুলো এখন লাইব্রেরির বই, আর এদের ফিডে এগুলো %3$@ হিসেবে দেখানো হয়।"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -157209,6 +157809,24 @@
     "Moved %lld items into %@. They're library books now, and their feeds list them %@." : {
       "comment" : "What VoiceOver says once Move to Library moved several items, episodes and articles, into the library. %lld is how many; the first %@ is the library folder, or \"the top of your library\"; the second is the note their feeds' rows show, \"In Library\".",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%2$@-এ %1$lld টি আইটেম সরানো হয়েছে। এটি এখন লাইব্রেরির বই, আর এর ফিডে এটি %3$@ হিসেবে দেখানো হয়।"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%2$@-এ %1$lld টি আইটেম সরানো হয়েছে। এগুলো এখন লাইব্রেরির বই, আর এদের ফিডে এগুলো %3$@ হিসেবে দেখানো হয়।"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -157708,6 +158326,12 @@
     "Moved “%@” into %@. It's a library book now, and its feed lists it %@." : {
       "comment" : "What VoiceOver says once Move to Library moved one feed item into the library. The first %@ is the item's title; the second is the library folder, or \"the top of your library\"; the third is the note its feed's row shows, \"In Library\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%1$@” %2$@-এ সরানো হয়েছে। এটি এখন লাইব্রেরির বই, আর এর ফিডে এটি %3$@ হিসেবে দেখানো হয়।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -159442,6 +160066,12 @@
     "Moves the imported books into a new folder with this name." : {
       "comment" : "VoiceOver hint of the Create Folder button of the ZIP archive question. \"This name\" is the name in the folder name field.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "আমদানি করা বইগুলো এই নামের একটি নতুন ফোল্ডারে সরায়।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -159507,6 +160137,24 @@
     "Moves these %lld articles into a library folder as books you can edit; they leave their feeds" : {
       "comment" : "What the Move to Library sheet says about several articles: they move into a library folder as books and leave their feeds. %lld is how many.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "এই %lld টি আর্টিকেল একটি লাইব্রেরি ফোল্ডারে সম্পাদনাযোগ্য বই হিসেবে সরায়; সেটি ফিড ছেড়ে যায়"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "এই %lld টি আর্টিকেল একটি লাইব্রেরি ফোল্ডারে সম্পাদনাযোগ্য বই হিসেবে সরায়; সেগুলো তাদের ফিড ছেড়ে যায়"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -159740,6 +160388,24 @@
     "Moves these %lld episodes into a library folder as books you can edit; they leave their feeds" : {
       "comment" : "What the Move to Library sheet says about several episodes: they move into a library folder as books and leave their feeds. %lld is how many.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "এই %lld টি পর্ব একটি লাইব্রেরি ফোল্ডারে সম্পাদনাযোগ্য বই হিসেবে সরায়; সেটি ফিড ছেড়ে যায়"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "এই %lld টি পর্ব একটি লাইব্রেরি ফোল্ডারে সম্পাদনাযোগ্য বই হিসেবে সরায়; সেগুলো তাদের ফিড ছেড়ে যায়"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -159973,6 +160639,24 @@
     "Moves these %lld items into a library folder as books you can edit; they leave their feeds" : {
       "comment" : "What the Move to Library sheet says about several items, episodes and articles: they move into a library folder as books and leave their feeds. %lld is how many.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "এই %lld টি আইটেম একটি লাইব্রেরি ফোল্ডারে সম্পাদনাযোগ্য বই হিসেবে সরায়; সেটি ফিড ছেড়ে যায়"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "এই %lld টি আইটেম একটি লাইব্রেরি ফোল্ডারে সম্পাদনাযোগ্য বই হিসেবে সরায়; সেগুলো তাদের ফিড ছেড়ে যায়"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -160206,6 +160890,12 @@
     "Moves this article into a library folder as a book you can edit; it leaves the feed" : {
       "comment" : "What the Move to Library sheet says about one article: it moves into a library folder as a book and leaves its feed.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই আর্টিকেলটি একটি লাইব্রেরি ফোল্ডারে সম্পাদনাযোগ্য বই হিসেবে সরায়; এটি ফিড ছেড়ে যায়"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -160271,6 +160961,12 @@
     "Moves this episode into a library folder as a book you can edit; it leaves the feed" : {
       "comment" : "What the Move to Library sheet says about one episode: it moves into a library folder as a book and leaves its feed.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই পর্বটি একটি লাইব্রেরি ফোল্ডারে সম্পাদনাযোগ্য বই হিসেবে সরায়; এটি ফিড ছেড়ে যায়"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -160336,6 +161032,12 @@
     "Moves this item into a library folder as a book you can edit; it leaves the feed" : {
       "comment" : "What the Move to Library sheet says about one item, an episode or an article: it moves into a library folder as a book and leaves its feed.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই আইটেমটি একটি লাইব্রেরি ফোল্ডারে সম্পাদনাযোগ্য বই হিসেবে সরায়; এটি ফিড ছেড়ে যায়"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -161414,6 +162116,12 @@
     "Musepack" : {
       "comment" : "The name of the Musepack audio format. Inside sentences about importing a file of that format.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Musepack"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -162602,6 +163310,12 @@
     "Never delete played downloads" : {
       "comment" : "Title of the checkbox that turns off deleting downloads after playing.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "চালানো ডাউনলোড কখনও মুছবেন না"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -162667,6 +163381,12 @@
     "New" : {
       "comment" : "Badge on a book's row in the Library list: the book has never been opened.\nThe note on a feed's episode or article that is new: published since the subscription began and neither played nor opened. Title case.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "নতুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -162732,6 +163452,12 @@
     "New Articles" : {
       "comment" : "Title of the alert shown after a refresh TextMouth made by itself brought new articles. Title case.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "নতুন আর্টিকেল"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -162862,6 +163588,12 @@
     "New Episodes" : {
       "comment" : "Title of the alert shown after a refresh TextMouth made by itself brought new episodes. Title case.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "নতুন পর্ব"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -163258,6 +163990,12 @@
     "New Items" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of test as a condition's test pop-up names it. This is the case .hasNewItems.\nTitle of the alert shown after a refresh TextMouth made by itself brought new episodes and articles, or from several kinds of feed. Title case.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "নতুন আইটেম"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -163654,6 +164392,12 @@
     "New article: “%@”" : {
       "comment" : "The body of the notification of one new article. %@ is its title.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "নতুন আর্টিকেল: “%@”"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -163719,6 +164463,12 @@
     "New episode: “%@”" : {
       "comment" : "The body of the notification of one new episode. %@ is its title.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "নতুন পর্ব: “%@”"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -163920,6 +164670,12 @@
     "New item: “%@”" : {
       "comment" : "The body of the notification of one new item, an episode or an article. %@ is its title.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "নতুন আইটেম: “%@”"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -164050,6 +164806,12 @@
     "Newest articles kept downloaded or listed, from 1 to 2,000" : {
       "comment" : "VoiceOver hint of the number of the newest items, for a feed of articles. The range is the limits of the number.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সবচেয়ে নতুন কতগুলো আর্টিকেল ডাউনলোড করা বা তালিকাভুক্ত রাখা হবে, 1 থেকে 2,000"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -164115,6 +164877,12 @@
     "Newest episodes and articles kept downloaded or listed, from 1 to 2,000" : {
       "comment" : "VoiceOver hint of the number of the newest items, in Settings, for every feed. The range is the limits of the number.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সবচেয়ে নতুন কতগুলো পর্ব ও আর্টিকেল ডাউনলোড করা বা তালিকাভুক্ত রাখা হবে, 1 থেকে 2,000"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -164180,6 +164948,12 @@
     "Newest episodes kept downloaded or listed, from 1 to 2,000" : {
       "comment" : "VoiceOver hint of the number of the newest items, for a feed of episodes. The range is the limits of the number.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সবচেয়ে নতুন কতগুলো পর্ব ডাউনলোড করা বা তালিকাভুক্ত রাখা হবে, 1 থেকে 2,000"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -164245,6 +165019,12 @@
     "Newest items kept downloaded or listed, from 1 to 2,000" : {
       "comment" : "VoiceOver hint of the number of the newest items, for a feed of both episodes and articles. The range is the limits of the number.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সবচেয়ে নতুন কতগুলো আইটেম ডাউনলোড করা বা তালিকাভুক্ত রাখা হবে, 1 থেকে 2,000"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -165345,6 +166125,12 @@
     "No Thanks" : {
       "comment" : "Title and VoiceOver label of the button that leaves the books of a ZIP archive where they are. Title case.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "না, ধন্যবাদ"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -165871,6 +166657,12 @@
     "No books were found in “%@”." : {
       "comment" : "What the library says as an archive holds no book TextMouth reads. %@ is the archive's name. A sentence about what it holds may follow.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@”-এ কোনো বই পাওয়া যায়নি।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -166657,6 +167449,12 @@
     "No feed download is under way." : {
       "comment" : "What Speak Download Progress says while no feed download runs.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "কোনো ফিড ডাউনলোড চলছে না।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -166722,6 +167520,12 @@
     "No feed was subscribed to." : {
       "comment" : "What the Import OPML sheet says once the import ended and no feed was subscribed to.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "কোনো ফিডে সাবস্ক্রাইব করা হয়নি।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -166988,6 +167792,12 @@
     "No import is under way." : {
       "comment" : "What the Speak Import Progress command says when no import is under way.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "কোনো আমদানি চলছে না।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -167514,6 +168324,24 @@
     "No new books in “%@”: all %lld were already in your library." : {
       "comment" : "What the library says as an archive holds three or more books, all of which the library already has. %1$@ is the archive's name and %2$lld the number of books.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "“%1$@”-এ কোনো নতুন বই নেই: সব %2$lld টি বই আগে থেকেই আপনার লাইব্রেরিতে ছিল।"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "“%1$@”-এ কোনো নতুন বই নেই: সব %2$lld টি বই আগে থেকেই আপনার লাইব্রেরিতে ছিল।"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -167747,6 +168575,12 @@
     "No new books in “%@”: both were already in your library." : {
       "comment" : "What the library says as an archive holds two books, both of which the library already has. %@ is the archive's name.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@”-এ কোনো নতুন বই নেই: দুটিই আগে থেকেই আপনার লাইব্রেরিতে ছিল।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -167812,6 +168646,12 @@
     "No new books in “%@”: its one book was already in your library." : {
       "comment" : "What the library says as an archive holds one book, which the library already has. %@ is the archive's name.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@”-এ কোনো নতুন বই নেই: এর একমাত্র বইটি আগে থেকেই আপনার লাইব্রেরিতে ছিল।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -168787,6 +169627,12 @@
     "No podcasts were found for “%@”. Try other words, or type the feed's address." : {
       "comment" : "What the Add Feed sheet says when a podcast search found nothing. %@ is the words searched for.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@”-এর জন্য কোনো পডকাস্ট পাওয়া যায়নি। অন্য শব্দ চেষ্টা করুন, অথবা ফিডের ঠিকানা টাইপ করুন।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -170241,6 +171087,12 @@
     "No text could be read from this comic book archive: OCR could not run (%@)." : {
       "comment" : "Why a comic book archive was refused at import: text recognition (OCR) could not run. %@ is the reason, a phrase in English.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই কমিক বুক আর্কাইভ থেকে কোনো টেক্সট পড়া যায়নি: OCR চালানো যায়নি (%@)।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -170306,6 +171158,12 @@
     "No text could be read from this picture: OCR could not run (%@)." : {
       "comment" : "Why a picture was refused at import: text recognition (OCR) could not run. %@ is the reason, a phrase in English.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই ছবি থেকে কোনো টেক্সট পড়া যায়নি: OCR চালানো যায়নি (%@)।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -170371,6 +171229,12 @@
     "No text was found in the one picture of this comic book archive." : {
       "comment" : "Why a comic book archive of one picture was refused at import: text recognition found no text in it.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই কমিক বুক আর্কাইভের একমাত্র ছবিতে কোনো টেক্সট পাওয়া যায়নি।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -170436,6 +171300,12 @@
     "No text was found in this picture." : {
       "comment" : "Why a picture was refused at import: text recognition found no text in it.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই ছবিতে কোনো টেক্সট পাওয়া যায়নি।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -170501,6 +171371,24 @@
     "No text was found on any of the %lld pages of this comic book archive." : {
       "comment" : "Why a comic book archive of several pictures was refused at import: text recognition found no text on any page. %lld is the number of pages, always more than one.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "এই কমিক বুক আর্কাইভের %lld টি পৃষ্ঠার কোনোটিতেই টেক্সট পাওয়া যায়নি।"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "এই কমিক বুক আর্কাইভের %lld টি পৃষ্ঠার কোনোটিতেই টেক্সট পাওয়া যায়নি।"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -170734,6 +171622,24 @@
     "No text was found on any of the %lld pages of this picture." : {
       "comment" : "Why a picture of several pages, such as a TIFF, was refused at import: text recognition found no text on any page. %lld is the number of pages, always more than one.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "এই ছবির %lld টি পৃষ্ঠার কোনোটিতেই টেক্সট পাওয়া যায়নি।"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "এই ছবির %lld টি পৃষ্ঠার কোনোটিতেই টেক্সট পাওয়া যায়নি।"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -172139,6 +173045,12 @@
     "Not Downloaded" : {
       "comment" : "The note on a feed's episode or article row, and in a book's row, when its file is not on this Mac. Title case.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ডাউনলোড হয়নি"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -172204,6 +173116,12 @@
     "Not Enough Space to Convert Audio" : {
       "comment" : "Title of the alert that says a book's Ogg audio waits for disk space to be converted to AAC. Title case.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "অডিও রূপান্তরের জন্য যথেষ্ট জায়গা নেই"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -172470,6 +173388,12 @@
     "Not available in this window." : {
       "comment" : "Second sentence of the hint of a dimmed choice of the Add to Library sheet: its menu command does not work in the window the sheet is in. The choice's own summary comes first.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই উইন্ডোতে পাওয়া যায় না।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -172535,6 +173459,12 @@
     "Not checked" : {
       "comment" : "How an unsubscribed feed's last check reads when this Mac never checked it. Spoken after a comma with its first letter in lower case.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "চেক করা হয়নি"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -172600,6 +173530,12 @@
     "Not checked since %@" : {
       "comment" : "How an unsubscribed feed's last check reads. %@ is when, such as \"October 9 at 3:05 PM\". Spoken after a comma with its first letter in lower case.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ থেকে চেক করা হয়নি"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -172665,6 +173601,12 @@
     "Not checked yet" : {
       "comment" : "How a feed's last check reads before it was ever checked. Spoken after a comma with its first letter in lower case.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এখনও চেক করা হয়নি"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -172730,6 +173672,24 @@
     "Not extracted: TextMouth extracts archives within an archive only %lld levels deep." : {
       "comment" : "Why an archive found inside an archive was not extracted: it lies deeper than TextMouth searches. %lld is the number of levels TextMouth goes into.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "এক্সট্র্যাক্ট করা হয়নি: TextMouth আর্কাইভের ভেতরের আর্কাইভ শুধু %lld স্তর গভীর পর্যন্ত এক্সট্র্যাক্ট করে।"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "এক্সট্র্যাক্ট করা হয়নি: TextMouth আর্কাইভের ভেতরের আর্কাইভ শুধু %lld স্তর গভীর পর্যন্ত এক্সট্র্যাক্ট করে।"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -173678,6 +174638,12 @@
     "Nothing Imported" : {
       "comment" : "Title of the library's alert as a ZIP batch that brought no new book ends. Nothing failed, so it is no error. Title case.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "কিছুই আমদানি হয়নি"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -175823,6 +176789,12 @@
     "Ogg" : {
       "comment" : "The name of the Ogg container format. Inside sentences about importing a file of that format.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ogg"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -175953,6 +176925,12 @@
     "One copy is played from a recording and the other is read aloud from text, so replacing keeps only the existing copy's folder and place on the reading list, not its reading position, bookmarks and their notes, or settings." : {
       "comment" : "Part of the question asked about a duplicate where one copy is an audiobook played from a recording and the other is read aloud from text: what Replace Existing keeps of the library's copy. \"The existing copy\" is the library's copy.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "একটি কপি রেকর্ডিং থেকে চালানো হয় এবং অন্যটি টেক্সট থেকে পড়ে শোনানো হয়, তাই প্রতিস্থাপন করলে শুধু বিদ্যমান কপির ফোল্ডার ও পড়ার তালিকায় এর জায়গা থাকে, এর পড়ার অবস্থান, বুকমার্ক ও তাদের নোট, বা সেটিংস থাকে না।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -176290,6 +177268,12 @@
     "Only an episode or article downloaded in its feed can move into the library." : {
       "comment" : "Why Move to Library did nothing: none of the chosen items is an episode or article downloaded in its feed. Follows \"Could not move to the library: \".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "শুধু ফিডে ডাউনলোড করা পর্ব বা আর্টিকেল লাইব্রেরিতে সরানো যায়।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -176355,6 +177339,12 @@
     "Only at launch and when I ask" : {
       "comment" : "Title of the checkbox that turns the refresh interval off, so feeds refresh only at launch and on request.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "শুধু চালু হওয়ার সময় এবং আমি বললে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -176686,6 +177676,24 @@
     "Only the newest %lld listed" : {
       "comment" : "A choice of the List and download pop-up menu: only the newest items are listed. %lld is how many.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "শুধু সবচেয়ে নতুন %lld টি তালিকাভুক্ত"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "শুধু সবচেয়ে নতুন %lld টি তালিকাভুক্ত"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -176919,6 +177927,12 @@
     "Open" : {
       "comment" : "Menu item of a book's row that opens the book in a reader window.\nTitle of the command that opens a feed item's book, downloading it first when needed. Title case.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "খুলুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -178970,6 +179984,12 @@
     "Opens a sheet to open a book, import a folder, make a book from text, record audio, or add a feed" : {
       "comment" : "VoiceOver hint of the Add to Library toolbar button. Names the five choices the sheet offers, in the order the sheet lists them.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বই খুলতে, ফোল্ডার আমদানি করতে, টেক্সট থেকে বই বানাতে, অডিও রেকর্ড করতে বা ফিড যোগ করতে একটি শিট খোলে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -179035,6 +180055,12 @@
     "Opens a sheet to type a feed's address and choose its folder" : {
       "comment" : "VoiceOver hint of the Add Feed button in the Add to Library sheet.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ফিডের ঠিকানা টাইপ করতে ও এর ফোল্ডার বেছে নিতে একটি শিট খোলে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -179100,6 +180126,12 @@
     "Opens it" : {
       "comment" : "VoiceOver hint of a downloaded feed item's row: its default action opens it.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এটি খোলে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -179165,6 +180197,12 @@
     "Opens its book in your library" : {
       "comment" : "VoiceOver hint of the row of a feed item that was moved into the library: its default action opens its book.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "লাইব্রেরিতে এর বইটি খোলে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -179768,6 +180806,12 @@
     "Opens the feed's folder" : {
       "comment" : "VoiceOver hint of a feed's row in the Library.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ফিডের ফোল্ডারটি খোলে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -181709,6 +182753,12 @@
     "Page %@" : {
       "comment" : "Announcement on reaching a page of a book that has pages, and the start of a sentence naming a page. %@ is the page's label as the book names it, such as 13 or xii, an identifier written without digit grouping.\nTitle of the chapter of one page of a book of pictures, made at import. %@ is the page's number, an identifier written without digit grouping.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পৃষ্ঠা %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -182324,6 +183374,12 @@
     "Part of %@ could not be decoded and is kept as silence." : {
       "comment" : "Notice that part of one file's sound could not be decoded and the book keeps it as silence. %@ is the file's name in curly quotes.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@-এর একটি অংশ ডিকোড করা যায়নি এবং নীরবতা হিসেবে রাখা হয়েছে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -182454,6 +183510,24 @@
     "Part of %lld files, %@, could not be decoded and is kept as silence." : {
       "comment" : "Notice that part of several files' sound could not be decoded and the book keeps it as silence. %1$lld is the number of files and %2$@ their names in curly quotes, listed as a sentence lists them.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%1$lld টি ফাইলের অংশ, %2$@, ডিকোড করা যায়নি এবং নীরবতা হিসেবে রাখা হয়েছে।"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%1$lld টি ফাইলের অংশ, %2$@, ডিকোড করা যায়নি এবং নীরবতা হিসেবে রাখা হয়েছে।"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -185190,6 +186264,12 @@
     "Plain http: others can read or change what this feed sends." : {
       "comment" : "The note in Feed Info about a feed whose address uses plain http, which is not encrypted. Plain http is a term; keep it.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Plain http: অন্যরা এই ফিডের পাঠানো তথ্য পড়তে বা বদলাতে পারে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -186603,6 +187683,12 @@
     "Played" : {
       "comment" : "The note on a feed's episode that played to its end or was marked played. Title case.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "শোনা হয়েছে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -186668,6 +187754,12 @@
     "Played downloads are kept until you delete them" : {
       "comment" : "VoiceOver hint of the checkbox that turns off deleting downloads after playing.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "চালানো ডাউনলোড আপনি না মোছা পর্যন্ত থেকে যায়"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -188603,6 +189695,12 @@
     "Post a notification for each feed with new episodes" : {
       "comment" : "Label of the switch that posts a notification for each feed with new items after a refresh.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "নতুন পর্ব আছে এমন প্রতিটি ফিডের জন্য একটি বিজ্ঞপ্তি পাঠান"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -190809,6 +191907,12 @@
     "Published by" : {
       "comment" : "Label of the feed's publisher in Feed Info.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "প্রকাশক"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -191211,6 +192315,12 @@
     "Put the feed's folder in" : {
       "comment" : "Caption of the folder picker of the Add Feed sheet: the library folder that will hold the feed's own folder.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ফিডের ফোল্ডার রাখুন যেখানে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -191276,6 +192386,12 @@
     "Put the feeds' folders in" : {
       "comment" : "Caption of the folder picker of the Import OPML sheet: the library folder that will hold each feed's own folder.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ফিডগুলোর ফোল্ডার রাখুন যেখানে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -191471,6 +192587,12 @@
     "Puts the new copy in place of the one already in the library, keeping only the existing copy's folder and place on the reading list." : {
       "comment" : "VoiceOver hint of the Replace Existing button of the duplicate-book question, when one copy is an audiobook and the other is not. \"The existing copy\" is the copy in the library.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "নতুন কপিটি লাইব্রেরির আগের কপির জায়গায় রাখে, শুধু বিদ্যমান কপির ফোল্ডার ও পড়ার তালিকায় এর জায়গা রেখে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -191536,6 +192658,12 @@
     "Puts the new copy in place of the one already in the library, keeping the existing copy's reading position, bookmarks, and settings." : {
       "comment" : "VoiceOver hint of the Replace Existing button of the duplicate-book question, when both copies are of one kind. \"The existing copy\" is the copy in the library.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "নতুন কপিটি লাইব্রেরির আগের কপির জায়গায় রাখে, বিদ্যমান কপির পড়ার অবস্থান, বুকমার্ক ও সেটিংস রেখে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -192813,6 +193941,12 @@
     "Read" : {
       "comment" : "The note on a feed's article that was read to its end or marked read. Title case.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পড়া হয়েছে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -193014,6 +194148,12 @@
     "Read on the web:" : {
       "comment" : "The line that starts the link to an article's web page, at the end of the article's text as TextMouth saves it as a book. The article's address follows as a link.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ওয়েবে পড়ুন:"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -194946,6 +196086,12 @@
     "RealMedia" : {
       "comment" : "The name of the RealMedia format. Inside sentences about importing a file of that format.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "RealMedia"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -196483,6 +197629,12 @@
     "Records from a microphone into a new audiobook." : {
       "comment" : "One-line summary and VoiceOver hint of the Record choice of the Add to Library sheet.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "মাইক্রোফোন থেকে একটি নতুন অডিওবুকে রেকর্ড করে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -197334,6 +198486,12 @@
     "Refresh All Feeds" : {
       "comment" : "Title of the Library menu's command that refreshes every feed now. Title case.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সব ফিড রিফ্রেশ করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -197399,6 +198557,12 @@
     "Refresh All Feeds Now" : {
       "comment" : "Title of the button in the Feeds tab of Settings that refreshes every feed at once. Title case.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এখনই সব ফিড রিফ্রেশ করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -197464,6 +198628,12 @@
     "Refresh every feed when TextMouth opens" : {
       "comment" : "Label of the switch in the Feeds tab of Settings that refreshes every feed at launch.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth খোলার সময় প্রতিটি ফিড রিফ্রেশ করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -197529,6 +198699,12 @@
     "Refresh feeds every" : {
       "comment" : "Label of the number field and stepper that say how many hours pass between refreshes of every feed.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ফিড রিফ্রেশ করুন প্রতি"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -197594,6 +198770,12 @@
     "Refreshed %@: %@" : {
       "comment" : "What VoiceOver says once Refresh All Feeds has refreshed the feeds. The first %@ is how many feeds, such as \"3 feeds\"; the second is what the refresh found, such as \"2 new episodes.\" or \"nothing new.\", with its full stop.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ রিফ্রেশ করা হয়েছে: %2$@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -197665,6 +198847,12 @@
     "Refreshing" : {
       "comment" : "Heading of the first group of the Feeds tab of Settings: how feeds are refreshed. Title case.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "রিফ্রেশ"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -197730,6 +198918,12 @@
     "Refreshing all feeds…" : {
       "comment" : "What the Feeds tab of Settings shows and VoiceOver says while every feed is being refreshed.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সব ফিড রিফ্রেশ করা হচ্ছে…"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -201581,6 +202775,12 @@
     "Repack the pages of RAR comics as CBZ comics, then import those." : {
       "comment" : "Advice after the refusal of a comic whose pages are in a RAR archive.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "RAR কমিকের পৃষ্ঠাগুলো CBZ কমিক হিসেবে আবার প্যাক করুন, তারপর সেগুলো আমদানি করুন।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -201906,6 +203106,12 @@
     "Replace Existing" : {
       "comment" : "Title and VoiceOver label of the button of the duplicate-book question that replaces the copy in the library. Title case.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বিদ্যমানটি প্রতিস্থাপন করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -202497,6 +203703,12 @@
     "Replacing keeps the existing copy's reading position and bookmarks, moved to their words in the new text where found, and its settings, folder, and place on the reading list. An edit of its text is kept as a copy beside the new text, not applied." : {
       "comment" : "Part of the question asked about a duplicate book that is read from text: what Replace Existing keeps of the library's copy. \"The existing copy\" is the library's copy.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "প্রতিস্থাপন করলে বিদ্যমান কপির পড়ার অবস্থান ও বুকমার্ক রাখা হয়, নতুন টেক্সটে যেখানে পাওয়া যায় সেই শব্দে সরিয়ে, এবং এর সেটিংস, ফোল্ডার ও পড়ার তালিকায় এর জায়গাও। এর টেক্সটের সম্পাদনা নতুন টেক্সটের পাশে একটি কপি হিসেবে রাখা হয়, প্রয়োগ করা হয় না।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -202562,6 +203774,12 @@
     "Replacing keeps the existing copy's reading position, bookmarks, settings, folder, and place on the reading list, and its transcript when the audio is the same, rather than the transcript file found beside the new copy's audio." : {
       "comment" : "Part of the question asked about a duplicate audiobook whose new copy came with a transcript file beside its audio: Replace Existing keeps the library copy's own transcript over that file. \"The existing copy\" is the library's copy. A sentence about what is not kept follows.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "প্রতিস্থাপন করলে বিদ্যমান কপির পড়ার অবস্থান, বুকমার্ক, সেটিংস, ফোল্ডার ও পড়ার তালিকায় জায়গা রাখা হয়, এবং অডিও একই হলে এর ট্রান্সক্রিপ্টও, নতুন কপির অডিওর পাশে পাওয়া ট্রান্সক্রিপ্ট ফাইলের বদলে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -202627,6 +203845,12 @@
     "Replacing keeps the existing copy's reading position, bookmarks, settings, folder, and place on the reading list, and its transcript when the audio is the same." : {
       "comment" : "Part of the question asked about a duplicate audiobook: what Replace Existing keeps of the library's copy. \"The existing copy\" is the library's copy. A sentence about what is not kept follows.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "প্রতিস্থাপন করলে বিদ্যমান কপির পড়ার অবস্থান, বুকমার্ক, সেটিংস, ফোল্ডার ও পড়ার তালিকায় জায়গা রাখা হয়, এবং অডিও একই হলে এর ট্রান্সক্রিপ্টও।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -202692,6 +203916,12 @@
     "Replacing keeps the existing copy's reading position, bookmarks, settings, folder, and place on the reading list." : {
       "comment" : "Part of the question asked about a duplicate audiobook whose new copy came with a transcript file beside its audio: what Replace Existing keeps of the library's copy. \"The existing copy\" is the library's copy. Sentences about the transcript and what is not kept follow.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "প্রতিস্থাপন করলে বিদ্যমান কপির পড়ার অবস্থান, বুকমার্ক, সেটিংস, ফোল্ডার ও পড়ার তালিকায় জায়গা রাখা হয়।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -202822,6 +204052,12 @@
     "Replacing “%@”. This can take a moment." : {
       "comment" : "VoiceOver announcement as Replace Existing begins for a duplicate book; the sheet's buttons are dimmed until it is done. %@ is the book's title.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” প্রতিস্থাপন করা হচ্ছে। এতে একটু সময় লাগতে পারে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -205240,6 +206476,12 @@
     "Resubscribe" : {
       "comment" : "Title of the command that checks an unsubscribed feed again, in a feed's menu and among its VoiceOver actions. Title case.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "আবার সাবস্ক্রাইব করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -205305,6 +206547,12 @@
     "Resubscribed to %@. Checking it now…" : {
       "comment" : "What VoiceOver says as Resubscribe starts checking the feed. %@ is the feed's title.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@-এ আবার সাবস্ক্রাইব করা হয়েছে। এখন চেক করা হচ্ছে…"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -208977,6 +210225,12 @@
     "Save WordPerfect documents as Word or HTML files in a program that reads them, such as LibreOffice, then import those." : {
       "comment" : "Advice after the refusal of a WordPerfect document, which no part of macOS reads. LibreOffice is a program's name.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "WordPerfect নথি এমন প্রোগ্রামে Word বা HTML ফাইল হিসেবে সংরক্ষণ করুন যা সেগুলো পড়তে পারে, যেমন LibreOffice, তারপর সেগুলো আমদানি করুন।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -210136,6 +211390,12 @@
     "Save your subscriptions as an OPML file, which other feed readers import." : {
       "comment" : "The message of the Save panel that saves the subscriptions as an OPML file.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "আপনার সাবস্ক্রিপশন একটি OPML ফাইল হিসেবে সংরক্ষণ করুন, যা অন্য ফিড রিডার আমদানি করে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -211649,6 +212909,12 @@
     "Search" : {
       "comment" : "Title of the button that searches Apple's podcast directory.\nTitle of the reader toolbar's button that opens the search in the book.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "অনুসন্ধান করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -211980,6 +213246,12 @@
     "Search for a podcast" : {
       "comment" : "Caption and VoiceOver label of the field where the listener searches Apple's podcast directory.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পডকাস্ট অনুসন্ধান করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -212376,6 +213648,24 @@
     "Search results, %lld podcasts" : {
       "comment" : "VoiceOver label of the list of podcasts a search found. %lld is how many podcasts.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "অনুসন্ধানের ফলাফল, %lld টি পডকাস্ট"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "অনুসন্ধানের ফলাফল, %lld টি পডকাস্ট"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -213108,6 +214398,12 @@
     "Searching for podcasts…" : {
       "comment" : "What the Add Feed sheet shows and VoiceOver says while a podcast search runs.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পডকাস্ট অনুসন্ধান করা হচ্ছে…"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -213498,6 +214794,12 @@
     "Security" : {
       "comment" : "Label of the note about a feed that uses plain http, in Feed Info.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "নিরাপত্তা"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -217850,6 +219152,12 @@
     "Show Description…" : {
       "comment" : "Title of the command that shows a feed item's text in a sheet. The ellipsis says a sheet follows. Title case.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বিবরণ দেখান…"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -218550,6 +219858,12 @@
     "Show an alert when a refresh brings new episodes" : {
       "comment" : "Label of the switch that shows an alert after a refresh TextMouth made by itself brought new items.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "রিফ্রেশে নতুন পর্ব এলে একটি অ্যালার্ট দেখান"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -218680,6 +219994,12 @@
     "Show book information" : {
       "comment" : "VoiceOver label of the reader's Book Info button for a feed's episode or article, whose Book Info only shows.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বইয়ের তথ্য দেখান"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -223263,6 +224583,12 @@
     "Some Files Not Imported" : {
       "comment" : "Title of the library's alert as a ZIP batch that added at least one book ends having left some files out: a file failed or the batch was cancelled. Title case.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "কিছু ফাইল আমদানি হয়নি"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -226185,6 +227511,12 @@
     "Speex" : {
       "comment" : "The name of the Speex speech format. Inside sentences about importing a file of that format.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Speex"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -229003,6 +230335,24 @@
     "Stopped %lld feed downloads." : {
       "comment" : "Announced as Cancel stops several feed downloads. %lld is how many, the rule's waiting downloads among them.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld টি ফিড ডাউনলোড থামানো হয়েছে।"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld টি ফিড ডাউনলোড থামানো হয়েছে।"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -229307,6 +230657,12 @@
     "Stopped downloading “%@”." : {
       "comment" : "What VoiceOver says once Cancel Download stopped a download. %@ is the episode's or article's title.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” ডাউনলোড করা থামানো হয়েছে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -229567,6 +230923,12 @@
     "Stops checking; the feed and its downloads stay" : {
       "comment" : "VoiceOver hint of the Unsubscribe button in Feed Info when it acts at once.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "চেক করা বন্ধ করে; ফিড ও এর ডাউনলোড থেকে যায়"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -229697,6 +231059,12 @@
     "Stops every feed download, including those waiting, and deletes what they had downloaded." : {
       "comment" : "What VoiceOver says the feed downloads section's Cancel button does: it stops every feed download and deletes what they had downloaded.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "অপেক্ষায় থাকাগুলোসহ প্রতিটি ফিড ডাউনলোড থামায় এবং যা ডাউনলোড হয়েছিল তা মুছে ফেলে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -230282,6 +231650,12 @@
     "Stops the import under way and those waiting. Books already imported stay." : {
       "comment" : "VoiceOver hint of the import overlay's Cancel button.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "চলমান আমদানি এবং অপেক্ষায় থাকাগুলো থামায়। আগে আমদানি হওয়া বই থেকে যায়।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -231003,6 +232377,12 @@
     "Subscribe" : {
       "comment" : "Title of the button that subscribes to a feed, in the Add Feed sheet.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সাবস্ক্রাইব করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -231068,6 +232448,12 @@
     "Subscribe to %@" : {
       "comment" : "VoiceOver label of the Subscribe button of one podcast in the search results. %@ is the podcast's title.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ সাবস্ক্রাইব করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -231133,6 +232519,12 @@
     "Subscribed" : {
       "comment" : "Label of when the listener subscribed to the feed, in Feed Info.\nText of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A condition's relation as its relation pop-up names it, by its test and whether it is negated. This is the form for the other case of the condition.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সাবস্ক্রাইব করা হয়েছে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -231198,6 +232590,12 @@
     "Subscribed to %@. This feed uses plain http, so others can read or change what it sends; TextMouth still loads it." : {
       "comment" : "The warning shown once after subscribing to a feed whose address uses plain http. %@ is the feed's title.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@-এ সাবস্ক্রাইব করা হয়েছে। এই ফিড plain http ব্যবহার করে, তাই অন্যরা এর পাঠানো তথ্য পড়তে বা বদলাতে পারে; TextMouth তবুও এটি লোড করে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -231263,6 +232661,12 @@
     "Subscribed to %@: %@." : {
       "comment" : "What VoiceOver says once a subscription is made. The first %@ is the feed's title; the second is the feed's size, such as \"10 of 381 episodes listed\" or \"12 episodes\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@-এ সাবস্ক্রাইব করা হয়েছে: %2$@।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -231334,6 +232738,24 @@
     "Subscribed to %lld feeds." : {
       "comment" : "What the Import OPML sheet says once the import ended: how many feeds were subscribed to. %lld is how many.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld টি ফিডে সাবস্ক্রাইব করা হয়েছে।"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld টি ফিডে সাবস্ক্রাইব করা হয়েছে।"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -231567,6 +232989,12 @@
     "Subscribes to this podcast and fills the address field" : {
       "comment" : "VoiceOver hint of the Subscribe button of one podcast in the search results.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই পডকাস্টে সাবস্ক্রাইব করে এবং ঠিকানার ঘর পূরণ করে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -231632,6 +233060,12 @@
     "Subscribing to %@, %lld of %lld…" : {
       "comment" : "What the Import OPML sheet shows while it subscribes to the feeds. The first %@ is the title of the feed being subscribed to; the first %lld is its number in the file; the second %lld is how many feeds the file lists.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@-এ সাবস্ক্রাইব করা হচ্ছে, %3$lld টির মধ্যে %2$lld…"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -234772,6 +236206,12 @@
     "Text recognition could not read %@: %@." : {
       "comment" : "Warning after a book of pictures was imported: text recognition could not read some pages. %1$@ is how many of how many, such as \"1 of 12 pages\", and %2$@ names the pages and why, such as \"page 3 (its picture could not be decoded)\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "টেক্সট শনাক্তকরণ %1$@ পড়তে পারেনি: %2$@।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -234843,6 +236283,24 @@
     "Text recognition could not read any of the %lld pages: %@." : {
       "comment" : "Why a book of several pages of pictures was refused at import: text recognition could not read any page. %1$lld is the number of pages and %2$@ names the pages and why, such as \"pages 1 and 2 (its picture could not be decoded)\".",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "টেক্সট শনাক্তকরণ %lld টি পৃষ্ঠার কোনোটিই পড়তে পারেনি: %@।"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "টেক্সট শনাক্তকরণ %lld টি পৃষ্ঠার কোনোটিই পড়তে পারেনি: %@।"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -235076,6 +236534,12 @@
     "Text recognition could not read the only page: %@." : {
       "comment" : "Why a book of one page of a picture was refused at import: text recognition could not read its only page. %@ names the page and why, such as \"page 1 (its picture could not be decoded)\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "টেক্সট শনাক্তকরণ একমাত্র পৃষ্ঠাটি পড়তে পারেনি: %@।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -235608,6 +237072,12 @@
     "TextMouth Subscriptions" : {
       "comment" : "The title written into an exported OPML file of subscriptions. Title case.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth সাবস্ক্রিপশন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -235738,6 +237208,12 @@
     "TextMouth can't convert %@ files because its converter is missing from the app." : {
       "comment" : "Why a file was not imported: the converter TextMouth carries is missing from the app, which only a damaged copy is. %@ is the name of the file's format, such as WMA or Matroska. Advice to install the app again follows.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth %@ ফাইল রূপান্তর করতে পারে না, কারণ অ্যাপে এর কনভার্টার নেই।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -235803,6 +237279,12 @@
     "TextMouth can't convert the sound of “%@”: it is in a kind of audio it does not read." : {
       "comment" : "Why a file was not imported: its sound is in a codec TextMouth does not decode. %@ is the file's name.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth “%@”-এর সাউন্ড রূপান্তর করতে পারে না: এটি এমন অডিও ধরনের যা সে পড়ে না।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -235868,6 +237350,12 @@
     "TextMouth can't convert “%@”: its sound changes rate or channels partway through, by more than it can follow." : {
       "comment" : "Why a file was not imported: its sound changes its sample rate or its number of channels partway through, by more than the converter can follow. %@ is the file's name.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth “%@” রূপান্তর করতে পারে না: এর সাউন্ডের রেট বা চ্যানেল মাঝপথে এমন বদলায় যা সে অনুসরণ করতে পারে না।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -235933,6 +237421,12 @@
     "TextMouth can't convert “%@”: part of its sound is in one piece too large to decode." : {
       "comment" : "Why a file was not imported: one frame of its sound holds more samples than TextMouth decodes at once. %@ is the file's name.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth “%@” রূপান্তর করতে পারে না: এর সাউন্ডের একটি অংশ ডিকোড করার জন্য খুব বড় একটি টুকরোয় আছে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -235998,6 +237492,12 @@
     "TextMouth can't play this kind of file (%@)." : {
       "comment" : "Why a feed's episode could not be downloaded: the file is of a kind TextMouth does not play. %@ is the file's type or extension, such as audio/x-flac.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth এই ধরনের ফাইল চালাতে পারে না (%@)।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -236211,6 +237711,12 @@
     "TextMouth can't read this kind of picture (%@). Save it as a PNG or JPEG, then import that copy." : {
       "comment" : "Why a picture was refused at import: a kind of picture the system knows but TextMouth does not decode. %@ is the system's description of the kind, such as \"DNG image\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth এই ধরনের ছবি পড়তে পারে না (%@)। এটি PNG বা JPEG হিসেবে সংরক্ষণ করুন, তারপর সেই কপি আমদানি করুন।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -236276,6 +237782,12 @@
     "TextMouth can't read “%@” as %@. It may be damaged, or named for another format." : {
       "comment" : "Why a file was not imported: its bytes are not of the format its name says, or are damaged. %1$@ is the file's name and %2$@ the name of the format its name says, such as WMA or AVI video.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth “%1$@”-কে %2$@ হিসেবে পড়তে পারে না। এটি ক্ষতিগ্রস্ত হতে পারে, বা অন্য ফরম্যাটের নামে নাম দেওয়া।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -236927,6 +238439,12 @@
     "TextMouth cannot open copy-protected files." : {
       "comment" : "Advice after the refusal of audio that is locked to a store's own player, such as Audible's .aa and .aax files.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth কপি-সুরক্ষিত ফাইল খুলতে পারে না।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -237264,6 +238782,12 @@
     "TextMouth could not keep the new copy of “%@”. Choose Cancel to discard the copy, then import the file again." : {
       "comment" : "What the duplicate question says when Keep Both could not take the waiting mark off the new copy. %@ is the new copy's title. \"Cancel\" is the sheet's Cancel button.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth “%@”-এর নতুন কপি রাখতে পারেনি। কপিটি বাতিল করতে বাতিল করুন বেছে নিন, তারপর ফাইলটি আবার আমদানি করুন।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -237524,6 +239048,12 @@
     "TextMouth could not read the cue sheet “%@”, so its headings were not used." : {
       "comment" : "Notice that a cue sheet of an imported folder or archive was not used, because it could not be read. %@ is the cue sheet's name.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth CUE শিট “%@” পড়তে পারেনি, তাই এর হেডিং ব্যবহার করা হয়নি।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -237589,6 +239119,12 @@
     "TextMouth could not read the label file “%@”, so its headings were not used." : {
       "comment" : "Notice that an Audacity label file of an imported folder or archive was not used, because it could not be read. %@ is the label file's name.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth লেবেল ফাইল “%@” পড়তে পারেনি, তাই এর হেডিং ব্যবহার করা হয়নি।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -238499,6 +240035,12 @@
     "TextMouth couldn't keep the earlier text beside the new download, so the article stays as it was." : {
       "comment" : "Why a feed article's new download failed: its earlier text could not be kept beside it.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth নতুন ডাউনলোডের পাশে আগের টেক্সট রাখতে পারেনি, তাই আর্টিকেলটি আগের মতোই থাকে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -238694,6 +240236,12 @@
     "TextMouth couldn't make a folder for this feed." : {
       "comment" : "Why Subscribe could not make the feed's folder, when no better reason is known.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth এই ফিডের জন্য একটি ফোল্ডার বানাতে পারেনি।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -239193,6 +240741,12 @@
     "TextMouth couldn't save its list of this feed's downloads, so the download was kept. Try again once the library can be saved." : {
       "comment" : "Why a feed episode's download could not be deleted: the list of the feed's downloads could not be saved.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth এই ফিডের ডাউনলোডের তালিকা সংরক্ষণ করতে পারেনি, তাই ডাউনলোডটি রাখা হয়েছে। লাইব্রেরি সংরক্ষণ করা গেলে আবার চেষ্টা করুন।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -239258,6 +240812,12 @@
     "TextMouth couldn't save the feed's list of its items, so nothing moved." : {
       "comment" : "Why Move to Library did nothing: the feed's record could not be saved. Follows \"Could not move to the library: \".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth ফিডের আইটেমের তালিকা সংরক্ষণ করতে পারেনি, তাই কিছুই সরেনি।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -239323,6 +240883,12 @@
     "TextMouth couldn't save the library before deleting the feed “%@”, so nothing was deleted." : {
       "comment" : "Why Delete Feed did nothing: the library could not be saved first. %@ is the feed's title.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth “%@” ফিড মোছার আগে লাইব্রেরি সংরক্ষণ করতে পারেনি, তাই কিছুই মোছা হয়নি।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -239713,6 +241279,12 @@
     "TextMouth does not open RAR archives. Unpack them, then import what they hold." : {
       "comment" : "Advice after the refusal of a RAR archive that is no comic.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth RAR আর্কাইভ খোলে না। সেগুলো আনপ্যাক করুন, তারপর যা আছে তা আমদানি করুন।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -240011,6 +241583,24 @@
     "TextMouth downloads %lld of them again at their feeds' next checks, or the next time it opens." : {
       "comment" : "After Cancel stops feed downloads, several of which TextMouth downloads again by itself. %lld is how many of them it downloads again.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "TextMouth তাদের মধ্যে %lld টি ফিডগুলোর পরের চেকে, বা পরের বার খোলার সময়, আবার ডাউনলোড করে।"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "TextMouth তাদের মধ্যে %lld টি ফিডগুলোর পরের চেকে, বা পরের বার খোলার সময়, আবার ডাউনলোড করে।"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -240244,6 +241834,12 @@
     "TextMouth downloads 1 of them again at its feed's next check, or the next time it opens." : {
       "comment" : "After Cancel stops feed downloads, exactly one of which TextMouth downloads again by itself.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth তাদের মধ্যে 1 টি ফিডের পরের চেকে, বা পরের বার খোলার সময়, আবার ডাউনলোড করে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -240309,6 +241905,12 @@
     "TextMouth downloads each feed's newest again at its next check, or the next time it opens." : {
       "comment" : "After Cancel stops feed downloads that the newest-N rule downloads again by itself.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth প্রতিটি ফিডের সবচেয়ে নতুনগুলো তার পরের চেকে, বা পরের বার খোলার সময়, আবার ডাউনলোড করে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -242244,6 +243846,12 @@
     "TextMouth is replacing “%@” with the new copy. Try again when that finishes." : {
       "comment" : "Why an action on a book is refused while Replace Existing makes the new copy ready, such as Edit Text or opening the book. %@ is the book's title.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth “%@” নতুন কপি দিয়ে প্রতিস্থাপন করছে। সেটি শেষ হলে আবার চেষ্টা করুন।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -242309,6 +243917,12 @@
     "TextMouth is still carrying out your last answer. Wait until it finishes." : {
       "comment" : "What an import question says when it is answered again while the previous answer is still being carried out.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth এখনও আপনার শেষ উত্তর কার্যকর করছে। শেষ না হওয়া পর্যন্ত অপেক্ষা করুন।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -242374,6 +243988,12 @@
     "TextMouth is still saving them." : {
       "comment" : "The reason that ends \"Changes to the feed “Planet Money” could not be saved:\" in the quit prompt and banner. Them are the feed's changes.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth এখনও সেগুলো সংরক্ষণ করছে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -242634,6 +244254,12 @@
     "TextMouth isn't allowed to post notifications. Turn them on in System Settings, Notifications, TextMouth." : {
       "comment" : "What the notifications setting's help says while macOS does not allow TextMouth to post notifications. System Settings and Notifications are macOS's own names, in the language of macOS.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth-কে বিজ্ঞপ্তি পাঠানোর অনুমতি দেওয়া হয়নি। সিস্টেম সেটিংস, বিজ্ঞপ্তি, TextMouth-এ সেগুলো চালু করুন।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -242764,6 +244390,12 @@
     "TextMouth keeps the original file of audio it converts at import. An original takes about as much disk space as its converted file, or twice as much when uncompressed. Export offers it as the Original file. A feed episode's original is not kept: it can be downloaded again." : {
       "comment" : "Caption under the Keep Originals switch while it is on. \"Original file\" names the choice Export offers; keep it the same as that choice's translation.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth আমদানির সময় যে অডিও রূপান্তর করে তার মূল ফাইল রাখে। একটি মূল ফাইল রূপান্তরিত ফাইলের প্রায় সমান ডিস্ক জায়গা নেয়, বা সংকোচন না করা হলে দ্বিগুণ। রপ্তানি এটিকে মূল ফাইল হিসেবে দেয়। ফিডের পর্বের মূল ফাইল রাখা হয় না: তা আবার ডাউনলোড করা যায়।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -242965,6 +244597,12 @@
     "TextMouth left out %@, which hold no sound it can read." : {
       "comment" : "Notice that a book left out several files that hold no sound TextMouth can read. %@ is the files' count and names, such as \"2 files, “a.spx” and “b.spx”\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth %@ বাদ দিয়েছে, যেগুলোতে পড়ার মতো কোনো সাউন্ড নেই।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -243030,6 +244668,12 @@
     "TextMouth left out %@, which holds no sound it can read." : {
       "comment" : "Notice that a book left out one file that holds no sound TextMouth can read. %@ is the file's name in curly quotes.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth %@ বাদ দিয়েছে, যাতে পড়ার মতো কোনো সাউন্ড নেই।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -243095,6 +244739,12 @@
     "TextMouth left out %@, which need TextMouth's converter, missing from the app." : {
       "comment" : "Notice that a book left out several files that only TextMouth's own converter reads, because the converter is missing from the app. %@ is the files' count and names, such as \"2 files, “a.avi” and “b.wmv”\". Advice to install the app again follows.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth %@ বাদ দিয়েছে, যেগুলোর জন্য TextMouth-এর কনভার্টার দরকার, যা অ্যাপে নেই।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -243160,6 +244810,12 @@
     "TextMouth left out %@, which needs TextMouth's converter, missing from the app." : {
       "comment" : "Notice that a book left out one file that only TextMouth's own converter reads, because the converter is missing from the app. %@ is the file's name in curly quotes. Advice to install the app again follows.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth %@ বাদ দিয়েছে, যার জন্য TextMouth-এর কনভার্টার দরকার, যা অ্যাপে নেই।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -243290,6 +244946,12 @@
     "TextMouth makes a folder named after the feed in %@, and its episodes and articles download into it." : {
       "comment" : "The line under the folder picker of the Add Feed sheet. %@ is the library folder chosen, or the name of the library's top level.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth %@-এ ফিডের নামে একটি ফোল্ডার বানায়, এবং এর পর্ব ও আর্টিকেল সেটিতে ডাউনলোড হয়।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -243550,6 +245212,24 @@
     "TextMouth moved %lld new copies of duplicate books to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back." : {
       "comment" : "Alert after the launch moved the new copies of four or more duplicate books to the Trash, because their questions were never answered. %lld is the number of books. \"Put Back\" is Finder's command in the Trash.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "TextMouth ডুপ্লিকেট বইয়ের %lld টি নতুন কপি ট্র্যাশে সরিয়েছে, কারণ TextMouth বন্ধ হওয়ার আগে সেগুলো ডুপ্লিকেট হিসেবে রাখা হবে কি না সেই প্রশ্নের উত্তর দেওয়া হয়নি। সেগুলো ফিরে পেতে ট্র্যাশ খুলে আগের জায়গায় রাখুন বেছে নিন।"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "TextMouth ডুপ্লিকেট বইয়ের %lld টি নতুন কপি ট্র্যাশে সরিয়েছে, কারণ TextMouth বন্ধ হওয়ার আগে সেগুলো ডুপ্লিকেট হিসেবে রাখা হবে কি না সেই প্রশ্নের উত্তর দেওয়া হয়নি। সেগুলো ফিরে পেতে ট্র্যাশ খুলে আগের জায়গায় রাখুন বেছে নিন।"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -243783,6 +245463,12 @@
     "TextMouth moved the new copies of %@ to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back." : {
       "comment" : "Alert after the launch moved the new copies of two or three duplicate books to the Trash, because their questions were never answered. %@ is their titles in curly quotes, listed as a sentence lists them. \"Put Back\" is Finder's command in the Trash.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth %@-এর নতুন কপি ট্র্যাশে সরিয়েছে, কারণ TextMouth বন্ধ হওয়ার আগে সেগুলো ডুপ্লিকেট হিসেবে রাখা হবে কি না সেই প্রশ্নের উত্তর দেওয়া হয়নি। সেগুলো ফিরে পেতে ট্র্যাশ খুলে আগের জায়গায় রাখুন বেছে নিন।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -243848,6 +245534,12 @@
     "TextMouth moved the new copy of “%@” to the Trash, because the question whether to keep it as a duplicate was never answered before TextMouth closed. To get it back, open the Trash and choose Put Back." : {
       "comment" : "Alert after the launch moved the new copy of one duplicate book to the Trash, because its question was never answered. %@ is the book's title. \"Put Back\" is Finder's command in the Trash.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth “%@”-এর নতুন কপি ট্র্যাশে সরিয়েছে, কারণ TextMouth বন্ধ হওয়ার আগে সেটি ডুপ্লিকেট হিসেবে রাখা হবে কি না সেই প্রশ্নের উত্তর দেওয়া হয়নি। সেটি ফিরে পেতে ট্র্যাশ খুলে আগের জায়গায় রাখুন বেছে নিন।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -244918,6 +246610,24 @@
     "TextMouth skipped %lld entries of “%@”: %@." : {
       "comment" : "Notice after a playlist imported with entries left out. %1$lld is the number of entries skipped, %2$@ the playlist's name, and %3$@ the list of the entries, each with its reason in parentheses.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "TextMouth “%2$@”-এর %1$lld টি এন্ট্রি বাদ দিয়েছে: %3$@।"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "TextMouth “%2$@”-এর %1$lld টি এন্ট্রি বাদ দিয়েছে: %3$@।"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -245287,6 +246997,12 @@
     "TextMouth stopped reading this document because %@." : {
       "comment" : "Why a document was refused at import: the program that reads it ran too long or used too much memory and was stopped. %@ is the reason, a clause in English that follows \"because\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth এই নথি পড়া বন্ধ করেছে কারণ %@।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -245417,6 +247133,12 @@
     "TextMouth stops checking this feed for new articles." : {
       "comment" : "The first sentence of the confirmation before Unsubscribe, for a feed of articles.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth এই ফিডে নতুন আর্টিকেলের জন্য চেক করা বন্ধ করে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -245482,6 +247204,12 @@
     "TextMouth stops checking this feed for new episodes." : {
       "comment" : "The first sentence of the confirmation before Unsubscribe, for a feed of episodes.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth এই ফিডে নতুন পর্বের জন্য চেক করা বন্ধ করে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -245547,6 +247275,12 @@
     "TextMouth stops checking this feed for new items." : {
       "comment" : "The first sentence of the confirmation before Unsubscribe, for a feed of episodes and articles.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth এই ফিডে নতুন আইটেমের জন্য চেক করা বন্ধ করে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -246221,6 +247955,12 @@
     "TextMouth's converter could not make itself safe before reading “%@”, so it did not read the file." : {
       "comment" : "Why a file was not imported: TextMouth's converter could not confine itself before reading it, so it did not read the file. %@ is the file's name. Advice to install the app again follows.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth-এর কনভার্টার “%@” পড়ার আগে নিজেকে নিরাপদ করতে পারেনি, তাই ফাইলটি পড়েনি।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -246286,6 +248026,12 @@
     "TextMouth's converter gave back audio of “%@” that TextMouth could not read." : {
       "comment" : "Why a file was not imported: what TextMouth's converter gave back was not audio TextMouth reads, which only a damaged copy of the app could make. %@ is the file's name. Advice to install the app again follows.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth-এর কনভার্টার “%@”-এর যে অডিও ফেরত দিয়েছে তা TextMouth পড়তে পারেনি।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -246351,6 +248097,12 @@
     "TextMouth's converter stopped before the end of “%@”, so it could not be imported." : {
       "comment" : "Why a file was not imported: TextMouth's converter ended before the end of its sound, with no error. %@ is the file's name.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth-এর কনভার্টার “%@”-এর শেষ পর্যন্ত পৌঁছানোর আগেই থেমে গেছে, তাই এটি আমদানি করা যায়নি।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -246416,6 +248168,12 @@
     "TextMouth's converter stopped unexpectedly while reading “%@”. The file may be damaged." : {
       "comment" : "Why a file was not imported: TextMouth's converter stopped unexpectedly while reading it, as a damaged file can make it do. %@ is the file's name.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth-এর কনভার্টার “%@” পড়ার সময় হঠাৎ থেমে গেছে। ফাইলটি ক্ষতিগ্রস্ত হতে পারে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -246812,6 +248570,12 @@
     "That OPML file is damaged at line %@: %@." : {
       "comment" : "Why an OPML file of subscriptions could not be imported: its markup is damaged. The first %@ is the line number of the fault, an identifier written without digit grouping. The second is a short technical reason in English, from the parser, kept English as detail for a bug report.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সেই OPML ফাইল %1$@ লাইনে ক্ষতিগ্রস্ত: %2$@।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -246883,6 +248647,12 @@
     "That OPML file lists no feeds." : {
       "comment" : "Why an OPML file of subscriptions could not be imported: it lists no feed TextMouth can subscribe to.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সেই OPML ফাইলে কোনো ফিড নেই।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -246948,6 +248718,12 @@
     "That address isn't a web address TextMouth can open." : {
       "comment" : "Why a feed could not be fetched: its address is not an http or https address.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সেটি TextMouth খুলতে পারে এমন ওয়েব ঠিকানা নয়।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -247013,6 +248789,12 @@
     "That file is empty." : {
       "comment" : "Why an OPML file of subscriptions could not be imported: it is empty.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সেই ফাইলটি খালি।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -247078,6 +248860,12 @@
     "That file isn't an OPML list of subscriptions." : {
       "comment" : "Why an OPML file of subscriptions could not be imported: it is another kind of file.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সেই ফাইল সাবস্ক্রিপশনের OPML তালিকা নয়।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -247143,6 +248931,12 @@
     "That isn't a web address. Enter a feed's address, or the address of a page that names one." : {
       "comment" : "Why Subscribe refused: the address typed is not a web address.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সেটি ওয়েব ঠিকানা নয়। একটি ফিডের ঠিকানা, বা ফিডের নাম উল্লেখ করা পৃষ্ঠার ঠিকানা লিখুন।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -247403,6 +249197,12 @@
     "That page doesn't name a feed." : {
       "comment" : "Why Subscribe refused: the web page names no feed.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সেই পৃষ্ঠা কোনো ফিডের নাম উল্লেখ করেনি।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -247468,6 +249268,24 @@
     "That page names %lld feeds. Choose one, then Subscribe." : {
       "comment" : "What the Add Feed sheet says when a web page names several feeds. %lld is how many feeds the page names. Subscribe is the name of the Subscribe button.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "সেই পৃষ্ঠায় %lld টি ফিডের নাম আছে। একটি বেছে নিন, তারপর সাবস্ক্রাইব করুন।"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "সেই পৃষ্ঠায় %lld টি ফিডের নাম আছে। একটি বেছে নিন, তারপর সাবস্ক্রাইব করুন।"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -248490,6 +250308,24 @@
     "The %@ kept for %lld removed downloads was deleted." : {
       "comment" : "The last sentence of the announcement of Unsubscribe: what the feed kept for one removed download was deleted. %@ is one part that was kept, such as \"transcript\"; %lld is how many removed downloads. The verb is singular.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%2$lld টি সরানো ডাউনলোডের জন্য রাখা %1$@ মুছে ফেলা হয়েছে।"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%2$lld টি সরানো ডাউনলোডের জন্য রাখা %1$@ মুছে ফেলা হয়েছে।"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -248723,6 +250559,24 @@
     "The %@ kept for %lld removed downloads were deleted." : {
       "comment" : "The last sentence of the announcement of Unsubscribe: what the feed kept for removed downloads was deleted. %@ is a list of what was kept, such as \"places and bookmarks\"; %lld is how many removed downloads. The verb is plural.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%2$lld টি সরানো ডাউনলোডের জন্য রাখা %1$@ মুছে ফেলা হয়েছে।"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%2$lld টি সরানো ডাউনলোডের জন্য রাখা %1$@ মুছে ফেলা হয়েছে।"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -252249,6 +254103,12 @@
     "The address of %@ doesn't hold a feed TextMouth can read." : {
       "comment" : "Why a feed could not be refreshed or subscribed to: its address holds something that is not a feed, such as a web page. %@ is the feed's title or server.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@-এর ঠিকানায় TextMouth পড়তে পারে এমন কোনো ফিড নেই।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -252314,6 +254174,24 @@
     "The archive also holds %lld other books that were not imported; unzip it to import them." : {
       "comment" : "Second sentence of the notice about an archive that holds other books than the one imported. %lld is the number of other books.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "আর্কাইভে আরও %lld টি বই আছে যা আমদানি হয়নি; সেটি আমদানি করতে আনজিপ করুন।"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "আর্কাইভে আরও %lld টি বই আছে যা আমদানি হয়নি; সেগুলো আমদানি করতে আনজিপ করুন।"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -252831,6 +254709,12 @@
     "The archive holds a file whose path leads outside it, which is never extracted." : {
       "comment" : "Why an archive was refused at import: it holds a file whose path climbs out of the folder it is extracted into.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "আর্কাইভে এমন একটি ফাইল আছে যার পাথ এর বাইরে যায়, যা কখনও এক্সট্র্যাক্ট করা হয় না।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -252896,6 +254780,12 @@
     "The archive holds a link to a file outside it, which is never extracted." : {
       "comment" : "Why an archive was refused at import: it holds a symbolic link to a file outside it.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "আর্কাইভে এর বাইরের একটি ফাইলের লিঙ্ক আছে, যা কখনও এক্সট্র্যাক্ট করা হয় না।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -253026,6 +254916,12 @@
     "The archive is damaged, incomplete, or not a ZIP archive." : {
       "comment" : "Why an archive was refused at import: it could not be read as a ZIP archive.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "আর্কাইভটি ক্ষতিগ্রস্ত, অসম্পূর্ণ, বা ZIP আর্কাইভ নয়।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -253162,6 +255058,12 @@
     "The article leaves the list for good, and its download, if any, is deleted." : {
       "comment" : "First sentence of the confirmation before an article is deleted from its feed.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "আর্টিকেলটি চিরতরে তালিকা থেকে চলে যায়, এবং এর ডাউনলোড, থাকলে, মুছে ফেলা হয়।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -253227,6 +255129,12 @@
     "The article leaves the list for good; the book it became in your library stays." : {
       "comment" : "First sentence of the confirmation before an article that was moved into the library is deleted from its feed.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "আর্টিকেলটি চিরতরে তালিকা থেকে চলে যায়; আপনার লাইব্রেরিতে এটি থেকে তৈরি হওয়া বইটি থেকে যায়।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -253357,6 +255265,12 @@
     "The audio converted from %@ could not be given its name." : {
       "comment" : "Why a converted audio file was refused: it could not be given its final name. %@ is the source file's name.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ থেকে রূপান্তরিত অডিওকে তার নাম দেওয়া যায়নি।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -253422,6 +255336,12 @@
     "The audio converted from %@ could not be written (%@)." : {
       "comment" : "Why converted audio was not saved as an .m4a file. %1$@ is the source file's name and %2$@ the error's domain and code, in the system's words.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ থেকে রূপান্তরিত অডিও লেখা যায়নি (%2$@)।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -253493,6 +255413,12 @@
     "The audio converted from %@ failed its check: %@." : {
       "comment" : "Why a converted audio file was refused: it failed the check made after conversion. %1$@ is the source file's name and %2$@ the reason, a phrase with no full stop.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ থেকে রূপান্তরিত অডিও যাচাইয়ে ব্যর্থ হয়েছে: %2$@।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -253830,6 +255756,12 @@
     "The audio file %@ could not be read for converting." : {
       "comment" : "Why an audio file could not be converted at import: it could not be read as audio, or it is only in the cloud. %@ is the file's name.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "রূপান্তরের জন্য অডিও ফাইল %@ পড়া যায়নি।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -253966,6 +255898,24 @@
     "The audio file %@ has %lld channels but does not say which is which, so TextMouth cannot mix it to stereo." : {
       "comment" : "Why an audio file was not converted: it has more than two channels and does not say which is which, so a mix to stereo would keep two arbitrary channels. %1$@ is the file's name and %2$lld the number of channels, always more than two.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "অডিও ফাইল %1$@-এ %2$lld টি চ্যানেল আছে কিন্তু কোনটি কোনটি তা বলা নেই, তাই TextMouth এটিকে স্টেরিওতে মেশাতে পারে না।"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "অডিও ফাইল %1$@-এ %2$lld টি চ্যানেল আছে কিন্তু কোনটি কোনটি তা বলা নেই, তাই TextMouth এটিকে স্টেরিওতে মেশাতে পারে না।"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -255068,6 +257018,12 @@
     "The book has no package to hold its text." : {
       "comment" : "Why an import failed: the book has no package folder to hold its text. Follows \"Import failed: \".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বইটির টেক্সট রাখার কোনো প্যাকেজ নেই।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
