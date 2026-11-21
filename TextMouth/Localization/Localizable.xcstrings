@@ -11239,7 +11239,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ enthält eine widersprüchliche Version von %2$@, zu einer anderen Zeit gesichert."
+            "value" : "%1$@ enthält eine widersprüchliche Version %2$@, zu einer anderen Zeit gesichert."
           }
         },
         "en" : {
@@ -11382,7 +11382,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ enthält eine widersprüchliche Version von %2$@, gesichert am %3$@."
+            "value" : "%1$@ enthält eine widersprüchliche Version %2$@, gesichert am %3$@."
           }
         },
         "en" : {
@@ -11525,7 +11525,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ enthält eine widersprüchliche Version von %2$@, gesichert auf „%3$@“ am %4$@."
+            "value" : "%1$@ enthält eine widersprüchliche Version %2$@, gesichert auf „%3$@“ am %4$@."
           }
         },
         "en" : {
@@ -11668,7 +11668,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ enthält eine widersprüchliche Version von %2$@, gesichert auf „%3$@“."
+            "value" : "%1$@ enthält eine widersprüchliche Version %2$@, gesichert auf „%3$@“."
           }
         },
         "en" : {
@@ -20525,7 +20525,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ hat eine widersprüchliche Kopie von %2$@ beiseitegelegt: „%3$@“ in %4$@."
+            "value" : "%1$@ hat eine widersprüchliche Kopie %2$@, beiseitegelegt: „%3$@“ in %4$@."
           }
         },
         "en" : {
@@ -68738,7 +68738,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%1$lld Treffer in %2$@"
+                  "value" : "%1$lld Treffer, verteilt auf %2$@"
                 }
               }
             }
@@ -216996,7 +216996,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Experimentell. Eine Folge von Medientasten oder AirPods-Bedienungen innerhalb kurzer Zeit startet den zuletzt verwendeten Einschlaf-Timer neu, praktisch nach seinem Ablauf."
+            "value" : "Experimentell. Eine Folge von Befehlen über Medientasten oder AirPods innerhalb kurzer Zeit startet den zuletzt verwendeten Einschlaf-Timer neu – praktisch, nachdem er abgelaufen ist."
           }
         },
         "es" : {
@@ -251921,7 +251921,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Wenn %1$@ später von %2$@ eintrifft, behält %3$@ möglicherweise zwei Kopien davon."
+            "value" : "Wenn %1$@ später von %2$@ eintrifft, liegen in %3$@ möglicherweise zwei Kopien davon."
           }
         },
         "en" : {
@@ -252201,7 +252201,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Wenn die Datei später von %@ eintrifft, benennt sie dieselbe Bibliothek."
+            "value" : "Wenn die Datei später von %@ eintrifft, bezeichnet sie dieselbe Bibliothek."
           }
         },
         "es" : {
@@ -252475,7 +252475,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Wenn die eigene Datei %1$@ der Bibliothek später von %2$@ eintrifft, behält %3$@ möglicherweise zwei Kopien davon, und dieser Mac und der andere wären sich uneins, welche Bibliothek dies ist."
+            "value" : "Wenn die eigene Datei %1$@ der Bibliothek später von %2$@ eintrifft, liegen in %3$@ möglicherweise zwei Kopien davon, und dieser Mac und der andere wären sich uneins, welche Bibliothek dies ist."
           }
         },
         "en" : {
@@ -254536,7 +254536,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Importiere es erneut, wodurch nach dem Duplikat gefragt wird, und wähle Vorhandenes ersetzen, damit die im Datenordner gespeicherte Kopie an seine Stelle tritt, oder entferne es aus der Bibliothek und verschiebe dann den Datenordner erneut."
+            "value" : "Importiere es erneut, wodurch nach dem Duplikat gefragt wird, und wähle „Vorhandenes ersetzen“, damit die im Datenordner gespeicherte Kopie an seine Stelle tritt, oder entferne es aus der Bibliothek und verschiebe dann den Datenordner erneut."
           }
         },
         "es" : {
@@ -266952,7 +266952,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Enthalten: %@."
+            "value" : "Inhalt: %@."
           }
         },
         "es" : {
@@ -267512,7 +267512,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sie enthält den Feed „%1$@“ mit %2$@."
+            "value" : "Sie enthält den Feed „%1$@“: %2$@."
           }
         },
         "en" : {
@@ -267655,7 +267655,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sie enthält den Feed „%1$@“ mit %2$@; der Eintrag enthält %3$@."
+            "value" : "Sie enthält den Feed „%1$@“: %2$@; die Eintragsdatei enthält %3$@."
           }
         },
         "en" : {
@@ -283290,7 +283290,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Führende Artikel"
+            "value" : "Artikel am Titelanfang"
           }
         },
         "es" : {
@@ -295544,7 +295544,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Zum Anfang wiederholen"
+            "value" : "Von vorn wiederholen"
           }
         },
         "es" : {
@@ -307637,13 +307637,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Mehr als %1$lld Treffer in %2$@"
+                  "value" : "Mehr als %1$lld Treffer, verteilt auf %2$@"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Mehr als %1$lld Treffer in %2$@"
+                  "value" : "Mehr als %1$lld Treffer, verteilt auf %2$@"
                 }
               }
             }
@@ -345483,7 +345483,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Keine (global verwenden)"
+            "value" : "Keine (globale Sprungwerte)"
           }
         },
         "es" : {
@@ -398069,7 +398069,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Erstellt die Ordnerstruktur neu und migriert Bücher mit alter Speicherung."
+            "value" : "Erstellt die Ordnerstruktur neu und migriert Bücher, die noch das alte Speicherformat nutzen."
           }
         },
         "es" : {
@@ -407048,7 +407048,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Downloads von %@ entfernt"
+            "value" : "Downloads der %@ entfernt"
           }
         },
         "es" : {
@@ -417192,7 +417192,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sichern erneut versuchen steht oben im Bibliotheksfenster."
+            "value" : "„Erneut versuchen“ steht oben im Bibliotheksfenster."
           }
         },
         "es" : {
@@ -437012,7 +437012,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Lege den Kurzbefehl mit %1$@ im Tab %2$@ fest; der Standard ist %3$@."
+            "value" : "Lege den Kurzbefehl unter „%1$@“ im Tab „%2$@“ fest; der Standard ist %3$@."
           }
         },
         "en" : {
@@ -462605,13 +462605,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Nicht mehr %lld Buch auf diesem Mac behalten"
+                  "value" : "%lld Buch nicht mehr auf diesem Mac behalten"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Nicht mehr %lld Bücher auf diesem Mac behalten"
+                  "value" : "%lld Bücher nicht mehr auf diesem Mac behalten"
                 }
               }
             }
@@ -464721,7 +464721,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nach %1$@ von %2$@ gestoppt:"
+            "value" : "Nach %1$@ der %2$@ gestoppt:"
           }
         },
         "en" : {
@@ -498747,7 +498747,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth öffnet beim nächsten Öffnen die Bibliothek in %1$@, konnte sich aber nicht von selbst erneut öffnen: %2$@"
+            "value" : "TextMouth öffnet beim nächsten Start die Bibliothek in %1$@, konnte sich aber nicht selbst neu starten: %2$@"
           }
         },
         "en" : {
@@ -504256,7 +504256,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Die %1$@ in der Liste werden durch die %2$@ von TextMouth ersetzt."
+            "value" : "TextMouth ersetzt die %1$@ in der Liste durch seine %2$@."
           }
         },
         "en" : {
@@ -526483,7 +526483,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Die Downloads von %1$@ wurden nicht entfernt: %2$@"
+            "value" : "Die Downloads der %1$@ wurden nicht entfernt: %2$@"
           }
         },
         "en" : {
@@ -540030,7 +540030,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Der Bibliotheksindex wurde mit %@ neu aufgebaut."
+            "value" : "Der Bibliotheksindex wurde neu aufgebaut und enthält %@."
           }
         },
         "es" : {
@@ -541406,7 +541406,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Der Bibliotheksindex ist auf diesem Mac, aber ihre Identitätsdatei %1$@ ist von %2$@ noch nicht angekommen."
+            "value" : "Der Index der Bibliothek ist auf diesem Mac, aber ihre Identitätsdatei %1$@ ist von %2$@ noch nicht angekommen."
           }
         },
         "en" : {
@@ -561297,7 +561297,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Der nicht lesbare Bibliotheksindex ist nicht mehr vorhanden, daher hat TextMouth die aus deinen Büchern neu aufgebaute Bibliothek als neuen Index gesichert, mit %@."
+            "value" : "Der nicht lesbare Bibliotheksindex ist nicht mehr vorhanden, daher hat TextMouth die aus deinen Büchern neu aufgebaute Bibliothek als neuen Index gesichert, der %@ enthält."
           }
         },
         "es" : {
@@ -631714,7 +631714,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "die Eintragsdatei eines Buchs, %@"
+            "value" : "der Eintragsdatei eines Buchs, %@"
           }
         },
         "es" : {
@@ -631851,7 +631851,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "der Index der Folgen eines Feeds, %@"
+            "value" : "des Index der Folgen eines Feeds, %@"
           }
         },
         "es" : {
@@ -631988,7 +631988,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "die Eintragsdatei eines Feeds, %@"
+            "value" : "der Eintragsdatei eines Feeds, %@"
           }
         },
         "es" : {
@@ -672237,7 +672237,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "der Bibliotheksindex, %@"
+            "value" : "des Bibliotheksindex, %@"
           }
         },
         "es" : {
