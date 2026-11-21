@@ -238825,6 +238825,12 @@
             "value" : "TextMouth n’a pas encore lu les en-têtes de ce livre. Ouvrez le livre une fois, puis exportez de nouveau."
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth belum membaca tajuk buku ini. Buka buku sekali, lalu ekspor lagi."
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -239576,6 +239582,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth ne télécharge rien pour le moment."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth tidak sedang mengunduh sekarang."
           }
         },
         "it" : {
@@ -242287,6 +242299,12 @@
             "value" : "TextMouth a quitté le %1$@ : sa mémoire a atteint %2$@ Go pendant la lecture de %3$@, à cause d’un défaut de l’audio de macOS. Votre position a été enregistrée."
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth keluar pada %1$@: memorinya membengkak hingga %2$@ GB saat %3$@ diputar, karena kesalahan pada audio macOS. Posisi Anda telah disimpan."
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -242356,6 +242374,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth a quitté le %1$@ : sa mémoire a atteint %2$@ Go pendant la lecture d’un livre, à cause d’un défaut de l’audio de macOS. Votre position a été enregistrée."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth keluar pada %1$@: memorinya membengkak hingga %2$@ GB saat sebuah buku diputar, karena kesalahan pada audio macOS. Posisi Anda telah disimpan."
           }
         },
         "it" : {
@@ -242429,6 +242453,12 @@
             "value" : "TextMouth a quitté le %1$@ : sa mémoire a atteint %2$@ Go alors que rien n’était en lecture. Votre position a été enregistrée."
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth keluar pada %1$@: memorinya membengkak hingga %2$@ GB saat tidak ada yang diputar. Posisi Anda telah disimpan."
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -242494,6 +242524,12 @@
             "value" : "TextMouth lit les fichiers BRF et BRL que vous ajoutez à partir de maintenant avec ces caractères, et reconnaît tout seul les motifs braille Unicode. La fenêtre Exporter en démarre un BRF avec eux. Un livre garde ses caractères d’import, que la fenêtre Informations sur le livre peut modifier."
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth membaca file BRF dan BRL yang Anda tambahkan mulai sekarang dengan karakter ini, dan mengenali pola braille Unicode sendiri. Dialog Ekspor memulai BRF dengan karakter ini. Buku menyimpan karakter impornya, yang dapat diubah di Informasi Buku."
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -242557,6 +242593,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth lit les fichiers braille (BRF, BRL et PEF) avec ce code et exporte avec lui, sauf si la fenêtre Exporter en choisit un autre. Un livre garde le code avec lequel il a été importé."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth membaca file braille (BRF, BRL, dan PEF) dengan kode ini dan mengekspor dengannya kecuali dialog Ekspor memilih kode lain. Buku menyimpan kode yang dipakai saat diimpor."
           }
         },
         "it" : {
@@ -243123,6 +243165,12 @@
             "value" : "TextMouth a arrêté %1$@ parce que %2$@, et ne réessaiera pas avant que TextMouth soit fermé puis rouvert."
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth menghentikan %1$@ karena %2$@, dan tidak akan mencoba lagi sampai TextMouth ditutup dan dibuka kembali."
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -243186,6 +243234,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth a arrêté %@ plus tôt parce que cela prenait trop de temps, et ne réessaiera pas avant que TextMouth soit fermé puis rouvert."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth menghentikan %@ sebelumnya karena terlalu lama, dan tidak akan mencoba lagi sampai TextMouth ditutup dan dibuka kembali."
           }
         },
         "it" : {
@@ -243316,6 +243370,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth a arrêté la traduction braille parce que %@."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth menghentikan penerjemahan braille karena %@."
           }
         },
         "it" : {
@@ -244711,6 +244771,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth : aucun détail de compilation enregistré"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth: tidak ada detail build yang tercatat"
           }
         },
         "it" : {
@@ -248029,6 +248095,12 @@
             "value" : "Les %lld livres sélectionnés sont déjà dans la liste de lecture."
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%lld buku yang dipilih sudah ada di daftar bacaan."
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -248820,6 +248892,12 @@
             "value" : "Le fichier EPUB n’a pas pu être écrit, car le disque est peut-être plein."
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "File EPUB tidak dapat ditulis, karena disk mungkin penuh."
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -248885,6 +248963,12 @@
             "value" : "Le fichier EPUB n’a pas pu être écrit."
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "File EPUB tidak dapat ditulis."
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -248948,6 +249032,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le fichier EPUB n’a pas pu être écrit : %@."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "File EPUB tidak dapat ditulis: %@."
           }
         },
         "it" : {
@@ -249769,6 +249859,18 @@
             }
           }
         },
+        "id" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "MP3 memiliki bab untuk %@ pertama dari %lld tajuknya; ekspor sebagai M4B untuk satu bab bagi masing-masing."
+                }
+              }
+            }
+          }
+        },
         "it" : {
           "variations" : {
             "plural" : {
@@ -249934,6 +250036,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le moteur vocal du Mac a refusé de lire une partie de « %@ », même avec ses chevrons rendus silencieux."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mesin ucapan Mac menolak mengucapkan sebagian dari “%@”, bahkan saat tanda kurungnya disenyapkan."
           }
         },
         "it" : {
@@ -252991,6 +253099,12 @@
             "value" : "Le livre n’a aucune transcription synchronisée à écrire en sous-titres."
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Buku tidak memiliki transkrip bertanda waktu untuk ditulis sebagai takarir."
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -253119,6 +253233,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le livre est dans %@."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Buku ada di %@."
           }
         },
         "it" : {
@@ -253836,6 +253956,12 @@
             "value" : "L’audio du livre tel qu’il était avant sa première modification, que TextMouth conserve tant que le réglage Audio d’origine est activé."
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Audio buku sebelum pengeditan pertamanya, yang disimpan TextMouth selama pengaturan Audio asli aktif."
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -254096,6 +254222,12 @@
             "value" : "L’audio du livre : son fichier, ou ses pistes dans un dossier portant le nom du livre, chacune nommée d’après son chapitre."
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Audio buku: filenya, atau trek-nya dalam folder bernama sesuai buku, masing-masing dinamai sesuai babnya."
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -254159,6 +254291,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le fichier du livre tel qu’importé ; pour un livre audio, ses fichiers audio avant que TextMouth les convertisse."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "File buku seperti saat diimpor; untuk buku audio, file audionya sebelum TextMouth mengonversinya."
           }
         },
         "it" : {
@@ -254289,6 +254427,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Les en-têtes du livre ont changé après l’ouverture de la fenêtre. Rouvrez-la et choisissez de nouveau la plage."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tajuk buku berubah setelah dialog dibuka. Buka kembali dan pilih rentangnya lagi."
           }
         },
         "it" : {
@@ -254486,6 +254630,12 @@
             "value" : "Le texte du livre en %@, créé à partir de son Markdown."
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Teks buku sebagai %@, dibuat dari Markdown-nya."
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -254551,6 +254701,12 @@
             "value" : "Le texte du livre en Markdown, avec ses en-têtes, ses listes et ses mises en valeur."
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Teks buku sebagai Markdown, dengan tajuk, daftar, dan penekanannya."
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -254614,6 +254770,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le texte du livre n’a pas pu être converti en document Word 97-2003."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Teks buku tidak dapat dijadikan dokumen Word 97-2003."
           }
         },
         "it" : {
@@ -254811,6 +254973,12 @@
             "value" : "Le texte du livre lu par sa voix dans un seul fichier audio, avec un chapitre par en-tête."
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Teks buku diucapkan oleh suaranya ke dalam satu file audio, dengan satu bab untuk setiap tajuk."
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -254939,6 +255107,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "La voix du livre ne peut pas être enregistrée dans un fichier. Choisissez une autre voix avec le bouton %@ du lecteur, puis exportez de nouveau."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Suara buku tidak dapat direkam ke file. Pilih suara lain dengan tombol %@ di pembaca, lalu ekspor lagi."
           }
         },
         "it" : {
@@ -255071,6 +255245,12 @@
             "value" : "Les livres sont dans %@."
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Buku-buku ada di %@."
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -255136,6 +255316,12 @@
             "value" : "Le code braille pour lire et écrire le braille."
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kode braille untuk membaca dan menulis braille."
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -255199,6 +255385,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le code braille dans lequel le livre est écrit."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kode braille tempat buku ditulis."
           }
         },
         "it" : {
@@ -255331,6 +255523,12 @@
             "value" : "La table braille écrit une cellule à huit points, %@, mais les fichiers BRF et PEF de TextMouth n’ont que six points."
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tabel braille menulis sel delapan titik, %@, tetapi file BRF dan PEF TextMouth hanya enam titik."
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -255394,6 +255592,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "La table braille écrit « %@ » comme une cellule à huit points, mais les fichiers BRF et PEF de TextMouth n’ont que six points."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tabel braille menulis “%@” sebagai sel delapan titik, tetapi file BRF dan PEF TextMouth hanya enam titik."
           }
         },
         "it" : {
@@ -255461,6 +255665,12 @@
             "value" : "La table choisie est intégrée à TextMouth (liblouis %@)."
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tabel yang dipilih sudah ada di dalam TextMouth (liblouis %@)."
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -255526,6 +255736,12 @@
             "value" : "La table choisie est l’une des tables braille VoiceOver de ce Mac (liblouis %@)."
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tabel yang dipilih adalah salah satu tabel braille VoiceOver di Mac ini (liblouis %@)."
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -255589,6 +255805,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "La table choisie est l’une des tables braille VoiceOver de ce Mac."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tabel yang dipilih adalah salah satu tabel braille VoiceOver di Mac ini."
           }
         },
         "it" : {
@@ -256643,6 +256865,12 @@
             "value" : "Les détails n’ont pas pu être copiés"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Detail tidak dapat disalin"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -256842,6 +257070,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le disque manque de place : il faut environ %1$@, et TextMouth garde %2$@ de libre. Libérez de l’espace, puis exportez de nouveau."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ruang disk tidak cukup: ini memerlukan sekitar %1$@, dan TextMouth menyisakan %2$@ kosong. Kosongkan sebagian ruang, lalu ekspor lagi."
           }
         },
         "it" : {
@@ -257890,6 +258124,12 @@
             "value" : "L’exportation a été arrêtée avant le reste."
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ekspor dihentikan sebelum sisanya."
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -258915,6 +259155,12 @@
             "value" : "Le fichier %@ n’a pas pu être lu assez vite."
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "File %@ tidak dapat dibaca dengan cukup cepat."
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -258978,6 +259224,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le fichier %@ a échoué en cours de route."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "File %@ gagal di tengah jalan."
           }
         },
         "it" : {
@@ -259045,6 +259297,12 @@
             "value" : "Le fichier %@ est endommagé, illisible ou n’est pas un fichier audio."
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "File %@ rusak, tidak dapat dibaca, atau bukan file audio."
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -259108,6 +259366,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le fichier %@ est introuvable."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "File %@ hilang."
           }
         },
         "it" : {
@@ -259175,6 +259439,12 @@
             "value" : "Le fichier %@ a cessé de répondre."
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "File %@ berhenti merespons."
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -259238,6 +259508,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le fichier %@ a été arrêté parce que la mémoire de TextMouth était devenue trop grande."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "File %@ dihentikan karena memori TextMouth membengkak terlalu besar."
           }
         },
         "it" : {
@@ -262106,6 +262382,12 @@
             "value" : "L’en-tête dont la section termine l’audio, avec ses sous-en-têtes, ou la fin du livre."
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tajuk yang bagiannya mengakhiri audio, beserta subtajuknya, atau akhir buku."
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -262502,6 +262784,12 @@
             "value" : "La langue du code braille pour lire et écrire le braille."
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bahasa kode braille untuk membaca dan menulis braille."
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -262565,6 +262853,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "La langue du code braille dans lequel le livre est écrit."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bahasa kode braille tempat buku ditulis."
           }
         },
         "it" : {
@@ -265836,6 +266130,12 @@
             "value" : "Le prochain article n’a pas pu être téléchargé, la lecture s’est donc arrêtée. %@"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Artikel berikutnya tidak dapat diunduh, jadi pemutaran berhenti. %@"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -266029,6 +266329,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le prochain épisode n’a pas pu être téléchargé, la lecture s’est donc arrêtée. %@"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Episode berikutnya tidak dapat diunduh, jadi pemutaran berhenti. %@"
           }
         },
         "it" : {
@@ -267783,6 +268089,12 @@
             "value" : "La partie du livre choisie ne contient aucun mot à lire."
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bagian buku yang dipilih tidak memiliki kata untuk diucapkan."
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -267852,6 +268164,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le passage tel que le livre le contient, caractères %1$@ à %2$@ du chapitre %3$@ :"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bagian seperti yang ada di buku, karakter %1$@ hingga %2$@ dari bab %3$@:"
           }
         },
         "it" : {
@@ -269594,6 +269912,12 @@
             "value" : "La liste de lecture est vide. Pour ajouter un livre, choisissez Ajouter à la liste de lecture dans ses actions."
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Daftar bacaan kosong. Untuk menambahkan buku, pilih Tambahkan ke Daftar Bacaan dari tindakannya."
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -269659,6 +269983,12 @@
             "value" : "La liste de lecture est vide. Pour ajouter un livre, choisissez Ajouter à la liste de lecture dans son menu contextuel, ses actions VoiceOver ou le menu Bibliothèque."
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Daftar bacaan kosong. Untuk menambahkan buku, pilih Tambahkan ke Daftar Bacaan dari menu konteksnya, tindakan VoiceOver, atau menu Pustaka."
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -269722,6 +270052,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "La liste de lecture est réglée pour s’arrêter à la fin d’un livre"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Daftar bacaan diatur untuk berhenti saat buku berakhir"
           }
         },
         "it" : {
@@ -270215,6 +270551,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "L’enregistrement tel qu’il a été fait, avant toute modification."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Rekaman seperti saat dibuat, sebelum pengeditan apa pun."
           }
         },
         "it" : {
@@ -270808,6 +271150,12 @@
             "value" : "Le texte refusé commençait avant ce passage, au caractère %@."
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Teks yang ditolak dimulai sebelum bagian ini, di karakter %@."
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -270871,6 +271219,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le texte refusé commence ici, au caractère %@."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Teks yang ditolak dimulai di sini, di karakter %@."
           }
         },
         "it" : {
@@ -270938,6 +271292,12 @@
             "value" : "Le texte refusé se termine ici, au caractère %@."
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Teks yang ditolak berakhir di sini, di karakter %@."
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -271001,6 +271361,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le texte refusé se poursuit après ce passage, jusqu’au caractère %@."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Teks yang ditolak berlanjut melewati bagian ini, hingga karakter %@."
           }
         },
         "it" : {
@@ -271588,6 +271954,12 @@
             "value" : "Le moteur vocal a refusé de lire le texte ici, deux fois, donc la lecture s’est arrêtée. Lire réessaie à partir du même endroit."
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mesin ucapan menolak mengucapkan teks di sini, dua kali, jadi ucapan berhenti. Putar mencoba lagi dari tempat yang sama."
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -271984,6 +272356,12 @@
             "value" : "Le texte remis au moteur vocal, après les substitutions et le garde-fou du balisage, caractères %1$@ à %2$@ du texte lu :"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Teks yang diberikan ke mesin ucapan, setelah substitusi dan pelindung markup, karakter %1$@ hingga %2$@ dari teks yang diucapkan:"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -272047,6 +272425,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le texte de %@"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Teks %@"
           }
         },
         "it" : {
@@ -272309,6 +272693,12 @@
             "value" : "Le texte de ce livre %@, ce que TextMouth ne peut pas exporter sans risque. Choisissez Modifier le texte, aplatissez l’imbrication et enregistrez ; puis exportez de nouveau."
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Teks buku ini %@, yang tidak dapat diekspor TextMouth dengan aman. Pilih Edit Teks, ratakan tingkatnya, lalu simpan; kemudian ekspor lagi."
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -272569,6 +272959,12 @@
             "value" : "La transcription en sous-titres %@, un seul fichier synchronisé depuis le début de l’audio."
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Transkrip sebagai takarir %@, satu file bertanda waktu dari awal audio."
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -272632,6 +273028,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "La transcription telle que TextMouth la garde, en JSON, avec son texte en Markdown."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Transkrip seperti yang disimpan TextMouth, dalam JSON, dengan teksnya sebagai Markdown."
           }
         },
         "it" : {
@@ -273485,6 +273887,12 @@
             "value" : "Le texte de la transcription en %@, créé à partir de son Markdown."
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Teks transkrip sebagai %@, dibuat dari Markdown-nya."
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -273678,6 +274086,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "La transcription, avec son texte en Markdown pour un livre audio."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Transkrip, dengan teksnya sebagai Markdown untuk buku audio."
           }
         },
         "it" : {
@@ -274070,6 +274484,12 @@
             "value" : "La voix a changé de type d’audio en cours de « %@ »."
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Suara mengubah jenis audionya di tengah “%@”."
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -274133,6 +274553,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "La voix n’a émis aucun son pour « %@ ». Vérifiez qu’elle parle la langue du livre."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Suara tidak mengeluarkan bunyi untuk “%@”. Periksa apakah suara itu berbicara dalam bahasa buku."
           }
         },
         "it" : {
@@ -274200,6 +274626,12 @@
             "value" : "La voix s’est arrêtée en cours de « %@ », et TextMouth a cessé d’attendre."
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Suara berhenti di tengah “%@”, dan TextMouth berhenti menunggu."
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -274263,6 +274695,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Les mots que TextMouth lit à voix haute, en texte brut, chaque chapitre sous son titre."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kata-kata yang dibacakan TextMouth, sebagai teks biasa, setiap bab di bawah judulnya."
           }
         },
         "it" : {
@@ -275217,6 +275655,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Il n’y a rien à exporter."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tidak ada yang dapat diekspor."
           }
         },
         "it" : {
@@ -277576,6 +278020,12 @@
             "value" : "Ce Mac"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mac Ini"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -278096,6 +278546,12 @@
             "value" : "Ce Mac n’a plus la table choisie, « %@ » ; choisissez-en une autre."
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mac ini tidak lagi memiliki tabel yang dipilih, “%@”; pilih yang lain."
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -278167,6 +278623,12 @@
             "value" : "La table braille « %1$@ » de ce Mac est passée de liblouis %2$@ à %3$@ depuis la lecture du livre, donc TextMouth garde le texte du livre tel qu’il était."
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tabel braille Mac ini “%1$@” berubah dari liblouis %2$@ ke %3$@ sejak buku dibaca, jadi TextMouth mempertahankan teks buku seperti semula."
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -278236,6 +278698,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "La table braille « %1$@ » de ce Mac a peut-être changé depuis que liblouis %2$@ a lu le livre, donc TextMouth garde le texte du livre tel qu’il était."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tabel braille Mac ini “%1$@” mungkin telah berubah sejak liblouis %2$@ membaca buku, jadi TextMouth mempertahankan teks buku seperti semula."
           }
         },
         "it" : {
@@ -278433,6 +278901,12 @@
             "value" : "Cette semaine"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Minggu Ini"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -278496,6 +278970,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Cette fenêtre"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Jendela Ini"
           }
         },
         "it" : {
@@ -278821,6 +279301,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Ce livre audio n’a pas de texte."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Buku audio ini tidak memiliki teks."
           }
         },
         "it" : {
@@ -279446,6 +279932,12 @@
             "value" : "Ce livre n’a pas d’en-têtes, donc il est exporté en entier."
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Buku ini tidak memiliki tajuk, jadi seluruhnya diekspor."
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -280069,6 +280561,12 @@
             "value" : "Ce livre a été exporté depuis TextMouth en texte seul."
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Buku ini diekspor dari TextMouth sebagai teks saja."
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -280132,6 +280630,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Ce livre n’a pas été ouvert depuis la liste de lecture."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Buku ini tidak dibuka dari daftar bacaan."
           }
         },
         "it" : {
@@ -280522,6 +281026,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le texte de ce livre est illisible, il ne peut donc pas être converti en fichier audio parlé."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Teks buku ini tidak dapat dibaca, jadi tidak dapat diucapkan ke dalam file audio."
           }
         },
         "it" : {
@@ -281237,6 +281747,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Ce fichier"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "File ini"
           }
         },
         "it" : {
@@ -282474,6 +282990,12 @@
             "value" : "Ce dossier est vide."
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Folder ini kosong."
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -282602,6 +283124,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Cet iPhone"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iPhone Ini"
           }
         },
         "it" : {
@@ -283657,6 +284185,18 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Cette plage compte %lld en-têtes, mais un MP3 n’a de chapitres que pour les %@ premiers. Choisissez M4B pour avoir un chapitre par en-tête."
+                }
+              }
+            }
+          }
+        },
+        "id" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Rentang ini memiliki %lld tajuk, tetapi MP3 hanya memiliki bab untuk %@ yang pertama. Pilih M4B untuk satu bab bagi masing-masing."
                 }
               }
             }
@@ -284940,6 +285480,12 @@
             "value" : "Minuteur réinitialisé."
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Timer direset."
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -285005,6 +285551,12 @@
             "value" : "Minuteur réinitialisé : %@."
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Timer direset: %@."
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -285068,6 +285620,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Minuteur relancé : %@."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Timer dimulai ulang: %@."
           }
         },
         "it" : {
@@ -285196,6 +285754,18 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Minuteur réglé sur %lld minutes."
+                }
+              }
+            }
+          }
+        },
+        "id" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Timer diatur selama %lld menit."
                 }
               }
             }
@@ -285821,6 +286391,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "À"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ke"
           }
         },
         "it" : {
@@ -287037,6 +287613,12 @@
             "value" : "Aujourd’hui"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Hari Ini"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -287741,6 +288323,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Temps d’écoute total"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Total waktu mendengarkan"
           }
         },
         "it" : {
@@ -289449,6 +290037,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Transcription"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Transkrip"
           }
         },
         "it" : {
@@ -292713,6 +293307,12 @@
             "value" : "Intégral"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tanpa kontraksi"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -292776,6 +293376,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Intégral (degré %@)"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tanpa kontraksi (Tingkat %@)"
           }
         },
         "it" : {
@@ -295159,6 +295765,12 @@
             "value" : "Sans titre"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tanpa Judul"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -296270,6 +296882,12 @@
             "value" : "Utiliser le réglage global (%@)"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Gunakan pengaturan global (%@)"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -296593,6 +297211,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Version"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Versi"
           }
         },
         "it" : {
@@ -296985,6 +297609,12 @@
             "value" : "Voix"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Suara"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -297115,6 +297745,12 @@
             "value" : "Voix et vitesse"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Suara dan kecepatan"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -297178,6 +297814,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Voix changée pour %@"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Suara diubah ke %@"
           }
         },
         "it" : {
@@ -297375,6 +298017,12 @@
             "value" : "Voix : %@"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Suara: %@"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -297446,6 +298094,12 @@
             "value" : "Voix : %1$@ (%2$@), %3$@, qualité %4$@"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Suara: %1$@ (%2$@), %3$@, kualitas %4$@"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -297509,6 +298163,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Voix : la voix par défaut du système"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Suara: suara default sistem"
           }
         },
         "it" : {
@@ -297641,6 +298301,12 @@
             "value" : "Volume"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Volume"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -297704,6 +298370,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Volume : %lld %%"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Volume: %lld%%"
           }
         },
         "it" : {
@@ -299006,6 +299678,12 @@
             "value" : "L’unité de déplacement d’un livre de ce type, tant qu’il n’a pas la sienne."
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Satuan gerak untuk buku jenis ini hingga memiliki satuan sendiri."
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -299461,6 +300139,12 @@
             "value" : "Éléments à exporter"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Yang diekspor"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -299825,6 +300509,18 @@
             }
           }
         },
+        "id" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Saat tersisa %lld menit atau kurang, mengunduh artikel berikutnya jika belum ada di Mac ini"
+                }
+              }
+            }
+          }
+        },
         "it" : {
           "variations" : {
             "plural" : {
@@ -300053,6 +300749,18 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Quand il reste %lld minutes ou moins, télécharge le livre suivant s’il n’est pas encore sur ce Mac."
+                }
+              }
+            }
+          }
+        },
+        "id" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Saat tersisa %lld menit atau kurang, mengunduh buku berikutnya jika belum ada di Mac ini"
                 }
               }
             }
@@ -300291,6 +300999,18 @@
             }
           }
         },
+        "id" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Saat tersisa %lld menit atau kurang, mengunduh episode berikutnya jika belum ada di Mac ini"
+                }
+              }
+            }
+          }
+        },
         "it" : {
           "variations" : {
             "plural" : {
@@ -300519,6 +301239,18 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Quand il reste %lld minutes ou moins, télécharge l’élément suivant s’il n’est pas encore sur ce Mac."
+                }
+              }
+            }
+          }
+        },
+        "id" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Saat tersisa %lld menit atau kurang, mengunduh item berikutnya jika belum ada di Mac ini"
                 }
               }
             }
@@ -300821,6 +301553,12 @@
             "value" : "Quand un livre se termine"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Saat buku berakhir"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -300951,6 +301689,12 @@
             "value" : "Quand un article se termine"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Saat artikel berakhir"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -301016,6 +301760,12 @@
             "value" : "Quand un épisode se termine"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Saat episode berakhir"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -301079,6 +301829,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Quand un élément se termine"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Saat item berakhir"
           }
         },
         "it" : {
@@ -301861,6 +302617,12 @@
             "value" : "Si activé, un fichier braille lu comme de l’Unified English Braille abrégé qui est clairement de l’English Braille, American Edition est lu comme tel."
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Saat aktif, file braille yang dibaca sebagai Unified English Braille berkontraksi yang jelas merupakan English Braille, American Edition akan dibaca sebagai itu."
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -302316,6 +303078,12 @@
             "value" : "Où"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Di mana"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -302381,6 +303149,12 @@
             "value" : "Où suis-je ? (fin)"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Di mana saya? (Akhir)"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -302444,6 +303218,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Où suis-je ? (début)"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Di mana saya? (Awal)"
           }
         },
         "it" : {
@@ -302907,6 +303687,12 @@
             "value" : "Où l’audio commence : le début du livre ou un en-tête."
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tempat audio dimulai: awal buku, atau sebuah tajuk."
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -302970,6 +303756,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Indique si la dernière ligne de chaque page porte son numéro de page braille."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Apakah baris terakhir setiap halaman memuat nomor halaman braille-nya."
           }
         },
         "it" : {
@@ -303037,6 +303829,12 @@
             "value" : "Indique si le braille de ce code est abrégé, ce qui écrit les mots courants et les groupes de lettres avec moins de cellules."
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Apakah braille kode itu berkontraksi, yang menulis kata umum dan kelompok huruf dengan lebih sedikit sel."
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -303100,6 +303898,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Indique si le braille de ce code est abrégé."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Apakah braille kode itu berkontraksi."
           }
         },
         "it" : {
@@ -303599,6 +304403,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Pendant la lecture, fait avancer Contenu du livre avec la voix, même quand vous le lisez."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Saat diputar, menggerakkan Konten buku mengikuti ucapan, bahkan saat Anda membacanya."
           }
         },
         "it" : {
@@ -304452,6 +305262,12 @@
             "value" : "Avec « %1$@ », Lire sur un livre terminé indique qu’il est terminé ; avec « %2$@ », Lire le reprend depuis le début."
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Dengan “%1$@”, Putar pada buku yang sudah selesai menyatakan buku itu selesai; dengan “%2$@”, Putar memulainya lagi dari awal."
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -305179,6 +305995,12 @@
             "value" : "Document Word 97-2003. Ses en-têtes sont du texte simple, donc le volet de navigation de Word les omet."
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Dokumen Word 97-2003. Tajuknya berupa teks biasa, jadi panel navigasi Word tidak menampilkannya."
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -305764,6 +306586,12 @@
             "value" : "Écrit ce chapitre et tous les autres chapitres trop imbriqués de cet export en paragraphes simples de lignes, sans redemander."
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Menulis bab ini dan setiap bab lain dalam ekspor ini yang bertingkat terlalu dalam sebagai paragraf biasa dari baris, tanpa bertanya lagi."
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -305827,6 +306655,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Écrit ce chapitre en paragraphes simples de ses lignes, et exporte tout le reste comme d’habitude."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Menulis bab ini sebagai paragraf biasa dari barisnya, dan mengekspor semua yang lain seperti biasa."
           }
         },
         "it" : {
@@ -306674,6 +307508,12 @@
             "value" : "La bibliothèque de votre Mac n’est pas touchée."
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Pustaka Mac Anda tidak disentuh."
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -307198,6 +308038,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Votre bibliothèque est vide. Ajouter à la bibliothèque ajoute un livre."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Pustaka Anda kosong. Tambahkan ke Pustaka untuk menambahkan buku."
           }
         },
         "it" : {
@@ -308043,6 +308889,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "environ %@"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "sekitar %@"
           }
         },
         "it" : {
@@ -309861,6 +310713,12 @@
             "value" : "compilation %@"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "build %@"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -309924,6 +310782,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "compilé le %@"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "dibuat %@"
           }
         },
         "it" : {
@@ -310919,6 +311783,12 @@
             "value" : "commit %@"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "commit %@"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -311634,6 +312504,12 @@
             "value" : "point %@"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "titik %@"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -311697,6 +312573,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "points %@"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "titik %@"
           }
         },
         "it" : {
@@ -312152,6 +313034,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "fondu sortant"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "memudar"
           }
         },
         "it" : {
@@ -314453,6 +315341,12 @@
             "value" : "dans le cloud"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "di cloud"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -315166,6 +316060,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "elle ne se charge pas dans liblouis %@ de TextMouth"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "tidak dapat dimuat di liblouis TextMouth %@"
           }
         },
         "it" : {
@@ -316058,6 +316958,18 @@
             }
           }
         },
+        "id" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "memerlukan memori lebih dari %lld MB"
+                }
+              }
+            }
+          }
+        },
         "it" : {
           "variations" : {
             "plural" : {
@@ -316356,6 +317268,18 @@
             }
           }
         },
+        "id" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "menerjemahkan terlalu lambat, di bawah %lld KB per detik"
+                }
+              }
+            }
+          }
+        },
         "it" : {
           "variations" : {
             "plural" : {
@@ -316521,6 +317445,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "elle écrit du braille à huit points, et TextMouth n’utilise que le braille à six points"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "menulis braille delapan titik, dan TextMouth hanya memakai braille enam titik"
           }
         },
         "it" : {
@@ -318664,6 +319594,12 @@
             "value" : "min"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "mnt"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -320049,6 +320985,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "aucun point"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "tanpa titik"
           }
         },
         "it" : {
@@ -324349,6 +325291,18 @@
             }
           }
         },
+        "id" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "menghentikan %lld ekspor ucapan dengan bab yang telah selesai disimpan"
+                }
+              }
+            }
+          }
+        },
         "it" : {
           "variations" : {
             "plural" : {
@@ -324516,6 +325470,12 @@
             "value" : "arrêt d’une exportation vocale avec conservation des chapitres terminés"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "menghentikan ekspor ucapan dengan bab yang telah selesai disimpan"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -324581,6 +325541,12 @@
             "value" : "s’arrête à la fin du livre"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "berhenti di akhir buku"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -324644,6 +325610,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "s’arrête à la fin de cet en-tête"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "berhenti di akhir tajuk ini"
           }
         },
         "it" : {
@@ -324774,6 +325746,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "symboles"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "simbol"
           }
         },
         "it" : {
@@ -325659,6 +326637,12 @@
             "value" : "l’assistant braille a échoué"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "pembantu braille gagal"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -325722,6 +326706,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "l’assistant braille a été arrêté parce que %@"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "pembantu braille dihentikan karena %@"
           }
         },
         "it" : {
@@ -326309,6 +327299,12 @@
             "value" : "le fichier %@ n’a pas pu être lu assez vite"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "file %@ tidak dapat dibaca dengan cukup cepat"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -326372,6 +327368,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "le fichier %@ a échoué en cours de route"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "file %@ gagal di tengah jalan"
           }
         },
         "it" : {
@@ -326439,6 +327441,12 @@
             "value" : "le fichier %@ est endommagé, illisible ou n’est pas un fichier audio"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "file %@ rusak, tidak dapat dibaca, atau bukan file audio"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -326502,6 +327510,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "le fichier %@ est introuvable"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "file %@ hilang"
           }
         },
         "it" : {
@@ -326569,6 +327583,12 @@
             "value" : "le fichier %@ a cessé de répondre"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "file %@ berhenti merespons"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -326632,6 +327652,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "le fichier %@ a été arrêté parce que la mémoire de TextMouth était devenue trop grande"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "file %@ dihentikan karena memori TextMouth membengkak terlalu besar"
           }
         },
         "it" : {
@@ -327745,6 +328771,12 @@
             "value" : "ce Mac ne l’a plus"
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mac ini tidak lagi memilikinya"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -328718,6 +329750,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "version %@"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "versi %@"
           }
         },
         "it" : {
@@ -329834,6 +330872,12 @@
             "value" : "« %@ » n’a pas pu être téléchargé depuis iCloud. Vérifiez la connexion, puis ajoutez-le de nouveau."
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” tidak dapat diunduh dari iCloud. Periksa koneksi, lalu tambahkan lagi."
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -330171,6 +331215,12 @@
             "value" : "« %1$@ » est une Voix personnelle, que macOS ne peut pas enregistrer dans un fichier. Choisissez une autre voix avec le bouton %2$@ du lecteur, puis exportez de nouveau."
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%1$@” adalah Personal Voice, yang tidak dapat direkam macOS ke file. Pilih suara lain dengan tombol %2$@ di pembaca, lalu ekspor lagi."
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -330366,6 +331416,12 @@
             "value" : "« %@ » est un fichier XML, mais pas un lexique de prononciation."
           }
         },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” adalah file XML, tetapi bukan leksikon pelafalan."
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -330500,6 +331556,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "« %@ » n’est pas un fichier XML complet et valide."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” bukan file XML yang lengkap dan valid."
           }
         },
         "it" : {
@@ -330831,6 +331893,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "« %@ » est trop volumineux pour être lu."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” terlalu besar untuk dibaca."
           }
         },
         "it" : {
@@ -331316,6 +332384,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "« %@ » utilise des entités XML qui lui sont propres, que TextMouth ne lit pas."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” memakai entitas XML sendiri, yang tidak dapat dibaca TextMouth."
           }
         },
         "it" : {
