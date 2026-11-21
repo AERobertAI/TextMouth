@@ -18037,7 +18037,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ transcrites sur %2$@"
+            "value" : "Transcription : %1$@ sur %2$@"
           }
         },
         "he" : {
@@ -59522,7 +59522,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld modification, toutes enregistrées"
+                  "value" : "%lld modification, enregistrée"
                 }
               },
               "other" : {
@@ -59989,7 +59989,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld modification, pas toutes enregistrées"
+                  "value" : "%lld modification, non enregistrée"
                 }
               },
               "other" : {
@@ -93348,7 +93348,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Un marqueur de chapitre a besoin d’un titre."
+            "value" : "Un marqueur de chapitre doit avoir un titre."
           }
         },
         "he" : {
@@ -94039,7 +94039,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Un préréglage de filtre a besoin d’un nom."
+            "value" : "Un préréglage de filtre doit avoir un nom."
           }
         },
         "he" : {
@@ -108561,7 +108561,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Un épisode de son flux ne peut pas être modifié."
+            "value" : "Un épisode encore dans son flux ne peut pas être modifié."
           }
         },
         "he" : {
@@ -115613,7 +115613,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Demande après chaque importation de livre audio s’il faut le transcrire. Désactivé, les livres audio ne sont transcrits qu’avec Transcrire l’audio."
+            "value" : "Demande après chaque importation de livre audio s’il faut le transcrire. Si l’option est désactivée, les livres audio ne sont transcrits qu’avec Transcrire l’audio."
           }
         },
         "he" : {
@@ -118770,7 +118770,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Jonction du fichier « %1$@ » à %2$@."
+            "value" : "Ajout du fichier « %1$@ » à %2$@."
           }
         },
         "he" : {
@@ -120922,7 +120922,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Intensité des livres audio"
+            "value" : "Niveau sonore des livres audio"
           }
         },
         "he" : {
@@ -181553,7 +181553,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Supprime l’enregistrement sans l’enregistrer."
+            "value" : "Supprime l’enregistrement sans le conserver."
           }
         },
         "he" : {
@@ -181827,7 +181827,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Supprime cet enregistrement sans l’enregistrer."
+            "value" : "Supprime cet enregistrement sans le conserver."
           }
         },
         "he" : {
@@ -481484,7 +481484,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth exécute encore votre dernière réponse. Attendez qu’il ait terminé."
+            "value" : "TextMouth traite encore votre dernière réponse. Attendez qu’il ait terminé."
           }
         },
         "he" : {
@@ -482169,7 +482169,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth n’est pas autorisé à publier des notifications. Activez-les dans Réglages Système, Notifications, TextMouth."
+            "value" : "TextMouth n’est pas autorisé à envoyer des notifications. Activez-les dans Réglages Système, Notifications, TextMouth."
           }
         },
         "he" : {
@@ -482842,7 +482842,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth a écarté %@, qui ne contiennent aucun son qu’il peut lire."
+            "value" : "TextMouth a écarté %@, qui ne contiennent aucun son qu’il puisse lire."
           }
         },
         "he" : {
@@ -482979,7 +482979,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth a écarté %@, qui ne contient aucun son qu’il peut lire."
+            "value" : "TextMouth a écarté %@, qui ne contient aucun son qu’il puisse lire."
           }
         },
         "he" : {
@@ -491019,7 +491019,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Cette adresse n’est pas une adresse web que TextMouth peut ouvrir."
+            "value" : "Cette adresse n’est pas une adresse web que TextMouth puisse ouvrir."
           }
         },
         "he" : {
@@ -492214,19 +492214,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Cette page désigne %lld de flux. Choisissez-en un, puis S’abonner."
+                  "value" : "Cette page désigne %lld de flux. Sélectionnez-en un, puis choisissez S’abonner."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Cette page désigne %lld flux. Choisissez-le, puis S’abonner."
+                  "value" : "Cette page désigne %lld flux. Sélectionnez-le, puis choisissez S’abonner."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Cette page désigne %lld flux. Choisissez-en un, puis S’abonner."
+                  "value" : "Cette page désigne %lld flux. Sélectionnez-en un, puis choisissez S’abonner."
                 }
               }
             }
@@ -494262,19 +494262,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Supprimé : %@, conservé pour %lld de téléchargements retirés."
+                  "value" : "Ce qui était conservé pour %2$lld de téléchargements retirés a été supprimé : %1$@."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Supprimé : %@, conservé pour %lld téléchargement retiré."
+                  "value" : "Ce qui était conservé pour %2$lld téléchargement retiré a été supprimé : %1$@."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Supprimé : %@, conservé pour %lld téléchargements retirés."
+                  "value" : "Ce qui était conservé pour %2$lld téléchargements retirés a été supprimé : %1$@."
                 }
               }
             }
@@ -494729,19 +494729,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Supprimés : %@, conservés pour %lld de téléchargements retirés."
+                  "value" : "Ce qui était conservé pour %2$lld de téléchargements retirés a été supprimé : %1$@."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Supprimés : %@, conservés pour %lld téléchargement retiré."
+                  "value" : "Ce qui était conservé pour %2$lld téléchargement retiré a été supprimé : %1$@."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Supprimés : %@, conservés pour %lld téléchargements retirés."
+                  "value" : "Ce qui était conservé pour %2$lld téléchargements retirés a été supprimé : %1$@."
                 }
               }
             }
@@ -501468,7 +501468,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "L’adresse de %@ ne contient pas un flux que TextMouth peut lire."
+            "value" : "L’adresse de %@ ne contient aucun flux que TextMouth puisse lire."
           }
         },
         "he" : {
@@ -503335,7 +503335,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "L’article quitte la liste pour de bon, et son téléchargement, s’il y en a un, est supprimé."
+            "value" : "L’article quitte définitivement la liste, et son téléchargement, s’il y en a un, est supprimé."
           }
         },
         "he" : {
@@ -503472,7 +503472,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "L’article quitte la liste pour de bon ; le livre qu’il est devenu dans votre bibliothèque reste."
+            "value" : "L’article quitte définitivement la liste ; le livre qu’il est devenu dans votre bibliothèque reste."
           }
         },
         "he" : {
@@ -503746,7 +503746,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "L’audio converti à partir de %@ n’a pas pu recevoir son nom."
+            "value" : "L’audio converti à partir de %@ n’a pas pu être renommé."
           }
         },
         "he" : {
@@ -516929,7 +516929,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "L’épisode quitte la liste pour de bon, et son téléchargement, s’il y en a un, est supprimé."
+            "value" : "L’épisode quitte définitivement la liste, et son téléchargement, s’il y en a un, est supprimé."
           }
         },
         "he" : {
@@ -517066,7 +517066,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "L’épisode quitte la liste pour de bon ; le livre qu’il est devenu dans votre bibliothèque reste."
+            "value" : "L’épisode quitte définitivement la liste ; le livre qu’il est devenu dans votre bibliothèque reste."
           }
         },
         "he" : {
@@ -522250,7 +522250,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "L’adresse du fichier n’est pas une adresse web que TextMouth peut ouvrir."
+            "value" : "L’adresse du fichier n’est pas une adresse web que TextMouth puisse ouvrir."
           }
         },
         "he" : {
@@ -556964,7 +556964,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ce flux utilise http simple"
+            "value" : "Ce flux utilise http non chiffré"
           }
         },
         "he" : {
@@ -559870,7 +559870,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ce fichier XML n’est ni un livre DTBook, ni un document XML Word 2003, ni un fichier braille PEF, les seuls XML que TextMouth lit."
+            "value" : "Ce fichier XML n’est ni un livre DTBook, ni un document XML Word 2003, ni un fichier braille PEF, les seuls formats XML que TextMouth lit."
           }
         },
         "he" : {
@@ -564258,7 +564258,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Cette archive de bande dessinée ne contient aucune image que TextMouth peut lire."
+            "value" : "Cette archive de bande dessinée ne contient aucune image que TextMouth puisse lire."
           }
         },
         "he" : {
@@ -592686,7 +592686,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Désabonné de %1$@ : TextMouth ne vérifie plus ses nouveaux articles%2$@."
+            "value" : "Désabonné de %1$@ : TextMouth n’y recherche plus de nouveaux articles%2$@."
           }
         },
         "he" : {
@@ -592829,7 +592829,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Désabonné de %1$@ : TextMouth ne vérifie plus ses nouveaux épisodes%2$@."
+            "value" : "Désabonné de %1$@ : TextMouth n’y recherche plus de nouveaux épisodes%2$@."
           }
         },
         "he" : {
@@ -592972,7 +592972,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Désabonné de %1$@ : TextMouth ne vérifie plus ses nouveaux éléments%2$@."
+            "value" : "Désabonné de %1$@ : TextMouth n’y recherche plus de nouveaux éléments%2$@."
           }
         },
         "he" : {
@@ -600756,7 +600756,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "En attente de la fin du déplacement du dossier de données..."
+            "value" : "En attente de la fin du déplacement du dossier de données…"
           }
         },
         "he" : {
@@ -606509,7 +606509,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Si la case est cochée, ce flux suit le réglage de l’onglet %@ des Réglages ; décochez-la pour lui en donner un propre."
+            "value" : "Si la case est cochée, ce flux suit le réglage de l’onglet %@ des Réglages ; décochez-la pour lui donner son propre réglage."
           }
         },
         "he" : {
@@ -635473,19 +635473,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "il fait %@, plus que %lld de mégapixels"
+                  "value" : "elle fait %@, plus que %lld de mégapixels"
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "il fait %@, plus que %lld mégapixel"
+                  "value" : "elle fait %@, plus que %lld mégapixel"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "il fait %@, plus que %lld mégapixels"
+                  "value" : "elle fait %@, plus que %lld mégapixels"
                 }
               }
             }
@@ -640826,7 +640826,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "enregistrement de la position de vos téléchargements de flux pour la prochaine fois"
+            "value" : "enregistrement de l’avancement de vos téléchargements de flux pour la prochaine fois"
           }
         },
         "he" : {
