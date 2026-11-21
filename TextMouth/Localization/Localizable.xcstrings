@@ -106224,7 +106224,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Po przerwie %1$@, czas: %2$@."
+            "value" : "Po przerwie (%1$@), czas: %2$@."
           }
         },
         "pt-BR" : {
@@ -166165,7 +166165,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Skopiowano %@."
+            "value" : "Skopiowano: %@."
           }
         },
         "pt-BR" : {
@@ -174981,7 +174981,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Wytnij %@"
+            "value" : "Wytnij fragment (%@)"
           }
         },
         "pt-BR" : {
@@ -175118,7 +175118,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Wycięto %@."
+            "value" : "Wycięto: %@."
           }
         },
         "pt-BR" : {
@@ -237260,7 +237260,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Znaleziono w: %@. Gdy włączone, filtry edytora działają przez ffmpeg, ze wszystkimi jego filtrami."
+            "value" : "Znaleziono w: %@. Gdy ta opcja jest włączona, filtry edytora działają przez ffmpeg, ze wszystkimi jego filtrami."
           }
         },
         "pt-BR" : {
@@ -296152,7 +296152,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nie można zapisać MP3: nie udało się uruchomić kodera TextMouth, a ffmpeg nie jest zainstalowany albo jest wyłączony w ustawieniach pamięci."
+            "value" : "Nie można zapisać MP3: nie udało się uruchomić kodera TextMouth, a ffmpeg nie jest zainstalowany albo jest wyłączony w: Ustawienia, Pamięć."
           }
         },
         "pt-BR" : {
@@ -308524,7 +308524,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Przenieś %@"
+            "value" : "Przenieś fragment (%@)"
           }
         },
         "pt-BR" : {
@@ -315454,7 +315454,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Przeniesiono %1$@ do: %2$@."
+            "value" : "Przeniesiono fragment (%1$@) do: %2$@."
           }
         },
         "pt-BR" : {
@@ -333593,7 +333593,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nie znaleziono plików dźwiękowych w: %@."
+            "value" : "Nie znaleziono plików dźwiękowych w książce %@."
           }
         },
         "pt-BR" : {
@@ -370165,7 +370165,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Wklejono %@ z powrotem w miejsce wycięcia."
+            "value" : "Wklejono z powrotem w miejsce wycięcia: %@."
           }
         },
         "pt-BR" : {
@@ -370308,7 +370308,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Wklejono %1$@ w miejsce %2$@."
+            "value" : "Wklejono fragment (%1$@) w miejsce zaznaczenia (%2$@)."
           }
         },
         "pt-BR" : {
@@ -370445,7 +370445,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Wklejono %@."
+            "value" : "Wklejono: %@."
           }
         },
         "pt-BR" : {
@@ -396753,7 +396753,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nagrywanie do wstawienia w czasie %1$@, z mikrofonu %2$@, po sygnale dźwiękowym. Nagraj w miejscu zaznaczenia albo Zatrzymaj kończy nagrywanie; Odznacz je odrzuca."
+            "value" : "Nagrywanie do wstawienia, czas: %1$@, z mikrofonu %2$@, po sygnale dźwiękowym. Nagraj w miejscu zaznaczenia albo Zatrzymaj kończy nagrywanie; Odznacz je odrzuca."
           }
         },
         "pt-BR" : {
@@ -398540,7 +398540,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ponów %@"
+            "value" : "Ponów: %@"
           }
         },
         "pt-BR" : {
@@ -408478,7 +408478,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Zastąp %@"
+            "value" : "Zastąp fragment (%@)"
           }
         },
         "pt-BR" : {
@@ -409169,7 +409169,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Zastąpiono %1$@ nowym nagraniem (%2$@), które jest zaznaczone."
+            "value" : "Zastąpiono fragment (%1$@) nowym nagraniem (%2$@), które jest zaznaczone."
           }
         },
         "pt-BR" : {
@@ -425646,7 +425646,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Zachowano %@"
+            "value" : "Zachowano: %@"
           }
         },
         "pt-BR" : {
@@ -426468,7 +426468,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Zachowano. Dźwięk książki ma teraz długość %@."
+            "value" : "Zachowano. Nowa długość dźwięku książki: %@."
           }
         },
         "pt-BR" : {
@@ -426605,7 +426605,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Zachowuje edycje w pliku dźwiękowym książki, w formacie, który książka ma."
+            "value" : "Zachowuje edycje w pliku dźwiękowym książki, w jej obecnym formacie."
           }
         },
         "pt-BR" : {
@@ -427296,7 +427296,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Zachowywanie dźwięku (%1$@) jako %2$@, w formacie, który ma ta książka."
+            "value" : "Zachowywanie dźwięku (%1$@) jako %2$@, w obecnym formacie tej książki."
           }
         },
         "pt-BR" : {
@@ -434594,7 +434594,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Zaznaczono %@."
+            "value" : "Zaznaczono: %@."
           }
         },
         "pt-BR" : {
@@ -435428,7 +435428,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Zaznaczenie od %1$@ do %2$@; długość %3$@."
+            "value" : "Zaznaczenie: początek %1$@, koniec %2$@, długość %3$@."
           }
         },
         "pt-BR" : {
@@ -437819,7 +437819,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ustawia język transkrybowania. Język oznaczony jako wymaga pobrania można pobrać tylko w arkuszu Transkrybuj dźwięk."
+            "value" : "Ustawia język transkrybowania. Język oznaczony jako „wymaga pobrania” można pobrać tylko w arkuszu Transkrybuj dźwięk."
           }
         },
         "pt-BR" : {
@@ -503613,7 +503613,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Plik %@ nie zawiera tekstu z czasem, którego TextMouth mógłby użyć."
+            "value" : "Plik %@ nie zawiera tekstu ze znacznikami czasu, którego TextMouth mógłby użyć."
           }
         },
         "pt-BR" : {
@@ -505399,7 +505399,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nie udało się pobrać modelu %1$@: %2$@"
+            "value" : "Nie udało się pobrać modelu (%1$@): %2$@"
           }
         },
         "pt-BR" : {
@@ -505673,7 +505673,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Pobieranie modelu %@ zostało anulowane."
+            "value" : "Pobieranie modelu (%@) zostało anulowane."
           }
         },
         "pt-BR" : {
@@ -515086,7 +515086,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Edytor dźwięku dla: %@ jest już otwarty."
+            "value" : "Edytor dźwięku książki %@ jest już otwarty."
           }
         },
         "pt-BR" : {
