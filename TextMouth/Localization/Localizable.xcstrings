@@ -44761,7 +44761,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld buku selesai sepanjang waktu"
+                  "value" : "%lld buku selesai sepanjang masa"
                 }
               }
             }
@@ -98890,7 +98890,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tentang"
+            "value" : "Mengenai"
           }
         },
         "it" : {
@@ -104818,7 +104818,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Menambahkan tombol Ekspor ke bilah alat setiap pembaca. File, Ekspor berfungsi dengan kedua cara."
+            "value" : "Menambahkan tombol Ekspor ke bar alat setiap pembaca. File, Ekspor tetap berfungsi dalam kedua kasus."
           }
         },
         "it" : {
@@ -107894,7 +107894,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sepanjang Waktu"
+            "value" : "Sepanjang Masa"
           }
         },
         "it" : {
@@ -130582,7 +130582,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Buku Selesai Sepanjang Waktu"
+            "value" : "Buku Selesai Sepanjang Masa"
           }
         },
         "it" : {
@@ -608487,7 +608487,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "User"
+            "value" : "Pengguna"
           }
         },
         "it" : {
@@ -660473,7 +660473,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "pada halaman berlabel %2$@ urutan %1$@"
+            "value" : "pada halaman berlabel %2$@ yang %1$@"
           }
         },
         "it" : {
