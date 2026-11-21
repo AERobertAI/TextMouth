@@ -498992,7 +498992,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth sẽ thoát và mở lại để tải nó."
+            "value" : "TextMouth sẽ thoát và mở lại để dùng thư viện đó."
           }
         },
         "zh-Hans" : {
@@ -499129,7 +499129,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth sẽ thoát và mở lại để bắt đầu nó."
+            "value" : "TextMouth sẽ thoát và mở lại để bắt đầu thư viện mới."
           }
         },
         "zh-Hans" : {
@@ -525066,7 +525066,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Thư mục dữ liệu không có thư mục Nhật ký, nên nhật ký được ghi vào %@ cho đến khi có."
+            "value" : "Thư mục dữ liệu không có thư mục Logs, nên nhật ký được ghi vào %@ cho đến khi có."
           }
         },
         "zh-Hans" : {
@@ -525346,7 +525346,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Không ghi được vào thư mục Nhật ký của thư mục dữ liệu (%1$@), nên nhật ký được ghi vào %2$@ cho đến khi ghi được."
+            "value" : "Không ghi được vào thư mục Logs của thư mục dữ liệu (%1$@), nên nhật ký được ghi vào %2$@ cho đến khi ghi được."
           }
         },
         "zh-Hans" : {
@@ -537386,7 +537386,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Chỉ mục không thay đổi cho đến khi bạn chọn %1$@ hoặc %2$@, vẫn có sẵn từ %3$@ ở đầu thư viện."
+            "value" : "Chỉ mục không thay đổi cho đến khi bạn chọn %1$@ hoặc %2$@; hai nút này vẫn có sẵn khi bạn chọn %3$@ ở đầu thư viện."
           }
         },
         "zh-Hans" : {
@@ -540680,7 +540680,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Thư viện không khả dụng, nên nhật ký được ghi vào %@ cho đến khi có."
+            "value" : "Thư viện không khả dụng, nên nhật ký được ghi vào %@ cho đến khi thư viện khả dụng trở lại."
           }
         },
         "zh-Hans" : {
@@ -542616,7 +542616,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Thời gian tối đa cho cả chuỗi. Cửa sổ ngắn hơn nghĩa là ít khớp nhầm hơn nhưng phải nhấn nhanh hơn."
+            "value" : "Thời gian tối đa cho cả chuỗi. Khoảng thời gian ngắn hơn nghĩa là ít khớp nhầm hơn nhưng phải nhấn nhanh hơn."
           }
         },
         "zh-Hans" : {
@@ -543462,7 +543462,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Vị trí mới, %1$@, là liên kết đến %2$@, không tìm thấy."
+            "value" : "Vị trí mới, %1$@, là liên kết đến %2$@, nhưng không tìm thấy nơi đó."
           }
         },
         "zh-Hans" : {
@@ -608422,7 +608422,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hãy dùng việc này sau khi khôi phục tệp từ bản sao lưu, sửa quyền của nó, hoặc cập nhật TextMouth lên phiên bản đã lưu nó."
+            "value" : "Hãy dùng tùy chọn này sau khi khôi phục tệp từ bản sao lưu, sửa quyền của nó, hoặc cập nhật TextMouth lên phiên bản đã lưu nó."
           }
         },
         "zh-Hans" : {
@@ -619805,7 +619805,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Khi tắt, hộp thoại vẫn mở và hiện thời gian còn lại cùng nút đặt lại."
+            "value" : "Khi tắt, hộp thoại vẫn mở và hiển thị thời gian còn lại cùng nút đặt lại."
           }
         },
         "zh-Hans" : {
@@ -621729,7 +621729,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nơi TextMouth ghi nhật ký chẩn đoán. %1$@ giữ chúng cùng sách của bạn, nên chúng di chuyển và đồng bộ cùng thư viện. %2$@ giữ chúng trong %3$@, nơi không bao giờ đồng bộ. Thay đổi áp dụng từ dòng tiếp theo; nhật ký cũ vẫn còn."
+            "value" : "Nơi TextMouth ghi nhật ký chẩn đoán. Nếu chọn %1$@, nhật ký được giữ cùng sách của bạn, nên chúng di chuyển và đồng bộ cùng thư viện. Nếu chọn %2$@, nhật ký được giữ trong %3$@, nơi không bao giờ đồng bộ. Thay đổi áp dụng từ dòng tiếp theo; nhật ký cũ vẫn còn."
           }
         },
         "zh-Hans" : {
@@ -638590,7 +638590,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "chọn Gỡ bản tải về"
+            "value" : "chọn Xóa bản tải về"
           }
         },
         "zh-Hans" : {
