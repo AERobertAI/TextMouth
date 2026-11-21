@@ -294140,6 +294140,12 @@
             "value" : "Книгу імпортовано."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sách đã được nhập."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -294993,6 +294999,12 @@
             "value" : "Шляхи до пакета й вмісту книги не відповідають керованому розташуванню бібліотеки."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Các đường dẫn gói và nội dung của sách không khớp với một vị trí thư viện được quản lý."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -295696,6 +295708,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Файл bookInfo.json не прочитався так, як його було записано."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tệp bookInfo.json không đọc lại đúng như khi được ghi."
           }
         },
         "zh-Hans" : {
@@ -296598,6 +296616,12 @@
             "value" : "Щойно імпортована копія неповна."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bản sao vừa nhập chưa đầy đủ."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -296918,6 +296942,12 @@
             "value" : "Файл CUE «%@» завеликий для читання."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tệp CUE “%@” quá lớn để đọc."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -296987,6 +297017,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Файл CUE «%@» не називає жодного аудіо поруч, тож його заголовки не використано."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tệp CUE “%@” không nêu tệp âm thanh nào bên cạnh nó, nên các đề mục của nó không được dùng."
           }
         },
         "zh-Hans" : {
@@ -298097,6 +298133,12 @@
             "value" : "Завантаження зупинено."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Đã dừng tải về."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -298838,6 +298880,12 @@
             "value" : "Епізод остаточно зникає зі списку, а його завантаження, якщо є, видаляється."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tập rời khỏi danh sách vĩnh viễn, và bản tải về của nó, nếu có, bị xóa."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -298907,6 +298955,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Епізод остаточно зникає зі списку; книга, якою він став у вашій бібліотеці, залишається."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tập rời khỏi danh sách vĩnh viễn; sách mà nó đã trở thành trong thư viện của bạn vẫn còn."
           }
         },
         "zh-Hans" : {
@@ -298980,6 +299034,12 @@
             "value" : "Файли наявної копії видаляються назавжди, відновити їх неможливо."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Các tệp của bản hiện có bị xóa vĩnh viễn và không thể khôi phục."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -299049,6 +299109,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Файли наявної копії потрапляють до Кошика, але їх повернення не поверне цю копію до вашої бібліотеки."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Các tệp của bản hiện có được chuyển vào thùng rác, nhưng đưa chúng về chỗ cũ sẽ không trả bản đó về thư viện của bạn."
           }
         },
         "zh-Hans" : {
@@ -299262,6 +299328,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Стрічка на %@ порожня."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nguồn cấp tại %@ trống."
           }
         },
         "zh-Hans" : {
@@ -299509,6 +299581,18 @@
             }
           }
         },
+        "vi" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Nguồn cấp tại %1$@ lớn hơn %2$lld MB mà TextMouth đọc."
+                }
+              }
+            }
+          }
+        },
         "zh-Hans" : {
           "variations" : {
             "plural" : {
@@ -299592,6 +299676,12 @@
             "value" : "Стрічку пошкоджено в рядку %1$@: %2$@."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nguồn cấp bị hỏng ở dòng %1$@: %2$@."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -299661,6 +299751,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Стрічка залишає вашу бібліотеку разом зі списком статей і налаштуваннями."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nguồn cấp rời khỏi thư viện của bạn, cùng danh sách bài viết và cài đặt của nó."
           }
         },
         "zh-Hans" : {
@@ -299734,6 +299830,12 @@
             "value" : "Стрічка залишає вашу бібліотеку разом зі списком епізодів і налаштуваннями."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nguồn cấp rời khỏi thư viện của bạn, cùng danh sách tập và cài đặt của nó."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -299803,6 +299905,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Стрічка залишає вашу бібліотеку разом зі списком елементів і налаштуваннями."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nguồn cấp rời khỏi thư viện của bạn, cùng danh sách mục và cài đặt của nó."
           }
         },
         "zh-Hans" : {
@@ -299882,6 +299990,12 @@
             "value" : "Стрічка залишається у вашій бібліотеці з налаштуваннями та такими завантаженнями: %1$@; %2$@ знову перевіряє її."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nguồn cấp vẫn ở trong thư viện của bạn cùng cài đặt và %1$@ của nó; chọn %2$@ để kiểm tra lại."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -299951,6 +300065,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Стрічка залишається у вашій бібліотеці з налаштуваннями, а %@ знову перевіряє її."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nguồn cấp vẫn ở trong thư viện của bạn cùng cài đặt của nó; chọn %@ để kiểm tra lại."
           }
         },
         "zh-Hans" : {
@@ -300024,6 +300144,12 @@
             "value" : "Стрічка «%@» залишається з ним."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nguồn cấp “%@” vẫn còn cùng với nó."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -300093,6 +300219,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Стрічка «%@» залишається з ними."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nguồn cấp “%@” vẫn còn cùng với chúng."
           }
         },
         "zh-Hans" : {
@@ -301855,6 +301987,12 @@
             "value" : "Адреса файлу не є вебадресою, яку TextMouth може відкрити."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Địa chỉ của tệp không phải địa chỉ web mà TextMouth mở được."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -301924,6 +302062,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Файлів нової копії «%@» більше немає в бібліотеці, тож її не можна зберегти. Виберіть «Скасувати», а потім імпортуйте файл знову."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Các tệp của bản sao mới của “%@” không còn trong thư viện, nên không giữ lại được. Hãy chọn Hủy, rồi nhập lại tệp."
           }
         },
         "zh-Hans" : {
@@ -302918,6 +303062,12 @@
             "value" : "Папки, вибраної для цієї стрічки, більше немає в бібліотеці. Виберіть іншу папку."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Thư mục đã chọn cho nguồn cấp này không còn trong thư viện. Hãy chọn thư mục khác."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -302987,6 +303137,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Вибраної папки більше немає в бібліотеці. Виберіть іншу папку."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Thư mục đã chọn không còn trong thư viện. Hãy chọn thư mục khác."
           }
         },
         "zh-Hans" : {
@@ -303060,6 +303216,12 @@
             "value" : "Папки, вибраної для папки стрічки, більше немає в бібліотеці. Виберіть іншу."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Thư mục đã chọn để chứa thư mục của nguồn cấp không còn trong thư viện. Hãy chọn thư mục khác."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -303129,6 +303291,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Папки для цієї стрічки більше немає в бібліотеці. Виберіть для неї іншу папку."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Thư mục của nguồn cấp này không còn trong thư viện. Hãy chọn thư mục khác cho nó."
           }
         },
         "zh-Hans" : {
@@ -303856,6 +304024,12 @@
             "value" : "Папки стрічки %@ більше немає в бібліотеці."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Thư mục của %@ không còn trong thư viện."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -304075,6 +304249,12 @@
             "value" : "Заголовки з %@ виходять за кінець аудіо, тож доріжки імпортовано без них."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Các đề mục từ %@ vượt quá phần cuối của âm thanh, nên các bản âm thanh được nhập mà không có chúng."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -304144,6 +304324,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Імпорт зупинено до завершення."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Việc nhập đã bị dừng trước khi kết thúc."
           }
         },
         "zh-Hans" : {
@@ -304306,6 +304492,12 @@
             "value" : "Файл міток «%@» за назвою не збігається з жодним аудіофайлом поруч, тож його заголовки не використано."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tệp nhãn “%@” không khớp tên với tệp âm thanh nào bên cạnh nó, nên các đề mục của nó không được dùng."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -304375,6 +304567,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Мітки файлу «%@» виходять за кінець його аудіо, тож його заголовки не використано."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Các nhãn của tệp nhãn “%@” vượt quá phần cuối của âm thanh của nó, nên các đề mục của nó không được dùng."
           }
         },
         "zh-Hans" : {
@@ -304774,6 +304972,12 @@
             "value" : "Бібліотека недоступна, тож TextMouth не може зберегти нову копію «%@». Дайте відповідь знову, коли вона повернеться."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Không truy cập được thư viện, nên TextMouth không giữ lại được bản sao mới của “%@”. Hãy trả lời lại khi thư viện hoạt động trở lại."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -304843,6 +305047,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Бібліотека зараз не може переміщувати книги. Спробуйте знову, коли вона стане доступною."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Thư viện hiện không chuyển được sách. Hãy thử lại khi nó sẵn sàng."
           }
         },
         "zh-Hans" : {
@@ -306716,6 +306926,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Список одразу відображає зміну параметра «%@»; те, що завантажується або видаляється, чекає, поки зміна не триватиме десять секунд, і тоді VoiceOver оголошує її."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Danh sách theo kịp thay đổi của %@ ngay lập tức; những gì được tải về hoặc bị gỡ đi sẽ chờ đến khi thay đổi giữ nguyên mười giây, và VoiceOver sẽ thông báo vào lúc đó."
           }
         },
         "zh-Hans" : {
@@ -309213,6 +309429,12 @@
             "value" : "Не вдалося видалити оригінальний файл: %@"
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Không xóa được tệp gốc: %@"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -309282,6 +309504,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Не вдалося перемістити оригінальний файл до Кошика: %@"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Không chuyển được tệp gốc vào thùng rác: %@"
           }
         },
         "zh-Hans" : {
@@ -309438,6 +309666,12 @@
             "value" : "Оригінальний файл збережено."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tệp gốc đã được giữ lại."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -309513,6 +309747,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Оригінальний файл збережено: TextMouth імпортував з архіву «%2$@» лише книгу DAISY «%1$@»."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tệp gốc đã được giữ lại: TextMouth chỉ nhập sách DAISY “%1$@” từ kho lưu trữ “%2$@”."
           }
         },
         "zh-Hans" : {
@@ -309592,6 +309832,12 @@
             "value" : "Оригінальний файл збережено: TextMouth імпортував аудіо «%1$@» з архіву «%2$@», і архів — єдина копія його тексту."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tệp gốc đã được giữ lại: TextMouth đã nhập âm thanh của “%1$@” từ kho lưu trữ “%2$@”, và kho lưu trữ là bản duy nhất của văn bản đó."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -309661,6 +309907,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Оригінальний файл збережено: це папка, а імпорт ніколи не видаляє папки."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tệp gốc đã được giữ lại: nó là một thư mục, và việc nhập không bao giờ xóa thư mục."
           }
         },
         "zh-Hans" : {
@@ -309734,6 +309986,12 @@
             "value" : "Оригінальний файл буде переміщено до Кошика після успішного імпорту."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tệp gốc sẽ được chuyển vào thùng rác sau khi nhập thành công."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -309803,6 +310061,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Оригінальний файл буде остаточно видалено після успішного імпорту."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tệp gốc sẽ bị xóa vĩnh viễn sau khi nhập thành công."
           }
         },
         "zh-Hans" : {
@@ -310119,6 +310383,12 @@
             "value" : "Не вдалося видалити оригінальний файл «%1$@»: %2$@"
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Không xóa được tệp gốc “%1$@”: %2$@"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -310194,6 +310464,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Не вдалося перемістити оригінальний файл «%1$@» до Кошика: %2$@"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Không chuyển được tệp gốc “%1$@” vào thùng rác: %2$@"
           }
         },
         "zh-Hans" : {
@@ -310690,6 +310966,12 @@
             "value" : "Сторінка на %@ більша, ніж може прочитати TextMouth."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Trang tại %@ lớn hơn mức TextMouth đọc."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -311004,6 +311286,12 @@
             "value" : "Збережені для нього місце, закладки та транскрипція також видаляються."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Vị trí, dấu trang và bản chép lời được giữ cho nó cũng bị xóa."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -311073,6 +311361,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Список відтворення «%@» не є повним коректним файлом списку відтворення."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Danh sách phát “%@” không phải là tệp danh sách phát hợp lệ và đầy đủ."
           }
         },
         "zh-Hans" : {
@@ -311223,6 +311517,12 @@
             "value" : "Список відтворення «%@» використовує власні сутності XML, яких TextMouth не читає."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Danh sách phát “%@” dùng các thực thể XML riêng, mà TextMouth không đọc."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -311300,6 +311600,12 @@
             "value" : "Каталог подкастів на %1$@ не зміг відповісти на пошук (помилка %2$@). Спробуйте пізніше."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Danh mục podcast tại %1$@ không trả lời được tìm kiếm (lỗi %2$@). Hãy thử lại sau."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -311369,6 +311675,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Каталог подкастів на %@ не знайдено."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Không tìm thấy danh mục podcast tại %@."
           }
         },
         "zh-Hans" : {
@@ -311446,6 +311758,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Не вдалося зв’язатися з каталогом подкастів на %1$@: %2$@"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Không kết nối được với danh mục podcast tại %1$@: %2$@"
           }
         },
         "zh-Hans" : {
@@ -311693,6 +312011,18 @@
             }
           }
         },
+        "vi" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Danh mục podcast tại %1$@ không phản hồi trong %2$lld giây."
+                }
+              }
+            }
+          }
+        },
         "zh-Hans" : {
           "variations" : {
             "plural" : {
@@ -311770,6 +312100,12 @@
             "value" : "Каталог подкастів не можна шукати в цій мережі, яка обмежує дані."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Không tìm kiếm được danh mục podcast trên mạng này, vì mạng giới hạn dữ liệu."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -311839,6 +312175,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Каталог подкастів не зміг відповісти на пошук. Спробуйте пізніше."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Danh mục podcast không trả lời được tìm kiếm. Hãy thử lại sau."
           }
         },
         "zh-Hans" : {
@@ -311912,6 +312254,12 @@
             "value" : "Каталог подкастів відхилив пошук: він дозволяє близько 20 на хвилину. Зачекайте хвилину й спробуйте знову."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Danh mục podcast đã từ chối tìm kiếm; nó cho phép khoảng 20 lần một phút. Hãy chờ một phút rồi thử lại."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -311983,6 +312331,12 @@
             "value" : "Каталог подкастів надіслав відповідь, яку TextMouth не може прочитати. Спробуйте пізніше."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Danh mục podcast gửi câu trả lời mà TextMouth không đọc được. Hãy thử lại sau."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -312052,6 +312406,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Відповідь каталогу подкастів більша, ніж може прочитати TextMouth."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Câu trả lời của danh mục podcast lớn hơn mức TextMouth đọc."
           }
         },
         "zh-Hans" : {
@@ -312634,6 +312994,12 @@
             "value" : "Видавець вилучив цю стрічку."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nhà phát hành đã gỡ nguồn cấp này."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -312703,6 +313069,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Видавець вилучив цей файл."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nhà phát hành đã gỡ tệp này."
           }
         },
         "zh-Hans" : {
@@ -314213,6 +314585,12 @@
             "value" : "Оновлення «%@» зупинено."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Việc làm mới %@ đã bị dừng."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -314675,6 +315053,12 @@
             "value" : "Пошук не вдалося надіслати, бо адреса каталогу не є вебадресою."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Không gửi được tìm kiếm, vì địa chỉ của danh mục không phải địa chỉ web."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -314744,6 +315128,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Пошук зупинено."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tìm kiếm đã bị dừng."
           }
         },
         "zh-Hans" : {
@@ -314983,6 +315373,12 @@
             "value" : "Сервер %@ не знайдено."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Không tìm thấy máy chủ %@."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -315054,6 +315450,12 @@
             "value" : "Сервер %@ не знайдено. Перевірте адресу."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Không tìm thấy máy chủ %@. Hãy kiểm tra địa chỉ."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -315123,6 +315525,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Сервер повідомляє, що файлу більше немає."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Máy chủ cho biết tệp không còn nữa."
           }
         },
         "zh-Hans" : {
@@ -315437,6 +315845,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Не вдалося зберегти підписки: %@"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Không lưu được các mục đăng ký: %@"
           }
         },
         "zh-Hans" : {
@@ -316185,6 +316599,12 @@
             "value" : "Доріжки файлу CUE «%@» виходять за кінець його аудіо, тож його заголовки не використано."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Các bản âm thanh của tệp CUE “%@” vượt quá phần cuối của âm thanh của nó, nên các đề mục của nó không được dùng."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -316657,6 +317077,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Файл транскрипції поруч з аудіо нової копії замінює транскрипцію наявної копії."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tệp bản chép lời tìm thấy bên cạnh âm thanh của bản sao mới thay thế bản chép lời của bản hiện có."
           }
         },
         "zh-Hans" : {
@@ -318768,6 +319194,12 @@
             "value" : "Немає стрічок для оновлення."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Không có nguồn cấp nào để làm mới."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -318839,6 +319271,12 @@
             "value" : "Немає підписок для експорту."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Không có mục đăng ký nào để xuất."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -318908,6 +319346,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Немає підписок для експорту: усі стрічки у вашій бібліотеці без підписки."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Không có mục đăng ký nào để xuất: mọi nguồn cấp trong thư viện của bạn đều đã hủy đăng ký."
           }
         },
         "zh-Hans" : {
@@ -319378,6 +319822,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Недостатньо вільного місця на диску для перетворення %1$@: потрібно %2$@ вільного місця."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Không đủ dung lượng đĩa trống để chuyển đổi %1$@: cần %2$@ trống."
           }
         },
         "zh-Hans" : {
@@ -320227,6 +320677,12 @@
             "value" : "На цьому Mac немає місця для цього епізоду (%@)."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Máy Mac này không đủ chỗ cho tập này (%@)."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -320296,6 +320752,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "На диску недостатньо вільного місця."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Đĩa không đủ dung lượng trống."
           }
         },
         "zh-Hans" : {
@@ -320533,6 +320995,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "За цією адресою вже немає стрічки."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Không còn nguồn cấp nào ở địa chỉ đó nữa."
           }
         },
         "zh-Hans" : {
@@ -321701,6 +322169,12 @@
             "value" : "Ця стрічка використовує звичайний http"
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nguồn cấp này dùng http thuần"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -321770,6 +322244,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Налаштування цієї стрічки"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Cài đặt của nguồn cấp này"
           }
         },
         "zh-Hans" : {
@@ -322554,6 +323034,12 @@
             "value" : "Цей Mac не підключений до інтернету, тому %@ не можна оновити. Підключіться до інтернету й спробуйте знову."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Máy Mac này đang ngoại tuyến, nên không làm mới được %@. Hãy kết nối internet và thử lại."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -322708,6 +323194,12 @@
             "value" : "Цей Mac не підключений до інтернету, тому здійснити пошук у каталозі неможливо. Підключіться до інтернету й спробуйте знову."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Máy Mac này đang ngoại tuyến, nên không tìm kiếm được danh mục. Hãy kết nối internet và thử lại."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -322777,6 +323269,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Цей Mac не підключений до інтернету, тому «%@» не можна завантажити. Підключіться до інтернету й спробуйте знову."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Máy Mac này đang ngoại tuyến, nên không tải về được “%@”. Hãy kết nối internet và thử lại."
           }
         },
         "zh-Hans" : {
@@ -323401,6 +323899,12 @@
             "value" : "Цей файл XML не є ні книгою DTBook, ні документом Word 2003 XML, ні файлом Брайля PEF: лише такий XML читає TextMouth."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tệp XML này không phải sách DTBook, tài liệu XML Word 2003 hay tệp braille PEF, những loại XML duy nhất mà TextMouth đọc."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -323470,6 +323974,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "У цієї статті немає опису."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bài viết này không có mô tả."
           }
         },
         "zh-Hans" : {
@@ -324564,6 +325074,12 @@
             "value" : "У цієї книги немає дійсного керованого пакета. Вилучіть її лише з бібліотеки або відновіть її сховище перед видаленням."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sách này không có gói được quản lý hợp lệ. Chỉ gỡ nó khỏi thư viện, hoặc sửa chữa bộ nhớ của nó trước khi xóa."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -325402,6 +325918,12 @@
             "value" : "Аудіо цієї книги не вдалося перетворити з Ogg на AAC. TextMouth спробує знову під час наступного запуску."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Không chuyển đổi được âm thanh của sách này từ Ogg sang AAC. TextMouth sẽ thử lại vào lần khởi động kế tiếp."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -325473,6 +325995,12 @@
             "value" : "Аудіо цієї книги перетворюється з Ogg на AAC. Воно відтворюватиметься після завершення."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Âm thanh của sách này đang được chuyển đổi từ Ogg sang AAC. Sách sẽ phát khi việc đó kết thúc."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -325542,6 +326070,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Аудіо цієї книги потрібно перетворити з Ogg на AAC. TextMouth перетворює його зараз, і воно відтворюватиметься після завершення."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Âm thanh của sách này cần được chuyển đổi từ Ogg sang AAC. TextMouth đang chuyển đổi, và sách sẽ phát khi việc đó kết thúc."
           }
         },
         "zh-Hans" : {
@@ -325834,6 +326368,12 @@
             "value" : "Цей архів коміксу містить більше ніж %@ зображень, які читає TextMouth."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kho lưu trữ truyện tranh này chứa nhiều hơn %@ ảnh mà TextMouth đọc."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -325903,6 +326443,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Цей архів коміксу не містить зображень, які може прочитати TextMouth."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kho lưu trữ truyện tranh này không chứa ảnh nào mà TextMouth đọc được."
           }
         },
         "zh-Hans" : {
@@ -326130,6 +326676,12 @@
             "value" : "Це завантаження не в папці своєї стрічки, тож TextMouth залишив його файли як є."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bản tải về này không nằm trong thư mục của nguồn cấp, nên TextMouth để nguyên các tệp của nó."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -326199,6 +326751,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "У цього епізоду немає опису."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tập này không có mô tả."
           }
         },
         "zh-Hans" : {
@@ -326349,6 +326907,12 @@
             "value" : "Цієї стрічки більше немає у вашій бібліотеці."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nguồn cấp này không còn trong thư viện của bạn."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -326418,6 +326982,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Ця стрічка потребує пароля, який TextMouth поки не може надіслати."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nguồn cấp này cần mật khẩu, mà TextMouth chưa gửi được."
           }
         },
         "zh-Hans" : {
@@ -326568,6 +327138,12 @@
             "value" : "Цей файл не вдалося прочитати як документ Word 2003 XML."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Không đọc được tệp này như một tài liệu XML Word 2003."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -326637,6 +327213,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Цей файл не вдалося прочитати як документ Word 97-2003."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Không đọc được tệp này như một tài liệu Word 97-2003."
           }
         },
         "zh-Hans" : {
@@ -326710,6 +327292,12 @@
             "value" : "Цей файл не вдалося прочитати як архів коміксу. Він може бути пошкоджений або іншого типу."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Không đọc được tệp này như một kho lưu trữ truyện tranh. Tệp có thể bị hỏng, hoặc là một loại tệp khác."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -326779,6 +327367,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Цей файл не вдалося прочитати як зображення. Він може бути пошкоджений або іншого типу."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Không đọc được tệp này như một ảnh. Tệp có thể bị hỏng, hoặc là một loại tệp khác."
           }
         },
         "zh-Hans" : {
@@ -326852,6 +327446,12 @@
             "value" : "Цей файл не вдалося прочитати як документ із форматованим текстом і вкладеннями."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Không đọc được tệp này như một tài liệu văn bản có định dạng kèm tệp đính kèm."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -326921,6 +327521,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Цей файл не вдалося прочитати як документ із форматованим текстом."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Không đọc được tệp này như một tài liệu văn bản có định dạng."
           }
         },
         "zh-Hans" : {
@@ -326994,6 +327600,12 @@
             "value" : "Цей файл не вдалося прочитати як текстовий документ OpenDocument."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Không đọc được tệp này như một tài liệu văn bản OpenDocument."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -327063,6 +327675,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "У цьому файлі немає тексту для читання."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tệp này không có văn bản để đọc."
           }
         },
         "zh-Hans" : {
@@ -327519,6 +328137,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Цей файл потребує пароля, який TextMouth поки не може надіслати."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tệp này cần mật khẩu, mà TextMouth chưa gửi được."
           }
         },
         "zh-Hans" : {
@@ -328545,6 +329169,12 @@
             "value" : "Це зображення не вдалося декодувати. Воно може бути пошкоджене."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Không giải mã được ảnh này. Ảnh có thể bị hỏng."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -328785,6 +329415,18 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Це зображення містить %lld сторінки, а TextMouth читає не більше %@."
+                }
+              }
+            }
+          }
+        },
+        "vi" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Ảnh này có %lld trang, nhiều hơn %@ mà TextMouth đọc."
                 }
               }
             }
@@ -329036,6 +329678,18 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Це зображення має розмір %@, а TextMouth читає не більше ніж %lld мегапікселя."
+                }
+              }
+            }
+          }
+        },
+        "vi" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Ảnh này là %1$@, lớn hơn %2$lld megapixel mà TextMouth đọc."
                 }
               }
             }
@@ -331895,6 +332549,12 @@
             "value" : "Щоб завантажити його знову, виберіть %@ у його рядку."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Để tải về lại, hãy chọn %@ trên hàng của nó."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -332140,6 +332800,18 @@
             }
           }
         },
+        "vi" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Để tải về lại %lld mục còn lại, hãy chọn %@ trên hàng của chúng."
+                }
+              }
+            }
+          }
+        },
         "zh-Hans" : {
           "variations" : {
             "plural" : {
@@ -332217,6 +332889,12 @@
             "value" : "Щоб знову завантажити інший, виберіть %@ у його рядку."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Để tải về lại mục còn lại, hãy chọn %@ trên hàng của nó."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -332286,6 +332964,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Щоб завантажити їх знову, виберіть %@ у їхніх рядках."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Để tải về lại chúng, hãy chọn %@ trên hàng của chúng."
           }
         },
         "zh-Hans" : {
@@ -332442,6 +333126,12 @@
             "value" : "Щоб зберегти статтю, спершу виберіть %@ у її рядку."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Để giữ một bài viết, hãy chọn trước %@ trên hàng của nó."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -332513,6 +333203,12 @@
             "value" : "Щоб зберегти епізод, спершу виберіть %@ у його рядку."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Để giữ một tập, hãy chọn trước %@ trên hàng của nó."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -332582,6 +333278,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Щоб зберегти елемент, спершу виберіть %@ у його рядку."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Để giữ một mục, hãy chọn trước %@ trên hàng của nó."
           }
         },
         "zh-Hans" : {
@@ -332991,6 +333693,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Щоб ним скористатися, виберіть %@ на вкладці «Текст» у налаштуваннях."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Để dùng nó, hãy chọn %@ trên thẻ Văn bản trong Cài đặt."
           }
         },
         "zh-Hans" : {
@@ -334345,6 +335053,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Доріжка %@"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bản âm thanh %@"
           }
         },
         "zh-Hans" : {
@@ -339059,6 +339773,12 @@
             "value" : "Введіть назву подкасту або видавця, а потім натисніть Return, щоб пошукати в каталозі Apple."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nhập tiêu đề hoặc nhà phát hành của podcast, rồi nhấn Return để tìm trong danh mục của Apple"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -339288,6 +340008,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Введіть або вставте адресу стрічки чи вебсторінки, а потім натисніть Return."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nhập hoặc dán địa chỉ nguồn cấp hoặc trang web, rồi nhấn Return"
           }
         },
         "zh-Hans" : {
@@ -341155,6 +341881,12 @@
             "value" : "Невідома тривалість"
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Không rõ thời lượng"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -341982,6 +342714,12 @@
             "value" : "Скасувати підписку"
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Hủy đăng ký"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -342053,6 +342791,12 @@
             "value" : "Скасувати підписку на %@?"
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Hủy đăng ký %@?"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -342122,6 +342866,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Без підписки"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Đã hủy đăng ký"
           }
         },
         "zh-Hans" : {
@@ -342201,6 +342951,12 @@
             "value" : "Підписку на %1$@ скасовано: TextMouth більше не перевіряє її на нові статті%2$@."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Đã hủy đăng ký %1$@: TextMouth không còn kiểm tra bài viết mới của nó%2$@."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -342276,6 +343032,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Підписку на %1$@ скасовано: TextMouth більше не перевіряє її на нові епізоди%2$@."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Đã hủy đăng ký %1$@: TextMouth không còn kiểm tra tập mới của nó%2$@."
           }
         },
         "zh-Hans" : {
@@ -342355,6 +343117,12 @@
             "value" : "Підписку на %1$@ скасовано: TextMouth більше не перевіряє її на нові елементи%2$@."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Đã hủy đăng ký %1$@: TextMouth không còn kiểm tra mục mới của nó%2$@."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -342424,6 +343192,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Скасувати підписку…"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Hủy đăng ký…"
           }
         },
         "zh-Hans" : {
@@ -342574,6 +343348,12 @@
             "value" : "Непідтримуваний формат файлу: .%@"
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Định dạng tệp không được hỗ trợ: .%@"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -342643,6 +343423,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Непідтримуваний формат файлу: .%@."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Định dạng tệp không được hỗ trợ: .%@."
           }
         },
         "zh-Hans" : {
@@ -345891,6 +346677,12 @@
             "value" : "WMA"
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "WMA"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -345960,6 +346752,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "відео WMV"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Video WMV"
           }
         },
         "zh-Hans" : {
@@ -346033,6 +346831,12 @@
             "value" : "Дочекайтеся завершення експорту"
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Chờ đến khi việc xuất kết thúc"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -346102,6 +346906,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Дочекайтеся завершення транскрибування або скасуйте її"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Chờ đến khi việc chép lời kết thúc, hoặc hủy nó"
           }
         },
         "zh-Hans" : {
@@ -346839,6 +347649,12 @@
             "value" : "Очікування завершення переміщення каталогу даних..."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Đang chờ việc di chuyển thư mục dữ liệu hoàn tất..."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -346908,6 +347724,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Очікує завантаження"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Đang chờ tải về"
           }
         },
         "zh-Hans" : {
@@ -347123,6 +347945,12 @@
             "value" : "Вебсторінка"
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Trang web"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -347194,6 +348022,12 @@
             "value" : "Вебсайт"
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Trang web"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -347260,6 +348094,12 @@
           }
         },
         "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "WebM"
+          }
+        },
+        "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "WebM"
@@ -348157,6 +348997,18 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Збережене для %lld вилученого завантаження видалено."
+                }
+              }
+            }
+          }
+        },
+        "vi" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Những gì được giữ cho %lld bản tải về đã gỡ đã bị xóa."
                 }
               }
             }
@@ -349356,6 +350208,12 @@
             "value" : "Коли надходять нові епізоди"
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Khi có tập mới"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -350094,6 +350952,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Коли позначено, ця стрічка дотримується налаштування в «Налаштуваннях», %@; зніміть позначку, щоб дати стрічці власне."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Khi được chọn, nguồn cấp này theo cài đặt trong Cài đặt, %@; bỏ chọn để cho nguồn cấp này cài đặt riêng"
           }
         },
         "zh-Hans" : {
@@ -352924,6 +353788,12 @@
             "value" : "Windows Media"
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Windows Media"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -354640,6 +355510,12 @@
             "value" : "Кількість слів"
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Số từ"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -355499,6 +356375,12 @@
             "value" : "Ви можете відновити його з Кошика, доки Кошик не очищено."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bạn có thể khôi phục nó từ thùng rác cho đến khi làm trống thùng rác."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -355985,6 +356867,12 @@
             "value" : "Після кожного імпорту вас запитуватимуть, чи видаляти оригінальний файл остаточно."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bạn sẽ được hỏi có xóa vĩnh viễn tệp gốc hay không sau mỗi lần nhập."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -356056,6 +356944,12 @@
             "value" : "Після кожного імпорту вас запитуватимуть, чи перемістити оригінальний файл до Кошика."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bạn sẽ được hỏi có chuyển tệp gốc vào thùng rác hay không sau mỗi lần nhập."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -356125,6 +357019,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Ви вже підписані на %@."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bạn đã đăng ký %@ rồi."
           }
         },
         "zh-Hans" : {
@@ -357543,6 +358443,12 @@
             "value" : "тип, якого система не називає"
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "một loại mà hệ thống không đặt tên"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -357766,6 +358672,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "пакет з його назвою є і в папці бібліотеки, і в папці його стрічки"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "một gói có tên của nó nằm trong cả thư mục thư viện của nó lẫn thư mục của nguồn cấp"
           }
         },
         "zh-Hans" : {
@@ -358362,6 +359274,12 @@
             "value" : "додавання до бібліотеки"
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "thêm nó vào thư viện"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -358431,6 +359349,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "додавання до папки бібліотеки"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "thêm nó vào thư mục thư viện"
           }
         },
         "zh-Hans" : {
@@ -359486,6 +360410,12 @@
             "value" : "одразу"
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ngay lập tức"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -359697,6 +360627,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "закладки"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "dấu trang"
           }
         },
         "zh-Hans" : {
@@ -360052,6 +360988,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "від %@"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "bởi %@"
           }
         },
         "zh-Hans" : {
@@ -360569,6 +361511,12 @@
             "value" : "перевірка формату"
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "kiểm tra định dạng của nó"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -360640,6 +361588,12 @@
             "value" : "перевірка пакета"
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "kiểm tra gói"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -360709,6 +361663,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "виберіть %@ знову"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "chọn lại %@"
           }
         },
         "zh-Hans" : {
@@ -361167,6 +362127,12 @@
             "value" : "перетворення аудіо DAISY"
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "chuyển đổi âm thanh DAISY của nó"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -361236,6 +362202,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "перетворення аудіо"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "chuyển đổi âm thanh của nó"
           }
         },
         "zh-Hans" : {
@@ -361309,6 +362281,12 @@
             "value" : "копіювання до бібліотеки"
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "sao chép nó vào thư viện"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -361378,6 +362356,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "створення пакета"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "tạo gói của nó"
           }
         },
         "zh-Hans" : {
@@ -361709,6 +362693,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "видалення завантаження"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "xóa bản tải về của nó"
           }
         },
         "zh-Hans" : {
@@ -362313,6 +363303,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "розпакування архіву"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "giải nén kho lưu trữ"
           }
         },
         "zh-Hans" : {
@@ -365341,6 +366337,12 @@
             "value" : "експортується, і %@ зараз зупинило б експорт"
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "đang được xuất, và %@ lúc này sẽ làm dừng việc xuất"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -365412,6 +366414,12 @@
             "value" : "транскрибується, і %@ зараз призвело б до втрати транскрипції"
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "đang được chép lời, và %@ lúc này sẽ làm mất bản chép lời"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -365481,6 +366489,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "відкрито у вікні читання"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "đang mở trong một trình đọc"
           }
         },
         "zh-Hans" : {
@@ -365937,6 +366951,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "завантажиться, щойно цей Mac підключиться до мережі без обмежень даних"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "nó sẽ tải về khi máy Mac này vào mạng không giới hạn dữ liệu"
           }
         },
         "zh-Hans" : {
@@ -366421,6 +367441,18 @@
             }
           }
         },
+        "vi" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "nó là %1$@, lớn hơn %2$lld megapixel"
+                }
+              }
+            }
+          }
+        },
         "zh-Hans" : {
           "variations" : {
             "plural" : {
@@ -366496,6 +367528,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "це тип зображення, який TextMouth не може прочитати (%@)"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "nó là loại ảnh mà TextMouth không đọc được (%@)"
           }
         },
         "zh-Hans" : {
@@ -366721,6 +367759,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "його тривалість нульова"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "nó không có thời lượng"
           }
         },
         "zh-Hans" : {
@@ -367055,6 +368099,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "потрібно %@ місця на цьому Mac"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "nó cần chỗ cho %@ trên máy Mac này"
           }
         },
         "zh-Hans" : {
@@ -367642,6 +368692,18 @@
             }
           }
         },
+        "vi" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld bài viết đã tải về của nó"
+                }
+              }
+            }
+          }
+        },
         "zh-Hans" : {
           "variations" : {
             "plural" : {
@@ -367888,6 +368950,18 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "її %lld завантаженого епізоду"
+                }
+              }
+            }
+          }
+        },
+        "vi" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld tập đã tải về của nó"
                 }
               }
             }
@@ -368144,6 +369218,18 @@
             }
           }
         },
+        "vi" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld mục đã tải về của nó"
+                }
+              }
+            }
+          }
+        },
         "zh-Hans" : {
           "variations" : {
             "plural" : {
@@ -368387,6 +369473,12 @@
             "value" : "його вміст не збігається зі збереженою контрольною сумою"
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "nội dung của nó không khớp với giá trị kiểm tra được lưu cùng"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -368456,6 +369548,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "її завантажена стаття"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "bài viết đã tải về của nó"
           }
         },
         "zh-Hans" : {
@@ -368529,6 +369627,12 @@
             "value" : "її завантажений епізод"
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "tập đã tải về của nó"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -368598,6 +369702,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "її завантажений елемент"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "mục đã tải về của nó"
           }
         },
         "zh-Hans" : {
@@ -368671,6 +369781,12 @@
             "value" : "його файл не вдалося прочитати як зображення"
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "tệp của nó không đọc được như một ảnh"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -368740,6 +369856,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "його файл пошкоджено або він неповний: %@"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "tệp của nó bị hỏng hoặc chưa đầy đủ: %@"
           }
         },
         "zh-Hans" : {
@@ -369008,6 +370130,12 @@
             "value" : "його пакета немає ні в папці бібліотеки, ні в папці його стрічки"
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "gói của nó không nằm trong thư mục thư viện của nó lẫn thư mục của nguồn cấp"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -369077,6 +370205,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "його зображення не вдалося декодувати"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "không giải mã được ảnh của nó"
           }
         },
         "zh-Hans" : {
@@ -369150,6 +370284,12 @@
             "value" : "його рядок не вказує на жоден пакет, яким керує бібліотека"
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "hàng của nó không nêu gói nào mà thư viện quản lý"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -369219,6 +370359,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "збереження місця ваших завантажень зі стрічок на наступний раз"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "giữ lại vị trí các bản tải về nguồn cấp của bạn cho lần sau"
           }
         },
         "zh-Hans" : {
@@ -370160,6 +371306,12 @@
             "value" : "понад %@"
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "hơn %@"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -370786,6 +371938,18 @@
             }
           }
         },
+        "vi" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "lồng trích dẫn, danh sách hoặc phần nhấn mạnh sâu hơn %lld cấp"
+                }
+              }
+            }
+          }
+        },
         "zh-Hans" : {
           "variations" : {
             "plural" : {
@@ -370861,6 +372025,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "ніколи"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "không bao giờ"
           }
         },
         "zh-Hans" : {
@@ -371639,6 +372809,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "нічого не завантажено"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "không có bản nào tải về"
           }
         },
         "zh-Hans" : {
@@ -372456,6 +373632,12 @@
             "value" : "нічого нового."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "không có gì mới."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -372815,6 +373997,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "лише під час запуску й на ваш запит"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "chỉ khi mở ứng dụng và khi bạn yêu cầu"
           }
         },
         "zh-Hans" : {
@@ -373399,6 +374587,12 @@
             "value" : "власні налаштування"
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "cài đặt riêng"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -373707,6 +374901,12 @@
             "value" : "місце"
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "vị trí"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -373776,6 +374976,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "місця"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "các vị trí"
           }
         },
         "zh-Hans" : {
@@ -374009,6 +375215,12 @@
             "value" : "читання аудіо"
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "đọc âm thanh của nó"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -374080,6 +375292,12 @@
             "value" : "читання маніфесту"
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "đọc bản kê khai của nó"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -374149,6 +375367,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "читання тексту"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "đọc văn bản của nó"
           }
         },
         "zh-Hans" : {
@@ -374350,6 +375574,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "читання файлу"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "đọc tệp"
           }
         },
         "zh-Hans" : {
@@ -374834,6 +376064,12 @@
             "value" : "повернення до бібліотеки"
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "trả nó về thư viện"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -374905,6 +376141,12 @@
             "value" : "збереження файлу bookInfo.json"
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "lưu tệp bookInfo.json của nó"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -374974,6 +376216,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "збереження змін у ваших підписках на стрічки"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "lưu các thay đổi đối với đăng ký nguồn cấp của bạn"
           }
         },
         "zh-Hans" : {
@@ -377008,6 +378256,18 @@
             }
           }
         },
+        "vi" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%1$@ được giữ lại cho %2$lld bản tải về đã gỡ"
+                }
+              }
+            }
+          }
+        },
         "zh-Hans" : {
           "variations" : {
             "plural" : {
@@ -377997,6 +379257,12 @@
             "value" : "завантаження завершилося без файлу"
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "lượt tải về kết thúc mà không có tệp"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -378208,6 +379474,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "стрічку «%@»"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "nguồn cấp “%@”"
           }
         },
         "zh-Hans" : {
@@ -379364,6 +380636,12 @@
             "value" : "сервер"
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "máy chủ"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -379435,6 +380713,12 @@
             "value" : "сервер не надіслав відповіді"
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "máy chủ không gửi lại câu trả lời nào"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -379504,6 +380788,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "верхній рівень вашої бібліотеки"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "đầu thư viện của bạn"
           }
         },
         "zh-Hans" : {
@@ -379991,6 +381281,12 @@
             "value" : "цей формат"
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "định dạng này"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -380192,6 +381488,12 @@
             "value" : "сьогодні о %@"
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "hôm nay lúc %@"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -380346,6 +381648,12 @@
             "value" : "транскрипція"
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "bản chép lời"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -380417,6 +381725,12 @@
             "value" : "транскрипції"
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "các bản chép lời"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -380486,6 +381800,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "спробуйте знову"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "thử lại"
           }
         },
         "zh-Hans" : {
@@ -381201,6 +382521,18 @@
             }
           }
         },
+        "vi" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "những gì được giữ lại cho %lld bản tải về đã gỡ"
+                }
+              }
+            }
+          }
+        },
         "zh-Hans" : {
           "variations" : {
             "plural" : {
@@ -381426,6 +382758,12 @@
             "value" : "учора о %@"
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "hôm qua lúc %@"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -381649,6 +382987,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "«%1$@» (%2$@)"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%1$@” (%2$@)"
           }
         },
         "zh-Hans" : {
@@ -382060,6 +383404,12 @@
             "value" : "Під час заміни «%@» щось змінилося, тож TextMouth залишив обидві копії як є. Виберіть «Замінити наявний» знову."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” đã thay đổi trong lúc được thay thế, nên TextMouth để nguyên cả hai bản sao. Hãy chọn lại Thay thế bản hiện có."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -382386,6 +383736,12 @@
             "value" : "«%@» завантажиться, щойно цей Mac підключиться до мережі без обмежень даних."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” sẽ tải về khi máy Mac này vào mạng không giới hạn dữ liệu."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -382457,6 +383813,12 @@
             "value" : "У «%@» немає ні книги DAISY, ні аудіодоріжок, які можна імпортувати як одну книгу."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” không chứa sách DAISY nào và không có bản âm thanh nào để nhập thành một sách."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -382526,6 +383888,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "У «%@» немає звуку для імпорту."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” không chứa âm thanh nào để nhập."
           }
         },
         "zh-Hans" : {
@@ -382682,6 +384050,12 @@
             "value" : "«%@» — це лексикон вимови, а не список відтворення."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” là từ điển phát âm, không phải danh sách phát."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -382751,6 +384125,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "«%@» уже додається до бібліотеки."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” đang được thêm vào thư viện rồi."
           }
         },
         "zh-Hans" : {
@@ -383606,6 +384986,12 @@
             "value" : "«%1$@» збігається з «%2$@», що вже є у вашій бібліотеці. Замінити наявну копію чи зберегти обидві як окремі книги?"
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%1$@” trùng với “%2$@”, đã có trong thư viện của bạn. Thay thế bản hiện có, hay giữ cả hai thành các sách riêng?"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -383683,6 +385069,12 @@
             "value" : "«%1$@» потребує %2$@ вільного місця"
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%1$@” cần %2$@ trống"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -383758,6 +385150,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "«%1$@» більше не чекає на завантаження; воно завантажиться, коли ви виберете %2$@."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%1$@” không còn chờ tải về nữa; nó sẽ tải về khi bạn chọn %2$@."
           }
         },
         "zh-Hans" : {
@@ -384329,6 +385727,12 @@
             "value" : "«%1$@», %2$@"
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%1$@”, %2$@"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -384404,6 +385808,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "«%1$@», %2$@: %3$@"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%1$@”, %2$@: %3$@"
           }
         },
         "zh-Hans" : {
