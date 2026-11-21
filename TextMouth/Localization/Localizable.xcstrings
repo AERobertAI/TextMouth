@@ -18453,13 +18453,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%1$@ von %2$lld Kapitel konnte nicht gelesen werden"
+                  "value" : "%1$@ von %2$lld Kapitel nicht lesbar"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%1$@ von %2$lld Kapiteln konnten nicht gelesen werden"
+                  "value" : "%1$@ von %2$lld Kapiteln nicht lesbar"
                 }
               }
             }
@@ -105747,7 +105747,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Fügt die Geschwindigkeit hinzu, mit der gezählt wird, etwa 2,0x bei einem Hörbuch, das nicht mit 1x läuft, oder 500 Wörter pro Minute bei einem Textbuch, in der Leseansicht, bei „Wo bin ich?“, „Leseposition kopieren“ und in den Dauern des Überschriften-Sheets."
+            "value" : "Fügt in der Leseansicht, bei „Wo bin ich?“, bei „Leseposition kopieren“ und bei der Anzeige „Dauer“ im Überschriften-Sheet die Geschwindigkeit hinzu, mit der die Zeiten berechnet werden, etwa 2,0x bei einem Hörbuch, das nicht mit 1x läuft, oder 500 Wörter pro Minute bei einem Textbuch."
           }
         },
         "es" : {
@@ -151273,7 +151273,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Wählt getrennte Navigationseinheiten für Vorwärts und Rückwärts für dieses Buch."
+            "value" : "Wählt für dieses Buch getrennte Navigationseinheiten für Vorwärts und Rückwärts."
           }
         },
         "es" : {
@@ -201566,7 +201566,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Jede Zeile, die mit <!-- chapter: beginnt, beginnt ein Kapitel; behalte diese Zeilen."
+            "value" : "Jede Zeile, die mit <!-- chapter: anfängt, beginnt ein Kapitel; behalte diese Zeilen."
           }
         },
         "es" : {
@@ -203901,7 +203901,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "„Text bearbeiten“ wurde für %@ beendet, weil eine neue Kopie ihn ersetzt hat."
+            "value" : "„Text bearbeiten“ wurde für %@ beendet, weil eine neue Kopie das Buch ersetzt hat."
           }
         },
         "es" : {
@@ -304105,7 +304105,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Maximal sind %@ erlaubt."
+            "value" : "Das Maximum ist %@."
           }
         },
         "es" : {
@@ -335314,7 +335314,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Es konnte keine Kopie deines bearbeiteten Texts behalten werden, daher lässt TextMouth content.md unverändert."
+            "value" : "Es konnte keine Kopie deines bearbeiteten Texts angelegt werden, daher lässt TextMouth content.md unverändert."
           }
         },
         "es" : {
@@ -353897,7 +353897,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Die Texterkennung (OCR) konnte auf allen %lld Seiten nicht ausgeführt werden, daher fehlt Text, der nur in den Bildern steht: %@."
+                  "value" : "Die Texterkennung (OCR) konnte auf %lld Seite nicht ausgeführt werden, daher fehlt Text, der nur in ihren Bildern steht: %@."
                 }
               },
               "other" : {
@@ -364781,7 +364781,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Wahltaste"
+            "value" : "Wahl"
           }
         },
         "es" : {
@@ -390791,7 +390791,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Leseansichtsfenster"
+            "value" : "Leseansichten"
           }
         },
         "es" : {
