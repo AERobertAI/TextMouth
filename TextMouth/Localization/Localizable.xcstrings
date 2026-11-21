@@ -604,7 +604,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ %2$@，TextMouth 無法連同其結構一起輸出。"
+            "value" : "%1$@中，%2$@，TextMouth 無法連同其結構一起輸出。"
           }
         }
       }
@@ -2732,7 +2732,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ 會在目前位置加入一個。"
+            "value" : "「%@」會在目前位置加入書籤。"
           }
         }
       }
@@ -11196,7 +11196,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ 沒有文字，所以游標在 %2$@。"
+            "value" : "%1$@沒有文字，所以游標在%2$@。"
           }
         }
       }
@@ -13374,7 +13374,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ 僅在雲端"
+            "value" : "%@僅在雲端"
           }
         }
       }
@@ -13523,7 +13523,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ 是 Word 6 或 Word 95 文件，iPhone 版 TextMouth 目前還無法讀取。"
+            "value" : "%@是 Word 6 或 Word 95 文件，iPhone 版 TextMouth 目前還無法讀取。"
           }
         }
       }
@@ -14876,7 +14876,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ 是 %2$@ 格式，iPhone 版 TextMouth 目前還無法播放。"
+            "value" : "%1$@是 %2$@ 格式，iPhone 版 TextMouth 目前還無法播放。"
           }
         }
       }
@@ -15031,7 +15031,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ 位於已略過的區段中，所以游標在 %2$@。"
+            "value" : "%1$@位於已略過的區段中，所以游標在%2$@。"
           }
         }
       }
@@ -19009,7 +19009,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ 需要「%2$@」，這是 Mac 內建的點字表之一，iPhone 版 TextMouth 沒有這個點字表。"
+            "value" : "%1$@需要「%2$@」，這是 Mac 內建的點字表之一，iPhone 版 TextMouth 沒有這個點字表。"
           }
         }
       }
@@ -19158,7 +19158,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ 的巢狀層次太深"
+            "value" : "%@的巢狀層次太深"
           }
         }
       }
@@ -22832,7 +22832,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ 音效"
+            "value" : "%@ 的音效"
           }
         }
       }
@@ -24346,7 +24346,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ 會重試儲存，%2$@ 會結束且不儲存，%3$@ 會讓 TextMouth 保持打開。"
+            "value" : "「%1$@」會重試儲存，「%2$@」會結束且不儲存，「%3$@」會讓 TextMouth 保持打開。"
           }
         }
       }
@@ -27257,7 +27257,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ 在 %2$@ 中有效。"
+            "value" : "%1$@ 在%2$@中有效。"
           }
         }
       }
@@ -28020,7 +28020,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@，%2$@ 品質"
+            "value" : "%1$@，%2$@"
           }
         }
       }
@@ -66654,7 +66654,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "有 %lld 個詞條只提供拼音，因此已略過。"
+                  "value" : "有 %lld 個詞條只提供音標，因此已略過。"
                 }
               }
             }
@@ -112602,7 +112602,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "已加入 %lld 條規則，來自「%@」。"
+                  "value" : "已從「%2$@」加入 %1$lld 條規則。"
                 }
               }
             }
@@ -113350,7 +113350,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "在每個閱讀器的工具列加入「輸出」按鈕。「檔案」>「輸出」同樣可用。"
+            "value" : "在每個閱讀器的工具列加入「輸出」按鈕。無論是否加入，「檔案」選單中的「輸出」都可以使用。"
           }
         }
       }
@@ -113797,7 +113797,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "在你的規則之後加入詞典的詞條；只有拼音的詞條會被略過。"
+            "value" : "在你的規則之後加入詞典的詞條；只有音標的詞條會被略過。"
           }
         }
       }
@@ -122073,7 +122073,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "單引號"
+            "value" : "撇號"
           }
         }
       }
@@ -128151,7 +128151,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "詢問選用的備註，然後標記閱讀位置。"
+            "value" : "先讓你輸入選填的備註，再標記閱讀位置。"
           }
         }
       }
@@ -153520,7 +153520,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "此書的第 %1$@ 章 %2$@，TextMouth 無法安全輸出。請選擇「編輯文字」，將巢狀結構攤平並儲存，然後再次輸出。"
+            "value" : "此書的第 %1$@ 章中，%2$@，TextMouth 無法安全輸出。請選擇「編輯文字」，減少巢狀層級並儲存，然後再次輸出。"
           }
         }
       }
@@ -169654,7 +169654,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "全部關閉"
+            "value" : "關閉全部"
           }
         }
       }
@@ -206616,7 +206616,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "下箭頭"
+            "value" : "向下箭頭"
           }
         }
       }
@@ -225799,7 +225799,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "此書的結尾行為"
+            "value" : "此書結束時的行為"
           }
         }
       }
@@ -226842,7 +226842,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "加強"
+            "value" : "增強音質"
           }
         }
       }
@@ -239222,7 +239222,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "已將 %1$@ 輸出至 %2$@。"
+            "value" : "已將 %1$@輸出至 %2$@。"
           }
         }
       }
@@ -257460,7 +257460,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "從"
+            "value" : "起點"
           }
         }
       }
@@ -270634,7 +270634,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "第二次按鍵必須在多快內跟上第一次。單按與連按兩次動作不同的按鍵，會先等候這段時間才執行單按動作。"
+            "value" : "第二次按鍵必須在第一次之後多久內按下。單按與連按兩次動作不同的按鍵，會先等候這段時間才執行單按動作。"
           }
         }
       }
@@ -277612,7 +277612,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "輸入 %@ 的操作在 TextMouth 關閉時已停止。"
+            "value" : "輸入%@的操作在 TextMouth 關閉時已停止。"
           }
         }
       }
@@ -288734,7 +288734,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "它沒有標題，因此目錄列有 %lld 個項目，對應其章節和它標記的位置。"
+                  "value" : "它沒有標題，因此目錄中有 %lld 個項目，對應其章節和它標記的位置。"
                 }
               }
             }
@@ -288886,7 +288886,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "它沒有標題，因此目錄列只有一個項目，對應整本書。"
+            "value" : "它沒有標題，因此目錄中只有一個項目，對應整本書。"
           }
         }
       }
@@ -297341,7 +297341,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "它的標題是真正的標題，目錄列有連結指向它們。"
+            "value" : "它的標題是真正的標題，目錄會連結到這些標題。"
           }
         }
       }
@@ -300333,7 +300333,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "已跳至頁面 %1$@：標示為 %3$@ 的頁面中的 %2$@。"
+            "value" : "已跳至第 %1$@ 頁，即標示為 %3$@ 的頁面中的%2$@。"
           }
         }
       }
@@ -300482,7 +300482,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "已跳至頁面 %@。"
+            "value" : "已跳至第 %@ 頁。"
           }
         }
       }
@@ -308267,7 +308267,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "左箭頭"
+            "value" : "向左箭頭"
           }
         }
       }
@@ -331430,7 +331430,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "縮至最小"
+            "value" : "縮到最小"
           }
         }
       }
@@ -331579,7 +331579,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "全部縮至最小"
+            "value" : "將全部縮到最小"
           }
         }
       }
@@ -374250,7 +374250,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "尚未安裝語音。請在「系統設定」>「輔助使用」>「語音內容」中加入語音，然後再次輸出。"
+            "value" : "尚未安裝語音。請在「系統設定」的「輔助使用」中，於「語音內容」加入語音，然後再次輸出。"
           }
         }
       }
@@ -374399,7 +374399,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "尚未安裝語音。請在「設定」>「輔助使用」>「閱讀與朗讀」中加入語音。"
+            "value" : "尚未安裝語音。請在「設定」的「輔助使用」中，於「閱讀與朗讀」加入語音。"
           }
         }
       }
@@ -400686,7 +400686,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "從列表中的書結束時，略過已完成的書。"
+            "value" : "列表中的書結束時，略過已完成的書。"
           }
         }
       }
@@ -411774,7 +411774,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "在你倒轉時播放。"
+            "value" : "在你向後跳轉時播放。"
           }
         }
       }
@@ -411923,7 +411923,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "在你快轉時播放。"
+            "value" : "在你向前跳轉時播放。"
           }
         }
       }
@@ -413773,7 +413773,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "優質"
+            "value" : "高音質"
           }
         }
       }
@@ -414822,7 +414822,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "預聽 %@ 音效"
+            "value" : "預聽 %@ 的音效"
           }
         }
       }
@@ -421676,7 +421676,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "現在結束會使這些更改未儲存："
+            "value" : "現在結束的話，以下更改將不會儲存："
           }
         }
       }
@@ -450351,7 +450351,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "還原標準列表：ASCII 符號、項目符號、破折號、省略號和製表線。"
+            "value" : "還原標準列表：ASCII 符號、項目符號、破折號、刪節號和製表線。"
           }
         }
       }
@@ -450500,7 +450500,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "還原此動作的預設快速鍵，日後版本可能會更改這些預設值。"
+            "value" : "還原此動作的預設快速鍵；預設快速鍵會隨日後版本的更改而更新。"
           }
         }
       }
@@ -455622,7 +455622,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "多重格式文字，每個標題依其大綱層級呈現，適用於 Word、Pages 和 TextEdit。"
+            "value" : "多重格式文字，每個標題依其大綱層級呈現，適用於 Word、Pages 和「文字編輯」。"
           }
         }
       }
@@ -455771,7 +455771,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "右箭頭"
+            "value" : "向右箭頭"
           }
         }
       }
@@ -469572,7 +469572,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "選擇章節"
+            "value" : "選取章節"
           }
         }
       }
@@ -486030,7 +486030,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "倒轉"
+            "value" : "向後跳轉"
           }
         }
       }
@@ -486328,7 +486328,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "倒轉：%@"
+            "value" : "向後跳轉：%@"
           }
         }
       }
@@ -487073,7 +487073,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "快轉"
+            "value" : "向前跳轉"
           }
         }
       }
@@ -487371,7 +487371,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "快轉：%@"
+            "value" : "向前跳轉：%@"
           }
         }
       }
@@ -492362,7 +492362,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "依 %@ 排序書籍"
+            "value" : "依%@排序書籍"
           }
         }
       }
@@ -492660,7 +492660,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "已依 %@ 排序"
+            "value" : "已依%@排序"
           }
         }
       }
@@ -497459,7 +497459,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "標準"
+            "value" : "標準音質"
           }
         }
       }
@@ -515003,7 +515003,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "文字未更新：%@ 已被移除，或其下載項目已刪除，因此「編輯文字」已為它停止。"
+            "value" : "文字未更新：%@ 已被移除，或其下載項目已刪除，因此其「編輯文字」已停止。"
           }
         }
       }
@@ -515158,7 +515158,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "文字未更新：%2$@ 編輯後文字的第 %1$@ 章 %3$@，TextMouth 無法安全讀取。請將它攤平後再儲存，或還原更改；在此之前，書籍會保留舊的文字。"
+            "value" : "文字未更新：%2$@ 編輯後文字的第 %1$@ 章中，%3$@，TextMouth 無法安全讀取。請減少巢狀層級後再次儲存，或還原更改；在此之前，書籍會保留舊的文字。"
           }
         }
       }
@@ -515313,7 +515313,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "文字未更新：%1$@ 編輯後的文字 %2$@，TextMouth 無法安全讀取。請將它攤平後再儲存，或還原更改；在此之前，書籍會保留舊的文字。"
+            "value" : "文字未更新：%1$@ 編輯後的文字中，%2$@，TextMouth 無法安全讀取。請減少巢狀層級後再次儲存，或還原更改；在此之前，書籍會保留舊的文字。"
           }
         }
       }
@@ -531161,7 +531161,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth 正在完成收尾工作後才會結束：%@。完成後便會結束。"
+            "value" : "TextMouth 結束前正在完成收尾工作：%@。完成後便會結束。"
           }
         }
       }
@@ -538387,7 +538387,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth 之後加入的 BRF 和 BRL 檔案會以這些字元讀取，並自動辨識 Unicode 點字圖樣。輸出對話框會以這些字元開始 BRF。每本書都保留其輸入時的字元，可在「書籍資訊」中更改。"
+            "value" : "你之後加入的 BRF 和 BRL 檔案，TextMouth 會以這些字元讀取，並自動辨識 Unicode 點字圖樣。輸出對話框中的 BRF 一開始也會使用這些字元。每本書都保留其輸入時的字元，可在「書籍資訊」中更改。"
           }
         }
       }
@@ -546202,7 +546202,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ 在「%3$@」的 %2$@ 處結束，但該檔案只有 %4$@ 長。"
+            "value" : "%1$@ 在「%3$@」的 %2$@處結束，但該檔案只有 %4$@長。"
           }
         }
       }
@@ -549237,7 +549237,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "標示為 %2$@ 的頁面中的 %1$@"
+            "value" : "標示為 %2$@ 的頁面中的%1$@"
           }
         }
       }
@@ -549392,7 +549392,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ 在「%3$@」的 %2$@ 處開始，早於較前面的 %4$@，後者在 %5$@ 處開始。"
+            "value" : "%1$@ 在「%3$@」的 %2$@處開始，早於較前面的%4$@，後者在 %5$@處開始。"
           }
         }
       }
@@ -549547,7 +549547,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ 在「%3$@」的 %2$@ 處開始，但該檔案只有 %4$@ 長。"
+            "value" : "%1$@ 在「%3$@」的 %2$@處開始，但該檔案只有 %4$@長。"
           }
         }
       }
@@ -567184,7 +567184,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "此點字表寫出八點點字格 %@，但 TextMouth 的 BRF 和 PEF 檔案只支援六點。"
+            "value" : "此點字表寫出八點點字格（%@），但 TextMouth 的 BRF 和 PEF 檔案只支援六點。"
           }
         }
       }
@@ -569425,7 +569425,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "游標在 %@。"
+            "value" : "游標在%@。"
           }
         }
       }
@@ -575322,7 +575322,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "無法足夠快地讀取檔案 %@。"
+            "value" : "讀取檔案 %@ 的速度不夠快。"
           }
         }
       }
@@ -582497,7 +582497,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "其區段結束音訊的標題（連同其子標題），或書籍結尾。"
+            "value" : "音訊結束的位置：某個標題的區段結尾（連同其子標題），或書籍結尾。"
           }
         }
       }
@@ -599578,7 +599578,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "閱讀列表是空的。若要加入書籍，請從其內容選單、VoiceOver 動作或「書庫」選單中選擇「加入閱讀列表」。"
+            "value" : "閱讀列表是空的。若要加入書籍，請從其快速選單、VoiceOver 動作或「書庫」選單中選擇「加入閱讀列表」。"
           }
         }
       }
@@ -605606,7 +605606,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "此書的文字 %@，TextMouth 無法安全輸出。請選擇「編輯文字」，將巢狀結構攤平並儲存，然後再次輸出。"
+            "value" : "此書的文字中，%@，TextMouth 無法安全輸出。請選擇「編輯文字」，減少巢狀層級並儲存，然後再次輸出。"
           }
         }
       }
@@ -632916,7 +632916,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "時間，以 %@ 計"
+            "value" : "時間，以%@計"
           }
         }
       }
@@ -636250,7 +636250,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "至"
+            "value" : "終點"
           }
         }
       }
@@ -648926,7 +648926,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "按了兩次，相隔 %1$@。請將時間設定為高於 %2$@，才會算作一次。"
+            "value" : "按了兩次，相隔 %1$@。請將時間設定為高於 %2$@，才會算作連按兩次。"
           }
         }
       }
@@ -650422,7 +650422,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "請輸入直引號：在「文字編輯」中，於「編輯」>「替換」下關閉「智慧型引號」。"
+            "value" : "請輸入直引號：在「文字編輯」的「編輯」選單中，於「替代」下關閉「智慧型引號」。"
           }
         }
       }
@@ -657716,7 +657716,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "上箭頭"
+            "value" : "向上箭頭"
           }
         }
       }
@@ -662645,7 +662645,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "語音：%1$@（%2$@），%3$@，%4$@ 品質"
+            "value" : "語音：%1$@（%2$@），%3$@，%4$@"
           }
         }
       }
@@ -674249,7 +674249,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "我在哪裡？宣告書籍中的目前位置"
+            "value" : "我在哪裡？播報書籍中的目前位置"
           }
         }
       }
@@ -681040,7 +681040,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "在 %@ 中有效"
+            "value" : "在%@中有效"
           }
         }
       }
@@ -689210,7 +689210,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "位於 %1$@，全長 %2$@，速度 %3$@"
+            "value" : "位於 %1$@，全長 %2$@，速度%3$@"
           }
         }
       }
@@ -694803,7 +694803,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ 點"
+            "value" : "點 %@"
           }
         }
       }
@@ -694952,7 +694952,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ 點"
+            "value" : "點 %@"
           }
         }
       }
@@ -702277,7 +702277,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "它 %@，TextMouth 無法安全讀取。請將它攤平後再儲存，或還原更改，書籍便會打開。"
+            "value" : "其中%@，TextMouth 無法安全讀取。請減少巢狀層級後再次儲存，或還原更改，書籍便會打開。"
           }
         }
       }
@@ -702426,7 +702426,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "它 %@，TextMouth 無法安全讀取。請將它攤平後再儲存，或還原更改，文字便會顯示。"
+            "value" : "其中%@，TextMouth 無法安全讀取。請減少巢狀層級後再次儲存，或還原更改，文字便會顯示。"
           }
         }
       }
@@ -707542,7 +707542,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "它的第 %1$@ 章 %2$@，TextMouth 無法安全讀取。請將它攤平後再儲存，或還原更改，書籍便會打開。"
+            "value" : "它的第 %1$@ 章中，%2$@，TextMouth 無法安全讀取。請減少巢狀層級後再次儲存，或還原更改，書籍便會打開。"
           }
         }
       }
@@ -707697,7 +707697,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "它的第 %1$@ 章 %2$@，TextMouth 無法安全讀取。請將它攤平後再儲存，或還原更改，文字便會顯示。"
+            "value" : "它的第 %1$@ 章中，%2$@，TextMouth 無法安全讀取。請減少巢狀層級後再次儲存，或還原更改，文字便會顯示。"
           }
         }
       }
@@ -716681,7 +716681,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "標示為 %2$@ 的頁面中的 %1$@"
+            "value" : "標示為 %2$@ 的頁面中的%1$@"
           }
         }
       }
@@ -727844,7 +727844,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "無法足夠快地讀取檔案 %@"
+            "value" : "讀取檔案 %@ 的速度不夠快"
           }
         }
       }
@@ -739171,7 +739171,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "「%@」使用它自己的 XML 實體，TextMouth 不會讀取。"
+            "value" : "「%@」使用自行定義的 XML 實體，TextMouth 無法讀取。"
           }
         }
       }
