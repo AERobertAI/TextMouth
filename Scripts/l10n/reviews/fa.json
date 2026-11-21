@@ -2367,6 +2367,53 @@
      "why": "meaning: ثبت is the act of registering, not the book’s stored record"
     }
    ]
+  },
+  {
+   "part": 4,
+   "areas": [
+    "the whole app: words carried across the three parts"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "Adds an Export button to each reader's toolbar. File, Export works either way.",
+     "english": "Adds an Export button to each reader's toolbar. File, Export works either way.",
+     "before": "یک دکمه «صادر کردن» به نوار ابزار هر کتاب‌خوان اضافه می‌کند. «فایل > صادر کردن» در هر حال کار می‌کند.",
+     "after": "یک دکمه «صادر کردن» به نوار ابزار هر کتاب‌خوان اضافه می‌کند. «فایل»، «صادر کردن» در هر حال کار می‌کند.",
+     "why": "voiceover: a path joined by > is read aloud as 'greater than'; Persian writes the steps with its comma, as the glossary's Settings path now does"
+    },
+    {
+     "key": "Paused %lld books that were playing.",
+     "english": {
+      "one": "Paused the book that was playing.",
+      "other": "Paused %lld books that were playing."
+     },
+     "before": {
+      "one": "%lld کتابی که پخش می‌شد مکث شد.",
+      "other": "%lld کتابی که پخش می‌شدند مکث شدند."
+     },
+     "after": {
+      "one": "%lld کتابی که پخش می‌شد موقتاً متوقف شد.",
+      "other": "%lld کتابی که پخش می‌شدند موقتاً متوقف شدند."
+     },
+     "why": "grammar: مکث کردن takes no passive, so a paused state is موقتاً متوقف شد, as part 3 writes it"
+    },
+    {
+     "key": "Paused at %@.",
+     "english": "Paused at %@.",
+     "before": "در %@ مکث شد.",
+     "after": "در %@ موقتاً متوقف شد.",
+     "why": "grammar: مکث کردن takes no passive, so a paused state is موقتاً متوقف شد, as part 3 writes it"
+    },
+    {
+     "key": "Paused.",
+     "english": "Paused.",
+     "before": "مکث شد.",
+     "after": "موقتاً متوقف شد.",
+     "why": "grammar: مکث کردن takes no passive, so a paused state is موقتاً متوقف شد, as part 3 writes it"
+    }
+   ]
   }
  ]
 }
