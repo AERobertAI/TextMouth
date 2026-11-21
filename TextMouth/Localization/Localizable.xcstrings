@@ -17926,7 +17926,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ kayıt yapılmıyor"
+            "value" : "%@, kayıt yapılmıyor"
           }
         },
         "uk" : {
@@ -19376,7 +19376,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ kısımları parçalarının belirli aralıklarını oynatıyor, bu yüzden parçaları henüz düzenlenemez."
+            "value" : "%@ kitabının kısımları ses parçalarının belirli aralıklarıdır, bu yüzden parçaları henüz düzenlenemez."
           }
         },
         "uk" : {
@@ -29241,7 +29241,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@, yazar: %2$@"
+            "value" : "%1$@, %2$@ tarafından"
           }
         },
         "uk" : {
@@ -60177,7 +60177,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld düzenleme geri alındı. Başka bir düzenleme yapana kadar Yinele bunları geri getirir."
+                  "value" : "%lld düzenleme geri alındı. Başka bir düzenleme yapana kadar Yinele onu geri getirir."
                 }
               },
               "other" : {
@@ -60644,7 +60644,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld düzenleme, hepsi kaydedildi"
+                  "value" : "%lld düzenleme, kaydedildi"
                 }
               },
               "other" : {
@@ -61111,7 +61111,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld düzenleme, bazıları kaydedilmedi"
+                  "value" : "%lld düzenleme, kaydedilmedi"
                 }
               },
               "other" : {
@@ -85923,13 +85923,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld zamanlı bölüm çok uzundu ve kısaltıldı."
+                  "value" : "%lld zamanlı pasaj çok uzundu ve kısaltıldı."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld zamanlı bölüm çok uzundu ve kısaltıldı."
+                  "value" : "%lld zamanlı pasaj çok uzundu ve kısaltıldı."
                 }
               }
             }
@@ -86390,13 +86390,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld zamanlı bölüm okunamadı ve dışarıda bırakıldı."
+                  "value" : "%lld zamanlı pasaj okunamadı ve dışarıda bırakıldı."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld zamanlı bölüm okunamadı ve dışarıda bırakıldı."
+                  "value" : "%lld zamanlı pasaj okunamadı ve dışarıda bırakıldı."
                 }
               }
             }
@@ -155479,7 +155479,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ tarihinde, %2$@ sürüm kurallarıyla temizlendi: %3$@."
+            "value" : "%1$@ tarihinde, kural sürümü %2$@ ile temizlendi: %3$@."
           }
         },
         "uk" : {
@@ -492667,7 +492667,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth, içe aktarırken dönüştürdüğü sesin orijinal dosyasını saklar. Orijinal dosya, dönüştürülmüş dosyası kadar disk alanı kaplar; sıkıştırılmamışsa iki katı kadar. Dışa aktarma bunu Orijinal dosya olarak sunar. Bir besleme podcast bölümünün orijinali saklanmaz: yeniden indirilebilir."
+            "value" : "TextMouth, içe aktarırken dönüştürdüğü sesin orijinal dosyasını saklar. Bir orijinal dosya, dönüştürülmüş dosyasıyla yaklaşık aynı disk alanını kaplar; sıkıştırılmamışsa iki katı kadar. Dışa aktarma bunu Orijinal dosya olarak sunar. Beslemedeki bir podcast bölümünün orijinali saklanmaz: yeniden indirilebilir."
           }
         },
         "uk" : {
@@ -493763,7 +493763,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth şu konumda beslemenin adını taşıyan bir klasör oluşturur: %@. Podcast bölümleri ve makaleler bu klasöre iner."
+            "value" : "TextMouth şu konumda beslemenin adını taşıyan bir klasör oluşturur: %@. Podcast bölümleri ve makaleler bu klasöre indirilir."
           }
         },
         "uk" : {
@@ -497404,13 +497404,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "TextMouth “%2$@” çalma listesinden %1$lld girişi atladı: %3$@."
+                  "value" : "TextMouth “%2$@” çalma listesinden %1$lld girdiyi atladı: %3$@."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "TextMouth “%2$@” çalma listesinden %1$lld girişi atladı: %3$@."
+                  "value" : "TextMouth “%2$@” çalma listesinden %1$lld girdiyi atladı: %3$@."
                 }
               }
             }
@@ -501607,7 +501607,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bu dosya, aboneliklerin OPML listesi değil."
+            "value" : "Bu dosya bir OPML abonelik listesi değil."
           }
         },
         "uk" : {
@@ -512420,7 +512420,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Arşivde içe aktarılmayan %lld kitap daha var; bunları içe aktarmak için arşivi açın."
+                  "value" : "Arşivde içe aktarılmayan %lld kitap daha var; onu içe aktarmak için arşivi açın."
                 }
               },
               "other" : {
@@ -537094,7 +537094,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Başlıkları sesin sonunu aştığı için parçalar bunlarsız içe aktarıldı: %@."
+            "value" : "%@ içindeki başlıklar sesin sonunu aştığı için parçalar başlıksız içe aktarıldı."
           }
         },
         "uk" : {
@@ -541639,7 +541639,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Liste, şu ayardaki değişikliği hemen izler: %@. Neyin indirileceği ya da gideceği, değişiklik on saniye durana kadar bekler ve VoiceOver o zaman duyurur."
+            "value" : "Liste, %@ ayarındaki bir değişikliği hemen izler; indirilecekler ve kaldırılacaklar ise değişiklik on saniye boyunca aynı kalana kadar bekler ve VoiceOver bunları o zaman duyurur."
           }
         },
         "uk" : {
@@ -546786,7 +546786,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Orijinal dosya saklandı: bir klasör ve içe aktarma hiçbir zaman klasör silmez."
+            "value" : "Orijinal dosya saklandı: bu bir klasör ve içe aktarma hiçbir zaman klasör silmez."
           }
         },
         "uk" : {
@@ -568280,7 +568280,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bu Besleme Düz http Kullanıyor"
+            "value" : "Bu Besleme Şifrelenmemiş http Kullanıyor"
           }
         },
         "uk" : {
@@ -587140,7 +587140,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Diğer %lld tanesini yeniden indirmek için satırlarında şunu seçin: %@."
+                  "value" : "Diğer %lld tanesini yeniden indirmek için satırında şunu seçin: %@."
                 }
               },
               "other" : {
@@ -604550,7 +604550,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Abonelikten çıkılsın mı: %@?"
+            "value" : "%@ aboneliğinden çıkılsın mı?"
           }
         },
         "uk" : {
@@ -677899,7 +677899,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "“%@” değiştirilirken değişti, bu yüzden TextMouth iki kopyayı da olduğu gibi bıraktı. Mevcut Olanı Değiştir'i yeniden seçin."
+            "value" : "“%@”, yerine konacak yeni kopya hazırlanırken değişti, bu yüzden TextMouth iki kopyayı da olduğu gibi bıraktı. Mevcut Olanı Değiştir'i yeniden seçin."
           }
         },
         "uk" : {
