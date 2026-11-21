@@ -1,0 +1,676 @@
+{
+ "language": "uk",
+ "reviews": [
+  {
+   "part": 1,
+   "areas": [
+    "library",
+    "storage and settings"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ can't be made, because the folder that would hold it, %@, can't be found.",
+     "english": "%1$@ can't be made, because the folder that would hold it, %2$@, can't be found.",
+     "before": "%1$@ не можна створити, тому що не вдається знайти папку, в якій воно мало б міститися: %2$@.",
+     "after": "%1$@ не можна створити, бо не вдається знайти батьківську папку: %2$@.",
+     "why": "grammar: neuter «воно» had no noun to point to; the chosen path is masculine"
+    },
+    {
+     "key": "%@ can't be read as %@: it holds bytes that are not valid in that encoding.",
+     "english": "%1$@ can't be read as %2$@: it holds bytes that are not valid in that encoding.",
+     "before": "%1$@ не вдається прочитати як %2$@: байти, недійсні в цьому кодуванні.",
+     "after": "%1$@ не вдається прочитати як %2$@: дані містять байти, недійсні в цьому кодуванні.",
+     "why": "natural: the reason after the colon was a bare noun phrase with no verb"
+    },
+    {
+     "key": "%@ has no transcript to search. Transcribe it first, with Transcribe Audio.",
+     "english": "%@ has no transcript to search. Transcribe it first, with Transcribe Audio.",
+     "before": "%@: немає транскрипції для пошуку. Спершу транскрибуйте її командою «Транскрибувати аудіо».",
+     "after": "%@: немає транскрипції для пошуку. Спершу створіть її командою «Транскрибувати аудіо».",
+     "why": "grammar: «транскрибуйте її» pointed back to the transcript, so it read as transcribing the transcript; the command makes the transcript"
+    },
+    {
+     "key": "%@ is filed %@ in %@ and %@ in %@.",
+     "english": "%1$@ is filed %2$@ in %3$@ and %4$@ in %5$@.",
+     "before": "%1$@: у %3$@ — %2$@, у %5$@ — %4$@.",
+     "after": "%1$@: %3$@ — %2$@, %5$@ — %4$@.",
+     "why": "grammar: «у %3$@» put the copy names, which are nominative («ця копія»), after a preposition that needs the locative"
+    },
+    {
+     "key": "%@ may be signed out or not running.",
+     "english": "%@ may be signed out or not running.",
+     "before": "Можливо, зі служби вийшли з облікового запису або її не запущено (%@).",
+     "after": "%@: можливо, ви вийшли з облікового запису або програму не запущено.",
+     "why": "natural: «зі служби вийшли з облікового запису або її не запущено (%@)» was convoluted, with the service name in brackets at the end"
+    },
+    {
+     "key": "%@ percent",
+     "english": "%@ percent",
+     "before": "%@ відсотків",
+     "after": "відсотків: %@",
+     "why": "grammar: «%@ відсотків» is wrong for 1, 2 to 4, 21 to 24 and so on (42 відсотки); the label form reads right for every number, as the other percent strings do"
+    },
+    {
+     "key": "%@ read",
+     "english": "%@ read",
+     "before": "прочитано: %@",
+     "after": "прочитано %@",
+     "why": "grammar: it wraps the progress, now «відсотків: 42», and reads «прочитано відсотків: 42»; the colon would have doubled"
+    },
+    {
+     "key": "%@ total remaining at current speed",
+     "english": "%@ total remaining at current speed",
+     "before": "%@ усього залишилося за поточної швидкості",
+     "after": "усього залишилося %@ за поточної швидкості",
+     "why": "natural: the time placed before «усього залишилося» copied the English word order"
+    },
+    {
+     "key": "%lld Selected",
+     "english": {
+      "one": "%lld Selected",
+      "other": "%lld Selected"
+     },
+     "before": {
+      "few": "%lld вибраних",
+      "many": "%lld вибраних",
+      "one": "%lld вибраних",
+      "other": "%lld вибраних"
+     },
+     "after": {
+      "one": "%lld вибрану",
+      "few": "%lld вибрані",
+      "many": "%lld вибраних",
+      "other": "%lld вибраних"
+     },
+     "why": "grammar: «1 вибраних» does not agree with the count; the object of «Перемістити … до Кошика» is accusative, as in «%lld вибрану книгу»"
+    },
+    {
+     "key": "%lld books in this library need a newer version of TextMouth. They are kept as they are, but not shown.",
+     "english": "%lld books in this library need a newer version of TextMouth. They are kept as they are, but not shown.",
+     "before": "%lld книг у цій бібліотеці потребують новішої версії TextMouth. Вони зберігаються як є, але не показуються.",
+     "after": "Книг у цій бібліотеці, яким потрібна новіша версія TextMouth: %lld. Вони зберігаються як є, але не показуються.",
+     "why": "grammar: the string has no plural forms, and «%lld книг» is wrong for 2 to 4 and 22 to 24 (3 книги); the count now follows a colon"
+    },
+    {
+     "key": "%lld views need a newer TextMouth. They are kept as they are, and not offered.",
+     "english": {
+      "one": "%lld view needs a newer TextMouth. It is kept as it is, and not offered.",
+      "other": "%lld views need a newer TextMouth. They are kept as they are, and not offered."
+     },
+     "before": {
+      "few": "%lld вигляди потребують новішої версії TextMouth. Їх збережено як є, але не пропонуються.",
+      "many": "%lld виглядів потребують новішої версії TextMouth. Їх збережено як є, але не пропонуються.",
+      "one": "%lld вигляд потребує новішої версії TextMouth. Його збережено як є, але не пропонується.",
+      "other": "%lld вигляди потребують новішої версії TextMouth. Їх збережено як є, але не пропонуються."
+     },
+     "after": {
+      "one": "%lld вигляд потребує новішої версії TextMouth. Його збережено як є, але він не пропонується.",
+      "few": "%lld вигляди потребують новішої версії TextMouth. Їх збережено як є, але вони не пропонуються.",
+      "many": "%lld виглядів потребують новішої версії TextMouth. Їх збережено як є, але вони не пропонуються.",
+      "other": "%lld вигляди потребують новішої версії TextMouth. Їх збережено як є, але вони не пропонуються."
+     },
+     "why": "grammar: «не пропонуються» had no subject, since «Їх» is the object of «збережено»"
+    },
+    {
+     "key": "A book that's only in the cloud needs an internet connection to open.",
+     "english": "A book that's only in the cloud needs an internet connection to open.",
+     "before": "Книзі, яка є лише в хмарі, для відкриття потрібне підключення до інтернету.",
+     "after": "Щоб відкрити книгу, яка є лише в хмарі, потрібне підключення до інтернету.",
+     "why": "natural: «Книзі ... для відкриття потрібне» was stiff; now built as its sibling with the service name"
+    },
+    {
+     "key": "An edit of its text is kept beside the new reading, as a copy in the book's package.",
+     "english": "An edit of its text is kept beside the new reading, as a copy in the book's package.",
+     "before": "Редагування його тексту зберігається поряд із новим прочитанням як копія в пакеті книги.",
+     "after": "Ваші зміни в тексті зберігаються як копія в пакеті книги, поряд із заново прочитаним текстом.",
+     "why": "meaning: «нове прочитання» is a new interpretation, not the text a re-read makes; and «його» had no masculine noun to point to"
+    },
+    {
+     "key": "Asks first, then gives the library a new identity and opens it.",
+     "english": "Asks first, then gives the library a new identity and opens it.",
+     "before": "Спочатку запитує, потім надає бібліотеці нову ідентичність і відкриває її.",
+     "after": "Спочатку запитує, потім надає бібліотеці новий ідентифікатор і відкриває її.",
+     "why": "term: «ідентичність» is a personal or cultural identity; the library mark that tells copies apart is its «ідентифікатор»"
+    },
+    {
+     "key": "Asks first, then writes the identity this Mac knows for the library and opens it.",
+     "english": "Asks first, then writes the identity this Mac knows for the library and opens it.",
+     "before": "Спочатку запитує, потім записує ідентичність, яку цей Mac знає для бібліотеки, і відкриває її.",
+     "after": "Спочатку запитує, потім записує ідентифікатор бібліотеки, відомий цьому Mac, і відкриває її.",
+     "why": "term: «ідентичність» is a personal identity, the library mark is its «ідентифікатор»; and «яку цей Mac знає для бібліотеки» was a calque"
+    },
+    {
+     "key": "Cancel New Folder",
+     "english": "Cancel New Folder",
+     "before": "Скасувати нову папку",
+     "after": "Скасувати створення папки",
+     "why": "natural: «Скасувати нову папку» cancels a folder; the button closes the new folder fields without making one"
+    },
+    {
+     "key": "Changes to %lld other books could not be saved either.",
+     "english": {
+      "one": "Changes to %lld other book could not be saved either.",
+      "other": "Changes to %lld other books could not be saved either."
+     },
+     "before": {
+      "few": "Зміни ще до %lld інших книг також не вдалося зберегти.",
+      "many": "Зміни ще до %lld інших книг також не вдалося зберегти.",
+      "one": "Зміни ще до %lld іншої книги також не вдалося зберегти.",
+      "other": "Зміни ще до %lld іншої книги також не вдалося зберегти."
+     },
+     "after": {
+      "one": "Також не вдалося зберегти зміни ще в %lld іншій книзі.",
+      "few": "Також не вдалося зберегти зміни ще в %lld інших книгах.",
+      "many": "Також не вдалося зберегти зміни ще в %lld інших книгах.",
+      "other": "Також не вдалося зберегти зміни ще в %lld інших книгах."
+     },
+     "why": "meaning: «Зміни ще до %lld» reads as changes to up to that many; «до» before a number means up to"
+    },
+    {
+     "key": "Changes to %lld other feeds could not be saved either.",
+     "english": {
+      "one": "Changes to %lld other feed could not be saved either.",
+      "other": "Changes to %lld other feeds could not be saved either."
+     },
+     "before": {
+      "few": "Зміни ще до %lld інших стрічок також не вдалося зберегти.",
+      "many": "Зміни ще до %lld інших стрічок також не вдалося зберегти.",
+      "one": "Зміни ще до %lld іншої стрічки також не вдалося зберегти.",
+      "other": "Зміни ще до %lld іншої стрічки також не вдалося зберегти."
+     },
+     "after": {
+      "one": "Також не вдалося зберегти зміни ще в %lld іншій стрічці.",
+      "few": "Також не вдалося зберегти зміни ще в %lld інших стрічках.",
+      "many": "Також не вдалося зберегти зміни ще в %lld інших стрічках.",
+      "other": "Також не вдалося зберегти зміни ще в %lld інших стрічках."
+     },
+     "why": "meaning: «Зміни ще до %lld» reads as changes to up to that many; «до» before a number means up to"
+    },
+    {
+     "key": "Could not discard duplicate import",
+     "english": "Could not discard duplicate import",
+     "before": "Не вдалося відхилити дубльований імпорт",
+     "after": "Не вдалося відкинути імпортований дублікат",
+     "why": "meaning: «відхилити дубльований імпорт» rejects a repeated import; the new copy that duplicates a book is what could not be discarded"
+    },
+    {
+     "key": "Could not read the text back from the editor's file, so the text here is unchanged.",
+     "english": "Could not read the text back from the editor's file, so the text here is unchanged.",
+     "before": "Не вдалося прочитати текст назад із файлу редактора, тому текст тут не змінено.",
+     "after": "Не вдалося зчитати текст із файлу редактора, тому текст тут не змінено.",
+     "why": "natural: «прочитати назад» reads as reading backwards; reading a saved file back is «зчитати»"
+    },
+    {
+     "key": "Delete After Import",
+     "english": "Delete After Import",
+     "before": "Видалити після імпорту",
+     "after": "Видаляти після імпорту",
+     "why": "natural: a standing setting takes the imperfective, as its sibling «Запитувати щоразу» does"
+    },
+    {
+     "key": "Details are at the top of the Library window.",
+     "english": "Details are at the top of the Library window.",
+     "before": "Подробиці вгорі вікна бібліотеки.",
+     "after": "Подробиці наведено вгорі вікна бібліотеки.",
+     "why": "natural: the sentence had no verb"
+    },
+    {
+     "key": "Downloaded. Loading.",
+     "english": "Downloaded. Loading.",
+     "before": "Завантажено. Завантаження книги.",
+     "after": "Завантажено. Відкриття книги.",
+     "why": "meaning: «Завантаження книги» right after «Завантажено» reads as downloading again; the book is now loading into the reader"
+    },
+    {
+     "key": "Edit Text stops for this book; choose Edit Text again to edit the new reading.",
+     "english": "Edit Text stops for this book; choose Edit Text again to edit the new reading.",
+     "before": "Редагування тексту цієї книги завершується; виберіть «Редагувати текст» ще раз, щоб редагувати нове прочитання.",
+     "after": "Редагування тексту цієї книги завершується; виберіть «Редагувати текст» ще раз, щоб редагувати заново прочитаний текст.",
+     "why": "meaning: «нове прочитання» is a new interpretation, not the text a re-read makes"
+    },
+    {
+     "key": "Experimental. A sequence of media keys or AirPods controls within a short time window re-arms the last sleep timer, handy after one expires.",
+     "english": "Experimental. A sequence of media keys or AirPods controls within a short time window re-arms the last sleep timer, handy after one expires.",
+     "before": "Експериментально. Послідовність медіаклавіш або елементів керування AirPods за короткий проміжок часу знову запускає останній таймер сну, що зручно після його спрацювання.",
+     "after": "Експериментальна функція. Послідовність медіаклавіш або елементів керування AirPods за короткий проміжок часу знову запускає останній таймер сну, що зручно після його спрацювання.",
+     "why": "natural: «Експериментально.» alone is an adverb, not a label for an experimental feature"
+    },
+    {
+     "key": "Failed to rebuild to default",
+     "english": "Failed to rebuild to default",
+     "before": "Не вдалося відновити типові значення",
+     "after": "Не вдалося повернути бібліотеку до типового розташування",
+     "why": "meaning: Reset to Default in Storage moves the library back to the default location; «відновити типові значення» restores settings"
+    },
+    {
+     "key": "Folder placement and manual order that were stored only in the unreadable index are lost from the library.",
+     "english": "Folder placement and manual order that were stored only in the unreadable index are lost from the library.",
+     "before": "Розташування папок і порядок, задані вручну, які зберігалися лише в нечитабельному індексі, буде втрачено з бібліотеки.",
+     "after": "Розміщення книг у папках і власний порядок, що зберігалися лише в нечитабельному індексі, буде втрачено.",
+     "why": "natural: «буде втрачено з бібліотеки» copies «lost from the library»; and «порядок, задані вручну» lost agreement"
+    },
+    {
+     "key": "Folders and the Reading List list what they always have. You can move them, and hide the Reading List.",
+     "english": "Folders and the Reading List list what they always have. You can move them, and hide the Reading List.",
+     "before": "Папки та список читання завжди показують те, що мають. Їх можна переміщувати, а список читання — приховати.",
+     "after": "«Папки» та «Список читання» завжди показують свій звичайний вміст. Їх можна переміщувати, а «Список читання» — приховати.",
+     "why": "natural: «показують те, що мають» was close to a tautology, and the two view names lacked the quotes the other view names have"
+    },
+    {
+     "key": "Give It a New Identity…",
+     "english": "Give It a New Identity…",
+     "before": "Надати нову ідентичність…",
+     "after": "Надати новий ідентифікатор…",
+     "why": "term: «ідентичність» is a personal or cultural identity; the library mark that tells copies apart is its «ідентифікатор»"
+    },
+    {
+     "key": "Give a New Identity",
+     "english": "Give a New Identity",
+     "before": "Надати нову ідентичність",
+     "after": "Надати новий ідентифікатор",
+     "why": "term: «ідентичність» is a personal or cultural identity; the library mark that tells copies apart is its «ідентифікатор»"
+    },
+    {
+     "key": "Give the library a new identity?",
+     "english": "Give the library a new identity?",
+     "before": "Надати бібліотеці нову ідентичність?",
+     "after": "Надати бібліотеці новий ідентифікатор?",
+     "why": "term: «ідентичність» is a personal or cultural identity; the library mark that tells copies apart is its «ідентифікатор»"
+    },
+    {
+     "key": "Guessed from the book's braille. If it reads wrongly, choose Unified English Braille in Braille Code.",
+     "english": "Guessed from the book's braille. If it reads wrongly, choose Unified English Braille in Braille Code.",
+     "before": "Визначено за брайлем книги. Якщо код прочитано неправильно, виберіть Unified English Braille у пункті «Код Брайля».",
+     "after": "Код припущено на основі брайля книги. Якщо книга читається неправильно, виберіть Unified English Braille у меню «Код Брайля».",
+     "why": "meaning: «Визначено» lost the doubt of «guessed»; «код прочитано неправильно» said the code was misread, not the book; Braille Code is a pop-up menu"
+    },
+    {
+     "key": "Its text is replaced by the new reading.",
+     "english": "Its text is replaced by the new reading.",
+     "before": "Його текст замінюється новим прочитанням.",
+     "after": "Текст книги замінюється заново прочитаним текстом.",
+     "why": "meaning: «нове прочитання» is a new interpretation, not the text a re-read makes; and «Його» had no masculine noun to point to"
+    },
+    {
+     "key": "Keep Original",
+     "english": "Keep Original",
+     "before": "Залишити оригінал",
+     "after": "Залишати оригінал",
+     "why": "natural: a standing setting takes the imperfective, as its sibling «Запитувати щоразу» does"
+    },
+    {
+     "key": "Loading ISBNs...",
+     "english": "Loading ISBNs...",
+     "before": "Завантаження ISBN...",
+     "after": "Зчитування ISBN...",
+     "why": "meaning: «Завантаження ISBN» reads as downloading them; the scan reads the ISBNs from the books"
+    },
+    {
+     "key": "Most rows shown",
+     "english": "Most rows shown",
+     "before": "Найбільше показаних рядків",
+     "after": "Найбільша кількість рядків",
+     "why": "natural: «Найбільше показаних рядків» reads as most of the rows shown; the limit field holds the largest number of rows"
+    },
+    {
+     "key": "Only the Latest from Each Feed",
+     "english": "Only the Latest from Each Feed",
+     "before": "Лише найновіше з кожної стрічки",
+     "after": "Лише останнє з кожної стрічки",
+     "why": "meaning: «найновіше» says the newest published; the checkbox keeps the item opened last, as its hint says"
+    },
+    {
+     "key": "Removal Behavior",
+     "english": "Removal Behavior",
+     "before": "Поведінка при вилученні",
+     "after": "Поведінка вилучення",
+     "why": "natural: «при вилученні» is a Russian-style use of «при» (the only one in the catalog); built as its sibling «Поведінка імпорту»"
+    },
+    {
+     "key": "Restore Its Identity…",
+     "english": "Restore Its Identity…",
+     "before": "Відновити її ідентичність…",
+     "after": "Відновити її ідентифікатор…",
+     "why": "term: «ідентичність» is a personal or cultural identity; the library mark that tells copies apart is its «ідентифікатор»"
+    },
+    {
+     "key": "Restore the library's identity?",
+     "english": "Restore the library's identity?",
+     "before": "Відновити ідентичність бібліотеки?",
+     "after": "Відновити ідентифікатор бібліотеки?",
+     "why": "term: «ідентичність» is a personal or cultural identity; the library mark that tells copies apart is its «ідентифікатор»"
+    },
+    {
+     "key": "Retry is at the top of the Library window.",
+     "english": "Retry is at the top of the Library window.",
+     "before": "Кнопка «Повторити» вгорі вікна бібліотеки.",
+     "after": "Кнопка «Повторити» — угорі вікна бібліотеки.",
+     "why": "natural: without a verb or a dash the sentence read as a bare noun phrase"
+    },
+    {
+     "key": "Show bookmark button in playback controls",
+     "english": "Show bookmark button in playback controls",
+     "before": "Показувати кнопку закладки в елементах керування відтворенням",
+     "after": "Показувати кнопку закладки на панелі відтворення",
+     "why": "natural: «в елементах керування відтворенням» is a long calque of in playback controls; the buttons go on the playback bar, «панель відтворення», as other strings say"
+    },
+    {
+     "key": "Show speed controls in playback controls",
+     "english": "Show speed controls in playback controls",
+     "before": "Показувати елементи керування швидкістю в елементах керування відтворенням",
+     "after": "Показувати елементи керування швидкістю на панелі відтворення",
+     "why": "natural: «в елементах керування відтворенням» is a long calque of in playback controls; the buttons go on the playback bar, «панель відтворення», as other strings say"
+    },
+    {
+     "key": "Some files of “%@” are only in the cloud, and replacing it now would leave them behind. Download the book, then choose %@ again.",
+     "english": "Some files of “%1$@” are only in the cloud, and replacing it now would leave them behind. Download the book, then choose %2$@ again.",
+     "before": "Деякі файли «%1$@» є лише в хмарі, і заміна зараз залишила б їх. Завантажте книгу, а потім знову виберіть «%2$@».",
+     "after": "Деякі файли «%1$@» є лише в хмарі, і якщо замінити книгу зараз, їх не буде перенесено. Завантажте книгу, а потім знову виберіть «%2$@».",
+     "why": "meaning: «заміна зараз залишила б їх» also reads as keeping the files; the replacement would leave them out"
+    },
+    {
+     "key": "Start New Library",
+     "english": "Start New Library",
+     "before": "Почати нову бібліотеку",
+     "after": "Створити нову бібліотеку",
+     "why": "natural: «почати бібліотеку» copies start a library; a new library is created, «створити», as the hint «створює там нову» says"
+    },
+    {
+     "key": "Start a New Library?",
+     "english": "Start a New Library?",
+     "before": "Почати нову бібліотеку?",
+     "after": "Створити нову бібліотеку?",
+     "why": "natural: «почати бібліотеку» copies start a library; a new library is created, «створити», as the hint «створює там нову» says"
+    },
+    {
+     "key": "Switching loses the changes TextMouth couldn't save while the library isn't available.",
+     "english": "Switching loses the changes TextMouth couldn't save while the library isn't available.",
+     "before": "Перемикання втрачає зміни, які TextMouth не вдалося зберегти, поки бібліотека недоступна.",
+     "after": "Під час перемикання буде втрачено зміни, які TextMouth не вдалося зберегти, поки бібліотека недоступна.",
+     "why": "natural: «Перемикання втрачає зміни» made the switch an agent that loses things"
+    },
+    {
+     "key": "Test input text",
+     "english": "Test input text",
+     "before": "Тестовий вхідний текст",
+     "after": "Текст для перевірки",
+     "why": "natural: «Тестовий вхідний текст» is programmer jargon; the field its label names already says «Текст для перевірки»"
+    },
+    {
+     "key": "Test this rule against the input",
+     "english": "Test this rule against the input",
+     "before": "Перевірити це правило на вхідному тексті",
+     "after": "Перевірити це правило на введеному тексті",
+     "why": "natural: «вхідному тексті» is programmer jargon for the text typed to test"
+    },
+    {
+     "key": "TextMouth could not check whether to move it to the Trash.",
+     "english": "TextMouth could not check whether to move it to the Trash.",
+     "before": "TextMouth не вдалося перевірити, чи переміщувати її до Кошика.",
+     "after": "TextMouth не вдалося перевірити, чи переміщувати його до Кошика.",
+     "why": "grammar: «It» is the original file, masculine, so «його», not «її»"
+    },
+    {
+     "key": "TextMouth could not move %@ to the current library format.",
+     "english": "TextMouth could not move %@ to the current library format.",
+     "before": "TextMouth не вдалося перемістити до поточного формату бібліотеки: %@.",
+     "after": "TextMouth не вдалося перевести в поточний формат бібліотеки: %@.",
+     "why": "natural: «перемістити до формату» copies move to a format, and «таке:» was filler; a book is brought into a format, «перевести в формат»"
+    },
+    {
+     "key": "TextMouth could not save a copy of %@, so it left that file unchanged.",
+     "english": "TextMouth could not save a copy of %@, so it left that file unchanged.",
+     "before": "TextMouth не вдалося зберегти копію %@, тому залишив цей файл без змін.",
+     "after": "TextMouth не зміг зберегти копію %@, тому залишив цей файл без змін.",
+     "why": "grammar: «TextMouth не вдалося» puts TextMouth in the dative, so «залишив» had no subject"
+    },
+    {
+     "key": "TextMouth couldn't keep the text you changed in “%@” beside the new reading, so it left the book as it was.",
+     "english": "TextMouth couldn't keep the text you changed in “%@” beside the new reading, so it left the book as it was.",
+     "before": "TextMouth не вдалося зберегти текст, який ви змінили в «%@», поряд із новим прочитанням, тому книгу залишено без змін.",
+     "after": "TextMouth не вдалося зберегти текст, який ви змінили в «%@», поряд із заново прочитаним текстом, тому книгу залишено без змін.",
+     "why": "meaning: «нове прочитання» is a new interpretation, not the text a re-read makes"
+    },
+    {
+     "key": "TextMouth moved %@ to the current library format, but with a problem:",
+     "english": "TextMouth moved %@ to the current library format, but with a problem:",
+     "before": "TextMouth перемістив до поточного формату бібліотеки таке: %@, але з проблемою:",
+     "after": "TextMouth перевів у поточний формат бібліотеки: %@, але з проблемою:",
+     "why": "natural: «перемістити до формату» copies move to a format, and «таке:» was filler; a book is brought into a format, «перевести в формат»"
+    },
+    {
+     "key": "TextMouth moved %@ to the current library format, but with problems:",
+     "english": "TextMouth moved %@ to the current library format, but with problems:",
+     "before": "TextMouth перемістив до поточного формату бібліотеки таке: %@, але з проблемами:",
+     "after": "TextMouth перевів у поточний формат бібліотеки: %@, але з проблемами:",
+     "why": "natural: «перемістити до формату» copies move to a format, and «таке:» was filler; a book is brought into a format, «перевести в формат»"
+    },
+    {
+     "key": "TextMouth will start a new, empty library in the default location, %@, instead of the library in %@, which isn't available.",
+     "english": "TextMouth will start a new, empty library in the default location, %1$@, instead of the library in %2$@, which isn't available.",
+     "before": "TextMouth почне нову порожню бібліотеку в типовому розташуванні, %1$@, замість бібліотеки в %2$@, яка недоступна.",
+     "after": "TextMouth створить нову порожню бібліотеку в типовому розташуванні, %1$@, замість бібліотеки в %2$@, яка недоступна.",
+     "why": "natural: «почати бібліотеку» copies start a library; a new library is created, «створити», as the hint «створює там нову» says"
+    },
+    {
+     "key": "TextMouth writes %@ with a new identity for the library, and opens it.",
+     "english": "TextMouth writes %@ with a new identity for the library, and opens it.",
+     "before": "TextMouth запише %@ з новою ідентичністю бібліотеки й відкриє її.",
+     "after": "TextMouth запише %@ з новим ідентифікатором бібліотеки й відкриє її.",
+     "why": "term: «ідентичність» is a personal or cultural identity; the library mark that tells copies apart is its «ідентифікатор»"
+    },
+    {
+     "key": "TextMouth writes %@ with the identity this Mac knows for the library, and opens it.",
+     "english": "TextMouth writes %@ with the identity this Mac knows for the library, and opens it.",
+     "before": "TextMouth запише %@ з ідентичністю, яку цей Mac знає для бібліотеки, і відкриє її.",
+     "after": "TextMouth запише %@ з ідентифікатором бібліотеки, відомим цьому Mac, і відкриє її.",
+     "why": "term: «ідентичність» is a personal identity, the library mark is its «ідентифікатор»; and «яку цей Mac знає для бібліотеки» was a calque"
+    },
+    {
+     "key": "That would put %@ %lld levels deep, but folders nest at most %lld levels.",
+     "english": {
+      "one": "That would put %@ %lld level deep, but folders nest at most %lld levels.",
+      "other": "That would put %@ %lld levels deep, but folders nest at most %lld levels."
+     },
+     "before": {
+      "few": "Через це %1$@ було б розташовано на %2$lld рівнях вкладеності, а папки можуть мати щонайбільше %3$lld рівнів вкладеності.",
+      "many": "Через це %1$@ було б розташовано на %2$lld рівнях вкладеності, а папки можуть мати щонайбільше %3$lld рівнів вкладеності.",
+      "one": "Через це %1$@ було б розташовано на %2$lld рівні вкладеності, а папки можуть мати щонайбільше %3$lld рівнів вкладеності.",
+      "other": "Через це %1$@ було б розташовано на %2$lld рівнях вкладеності, а папки можуть мати щонайбільше %3$lld рівнів вкладеності."
+     },
+     "after": {
+      "one": "Через це %1$@ було б розташовано на %2$lld рівні вкладеності, а найбільша допустима глибина — %3$lld.",
+      "few": "Через це %1$@ було б розташовано на %2$lld рівнях вкладеності, а найбільша допустима глибина — %3$lld.",
+      "many": "Через це %1$@ було б розташовано на %2$lld рівнях вкладеності, а найбільша допустима глибина — %3$lld.",
+      "other": "Через це %1$@ було б розташовано на %2$lld рівнях вкладеності, а найбільша допустима глибина — %3$lld."
+     },
+     "why": "grammar: the limit is 4, and «щонайбільше 4 рівнів» does not agree (4 рівні); the limit now stands alone after a dash"
+    },
+    {
+     "key": "The Hobbit counts as an H when you type. The list keeps its order and shows each title as it is written.",
+     "english": "The Hobbit counts as an H when you type. The list keeps its order and shows each title as it is written.",
+     "before": "«The Hobbit» під час введення враховується як H. Список зберігає свій порядок і показує кожну назву так, як вона написана.",
+     "after": "Під час введення «The Hobbit» знаходиться за літерою H. Список зберігає свій порядок і показує кожну назву так, як вона написана.",
+     "why": "meaning: «враховується як H» says the title counts as the letter H; typing H finds it"
+    },
+    {
+     "key": "The Hobbit sorts among the H's and shows as Hobbit, The. Typing H finds it among the H's.",
+     "english": "The Hobbit sorts among the H's and shows as Hobbit, The. Typing H finds it among the H's.",
+     "before": "«The Hobbit» сортується серед H і показується як «Hobbit, The». Введення H знаходить її серед H.",
+     "after": "«The Hobbit» сортується серед назв на H і показується як «Hobbit, The». Введення H знаходить цю книгу серед них.",
+     "why": "natural: «серед H» copies among the H-s; titles sort among the titles on a letter"
+    },
+    {
+     "key": "The folder is there, but TextMouth can't read its library identity file: %@",
+     "english": "The folder is there, but TextMouth can't read its library identity file: %@",
+     "before": "Папка на місці, але TextMouth не може прочитати файл ідентичності її бібліотеки: %@",
+     "after": "Папка на місці, але TextMouth не може прочитати файл ідентифікатора її бібліотеки: %@",
+     "why": "term: «ідентичність» is a personal or cultural identity; the library mark that tells copies apart is its «ідентифікатор»"
+    },
+    {
+     "key": "The library's identity file is on this Mac, but its index, %@, hasn't arrived from %@.",
+     "english": "The library's identity file is on this Mac, but its index, %1$@, hasn't arrived from %2$@.",
+     "before": "Файл ідентичності бібліотеки є на цьому Mac, але її індекс, %1$@, не надійшов (джерело: %2$@).",
+     "after": "Файл ідентифікатора бібліотеки є на цьому Mac, але її індекс, %1$@, не надійшов (джерело: %2$@).",
+     "why": "term: «ідентичність» is a personal or cultural identity; the library mark that tells copies apart is its «ідентифікатор»"
+    },
+    {
+     "key": "The library's index is on this Mac, but its identity file, %@, hasn't arrived from %@.",
+     "english": "The library's index is on this Mac, but its identity file, %1$@, hasn't arrived from %2$@.",
+     "before": "Індекс бібліотеки є на цьому Mac, але її файл ідентичності, %1$@, не надійшов (джерело: %2$@).",
+     "after": "Індекс бібліотеки є на цьому Mac, але її файл ідентифікатора, %1$@, не надійшов (джерело: %2$@).",
+     "why": "term: «ідентичність» is a personal or cultural identity; the library mark that tells copies apart is its «ідентифікатор»"
+    },
+    {
+     "key": "This Mac doesn't know the library's identity, so it can't restore it.",
+     "english": "This Mac doesn't know the library's identity, so it can't restore it.",
+     "before": "Цей Mac не знає ідентичності бібліотеки, тому не може її відновити.",
+     "after": "Цей Mac не знає ідентифікатора бібліотеки, тому не може його відновити.",
+     "why": "term: «ідентичність» is a personal or cultural identity; the library mark that tells copies apart is its «ідентифікатор»"
+    },
+    {
+     "key": "This braille looks like English Braille, American Edition. Choose its Braille Code in Book Information.",
+     "english": "This braille looks like English Braille, American Edition. Choose its Braille Code in Book Information.",
+     "before": "Цей брайль схожий на English Braille, American Edition. Виберіть його «Код Брайля» у вікні «Інформація про книгу».",
+     "after": "Цей брайль схожий на English Braille, American Edition. Виберіть цей код у меню «Код Брайля» вікна «Інформація про книгу».",
+     "why": "natural: «Виберіть його «Код Брайля»» chose the pop-up itself; the code is chosen in the Braille Code pop-up of the window"
+    },
+    {
+     "key": "Titles sort, and are found by typing, as they are written: The Hobbit is among the T's.",
+     "english": "Titles sort, and are found by typing, as they are written: The Hobbit is among the T's.",
+     "before": "Назви сортуються й шукаються введенням так, як написані: «The Hobbit» серед T.",
+     "after": "Назви сортуються й знаходяться введенням так, як їх написано: «The Hobbit» стоїть серед назв на T.",
+     "why": "natural: «серед T» copies among the T-s; titles sort among the titles on a letter"
+    },
+    {
+     "key": "Together with the archives inside it, the archive expands to %@, more than the %@ TextMouth extracts from archives holding audio or other archives.",
+     "english": "Together with the archives inside it, the archive expands to %1$@, more than the %2$@ TextMouth extracts from archives holding audio or other archives.",
+     "before": "Разом з архівами всередині нього він займе після розпакування %1$@, що більше за ліміт TextMouth для архівів з аудіо чи іншими архівами: %2$@.",
+     "after": "Разом з архівами всередині нього архів після розпакування займе %1$@, що більше за ліміт TextMouth для архівів з аудіо чи іншими архівами: %2$@.",
+     "why": "grammar: «він займе» had no noun to point to; the archive is now named, as its sibling about files and folders names it"
+    },
+    {
+     "key": "Together with the archives inside it, the archive expands to %@, more than the %@ TextMouth extracts from archives without audio.",
+     "english": "Together with the archives inside it, the archive expands to %1$@, more than the %2$@ TextMouth extracts from archives without audio.",
+     "before": "Разом з архівами всередині нього він займе після розпакування %1$@, що більше за ліміт TextMouth для архівів без аудіо: %2$@.",
+     "after": "Разом з архівами всередині нього архів після розпакування займе %1$@, що більше за ліміт TextMouth для архівів без аудіо: %2$@.",
+     "why": "grammar: «він займе» had no noun to point to; the archive is now named, as its sibling about files and folders names it"
+    },
+    {
+     "key": "Transcribe it again, then search the new transcript.",
+     "english": "Transcribe it again, then search the new transcript.",
+     "before": "Транскрибуйте її знову, а потім шукайте в новій транскрипції.",
+     "after": "Транскрибуйте аудіо ще раз, а потім шукайте в новій транскрипції.",
+     "why": "grammar: «Транскрибуйте її» pointed back to the transcript named just before; the audio is what is transcribed"
+    },
+    {
+     "key": "Try again in a moment.",
+     "english": "Try again in a moment.",
+     "before": "Повторіть спробу за мить.",
+     "after": "Повторіть спробу трохи згодом.",
+     "why": "natural: «за мить» is literary and promises an instant; Apple says to try again later"
+    },
+    {
+     "key": "Until then, changing the location and rebuilding the directory are unavailable.",
+     "english": "Until then, changing the location and rebuilding the directory are unavailable.",
+     "before": "До цього змінити розташування й перебудувати каталог неможливо.",
+     "after": "До того часу змінити розташування й перебудувати каталог неможливо.",
+     "why": "meaning: «До цього» usually means before this, so the sentence read as a past limit"
+    },
+    {
+     "key": "What happens when a book finishes playing",
+     "english": "What happens when a book finishes playing",
+     "before": "Що відбувається, коли книга закінчує відтворюватися.",
+     "after": "Що відбувається, коли відтворення книги закінчується.",
+     "why": "natural: «книга закінчує відтворюватися» was a stiff calque of finishes playing"
+    },
+    {
+     "key": "When checked, matches must use the same upper and lower case",
+     "english": "When checked, matches must use the same upper and lower case",
+     "before": "Якщо позначено, збіги мають мати той самий регістр літер.",
+     "after": "Якщо позначено, у збігах враховується регістр літер.",
+     "why": "natural: «збіги мають мати» stacked two forms of «мати»"
+    },
+    {
+     "key": "Where none of their words are left, %@, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "english": "Where none of their words are left, %@, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "before": "Якщо не залишилося жодного з їхніх слів, %@, кожне з них переходить приблизно на те саме місце в розділі або до найближчого уривка, спільного для обох прочитань.",
+     "after": "Якщо не залишилося жодного з їхніх слів, %@, кожна з них переходить приблизно на те саме місце в розділі або до найближчого уривка, спільного для старого й нового тексту.",
+     "why": "grammar: neuter «кожне» did not agree with позиція and закладки, both feminine; and «обох прочитань» meant two interpretations, not the old and new text"
+    },
+    {
+     "key": "Where none of their words are left, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "english": "Where none of their words are left, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "before": "Якщо не залишилося жодного з їхніх слів, кожне з них переходить приблизно на те саме місце в розділі або до найближчого уривка, спільного для обох прочитань.",
+     "after": "Якщо не залишилося жодного з їхніх слів, кожна з них переходить приблизно на те саме місце в розділі або до найближчого уривка, спільного для старого й нового тексту.",
+     "why": "grammar: neuter «кожне» did not agree with позиція and закладки, both feminine; and «обох прочитань» meant two interpretations, not the old and new text"
+    },
+    {
+     "key": "its files are deleted permanently and cannot be recovered",
+     "english": "its files are deleted permanently and cannot be recovered",
+     "before": "його файли видаляються остаточно й не підлягають відновленню",
+     "after": "її файли видаляються остаточно й не підлягають відновленню",
+     "why": "grammar: the clause is about a book, which is feminine, so its files are «її», not «його»"
+    },
+    {
+     "key": "its files go to the Trash, where you can recover them until the Trash is emptied",
+     "english": "its files go to the Trash, where you can recover them until the Trash is emptied",
+     "before": "його файли потрапляють до Кошика, де їх можна відновити, доки Кошик не очищено",
+     "after": "її файли потрапляють до Кошика, де їх можна відновити, доки Кошик не очищено",
+     "why": "grammar: the clause is about a book, which is feminine, so its files are «її», not «його»"
+    },
+    {
+     "key": "its files stay in the TextMouth library folder",
+     "english": "its files stay in the TextMouth library folder",
+     "before": "його файли залишаються в папці бібліотеки TextMouth",
+     "after": "її файли залишаються в папці бібліотеки TextMouth",
+     "why": "grammar: the clause is about a book, which is feminine, so its files are «її», not «його»"
+    },
+    {
+     "key": "only the latest from each feed",
+     "english": "only the latest from each feed",
+     "before": "лише найновіше з кожної стрічки",
+     "after": "лише останнє з кожної стрічки",
+     "why": "meaning: «найновіше» says the newest published; the option keeps the item opened last"
+    },
+    {
+     "key": "permission denied",
+     "english": "permission denied",
+     "before": "дозвіл відхилено",
+     "after": "немає дозволу",
+     "why": "term: «дозвіл відхилено» copies permission denied; macOS says «немає дозволу»"
+    },
+    {
+     "key": "so its place and bookmarks there were taken from the library index alone.",
+     "english": "so its place and bookmarks there were taken from the library index alone.",
+     "before": "тому його позицію та закладки там узято лише з індексу бібліотеки.",
+     "after": "тому позицію та закладки цієї книги там узято лише з індексу бібліотеки.",
+     "why": "grammar: «його» pointed to the record named before, not to the book, which is feminine"
+    },
+    {
+     "key": "the identity marker of %@",
+     "english": "the identity marker of %@",
+     "before": "маркер ідентичності (%@)",
+     "after": "маркер ідентифікатора (%@)",
+     "why": "term: «ідентичність» is a personal or cultural identity; the library mark that tells copies apart is its «ідентифікатор», as in the other identity strings"
+    },
+    {
+     "key": "the identity marker of the library in %@",
+     "english": "the identity marker of the library in %@",
+     "before": "маркер ідентичності бібліотеки (%@)",
+     "after": "маркер ідентифікатора бібліотеки (%@)",
+     "why": "term: «ідентичність» is a personal or cultural identity; the library mark that tells copies apart is its «ідентифікатор», as in the other identity strings"
+    },
+    {
+     "key": "“%@” keeps %@.",
+     "english": "“%1$@” keeps %2$@.",
+     "before": "«%1$@» залишає %2$@.",
+     "after": "Для «%1$@» залишено %2$@.",
+     "why": "meaning: ««%1$@» залишає %2$@» also reads as the book leaving the code behind; the listener keeps the code for the book"
+    }
+   ]
+  }
+ ]
+}
