@@ -541829,7 +541829,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Das Mikrofon, von dem „Darüber aufnehmen“ aufnimmt. TextMouth merkt es sich, unabhängig vom Eingang von macOS."
+            "value" : "Das Mikrofon, mit dem „Darüber aufnehmen“ aufnimmt. TextMouth merkt es sich, unabhängig vom Eingang von macOS."
           }
         },
         "es" : {
@@ -542103,7 +542103,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Das Mikrofon, von dem aufgenommen wird. TextMouth merkt es sich; der Eingang, den macOS sonst verwendet, bleibt unverändert."
+            "value" : "Das Mikrofon, mit dem aufgenommen wird. TextMouth merkt es sich; der Eingang, den macOS sonst verwendet, bleibt unverändert."
           }
         },
         "es" : {
@@ -610929,7 +610929,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "VoiceOver spricht den Pegel während der Aufnahme. Über Lautsprecher kann seine Sprache mit aufgenommen werden."
+            "value" : "VoiceOver spricht den Pegel während der Aufnahme. Über Lautsprecher kann die Sprachausgabe mit aufgenommen werden."
           }
         },
         "es" : {
@@ -634150,7 +634150,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "alle %lld Datei"
+                  "value" : "die einzige Datei"
                 }
               },
               "other" : {
