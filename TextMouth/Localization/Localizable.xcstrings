@@ -482972,7 +482972,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth kunde inte registrera borttagningen i dess paket, %@."
+            "value" : "TextMouth kunde inte registrera borttagningen i bokens paket, %@."
           }
         },
         "th" : {
@@ -491148,7 +491148,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth läser ”%@” igen med andra punktskriftsfilstecken. Försök igen när det är klart."
+            "value" : "TextMouth läser ”%@” igen med andra punktskriftstecken. Försök igen när det är klart."
           }
         },
         "th" : {
@@ -496565,7 +496565,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth läser sin fil som en fil du lägger till: med den teckenkodning som filen anger, annars den som TextMouth hittar."
+            "value" : "TextMouth läser bokens fil som en fil du lägger till: med den teckenkodning som filen anger, annars den som TextMouth hittar."
           }
         },
         "th" : {
@@ -503145,13 +503145,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Det skulle placera %@ %lld nivå djupt, men mappar kan kapslas högst %lld nivåer."
+                  "value" : "Det skulle placera %@ %lld nivå djupt, men mappar kan kapslas högst %lld nivåer djupt."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Det skulle placera %@ %lld nivåer djupt, men mappar kan kapslas högst %lld nivåer."
+                  "value" : "Det skulle placera %@ %lld nivåer djupt, men mappar kan kapslas högst %lld nivåer djupt."
                 }
               }
             }
@@ -522707,7 +522707,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Punktskriften översätts till vanlig skrift igen med den här koden. Inget kontrollerar att det är rätt val. Om ord läses fel, välj en annan."
+            "value" : "Punktskriften översätts till svartskrift igen med den här koden. Inget kontrollerar att det är rätt val. Om ord läses fel, välj en annan."
           }
         },
         "th" : {
@@ -536808,7 +536808,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Mapparna %@ och %@ kan inte båda flyttas till %@: deras namn betyder samma mapp på den här disken."
+            "value" : "Mapparna %@ och %@ kan inte båda flyttas till %@: deras namn syftar på samma mapp på den här disken."
           }
         },
         "th" : {
@@ -563965,13 +563965,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Det finns ingen vy %@. Gå till vy når %lld vy."
+                  "value" : "Det finns ingen vy %@. ”Gå till vy” når %lld vy."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Det finns ingen vy %@. Gå till vy når %lld vyer."
+                  "value" : "Det finns ingen vy %@. ”Gå till vy” når %lld vyer."
                 }
               }
             }
@@ -617863,7 +617863,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "När en bok raderas, %@."
+            "value" : "När en bok raderas: %@."
           }
         },
         "th" : {
@@ -619644,7 +619644,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "När den är avstängd kommer borttagning av en bok att %@ direkt."
+            "value" : "När den är avstängd och du tar bort en bok kommer TextMouth att %@ direkt."
           }
         },
         "th" : {
@@ -620192,7 +620192,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "När den är på frågar borttagning av en bok först om du vill %@ eller behålla dem i TextMouths biblioteksmapp."
+            "value" : "När den är på och du tar bort en bok frågar TextMouth först om du vill %@ eller behålla dem i TextMouths biblioteksmapp."
           }
         },
         "th" : {
@@ -625478,7 +625478,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Med %@ gäller: %@."
+            "value" : "Med ”%@” gäller: %@."
           }
         },
         "th" : {
@@ -625615,7 +625615,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Med %@ finns flödet och dess nedladdningar kvar, utan mapp tills Flödesinformation ger flödet en ny; Radera flöde… på dess rad raderar det."
+            "value" : "Med ”%@” finns flödet och dess nedladdningar kvar, utan mapp tills Flödesinformation ger flödet en ny; ”Radera flöde…” på dess rad raderar det."
           }
         },
         "th" : {
@@ -625752,7 +625752,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Med %@ finns flödena och deras nedladdningar kvar, utan mapp tills Flödesinformation ger vart och ett en ny; Radera flöde… på ett flödes rad raderar det."
+            "value" : "Med ”%@” finns flödena och deras nedladdningar kvar, utan mapp tills Flödesinformation ger vart och ett en ny; ”Radera flöde…” på ett flödes rad raderar det."
           }
         },
         "th" : {
@@ -625895,7 +625895,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Med %@ lämnar mappen och allt i den biblioteket, och %@."
+            "value" : "Med ”%@” lämnar mappen och allt i den biblioteket, och %@."
           }
         },
         "th" : {
@@ -626032,7 +626032,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Med Flytta ut innehållet flyttas flödets mapp med resten."
+            "value" : "Med ”Flytta ut innehållet” flyttas flödets mapp med resten."
           }
         },
         "th" : {
@@ -626169,7 +626169,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Med Flytta ut innehållet flyttas deras mappar med resten."
+            "value" : "Med ”Flytta ut innehållet” flyttas deras mappar med resten."
           }
         },
         "th" : {
@@ -626306,7 +626306,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Med Flytta ut innehållet finns de kvar i biblioteket och bara mappen raderas."
+            "value" : "Med ”Flytta ut innehållet” finns de kvar i biblioteket och bara mappen raderas."
           }
         },
         "th" : {
@@ -667464,7 +667464,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "prenumererar"
+            "value" : "med prenumeration"
           }
         },
         "th" : {
@@ -675335,7 +675335,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "prenumererar inte"
+            "value" : "utan prenumeration"
           }
         },
         "th" : {
