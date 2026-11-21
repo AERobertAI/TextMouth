@@ -236881,19 +236881,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Encontradas %lld de gravações de antes do último encerramento do TextMouth, em %@. Salve ou descarte cada uma."
+                  "value" : "Foram encontradas %lld de gravações feitas antes do último encerramento do TextMouth, em %@. Salve ou descarte cada uma."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Encontrada %lld gravação de antes do último encerramento do TextMouth, em %@. Salve ou descarte cada uma."
+                  "value" : "Foi encontrada %lld gravação feita antes do último encerramento do TextMouth, em %@. Salve ou descarte cada uma."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Encontradas %lld gravações de antes do último encerramento do TextMouth, em %@. Salve ou descarte cada uma."
+                  "value" : "Foram encontradas %lld gravações feitas antes do último encerramento do TextMouth, em %@. Salve ou descarte cada uma."
                 }
               }
             }
@@ -237129,7 +237129,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Encontrada uma gravação de antes do último encerramento do TextMouth, em %@. Salve-a ou descarte-a."
+            "value" : "Foi encontrada uma gravação feita antes do último encerramento do TextMouth, em %@. Salve-a ou descarte-a."
           }
         },
         "ru" : {
@@ -262304,7 +262304,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Inseridos %@ de nova gravação, que está selecionada."
+            "value" : "Nova gravação inserida (%@) e selecionada."
           }
         },
         "ru" : {
@@ -262441,7 +262441,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Inseridos %@ de silêncio."
+            "value" : "Silêncio inserido: %@."
           }
         },
         "ru" : {
@@ -278580,7 +278580,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Manter por alguns dias"
+            "value" : "Manter por um número de dias"
           }
         },
         "ru" : {
@@ -296158,7 +296158,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Não é possível gravar MP3: o codificador do TextMouth não pôde iniciar, e o ffmpeg está ausente ou desativado nos ajustes de Armazenamento."
+            "value" : "Não é possível salvar em MP3: o codificador do TextMouth não pôde iniciar, e o ffmpeg está ausente ou desativado nos ajustes de Armazenamento."
           }
         },
         "ru" : {
@@ -297671,7 +297671,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Faz estas correções. A transcrição anterior é mantida, então Desfazer limpeza pode recolocá-la."
+            "value" : "Faz estas correções. A transcrição anterior é mantida, então Desfazer limpeza pode restaurá-la."
           }
         },
         "ru" : {
@@ -306830,7 +306830,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Os minutos devem ser menos de 60."
+            "value" : "Os minutos devem ser menores que 60."
           }
         },
         "ru" : {
@@ -315460,7 +315460,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Movido: %1$@, para %2$@."
+            "value" : "Movido: %1$@ para %2$@."
           }
         },
         "ru" : {
@@ -339957,7 +339957,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nenhum original é mantido, então não é possível reverter. Desfazer retoma as edições feitas desde o último salvamento."
+            "value" : "Nenhum original é mantido, então não é possível reverter. Desfazer anula as edições feitas desde o último salvamento."
           }
         },
         "ru" : {
@@ -342971,7 +342971,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nenhum som de %@. Verifique se o microfone está ligado e não está no mudo."
+            "value" : "Nenhum som de %@. Verifique se o microfone está ligado e não está silenciado."
           }
         },
         "ru" : {
@@ -349472,7 +349472,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ainda não estão no áudio do livro. Descartar as desfaz; na próxima vez que você editar este livro, Refazer as traz de volta até você fazer outra edição."
+            "value" : "Ainda não estão no áudio do livro. Descartar desfaz essas edições; na próxima vez que você editar este livro, Refazer pode trazê-las de volta enquanto você não fizer outra edição."
           }
         },
         "ru" : {
@@ -370171,7 +370171,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Colados %@ de volta onde foram cortados."
+            "value" : "Colado de volta no lugar do corte: %@."
           }
         },
         "ru" : {
@@ -370314,7 +370314,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Colados %1$@ sobre %2$@."
+            "value" : "Colado: %1$@ sobre %2$@."
           }
         },
         "ru" : {
@@ -370451,7 +370451,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Colados %@."
+            "value" : "Colado: %@."
           }
         },
         "ru" : {
@@ -387015,7 +387015,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Recoloca a transcrição como estava antes da última limpeza."
+            "value" : "Restaura a transcrição como estava antes da última limpeza."
           }
         },
         "ru" : {
@@ -387426,7 +387426,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Recolocando a transcrição anterior…"
+            "value" : "Restaurando a transcrição anterior…"
           }
         },
         "ru" : {
@@ -397587,7 +397587,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Grava sobre a seleção ou no cursor, após um sinal sonoro. De novo, ou Parar, encerra."
+            "value" : "Grava sobre a seleção ou no cursor, após um sinal sonoro. Usá-lo de novo ou usar Parar encerra a gravação."
           }
         },
         "ru" : {
@@ -409175,7 +409175,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Substituído: %1$@, por %2$@ de nova gravação, que está selecionada."
+            "value" : "Substituído: %1$@ por %2$@ de nova gravação, que está selecionada."
           }
         },
         "ru" : {
@@ -422221,7 +422221,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Executa uma predefinição de filtro sobre a seleção ou o arquivo inteiro."
+            "value" : "Aplica uma predefinição de filtro à seleção ou ao arquivo inteiro."
           }
         },
         "ru" : {
@@ -432078,7 +432078,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Os segundos devem ser menos de 60."
+            "value" : "Os segundos devem ser menores que 60."
           }
         },
         "ru" : {
@@ -435017,7 +435017,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Selecionados %@ antes do capítulo 1."
+            "value" : "Selecionado: %@ antes do capítulo 1."
           }
         },
         "ru" : {
@@ -490588,7 +490588,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "O TextMouth está sendo encerrado e o áudio do livro ainda não contém estas edições. Descartar as desfaz; na próxima vez que você editar este livro, Refazer as traz de volta até você fazer outra edição. Cancelar mantém o TextMouth aberto."
+            "value" : "O TextMouth está sendo encerrado e o áudio do livro ainda não contém estas edições. Descartar desfaz essas edições; na próxima vez que você editar este livro, Refazer pode trazê-las de volta enquanto você não fizer outra edição. Cancelar mantém o TextMouth aberto."
           }
         },
         "ru" : {
@@ -500755,7 +500755,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "As regras do próprio TextMouth são mais recentes, versão %@. Para usá-las, exclua sua cópia ou copie as regras delas para ela."
+            "value" : "As regras do próprio TextMouth são mais recentes, versão %@. Para usá-las, exclua sua cópia ou copie essas regras para ela."
           }
         },
         "ru" : {
@@ -519818,7 +519818,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "O áudio do livro mudou desde que foi transcrito (%@), então a transcrição não se encaixa mais. Transcreva de novo."
+            "value" : "O áudio do livro mudou desde que foi transcrito (%@), então a transcrição não corresponde mais a ele. Transcreva de novo."
           }
         },
         "ru" : {
@@ -527377,7 +527377,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Não foi possível gravar o áudio editado."
+            "value" : "Não foi possível gravar o arquivo de áudio editado."
           }
         },
         "ru" : {
@@ -560815,7 +560815,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "O texto da transcrição não voltou como um capítulo para cada capítulo do livro."
+            "value" : "Ao ser relido, o texto da transcrição não tinha um capítulo para cada capítulo do livro."
           }
         },
         "ru" : {
@@ -596444,7 +596444,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Recortado na seleção: restam %@."
+            "value" : "Recortado na seleção; duração restante: %@."
           }
         },
         "ru" : {
@@ -601936,7 +601936,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Desfazer limpeza recoloca a transcrição de antes."
+            "value" : "Desfazer limpeza restaura a transcrição de antes."
           }
         },
         "ru" : {
@@ -602210,7 +602210,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Desfaz todas as edições, de volta ao original; Refazer as traz de volta."
+            "value" : "Desfaz todas as edições e volta ao original; Refazer pode trazê-las de volta."
           }
         },
         "ru" : {
@@ -627801,7 +627801,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Grava marcas de capítulo e marcas ao lado do áudio, em um arquivo de rótulos do Audacity com o mesmo nome."
+            "value" : "Salva marcas de capítulo e marcas ao lado do áudio, em um arquivo de rótulos do Audacity com o mesmo nome."
           }
         },
         "ru" : {
@@ -630267,7 +630267,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sua cópia das regras está vazia. Editar regras… a abre para adicionar algumas."
+            "value" : "Sua cópia das regras está vazia. Editar regras… abre a cópia para você adicionar algumas."
           }
         },
         "ru" : {
