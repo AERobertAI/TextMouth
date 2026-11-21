@@ -9008,7 +9008,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ a pris sa touche par défaut, %@"
+            "value" : "%@ a pris la touche par défaut, %@"
           }
         },
         "hi" : {
@@ -15253,7 +15253,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ n’est pas un livre audio en pistes, il n’a donc aucun manifeste à modifier."
+            "value" : "%@ n’est pas un livre audio composé de pistes, il n’a donc aucun manifeste à modifier."
           }
         },
         "hi" : {
@@ -18279,7 +18279,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Lecture impossible pour %@ des %lld chapitre"
+                  "value" : "Lecture impossible pour %@ chapitre sur %lld"
                 }
               },
               "other" : {
@@ -103979,7 +103979,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ajoute la page, par exemple « Page 12 sur 300 », aux résumés de Où suis-je ? pour les livres de plus d’une page."
+            "value" : "Ajoute la page, par exemple « Page 12 sur 300 », aux résumés d’Où suis-je ? pour les livres de plus d’une page."
           }
         },
         "hi" : {
@@ -123030,7 +123030,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Barre oblique inverse"
+            "value" : "Barre oblique inversée"
           }
         },
         "hi" : {
@@ -131156,7 +131156,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Pause"
+            "value" : "Attn"
           }
         },
         "hi" : {
@@ -200415,7 +200415,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Modifier le texte s’est arrêté pour %@, car une nouvelle copie l’a remplacé."
+            "value" : "La modification du texte de %@ s’est arrêtée, car une nouvelle copie l’a remplacé."
           }
         },
         "hi" : {
@@ -200540,7 +200540,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Modifier le texte s’est arrêté pour %@, car son fichier a été relu."
+            "value" : "La modification du texte de %@ s’est arrêtée, car son fichier a été relu."
           }
         },
         "hi" : {
@@ -237621,7 +237621,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Aller à l’instant…"
+            "value" : "Aller à un instant…"
           }
         },
         "hi" : {
@@ -291041,7 +291041,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Faire un double appui"
+            "value" : "Passer en double appui"
           }
         },
         "hi" : {
@@ -291166,7 +291166,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Faire un appui simple"
+            "value" : "Passer en appui simple"
           }
         },
         "hi" : {
@@ -299702,7 +299702,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Réduire"
+            "value" : "Placer dans le Dock"
           }
         },
         "hi" : {
@@ -299827,7 +299827,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tout réduire"
+            "value" : "Tout placer dans le Dock"
           }
         },
         "hi" : {
@@ -308268,7 +308268,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Déplacer vers le dossier"
+            "value" : "Déplacer vers un dossier"
           }
         },
         "hi" : {
@@ -339622,7 +339622,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Aucun des %lld chapitre n’a pu être lu"
+                  "value" : "Aucun chapitre sur %lld n’a pu être lu"
                 }
               },
               "other" : {
@@ -346794,7 +346794,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "L’OCR n’a pas pu s’exécuter sur %@ des %lld page, donc le texte présent seulement dans les images est absent : %@."
+                  "value" : "L’OCR n’a pas pu s’exécuter pour %@ page sur %lld, donc le texte présent seulement dans ses images est absent : %@."
                 }
               },
               "other" : {
@@ -347213,19 +347213,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "L’OCR n’a pas pu s’exécuter sur la totalité des %lld de pages, donc le texte présent seulement dans les images est absent : %@."
+                  "value" : "L’OCR n’a pu s’exécuter sur aucune des %lld de pages, donc le texte présent seulement dans leurs images est absent : %@."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "L’OCR n’a pas pu s’exécuter sur la totalité des %lld page, donc le texte présent seulement dans les images est absent : %@."
+                  "value" : "L’OCR n’a pas pu s’exécuter sur %lld page, donc le texte présent seulement dans ses images est absent : %@."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "L’OCR n’a pas pu s’exécuter sur la totalité des %lld pages, donc le texte présent seulement dans les images est absent : %@."
+                  "value" : "L’OCR n’a pu s’exécuter sur aucune des %lld pages, donc le texte présent seulement dans leurs images est absent : %@."
                 }
               }
             }
@@ -362542,7 +362542,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Coller en adaptant le style"
+            "value" : "Coller et adapter le style"
           }
         },
         "hi" : {
@@ -398054,7 +398054,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Retirez-les : un livre audio en pistes est organisé avec des pistes."
+            "value" : "Retirez-les : un livre audio composé de pistes s’organise par pistes."
           }
         },
         "hi" : {
@@ -431345,7 +431345,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Raccourcis rétablis par défaut."
+            "value" : "Raccourcis par défaut rétablis."
           }
         },
         "hi" : {
