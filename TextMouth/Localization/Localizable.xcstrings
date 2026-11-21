@@ -243949,7 +243949,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Va a una pagina, a una percentuale o a un orario."
+            "value" : "Va a una pagina, a una percentuale o a un tempo."
           }
         },
         "ja" : {
@@ -248943,7 +248943,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Quanto acuta suona la voce nel file. Parte dal tono del libro."
+            "value" : "Quanto è acuta la voce nel file. Parte dal tono del libro."
           }
         },
         "ja" : {
@@ -276433,7 +276433,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Vai all’orario"
+            "value" : "Vai al tempo"
           }
         },
         "ja" : {
@@ -280073,19 +280073,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Conservati %@ di %lld di capitoli fino a quando TextMouth non viene chiuso, non inizia un’altra esportazione dell’audio parlato o non cambiano la voce, il testo, le sostituzioni o le pause del libro. Per proseguire dal capitolo %@, esporta lo stesso intervallo con la stessa velocità e lo stesso tono."
+                  "value" : "Conservati %@ su %lld di capitoli fino a quando TextMouth non viene chiuso, non inizia un’altra esportazione dell’audio parlato o non cambiano la voce, il testo, le sostituzioni o le pause del libro. Per proseguire dal capitolo %@, esporta lo stesso intervallo con la stessa velocità e lo stesso tono."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Conservati %@ di %lld capitolo fino a quando TextMouth non viene chiuso, non inizia un’altra esportazione dell’audio parlato o non cambiano la voce, il testo, le sostituzioni o le pause del libro. Per proseguire dal capitolo %@, esporta lo stesso intervallo con la stessa velocità e lo stesso tono."
+                  "value" : "Conservati %@ su %lld capitolo fino a quando TextMouth non viene chiuso, non inizia un’altra esportazione dell’audio parlato o non cambiano la voce, il testo, le sostituzioni o le pause del libro. Per proseguire dal capitolo %@, esporta lo stesso intervallo con la stessa velocità e lo stesso tono."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Conservati %@ di %lld capitoli fino a quando TextMouth non viene chiuso, non inizia un’altra esportazione dell’audio parlato o non cambiano la voce, il testo, le sostituzioni o le pause del libro. Per proseguire dal capitolo %@, esporta lo stesso intervallo con la stessa velocità e lo stesso tono."
+                  "value" : "Conservati %@ su %lld capitoli fino a quando TextMouth non viene chiuso, non inizia un’altra esportazione dell’audio parlato o non cambiano la voce, il testo, le sostituzioni o le pause del libro. Per proseguire dal capitolo %@, esporta lo stesso intervallo con la stessa velocità e lo stesso tono."
                 }
               }
             }
@@ -326987,7 +326987,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Unità di navigazione per i libri di testo"
+            "value" : "Unità di navigazione per i libri testuali"
           }
         },
         "ja" : {
@@ -333295,7 +333295,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nessuna finestra della libreria né libro aperti, quindi non c’è nulla da esportare."
+            "value" : "Non ci sono finestre della libreria né libri aperti, quindi non c’è nulla da esportare."
           }
         },
         "ja" : {
@@ -345108,7 +345108,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nessuna voce installata. Aggiungine una in Impostazioni di Sistema, Accessibilità, Contenuto parlato, poi esporta di nuovo."
+            "value" : "Nessuna voce installata. Aggiungine una in Impostazioni di Sistema, Accessibilità, Contenuti letti ad alta voce, poi esporta di nuovo."
           }
         },
         "ja" : {
@@ -427683,7 +427683,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Di’ quante"
+            "value" : "Di’ quanti"
           }
         },
         "ja" : {
@@ -458110,19 +458110,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Velocità: %lld di parole al minuto; frequenza %@, tono %@, volume %@"
+                  "value" : "Velocità: %lld di parole al minuto; velocità del motore %@, tono %@, volume %@"
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Velocità: %lld parola al minuto; frequenza %@, tono %@, volume %@"
+                  "value" : "Velocità: %lld parola al minuto; velocità del motore %@, tono %@, volume %@"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Velocità: %lld parole al minuto; frequenza %@, tono %@, volume %@"
+                  "value" : "Velocità: %lld parole al minuto; velocità del motore %@, tono %@, volume %@"
                 }
               }
             }
@@ -480875,7 +480875,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth non ha potuto controllare la tabella “%1$@” di questo Mac: %2$@. Scegliila di nuovo per riprovare."
+            "value" : "TextMouth non ha potuto controllare la tabella “%1$@” di questo Mac: %2$@. Sceglila di nuovo per riprovare."
           }
         },
         "ja" : {
@@ -511225,19 +511225,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "L’MP3 ha capitoli per i primi %@ delle sue %lld di intestazioni; esporta come M4B per avere un capitolo per ciascuna."
+                  "value" : "L’MP3 ha capitoli per le prime %@ delle sue %lld di intestazioni; esporta come M4B per avere un capitolo per ciascuna."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "L’MP3 ha capitoli per i primi %@ delle sue %lld intestazione; esporta come M4B per avere un capitolo per ciascuna."
+                  "value" : "L’MP3 ha capitoli per le prime %@ della sua %lld intestazione; esporta come M4B per avere un capitolo per ciascuna."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "L’MP3 ha capitoli per i primi %@ delle sue %lld intestazioni; esporta come M4B per avere un capitolo per ciascuna."
+                  "value" : "L’MP3 ha capitoli per le prime %@ delle sue %lld intestazioni; esporta come M4B per avere un capitolo per ciascuna."
                 }
               }
             }
@@ -673786,7 +673786,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "questo Mac non ce l’ha più"
+            "value" : "non è più presente su questo Mac"
           }
         },
         "ja" : {
