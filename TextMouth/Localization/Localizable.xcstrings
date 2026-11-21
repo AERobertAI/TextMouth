@@ -9920,7 +9920,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ heeft zijn standaardtoets, %@"
+            "value" : "%@ heeft nu de standaardtoets, %@"
           }
         },
         "pl" : {
@@ -19551,7 +19551,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ wacht nu even voor %@, voor het geval de toets twee keer wordt ingedrukt."
+            "value" : "%@ wacht nu even met %@, voor het geval de toets twee keer wordt ingedrukt."
           }
         },
         "pl" : {
@@ -20205,13 +20205,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%@ van %lld hoofdstukken niet gelezen"
+                  "value" : "%@ van %lld hoofdstuk niet te lezen"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%@ van %lld hoofdstukken niet gelezen"
+                  "value" : "%@ van %lld hoofdstukken niet te lezen"
                 }
               }
             }
@@ -21413,7 +21413,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ resterend op huidige snelheid"
+            "value" : "Nog %@ bij de huidige snelheid"
           }
         },
         "pl" : {
@@ -23374,7 +23374,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ door het boek"
+            "value" : "%@ van het boek"
           }
         },
         "pl" : {
@@ -23523,7 +23523,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ keer de snelheid"
+            "value" : "%@ keer zo snel"
           }
         },
         "pl" : {
@@ -23678,7 +23678,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ tot %2$@"
+            "value" : "%1$@ tot en met %2$@"
           }
         },
         "pl" : {
@@ -27340,7 +27340,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ schrijft dat hoofdstuk als gewone alinea's met zijn regels, met de citaat- en lijsttekens als tekens behouden, en exporteert al het andere zoals gewoonlijk."
+            "value" : "%@ schrijft de regels van dat hoofdstuk als gewone alinea's, waarbij de citaat- en lijsttekens als tekens behouden blijven, en exporteert al het andere zoals gewoonlijk."
           }
         },
         "pl" : {
@@ -27489,7 +27489,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ schrijft de tekst als gewone alinea's met zijn regels, met de citaat- en lijsttekens als tekens behouden, en exporteert al het andere zoals gewoonlijk."
+            "value" : "%@ schrijft de regels van de tekst als gewone alinea's, waarbij de citaat- en lijsttekens als tekens behouden blijven, en exporteert al het andere zoals gewoonlijk."
           }
         },
         "pl" : {
@@ -88637,13 +88637,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld regel is weggelaten: reguliere expressies en regels die uit staan, kunnen niet in een lexicon worden geschreven."
+                  "value" : "%lld regel is weggelaten: reguliere expressies en regels die uitstaan, kunnen niet in een lexicon worden geschreven."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld regels zijn weggelaten: reguliere expressies en regels die uit staan, kunnen niet in een lexicon worden geschreven."
+                  "value" : "%lld regels zijn weggelaten: reguliere expressies en regels die uitstaan, kunnen niet in een lexicon worden geschreven."
                 }
               }
             }
@@ -113284,7 +113284,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Voegt een knop Exporteer toe aan de knoppenbalk van elke lezer. Bestand, Exporteer werkt in beide gevallen."
+            "value" : "Voegt een knop Exporteer toe aan de knoppenbalk van elke lezer. Archief, Exporteer werkt in beide gevallen."
           }
         },
         "pl" : {
@@ -128532,7 +128532,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "At-teken"
+            "value" : "Apenstaartje"
           }
         },
         "pl" : {
@@ -135776,7 +135776,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Voor pagina %@"
+            "value" : "Vóór pagina %@"
           }
         },
         "pl" : {
@@ -152530,7 +152530,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hoofdstuk %@ kon niet worden afgespeeld: %@ uit het pakket van het boek."
+            "value" : "Hoofdstuk %@ kon niet worden afgespeeld: %@ in het pakket van het boek."
           }
         },
         "pl" : {
@@ -165553,7 +165553,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Kiest waarmee Speel af en de springknoppen vooruit of terug gaan."
+            "value" : "Kiest waarmee Speel af en de springknoppen vooruit- of teruggaan."
           }
         },
         "pl" : {
@@ -165702,7 +165702,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Kiest wat een boek dat uit de lijst is geopend doet als het eindigt."
+            "value" : "Kiest wat een boek dat uit de lijst is geopend, doet als het eindigt."
           }
         },
         "pl" : {
@@ -238256,7 +238256,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Exporteren kan niet naar de bibliotheekmap van TextMouth schrijven. Kies een andere map."
+            "value" : "Exporteren naar de bibliotheekmap van TextMouth is niet mogelijk. Kies een andere map."
           }
         },
         "pl" : {
@@ -238405,7 +238405,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Exporteren kan niet schrijven naar de map waarin TextMouth uitgesproken hoofdstukken bewaart, en die wordt leeggemaakt. Kies een andere map."
+            "value" : "Exporteren naar de map waarin TextMouth uitgesproken hoofdstukken bewaart, is niet mogelijk, want TextMouth maakt die map leeg. Kies een andere map."
           }
         },
         "pl" : {
@@ -241223,7 +241223,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$lld van %2$@ wordt geëxporteerd…"
+            "value" : "Exporteren: %1$lld van %2$@…"
           }
         },
         "pl" : {
@@ -250299,7 +250299,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Zoeken wat er kan worden geëxporteerd…"
+            "value" : "Uitzoeken wat er kan worden geëxporteerd…"
           }
         },
         "pl" : {
@@ -303005,7 +303005,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bewaart de boeken van de lijst gedownload op deze Mac; elke Mac kiest voor zichzelf. Als je dit uitschakelt, wordt er geen download verwijderd."
+            "value" : "Houdt de boeken van de lijst gedownload op deze Mac; elke Mac kiest voor zichzelf. Als je dit uitschakelt, wordt er geen download verwijderd."
           }
         },
         "pl" : {
@@ -303647,13 +303647,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%@ van %lld hoofdstuk is bewaard totdat TextMouth wordt afgesloten, een andere gesproken audio-export begint of de stem, de tekst, de vervangingen of de pauzes van het boek veranderen. Om verder te gaan vanaf hoofdstuk %@, exporteer je hetzelfde bereik met dezelfde snelheid en toonhoogte."
+                  "value" : "TextMouth bewaart %@ van %lld hoofdstuk totdat de app wordt afgesloten, een andere gesproken audio-export begint of de stem, de tekst, de vervangingen of de pauzes van het boek veranderen. Om verder te gaan vanaf hoofdstuk %@, exporteer je hetzelfde bereik met dezelfde snelheid en toonhoogte."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%@ van %lld hoofdstukken is bewaard totdat TextMouth wordt afgesloten, een andere gesproken audio-export begint of de stem, de tekst, de vervangingen of de pauzes van het boek veranderen. Om verder te gaan vanaf hoofdstuk %@, exporteer je hetzelfde bereik met dezelfde snelheid en toonhoogte."
+                  "value" : "TextMouth bewaart %@ van %lld hoofdstukken totdat de app wordt afgesloten, een andere gesproken audio-export begint of de stem, de tekst, de vervangingen of de pauzes van het boek veranderen. Om verder te gaan vanaf hoofdstuk %@, exporteer je hetzelfde bereik met dezelfde snelheid en toonhoogte."
                 }
               }
             }
@@ -304150,7 +304150,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Het gesproken hoofdstuk (%lld) is bewaard totdat TextMouth wordt afgesloten, een andere gesproken audio-export begint of de stem, de tekst, de vervangingen of de pauzes van het boek veranderen. Om er het audiobestand van te maken, exporteer je hetzelfde bereik met dezelfde snelheid en toonhoogte."
+                  "value" : "Het gesproken hoofdstuk is bewaard totdat TextMouth wordt afgesloten, een andere gesproken audio-export begint of de stem, de tekst, de vervangingen of de pauzes van het boek veranderen. Om er het audiobestand van te maken, exporteer je hetzelfde bereik met dezelfde snelheid en toonhoogte."
                 }
               },
               "other" : {
@@ -309691,7 +309691,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Niveau 1 tot %lld"
+            "value" : "Niveaus 1 tot en met %lld"
           }
         },
         "pl" : {
@@ -319538,7 +319538,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Boek laden…"
+            "value" : "Boek wordt geladen…"
           }
         },
         "pl" : {
@@ -328533,7 +328533,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Opmaakbeveiliging: streng, elke punthaak wordt niet uitgesproken, van teken %1$@ tot %2$@ van de gesproken tekst."
+            "value" : "Opmaakbeveiliging: streng, geen enkele punthaak wordt uitgesproken, van teken %1$@ tot %2$@ van de gesproken tekst."
           }
         },
         "pl" : {
@@ -371241,7 +371241,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Geen regels om te exporteren: alleen gewone tekstregels die aan staan, kunnen in een lexicon worden geschreven."
+            "value" : "Geen regels om te exporteren: alleen gewone tekstregels die aanstaan, kunnen in een lexicon worden geschreven."
           }
         },
         "pl" : {
@@ -374184,7 +374184,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Er is geen stem geïnstalleerd. Voeg er een toe in Systeeminstellingen, Toegankelijkheid, Gesproken content, en exporteer daarna opnieuw."
+            "value" : "Er is geen stem geïnstalleerd. Voeg er een toe in Systeeminstellingen, Toegankelijkheid, Gesproken materiaal, en exporteer daarna opnieuw."
           }
         },
         "pl" : {
@@ -375478,7 +375478,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Geen van de %lld hoofdstukken kon worden gelezen"
+                  "value" : "Het enige hoofdstuk kon niet worden gelezen"
                 }
               },
               "other" : {
@@ -382752,7 +382752,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Speelt nu af: %@"
+            "value" : "Wordt nu afgespeeld: %@"
           }
         },
         "pl" : {
@@ -383394,13 +383394,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "OCR kon niet worden uitgevoerd op %@ van %lld pagina's, dus tekst die alleen in de afbeeldingen staat ontbreekt: %@."
+                  "value" : "OCR kon niet worden uitgevoerd op %@ van %lld pagina, dus tekst die alleen in de afbeeldingen staat, ontbreekt: %@."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "OCR kon niet worden uitgevoerd op %@ van %lld pagina's, dus tekst die alleen in de afbeeldingen staat ontbreekt: %@."
+                  "value" : "OCR kon niet worden uitgevoerd op %@ van %lld pagina's, dus tekst die alleen in de afbeeldingen staat, ontbreekt: %@."
                 }
               }
             }
@@ -383897,13 +383897,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "OCR kon niet worden uitgevoerd op alle %lld pagina's, dus tekst die alleen in de afbeeldingen staat ontbreekt: %@."
+                  "value" : "OCR kon niet worden uitgevoerd op %lld pagina, dus tekst die alleen in de afbeeldingen staat, ontbreekt: %@."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "OCR kon niet worden uitgevoerd op alle %lld pagina's, dus tekst die alleen in de afbeeldingen staat ontbreekt: %@."
+                  "value" : "OCR kon niet worden uitgevoerd op alle %lld pagina's, dus tekst die alleen in de afbeeldingen staat, ontbreekt: %@."
                 }
               }
             }
@@ -384205,7 +384205,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "OCR kon niet worden uitgevoerd op de enige pagina van de PDF, dus tekst die alleen in de afbeeldingen staat ontbreekt: %@."
+            "value" : "OCR kon niet worden uitgevoerd op de enige pagina van de PDF, dus tekst die alleen in de afbeeldingen staat, ontbreekt: %@."
           }
         },
         "pl" : {
@@ -404556,7 +404556,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Percentage door het boek"
+            "value" : "Percentage van het boek"
           }
         },
         "pl" : {
@@ -410516,7 +410516,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Speelt het boek af en pauzeert voor het volgende boek."
+            "value" : "Speelt het boek af en pauzeert vóór het volgende boek."
           }
         },
         "pl" : {
@@ -414756,7 +414756,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Voorbeeld van geluid %@"
+            "value" : "Beluister geluid voor %@"
           }
         },
         "pl" : {
@@ -429804,7 +429804,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Toetsenbordcommando opnemen. Druk op een toets met Command of Control."
+            "value" : "Toetsenbordcommando wordt opgenomen. Druk op een toets met Command of Control."
           }
         },
         "pl" : {
@@ -429953,7 +429953,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Toetsenbordcommando opnemen. Druk op een toets, of druk er twee keer op voor een dubbele druk."
+            "value" : "Toetsenbordcommando wordt opgenomen. Druk op een toets, of druk er twee keer op voor een dubbele druk."
           }
         },
         "pl" : {
@@ -434189,13 +434189,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Hier geweigerd: %lld keer terwijl dit venster open was."
+                  "value" : "Hier geweigerd: %lld keer sinds dit venster is geopend."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Hier geweigerd: %lld keer terwijl dit venster open was."
+                  "value" : "Hier geweigerd: %lld keer sinds dit venster is geopend."
                 }
               }
             }
@@ -440594,7 +440594,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Haal ze weg: een luisterboek met tracks is ingedeeld met tracks."
+            "value" : "Haal ze weg: een luisterboek met tracks is ingedeeld in tracks."
           }
         },
         "pl" : {
@@ -448795,7 +448795,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Opnieuw starten: %@"
+            "value" : "Begint opnieuw: %@"
           }
         },
         "pl" : {
@@ -463124,7 +463124,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bewaart je gewone tekstregels die aan staan; regels met reguliere expressies worden weggelaten."
+            "value" : "Bewaart je gewone tekstregels die aanstaan; regels met reguliere expressies worden weggelaten."
           }
         },
         "pl" : {
@@ -468761,7 +468761,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sectie opgenomen: %@"
+            "value" : "Sectie weer meegenomen: %@"
           }
         },
         "pl" : {
@@ -488658,7 +488658,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Slaaptimer geannuleerd, omdat je naar een ander boek ging terwijl het geluid uitfaded."
+            "value" : "Slaaptimer geannuleerd, omdat je naar een ander boek ging terwijl het geluid zachter werd."
           }
         },
         "pl" : {
@@ -498585,7 +498585,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Opnieuw beginnen: %@"
+            "value" : "Begint opnieuw: %@"
           }
         },
         "pl" : {
@@ -516147,7 +516147,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tekst niet bijgewerkt: het originele bestand van %@ is ook gewijzigd. De tekst van het boek wordt de volgende keer dat het boek opent opnieuw daaruit gelezen."
+            "value" : "Tekst niet bijgewerkt: het originele bestand van %@ is ook gewijzigd. De tekst van het boek wordt er opnieuw uit gelezen wanneer het boek de volgende keer wordt geopend."
           }
         },
         "pl" : {
@@ -516296,7 +516296,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tekst niet bijgewerkt: de transcriptie van %@ is ook gewijzigd. De tekst van het boek wordt de volgende keer dat het boek opent opnieuw daaruit geschreven."
+            "value" : "Tekst niet bijgewerkt: de transcriptie van %@ is ook gewijzigd. De tekst van het boek wordt op basis daarvan opnieuw geschreven wanneer het boek de volgende keer wordt geopend."
           }
         },
         "pl" : {
@@ -524458,7 +524458,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth kon deze braille niet vertalen."
+            "value" : "TextMouth kon deze brailletekst niet vertalen."
           }
         },
         "pl" : {
@@ -529847,7 +529847,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth heeft de laatste bewaring nog niet gelezen."
+            "value" : "TextMouth heeft de laatst bewaarde versie nog niet gelezen."
           }
         },
         "pl" : {
@@ -534522,7 +534522,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth heeft de tekst die je in %@ hebt gewijzigd bewaard."
+            "value" : "TextMouth heeft de tekst bewaard die je in %@ hebt gewijzigd."
           }
         },
         "pl" : {
@@ -559004,7 +559004,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Het audiobestand %@ eindigt vóór de audio zelf, dus het kon niet worden geconverteerd."
+            "value" : "Het audiobestand %@ eindigt voordat de audio is afgelopen, dus het kon niet worden geconverteerd."
           }
         },
         "pl" : {
@@ -563691,7 +563691,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "De audio van het boek zoals die was vóór de eerste wijziging, die TextMouth bewaart zolang de instelling Originele audio aan staat."
+            "value" : "De audio van het boek zoals die was vóór de eerste wijziging, die TextMouth bewaart zolang de instelling Originele audio aanstaat."
           }
         },
         "pl" : {
@@ -578135,7 +578135,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Het bestand “%@” is beschadigd of onvolledig: het begint met een %@-byteordemarkering, maar de rest is geen geldige %@-tekst."
+            "value" : "Het bestand “%@” is beschadigd of onvolledig: het begint met een %@-bytevolgordemarkering, maar de rest is geen geldige %@-tekst."
           }
         },
         "pl" : {
@@ -581074,7 +581074,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "De map bevat %lld DAISY-boeken (%@)."
+                  "value" : "De map bevat %lld DAISY-boek (%@)."
                 }
               },
               "other" : {
@@ -594660,7 +594660,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Het andere %lld hoofdstuk heeft geen tekst."
+                  "value" : "Het andere hoofdstuk heeft geen tekst."
                 }
               },
               "other" : {
@@ -605093,7 +605093,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "De tekst van %@ kan niet worden gelezen, dus kan niet worden gewijzigd."
+            "value" : "De tekst van %@ kan niet worden gelezen, dus kan die niet worden gewijzigd."
           }
         },
         "pl" : {
@@ -619148,7 +619148,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Deze PDF heeft een wachtwoord nodig om te openen."
+            "value" : "Deze PDF kan alleen met een wachtwoord worden geopend."
           }
         },
         "pl" : {
@@ -624177,7 +624177,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "De tekst van dit boek kan niet worden gelezen, dus kan niet in een audiobestand worden uitgesproken."
+            "value" : "De tekst van dit boek kan niet worden gelezen, dus kan die niet in een audiobestand worden uitgesproken."
           }
         },
         "pl" : {
@@ -628051,7 +628051,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "De opmaak van dit bestand nest meer dan %@ niveaus diep, wat TextMouth niet veilig kan lezen."
+            "value" : "De opmaak van dit bestand is meer dan %@ niveaus diep genest, wat TextMouth niet veilig kan lezen."
           }
         },
         "pl" : {
@@ -628200,7 +628200,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Het zou TextMouth veel te lang duren om de opmaak van dit bestand te lezen."
+            "value" : "Het lezen van de opmaak van dit bestand zou TextMouth veel te veel tijd kosten."
           }
         },
         "pl" : {
@@ -649313,7 +649313,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Typ een pagina zoals het boek die nummert, zoals 12 of xii."
+            "value" : "Typ een pagina zoals het boek die nummert, bijvoorbeeld 12 of xii."
           }
         },
         "pl" : {
@@ -657352,7 +657352,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Zonder titel"
+            "value" : "Naamloos"
           }
         },
         "pl" : {
@@ -672544,7 +672544,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Als dit aan staat, wordt een braillebestand dat als verkort Unified English Braille is gelezen maar duidelijk English Braille, American Edition is, in plaats daarvan als dat gelezen."
+            "value" : "Als dit aanstaat, wordt een braillebestand dat als verkort Unified English Braille is gelezen maar duidelijk English Braille, American Edition is, in plaats daarvan als dat gelezen."
           }
         },
         "pl" : {
@@ -675083,7 +675083,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Of de laatste regel van elke pagina het braillepaginanummer draagt."
+            "value" : "Of de laatste regel van elke pagina het braillepaginanummer bevat."
           }
         },
         "pl" : {
@@ -675232,7 +675232,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Of de braille van die code verkort is, waarbij gangbare woorden en lettergroepen in minder cellen worden geschreven."
+            "value" : "Of het braille van die code verkort is, waarbij gangbare woorden en lettergroepen in minder cellen worden geschreven."
           }
         },
         "pl" : {
@@ -675381,7 +675381,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Of de braille van die code verkort is."
+            "value" : "Of het braille van die code verkort is."
           }
         },
         "pl" : {
@@ -681421,7 +681421,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Schrijft dit en elk ander te diep genest hoofdstuk van deze export als gewone alinea's met regels, zonder opnieuw te vragen."
+            "value" : "Schrijft de regels van dit en elk ander te diep genest hoofdstuk van deze export als gewone alinea's, zonder opnieuw te vragen."
           }
         },
         "pl" : {
@@ -681570,7 +681570,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Schrijft dit hoofdstuk als gewone alinea's met zijn regels en exporteert al het andere zoals gewoonlijk."
+            "value" : "Schrijft de regels van dit hoofdstuk als gewone alinea's en exporteert al het andere zoals gewoonlijk."
           }
         },
         "pl" : {
@@ -690249,7 +690249,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "voor pagina %@"
+            "value" : "vóór pagina %@"
           }
         },
         "pl" : {
@@ -707476,7 +707476,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "zijn hoofdstuk %@ %@, wat TextMouth niet veilig kan lezen. Maak het vlakker en bewaar opnieuw, of maak de wijziging ongedaan, en het boek opent."
+            "value" : "hoofdstuk %@ %@, wat TextMouth niet veilig kan lezen. Maak het vlakker en bewaar opnieuw, of maak de wijziging ongedaan, en het boek opent."
           }
         },
         "pl" : {
@@ -707631,7 +707631,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "zijn hoofdstuk %@ %@, wat TextMouth niet veilig kan lezen. Maak het vlakker en bewaar opnieuw, of maak de wijziging ongedaan, en de tekst verschijnt."
+            "value" : "hoofdstuk %@ %@, wat TextMouth niet veilig kan lezen. Maak het vlakker en bewaar opnieuw, of maak de wijziging ongedaan, en de tekst verschijnt."
           }
         },
         "pl" : {
