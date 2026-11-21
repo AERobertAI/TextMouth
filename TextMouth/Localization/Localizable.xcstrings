@@ -23087,7 +23087,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ espera por uma rede sem limite de dados para atualizar sozinho."
+            "value" : "%@ aguarda uma rede sem limite de dados para se atualizar automaticamente."
           }
         },
         "ru" : {
@@ -43468,19 +43468,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld de livros estão sem capítulos:"
+                  "value" : "%lld de livros estão com capítulos faltando:"
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld livro está sem capítulos:"
+                  "value" : "%lld livro está com capítulos faltando:"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld livros estão sem capítulos:"
+                  "value" : "%lld livros estão com capítulos faltando:"
                 }
               }
             }
@@ -99063,7 +99063,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Cerca de %@ restantes"
+            "value" : "Tempo restante: cerca de %@"
           }
         },
         "ru" : {
@@ -149147,7 +149147,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Escolha um arquivo OPML de assinaturas, como outros leitores de feeds os exportam."
+            "value" : "Escolha um arquivo OPML de assinaturas, como os que outros leitores de feeds exportam."
           }
         },
         "ru" : {
@@ -221565,19 +221565,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Exportadas %lld de assinaturas para %@."
+                  "value" : "%lld de assinaturas exportadas para %@."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Exportada %lld assinatura para %@."
+                  "value" : "%lld assinatura exportada para %@."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Exportadas %lld assinaturas para %@."
+                  "value" : "%lld assinaturas exportadas para %@."
                 }
               }
             }
@@ -255232,19 +255232,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Importados %lld de livros, mas %@"
+                  "value" : "%lld de livros importados, mas %@"
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Importado %lld livro, mas %@"
+                  "value" : "%lld livro importado, mas %@"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Importados %lld livros, mas %@"
+                  "value" : "%lld livros importados, mas %@"
                 }
               }
             }
@@ -255699,19 +255699,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Importados %lld de livros."
+                  "value" : "%lld de livros importados."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Importado %lld livro."
+                  "value" : "%lld livro importado."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Importados %lld livros."
+                  "value" : "%lld livros importados."
                 }
               }
             }
@@ -262852,7 +262852,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Instale o TextMouth novamente e depois importe o livro novamente."
+            "value" : "Reinstale o TextMouth e depois importe o livro novamente."
           }
         },
         "ru" : {
@@ -262989,7 +262989,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Instale o TextMouth novamente e depois importe o arquivo novamente."
+            "value" : "Reinstale o TextMouth e depois importe o arquivo novamente."
           }
         },
         "ru" : {
@@ -263948,7 +263948,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ele também exclui %@."
+            "value" : "Isso também exclui %@."
           }
         },
         "ru" : {
@@ -267441,7 +267441,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ele não contém nenhum arquivo."
+            "value" : "Não contém nenhum arquivo."
           }
         },
         "ru" : {
@@ -270150,19 +270150,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Ele ignorou %lld de entradas: %@."
+                  "value" : "%lld de entradas foram ignoradas: %@."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Ele ignorou %lld entrada: %@."
+                  "value" : "%lld entrada foi ignorada: %@."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Ele ignorou %lld entradas: %@."
+                  "value" : "%lld entradas foram ignoradas: %@."
                 }
               }
             }
@@ -275778,7 +275778,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "As faixas dela vão além do fim do áudio que ela cita, então foi feita para outra cópia desse áudio."
+            "value" : "As faixas dele vão além do fim do áudio que ele cita, então ele foi feito para outra cópia desse áudio."
           }
         },
         "ru" : {
@@ -278169,7 +278169,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Manter os dois"
+            "value" : "Manter ambos"
           }
         },
         "ru" : {
@@ -291687,7 +291687,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Lista todos os artigos; nada é baixado sozinho, e um download permanece até você excluí-lo ou os dias após a reprodução passarem."
+            "value" : "Lista todos os artigos; nada é baixado automaticamente, e um download permanece até você excluí-lo ou os dias após a reprodução passarem."
           }
         },
         "ru" : {
@@ -292291,7 +292291,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Lista todos os episódios e artigos; nada é baixado sozinho, e um download permanece até você excluí-lo ou os dias após a reprodução passarem."
+            "value" : "Lista todos os episódios e artigos; nada é baixado automaticamente, e um download permanece até você excluí-lo ou os dias após a reprodução passarem."
           }
         },
         "ru" : {
@@ -292895,7 +292895,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Lista todos os episódios; nada é baixado sozinho, e um download permanece até você excluí-lo ou os dias após a reprodução passarem."
+            "value" : "Lista todos os episódios; nada é baixado automaticamente, e um download permanece até você excluí-lo ou os dias após a reprodução passarem."
           }
         },
         "ru" : {
@@ -299951,19 +299951,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Marcados %lld de artigos de %@ como lidos."
+                  "value" : "%lld de artigos de %@ marcados como lidos."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Marcado %lld artigo de %@ como lido."
+                  "value" : "%lld artigo de %@ marcado como lido."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Marcados %lld artigos de %@ como lidos."
+                  "value" : "%lld artigos de %@ marcados como lidos."
                 }
               }
             }
@@ -300418,19 +300418,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Marcados %lld de episódios de %@ como reproduzidos."
+                  "value" : "%lld de episódios de %@ marcados como reproduzidos."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Marcado %lld episódio de %@ como reproduzido."
+                  "value" : "%lld episódio de %@ marcado como reproduzido."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Marcados %lld episódios de %@ como reproduzidos."
+                  "value" : "%lld episódios de %@ marcados como reproduzidos."
                 }
               }
             }
@@ -300885,19 +300885,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Marcados %lld de itens de %@ como reproduzidos."
+                  "value" : "%lld de itens de %@ marcados como reproduzidos."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Marcado %lld item de %@ como reproduzido."
+                  "value" : "%lld item de %@ marcado como reproduzido."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Marcados %lld itens de %@ como reproduzidos."
+                  "value" : "%lld itens de %@ marcados como reproduzidos."
                 }
               }
             }
@@ -315953,19 +315953,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Movidos %lld de artigos para %@. Eles agora são livros da biblioteca, e os feeds deles os listam como “%@”."
+                  "value" : "%lld de artigos movidos para %@. Eles agora são livros da biblioteca, e os feeds deles os listam como “%@”."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Movido %lld artigo para %@. Ele agora é um livro da biblioteca, e o feed dele o lista como “%@”."
+                  "value" : "%lld artigo movido para %@. Ele agora é um livro da biblioteca, e o feed dele o lista como “%@”."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Movidos %lld artigos para %@. Eles agora são livros da biblioteca, e os feeds deles os listam como “%@”."
+                  "value" : "%lld artigos movidos para %@. Eles agora são livros da biblioteca, e os feeds deles os listam como “%@”."
                 }
               }
             }
@@ -316420,19 +316420,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Movidos %lld de episódios para %@. Eles agora são livros da biblioteca, e os feeds deles os listam como “%@”."
+                  "value" : "%lld de episódios movidos para %@. Eles agora são livros da biblioteca, e os feeds deles os listam como “%@”."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Movido %lld episódio para %@. Ele agora é um livro da biblioteca, e o feed dele o lista como “%@”."
+                  "value" : "%lld episódio movido para %@. Ele agora é um livro da biblioteca, e o feed dele o lista como “%@”."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Movidos %lld episódios para %@. Eles agora são livros da biblioteca, e os feeds deles os listam como “%@”."
+                  "value" : "%lld episódios movidos para %@. Eles agora são livros da biblioteca, e os feeds deles os listam como “%@”."
                 }
               }
             }
@@ -316887,19 +316887,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Movidos %lld de itens para %@. Eles agora são livros da biblioteca, e os feeds deles os listam como “%@”."
+                  "value" : "%lld de itens movidos para %@. Eles agora são livros da biblioteca, e os feeds deles os listam como “%@”."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Movido %lld item para %@. Ele agora é um livro da biblioteca, e o feed dele o lista como “%@”."
+                  "value" : "%lld item movido para %@. Ele agora é um livro da biblioteca, e o feed dele o lista como “%@”."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Movidos %lld itens para %@. Eles agora são livros da biblioteca, e os feeds deles os listam como “%@”."
+                  "value" : "%lld itens movidos para %@. Eles agora são livros da biblioteca, e os feeds deles os listam como “%@”."
                 }
               }
             }
@@ -317695,7 +317695,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Movido “%1$@” para %2$@. Ele agora é um livro da biblioteca, e o feed dele o lista como “%3$@”."
+            "value" : "“%1$@” movido para %2$@. Ele agora é um livro da biblioteca, e o feed dele o lista como “%3$@”."
           }
         },
         "ru" : {
@@ -368471,7 +368471,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Parte de %@ não pôde ser decodificada e foi mantida como silêncio."
+            "value" : "Parte de %@ não pôde ser decodificada e foi substituída por silêncio."
           }
         },
         "ru" : {
@@ -368964,19 +368964,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Partes de %lld de arquivos, %@, não puderam ser decodificadas e foram mantidas como silêncio."
+                  "value" : "Partes de %lld de arquivos, %@, não puderam ser decodificadas e foram substituídas por silêncio."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Parte de %lld arquivo, %@, não pôde ser decodificada e foi mantida como silêncio."
+                  "value" : "Parte de %lld arquivo, %@, não pôde ser decodificada e foi substituída por silêncio."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Partes de %lld arquivos, %@, não puderam ser decodificadas e foram mantidas como silêncio."
+                  "value" : "Partes de %lld arquivos, %@, não puderam ser decodificadas e foram substituídas por silêncio."
                 }
               }
             }
@@ -381392,7 +381392,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Publicar uma notificação para cada feed com novos episódios"
+            "value" : "Enviar uma notificação para cada feed com novos episódios"
           }
         },
         "ru" : {
@@ -464539,19 +464539,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Interrompidos %lld de downloads de feeds."
+                  "value" : "%lld de downloads de feeds interrompidos."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Interrompido %lld download de feed."
+                  "value" : "%lld download de feed interrompido."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Interrompidos %lld downloads de feeds."
+                  "value" : "%lld downloads de feeds interrompidos."
                 }
               }
             }
