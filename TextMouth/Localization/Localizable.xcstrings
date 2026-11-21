@@ -2908,7 +2908,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%1$@ klasörü ayrıca daha yeni bir TextMouth'un eklediği %2$lld kitap içeriyor; bunlar olduğu gibi saklanır."
+                  "value" : "%1$@ klasörü ayrıca daha yeni bir TextMouth'un eklediği %2$lld kitap içeriyor; bu kitap olduğu gibi saklanır."
                 }
               },
               "other" : {
@@ -3805,7 +3805,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@, %2$@ tarafından"
+            "value" : "%1$@, yazar: %2$@"
           }
         },
         "uk" : {
@@ -13557,7 +13557,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ yerleşimi, %3$@: %2$@; %5$@: %4$@."
+            "value" : "%1$@ kitabının yeri, %3$@: %2$@; %5$@: %4$@."
           }
         },
         "uk" : {
@@ -28669,7 +28669,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@, %2$@ zamanında"
+            "value" : "%1$@, %2$@ noktasında"
           }
         },
         "uk" : {
@@ -35085,7 +35085,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@: Bazı değişiklikler kaydedilmedi ve kitaplığı değiştirmek bunları kaybettirir."
+            "value" : "%@: Bazı değişiklikler kaydedilmedi; kitaplık değiştirilirse bunlar kaybolur."
           }
         },
         "uk" : {
@@ -35638,13 +35638,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%1$@: %2$lld üzerinde eşleşme"
+                  "value" : "%1$@: %2$lld eşleşmeden fazla"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%1$@: %2$lld üzerinde eşleşme"
+                  "value" : "%1$@: %2$lld eşleşmeden fazla"
                 }
               }
             }
@@ -38882,13 +38882,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld Kitap"
+                  "value" : "%lld Kitabı"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld Kitap"
+                  "value" : "%lld Kitabı"
                 }
               }
             }
@@ -39349,13 +39349,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld Seçili"
+                  "value" : "Seçili %lld Kitabı"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld Seçili"
+                  "value" : "Seçili %lld Kitabı"
                 }
               }
             }
@@ -48222,13 +48222,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld buluttaki kitap atlandı."
+                  "value" : "Buluttaki %lld kitap atlandı."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld buluttaki kitap atlandı."
+                  "value" : "Buluttaki %lld kitap atlandı."
                 }
               }
             }
@@ -95824,7 +95824,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bulutta bir kitaplık biraz sürebilir: yalnızca bulutta olan dosyalar okunmak üzere bu Mac'e indirilir."
+            "value" : "Buluttaki bir kitaplıkta bu işlem biraz sürebilir: yalnızca bulutta olan dosyaları okunmak üzere bu Mac'e indirilir."
           }
         },
         "uk" : {
@@ -95961,7 +95961,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bir sınır kitaplar, podcast bölümleri ve makaleler arasında seçim yapar, beslemeler arasında asla."
+            "value" : "Sınır, beslemeler arasından değil, yalnızca kitaplar, podcast bölümleri ve makaleler arasından seçer."
           }
         },
         "uk" : {
@@ -105015,7 +105015,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Geçerli konuma yer imi ekler veya kaldırır."
+            "value" : "Geçerli konumda yer imi ekler veya kaldırır."
           }
         },
         "uk" : {
@@ -110146,7 +110146,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Metinde yapılan bir düzenleme, kitabın paketinde bir kopya olarak yeni okumanın yanında saklanır."
+            "value" : "Metinde yapılan bir düzenleme, kitabın paketinde bir kopya olarak yeniden okunan metnin yanında saklanır."
           }
         },
         "uk" : {
@@ -118652,7 +118652,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Şunlardan birini sorar: %@ veya dosyaları TextMouth kitaplık klasöründe tut."
+            "value" : "Hangisini istediğinizi sorar: %@ veya dosyaları TextMouth kitaplık klasöründe tut."
           }
         },
         "uk" : {
@@ -131464,7 +131464,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Kitaplar bu görünümde taşınamaz. Klasörlerde bir klasöre veya Okuma Listesine gidin, sonra tekrar deneyin."
+            "value" : "Kitaplar bu görünümde taşınamaz. Klasörler görünümünde bir klasöre veya Okuma Listesine gidin, sonra tekrar deneyin."
           }
         },
         "uk" : {
@@ -133935,13 +133935,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Ancak %1$@ klasörü ayrıca daha yeni bir TextMouth'un eklediği %2$lld kitap içeriyor: bunlar ve her birini içeren her klasör olduğu yerde kalır."
+                  "value" : "Ancak %1$@ klasörü ayrıca daha yeni bir TextMouth'un eklediği %2$lld kitap içeriyor: bu kitap ve onu içeren her klasör olduğu yerde kalır."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Ancak %1$@ klasörü ayrıca daha yeni bir TextMouth'un eklediği %2$lld kitap içeriyor: bunlar ve her birini içeren her klasör olduğu yerde kalır."
+                  "value" : "Ancak %1$@ klasörü ayrıca daha yeni bir TextMouth'un eklediği %2$lld kitap içeriyor: bu kitaplar ve bunlardan birini içeren her klasör olduğu yerde kalır."
                 }
               }
             }
@@ -135767,7 +135767,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Yeni Klasörü İptal Et"
+            "value" : "Yeni Klasörden Vazgeç"
           }
         },
         "uk" : {
@@ -141737,7 +141737,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ numaralı bölüm indirilmedi. Kitap: %2$@."
+            "value" : "%2$@ kitabının %1$@ numaralı bölümü indirilmedi."
           }
         },
         "uk" : {
@@ -143274,7 +143274,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Şunun çalıştığını ve bu Mac'in çevrimiçi olduğunu kontrol edin: %@. Sonra Tekrar Dene düğmesini seçin."
+            "value" : "%@ çalışıyor mu, bu Mac çevrimiçi mi, denetleyin; sonra “Tekrar Dene” düğmesini seçin."
           }
         },
         "uk" : {
@@ -145192,7 +145192,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Kitaplığın konumunu yeniden denetler ve konum orada ise kitaplığı açar."
+            "value" : "Kitaplığın konumunu yeniden denetler ve kitaplık oradaysa açar."
           }
         },
         "uk" : {
@@ -150267,7 +150267,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Kitap Bilgileri'nde başka birini seçin."
+            "value" : "Kitap Bilgilerinde başka birini seçin."
           }
         },
         "uk" : {
@@ -151089,7 +151089,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Kitap başına denetim olmasın, tek bir ortak seçici olsun veya ileri ve geri için ayrı seçicileri olan bir menü kullanılsın."
+            "value" : "Kitap başına denetim olmamasını, tek bir ortak seçiciyi veya ileri ve geri için ayrı seçicileri olan bir menüyü seçer."
           }
         },
         "uk" : {
@@ -154651,7 +154651,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "The, A ve An kelimelerinin, başlığın başında sıralarken ve başlığın ilk harflerini yazarken sayılıp sayılmayacağını seçer."
+            "value" : "Başlığın başındaki The, A ve An kelimelerinin sıralamada ve bir başlığın ilk harfleri yazılırken sayılıp sayılmayacağını seçer."
           }
         },
         "uk" : {
@@ -159875,7 +159875,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Depolama ayarlarındaki Kitaplıkları Karşılaştır tüm farkları listeler."
+            "value" : "Depolama ayarlarındaki “Kitaplıkları Karşılaştır” komutu tüm farkları listeler."
           }
         },
         "uk" : {
@@ -160697,7 +160697,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bu kitaplık, hangisinin daha yeni olduğunu söylemek için seçtiğiniz klasördeki kopyayla karşılaştırılıyor. Bu bir dakikaya kadar sürebilir; atlamak için Karşılaştırmayı Durdur'u seçin."
+            "value" : "Bu kitaplık, hangisinin daha yeni olduğunu söylemek için seçtiğiniz klasördeki kopyayla karşılaştırılıyor. Bu bir dakikaya kadar sürebilir; atlamak için “Karşılaştırmayı Durdur” düğmesini seçin."
           }
         },
         "uk" : {
@@ -160971,7 +160971,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Koşul %@ gün"
+            "value" : "Koşul %@, gün"
           }
         },
         "uk" : {
@@ -161108,7 +161108,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Koşul %@ klasör"
+            "value" : "Koşul %@, klasör"
           }
         },
         "uk" : {
@@ -161245,7 +161245,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Koşul %@ biçim"
+            "value" : "Koşul %@, biçim"
           }
         },
         "uk" : {
@@ -161382,7 +161382,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Koşul %@ alt klasörleri içerir"
+            "value" : "Koşul %@, alt klasörler dahil"
           }
         },
         "uk" : {
@@ -161656,7 +161656,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Koşul %@ okuma durumu"
+            "value" : "Koşul %@, okuma durumu"
           }
         },
         "uk" : {
@@ -161793,7 +161793,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Koşul %@ ilişki"
+            "value" : "Koşul %@, ilişki"
           }
         },
         "uk" : {
@@ -161930,7 +161930,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Koşul %@ metin"
+            "value" : "Koşul %@, metin"
           }
         },
         "uk" : {
@@ -163437,7 +163437,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ dinlemeye devam et"
+            "value" : "Dinlemeye devam et: %@"
           }
         },
         "uk" : {
@@ -178822,7 +178822,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Yeni kitaplar için varsayılan perde. 1.0 normaldir. Her kitap bunu geçersiz kılabilir."
+            "value" : "Yeni kitaplar için varsayılan perde. 1,0 normaldir. Her kitap bunu geçersiz kılabilir."
           }
         },
         "uk" : {
@@ -179370,7 +179370,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ öğesini sil"
+            "value" : "Sil: %@"
           }
         },
         "uk" : {
@@ -179507,7 +179507,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ Öğesini Kalıcı Olarak Sil"
+            "value" : "Kalıcı Olarak %@ Sil"
           }
         },
         "uk" : {
@@ -179644,7 +179644,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ öğesini kalıcı olarak sil"
+            "value" : "Kalıcı olarak sil: %@"
           }
         },
         "uk" : {
@@ -201930,7 +201930,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ öğesini düzenle"
+            "value" : "%@ Görünümünü Düzenle"
           }
         },
         "uk" : {
@@ -204402,7 +204402,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bu kitap için Metni Düzenle durur; yeni okumayı düzenlemek için Metni Düzenle'yi yeniden seçin."
+            "value" : "Bu kitabın “Metni Düzenle” oturumu sona erer; yeniden okunan metni düzenlemek için “Metni Düzenle” komutunu yeniden seçin."
           }
         },
         "uk" : {
@@ -215797,7 +215797,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Her Şey"
+            "value" : "Her Şeyi"
           }
         },
         "uk" : {
@@ -215934,7 +215934,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ İçindeki Her Şey"
+            "value" : "%@ İçindeki Her Şeyi"
           }
         },
         "uk" : {
@@ -217086,7 +217086,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Deneysel. Kısa bir süre içinde bir dizi medya tuşu veya AirPods denetimi, son uyku zamanlayıcısını yeniden kurar; biri bittikten sonra işe yarar."
+            "value" : "Deneysel. Kısa bir süre içinde bir dizi medya tuşu veya AirPods denetimi, son uyku zamanlayıcısını yeniden kurar; bir zamanlayıcı bittiğinde işe yarar."
           }
         },
         "uk" : {
@@ -225286,7 +225286,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Varsayılana yeniden oluşturulamadı"
+            "value" : "Varsayılan konuma sıfırlanamadı"
           }
         },
         "uk" : {
@@ -234345,7 +234345,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Klasör yolu farklı: %2$@: “%1$@”, %4$@: “%3$@”."
+            "value" : "Klasör yolu farklı: %2$@ içinde “%1$@”, %4$@ içinde “%3$@”."
           }
         },
         "uk" : {
@@ -234899,7 +234899,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Klasörler ve Okuma Listesi her zaman aynı öğeleri listeler. Bunları taşıyabilir ve Okuma Listesini gizleyebilirsiniz."
+            "value" : "Klasörler ve Okuma Listesi her zaman kendi içeriklerini listeler. Bunları taşıyabilir ve Okuma Listesini gizleyebilirsiniz."
           }
         },
         "uk" : {
@@ -245099,7 +245099,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Kitabın braille'inden tahmin edildi. Yanlış okunuyorsa Braille Kodu'nda Unified English Braille'i seçin."
+            "value" : "Kitabın braille'inden tahmin edildi. Yanlış okunuyorsa Braille Kodu menüsünde Unified English Braille'i seçin."
           }
         },
         "uk" : {
@@ -252154,7 +252154,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Dosya yoksa “%@” seçeneğini seçin."
+            "value" : "Dosya yoksa “%@” düğmesini seçin."
           }
         },
         "uk" : {
@@ -253119,7 +253119,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "İçe aktarma davranışı"
+            "value" : "İçe Aktarma Davranışı"
           }
         },
         "uk" : {
@@ -275665,7 +275665,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Metin, yeni okumayla değiştirilir."
+            "value" : "Kitabın metni, yeniden okunan metinle değiştirilir."
           }
         },
         "uk" : {
@@ -284071,7 +284071,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ olduğu yerde bırakıldı: podcast bölümleri ve makaleler beslemelerinde kalır; %2$@ birini kitaplığınızın kitabı yapar."
+            "value" : "%1$@ olduğu yerde bırakıldı: podcast bölümleri ve makaleler beslemelerinde kalır; “%2$@” komutu birini kitaplığınızın bir kitabı yapar."
           }
         },
         "uk" : {
@@ -284214,7 +284214,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ olduğu yerde bırakıldı: podcast bölümleri ve makaleler beslemelerinde kalır; %2$@ birini kitaplığınızın kitabı yapar."
+            "value" : "%1$@ olduğu yerde bırakıldı: podcast bölümleri ve makaleler beslemelerinde kalır; “%2$@” komutu birini kitaplığınızın bir kitabı yapar."
           }
         },
         "uk" : {
@@ -296736,7 +296736,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ yapıldı, %3$lld içinden %2$lld."
+            "value" : "%1$@ oluşturuldu, %3$lld içinden %2$lld."
           }
         },
         "uk" : {
@@ -307955,13 +307955,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%2$@ içinde %1$lld üzerinde eşleşme"
+                  "value" : "%2$@ içinde %1$lld eşleşmeden fazla"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%2$@ içinde %1$lld üzerinde eşleşme"
+                  "value" : "%2$@ içinde %1$lld eşleşmeden fazla"
                 }
               }
             }
@@ -308417,7 +308417,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "“%@” öğesini taşı"
+            "value" : "“%@” Klasörünü Taşı"
           }
         },
         "uk" : {
@@ -308965,7 +308965,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ Öğesini Çöp Sepetine Taşı"
+            "value" : "Çöp Sepetine %@ Taşı"
           }
         },
         "uk" : {
@@ -309102,7 +309102,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ öğesini Çöp Sepetine taşı"
+            "value" : "Çöp Sepetine taşı: %@"
           }
         },
         "uk" : {
@@ -315198,7 +315198,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@, %2$@ üstüne taşındı"
+            "value" : "%1$@, %2$@ kitabının üstüne taşındı"
           }
         },
         "uk" : {
@@ -315341,7 +315341,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@, %2$@ altına taşındı"
+            "value" : "%1$@, %2$@ kitabının altına taşındı"
           }
         },
         "uk" : {
@@ -317165,7 +317165,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ konumuna taşındı, %2$@."
+            "value" : "%1$@ konumuna gidildi, %2$@."
           }
         },
         "uk" : {
@@ -317302,7 +317302,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ konumuna taşındı."
+            "value" : "%@ konumuna gidildi."
           }
         },
         "uk" : {
@@ -317439,7 +317439,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Eşleşmeye taşındı, %@."
+            "value" : "Eşleşmeye gidildi, %@."
           }
         },
         "uk" : {
@@ -317576,7 +317576,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Eşleşmeye taşındı."
+            "value" : "Eşleşmeye gidildi."
           }
         },
         "uk" : {
@@ -319145,7 +319145,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Verileri ~/.TextMouth konumundaki varsayılan konuma geri taşır."
+            "value" : "Verileri varsayılan konuma (~/.TextMouth) geri taşır."
           }
         },
         "uk" : {
@@ -345989,13 +345989,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%1$@ seçili kitabın hiçbiri tercihiniz nedeniyle bu Mac'te tutulmuyor; %2$lld tanesi okuma listesi için tutuluyor."
+                  "value" : "Seçili %1$@ kitabın hiçbiri sizin seçiminizle bu Mac'te tutulmuyor; %2$lld tanesi okuma listesi için tutuluyor."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%1$@ seçili kitabın hiçbiri tercihiniz nedeniyle bu Mac'te tutulmuyor; %2$lld tanesi okuma listesi için tutuluyor."
+                  "value" : "Seçili %1$@ kitabın hiçbiri sizin seçiminizle bu Mac'te tutulmuyor; %2$lld tanesi okuma listesi için tutuluyor."
                 }
               }
             }
@@ -350866,7 +350866,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bunun doğru seçim olduğunu hiçbir şey denetlemez. Sayılar ve noktalama yanlış seslenirse başka birini seçin."
+            "value" : "Bunun doğru seçim olduğunu hiçbir şey denetlemez. Sayılar ve noktalama işaretleri kulağa yanlış gelirse başka birini seçin."
           }
         },
         "uk" : {
@@ -364049,7 +364049,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Kullanılamayan kitaplık yerine, varsayılan konumdaki ~/.TextMouth kitaplığını açar veya orada yeni bir tane başlatır."
+            "value" : "Kullanılamayan kitaplık yerine, varsayılan konumdaki (~/.TextMouth) kitaplığı açar veya orada yeni bir kitaplık başlatır."
           }
         },
         "uk" : {
@@ -381136,7 +381136,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ konumu: farklı ve ikisi de aynı anda kaydedilmiş."
+            "value" : "%@ kitabındaki konum: farklı ve ikisi de aynı anda kaydedilmiş."
           }
         },
         "uk" : {
@@ -381279,7 +381279,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ konumu: %2$@ içinde daha yeni, %3$@."
+            "value" : "%1$@ kitabındaki konum: %2$@ içinde daha yeni, %3$@."
           }
         },
         "uk" : {
@@ -391852,7 +391852,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Okuma listesi: %1$@ yalnızca %2$@ listesinde, %3$@. sırada."
+            "value" : "Okuma listesi: %1$@ yalnızca %2$@ içindeki listede, %3$@. sırada."
           }
         },
         "uk" : {
@@ -398844,7 +398844,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Metin Çıkarmayı Yeniden Yap?"
+            "value" : "Metin Çıkarma Yeniden Yapılsın mı?"
           }
         },
         "uk" : {
@@ -401646,7 +401646,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ Öğesini Yalnızca Kitaplıktan Kaldır"
+            "value" : "Yalnızca Kitaplıktan %@ Kaldır"
           }
         },
         "uk" : {
@@ -401783,7 +401783,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ öğesini kitaplıktan kaldır"
+            "value" : "Kitaplıktan kaldır: %@"
           }
         },
         "uk" : {
@@ -401920,7 +401920,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ öğesini kitaplıktan kaldır ve dosyaları sakla"
+            "value" : "Kitaplıktan kaldır ve dosyaları sakla: %@"
           }
         },
         "uk" : {
@@ -404752,7 +404752,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld Kitabın İndirmelerini Kaldır"
+                  "value" : "%lld Kitabın İndirmesini Kaldır"
                 }
               },
               "other" : {
@@ -414953,7 +414953,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "“%@” varsayılanına geri yüklensin mi?"
+            "value" : "“%@” görünümünün varsayılanı geri yüklensin mi?"
           }
         },
         "uk" : {
@@ -437986,7 +437986,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Görünüm açılır menüsünün bu görünümü ne zaman sunacağını belirler"
+            "value" : "Görünüm açılır menüsünün bu görünümü ne zaman sunacağını belirler."
           }
         },
         "uk" : {
@@ -453092,7 +453092,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "“%1$@” kitabının bazı dosyaları yalnızca bulutta ve şimdi değiştirmek onları geride bırakır. Kitabı indirin, sonra “%2$@” düğmesini yeniden seçin."
+            "value" : "“%1$@” kitabının bazı dosyaları yalnızca bulutta; kitap şimdi değiştirilirse bu dosyalar geride kalır. Kitabı indirin, sonra “%2$@” düğmesini yeniden seçin."
           }
         },
         "uk" : {
@@ -453503,7 +453503,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Artan Sırala"
+            "value" : "Artan Şekilde Sırala"
           }
         },
         "uk" : {
@@ -453777,7 +453777,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Azalan Sırala"
+            "value" : "Azalan Şekilde Sırala"
           }
         },
         "uk" : {
@@ -484080,7 +484080,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth, “%@” içinde değiştirdiğiniz metni yeni okumanın yanında saklayamadı, bu yüzden kitabı olduğu gibi bıraktı."
+            "value" : "TextMouth, “%@” içinde değiştirdiğiniz metni yeniden okunan metnin yanında saklayamadı, bu yüzden kitabı olduğu gibi bıraktı."
           }
         },
         "uk" : {
@@ -484770,13 +484770,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "TextMouth %lld dosyayı okuyamadı, bu yüzden bu eksik olabilir."
+                  "value" : "TextMouth %lld dosyayı okuyamadı, bu yüzden bu bilgi eksik olabilir."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "TextMouth %lld dosyayı okuyamadı, bu yüzden bu eksik olabilir."
+                  "value" : "TextMouth %lld dosyayı okuyamadı, bu yüzden bu bilgi eksik olabilir."
                 }
               }
             }
@@ -485923,7 +485923,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth hangi kopyanın daha yeni olduğunu söyleyemedi (%@)."
+            "value" : "TextMouth hangi kopyanın daha yeni olduğunu belirleyemedi (%@)."
           }
         },
         "uk" : {
@@ -486060,7 +486060,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth hangi kopyanın daha yeni olduğunu söyleyemedi."
+            "value" : "TextMouth hangi kopyanın daha yeni olduğunu belirleyemedi."
           }
         },
         "uk" : {
@@ -503175,13 +503175,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Bu, %1$@ konumunu %2$lld düzey derine koyar, ancak klasörler en fazla %3$lld düzey iç içe olabilir."
+                  "value" : "Bu, %1$@ konumunu %2$lld düzey derine taşırdı, ancak klasörler en fazla %3$lld düzey iç içe olabilir."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Bu, %1$@ konumunu %2$lld düzey derine koyar, ancak klasörler en fazla %3$lld düzey iç içe olabilir."
+                  "value" : "Bu, %1$@ konumunu %2$lld düzey derine taşırdı, ancak klasörler en fazla %3$lld düzey iç içe olabilir."
                 }
               }
             }
@@ -506119,13 +506119,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Bunlardan %2$lld tanesinin %1$@ saklanır."
+                  "value" : "Bunlardan %2$lld tanesi için şunlar saklanır: %1$@."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Bunlardan %2$lld tanesinin %1$@ saklanır."
+                  "value" : "Bunlardan %2$lld tanesi için şunlar saklanır: %1$@."
                 }
               }
             }
@@ -562483,7 +562483,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bunların %@ saklanır."
+            "value" : "Bunlar için şunlar saklanır: %@."
           }
         },
         "uk" : {
@@ -563995,13 +563995,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%1$@ numaralı görünüm yok. Görünüme Git %2$lld görünüme ulaşır."
+                  "value" : "%1$@ numaralı görünüm yok. “Görünüme Git” komutu %2$lld görünüme ulaşır."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%1$@ numaralı görünüm yok. Görünüme Git %2$lld görünüme ulaşır."
+                  "value" : "%1$@ numaralı görünüm yok. “Görünüme Git” komutu %2$lld görünüme ulaşır."
                 }
               }
             }
@@ -575528,7 +575528,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bu braille, English Braille, American Edition gibi görünüyor. Braille Kodu'nu Kitap Bilgileri'nde seçin."
+            "value" : "Bu braille, English Braille, American Edition gibi görünüyor. Kodunu Kitap Bilgilerindeki Braille Kodu menüsünden seçin."
           }
         },
         "uk" : {
@@ -603062,7 +603062,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Okunamadı: %1$@ okunamadı (%2$@), %3$@"
+            "value" : "Okunamayan dosya: %1$@ okunamadı (%2$@), %3$@"
           }
         },
         "uk" : {
@@ -603478,13 +603478,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Okunamadı: %1$@ %2$lld saniye sonra bile buluttan gelmedi, %3$@"
+                  "value" : "Okunamayan dosya: %1$@, %2$lld saniye sonra bile buluttan gelmedi, %3$@"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Okunamadı: %1$@ %2$lld saniye sonra bile buluttan gelmedi, %3$@"
+                  "value" : "Okunamayan dosya: %1$@, %2$lld saniye sonra bile buluttan gelmedi, %3$@"
                 }
               }
             }
@@ -603672,7 +603672,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Okunamadı: %1$@ yeniden istenmedi, çünkü sürücü önceki bir okumaya yanıt vermedi, %2$@"
+            "value" : "Okunamayan dosya: %1$@ yeniden istenmedi, çünkü sürücü önceki bir okumaya yanıt vermedi, %2$@"
           }
         },
         "uk" : {
@@ -604088,13 +604088,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Okunamadı: %1$@ okunmadı, çünkü TextMouth toplam %2$lld saniye sonra beklemeyi bıraktı, %3$@"
+                  "value" : "Okunamayan dosya: %1$@ okunmadı, çünkü TextMouth toplam %2$lld saniye sonra beklemeyi bıraktı, %3$@"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Okunamadı: %1$@ okunmadı, çünkü TextMouth toplam %2$lld saniye sonra beklemeyi bıraktı, %3$@"
+                  "value" : "Okunamayan dosya: %1$@ okunmadı, çünkü TextMouth toplam %2$lld saniye sonra beklemeyi bıraktı, %3$@"
                 }
               }
             }
@@ -617875,7 +617875,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bir kitap silindiğinde: %@."
+            "value" : "Bir kitap silindiğinde %@."
           }
         },
         "uk" : {
@@ -619656,7 +619656,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Kapalıyken bir kitabı kaldırmak hemen şunu yapar: %@."
+            "value" : "Kapalıyken, bir kitabı kaldırdığınızda hemen şu yapılır: %@."
           }
         },
         "uk" : {
@@ -620204,7 +620204,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Açıkken bir kitabı kaldırmak önce şunlardan birini sorar: %@ veya dosyaları TextMouth kitaplık klasöründe tut."
+            "value" : "Açıkken, bir kitabı kaldırdığınızda önce hangisini istediğiniz sorulur: %@ veya dosyaları TextMouth kitaplık klasöründe tut."
           }
         },
         "uk" : {
@@ -621854,7 +621854,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Kelimelerinden hiçbiri kalmadığında, %@, her biri bölümünde yaklaşık aynı noktaya ya da iki okumanın paylaştığı en yakın pasaja gider."
+            "value" : "Kelimelerinden hiçbiri kalmadığında, %@, her biri bölümünde yaklaşık aynı noktaya ya da iki metnin ortak olduğu en yakın pasaja gider."
           }
         },
         "uk" : {
@@ -621991,7 +621991,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Kelimelerinden hiçbiri kalmadığında, her biri bölümünde yaklaşık aynı noktaya ya da iki okumanın paylaştığı en yakın pasaja gider."
+            "value" : "Kelimelerinden hiçbiri kalmadığında, her biri bölümünde yaklaşık aynı noktaya ya da iki metnin ortak olduğu en yakın pasaja gider."
           }
         },
         "uk" : {
@@ -625490,7 +625490,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ ile: %2$@."
+            "value" : "“%1$@” ile %2$@."
           }
         },
         "uk" : {
@@ -625627,7 +625627,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ ile besleme ve indirmeleri kalır; Besleme Bilgileri ona başka bir klasör verene kadar hiçbir klasörde listelenmez; satırındaki Beslemeyi Sil… onu siler."
+            "value" : "“%@” ile besleme ve indirmeleri kalır; Besleme Bilgileri ona başka bir klasör verene kadar hiçbir klasörde listelenmez; satırındaki Beslemeyi Sil… onu siler."
           }
         },
         "uk" : {
@@ -625764,7 +625764,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ ile beslemeler ve indirmeleri kalır; Besleme Bilgileri her birine başka bir klasör verene kadar hiçbir klasörde listelenmez; bir beslemenin satırındaki Beslemeyi Sil… onu siler."
+            "value" : "“%@” ile beslemeler ve indirmeleri kalır; Besleme Bilgileri her birine başka bir klasör verene kadar hiçbir klasörde listelenmez; bir beslemenin satırındaki Beslemeyi Sil… onu siler."
           }
         },
         "uk" : {
@@ -625907,7 +625907,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ ile klasör ve içindeki her şey kitaplıktan çıkar; %2$@."
+            "value" : "“%1$@” ile klasör ve içindeki her şey kitaplıktan çıkar; %2$@."
           }
         },
         "uk" : {
@@ -626044,7 +626044,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "İçeriği Dışarı Taşı ile beslemenin klasörü de diğerleriyle birlikte taşınır."
+            "value" : "“İçeriği Dışarı Taşı” ile beslemenin klasörü de diğerleriyle birlikte taşınır."
           }
         },
         "uk" : {
@@ -626181,7 +626181,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "İçeriği Dışarı Taşı ile beslemelerin klasörleri de diğerleriyle birlikte taşınır."
+            "value" : "“İçeriği Dışarı Taşı” ile beslemelerin klasörleri de diğerleriyle birlikte taşınır."
           }
         },
         "uk" : {
@@ -626318,7 +626318,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "İçeriği Dışarı Taşı ile bunlar kitaplıkta kalır ve yalnızca klasör silinir."
+            "value" : "“İçeriği Dışarı Taşı” ile bunlar kitaplıkta kalır ve yalnızca klasör silinir."
           }
         },
         "uk" : {
@@ -656005,13 +656005,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld üzerinde"
+                  "value" : "%lld üzeri"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld üzerinde"
+                  "value" : "%lld üzeri"
                 }
               }
             }
@@ -666187,7 +666187,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "bu yüzden TextMouth iki kopyanın tek bir kitaplık olup olmadığını söyleyemedi ve hiçbir şeyi karşılaştırmadı."
+            "value" : "bu yüzden TextMouth iki kopyanın tek bir kitaplık olup olmadığını anlayamadı ve hiçbir şeyi karşılaştırmadı."
           }
         },
         "uk" : {
@@ -667476,7 +667476,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "abone"
+            "value" : "abone olunan"
           }
         },
         "uk" : {
@@ -671642,7 +671642,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ kimlik işareti"
+            "value" : "%@ içindeki kimlik işareti"
           }
         },
         "uk" : {
@@ -672190,7 +672190,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ kitaplık dizini"
+            "value" : "%@ içindeki kitaplık dizini"
           }
         },
         "uk" : {
@@ -675347,7 +675347,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "abone değil"
+            "value" : "abone olunmayan"
           }
         },
         "uk" : {
