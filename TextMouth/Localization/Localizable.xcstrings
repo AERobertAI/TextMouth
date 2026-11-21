@@ -268597,7 +268597,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Đây là thư mục của nguồn cấp %@. Dù chọn cách nào, nguồn cấp và các bản tải về của nó vẫn còn, không nằm trong thư mục nào cho đến khi Thông tin nguồn cấp gán cho nó thư mục khác; Xóa nguồn cấp… trên hàng của nó sẽ xóa nguồn cấp."
+            "value" : "Đây là thư mục của nguồn cấp %@. Dù chọn cách nào, nguồn cấp và các bản tải về của nó vẫn còn, không nằm trong thư mục nào cho đến khi bạn gán cho nó thư mục khác trong Thông tin nguồn cấp; lệnh Xóa nguồn cấp… trên hàng của nó sẽ xóa nguồn cấp."
           }
         },
         "zh-Hans" : {
@@ -268734,7 +268734,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Đây là thư mục của các nguồn cấp %@. Dù chọn cách nào, các nguồn cấp và bản tải về của chúng vẫn còn, không nằm trong thư mục nào cho đến khi Thông tin nguồn cấp gán cho mỗi nguồn cấp một thư mục khác; Xóa nguồn cấp… trên hàng của một nguồn cấp sẽ xóa nó."
+            "value" : "Đây là thư mục của các nguồn cấp %@. Dù chọn cách nào, các nguồn cấp và bản tải về của chúng vẫn còn, không nằm trong thư mục nào cho đến khi bạn gán cho mỗi nguồn cấp một thư mục khác trong Thông tin nguồn cấp; lệnh Xóa nguồn cấp… trên hàng của một nguồn cấp sẽ xóa nguồn cấp đó."
           }
         },
         "zh-Hans" : {
@@ -284083,7 +284083,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Đã để nguyên %1$@: tập và bài viết ở lại trong nguồn cấp của chúng; %2$@ biến một mục thành sách trong thư viện của bạn."
+            "value" : "Đã để nguyên %1$@: tập và bài viết ở lại trong nguồn cấp của chúng; lệnh %2$@ biến một mục thành sách trong thư viện của bạn."
           }
         },
         "zh-Hans" : {
@@ -284226,7 +284226,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Đã để nguyên %1$@: tập và bài viết ở lại trong nguồn cấp của chúng; %2$@ biến một mục thành sách trong thư viện của bạn."
+            "value" : "Đã để nguyên %1$@: tập và bài viết ở lại trong nguồn cấp của chúng; lệnh %2$@ biến một mục thành sách trong thư viện của bạn."
           }
         },
         "zh-Hans" : {
@@ -325820,7 +325820,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Những tên chỉ khác nhau ở chữ hoa chữ thường hoặc cách mã hóa dấu thì chỉ cùng một thư mục trên ổ đĩa này."
+            "value" : "Những tên chỉ khác nhau ở chữ hoa chữ thường hoặc cách mã hóa dấu đều trỏ đến cùng một thư mục trên ổ đĩa này."
           }
         },
         "zh-Hans" : {
@@ -350878,7 +350878,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Không có gì kiểm tra xem đây có phải lựa chọn đúng không. Nếu số và dấu câu nghe sai, hãy chọn lựa chọn khác."
+            "value" : "Không có cách nào kiểm tra đây có phải là lựa chọn đúng hay không. Nếu số và dấu câu nghe sai, hãy chọn mã khác."
           }
         },
         "zh-Hans" : {
@@ -370070,7 +370070,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hãy dán hoặc nhập văn bản vào đây thay vào đó, hoặc thử lại."
+            "value" : "Thay vào đó, hãy dán hoặc nhập văn bản vào đây, hoặc thử lại."
           }
         },
         "zh-Hans" : {
@@ -392144,7 +392144,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Danh sách đọc: “%1$@” là %2$@ trong %3$@ và %4$@ trong %5$@."
+            "value" : "Danh sách đọc: “%1$@” đang %2$@ trong %3$@ và %4$@ trong %5$@."
           }
         },
         "zh-Hans" : {
@@ -442301,7 +442301,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hiển thị khi áp dụng"
+            "value" : "Hiển thị khi thích hợp"
           }
         },
         "zh-Hans" : {
@@ -484092,7 +484092,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth không thể giữ văn bản bạn đã thay đổi trong “%@” cạnh cách đọc mới, nên đã để nguyên cuốn sách."
+            "value" : "TextMouth không thể giữ văn bản bạn đã thay đổi trong “%@” bên cạnh kết quả đọc lại, nên đã để nguyên cuốn sách."
           }
         },
         "zh-Hans" : {
@@ -506167,7 +506167,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%@ của %lld mục trong số đó được giữ lại."
+                  "value" : "Vẫn giữ lại %@ của %lld mục trong số đó."
                 }
               }
             }
@@ -522731,7 +522731,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Chữ braille được dịch sang chữ in lại bằng mã này. Không có gì kiểm tra xem đây có phải lựa chọn đúng không. Nếu từ ngữ đọc sai, hãy chọn mã khác."
+            "value" : "Chữ braille được dịch lại sang chữ in bằng mã này. Không có cách nào kiểm tra đây có phải là lựa chọn đúng hay không. Nếu từ ngữ đọc sai, hãy chọn mã khác."
           }
         },
         "zh-Hans" : {
@@ -528372,7 +528372,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nguồn cấp %@ vẫn còn, cùng các bản tải về của nó, không thuộc thư mục nào cho đến khi Thông tin nguồn cấp gán cho nó thư mục khác."
+            "value" : "Nguồn cấp %@ vẫn còn, cùng các bản tải về của nó, không thuộc thư mục nào cho đến khi bạn gán cho nó thư mục khác trong Thông tin nguồn cấp."
           }
         },
         "zh-Hans" : {
@@ -530221,7 +530221,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Các nguồn cấp %@ vẫn còn, cùng các bản tải về của chúng, không thuộc thư mục nào cho đến khi Thông tin nguồn cấp gán cho mỗi nguồn cấp một thư mục khác."
+            "value" : "Các nguồn cấp %@ vẫn còn, cùng các bản tải về của chúng, không thuộc thư mục nào cho đến khi bạn gán cho mỗi nguồn cấp một thư mục khác trong Thông tin nguồn cấp."
           }
         },
         "zh-Hans" : {
@@ -536832,7 +536832,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Các thư mục %1$@ và %2$@ không thể cùng chuyển vào %3$@: tên của chúng chỉ cùng một thư mục trên ổ đĩa này."
+            "value" : "Các thư mục %1$@ và %2$@ không thể cùng chuyển vào %3$@: tên của chúng trỏ đến cùng một thư mục trên ổ đĩa này."
           }
         },
         "zh-Hans" : {
@@ -562495,7 +562495,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ của chúng được giữ lại."
+            "value" : "Vẫn giữ lại %@ của chúng."
           }
         },
         "zh-Hans" : {
@@ -564043,7 +564043,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Không có chế độ xem %@. Đến chế độ xem chỉ tới được %lld chế độ xem."
+                  "value" : "Không có chế độ xem %@. Lệnh Đến chế độ xem chỉ tới được %lld chế độ xem."
                 }
               }
             }
