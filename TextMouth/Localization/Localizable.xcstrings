@@ -140168,7 +140168,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Der aktuelle Ordner wird als Wiederherstellungsdaten behalten."
+            "value" : "Der aktuelle Datenordner wird als Wiederherstellungsdaten behalten."
           }
         },
         "es" : {
@@ -167480,7 +167480,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Du kannst sie aus dem Papierkorb zurückholen, bis er geleert wird."
+            "value" : "Du kannst sie aus dem Papierkorb wiederherstellen, bis er geleert wird."
           }
         },
         "es" : {
