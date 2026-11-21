@@ -6776,7 +6776,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ fait de même pour tous les chapitres de ce type dans cet export, sans redemander."
+            "value" : "%@ fait de même pour tous les chapitres de ce type dans cette exportation, sans redemander."
           }
         },
         "he" : {
@@ -9116,7 +9116,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ a pris sa touche par défaut, %@"
+            "value" : "%@ a pris la touche par défaut, %@"
           }
         },
         "he" : {
@@ -15439,7 +15439,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ n’est pas un livre audio en pistes, il n’a donc aucun manifeste à modifier."
+            "value" : "%@ n’est pas un livre audio composé de pistes, il n’a donc aucun manifeste à modifier."
           }
         },
         "he" : {
@@ -18519,7 +18519,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Lecture impossible pour %@ des %lld chapitre"
+                  "value" : "Lecture impossible pour %@ chapitre sur %lld"
                 }
               },
               "other" : {
@@ -21377,7 +21377,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ arrête tout l’export. Les fichiers déjà écrits sont conservés."
+            "value" : "%@ arrête toute l’exportation. Les fichiers déjà écrits sont conservés."
           }
         },
         "he" : {
@@ -85198,19 +85198,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld de livres de texte"
+                  "value" : "%lld de livres texte"
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld livre de texte"
+                  "value" : "%lld livre texte"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld livres de texte"
+                  "value" : "%lld livres texte"
                 }
               }
             }
@@ -105485,7 +105485,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ajoute la page, par exemple « Page 12 sur 300 », aux résumés de Où suis-je ? pour les livres de plus d’une page."
+            "value" : "Ajoute la page, par exemple « Page 12 sur 300 », aux résumés d’Où suis-je ? pour les livres de plus d’une page."
           }
         },
         "he" : {
@@ -124968,7 +124968,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Barre oblique inverse"
+            "value" : "Barre oblique inversée"
           }
         },
         "he" : {
@@ -132482,7 +132482,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Braille Ready Format : pages de braille, pour les afficheurs braille et les embosseuses."
+            "value" : "Braille Ready Format : pages de braille, pour les plages braille et les embosseuses."
           }
         },
         "he" : {
@@ -133304,7 +133304,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Pause"
+            "value" : "Attn"
           }
         },
         "he" : {
@@ -134593,7 +134593,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "CR LF convient à la plupart des afficheurs braille et des embosseuses."
+            "value" : "CR LF convient à la plupart des plages braille et des embosseuses."
           }
         },
         "he" : {
@@ -203913,7 +203913,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Modifier le texte s’est arrêté pour %@, car une nouvelle copie l’a remplacé."
+            "value" : "La modification du texte de %@ s’est arrêtée, car une nouvelle copie l’a remplacé."
           }
         },
         "he" : {
@@ -204050,7 +204050,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Modifier le texte s’est arrêté pour %@, car son fichier a été relu."
+            "value" : "La modification du texte de %@ s’est arrêtée, car son fichier a été relu."
           }
         },
         "he" : {
@@ -235369,7 +235369,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Pour essayer avec un afficheur braille."
+            "value" : "Pour essayer avec une plage braille."
           }
         },
         "he" : {
@@ -242007,7 +242007,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Aller à l’instant…"
+            "value" : "Aller à un instant…"
           }
         },
         "he" : {
@@ -243925,7 +243925,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Va à une page, un pourcentage ou un temps."
+            "value" : "Va à une page, à un pourcentage ou à un instant."
           }
         },
         "he" : {
@@ -249741,7 +249741,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Comment le BRF écrit chaque cellule braille. La plupart des afficheurs braille et des embosseuses lisent le braille ASCII nord-américain ; ceux réglés pour l’allemand lisent l’Eurobraille. Pour partager avec un lecteur ailleurs, exportez un PEF."
+            "value" : "Comment le BRF écrit chaque cellule braille. La plupart des plages braille et des embosseuses lisent le braille ASCII nord-américain ; celles réglées pour l’allemand lisent l’Eurobraille. Pour partager avec un lecteur ailleurs, exportez un PEF."
           }
         },
         "he" : {
@@ -274211,7 +274211,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ses en-têtes sont de vrais en-têtes, et la table des matières les relie."
+            "value" : "Ses en-têtes sont de vrais en-têtes, et la table des matières y renvoie."
           }
         },
         "he" : {
@@ -276409,7 +276409,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Aller au temps"
+            "value" : "Aller à cet instant"
           }
         },
         "he" : {
@@ -296795,7 +296795,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Faire un double appui"
+            "value" : "Passer en double appui"
           }
         },
         "he" : {
@@ -296932,7 +296932,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Faire un appui simple"
+            "value" : "Passer en appui simple"
           }
         },
         "he" : {
@@ -304254,7 +304254,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Commandes multimédia non libérées : ce livre ne les détient pas."
+            "value" : "Commandes multimédias non libérées : ce livre ne les détient pas."
           }
         },
         "he" : {
@@ -304391,7 +304391,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Commandes multimédia libérées"
+            "value" : "Commandes multimédias libérées"
           }
         },
         "he" : {
@@ -305624,7 +305624,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Réduire"
+            "value" : "Placer dans le Dock"
           }
         },
         "he" : {
@@ -305761,7 +305761,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tout réduire"
+            "value" : "Tout placer dans le Dock"
           }
         },
         "he" : {
@@ -314292,7 +314292,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Déplacer vers le dossier"
+            "value" : "Déplacer vers un dossier"
           }
         },
         "he" : {
@@ -326963,7 +326963,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Unité de navigation des livres de texte"
+            "value" : "Unité de navigation des livres texte"
           }
         },
         "he" : {
@@ -337792,7 +337792,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Plus de livre dans le dossier"
+            "value" : "Aucun autre livre dans le dossier"
           }
         },
         "he" : {
@@ -346204,7 +346204,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Aucun des %lld chapitre n’a pu être lu"
+                  "value" : "Aucun chapitre sur %lld n’a pu être lu"
                 }
               },
               "other" : {
@@ -353496,7 +353496,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "L’OCR n’a pas pu s’exécuter sur %@ des %lld page, donc le texte présent seulement dans les images est absent : %@."
+                  "value" : "L’OCR n’a pas pu s’exécuter pour %@ page sur %lld, donc le texte présent seulement dans ses images est absent : %@."
                 }
               },
               "other" : {
@@ -353957,19 +353957,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "L’OCR n’a pas pu s’exécuter sur la totalité des %lld de pages, donc le texte présent seulement dans les images est absent : %@."
+                  "value" : "L’OCR n’a pu s’exécuter sur aucune des %lld de pages, donc le texte présent seulement dans leurs images est absent : %@."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "L’OCR n’a pas pu s’exécuter sur la totalité des %lld page, donc le texte présent seulement dans les images est absent : %@."
+                  "value" : "L’OCR n’a pas pu s’exécuter sur %lld page, donc le texte présent seulement dans ses images est absent : %@."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "L’OCR n’a pas pu s’exécuter sur la totalité des %lld pages, donc le texte présent seulement dans les images est absent : %@."
+                  "value" : "L’OCR n’a pu s’exécuter sur aucune des %lld pages, donc le texte présent seulement dans leurs images est absent : %@."
                 }
               }
             }
@@ -369706,7 +369706,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Coller en adaptant le style"
+            "value" : "Coller et adapter le style"
           }
         },
         "he" : {
@@ -406238,7 +406238,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Retirez-les : un livre audio en pistes est organisé avec des pistes."
+            "value" : "Retirez-les : un livre audio composé de pistes s’organise par pistes."
           }
         },
         "he" : {
@@ -410765,7 +410765,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Rétablir %@ par défaut"
+            "value" : "Rétablir les raccourcis par défaut de %@"
           }
         },
         "he" : {
@@ -440237,7 +440237,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Raccourcis rétablis par défaut."
+            "value" : "Raccourcis par défaut rétablis."
           }
         },
         "he" : {
@@ -454521,7 +454521,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Effets sonores réinitialisés par défaut"
+            "value" : "Effets sonores réinitialisés"
           }
         },
         "he" : {
@@ -455206,7 +455206,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Lire à voix haute la progression des imports"
+            "value" : "Lire à voix haute la progression des importations"
           }
         },
         "he" : {
@@ -472354,7 +472354,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Retire chaque livre terminé de la liste quand sa fenêtre passe à autre chose ou se ferme. Les livres terminés avant l’activation restent."
+            "value" : "Retire chaque livre terminé de la liste quand sa fenêtre passe à un autre livre ou se ferme. Les livres terminés avant l’activation restent."
           }
         },
         "he" : {
@@ -474689,7 +474689,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Texte non mis à jour : %@ a été retiré, ou son téléchargement supprimé, donc Modifier le texte s’est arrêté pour lui."
+            "value" : "Texte non mis à jour : %@ a été retiré, ou son téléchargement supprimé, donc la modification de son texte s’est arrêtée."
           }
         },
         "he" : {
@@ -496225,7 +496225,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth lit les fichiers BRF et BRL que vous ajoutez à partir de maintenant avec ces caractères, et reconnaît tout seul les motifs braille Unicode. La fenêtre Exporter en démarre un BRF avec eux. Un livre garde ses caractères d’import, que la fenêtre Informations sur le livre peut modifier."
+            "value" : "TextMouth lit les fichiers BRF et BRL que vous ajoutez à partir de maintenant avec ces caractères, et reconnaît tout seul les motifs braille Unicode. La fenêtre Exporter les présélectionne pour un BRF. Un livre garde ses caractères d’importation, que la fenêtre Informations sur le livre peut modifier."
           }
         },
         "he" : {
@@ -511153,7 +511153,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Le MP3 a des chapitres pour les %@ premiers de ses %lld en-têtes ; exportez en M4B pour avoir un chapitre par en-tête."
+                  "value" : "Le MP3 n’a de chapitres que pour %@ en-tête sur %lld ; exportez en M4B pour avoir un chapitre par en-tête."
                 }
               },
               "other" : {
@@ -548058,7 +548058,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Les %lld autres chapitres n’ont aucun texte."
+                  "value" : "%lld autre chapitre n’a aucun texte."
                 }
               },
               "other" : {
@@ -561857,7 +561857,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "La voix a changé de type d’audio en cours de « %@ »."
+            "value" : "La voix a changé de type d’audio pendant la lecture de « %@ »."
           }
         },
         "he" : {
@@ -562131,7 +562131,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "La voix s’est arrêtée en cours de « %@ », et TextMouth a cessé d’attendre."
+            "value" : "La voix s’est arrêtée pendant la lecture de « %@ », et TextMouth a cessé d’attendre."
           }
         },
         "he" : {
@@ -589466,7 +589466,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Basculer le signet"
+            "value" : "Ajouter ou retirer un signet"
           }
         },
         "he" : {
@@ -620537,7 +620537,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "À l’enregistrement, TextMouth vérifie le manifeste et réorganise le livre, en gardant votre place dans sa piste."
+            "value" : "À l’enregistrement, TextMouth vérifie le manifeste et réorganise le livre, en conservant votre position dans sa piste."
           }
         },
         "he" : {
@@ -620674,7 +620674,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "À l’enregistrement, le livre se met à jour et garde votre place au plus près."
+            "value" : "À l’enregistrement, le livre se met à jour et conserve votre position au plus près."
           }
         },
         "he" : {
@@ -628021,7 +628021,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Écrit ce chapitre et tous les autres chapitres trop imbriqués de cet export en paragraphes simples de lignes, sans redemander."
+            "value" : "Écrit ce chapitre et tous les autres chapitres trop imbriqués de cette exportation en paragraphes simples de lignes, sans redemander."
           }
         },
         "he" : {
@@ -668961,7 +668961,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "le fichier propre du livre a aussi changé. Rouvrez le livre pour en relire le texte à partir de ce fichier."
+            "value" : "le propre fichier du livre a aussi changé. Rouvrez le livre pour en relire le texte à partir de ce fichier."
           }
         },
         "he" : {
@@ -669098,7 +669098,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "l’enregistrement du livre ne peut pas être modifié pour l’instant. TextMouth réessaiera à votre prochain enregistrement ou retour."
+            "value" : "la fiche du livre ne peut pas être modifiée pour l’instant. TextMouth réessaiera à votre prochain enregistrement ou retour."
           }
         },
         "he" : {
