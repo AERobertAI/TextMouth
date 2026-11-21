@@ -2,6 +2,622 @@
  "language": "es",
  "reviews": [
   {
+   "part": 1,
+   "areas": [
+    "library",
+    "storage and settings"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "\"%@\" plays the next book in the same folder by sort order.",
+     "english": "\"%@\" plays the next book in the same folder by sort order.",
+     "before": "«%@» reproduce el siguiente libro de la misma carpeta, en orden de clasificación.",
+     "after": "“%@” reproduce el siguiente libro de la misma carpeta, en orden de clasificación.",
+     "why": "punctuation: the Spanish interface quotes with “ ” (183 strings), these few with « » read as other signs in braille"
+    },
+    {
+     "key": "%@ and any subfolders will be removed from the library.",
+     "english": "%@ and any subfolders will be removed from the library.",
+     "before": "%@ y cualquier subcarpeta se quitarán de la biblioteca.",
+     "after": "%@ y sus subcarpetas se quitarán de la biblioteca.",
+     "why": "natural: “cualquier subcarpeta” copies English “any subfolders”, Spanish says “sus subcarpetas”"
+    },
+    {
+     "key": "%@ holds a conflicting version of %@, saved at another time.",
+     "english": "%1$@ holds a conflicting version of %2$@, saved at another time.",
+     "before": "%1$@ guarda una versión en conflicto de %2$@, guardada en otro momento.",
+     "after": "%1$@ tiene una versión en conflicto de %2$@, guardada en otro momento.",
+     "why": "natural: “guarda una versión ... guardada” repeats the verb, “tiene” reads cleanly"
+    },
+    {
+     "key": "%@ holds a conflicting version of %@, saved on %@.",
+     "english": "%1$@ holds a conflicting version of %2$@, saved on %3$@.",
+     "before": "%1$@ guarda una versión en conflicto de %2$@, guardada el %3$@.",
+     "after": "%1$@ tiene una versión en conflicto de %2$@, guardada el %3$@.",
+     "why": "natural: “guarda una versión ... guardada” repeats the verb, “tiene” reads cleanly"
+    },
+    {
+     "key": "%@ holds a conflicting version of %@, saved on “%@” on %@.",
+     "english": "%1$@ holds a conflicting version of %2$@, saved on “%3$@” on %4$@.",
+     "before": "%1$@ guarda una versión en conflicto de %2$@, guardada en «%3$@» el %4$@.",
+     "after": "%1$@ tiene una versión en conflicto de %2$@, guardada en “%3$@” el %4$@.",
+     "why": "natural: “guarda una versión ... guardada” repeats the verb, and the quotes are now the interface’s “ ”"
+    },
+    {
+     "key": "%@ holds a conflicting version of %@, saved on “%@”.",
+     "english": "%1$@ holds a conflicting version of %2$@, saved on “%3$@”.",
+     "before": "%1$@ guarda una versión en conflicto de %2$@, guardada en «%3$@».",
+     "after": "%1$@ tiene una versión en conflicto de %2$@, guardada en “%3$@”.",
+     "why": "natural: “guarda una versión ... guardada” repeats the verb, and the quotes are now the interface’s “ ”"
+    },
+    {
+     "key": "%@ set aside a conflicting copy of %@: “%@”, in %@.",
+     "english": "%1$@ set aside a conflicting copy of %2$@: “%3$@”, in %4$@.",
+     "before": "%1$@ apartó una copia en conflicto de %2$@: «%3$@», en %4$@.",
+     "after": "%1$@ apartó una copia en conflicto de %2$@: “%3$@”, en %4$@.",
+     "why": "punctuation: the Spanish interface quotes with “ ” (183 strings), these few with « » read as other signs in braille"
+    },
+    {
+     "key": "%@, and %lld more",
+     "english": {
+      "one": "%@, and %lld more",
+      "other": "%@, and %lld more"
+     },
+     "before": {
+      "many": "%1$@, y %2$lld más",
+      "one": "%1$@, y %2$lld más",
+      "other": "%1$@, y %2$lld más"
+     },
+     "after": {
+      "many": "%1$@ y %2$lld más",
+      "one": "%1$@ y %2$lld más",
+      "other": "%1$@ y %2$lld más"
+     },
+     "why": "punctuation: Spanish puts no comma before “y” after a list of titles"
+    },
+    {
+     "key": "%@, any subfolders, and the %lld books inside will be removed from the library.",
+     "english": {
+      "one": "%@, any subfolders, and the %lld book inside will be removed from the library.",
+      "other": "%@, any subfolders, and the %lld books inside will be removed from the library."
+     },
+     "before": {
+      "many": "%1$@, cualquier subcarpeta y los %2$lld de libros que contiene se quitarán de la biblioteca.",
+      "one": "%1$@, cualquier subcarpeta y el libro que contiene se quitarán de la biblioteca.",
+      "other": "%1$@, cualquier subcarpeta y los %2$lld libros que contiene se quitarán de la biblioteca."
+     },
+     "after": {
+      "many": "%1$@, sus subcarpetas y los %2$lld de libros que contiene se quitarán de la biblioteca.",
+      "one": "%1$@, sus subcarpetas y el libro que contiene se quitarán de la biblioteca.",
+      "other": "%1$@, sus subcarpetas y los %2$lld libros que contiene se quitarán de la biblioteca."
+     },
+     "why": "natural: “cualquier subcarpeta” copies English “any subfolders”, Spanish says “sus subcarpetas”"
+    },
+    {
+     "key": "%@, any subfolders, and the book inside will be removed from the library.",
+     "english": "%@, any subfolders, and the book inside will be removed from the library.",
+     "before": "%@, cualquier subcarpeta y el libro que contiene se quitarán de la biblioteca.",
+     "after": "%@, sus subcarpetas y el libro que contiene se quitarán de la biblioteca.",
+     "why": "natural: “cualquier subcarpeta” copies English “any subfolders”, Spanish says “sus subcarpetas”"
+    },
+    {
+     "key": "%@: Some changes are not saved, and switching libraries would lose them.",
+     "english": "%@: Some changes are not saved, and switching libraries would lose them.",
+     "before": "%@: Hay cambios sin guardar, y cambiar de biblioteca los perdería.",
+     "after": "%@: hay cambios sin guardar, y se perderían al cambiar de biblioteca.",
+     "why": "natural: “cambiar de biblioteca los perdería” makes the switch the one who loses, and Spanish writes lower case after a colon"
+    },
+    {
+     "key": "%lld rules (%@ enabled)",
+     "english": {
+      "one": "%lld rule (%@ enabled)",
+      "other": "%lld rules (%@ enabled)"
+     },
+     "before": {
+      "many": "%1$lld de reglas (%2$@ activadas)",
+      "one": "%1$lld regla (%2$@ activadas)",
+      "other": "%1$lld reglas (%2$@ activadas)"
+     },
+     "after": {
+      "many": "%1$lld de reglas (activadas: %2$@)",
+      "one": "%1$lld regla (activadas: %2$@)",
+      "other": "%1$lld reglas (activadas: %2$@)"
+     },
+     "why": "grammar: “(1 activadas)” or “(0 activada)” break agreement for some counts, “activadas: %2$@” reads right for every count"
+    },
+    {
+     "key": "A move shifts one book at a time, and several are selected. Select one book, then try again.",
+     "english": "A move shifts one book at a time, and several are selected. Select one book, then try again.",
+     "before": "Un movimiento desplaza un libro a la vez, y hay varios seleccionados. Selecciona un solo libro e inténtalo de nuevo.",
+     "after": "Solo se puede mover un libro a la vez, y hay varios seleccionados. Selecciona uno solo e inténtalo de nuevo.",
+     "why": "natural: “Un movimiento desplaza un libro a la vez” is word for word, Spanish says “Solo se puede mover un libro a la vez”"
+    },
+    {
+     "key": "Always offers a view all the time. When Applicable offers it only while it lists something: the Reading List while it holds a book, episode, or article, and Feeds while there is a feed. Hidden leaves it out. A window keeps its view until you choose another.",
+     "english": "Always offers a view all the time. When Applicable offers it only while it lists something: the Reading List while it holds a book, episode, or article, and Feeds while there is a feed. Hidden leaves it out. A window keeps its view until you choose another.",
+     "before": "Siempre ofrece una vista en todo momento. Cuando corresponda la ofrece solo mientras muestra algo: la Lista de lectura mientras contiene un libro, episodio o artículo, y Canales mientras hay un canal. Oculta la deja fuera. Una ventana conserva su vista hasta que elijas otra.",
+     "after": "Con “Siempre”, la vista se ofrece en todo momento. Con “Cuando corresponda”, se ofrece solo mientras muestra algo: la Lista de lectura mientras contiene un libro, episodio o artículo, y Canales mientras hay un canal. Con “Oculta”, no se ofrece. Una ventana conserva su vista hasta que elijas otra.",
+     "why": "meaning: without English capitals the option names read as plain words (“Oculta la deja fuera” sounds like “hides leaves it out”), now quoted after “Con”"
+    },
+    {
+     "key": "Answer this one when the move ends.",
+     "english": "Answer this one when the move ends.",
+     "before": "Responde esta cuando termine el traslado.",
+     "after": "Responde a esta cuando termine el traslado.",
+     "why": "grammar: “responder” takes “a” before what is answered"
+    },
+    {
+     "key": "Blocks the spurious play command macOS sends when Bluetooth headphones are removed.",
+     "english": "Blocks the spurious play command macOS sends when Bluetooth headphones are removed.",
+     "before": "Bloquea la orden de reproducir falsa que macOS envía al quitarse unos audífonos Bluetooth.",
+     "after": "Bloquea la falsa orden de reproducción que macOS envía al quitarse unos auriculares Bluetooth.",
+     "why": "meaning: “audífonos” means hearing aids in Spain, “auriculares” is understood everywhere, and “la falsa orden de reproducción” is the Spanish word order"
+    },
+    {
+     "key": "Case sensitive matching",
+     "english": "Case sensitive matching",
+     "before": "Coincidencia que distingue mayúsculas y minúsculas",
+     "after": "Distinguir mayúsculas y minúsculas",
+     "why": "natural: “Coincidencia que distingue mayúsculas y minúsculas” is a long calque, a switch says “Distinguir mayúsculas y minúsculas”"
+    },
+    {
+     "key": "Changes to books saved.",
+     "english": "Changes to books saved.",
+     "before": "Cambios en los libros guardados.",
+     "after": "Se guardaron los cambios de los libros.",
+     "why": "meaning: “Cambios en los libros guardados” reads as changes in the saved books"
+    },
+    {
+     "key": "Changes to the feed “%@” could not be saved: %@",
+     "english": "Changes to the feed “%1$@” could not be saved: %2$@",
+     "before": "No se pudieron guardar los cambios del canal «%1$@»: %2$@",
+     "after": "No se pudieron guardar los cambios del canal “%1$@”: %2$@",
+     "why": "punctuation: the Spanish interface quotes with “ ” (183 strings), these few with « » read as other signs in braille"
+    },
+    {
+     "key": "Changes to “%@” could not be saved: %@",
+     "english": "Changes to “%1$@” could not be saved: %2$@",
+     "before": "No se pudieron guardar los cambios de «%1$@»: %2$@",
+     "after": "No se pudieron guardar los cambios de “%1$@”: %2$@",
+     "why": "punctuation: the Spanish interface quotes with “ ” (183 strings), these few with « » read as other signs in braille"
+    },
+    {
+     "key": "Choose an empty location and try again.",
+     "english": "Choose an empty location and try again.",
+     "before": "Elige una ubicación vacía e intenta de nuevo.",
+     "after": "Elige una ubicación vacía e inténtalo de nuevo.",
+     "why": "natural: “intenta de nuevo” lacks its object, Apple and 37 other strings say “inténtalo de nuevo”"
+    },
+    {
+     "key": "Choose no per-book control, one shared picker, or a menu with separate forward and backward pickers",
+     "english": "Choose no per-book control, one shared picker, or a menu with separate forward and backward pickers",
+     "before": "Elige ningún control por libro, un selector compartido o un menú con selectores separados para avanzar y retroceder",
+     "after": "Elige entre no tener control por libro, un selector compartido o un menú con selectores separados para avanzar y retroceder",
+     "why": "grammar: “Elige ningún control” needs a negation in Spanish, now “Elige entre no tener control...”"
+    },
+    {
+     "key": "Comparing this library with the copy in the folder you chose, to say which is newer. This can take up to a minute; choose Stop Comparing to skip it.",
+     "english": "Comparing this library with the copy in the folder you chose, to say which is newer. This can take up to a minute; choose Stop Comparing to skip it.",
+     "before": "Comparando esta biblioteca con la copia de la carpeta que elegiste, para decir cuál es más reciente. Puede tardar hasta un minuto; elige Detener comparación para omitirla.",
+     "after": "Comparando esta biblioteca con la copia de la carpeta que elegiste, para saber cuál es más reciente. Puede tardar hasta un minuto; elige Detener comparación para omitirla.",
+     "why": "natural: “para decir cuál es más reciente” copies English “to say which”, Spanish says “para saber cuál”"
+    },
+    {
+     "key": "Connect to the internet and try again.",
+     "english": "Connect to the internet and try again.",
+     "before": "Conéctate a internet e intenta de nuevo.",
+     "after": "Conéctate a internet e inténtalo de nuevo.",
+     "why": "natural: “intenta de nuevo” lacks its object, Apple and 37 other strings say “inténtalo de nuevo”"
+    },
+    {
+     "key": "Date Added",
+     "english": "Date Added",
+     "before": "Fecha de incorporación",
+     "after": "Fecha de agregación",
+     "why": "term: Apple Finder in Spanish sorts by “Fecha de agregación”, which also matches the glossary verb agregar and the Added row (Agregado)"
+    },
+    {
+     "key": "Download Not Removed",
+     "english": "Download Not Removed",
+     "before": "Descarga no quitada",
+     "after": "No se quitó la descarga",
+     "why": "natural: “Descarga no quitada” is a calque of the English title, Spanish says “No se quitó la descarga”"
+    },
+    {
+     "key": "Downloaded %@",
+     "english": "Downloaded %@",
+     "before": "Se descargó %@",
+     "after": "Se descargaron %@",
+     "why": "grammar: %@ is a count of several books (“3 libros”), so the verb is plural"
+    },
+    {
+     "key": "Downloads Not Removed",
+     "english": "Downloads Not Removed",
+     "before": "Descargas no quitadas",
+     "after": "No se quitaron las descargas",
+     "why": "natural: “Descargas no quitadas” is a calque of the English title, Spanish says “No se quitaron las descargas”"
+    },
+    {
+     "key": "Experimental. A sequence of media keys or AirPods controls within a short time window re-arms the last sleep timer, handy after one expires.",
+     "english": "Experimental. A sequence of media keys or AirPods controls within a short time window re-arms the last sleep timer, handy after one expires.",
+     "before": "Experimental. Una secuencia de teclas multimedia o controles de AirPods dentro de una ventana de tiempo corta vuelve a armar el último temporizador de apagado, útil cuando uno acaba de expirar.",
+     "after": "Experimental. Una secuencia de teclas multimedia o controles de AirPods dentro de una ventana de tiempo corta reactiva el último temporizador de apagado, útil cuando uno acaba de expirar.",
+     "why": "natural: “vuelve a armar” copies English “re-arms”, Spanish says “reactiva”"
+    },
+    {
+     "key": "Folder placement and manual order that were stored only in the unreadable index are lost from the library.",
+     "english": "Folder placement and manual order that were stored only in the unreadable index are lost from the library.",
+     "before": "La ubicación en carpetas y el orden manual que estaban guardados solo en el índice ilegible se pierden de la biblioteca.",
+     "after": "La ubicación en carpetas y el orden manual que estaban guardados solo en el índice ilegible desaparecen de la biblioteca.",
+     "why": "natural: “se pierden de la biblioteca” copies English “are lost from”, Spanish says “desaparecen de”"
+    },
+    {
+     "key": "Folders is always shown: every folder and feed opens there.",
+     "english": "Folders is always shown: every folder and feed opens there.",
+     "before": "Carpetas siempre se muestra: todas las carpetas y los canales se abren allí.",
+     "after": "La vista Carpetas siempre se muestra: todas las carpetas y los canales se abren allí.",
+     "why": "grammar: “Carpetas siempre se muestra” sounds like a plural noun with a singular verb, now “La vista Carpetas”"
+    },
+    {
+     "key": "Give a New Identity",
+     "english": "Give a New Identity",
+     "before": "Dar identidad nueva",
+     "after": "Dar una identidad nueva",
+     "why": "natural: the article is missing, as its sibling button “Dar una identidad nueva…” has it"
+    },
+    {
+     "key": "Go to View",
+     "english": "Go to View",
+     "before": "Ir a vista",
+     "after": "Ir a la vista",
+     "why": "natural: Spanish menu commands keep the article, as Apple writes “Ir a la carpeta”"
+    },
+    {
+     "key": "Gradually reduce volume before pausing when the sleep timer expires. 0 pauses instantly.",
+     "english": "Gradually reduce volume before pausing when the sleep timer expires. 0 pauses instantly.",
+     "before": "Reduce el volumen poco a poco antes de pausar cuando expira el temporizador de apagado. 0 pausa al instante.",
+     "after": "Reduce el volumen poco a poco antes de pausar cuando expira el temporizador de apagado. Con 0, se pausa al instante.",
+     "why": "natural: “0 pausa al instante” makes the number the one who pauses, Spanish says “Con 0, se pausa al instante”"
+    },
+    {
+     "key": "How long media commands are blocked after a Bluetooth device disconnects. Raise it if playback resumes after removing headphones.",
+     "english": "How long media commands are blocked after a Bluetooth device disconnects. Raise it if playback resumes after removing headphones.",
+     "before": "Cuánto tiempo se bloquean las órdenes multimedia después de que se desconecta un dispositivo Bluetooth. Auméntalo si la reproducción se reanuda al quitarte los audífonos.",
+     "after": "Cuánto tiempo se bloquean las órdenes multimedia después de que se desconecta un dispositivo Bluetooth. Auméntalo si la reproducción se reanuda al quitarte los auriculares.",
+     "why": "meaning: “audífonos” means hearing aids in Spain, “auriculares” is understood everywhere"
+    },
+    {
+     "key": "If the file arrives from %@ later, it names the same library.",
+     "english": "If the file arrives from %@ later, it names the same library.",
+     "before": "Si el archivo llega más tarde desde %@, nombra la misma biblioteca.",
+     "after": "Si el archivo llega más tarde desde %@, identifica la misma biblioteca.",
+     "why": "natural: “nombra la misma biblioteca” copies English “names”, an identity file “identifica” a library"
+    },
+    {
+     "key": "It holds the feed “%@” with %@.",
+     "english": "It holds the feed “%1$@” with %2$@.",
+     "before": "Contiene el canal «%1$@» con %2$@.",
+     "after": "Contiene el canal “%1$@” con %2$@.",
+     "why": "punctuation: the Spanish interface quotes with “ ” (183 strings), these few with « » read as other signs in braille"
+    },
+    {
+     "key": "It holds the feed “%@” with %@; the record holds %@.",
+     "english": "It holds the feed “%1$@” with %2$@; the record holds %3$@.",
+     "before": "Contiene el canal «%1$@» con %2$@; el registro contiene %3$@.",
+     "after": "Contiene el canal “%1$@” con %2$@; el registro contiene %3$@.",
+     "why": "punctuation: the Spanish interface quotes with “ ” (183 strings), these few with « » read as other signs in braille"
+    },
+    {
+     "key": "It holds the record of “%@”: %@.",
+     "english": "It holds the record of “%1$@”: %2$@.",
+     "before": "Contiene el registro de «%1$@»: %2$@.",
+     "after": "Contiene el registro de “%1$@”: %2$@.",
+     "why": "punctuation: the Spanish interface quotes with “ ” (183 strings), these few with « » read as other signs in braille"
+    },
+    {
+     "key": "It holds the record of “%@”: %@; the record holds %@.",
+     "english": "It holds the record of “%1$@”: %2$@; the record holds %3$@.",
+     "before": "Contiene el registro de «%1$@»: %2$@; el registro contiene %3$@.",
+     "after": "Contiene el registro de “%1$@”: %2$@; el registro contiene %3$@.",
+     "why": "punctuation: the Spanish interface quotes with “ ” (183 strings), these few with « » read as other signs in braille"
+    },
+    {
+     "key": "Its text could not be prepared for reading yet; TextMouth will try again later.",
+     "english": "Its text could not be prepared for reading yet; TextMouth will try again later.",
+     "before": "Aún no se pudo preparar su texto para la lectura; TextMouth intentará de nuevo más tarde.",
+     "after": "Aún no se pudo preparar su texto para la lectura; TextMouth lo intentará de nuevo más tarde.",
+     "why": "natural: “intentará de nuevo” lacks its object, as the other strings say “lo intentará de nuevo”"
+    },
+    {
+     "key": "Make sure its folder can be written to, then try again.",
+     "english": "Make sure its folder can be written to, then try again.",
+     "before": "Comprueba que se pueda escribir en su carpeta e intenta de nuevo.",
+     "after": "Comprueba que se pueda escribir en su carpeta e inténtalo de nuevo.",
+     "why": "natural: “intenta de nuevo” lacks its object, Apple and 37 other strings say “inténtalo de nuevo”"
+    },
+    {
+     "key": "Move cancelled.",
+     "english": "Move cancelled.",
+     "before": "Movimiento cancelado.",
+     "after": "Se canceló el traslado.",
+     "why": "term: the move of the library is “traslado” in every other sentence, said as an event"
+    },
+    {
+     "key": "Neither has newer places or books the other lacks, but they differ in other ways.",
+     "english": "Neither has newer places or books the other lacks, but they differ in other ways.",
+     "before": "Ninguna tiene lugares o libros más recientes que la otra no tenga, pero difieren en otros aspectos.",
+     "after": "Ninguna tiene lugares más recientes ni libros que falten en la otra, pero difieren en otros aspectos.",
+     "why": "meaning: “más recientes” and “que la otra no tenga” covered both nouns, the English has newer places, or books the other lacks, and a negative takes “ni”"
+    },
+    {
+     "key": "Not Within the Last",
+     "english": "Not Within the Last",
+     "before": "No dentro de los últimos",
+     "after": "Fuera de los últimos",
+     "why": "natural: “No dentro de los últimos” is a word-for-word negation, Spanish says “Fuera de los últimos” (7 días)"
+    },
+    {
+     "key": "Open in Editor",
+     "english": "Open in Editor",
+     "before": "Abrir en editor",
+     "after": "Abrir en el editor",
+     "why": "natural: Spanish keeps the article here, as its sibling button “Recargar desde el editor” does"
+    },
+    {
+     "key": "Original files removed.",
+     "english": "Original files removed.",
+     "before": "Archivos originales quitados.",
+     "after": "Se quitaron los archivos originales.",
+     "why": "natural: “Archivos originales quitados” is a calque of the English participle, Spanish announces “Se quitaron los archivos originales”"
+    },
+    {
+     "key": "Position display mode",
+     "english": "Position display mode",
+     "before": "Modo de mostrar la posición",
+     "after": "Mostrar la posición como",
+     "why": "natural: “Modo de mostrar la posición” is a clumsy calque of “display mode”, Spanish labels a picker “Mostrar la posición como”"
+    },
+    {
+     "key": "Reading list: “%@” is %@ in %@ and %@ in %@.",
+     "english": "Reading list: “%1$@” is %2$@ in %3$@ and %4$@ in %5$@.",
+     "before": "Lista de lectura: “%1$@” es %2$@ en %3$@ y %4$@ en %5$@.",
+     "after": "Lista de lectura: “%1$@” está %2$@ en %3$@ y %4$@ en %5$@.",
+     "why": "grammar: the values are “activada” and “desactivada”, a state, so Spanish needs “está”, not “es”"
+    },
+    {
+     "key": "Searched %@ of %@…",
+     "english": "Searched %1$@ of %2$@…",
+     "before": "Buscados %1$@ de %2$@…",
+     "after": "Buscado en %1$@ de %2$@…",
+     "why": "meaning: “Buscados 12 de 750 libros” says the books were searched for, the search runs in them, as “Buscando en %lld libros” says"
+    },
+    {
+     "key": "Shows the books in the order you arrange",
+     "english": "Shows the books in the order you arrange",
+     "before": "Muestra los libros en el orden que tú organizas",
+     "after": "Muestra los libros en el orden que les das",
+     "why": "natural: “el orden que tú organizas” is a calque with a needless “tú”, Spanish says “el orden que les das”"
+    },
+    {
+     "key": "Sort Ascending",
+     "english": "Sort Ascending",
+     "before": "Ordenar ascendente",
+     "after": "Ordenar de forma ascendente",
+     "why": "meaning: “Ordenar ascendente” is ungrammatical, and the command switches the order, so it says the action in full"
+    },
+    {
+     "key": "Sort Descending",
+     "english": "Sort Descending",
+     "before": "Ordenar descendente",
+     "after": "Ordenar de forma descendente",
+     "why": "meaning: “Ordenar descendente” is ungrammatical, and the command switches the order, so it says the action in full"
+    },
+    {
+     "key": "Stops playback resuming when headphones disconnect",
+     "english": "Stops playback resuming when headphones disconnect",
+     "before": "Evita que la reproducción se reanude cuando se desconectan los audífonos",
+     "after": "Evita que la reproducción se reanude cuando se desconectan los auriculares",
+     "why": "meaning: “audífonos” means hearing aids in Spain, “auriculares” is understood everywhere"
+    },
+    {
+     "key": "TextMouth could not read its library index, the file that records your folders, sort settings, and the order of your books.",
+     "english": "TextMouth could not read its library index, the file that records your folders, sort settings, and the order of your books.",
+     "before": "TextMouth no pudo leer el índice de su biblioteca, el archivo que guarda tus carpetas, los ajustes de orden y el orden de tus libros.",
+     "after": "TextMouth no pudo leer el índice de la biblioteca, el archivo que guarda tus carpetas, los ajustes de orden y el orden de tus libros.",
+     "why": "register: “su biblioteca” beside “tus carpetas” reads as the formal “your”, and the index is simply the library’s"
+    },
+    {
+     "key": "TextMouth is also open on “%@” (active %lld minutes ago).",
+     "english": {
+      "one": "TextMouth is also open on “%@” (active %lld minute ago).",
+      "other": "TextMouth is also open on “%@” (active %lld minutes ago)."
+     },
+     "before": {
+      "many": "TextMouth también está abierto en «%1$@» (activo hace %2$lld de minutos).",
+      "one": "TextMouth también está abierto en «%1$@» (activo hace %2$lld minuto).",
+      "other": "TextMouth también está abierto en «%1$@» (activo hace %2$lld minutos)."
+     },
+     "after": {
+      "many": "TextMouth también está abierto en “%1$@” (activo hace %2$lld de minutos).",
+      "one": "TextMouth también está abierto en “%1$@” (activo hace %2$lld minuto).",
+      "other": "TextMouth también está abierto en “%1$@” (activo hace %2$lld minutos)."
+     },
+     "why": "punctuation: the Spanish interface quotes with “ ” (183 strings), these few with « » read as other signs in braille"
+    },
+    {
+     "key": "TextMouth is also open on “%@” (active less than a minute ago).",
+     "english": "TextMouth is also open on “%@” (active less than a minute ago).",
+     "before": "TextMouth también está abierto en «%@» (activo hace menos de un minuto).",
+     "after": "TextMouth también está abierto en “%@” (activo hace menos de un minuto).",
+     "why": "punctuation: the Spanish interface quotes with “ ” (183 strings), these few with « » read as other signs in braille"
+    },
+    {
+     "key": "TextMouth needs the drive “%@” connected to open the library.",
+     "english": "TextMouth needs the drive “%@” connected to open the library.",
+     "before": "TextMouth necesita que la unidad «%@» esté conectada para abrir la biblioteca.",
+     "after": "TextMouth necesita que la unidad “%@” esté conectada para abrir la biblioteca.",
+     "why": "punctuation: the Spanish interface quotes with “ ” (183 strings), these few with « » read as other signs in braille"
+    },
+    {
+     "key": "The %@ of %lld of them are kept.",
+     "english": {
+      "one": "The %@ of %lld of them are kept.",
+      "other": "The %@ of %lld of them are kept."
+     },
+     "before": {
+      "many": "Los %1$@ de %2$lld de ellas se conservan.",
+      "one": "Los %1$@ de %2$lld de ellas se conservan.",
+      "other": "Los %1$@ de %2$lld de ellas se conservan."
+     },
+     "after": {
+      "many": "De %2$lld de ellas se conservan: %1$@.",
+      "one": "De %2$lld de ellas se conservan: %1$@.",
+      "other": "De %2$lld de ellas se conservan: %1$@."
+     },
+     "why": "grammar: “Los %1$@” breaks when the list starts with a feminine noun (transcripciones), the colon form fits every list, as “Se conservan: %@.” does"
+    },
+    {
+     "key": "The archive “%@” inside it expands to %@, but the disk holding the TextMouth library has only %@ free, and TextMouth keeps %@ of it free.",
+     "english": "The archive “%1$@” inside it expands to %2$@, but the disk holding the TextMouth library has only %3$@ free, and TextMouth keeps %4$@ of it free.",
+     "before": "El archivo comprimido «%1$@» de su interior se expande a %2$@, pero el disco que contiene la biblioteca de TextMouth solo tiene %3$@ libres, y TextMouth mantiene %4$@ libres.",
+     "after": "El archivo comprimido “%1$@” de su interior se expande a %2$@, pero el disco que contiene la biblioteca de TextMouth solo tiene %3$@ libres, y TextMouth mantiene %4$@ libres.",
+     "why": "punctuation: the Spanish interface quotes with “ ” (183 strings), these few with « » read as other signs in braille"
+    },
+    {
+     "key": "The drive “%@” isn't connected.",
+     "english": "The drive “%@” isn't connected.",
+     "before": "La unidad «%@» no está conectada.",
+     "after": "La unidad “%@” no está conectada.",
+     "why": "punctuation: the Spanish interface quotes with “ ” (183 strings), these few with « » read as other signs in braille"
+    },
+    {
+     "key": "The folders %@ and %@ can't both move into %@: their names mean the same folder on this disk.",
+     "english": "The folders %1$@ and %2$@ can't both move into %3$@: their names mean the same folder on this disk.",
+     "before": "Las carpetas %1$@ y %2$@ no pueden moverse juntas a %3$@: sus nombres significan la misma carpeta en este disco.",
+     "after": "Las carpetas %1$@ y %2$@ no pueden moverse juntas a %3$@: sus nombres se refieren a la misma carpeta en este disco.",
+     "why": "natural: “sus nombres significan la misma carpeta” copies English “mean”, Spanish says “se refieren a”, as its sibling sentence does"
+    },
+    {
+     "key": "The most time the whole sequence may take. Shorter windows mean fewer accidental matches but quicker presses.",
+     "english": "The most time the whole sequence may take. Shorter windows mean fewer accidental matches but quicker presses.",
+     "before": "El tiempo máximo que puede durar toda la secuencia. Ventanas más cortas significan menos coincidencias accidentales pero pulsaciones más rápidas.",
+     "after": "El tiempo máximo que puede durar toda la secuencia. Con una ventana más corta hay menos coincidencias accidentales, pero hay que pulsar más rápido.",
+     "why": "natural: “Ventanas más cortas significan” copies English “mean”, Spanish says what a shorter window brings"
+    },
+    {
+     "key": "There is no view %@. Go to View reaches %lld views.",
+     "english": {
+      "one": "There is no view %@. Go to View reaches %lld view.",
+      "other": "There is no view %@. Go to View reaches %lld views."
+     },
+     "before": {
+      "many": "No hay vista %1$@. Ir a vista llega a %2$lld de vistas.",
+      "one": "No hay vista %1$@. Ir a vista llega a %2$lld vista.",
+      "other": "No hay vista %1$@. Ir a vista llega a %2$lld vistas."
+     },
+     "after": {
+      "many": "No existe la vista %1$@. Ir a la vista llega hasta %2$lld de vistas.",
+      "one": "No existe la vista %1$@. Ir a la vista llega hasta %2$lld vista.",
+      "other": "No existe la vista %1$@. Ir a la vista llega hasta %2$lld vistas."
+     },
+     "why": "natural: “No hay vista 9” lacks the article, and the command is now “Ir a la vista”, as its menu title says"
+    },
+    {
+     "key": "This braille looks like English Braille, American Edition. Choose its Braille Code in Book Information.",
+     "english": "This braille looks like English Braille, American Edition. Choose its Braille Code in Book Information.",
+     "before": "Este braille parece braille inglés, edición estadounidense. Elige su código braille en Información del libro.",
+     "after": "Este braille parece English Braille, American Edition. Elige su código braille en Información del libro.",
+     "why": "term: the Braille Code pop-up and every other sentence name the code “English Braille, American Edition”, so the listener can find it"
+    },
+    {
+     "key": "To let it go, take it off the reading list, or clear %@ in the Reading List's options.",
+     "english": "To let it go, take it off the reading list, or clear %@ in the Reading List's options.",
+     "before": "Para soltarlo, quítalo de la lista de lectura, o desactiva %@ en las opciones de la lista de lectura.",
+     "after": "Para liberarlo, quítalo de la lista de lectura, o desactiva %@ en las opciones de la lista de lectura.",
+     "why": "natural: “Para soltarlo” is a literal “let it go”, Spanish frees a download with “liberarlo”"
+    },
+    {
+     "key": "To let them go, take them off the reading list, or clear %@ in the Reading List's options.",
+     "english": "To let them go, take them off the reading list, or clear %@ in the Reading List's options.",
+     "before": "Para soltarlos, quítalos de la lista de lectura, o desactiva %@ en las opciones de la lista de lectura.",
+     "after": "Para liberarlos, quítalos de la lista de lectura, o desactiva %@ en las opciones de la lista de lectura.",
+     "why": "natural: “Para soltarlos” is a literal “let them go”, Spanish frees downloads with “liberarlos”"
+    },
+    {
+     "key": "To use another folder, open Settings, Storage, and choose %@ or %@.",
+     "english": "To use another folder, open Settings, Storage, and choose %1$@ or %2$@.",
+     "before": "Para usar otra carpeta, abre Ajustes, Almacenamiento y elige %1$@ o %2$@.",
+     "after": "Para usar otra carpeta, abre Almacenamiento en Ajustes y elige %1$@ o %2$@.",
+     "why": "natural: “abre Ajustes, Almacenamiento y elige” reads as a list of three things, the tab is now named inside Ajustes"
+    },
+    {
+     "key": "Try again in a moment.",
+     "english": "Try again in a moment.",
+     "before": "Intenta de nuevo en un momento.",
+     "after": "Inténtalo de nuevo en un momento.",
+     "why": "natural: “intenta de nuevo” lacks its object, Apple and 37 other strings say “inténtalo de nuevo”"
+    },
+    {
+     "key": "Try again once that move is done.",
+     "english": "Try again once that move is done.",
+     "before": "Intenta de nuevo cuando termine ese traslado.",
+     "after": "Inténtalo de nuevo cuando termine ese traslado.",
+     "why": "natural: “intenta de nuevo” lacks its object, Apple and 37 other strings say “inténtalo de nuevo”"
+    },
+    {
+     "key": "Try again when that finishes.",
+     "english": "Try again when that finishes.",
+     "before": "Intenta de nuevo cuando eso termine.",
+     "after": "Inténtalo de nuevo cuando eso termine.",
+     "why": "natural: “intenta de nuevo” lacks its object, Apple and 37 other strings say “inténtalo de nuevo”"
+    },
+    {
+     "key": "Try again.",
+     "english": "Try again.",
+     "before": "Intenta de nuevo.",
+     "after": "Inténtalo de nuevo.",
+     "why": "natural: “intenta de nuevo” lacks its object, Apple and 37 other strings say “inténtalo de nuevo”"
+    },
+    {
+     "key": "Use it after parser updates.",
+     "english": "Use it after parser updates.",
+     "before": "Úsalo después de actualizar el analizador.",
+     "after": "Úsalo después de una actualización del analizador.",
+     "why": "meaning: “después de actualizar el analizador” tells the listener to update the parser, which only a TextMouth update does"
+    },
+    {
+     "key": "Word Count",
+     "english": "Word Count",
+     "before": "Cantidad de palabras",
+     "after": "Recuento de palabras",
+     "why": "term: Apple Pages in Spanish says “Recuento de palabras”"
+    },
+    {
+     "key": "chapter %@, saved %@, and %@",
+     "english": "chapter %1$@, saved %2$@, and %3$@",
+     "before": "capítulo %1$@, guardado %2$@, y %3$@",
+     "after": "capítulo %1$@, guardado el %2$@, y %3$@",
+     "why": "grammar: a date after “guardado” takes “el” in Spanish (guardado el 18 nov 2026), as “guardada el %3$@” does"
+    },
+    {
+     "key": "the library index, %@",
+     "english": "the library index, %@",
+     "before": "un índice de la biblioteca, %@",
+     "after": "el índice de la biblioteca, %@",
+     "why": "meaning: “un índice de la biblioteca” suggests one of several, the library has one index"
+    },
+    {
+     "key": "“%@” could not be moved back after a failed move, so its files are at %@ instead of %@: %@",
+     "english": "“%1$@” could not be moved back after a failed move, so its files are at %2$@ instead of %3$@: %4$@",
+     "before": "No se pudo devolver «%1$@» a su sitio tras un traslado fallido, así que sus archivos están en %2$@ en lugar de %3$@: %4$@",
+     "after": "No se pudo devolver “%1$@” a su sitio tras un traslado fallido, así que sus archivos están en %2$@ en lugar de %3$@: %4$@",
+     "why": "punctuation: the Spanish interface quotes with “ ” (183 strings), these few with « » read as other signs in braille"
+    }
+   ]
+  },
+  {
    "part": 2,
    "areas": [
     "feeds and import",
