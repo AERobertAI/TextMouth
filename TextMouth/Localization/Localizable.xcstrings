@@ -133990,25 +133990,25 @@
               "few" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Позначено як прослухані: %lld (стрічка «%@»)."
+                  "value" : "Позначено як прослухані епізоди: %lld (стрічка «%@»)."
                 }
               },
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Позначено як прослухані: %lld (стрічка «%@»)."
+                  "value" : "Позначено як прослухані епізоди: %lld (стрічка «%@»)."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Позначено як прослухані: %lld (стрічка «%@»)."
+                  "value" : "Позначено як прослухані епізоди: %lld (стрічка «%@»)."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Позначено як прослухані: %lld (стрічка «%@»)."
+                  "value" : "Позначено як прослухані епізоди: %lld (стрічка «%@»)."
                 }
               }
             }
