@@ -258511,6 +258511,12 @@
             "value" : "Минус"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Minus"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -320212,6 +320218,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Плюс"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Plus"
           }
         },
         "th" : {
@@ -386408,6 +386420,12 @@
             "value" : "Стандартное"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Standard"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -397152,6 +397170,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Система"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "System"
           }
         },
         "th" : {
@@ -412514,6 +412538,12 @@
             "value" : "TextMouth заканчивает дела перед выходом: %@. Выход произойдёт, когда всё будет сделано."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth gör sig klart innan det avslutas: %@. Det avslutas när det är klart."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -415191,6 +415221,12 @@
             "value" : "TextMouth оставил изменённый вами текст книги «%@»."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth behöll texten du ändrade i %@."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -417561,6 +417597,12 @@
             "value" : "TextMouth открывает manifest.json этой книги в вашем текстовом редакторе."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth öppnar bokens manifest.json i din textredigerare."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -417672,6 +417714,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth открывает текст этой книги в вашем текстовом редакторе в виде файла Markdown."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth öppnar bokens text i din textredigerare som en Markdown-fil."
           }
         },
         "th" : {
@@ -424171,6 +424219,12 @@
             "value" : "В аудиокниге %1$@ заканчивается на отметке %2$@ файла «%3$@», хотя его длина всего %4$@."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sektionen med %@ slutar %@ in i ”%@”, som bara är %@ lång."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -426540,6 +426594,12 @@
             "value" : "Страница с меткой %2$@, %1$@ по счёту"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Den %@ sidan med etiketten %@"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -426659,6 +426719,12 @@
             "value" : "В аудиокниге %1$@ начинается на отметке %2$@ файла «%3$@», то есть раньше, чем %4$@, который идёт в книге раньше и начинается на отметке %5$@."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sektionen med %@ börjar %@ in i ”%@”, före den tidigare sektionen med %@, som börjar %@ in."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -426776,6 +426842,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "В аудиокниге %1$@ начинается на отметке %2$@ файла «%3$@», хотя его длина всего %4$@."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sektionen med %@ börjar %@ in i ”%@”, som bara är %@ lång."
           }
         },
         "th" : {
@@ -428602,6 +428674,12 @@
             "value" : "Не удалось открыть файл DAISY как архив ZIP."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "DAISY-filen kunde inte öppnas som ZIP-arkiv."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -428713,6 +428791,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Не удалось открыть файл DOCX как архив ZIP."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "DOCX-filen kunde inte öppnas som ZIP-arkiv."
           }
         },
         "th" : {
@@ -428828,6 +428912,12 @@
             "value" : "В файле DOCX отсутствует необходимый элемент: %@"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "DOCX-filen saknar en obligatorisk post: %@"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -428939,6 +429029,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Не удалось открыть файл EPUB как архив ZIP."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "EPUB-filen kunde inte öppnas som ZIP-arkiv."
           }
         },
         "th" : {
@@ -429375,6 +429471,12 @@
             "value" : "Файл EPUB не найден по пути: %@"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "EPUB-filen hittades inte på: %@"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -429486,6 +429588,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "В EPUB нет порядка чтения (spine)."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "EPUB-boken har ingen läsordning (spine)."
           }
         },
         "th" : {
@@ -429601,6 +429709,12 @@
             "value" : "В EPUB нет файла META-INF/container.xml."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "EPUB-boken saknar META-INF/container.xml."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -429714,6 +429828,12 @@
             "value" : "В EPUB нет документа пакета (файла OPF)."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "EPUB-boken saknar sitt paketdokument (OPF-fil)."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -429825,6 +429945,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Не удалось разобрать документ пакета EPUB."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "EPUB-bokens paketdokument kunde inte tolkas."
           }
         },
         "th" : {
@@ -431055,6 +431181,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Не удалось открыть файл PDF."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "PDF-filen kunde inte öppnas."
           }
         },
         "th" : {
@@ -433796,6 +433928,12 @@
             "value" : "Аудиоредактор"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ljudredigeraren"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -434133,6 +434271,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Аудиофайл %@ заканчивается раньше, чем его звук, поэтому его не удалось преобразовать."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ljudfilen %@ slutar före sitt ljud, så den kunde inte konverteras."
           }
         },
         "th" : {
@@ -434643,6 +434787,12 @@
             "value" : "Аудиофайл %@ повреждён, поэтому его не удалось преобразовать."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ljudfilen %@ är skadad, så den kunde inte konverteras."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -434754,6 +434904,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Аудиофайл %@ не относится к тому типу, который указан в его имени."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ljudfilen %@ är inte den sortens fil som namnet säger."
           }
         },
         "th" : {
@@ -438634,6 +438790,12 @@
             "value" : "Навигация книги не соответствует её аудио; получите свежую копию и снова импортируйте её."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bokens navigering stämmer inte med dess ljud; skaffa en ny kopia och importera den igen."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -441417,6 +441579,12 @@
             "value" : "Файл коррекции %1$@ повреждён или относится к другой записи, поэтому %2$@ не удалось преобразовать."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Korrigeringsfilen %@ är skadad eller tillhör en annan inspelning, så %@ kunde inte konverteras."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -441992,6 +442160,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Курсор %@."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Markören är %@."
           }
         },
         "th" : {
@@ -447873,6 +448047,12 @@
             "value" : "Файл «%@»"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Filen ”%@”"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -447990,6 +448170,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Файл «%1$@» объявляет кодировку текста «%2$@», но содержит байты, недопустимые в этой кодировке."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Filen ”%@” anger teckenkodningen ”%@”, men innehåller byte som inte är giltiga i den kodningen."
           }
         },
         "th" : {
@@ -448111,6 +448297,12 @@
             "value" : "Файл «%1$@» объявляет кодировку текста «%2$@», которую TextMouth не может прочитать."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Filen ”%@” anger teckenkodningen ”%@”, som TextMouth inte kan läsa."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -448228,6 +448420,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Файл «%1$@» в этой книге DAISY ссылается на «%2$@» за пределами папки книги."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Filen ”%@” i den här DAISY-boken hänvisar till ”%@”, utanför bokens mapp."
           }
         },
         "th" : {
@@ -448349,6 +448547,12 @@
             "value" : "Файл «%1$@» в этом архиве повреждён или неполон: %2$@. Получите свежую копию архива и снова импортируйте её."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Filen ”%@” i det här arkivet är skadad eller ofullständig: %@. Skaffa en ny kopia av arkivet och importera det sedan igen."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -448466,6 +448670,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Файл «%1$@» в этой книге повреждён или неполон: %2$@. Получите свежую копию книги и снова импортируйте её."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Filen ”%@” i den här boken är skadad eller ofullständig: %@. Skaffa en ny kopia av boken och importera den sedan igen."
           }
         },
         "th" : {
@@ -448587,6 +448797,12 @@
             "value" : "Файл «%1$@» в этом документе повреждён или неполон: %2$@. Получите свежую копию документа и снова импортируйте его."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Filen ”%@” i det här dokumentet är skadad eller ofullständig: %@. Skaffa en ny kopia av dokumentet och importera det sedan igen."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -448704,6 +448920,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Файл «%1$@» повреждён или неполон: он начинается с метки порядка байтов %2$@, но остальное не является допустимым текстом %3$@."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Filen ”%@” är skadad eller ofullständig: den börjar med en %@-byteordningsmarkering, men resten är inte giltig %@-text."
           }
         },
         "th" : {
@@ -451078,6 +451300,24 @@
             }
           }
         },
+        "sv" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Mappen innehåller %lld DAISY-böcker (%@)."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Mappen innehåller %lld DAISY-böcker (%@)."
+                }
+              }
+            }
+          }
+        },
         "th" : {
           "variations" : {
             "plural" : {
@@ -451362,6 +451602,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Эта папка не является книгой DAISY: в её верхнем уровне нет файла ncc.html или .opf."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mappen är ingen DAISY-bok: den har ingen ncc.html- eller .opf-fil på översta nivån."
           }
         },
         "th" : {
@@ -456171,6 +456417,12 @@
             "value" : "Манифест «%1$@» нельзя изменить: %2$@"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Manifestet för %@ kan inte redigeras: %@"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -459277,6 +459529,12 @@
             "value" : "Единственную главу не удалось прочитать"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Det enda kapitlet kunde inte läsas"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -460895,6 +461153,12 @@
             "value" : "Исходный файл, который вы импортировали, не изменён."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Originalfilen du importerade ändras inte."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -461006,6 +461270,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Исходный файл, который вы импортировали, не затрагивается."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Originalfilen du importerade rörs inte."
           }
         },
         "th" : {
@@ -461700,6 +461970,24 @@
             }
           }
         },
+        "sv" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "De andra %lld kapitlen har ingen text."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "De andra %lld kapitlen har ingen text."
+                }
+              }
+            }
+          }
+        },
         "th" : {
           "variations" : {
             "plural" : {
@@ -461865,6 +462153,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Остальная глава не содержит текста."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Det andra kapitlet har ingen text."
           }
         },
         "th" : {
@@ -462650,6 +462944,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Плейлист «%@» слишком велик для чтения."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Spellistan ”%@” är för stor för att läsas."
           }
         },
         "th" : {
@@ -466773,6 +467073,12 @@
             "value" : "Длительность записи — %@."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Inspelningen varar i %@."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -466997,6 +467303,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Окно записи"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Inspelningsfönstret"
           }
         },
         "th" : {
@@ -469247,6 +469559,12 @@
             "value" : "Прежний текст content.md сохранён как %@ в пакете книги."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Texten som content.md innehöll sparades som %@ i bokens paket."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -469580,6 +469898,12 @@
             "value" : "Текст «%@» не удаётся прочитать, поэтому его нельзя изменить."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Texten i %@ kan inte läsas, så den kan inte redigeras."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -469693,6 +470017,12 @@
             "value" : "Текст «%@» ещё не готов к изменению."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Texten i %@ är inte redo att redigeras än."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -469804,6 +470134,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Текст «%@» заново прочитан из собственного файла книги."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Texten i %@ lästes in igen från sin egen fil."
           }
         },
         "th" : {
@@ -474338,6 +474674,12 @@
             "value" : "В этой книге нет страницы %@."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Det finns ingen sida %@ i den här boken."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -478230,6 +478572,12 @@
             "value" : "В этой книге EPUB нет текста для чтения."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Den här EPUB-boken har ingen text att läsa."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -478569,6 +478917,12 @@
             "value" : "В этой книге Kindle нет текучего текста, как в комиксах или копиях печатных изданий, поэтому TextMouth не может её прочитать."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Den här Kindle-boken har ingen flytande text, som i en serietidning eller en tryckkopia, så TextMouth kan inte läsa den."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -478680,6 +479034,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Эта книга Kindle сжата способом, который TextMouth пока не умеет читать."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Den här Kindle-boken är komprimerad på ett sätt som TextMouth inte kan läsa än."
           }
         },
         "th" : {
@@ -478795,6 +479155,12 @@
             "value" : "Эта книга Kindle защищена от копирования, а TextMouth не читает книги с такой защитой."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Den här Kindle-boken är kopieringsskyddad, och TextMouth kan inte läsa kopieringsskyddade böcker."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -478908,6 +479274,12 @@
             "value" : "Эта книга Kindle повреждена или неполна. Получите свежую копию и снова импортируйте её."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Den här Kindle-boken är skadad eller ofullständig. Skaffa en ny kopia och importera den sedan igen."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -479019,6 +479391,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Эта книга Kindle повреждена или неполна: %@. Получите свежую копию и снова импортируйте её."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Den här Kindle-boken är skadad eller ofullständig: %@. Skaffa en ny kopia och importera den sedan igen."
           }
         },
         "th" : {
@@ -480377,6 +480755,12 @@
             "value" : "Для открытия этого PDF нужен пароль."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Den här PDF-filen kräver ett lösenord för att öppnas."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -480488,6 +480872,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Этот файл SSML повреждён или неполон: %@."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Den här SSML-filen är skadad eller ofullständig: %@."
           }
         },
         "th" : {
@@ -482074,6 +482464,24 @@
             }
           }
         },
+        "sv" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Den här boken har %lld sidor, från %@ till %@."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Den här boken har %lld sidor, från %@ till %@."
+                }
+              }
+            }
+          }
+        },
         "th" : {
           "variations" : {
             "plural" : {
@@ -482461,6 +482869,12 @@
             "value" : "В этой книге нет страниц."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Den här boken har inga sidor."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -482685,6 +483099,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "В этой книге только одна страница."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Den här boken har bara en sida."
           }
         },
         "th" : {
@@ -484093,6 +484513,12 @@
             "value" : "Единственная страница этой книги — %@."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Den här bokens enda sida är %@."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -484658,6 +485084,12 @@
             "value" : "В этом документе больше %@, а это предел для одного документа, который читает TextMouth."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Det här dokumentet innehåller mer än %@, vilket är det mesta TextMouth läser från ett dokument."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -484769,6 +485201,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Этот документ защищён паролем."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Det här dokumentet är skyddat med lösenord."
           }
         },
         "th" : {
@@ -485108,6 +485546,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Это пояснение появляется только один раз."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Den här förklaringen visas bara en gång."
           }
         },
         "th" : {
@@ -486460,6 +486904,12 @@
             "value" : "Этот файл содержит только часть книги Kindle. Откройте основной файл .kfx книги."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Den här filen innehåller bara en del av en Kindle-bok. Öppna bokens huvudsakliga .kfx-fil."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -486571,6 +487021,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Этот файл — пакет Kindle Create, который TextMouth пока не умеет читать."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Den här filen är ett Kindle Create-paket, som TextMouth inte kan läsa än."
           }
         },
         "th" : {
@@ -486686,6 +487142,12 @@
             "value" : "Это не файл SSML: он начинается с элемента «%@», а не «speak»."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Den här filen är inte SSML: den börjar med elementet ”%@”, inte ”speak”."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -486799,6 +487261,12 @@
             "value" : "Этот файл не является книгой Kindle, которую TextMouth умеет читать."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Den här filen är inte en Kindle-bok som TextMouth kan läsa."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -486910,6 +487378,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Этот файл не является веб-архивом, который TextMouth умеет читать. Возможно, он повреждён или это файл другого типа."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Den här filen är inget webbarkiv som TextMouth kan läsa. Den kan vara skadad eller av en annan sort."
           }
         },
         "th" : {
@@ -487138,6 +487612,12 @@
             "value" : "Разметка этого файла вложена глубже, чем на %@ уровней, и TextMouth не может безопасно её прочитать."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Uppmärkningen i den här filen nästlar djupare än %@ nivåer, vilket TextMouth inte kan läsa på ett säkert sätt."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -487249,6 +487729,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Чтение разметки этого файла заняло бы у TextMouth слишком много времени."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Uppmärkningen i den här filen skulle ta TextMouth alldeles för lång tid att läsa."
           }
         },
         "th" : {
@@ -490399,6 +490885,12 @@
             "value" : "В этом веб-архиве есть файл типа «%@», а не веб-страница или текст, поэтому читать нечего."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Det här webbarkivet innehåller en fil av typen ”%@”, inte en webbsida eller text, så det finns inget att läsa."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -490510,6 +491002,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Тильда"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tilde"
           }
         },
         "th" : {
@@ -490738,6 +491236,12 @@
             "value" : "Время от начала"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tid in"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -490849,6 +491353,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Время при скорости %@"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tid vid %@"
           }
         },
         "th" : {
@@ -490964,6 +491474,12 @@
             "value" : "Время превышает длину книги."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tiden överskrider bokens längd."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -491077,6 +491593,12 @@
             "value" : "Время превышает длину записи."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tiden överskrider inspelningens längd."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -491188,6 +491710,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Время в записи"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tid i inspelningen"
           }
         },
         "th" : {
@@ -492570,6 +493098,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Время"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tider"
           }
         },
         "th" : {
@@ -496001,6 +496535,12 @@
             "value" : "Переключить закладку"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Växla bokmärke"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -496622,6 +497162,12 @@
             "value" : "Общее время книги: %@"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bokens totala tid: %@"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -496842,6 +497388,12 @@
             "value" : "Общее время: %@"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Total tid: %@"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -496953,6 +497505,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Всего: %@"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Totalt: %@"
           }
         },
         "th" : {
@@ -497746,6 +498304,12 @@
             "value" : "Расшифруйте её заново, затем измените новую расшифровку."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Transkribera den igen och redigera sedan den nya transkriptionen."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -497976,6 +498540,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Сначала расшифруйте её командой «Расшифровать аудио»."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Transkribera den först med Transkribera ljud."
           }
         },
         "th" : {
@@ -501160,6 +501730,12 @@
             "value" : "Пытается снова получить книгу."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Försöker hämta boken igen"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -501838,6 +502414,12 @@
             "value" : "True Audio"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "True Audio"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -501951,6 +502533,12 @@
             "value" : "Повторить попытку"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Försök igen"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -502062,6 +502650,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Попробовать двойное нажатие"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Prova ett dubbeltryck"
           }
         },
         "th" : {
@@ -502885,6 +503479,12 @@
             "value" : "Отключите «%@», чтобы сохранить метаданные только в библиотеку."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Stäng av ”%@” för att spara metadata bara i biblioteket."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -502996,6 +503596,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Две разные клавиши, а не двойное нажатие."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Två olika tangenter, inget dubbeltryck."
           }
         },
         "th" : {
@@ -503117,6 +503723,12 @@
             "value" : "Два нажатия с интервалом %1$@. Установите время больше, чем %2$@, чтобы считать их двойным нажатием."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Två tryck, %@ emellan. Ställ in tiden över %@ för att räkna dem som ett."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -503234,6 +503846,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Два нажатия с интервалом %1$@. Время двойного нажатия — не более %2$@."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Två tryck, %@ emellan. Tiden för dubbeltryck går upp till %@."
           }
         },
         "th" : {
@@ -503462,6 +504080,12 @@
             "value" : "Введите страницу так, как она пронумерована в книге, например 12 или xii."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Skriv en sida så som boken numrerar den, till exempel 12 eller xii."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -503575,6 +504199,12 @@
             "value" : "Введите номер страницы."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Skriv ett sidnummer."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -503686,6 +504316,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Введите процент от 0 до 100, например 47,5."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Skriv en procentsats från 0 till 100, till exempel 47,5."
           }
         },
         "th" : {
@@ -504027,6 +504663,12 @@
             "value" : "Введите название и снова сохраните."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Skriv en titel och spara sedan igen."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -504251,6 +504893,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Вводите прямые кавычки: в TextEdit отключите «Умные кавычки» в меню «Правка», «Подстановки»."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Skriv raka citattecken: i TextEdit stänger du av Smarta citattecken under Redigera, Ersättningar."
           }
         },
         "th" : {
@@ -505651,6 +506299,12 @@
             "value" : "Нижнее подчёркивание"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Understreck"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -505988,6 +506642,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Отменить"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ångra"
           }
         },
         "th" : {
@@ -506779,6 +507439,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Неизвестно"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Okänd"
           }
         },
         "th" : {
@@ -509231,6 +509897,12 @@
             "value" : "Неподдерживаемый формат аудио."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ljudformatet stöds inte."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -509915,6 +510587,12 @@
             "value" : "Стрелка вверх"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Uppåtpil"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -510145,6 +510823,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Обновляет голос, скорость и высоту тона по умолчанию для каждой книги без собственных настроек."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Uppdaterar standardrösten, hastigheten och tonhöjden för varje bok utan egna inställningar."
           }
         },
         "th" : {
@@ -510621,6 +511305,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Использовать общую настройку"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Använd global standard"
           }
         },
         "th" : {
@@ -511908,6 +512598,12 @@
             "value" : "Пользователь"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Användare"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -512019,6 +512715,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Используются общие настройки голоса, скорости и высоты тона"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Använder globala inställningar för röst, hastighet och tonhöjd"
           }
         },
         "th" : {
@@ -512358,6 +513060,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Вертикальная черта"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Lodstreck"
           }
         },
         "th" : {
@@ -513056,6 +513764,12 @@
             "value" : "Голос и скорость"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Röst och hastighet"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -513500,6 +514214,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Фильтр голосов по языку"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Språkfilter för röster"
           }
         },
         "th" : {
@@ -515897,6 +516617,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Внимание: это перезапишет копию файла EPUB в библиотеке и пересчитает её хеш MD5."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Varning: Det här skriver om bibliotekets kopia av EPUB-filen och räknar om dess MD5-hash."
           }
         },
         "th" : {
@@ -521799,6 +522525,12 @@
             "value" : "Когда эта книга заканчивается"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "När den här boken tar slut"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -521912,6 +522644,12 @@
             "value" : "При сохранении TextMouth проверяет манифест и перестраивает книгу, сохраняя вашу позицию чтения в дорожке."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "När du sparar kontrollerar TextMouth manifestet och ordnar om boken, och behåller din plats i dess spår."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -522023,6 +522761,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "При сохранении книга обновляется и по возможности сохраняет вашу позицию чтения."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "När du sparar uppdateras boken och din plats behålls så nära som möjligt."
           }
         },
         "th" : {
@@ -522459,6 +523203,12 @@
             "value" : "Где я?"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Var är jag?"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -522572,6 +523322,12 @@
             "value" : "Где я? Объявляет текущую позицию в книге"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Var är jag? Meddelar aktuell position i boken"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -522683,6 +523439,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Где я? Полная сводка"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Var är jag? Fullständig sammanfattning"
           }
         },
         "th" : {
@@ -524805,6 +525567,12 @@
             "value" : "Windows-1250 (центральноевропейский)"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Windows-1250 (centraleuropeiska)"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -524916,6 +525684,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Windows-1251 (кириллица)"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Windows-1251 (kyrilliska)"
           }
         },
         "th" : {
@@ -525031,6 +525805,12 @@
             "value" : "Windows-1252 (западноевропейский)"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Windows-1252 (västeuropeiska)"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -525142,6 +525922,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Windows-1253 (греческий)"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Windows-1253 (grekiska)"
           }
         },
         "th" : {
@@ -525257,6 +526043,12 @@
             "value" : "Windows-1254 (турецкий)"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Windows-1254 (turkiska)"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -525368,6 +526160,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Windows-1255 (иврит)"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Windows-1255 (hebreiska)"
           }
         },
         "th" : {
@@ -525483,6 +526281,12 @@
             "value" : "Windows-1256 (арабский)"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Windows-1256 (arabiska)"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -525596,6 +526400,12 @@
             "value" : "Windows-1257 (балтийский)"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Windows-1257 (baltiska)"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -525707,6 +526517,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Windows-874 (тайский)"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Windows-874 (thailändska)"
           }
         },
         "th" : {
@@ -527595,6 +528411,12 @@
             "value" : "Слов в минуту"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ord per minut"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -527708,6 +528530,12 @@
             "value" : "Работает"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Fungerar i"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -527819,6 +528647,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Работает: %@"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Fungerar i %@"
           }
         },
         "th" : {
@@ -528045,6 +528879,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Записывает название, автора, издателя и дату в копию этой книги в библиотеке."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Skriver titel, författare, utgivare och datum till bibliotekets kopia av den här boken."
           }
         },
         "th" : {
@@ -528372,6 +529212,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Год"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "År"
           }
         },
         "th" : {
@@ -530194,6 +531040,12 @@
             "value" : "Ваш изменённый текст также сохранён как %@ в пакете книги."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Din redigerade text sparades också som %@ i bokens paket."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -531824,6 +532676,12 @@
             "value" : "у команды меню только одно сочетание"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ett menykommando har bara en genväg"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -531935,6 +532793,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "сочетание команды меню — это одно нажатие клавиши вместе с Command или Control"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ett menykommandos genväg är ett tryck på en tangent med Kommando eller Control"
           }
         },
         "th" : {
@@ -534131,6 +534995,12 @@
             "value" : "на %1$@ из %2$@ при скорости %3$@"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "vid %@ av %@ med %@"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -534248,6 +535118,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "на %1$@ из %2$@ в записи"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "vid %@ av %@ i inspelningen"
           }
         },
         "th" : {
@@ -535000,6 +535876,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "перед страницей %@"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "före sidan %@"
           }
         },
         "th" : {
@@ -537328,6 +538210,12 @@
             "value" : "content.md только в облаке, поэтому TextMouth оставляет его как есть."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "content.md finns bara i molnet, så TextMouth lämnar den som den är."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -538809,6 +539697,12 @@
             "value" : "изменено вручную"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "redigerad manuellt"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -538920,6 +539814,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "восьмая"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "åttonde"
           }
         },
         "th" : {
@@ -539152,6 +540052,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "каждое окно"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "alla fönster"
           }
         },
         "th" : {
@@ -540064,6 +540970,12 @@
             "value" : "пятая"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "femte"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -540294,6 +541206,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "первая"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "första"
           }
         },
         "th" : {
@@ -541240,6 +542158,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "четвёртая"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "fjärde"
           }
         },
         "th" : {
@@ -542860,6 +543784,12 @@
             "value" : "заголовок «%@»"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "rubriken ”%@”"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -544246,6 +545176,12 @@
             "value" : "он %@, а TextMouth не может безопасно его прочитать. Упростите его и сохраните снова или отмените изменение, и книга откроется."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "den %@, vilket TextMouth inte kan läsa på ett säkert sätt. Förenkla den och spara igen, eller ångra ändringen, så öppnas boken."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -544357,6 +545293,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "он %@, а TextMouth не может безопасно его прочитать. Упростите его и сохраните снова или отмените изменение, и текст появится."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "den %@, vilket TextMouth inte kan läsa på ett säkert sätt. Förenkla den och spara igen, eller ångra ändringen, så visas texten."
           }
         },
         "th" : {
@@ -544472,6 +545414,12 @@
             "value" : "в него добавлены слова в главу без речи, где их нельзя сохранить. Уберите их и сохраните снова, и текст появится."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "den lägger till ord i ett kapitel utan tal, där de inte kan behållas. Ta bort dem och spara igen, så visas texten."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -544583,6 +545531,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "в нём изменён заголовок главы, который берётся из аудио. Верните его и сохраните снова, и текст появится."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "den ändrar ett kapitels rubrik, som kommer från ljudet. Sätt tillbaka den och spara igen, så visas texten."
           }
         },
         "th" : {
@@ -544924,6 +545878,12 @@
             "value" : "в нём %1$@, а в аудиокниге %2$@. Оставьте каждую строку, которая начинается с <!-- chapter:, и сохраните снова, и текст появится."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "den har %@, där ljudboken har %@. Behåll varje rad som börjar med <!-- chapter: och spara igen, så visas texten."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -545037,6 +545997,12 @@
             "value" : "в нём нет ни одной главы с текстом. Отмените изменение и сохраните снова, и книга откроется."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "den har inget kapitel med någon text. Ångra ändringen och spara igen, så öppnas boken."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -545148,6 +546114,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "в нём нет ни одной главы с текстом. Отмените изменение и сохраните снова, и текст появится."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "den har inget kapitel med någon text. Ångra ändringen och spara igen, så visas texten."
           }
         },
         "th" : {
@@ -545771,6 +546743,12 @@
             "value" : "он не в кодировке UTF-8. Сохраните его в UTF-8, и книга откроется."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "den är inte UTF-8-text. Spara den som UTF-8, så öppnas boken."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -545882,6 +546860,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "он не в кодировке UTF-8. Сохраните его в UTF-8, и текст появится."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "den är inte UTF-8-text. Spara den som UTF-8, så visas texten."
           }
         },
         "th" : {
@@ -548251,6 +549235,12 @@
             "value" : "его глава %1$@ %2$@, а TextMouth не может безопасно её прочитать. Упростите её и сохраните снова или отмените изменение, и книга откроется."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "dess kapitel %@ %@, vilket TextMouth inte kan läsa på ett säkert sätt. Förenkla det och spara igen, eller ångra ändringen, så öppnas boken."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -548368,6 +549358,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "его глава %1$@ %2$@, а TextMouth не может безопасно её прочитать. Упростите её и сохраните снова или отмените изменение, и текст появится."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "dess kapitel %@ %@, vilket TextMouth inte kan läsa på ett säkert sätt. Förenkla det och spara igen, eller ångra ändringen, så visas texten."
           }
         },
         "th" : {
@@ -550434,6 +551430,12 @@
             "value" : "Не удалось прочитать manifest.json."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "manifest.json kunde inte läsas."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -550545,6 +551547,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "В manifest.json есть сегменты, которые TextMouth записывает только для книги DAISY, которую он преобразует."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "manifest.json har segment, som TextMouth bara skriver för en DAISY-bok som den konverterar."
           }
         },
         "th" : {
@@ -552829,6 +553837,12 @@
             "value" : "девятая"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "nionde"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -552940,6 +553954,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "не удалось сохранить копию изменённого текста, поэтому TextMouth оставляет content.md как есть."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ingen kopia av den redigerade texten kunde sparas, så TextMouth lämnar content.md som den är."
           }
         },
         "th" : {
@@ -553160,6 +554180,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "нет страниц"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "inga sidor"
           }
         },
         "th" : {
@@ -555255,6 +556281,12 @@
             "value" : "на странице %@"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "på sidan %@"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -555372,6 +556404,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "на странице с меткой %2$@, %1$@ по счёту"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "på den %@ sidan med etiketten %@"
           }
         },
         "th" : {
@@ -556596,6 +557634,12 @@
             "value" : "страница %@"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "sidan %@"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -556707,6 +557751,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "страницы %@"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "sidorna %@"
           }
         },
         "th" : {
@@ -557278,6 +558328,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "окна чтения"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "läsarfönster"
           }
         },
         "th" : {
@@ -558311,6 +559367,24 @@
             }
           }
         },
+        "sv" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "läser in texten för %lld bok igen med en annan teckenkodning"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "läser in texten för %lld böcker igen med en annan teckenkodning"
+                }
+              }
+            }
+          }
+        },
         "th" : {
           "variations" : {
             "plural" : {
@@ -559055,6 +560129,12 @@
             "value" : "вторая"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "andra"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -559404,6 +560484,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "седьмая"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "sjunde"
           }
         },
         "th" : {
@@ -560037,6 +561123,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "шестая"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "sjätte"
           }
         },
         "th" : {
@@ -561421,6 +562513,12 @@
             "value" : "десятая"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "tionde"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -561532,6 +562630,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "текстовые поля используют его для правки"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "textfält använder den för redigering"
           }
         },
         "th" : {
@@ -562161,6 +563265,12 @@
             "value" : "аудиоредактор"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ljudredigeraren"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -562272,6 +563382,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "аудио аудиокниги изменилось после расшифровки, поэтому её расшифровка ей больше не соответствует."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ljudbokens ljud ändrades efter att den transkriberades, så dess transkription passar inte längre."
           }
         },
         "th" : {
@@ -562387,6 +563503,12 @@
             "value" : "расшифровку аудиокниги сейчас нельзя прочитать, поэтому правку нельзя в неё внести."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ljudbokens transkription kan inte läsas nu, så ändringen kan inte tas in i den."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -562498,6 +563620,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "собственный файл книги тоже изменился. Откройте книгу снова, чтобы прочитать её текст из этого файла."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "bokens egen fil ändrades också. Öppna boken igen för att läsa dess text från den filen."
           }
         },
         "th" : {
@@ -562613,6 +563741,12 @@
             "value" : "запись книги сейчас нельзя изменить. TextMouth повторит попытку при следующем сохранении или возврате."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "bokens post kan inte ändras nu. TextMouth försöker igen nästa gång du sparar eller återvänder."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -562724,6 +563858,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "расшифровка книги тоже изменилась. Откройте книгу снова, чтобы прочитать её текст из этой расшифровки."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "bokens transkription ändrades också. Öppna boken igen för att läsa dess text från den transkriptionen."
           }
         },
         "th" : {
@@ -563759,6 +564899,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "изменённую расшифровку нельзя наложить на аудио аудиокниги."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "den redigerade transkriptionen kan inte läggas över ljudbokens ljud."
           }
         },
         "th" : {
@@ -565587,6 +566733,12 @@
             "value" : "окно записи"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "inspelningsfönstret"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -566394,6 +567546,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "третья"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "tredje"
           }
         },
         "th" : {
@@ -567881,6 +569039,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "заголовок без названия %@"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "den namnlösa rubriken %@"
           }
         },
         "th" : {
