@@ -401336,7 +401336,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Gedrag bij verwijderen"
+            "value" : "Gedrag bij weghalen"
           }
         },
         "pl" : {
@@ -412588,7 +412588,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Stel standaardwaarden opnieuw in"
+            "value" : "Zet terug naar standaardwaarden"
           }
         },
         "pl" : {
@@ -417246,7 +417246,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Opnieuw proberen staat boven in het bibliotheekvenster."
+            "value" : "De knop Probeer opnieuw staat boven in het bibliotheekvenster."
           }
         },
         "pl" : {
@@ -422483,7 +422483,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Dezelfde ISBN"
+            "value" : "Hetzelfde ISBN"
           }
         },
         "pl" : {
@@ -437072,7 +437072,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Stel de toets ervoor in met %1$@ in het tabblad %2$@; de standaardtoets is %3$@."
+            "value" : "Stel het toetsenbordcommando ervoor in met %1$@ in het tabblad %2$@; standaard is dat %3$@."
           }
         },
         "pl" : {
@@ -445254,7 +445254,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Groep %1$@ tot %2$@ van %3$@ worden getoond"
+            "value" : "Groepen %1$@ tot en met %2$@ van %3$@ worden getoond"
           }
         },
         "pl" : {
@@ -446817,7 +446817,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Toont de groepen voor deze."
+            "value" : "Toont de vorige groepen."
           }
         },
         "pl" : {
@@ -449843,7 +449843,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Slaat overeenkomsten naast letters, cijfers of liggende streepjes over."
+            "value" : "Slaat treffers naast letters, cijfers of liggende streepjes over."
           }
         },
         "pl" : {
@@ -490302,7 +490302,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth wordt opnieuw geopend met een andere bibliotheek, dus ze blijven in deze onbewaard."
+            "value" : "TextMouth wordt opnieuw geopend met een andere bibliotheek, dus ze worden in deze bibliotheek niet bewaard."
           }
         },
         "pl" : {
@@ -507954,7 +507954,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Het %lld geselecteerde boek wordt al op deze Mac bewaard."
+                  "value" : "Het geselecteerde boek wordt al op deze Mac bewaard."
                 }
               },
               "other" : {
@@ -508421,7 +508421,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Het %lld geselecteerde boek wordt op deze Mac bewaard voor de leeslijst."
+                  "value" : "Het geselecteerde boek wordt op deze Mac bewaard voor de leeslijst."
                 }
               },
               "other" : {
@@ -510486,7 +510486,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "The Hobbit sorteert bij de H en wordt getoond als Hobbit, The. Als je H typt, vind je het bij de H."
+            "value" : "The Hobbit wordt bij de H gesorteerd en getoond als Hobbit, The. Als je H typt, vind je het bij de H."
           }
         },
         "pl" : {
