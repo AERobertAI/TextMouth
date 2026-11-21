@@ -1565,7 +1565,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@은(는) 보관함에 구독 해제된 상태로 있습니다. 다시 확인하려면 피드의 행 또는 %3$@에서 %2$@을(를) 선택하세요."
+            "value" : "%1$@은(는) 보관함에 구독 해제된 상태로 있습니다. 다시 확인하려면 피드의 행 또는 %3$@에서 %2$@을(를) 선택하십시오."
           }
         },
         "pt-BR" : {
@@ -2774,7 +2774,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@에서 피드를 보내지 못했습니다(오류 %2$@). 나중에 다시 시도하세요."
+            "value" : "%1$@에서 피드를 보내지 못했습니다(오류 %2$@). 나중에 다시 시도하십시오."
           }
         },
         "pt-BR" : {
@@ -2845,7 +2845,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@에서 파일을 보내지 못했습니다(오류 %2$@). 나중에 다시 시도하세요."
+            "value" : "%1$@에서 파일을 보내지 못했습니다(오류 %2$@). 나중에 다시 시도하십시오."
           }
         },
         "pt-BR" : {
@@ -4833,7 +4833,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@에는 정리할 대본이 없습니다. 먼저 오디오 대본을 만드세요."
+            "value" : "%@에는 정리할 대본이 없습니다. 먼저 오디오 대본을 만드십시오."
           }
         },
         "pt-BR" : {
@@ -6408,7 +6408,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@의 대본을 만드는 중입니다. 취소하거나, 끝난 후에 대본을 첨부하세요."
+            "value" : "%@의 대본을 만드는 중입니다. 취소하거나, 끝난 후에 대본을 첨부하십시오."
           }
         },
         "pt-BR" : {
@@ -6473,7 +6473,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@의 대본을 만드는 중입니다. 취소하거나, 끝난 후에 대본을 삭제하세요."
+            "value" : "%@의 대본을 만드는 중입니다. 취소하거나, 끝난 후에 대본을 삭제하십시오."
           }
         },
         "pt-BR" : {
@@ -6538,7 +6538,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@의 대본을 만드는 중입니다. 끝난 후에 대본을 정리하세요."
+            "value" : "%@의 대본을 만드는 중입니다. 끝난 후에 대본을 정리하십시오."
           }
         },
         "pt-BR" : {
@@ -6822,7 +6822,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@은(는) 보관함에 구독 해제된 상태로 있습니다. 다시 확인하려면 해당 행 또는 %3$@에서 %2$@을(를) 선택하세요."
+            "value" : "%1$@은(는) 보관함에 구독 해제된 상태로 있습니다. 다시 확인하려면 해당 행 또는 %3$@에서 %2$@을(를) 선택하십시오."
           }
         },
         "pt-BR" : {
@@ -7218,7 +7218,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@이(가) 리더에서 열려 있습니다. 리더를 닫은 다음 오디오 편집을 다시 선택하세요."
+            "value" : "%@이(가) 리더에서 열려 있습니다. 리더를 닫은 다음 오디오 편집을 다시 선택하십시오."
           }
         },
         "pt-BR" : {
@@ -7496,7 +7496,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@은(는) 구독 해제되어 TextMouth가 확인하지 않습니다. 다시 확인하려면 %2$@을(를) 선택하세요."
+            "value" : "%1$@은(는) 구독 해제되어 TextMouth가 확인하지 않습니다. 다시 확인하려면 %2$@을(를) 선택하십시오."
           }
         },
         "pt-BR" : {
@@ -7691,7 +7691,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@을(를) 사용할 수 없어서 TextMouth가 이 마이크로 녹음할 수 없습니다. 다른 마이크를 선택하세요."
+            "value" : "%@을(를) 사용할 수 없어서 TextMouth가 이 마이크로 녹음할 수 없습니다. 다른 마이크를 선택하십시오."
           }
         },
         "pt-BR" : {
@@ -8456,7 +8456,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@은(는) 피드에서 다운로드한 에피소드나 기사를 이동합니다. 해당 피드의 폴더에서 하나를 선택하세요."
+            "value" : "%@은(는) 피드에서 다운로드한 에피소드나 기사를 이동합니다. 해당 피드의 폴더에서 하나를 선택하십시오."
           }
         },
         "pt-BR" : {
@@ -11367,7 +11367,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@이(가) 연결되었습니다. 이 마이크로 녹음하려면 %2$@ 팝업 메뉴에서 선택하세요."
+            "value" : "%1$@이(가) 연결되었습니다. 이 마이크로 녹음하려면 %2$@ 팝업 메뉴에서 선택하십시오."
           }
         },
         "pt-BR" : {
@@ -11568,7 +11568,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ 연결이 끊겼습니다. 녹음하려면 마이크를 연결하세요."
+            "value" : "%@ 연결이 끊겼습니다. 녹음하려면 마이크를 연결하십시오."
           }
         },
         "pt-BR" : {
@@ -12067,7 +12067,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@이(가) 연결되었습니다. 녹음하려면 %2$@ 팝업 메뉴에서 하나를 선택하세요."
+            "value" : "%1$@이(가) 연결되었습니다. 녹음하려면 %2$@ 팝업 메뉴에서 하나를 선택하십시오."
           }
         },
         "pt-BR" : {
@@ -46392,7 +46392,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "확장자가 .%@인 파일은 대본이며 책이 아닙니다. 사용하려면 오디오를 가져오고 책을 연 다음 책 메뉴에서 “대본 첨부…” 항목을 선택하세요."
+            "value" : "확장자가 .%@인 파일은 대본이며 책이 아닙니다. 사용하려면 오디오를 가져오고 책을 연 다음 책 메뉴에서 “대본 첨부…” 항목을 선택하십시오."
           }
         },
         "pt-BR" : {
@@ -48029,7 +48029,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@에 대본을 첨부하는 중입니다. 끝난 후에 대본을 만드세요."
+            "value" : "%@에 대본을 첨부하는 중입니다. 끝난 후에 대본을 만드십시오."
           }
         },
         "pt-BR" : {
@@ -55338,7 +55338,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "이동이 끝나면 이 질문에 답하세요."
+            "value" : "이동이 끝나면 이 질문에 답하십시오."
           }
         },
         "pt-BR" : {
@@ -70122,7 +70122,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@이(가) 실행 중이고 이 Mac이 온라인 상태인지 확인한 다음 다시 시도를 선택하세요."
+            "value" : "%@이(가) 실행 중이고 이 Mac이 온라인 상태인지 확인한 다음 다시 시도를 선택하십시오."
           }
         },
         "pt-BR" : {
@@ -70252,7 +70252,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "위의 기준을 확인한 다음 %@을(를) 선택하세요."
+            "value" : "위의 기준을 확인한 다음 %@을(를) 선택하십시오."
           }
         },
         "pt-BR" : {
@@ -71227,7 +71227,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "먼저 %@을(를) 선택하세요."
+            "value" : "먼저 %@을(를) 선택하십시오."
           }
         },
         "pt-BR" : {
@@ -71363,7 +71363,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "보관함 윈도우 상단의 %3$@에서 %1$@ 또는 %2$@을(를) 선택하세요."
+            "value" : "보관함 윈도우 상단의 %3$@에서 %1$@ 또는 %2$@을(를) 선택하십시오."
           }
         },
         "pt-BR" : {
@@ -71948,7 +71948,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "저장 재시도를 선택한 다음 다시 시도하세요."
+            "value" : "저장 재시도를 선택한 다음 다시 시도하십시오."
           }
         },
         "pt-BR" : {
@@ -72143,7 +72143,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "오디오 시작부터 시간이 지정된 %@의 WebVTT(.vtt) 또는 SubRip(.srt) 대본을 선택하세요."
+            "value" : "오디오 시작부터 시간이 지정된 %@의 WebVTT(.vtt) 또는 SubRip(.srt) 대본을 선택하십시오."
           }
         },
         "pt-BR" : {
@@ -72338,7 +72338,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "그 밖의 폴더를 선택하세요."
+            "value" : "그 밖의 폴더를 선택하십시오."
           }
         },
         "pt-BR" : {
@@ -72468,7 +72468,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth 보관함이 들어 있는 폴더를 선택하거나 기본 위치를 사용하세요."
+            "value" : "TextMouth 보관함이 들어 있는 폴더를 선택하거나 기본 위치를 사용하십시오."
           }
         },
         "pt-BR" : {
@@ -72533,7 +72533,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "폴더를 선택하세요."
+            "value" : "폴더를 선택하십시오."
           }
         },
         "pt-BR" : {
@@ -72598,7 +72598,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "그 밖의 위치를 선택하세요."
+            "value" : "그 밖의 위치를 선택하십시오."
           }
         },
         "pt-BR" : {
@@ -72663,7 +72663,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "그 위치를 포함하지 않는 위치를 선택하세요."
+            "value" : "그 위치를 포함하지 않는 위치를 선택하십시오."
           }
         },
         "pt-BR" : {
@@ -72923,7 +72923,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "다른 피드 리더가 내보낸 구독 목록 OPML 파일을 선택하세요."
+            "value" : "다른 피드 리더가 내보낸 구독 목록 OPML 파일을 선택하십시오."
           }
         },
         "pt-BR" : {
@@ -72988,7 +72988,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "보관함을 옮길 빈 폴더를 선택하거나, TextMouth 보관함이 들어 있는 폴더를 선택하여 그 보관함을 사용하세요."
+            "value" : "보관함을 옮길 빈 폴더를 선택하거나, TextMouth 보관함이 들어 있는 폴더를 선택하여 그 보관함을 사용하십시오."
           }
         },
         "pt-BR" : {
@@ -73053,7 +73053,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "빈 폴더 또는 TextMouth 보관함이 들어 있는 폴더를 선택하세요."
+            "value" : "빈 폴더 또는 TextMouth 보관함이 들어 있는 폴더를 선택하십시오."
           }
         },
         "pt-BR" : {
@@ -73118,7 +73118,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "빈 위치를 선택한 다음 다시 시도하세요."
+            "value" : "빈 위치를 선택한 다음 다시 시도하십시오."
           }
         },
         "pt-BR" : {
@@ -73183,7 +73183,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "빈 위치를 선택하세요."
+            "value" : "빈 위치를 선택하십시오."
           }
         },
         "pt-BR" : {
@@ -73378,7 +73378,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "다른 폴더를 선택하세요."
+            "value" : "다른 폴더를 선택하십시오."
           }
         },
         "pt-BR" : {
@@ -73573,7 +73573,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "다른 위치를 선택하세요."
+            "value" : "다른 위치를 선택하십시오."
           }
         },
         "pt-BR" : {
@@ -73703,7 +73703,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "가져올 폴더를 각각 선택하세요. DAISY 책 폴더(ncc.html 또는 .opf 파일 포함) 또는 오디오 트랙 폴더이며, 하나의 오디오북이 됩니다."
+            "value" : "가져올 폴더를 각각 선택하십시오. DAISY 책 폴더(ncc.html 또는 .opf 파일 포함) 또는 오디오 트랙 폴더이며, 하나의 오디오북이 됩니다."
           }
         },
         "pt-BR" : {
@@ -74353,7 +74353,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "언어는 설정, 재생, 대본 만들기에서 선택하세요."
+            "value" : "언어는 설정, 재생, 대본 만들기에서 선택하십시오."
           }
         },
         "pt-BR" : {
@@ -76575,7 +76575,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "닫으세요"
+            "value" : "닫으십시오"
           }
         },
         "pt-BR" : {
@@ -76900,7 +76900,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "먼저 다음을 닫으세요: %@."
+            "value" : "먼저 다음을 닫으십시오: %@."
           }
         },
         "pt-BR" : {
@@ -79311,7 +79311,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "녹음하려면 마이크를 연결하세요."
+            "value" : "녹음하려면 마이크를 연결하십시오."
           }
         },
         "pt-BR" : {
@@ -79376,7 +79376,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "인터넷에 연결한 다음 다시 시도하세요."
+            "value" : "인터넷에 연결한 다음 다시 시도하십시오."
           }
         },
         "pt-BR" : {
@@ -80221,7 +80221,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Compiled HTML Help 파일을 HTML 파일이나 PDF 파일로 변환한 다음 가져오세요."
+            "value" : "Compiled HTML Help 파일을 HTML 파일이나 PDF 파일로 변환한 다음 가져오십시오."
           }
         },
         "pt-BR" : {
@@ -80286,7 +80286,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "DjVu 문서를 PDF 파일로 변환한 다음 가져오세요."
+            "value" : "DjVu 문서를 PDF 파일로 변환한 다음 가져오십시오."
           }
         },
         "pt-BR" : {
@@ -80351,7 +80351,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "XPS 문서를 PDF 파일로 변환한 다음 가져오세요."
+            "value" : "XPS 문서를 PDF 파일로 변환한 다음 가져오십시오."
           }
         },
         "pt-BR" : {
@@ -80481,7 +80481,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "16비트 또는 24비트 정수 샘플로 변환한 다음 다시 가져오세요."
+            "value" : "16비트 또는 24비트 정수 샘플로 변환한 다음 다시 가져오십시오."
           }
         },
         "pt-BR" : {
@@ -84447,7 +84447,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "가져온 책을 위한 폴더를 만들까요?"
+            "value" : "가져온 책을 위한 폴더를 만드시겠습니까?"
           }
         },
         "pt-BR" : {
@@ -84512,7 +84512,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "책을 담을 새 폴더를 만들까요?"
+            "value" : "책을 담을 새 폴더를 만드시겠습니까?"
           }
         },
         "pt-BR" : {
@@ -88591,7 +88591,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "원본 파일을 영구적으로 삭제할까요?"
+            "value" : "원본 파일을 영구적으로 삭제하시겠습니까?"
           }
         },
         "pt-BR" : {
@@ -89046,7 +89046,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "피드 “%@”을(를) 삭제할까요?"
+            "value" : "피드 “%@”을(를) 삭제하시겠습니까?"
           }
         },
         "pt-BR" : {
@@ -89111,7 +89111,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "원본 파일을 영구적으로 삭제할까요?"
+            "value" : "원본 파일을 영구적으로 삭제하시겠습니까?"
           }
         },
         "pt-BR" : {
@@ -89176,7 +89176,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "원본 파일 “%@”을(를) 영구적으로 삭제할까요?"
+            "value" : "원본 파일 “%@”을(를) 영구적으로 삭제하시겠습니까?"
           }
         },
         "pt-BR" : {
@@ -89306,7 +89306,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "“%@”을(를) 삭제할까요?"
+            "value" : "“%@”을(를) 삭제하시겠습니까?"
           }
         },
         "pt-BR" : {
@@ -93430,7 +93430,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "먼저 다운로드하세요. 보관함에서 선택한 다음 %@을(를) 선택하세요."
+            "value" : "먼저 다운로드하십시오. 보관함에서 선택한 다음 %@을(를) 선택하십시오."
           }
         },
         "pt-BR" : {
@@ -94151,7 +94151,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "책을 다운로드한 다음 다시 시도하세요."
+            "value" : "책을 다운로드한 다음 다시 시도하십시오."
           }
         },
         "pt-BR" : {
@@ -94476,7 +94476,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "먼저 다운로드하세요. 보관함에서 선택한 다음 %@을(를) 선택하세요."
+            "value" : "먼저 다운로드하십시오. 보관함에서 선택한 다음 %@을(를) 선택하십시오."
           }
         },
         "pt-BR" : {
@@ -104132,7 +104132,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "모든 피드가 구독 해제되어 확인한 피드가 없습니다. 다시 확인하려면 피드의 행 또는 %2$@에서 %1$@을(를) 선택하세요."
+            "value" : "모든 피드가 구독 해제되어 확인한 피드가 없습니다. 다시 확인하려면 피드의 행 또는 %2$@에서 %1$@을(를) 선택하십시오."
           }
         },
         "pt-BR" : {
@@ -105443,7 +105443,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "실험적 기능입니다. 이 규칙은 인식기가 소리 내어 읽는 책과 다르게 적는 단어를 수정합니다. 적용하기 전에 변경 사항을 확인하세요. 정리 실행 취소를 선택하면 대본이 원래대로 돌아갑니다."
+            "value" : "실험적 기능입니다. 이 규칙은 인식기가 소리 내어 읽는 책과 다르게 적는 단어를 수정합니다. 적용하기 전에 변경 사항을 확인하십시오. 정리 실행 취소를 선택하면 대본이 원래대로 돌아갑니다."
           }
         },
         "pt-BR" : {
@@ -106299,7 +106299,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Keynote 프레젠테이션을 Keynote에서 PDF 파일로 내보낸 다음 가져오세요."
+            "value" : "Keynote 프레젠테이션을 Keynote에서 PDF 파일로 내보낸 다음 가져오십시오."
           }
         },
         "pt-BR" : {
@@ -106364,7 +106364,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Numbers 스프레드시트를 Numbers에서 PDF 파일로 내보낸 다음 가져오세요."
+            "value" : "Numbers 스프레드시트를 Numbers에서 PDF 파일로 내보낸 다음 가져오십시오."
           }
         },
         "pt-BR" : {
@@ -106494,7 +106494,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Pages 문서를 Pages에서 Word 문서나 EPUB 책으로 내보낸 다음 가져오세요."
+            "value" : "Pages 문서를 Pages에서 Word 문서나 EPUB 책으로 내보낸 다음 가져오십시오."
           }
         },
         "pt-BR" : {
@@ -114883,7 +114883,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "TextMouth가 마지막으로 종료되기 전의 녹음 %lld개를 %@ 아래에서 찾았습니다. 각각 저장하거나 폐기하세요."
+                  "value" : "TextMouth가 마지막으로 종료되기 전의 녹음 %lld개를 %@ 아래에서 찾았습니다. 각각 저장하거나 폐기하십시오."
                 }
               }
             }
@@ -115023,7 +115023,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth가 마지막으로 종료되기 전의 녹음 1개를 %@ 아래에서 찾았습니다. 저장하거나 폐기하세요."
+            "value" : "TextMouth가 마지막으로 종료되기 전의 녹음 1개를 %@ 아래에서 찾았습니다. 저장하거나 폐기하십시오."
           }
         },
         "pt-BR" : {
@@ -115153,7 +115153,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "공간을 확보한 다음 다시 가져오세요."
+            "value" : "공간을 확보한 다음 다시 가져오십시오."
           }
         },
         "pt-BR" : {
@@ -115868,7 +115868,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "보관 파일의 새 사본을 받은 다음 다시 가져오세요."
+            "value" : "보관 파일의 새 사본을 받은 다음 다시 가져오십시오."
           }
         },
         "pt-BR" : {
@@ -120722,7 +120722,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bluetooth 기기의 연결이 해제된 후 미디어 명령을 차단하는 시간입니다. 헤드폰을 뺀 후 재생이 다시 시작되면 값을 높이세요."
+            "value" : "Bluetooth 기기의 연결이 해제된 후 미디어 명령을 차단하는 시간입니다. 헤드폰을 뺀 후 재생이 다시 시작되면 값을 높이십시오."
           }
         },
         "pt-BR" : {
@@ -122158,7 +122158,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "없어졌다면 %@을(를) 선택하세요."
+            "value" : "없어졌다면 %@을(를) 선택하십시오."
           }
         },
         "pt-BR" : {
@@ -123334,7 +123334,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "다시 가져오면 중복 항목에 대해 묻습니다. 이때 기존 항목 대체를 선택하여 데이터 디렉토리에 저장된 사본이 그 자리를 대신하게 하거나, 보관함에서 해당 항목을 제거한 다음 데이터 디렉토리를 다시 이동하세요."
+            "value" : "다시 가져오면 중복 항목에 대해 묻습니다. 이때 기존 항목 대체를 선택하여 데이터 디렉토리에 저장된 사본이 그 자리를 대신하게 하거나, 보관함에서 해당 항목을 제거한 다음 데이터 디렉토리를 다시 이동하십시오."
           }
         },
         "pt-BR" : {
@@ -127318,7 +127318,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth를 다시 설치한 다음 책을 다시 가져오세요."
+            "value" : "TextMouth를 다시 설치한 다음 책을 다시 가져오십시오."
           }
         },
         "pt-BR" : {
@@ -127383,7 +127383,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth를 다시 설치한 다음 파일을 다시 가져오세요."
+            "value" : "TextMouth를 다시 설치한 다음 파일을 다시 가져오십시오."
           }
         },
         "pt-BR" : {
@@ -128098,7 +128098,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "이제 읽을 수 있습니다. 다시 시도를 선택하여 사용하세요."
+            "value" : "이제 읽을 수 있습니다. 다시 시도를 선택하여 사용하십시오."
           }
         },
         "pt-BR" : {
@@ -143870,7 +143870,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "폴더에 쓸 수 있는지 확인한 다음 다시 시도하세요."
+            "value" : "폴더에 쓸 수 있는지 확인한 다음 다시 시도하십시오."
           }
         },
         "pt-BR" : {
@@ -151728,7 +151728,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "원본 파일을 휴지통으로 이동할까요?"
+            "value" : "원본 파일을 휴지통으로 이동하시겠습니까?"
           }
         },
         "pt-BR" : {
@@ -151988,7 +151988,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "원본 파일을 휴지통으로 이동할까요?"
+            "value" : "원본 파일을 휴지통으로 이동하시겠습니까?"
           }
         },
         "pt-BR" : {
@@ -152053,7 +152053,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "원본 파일 “%@”을(를) 휴지통으로 이동할까요?"
+            "value" : "원본 파일 “%@”을(를) 휴지통으로 이동하시겠습니까?"
           }
         },
         "pt-BR" : {
@@ -162728,7 +162728,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "필터 프리셋이 없습니다. 하나 추가하거나 기본값으로 재설정하세요."
+            "value" : "필터 프리셋이 없습니다. 하나 추가하거나 기본값으로 재설정하십시오."
           }
         },
         "pt-BR" : {
@@ -162793,7 +162793,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "필터 프리셋이 없습니다. 저장 공간 설정의 오디오 편집에서 추가하세요."
+            "value" : "필터 프리셋이 없습니다. 저장 공간 설정의 오디오 편집에서 추가하십시오."
           }
         },
         "pt-BR" : {
@@ -163313,7 +163313,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "연결된 마이크가 없습니다. 덮어 녹음하려면 마이크를 연결하세요."
+            "value" : "연결된 마이크가 없습니다. 덮어 녹음하려면 마이크를 연결하십시오."
           }
         },
         "pt-BR" : {
@@ -164716,7 +164716,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "“%@”에 대한 팟캐스트를 찾을 수 없습니다. 다른 단어로 검색하거나 피드 주소를 입력하세요."
+            "value" : "“%@”에 대한 팟캐스트를 찾을 수 없습니다. 다른 단어로 검색하거나 피드 주소를 입력하십시오."
           }
         },
         "pt-BR" : {
@@ -165821,7 +165821,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@에서 소리가 들어오지 않습니다. 마이크가 켜져 있고 음소거되지 않았는지 확인하세요."
+            "value" : "%@에서 소리가 들어오지 않습니다. 마이크가 켜져 있고 음소거되지 않았는지 확인하십시오."
           }
         },
         "pt-BR" : {
@@ -173313,7 +173313,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Finder에서 열어 다운로드한 다음 다시 선택하세요."
+            "value" : "Finder에서 열어 다운로드한 다음 다시 선택하십시오."
           }
         },
         "pt-BR" : {
@@ -174418,7 +174418,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "오디오 대본 만들기를 엽니다. 해당 언어의 모델이 이 Mac에 있으면 바로 시작하고, 없으면 거기서 다운로드한 다음 대본 만들기를 선택하세요."
+            "value" : "오디오 대본 만들기를 엽니다. 해당 언어의 모델이 이 Mac에 있으면 바로 시작하고, 없으면 거기서 다운로드한 다음 대본 만들기를 선택하십시오."
           }
         },
         "pt-BR" : {
@@ -182474,7 +182474,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "미리 듣기를 재생합니다. 적용하려면 적용을 다시 선택하세요."
+            "value" : "미리 듣기를 재생합니다. 적용하려면 적용을 다시 선택하십시오."
           }
         },
         "pt-BR" : {
@@ -184409,7 +184409,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "다른 Mac의 프리셋이 방금 도착해 이 프리셋을 대체했습니다. 변경을 다시 하세요."
+            "value" : "다른 Mac의 프리셋이 방금 도착해 이 프리셋을 대체했습니다. 변경을 다시 하십시오."
           }
         },
         "pt-BR" : {
@@ -184994,7 +184994,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "먼저 %@을(를) 미리 듣는 중입니다. 적용하려면 적용을 다시 선택하세요."
+            "value" : "먼저 %@을(를) 미리 듣는 중입니다. 적용하려면 적용을 다시 선택하십시오."
           }
         },
         "pt-BR" : {
@@ -187464,7 +187464,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth를 종료한 다음 다시 여세요."
+            "value" : "TextMouth를 종료한 다음 다시 여십시오."
           }
         },
         "pt-BR" : {
@@ -191683,7 +191683,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "녹음 중입니다. 중지하거나 선택 해제로 폐기한 다음 닫으세요."
+            "value" : "녹음 중입니다. 중지하거나 선택 해제로 폐기한 다음 닫으십시오."
           }
         },
         "pt-BR" : {
@@ -191748,7 +191748,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "녹음 중입니다. 먼저 녹음을 중지하세요."
+            "value" : "녹음 중입니다. 먼저 녹음을 중지하십시오."
           }
         },
         "pt-BR" : {
@@ -196928,7 +196928,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "RAR 만화의 페이지를 CBZ 만화로 다시 묶은 다음 가져오세요."
+            "value" : "RAR 만화의 페이지를 CBZ 만화로 다시 묶은 다음 가져오십시오."
           }
         },
         "pt-BR" : {
@@ -204198,7 +204198,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "WordPerfect 문서를 LibreOffice 같은 해당 파일을 읽는 프로그램에서 Word 또는 HTML 파일로 저장한 다음 가져오세요."
+            "value" : "WordPerfect 문서를 LibreOffice 같은 해당 파일을 읽는 프로그램에서 Word 또는 HTML 파일로 저장한 다음 가져오십시오."
           }
         },
         "pt-BR" : {
@@ -209270,7 +209270,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "오디오북을 하나만 선택한 다음 오디오 대본 만들기를 다시 선택하세요."
+            "value" : "오디오북을 하나만 선택한 다음 오디오 대본 만들기를 다시 선택하십시오."
           }
         },
         "pt-BR" : {
@@ -210848,7 +210848,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%2$@ 탭의 %1$@에서 단축키를 설정하세요. 기본값은 %3$@입니다."
+            "value" : "%2$@ 탭의 %1$@에서 단축키를 설정하십시오. 기본값은 %3$@입니다."
           }
         },
         "pt-BR" : {
@@ -211601,7 +211601,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "먼저 %@에서 충돌을 해결하세요."
+            "value" : "먼저 %@에서 충돌을 해결하십시오."
           }
         },
         "pt-BR" : {
@@ -222645,7 +222645,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "아직 정지 구간을 찾는 중입니다. 잠시 후 다시 시도하세요."
+            "value" : "아직 정지 구간을 찾는 중입니다. 잠시 후 다시 시도하십시오."
           }
         },
         "pt-BR" : {
@@ -222840,7 +222840,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "작업 중입니다. 변경이 끝난 후에 닫으세요."
+            "value" : "작업 중입니다. 변경이 끝난 후에 닫으십시오."
           }
         },
         "pt-BR" : {
@@ -227522,7 +227522,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "읽기 목록에서 제거하거나, 먼저 읽기 목록 옵션에서 %@을(를) 해제하세요."
+            "value" : "읽기 목록에서 제거하거나, 먼저 읽기 목록 옵션에서 %@을(를) 해제하십시오."
           }
         },
         "pt-BR" : {
@@ -230994,7 +230994,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth가 이 종류의 이미지(%@)를 읽을 수 없습니다. PNG 또는 JPEG으로 저장한 다음 그 사본을 가져오세요."
+            "value" : "TextMouth가 이 종류의 이미지(%@)를 읽을 수 없습니다. PNG 또는 JPEG으로 저장한 다음 그 사본을 가져오십시오."
           }
         },
         "pt-BR" : {
@@ -232011,7 +232011,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth가 “%@”의 새 사본을 유지하지 못했습니다. 취소를 선택해 사본을 버린 다음 파일을 다시 가져오세요."
+            "value" : "TextMouth가 “%@”의 새 사본을 유지하지 못했습니다. 취소를 선택해 사본을 버린 다음 파일을 다시 가져오십시오."
           }
         },
         "pt-BR" : {
@@ -233940,7 +233940,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth가 이 피드의 다운로드 목록을 저장하지 못해 다운로드가 유지되었습니다. 보관함을 저장할 수 있게 되면 다시 시도하세요."
+            "value" : "TextMouth가 이 피드의 다운로드 목록을 저장하지 못해 다운로드가 유지되었습니다. 보관함을 저장할 수 있게 되면 다시 시도하십시오."
           }
         },
         "pt-BR" : {
@@ -234460,7 +234460,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth는 RAR 압축 파일을 열지 않습니다. 압축을 푼 다음 안에 든 파일을 가져오세요."
+            "value" : "TextMouth는 RAR 압축 파일을 열지 않습니다. 압축을 푼 다음 안에 든 파일을 가져오십시오."
           }
         },
         "pt-BR" : {
@@ -235706,7 +235706,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth가 이미 %@의 대본을 만드는 중입니다. 끝난 후 다시 시도하세요."
+            "value" : "TextMouth가 이미 %@의 대본을 만드는 중입니다. 끝난 후 다시 시도하십시오."
           }
         },
         "pt-BR" : {
@@ -236979,7 +236979,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth가 “%@”을(를) 새 사본으로 대체하는 중입니다. 완료되면 다시 시도하세요."
+            "value" : "TextMouth가 “%@”을(를) 새 사본으로 대체하는 중입니다. 완료되면 다시 시도하십시오."
           }
         },
         "pt-BR" : {
@@ -237044,7 +237044,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth가 마지막 응답을 아직 처리하는 중입니다. 끝날 때까지 기다리세요."
+            "value" : "TextMouth가 마지막 응답을 아직 처리하는 중입니다. 끝날 때까지 기다리십시오."
           }
         },
         "pt-BR" : {
@@ -237369,7 +237369,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth가 알림을 보낼 수 없도록 설정되어 있습니다. 시스템 설정, 알림, TextMouth 순으로 이동해 켜세요."
+            "value" : "TextMouth가 알림을 보낼 수 없도록 설정되어 있습니다. 시스템 설정, 알림, TextMouth 순으로 이동해 켜십시오."
           }
         },
         "pt-BR" : {
@@ -237434,7 +237434,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth가 마이크를 사용할 수 있도록 허용되어 있지 않습니다. 시스템 설정, 개인정보 보호 및 보안, 마이크에서 켜세요."
+            "value" : "TextMouth가 마이크를 사용할 수 있도록 허용되어 있지 않습니다. 시스템 설정, 개인정보 보호 및 보안, 마이크에서 켜십시오."
           }
         },
         "pt-BR" : {
@@ -238372,7 +238372,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "TextMouth를 닫기 전에 중복 여부를 묻는 질문에 답하지 않았으므로, TextMouth가 중복된 책의 새 사본 %lld개를 휴지통으로 이동했습니다. 되찾으려면 휴지통을 열고 되돌려 놓기를 선택하세요."
+                  "value" : "TextMouth를 닫기 전에 중복 여부를 묻는 질문에 답하지 않았으므로, TextMouth가 중복된 책의 새 사본 %lld개를 휴지통으로 이동했습니다. 되찾으려면 휴지통을 열고 되돌려 놓기를 선택하십시오."
                 }
               }
             }
@@ -238512,7 +238512,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth를 닫기 전에 중복 여부를 묻는 질문에 답하지 않았으므로, TextMouth가 %@의 새 사본을 휴지통으로 이동했습니다. 되찾으려면 휴지통을 열고 되돌려 놓기를 선택하세요."
+            "value" : "TextMouth를 닫기 전에 중복 여부를 묻는 질문에 답하지 않았으므로, TextMouth가 %@의 새 사본을 휴지통으로 이동했습니다. 되찾으려면 휴지통을 열고 되돌려 놓기를 선택하십시오."
           }
         },
         "pt-BR" : {
@@ -238577,7 +238577,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth를 닫기 전에 중복 여부를 묻는 질문에 답하지 않았으므로, TextMouth가 “%@”의 새 사본을 휴지통으로 이동했습니다. 되찾으려면 휴지통을 열고 되돌려 놓기를 선택하세요."
+            "value" : "TextMouth를 닫기 전에 중복 여부를 묻는 질문에 답하지 않았으므로, TextMouth가 “%@”의 새 사본을 휴지통으로 이동했습니다. 되찾으려면 휴지통을 열고 되돌려 놓기를 선택하십시오."
           }
         },
         "pt-BR" : {
@@ -241399,7 +241399,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth 자체 규칙이 더 최신이며 버전은 %@입니다. 사용하려면 사용자 사본을 삭제하거나 해당 규칙을 사본에 복사하세요."
+            "value" : "TextMouth 자체 규칙이 더 최신이며 버전은 %@입니다. 사용하려면 사용자 사본을 삭제하거나 해당 규칙을 사본에 복사하십시오."
           }
         },
         "pt-BR" : {
@@ -241860,7 +241860,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "웹 주소가 아닙니다. 피드 주소 또는 피드를 알려 주는 페이지의 주소를 입력하세요."
+            "value" : "웹 주소가 아닙니다. 피드 주소 또는 피드를 알려 주는 페이지의 주소를 입력하십시오."
           }
         },
         "pt-BR" : {
@@ -242278,7 +242278,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "이 페이지에는 피드 %lld개가 있습니다. 하나를 선택한 다음 구독을 선택하세요."
+                  "value" : "이 페이지에는 피드 %lld개가 있습니다. 하나를 선택한 다음 구독을 선택하십시오."
                 }
               }
             }
@@ -242994,7 +242994,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ 필터에 옵션보다 많은 값이 지정되었습니다. key=value 형식으로 지정하세요."
+            "value" : "%@ 필터에 옵션보다 많은 값이 지정되었습니다. key=value 형식으로 지정하십시오."
           }
         },
         "pt-BR" : {
@@ -247040,7 +247040,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "압축 파일에 가져오지 않은 다른 책 %lld권이 더 있습니다. 압축을 풀어 가져오세요."
+                  "value" : "압축 파일에 가져오지 않은 다른 책 %lld권이 더 있습니다. 압축을 풀어 가져오십시오."
                 }
               }
             }
@@ -249807,7 +249807,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "책의 대본을 다시 만드는 중입니다. 끝난 후에 대본을 정리하세요."
+            "value" : "책의 대본을 다시 만드는 중입니다. 끝난 후에 대본을 정리하십시오."
           }
         },
         "pt-BR" : {
@@ -250262,7 +250262,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "책이 리더에서 열려 있습니다. 리더를 닫은 다음 다시 저장하세요."
+            "value" : "책이 리더에서 열려 있습니다. 리더를 닫은 다음 다시 저장하십시오."
           }
         },
         "pt-BR" : {
@@ -250327,7 +250327,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "책이 열려 있어 다운로드를 제거할 수 없습니다. 먼저 닫으세요."
+            "value" : "책이 열려 있어 다운로드를 제거할 수 없습니다. 먼저 닫으십시오."
           }
         },
         "pt-BR" : {
@@ -250652,7 +250652,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "대본을 만든 이후 책의 오디오가 변경되어(%@) 대본이 더 이상 맞지 않습니다. 대본을 다시 만드세요."
+            "value" : "대본을 만든 이후 책의 오디오가 변경되어(%@) 대본이 더 이상 맞지 않습니다. 대본을 다시 만드십시오."
           }
         },
         "pt-BR" : {
@@ -250717,7 +250717,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "대본을 만드는 동안 책의 오디오가 변경되었습니다: %@. 대본을 다시 만드세요."
+            "value" : "대본을 만드는 동안 책의 오디오가 변경되었습니다: %@. 대본을 다시 만드십시오."
           }
         },
         "pt-BR" : {
@@ -251497,7 +251497,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "책의 텍스트가 iCloud에만 있어서 TextMouth가 그대로 둡니다. 책을 다운로드한 다음 다시 시도하세요."
+            "value" : "책의 텍스트가 iCloud에만 있어서 TextMouth가 그대로 둡니다. 책을 다운로드한 다음 다시 시도하십시오."
           }
         },
         "pt-BR" : {
@@ -257079,7 +257079,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "“%@”의 새 사본 파일이 더 이상 보관함에 없어 유지할 수 없습니다. 취소를 선택한 다음 파일을 다시 가져오세요."
+            "value" : "“%@”의 새 사본 파일이 더 이상 보관함에 없어 유지할 수 없습니다. 취소를 선택한 다음 파일을 다시 가져오십시오."
           }
         },
         "pt-BR" : {
@@ -257903,7 +257903,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "이 피드에 선택한 폴더가 더 이상 보관함에 없습니다. 다른 폴더를 선택하세요."
+            "value" : "이 피드에 선택한 폴더가 더 이상 보관함에 없습니다. 다른 폴더를 선택하십시오."
           }
         },
         "pt-BR" : {
@@ -257968,7 +257968,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "선택한 폴더가 더 이상 보관함에 없습니다. 다른 폴더를 선택하세요."
+            "value" : "선택한 폴더가 더 이상 보관함에 없습니다. 다른 폴더를 선택하십시오."
           }
         },
         "pt-BR" : {
@@ -258033,7 +258033,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "피드의 폴더를 담도록 선택한 폴더가 더 이상 보관함에 없습니다. 다른 폴더를 선택하세요."
+            "value" : "피드의 폴더를 담도록 선택한 폴더가 더 이상 보관함에 없습니다. 다른 폴더를 선택하십시오."
           }
         },
         "pt-BR" : {
@@ -258098,7 +258098,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "이 피드의 폴더가 더 이상 보관함에 없습니다. 다른 폴더를 선택하세요."
+            "value" : "이 피드의 폴더가 더 이상 보관함에 없습니다. 다른 폴더를 선택하십시오."
           }
         },
         "pt-BR" : {
@@ -259519,7 +259519,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "보관함에 접근할 수 없어 TextMouth가 “%@”의 새 사본을 유지할 수 없습니다. 보관함이 돌아오면 다시 답하세요."
+            "value" : "보관함에 접근할 수 없어 TextMouth가 “%@”의 새 사본을 유지할 수 없습니다. 보관함이 돌아오면 다시 답하십시오."
           }
         },
         "pt-BR" : {
@@ -259584,7 +259584,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "보관함에서 지금은 책을 이동할 수 없습니다. 사용할 수 있게 되면 다시 시도하세요."
+            "value" : "보관함에서 지금은 책을 이동할 수 없습니다. 사용할 수 있게 되면 다시 시도하십시오."
           }
         },
         "pt-BR" : {
@@ -259649,7 +259649,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "책이 열려 있는 동안에는 보관함을 이동할 수 없습니다. 먼저 %@을(를) 닫으세요."
+            "value" : "책이 열려 있는 동안에는 보관함을 이동할 수 없습니다. 먼저 %@을(를) 닫으십시오."
           }
         },
         "pt-BR" : {
@@ -259714,7 +259714,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "책이 열려 있는 동안에는 보관함을 이동할 수 없습니다. 먼저 그 책을 닫으세요."
+            "value" : "책이 열려 있는 동안에는 보관함을 이동할 수 없습니다. 먼저 그 책을 닫으십시오."
           }
         },
         "pt-BR" : {
@@ -259909,7 +259909,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "보관함 색인을 읽을 수 없습니다. 먼저 보관함 윈도우에서 다시 시도 또는 보관함 색인 다시 만들기를 선택하세요."
+            "value" : "보관함 색인을 읽을 수 없습니다. 먼저 보관함 윈도우에서 다시 시도 또는 보관함 색인 다시 만들기를 선택하십시오."
           }
         },
         "pt-BR" : {
@@ -265001,7 +265001,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@의 팟캐스트 디렉터리가 검색에 응답하지 못했습니다(오류 %2$@). 나중에 다시 시도하세요."
+            "value" : "%1$@의 팟캐스트 디렉터리가 검색에 응답하지 못했습니다(오류 %2$@). 나중에 다시 시도하십시오."
           }
         },
         "pt-BR" : {
@@ -265500,7 +265500,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "팟캐스트 디렉터리가 검색에 응답하지 못했습니다. 나중에 다시 시도하세요."
+            "value" : "팟캐스트 디렉터리가 검색에 응답하지 못했습니다. 나중에 다시 시도하십시오."
           }
         },
         "pt-BR" : {
@@ -265565,7 +265565,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "팟캐스트 디렉터리가 검색을 거부했습니다. 분당 약 20회까지 허용됩니다. 1분 기다린 다음 다시 시도하세요."
+            "value" : "팟캐스트 디렉터리가 검색을 거부했습니다. 분당 약 20회까지 허용됩니다. 1분 기다린 다음 다시 시도하십시오."
           }
         },
         "pt-BR" : {
@@ -265630,7 +265630,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "팟캐스트 디렉터리가 TextMouth가 읽을 수 없는 응답을 보냈습니다. 나중에 다시 시도하세요."
+            "value" : "팟캐스트 디렉터리가 TextMouth가 읽을 수 없는 응답을 보냈습니다. 나중에 다시 시도하십시오."
           }
         },
         "pt-BR" : {
@@ -265825,7 +265825,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "정리 이전의 대본이 클라우드에만 있습니다. 책을 다운로드한 다음 다시 시도하세요."
+            "value" : "정리 이전의 대본이 클라우드에만 있습니다. 책을 다운로드한 다음 다시 시도하십시오."
           }
         },
         "pt-BR" : {
@@ -267169,7 +267169,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "녹음을 저장할 수 없습니다: %1$@ 녹음은 보관됩니다. %2$@ 또는 %3$@ 중에서 선택하세요."
+            "value" : "녹음을 저장할 수 없습니다: %1$@ 녹음은 보관됩니다. %2$@ 또는 %3$@ 중에서 선택하십시오."
           }
         },
         "pt-BR" : {
@@ -268209,7 +268209,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "서버 %@을(를) 찾을 수 없습니다. 주소를 확인하세요."
+            "value" : "서버 %@을(를) 찾을 수 없습니다. 주소를 확인하십시오."
           }
         },
         "pt-BR" : {
@@ -268404,7 +268404,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ 음성 모델이 아직 이 Mac에 없습니다. 먼저 다운로드하세요."
+            "value" : "%@ 음성 모델이 아직 이 Mac에 없습니다. 먼저 다운로드하십시오."
           }
         },
         "pt-BR" : {
@@ -269450,7 +269450,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "대본을 읽을 수 없습니다. 책이 클라우드에만 있다면 다운로드한 다음 다시 시도하세요."
+            "value" : "대본을 읽을 수 없습니다. 책이 클라우드에만 있다면 다운로드한 다음 다시 시도하십시오."
           }
         },
         "pt-BR" : {
@@ -269515,7 +269515,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "이 내용이 표시된 후 대본이 변경되었습니다. 변경 사항을 보려면 대본 정리를 다시 여세요."
+            "value" : "이 내용이 표시된 후 대본이 변경되었습니다. 변경 사항을 보려면 대본 정리를 다시 여십시오."
           }
         },
         "pt-BR" : {
@@ -269905,7 +269905,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "대본이 iCloud에만 있어서 TextMouth가 그대로 둡니다. 책을 다운로드한 다음 다시 시도하세요."
+            "value" : "대본이 iCloud에만 있어서 TextMouth가 그대로 둡니다. 책을 다운로드한 다음 다시 시도하십시오."
           }
         },
         "pt-BR" : {
@@ -270035,7 +270035,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@의 대본을 읽을 수 없습니다. 책이 클라우드에만 있다면 다운로드한 다음 다시 시도하세요."
+            "value" : "%@의 대본을 읽을 수 없습니다. 책이 클라우드에만 있다면 다운로드한 다음 다시 시도하십시오."
           }
         },
         "pt-BR" : {
@@ -271276,7 +271276,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "그다음 읽기 목록에서 제거하거나 읽기 목록 옵션에서 %@을(를) 해제하세요."
+            "value" : "그다음 읽기 목록에서 제거하거나 읽기 목록 옵션에서 %@을(를) 해제하십시오."
           }
         },
         "pt-BR" : {
@@ -274587,7 +274587,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "이 Mac이 오프라인이어서 %@을(를) 새로 고칠 수 없습니다. 인터넷에 연결한 다음 다시 시도하세요."
+            "value" : "이 Mac이 오프라인이어서 %@을(를) 새로 고칠 수 없습니다. 인터넷에 연결한 다음 다시 시도하십시오."
           }
         },
         "pt-BR" : {
@@ -274717,7 +274717,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "이 Mac이 오프라인이어서 디렉터리를 검색할 수 없습니다. 인터넷에 연결한 다음 다시 시도하세요."
+            "value" : "이 Mac이 오프라인이어서 디렉터리를 검색할 수 없습니다. 인터넷에 연결한 다음 다시 시도하십시오."
           }
         },
         "pt-BR" : {
@@ -274782,7 +274782,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "이 Mac이 오프라인이어서 “%@”을(를) 다운로드할 수 없습니다. 인터넷에 연결한 다음 다시 시도하세요."
+            "value" : "이 Mac이 오프라인이어서 “%@”을(를) 다운로드할 수 없습니다. 인터넷에 연결한 다음 다시 시도하십시오."
           }
         },
         "pt-BR" : {
@@ -276327,7 +276327,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "이 책에는 유효한 관리형 패키지가 없습니다. 보관함에서만 제거하거나, 삭제하기 전에 저장소를 복구하세요."
+            "value" : "이 책에는 유효한 관리형 패키지가 없습니다. 보관함에서만 제거하거나, 삭제하기 전에 저장소를 복구하십시오."
           }
         },
         "pt-BR" : {
@@ -282704,7 +282704,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "다시 다운로드하려면 해당 행에서 %@을(를) 선택하세요."
+            "value" : "다시 다운로드하려면 해당 행에서 %@을(를) 선택하십시오."
           }
         },
         "pt-BR" : {
@@ -282862,7 +282862,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "나머지 %1$lld개를 다시 다운로드하려면 각 행에서 %2$@을(를) 선택하세요."
+                  "value" : "나머지 %1$lld개를 다시 다운로드하려면 각 행에서 %2$@을(를) 선택하십시오."
                 }
               }
             }
@@ -283002,7 +283002,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "나머지 하나를 다시 다운로드하려면 해당 행에서 %@을(를) 선택하세요."
+            "value" : "나머지 하나를 다시 다운로드하려면 해당 행에서 %@을(를) 선택하십시오."
           }
         },
         "pt-BR" : {
@@ -283067,7 +283067,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "다시 다운로드하려면 각 행에서 %@을(를) 선택하세요."
+            "value" : "다시 다운로드하려면 각 행에서 %@을(를) 선택하십시오."
           }
         },
         "pt-BR" : {
@@ -283197,7 +283197,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "기사를 유지하려면 먼저 해당 행에서 %@을(를) 선택하세요."
+            "value" : "기사를 유지하려면 먼저 해당 행에서 %@을(를) 선택하십시오."
           }
         },
         "pt-BR" : {
@@ -283262,7 +283262,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "에피소드를 유지하려면 먼저 해당 행에서 %@을(를) 선택하세요."
+            "value" : "에피소드를 유지하려면 먼저 해당 행에서 %@을(를) 선택하십시오."
           }
         },
         "pt-BR" : {
@@ -283327,7 +283327,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "항목을 유지하려면 먼저 해당 행에서 %@을(를) 선택하세요."
+            "value" : "항목을 유지하려면 먼저 해당 행에서 %@을(를) 선택하십시오."
           }
         },
         "pt-BR" : {
@@ -283392,7 +283392,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "보관을 해제하려면 읽기 목록에서 제거하거나 읽기 목록 옵션에서 %@을(를) 해제하세요."
+            "value" : "보관을 해제하려면 읽기 목록에서 제거하거나 읽기 목록 옵션에서 %@을(를) 해제하십시오."
           }
         },
         "pt-BR" : {
@@ -283457,7 +283457,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "보관을 해제하려면 읽기 목록에서 제거하거나 읽기 목록 옵션에서 %@을(를) 해제하세요."
+            "value" : "보관을 해제하려면 읽기 목록에서 제거하거나 읽기 목록 옵션에서 %@을(를) 해제하십시오."
           }
         },
         "pt-BR" : {
@@ -283593,7 +283593,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "다른 폴더를 사용하려면 설정, 저장 공간을 열고 %1$@ 또는 %2$@을(를) 선택하세요."
+            "value" : "다른 폴더를 사용하려면 설정, 저장 공간을 열고 %1$@ 또는 %2$@을(를) 선택하십시오."
           }
         },
         "pt-BR" : {
@@ -283658,7 +283658,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "사용하려면 설정의 텍스트 탭에서 %@을(를) 선택하세요."
+            "value" : "사용하려면 설정의 텍스트 탭에서 %@을(를) 선택하십시오."
           }
         },
         "pt-BR" : {
@@ -283723,7 +283723,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "사용하려면 책을 열고 책 메뉴에서 %@을(를) 선택하세요."
+            "value" : "사용하려면 책을 열고 책 메뉴에서 %@을(를) 선택하십시오."
           }
         },
         "pt-BR" : {
@@ -284131,7 +284131,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "붙여넣기용으로 보관하기에는 너무 깁니다. 이동하려면 잘라낸 직후에 붙여넣으세요."
+            "value" : "붙여넣기용으로 보관하기에는 너무 깁니다. 이동하려면 잘라낸 직후에 붙여넣으십시오."
           }
         },
         "pt-BR" : {
@@ -287632,7 +287632,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "잠시 후 다시 시도하세요."
+            "value" : "잠시 후 다시 시도하십시오."
           }
         },
         "pt-BR" : {
@@ -287697,7 +287697,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "이동이 끝난 다음 다시 시도하세요."
+            "value" : "이동이 끝난 다음 다시 시도하십시오."
           }
         },
         "pt-BR" : {
@@ -287762,7 +287762,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "책을 다운로드한 후 다시 시도하세요."
+            "value" : "책을 다운로드한 후 다시 시도하십시오."
           }
         },
         "pt-BR" : {
@@ -287827,7 +287827,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "그 작업이 끝나면 다시 시도하세요."
+            "value" : "그 작업이 끝나면 다시 시도하십시오."
           }
         },
         "pt-BR" : {
@@ -287892,7 +287892,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "다시 시도하세요."
+            "value" : "다시 시도하십시오."
           }
         },
         "pt-BR" : {
@@ -288294,7 +288294,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "필터 체인을 입력하세요."
+            "value" : "필터 체인을 입력하십시오."
           }
         },
         "pt-BR" : {
@@ -288619,7 +288619,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "시간을 입력하세요. 예: 12:04.3, 1:02:03, 75.5."
+            "value" : "시간을 입력하십시오. 예: 12:04.3, 1:02:03, 75.5."
           }
         },
         "pt-BR" : {
@@ -288749,7 +288749,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "피드나 웹 페이지 주소를 입력하거나 붙여넣은 다음 Return 키를 누르세요"
+            "value" : "피드나 웹 페이지 주소를 입력하거나 붙여넣은 다음 Return 키를 누르십시오"
           }
         },
         "pt-BR" : {
@@ -290049,7 +290049,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "마지막으로 저장한 오디오 상태가 될 때까지 실행 취소하거나 실행 복귀하세요."
+            "value" : "마지막으로 저장한 오디오 상태가 될 때까지 실행 취소하거나 실행 복귀하십시오."
           }
         },
         "pt-BR" : {
@@ -291242,7 +291242,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ 구독을 해제할까요?"
+            "value" : "%@ 구독을 해제하시겠습니까?"
           }
         },
         "pt-BR" : {
@@ -292306,7 +292306,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ 및 %2$@을(를) 사용하거나 드래그하여 순서를 바꾸세요. 규칙은 위에서 아래로 적용됩니다."
+            "value" : "%1$@ 및 %2$@을(를) 사용하거나 드래그하여 순서를 바꾸십시오. 규칙은 위에서 아래로 적용됩니다."
           }
         },
         "pt-BR" : {
@@ -292761,7 +292761,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "파서를 업데이트한 후에 사용하세요."
+            "value" : "파서를 업데이트한 후에 사용하십시오."
           }
         },
         "pt-BR" : {
@@ -293086,7 +293086,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "파일을 백업에서 복원하거나, 권한을 수정하거나, 파일을 저장한 버전으로 TextMouth를 업데이트한 후에 사용하세요."
+            "value" : "파일을 백업에서 복원하거나, 권한을 수정하거나, 파일을 저장한 버전으로 TextMouth를 업데이트한 후에 사용하십시오."
           }
         },
         "pt-BR" : {
@@ -294652,7 +294652,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "내보내기가 끝날 때까지 기다리세요"
+            "value" : "내보내기가 끝날 때까지 기다리십시오"
           }
         },
         "pt-BR" : {
@@ -294717,7 +294717,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "대본 만들기가 끝날 때까지 기다리거나 취소하세요"
+            "value" : "대본 만들기가 끝날 때까지 기다리거나 취소하십시오"
           }
         },
         "pt-BR" : {
@@ -307410,7 +307410,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@을(를) 다시 선택하세요"
+            "value" : "%@을(를) 다시 선택하십시오"
           }
         },
         "pt-BR" : {
@@ -307475,7 +307475,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Make online-only를 선택하세요"
+            "value" : "Make online-only를 선택하십시오"
           }
         },
         "pt-BR" : {
@@ -307540,7 +307540,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "다운로드 제거를 선택하세요"
+            "value" : "다운로드 제거를 선택하십시오"
           }
         },
         "pt-BR" : {
@@ -309100,7 +309100,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ffmpeg를 시작할 수 없습니다. 설치되어 있는지 확인하거나 저장 공간 설정에서 ffmpeg 사용을 끄세요."
+            "value" : "ffmpeg를 시작할 수 없습니다. 설치되어 있는지 확인하거나 저장 공간 설정에서 ffmpeg 사용을 끄십시오."
           }
         },
         "pt-BR" : {
@@ -310081,7 +310081,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "오디오 샘플 레이트의 절반(%@ Hz) 미만인 주파수를 지정하세요"
+            "value" : "오디오 샘플 레이트의 절반(%@ Hz) 미만인 주파수를 지정하십시오"
           }
         },
         "pt-BR" : {
@@ -310146,7 +310146,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "더 좁은 폭을 지정하세요. 이 폭으로는 %@ Hz에서 사용할 수 있는 필터가 만들어지지 않습니다"
+            "value" : "더 좁은 폭을 지정하십시오. 이 폭으로는 %@ Hz에서 사용할 수 있는 필터가 만들어지지 않습니다"
           }
         },
         "pt-BR" : {
@@ -310217,7 +310217,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@에서 %2$@ 사이의 숫자를 지정하세요"
+            "value" : "%1$@에서 %2$@ 사이의 숫자를 지정하십시오"
           }
         },
         "pt-BR" : {
@@ -310282,7 +310282,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "숫자(예: 0.5) 또는 데시벨(예: -6dB)로 지정하세요"
+            "value" : "숫자(예: 0.5) 또는 데시벨(예: -6dB)로 지정하십시오"
           }
         },
         "pt-BR" : {
@@ -310347,7 +310347,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "2.5, 250ms, 0:01:30 같은 시간을 지정하세요"
+            "value" : "2.5, 250ms, 0:01:30 같은 시간을 지정하십시오"
           }
         },
         "pt-BR" : {
@@ -310418,7 +310418,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@에서 %2$@ 사이의 정수를 지정하세요"
+            "value" : "%1$@에서 %2$@ 사이의 정수를 지정하십시오"
           }
         },
         "pt-BR" : {
@@ -310483,7 +310483,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ 중 하나를 지정하세요"
+            "value" : "%@ 중 하나를 지정하십시오"
           }
         },
         "pt-BR" : {
@@ -310548,7 +310548,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "true 또는 false를 지정하세요"
+            "value" : "true 또는 false를 지정하십시오"
           }
         },
         "pt-BR" : {
@@ -311003,7 +311003,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "iCloud Drive가 꺼져 있거나 로그아웃되었을 수 있고, 이 Mac이 오프라인일 수도 있습니다. 확인한 다음 다시 시도를 선택하세요."
+            "value" : "iCloud Drive가 꺼져 있거나 로그아웃되었을 수 있고, 이 Mac이 오프라인일 수도 있습니다. 확인한 다음 다시 시도를 선택하십시오."
           }
         },
         "pt-BR" : {
@@ -325081,7 +325081,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "다시 시도하세요"
+            "value" : "다시 시도하십시오"
           }
         },
         "pt-BR" : {
@@ -325341,7 +325341,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Google Drive의 Offline Access 메뉴를 사용하세요"
+            "value" : "Google Drive의 Offline Access 메뉴를 사용하십시오"
           }
         },
         "pt-BR" : {
@@ -325406,7 +325406,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "드라이브 자체 명령으로 책을 온라인에만 유지하세요"
+            "value" : "드라이브 자체 명령으로 책을 온라인에만 유지하십시오"
           }
         },
         "pt-BR" : {
@@ -326449,7 +326449,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "“%@”이(가) 대체되는 동안 변경되어 TextMouth가 두 사본을 그대로 두었습니다. 기존 항목 대체를 다시 선택하세요."
+            "value" : "“%@”이(가) 대체되는 동안 변경되어 TextMouth가 두 사본을 그대로 두었습니다. 기존 항목 대체를 다시 선택하십시오."
           }
         },
         "pt-BR" : {
@@ -327389,7 +327389,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "“%@”이(가) 클라우드에만 있습니다. 책을 다운로드한 다음 대본을 만드세요."
+            "value" : "“%@”이(가) 클라우드에만 있습니다. 책을 다운로드한 다음 대본을 만드십시오."
           }
         },
         "pt-BR" : {
@@ -327454,7 +327454,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "“%@”이(가) 녹음 중입니다. 중지하거나 선택 해제로 폐기한 다음 종료하세요."
+            "value" : "“%@”이(가) 녹음 중입니다. 중지하거나 선택 해제로 폐기한 다음 종료하십시오."
           }
         },
         "pt-BR" : {
@@ -327519,7 +327519,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "“%@”이(가) 아직 작업 중입니다. 변경이 끝난 후 종료하세요."
+            "value" : "“%@”이(가) 아직 작업 중입니다. 변경이 끝난 후 종료하십시오."
           }
         },
         "pt-BR" : {
@@ -327791,7 +327791,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "“%1$@”은(는) 이미 보관함에 있는 “%2$@”과(와) 일치합니다. 기존 사본을 대체할까요, 아니면 둘 다 별도의 책으로 유지할까요?"
+            "value" : "“%1$@”은(는) 이미 보관함에 있는 “%2$@”과(와) 일치합니다. 기존 사본을 대체하시겠습니까, 아니면 둘 다 별도의 책으로 유지하시겠습니까?"
           }
         },
         "pt-BR" : {
