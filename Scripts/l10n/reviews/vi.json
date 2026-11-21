@@ -1,0 +1,667 @@
+{
+ "language": "vi",
+ "reviews": [
+  {
+   "part": 1,
+   "areas": [
+    "library",
+    "storage and settings"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "\"%@\" plays the next book in the same folder by sort order.",
+     "english": "\"%@\" plays the next book in the same folder by sort order.",
+     "before": "“%@” phát sách kế tiếp trong cùng thư mục theo thứ tự sắp xếp.",
+     "after": "“%@” phát sách tiếp theo trong cùng thư mục theo thứ tự sắp xếp.",
+     "why": "term: the choice it explains reads Tiếp tục sang sách tiếp theo, the glossary's Next (Tiếp theo); kế tiếp is the catalog's minority word"
+    },
+    {
+     "key": "%@ also holds %lld books a newer TextMouth added, which are kept.",
+     "english": {
+      "one": "%@ also holds %lld book a newer TextMouth added, which is kept.",
+      "other": "%@ also holds %lld books a newer TextMouth added, which are kept."
+     },
+     "before": {
+      "other": "%@ cũng có %lld sách do TextMouth bản mới hơn thêm vào, và chúng được giữ nguyên."
+     },
+     "after": {
+      "other": "%@ cũng có %lld sách do phiên bản TextMouth mới hơn thêm vào, và chúng được giữ nguyên."
+     },
+     "why": "natural: Vietnamese says phiên bản TextMouth mới hơn, as the catalog's other strings do, not TextMouth bản mới hơn"
+    },
+    {
+     "key": "%@ is filed %@ in %@ and %@ in %@.",
+     "english": "%1$@ is filed %2$@ in %3$@ and %4$@ in %5$@.",
+     "before": "%1$@ được xếp %2$@ trong %3$@ và %4$@ trong %5$@.",
+     "after": "Trong %3$@, %1$@ được xếp %2$@; trong %5$@, sách được xếp %4$@.",
+     "why": "natural: the copies first, so the placement fragments (trong thư mục “…”) no longer stack two trong phrases"
+    },
+    {
+     "key": "%@, shown when applicable",
+     "english": "%@, shown when applicable",
+     "before": "%@, hiển thị khi áp dụng",
+     "after": "%@, hiển thị khi thích hợp",
+     "why": "meaning: khi áp dụng is when applying; When Applicable is khi thích hợp"
+    },
+    {
+     "key": "%lld Selected",
+     "english": {
+      "one": "%lld Selected",
+      "other": "%lld Selected"
+     },
+     "before": {
+      "other": "%lld đã chọn"
+     },
+     "after": {
+      "other": "%lld sách đã chọn"
+     },
+     "why": "grammar: the removal title's object needs its noun (Chuyển 3 sách đã chọn vào Thùng rác, not Chuyển 3 đã chọn)"
+    },
+    {
+     "key": "%lld views need a newer TextMouth. They are kept as they are, and not offered.",
+     "english": {
+      "one": "%lld view needs a newer TextMouth. It is kept as it is, and not offered.",
+      "other": "%lld views need a newer TextMouth. They are kept as they are, and not offered."
+     },
+     "before": {
+      "other": "%lld chế độ xem cần TextMouth bản mới hơn. Chúng được giữ nguyên và không được hiển thị."
+     },
+     "after": {
+      "other": "%lld chế độ xem cần phiên bản TextMouth mới hơn. Chúng được giữ nguyên và không được hiển thị."
+     },
+     "why": "natural: phiên bản TextMouth mới hơn, as elsewhere in the catalog"
+    },
+    {
+     "key": "1 book in this library needs a newer version of TextMouth. It is kept as it is, but not shown.",
+     "english": "1 book in this library needs a newer version of TextMouth. It is kept as it is, but not shown.",
+     "before": "1 sách trong thư viện này cần phiên bản TextMouth mới hơn. Sách được giữ nguyên nhưng không hiển thị.",
+     "after": "1 cuốn sách trong thư viện này cần phiên bản TextMouth mới hơn. Cuốn sách này được giữ nguyên nhưng không hiển thị.",
+     "why": "natural: a number in a sentence takes its classifier (1 cuốn sách), and the second sentence names it as this book"
+    },
+    {
+     "key": "Always offers a view all the time. When Applicable offers it only while it lists something: the Reading List while it holds a book, episode, or article, and Feeds while there is a feed. Hidden leaves it out. A window keeps its view until you choose another.",
+     "english": "Always offers a view all the time. When Applicable offers it only while it lists something: the Reading List while it holds a book, episode, or article, and Feeds while there is a feed. Hidden leaves it out. A window keeps its view until you choose another.",
+     "before": "Luôn luôn hiển thị chế độ xem mọi lúc. Khi áp dụng chỉ hiển thị khi chế độ xem có mục để liệt kê: Danh sách đọc khi có sách, tập hoặc bài viết, và Nguồn cấp khi có nguồn cấp. Ẩn là bỏ chế độ xem đi. Mỗi cửa sổ giữ chế độ xem của nó cho đến khi bạn chọn chế độ khác.",
+     "after": "“Luôn luôn” hiển thị chế độ xem mọi lúc. “Khi thích hợp” chỉ hiển thị chế độ xem khi nó có mục để liệt kê: Danh sách đọc khi có sách, tập hoặc bài viết, và Nguồn cấp khi có nguồn cấp. “Ẩn” không hiển thị chế độ xem. Mỗi cửa sổ giữ chế độ xem của nó cho đến khi bạn chọn chế độ khác.",
+     "why": "meaning: the three choice names are the sentences' subjects, so they are quoted; When Applicable is Khi thích hợp, not Khi áp dụng (when applying)"
+    },
+    {
+     "key": "An edit of its text is kept beside the new reading, as a copy in the book's package.",
+     "english": "An edit of its text is kept beside the new reading, as a copy in the book's package.",
+     "before": "Bản sửa văn bản của sách được giữ cạnh cách đọc mới, dưới dạng một bản sao trong gói của sách.",
+     "after": "Bản sửa văn bản của sách được giữ bên cạnh kết quả đọc lại, dưới dạng một bản sao trong gói của sách.",
+     "why": "meaning: the new reading is the text a re-read makes (kết quả đọc lại), not cách đọc mới, a new way of reading"
+    },
+    {
+     "key": "Books can't be moved in this view. Go to a folder in Folders, or to the Reading List, then try again.",
+     "english": "Books can't be moved in this view. Go to a folder in Folders, or to the Reading List, then try again.",
+     "before": "Không thể di chuyển sách trong chế độ xem này. Hãy vào một thư mục trong Thư mục, hoặc vào Danh sách đọc, rồi thử lại.",
+     "after": "Không thể di chuyển sách trong chế độ xem này. Hãy vào một thư mục trong chế độ xem Thư mục, hoặc vào Danh sách đọc, rồi thử lại.",
+     "why": "meaning: trong Thư mục is heard as in a folder; the Folders view is named as a view"
+    },
+    {
+     "key": "But %@ also holds %lld books a newer TextMouth added: they are kept where they are, and so is every folder that holds one.",
+     "english": {
+      "one": "But %@ also holds %lld book a newer TextMouth added: it is kept where it is, and so is every folder that holds it.",
+      "other": "But %@ also holds %lld books a newer TextMouth added: they are kept where they are, and so is every folder that holds one."
+     },
+     "before": {
+      "other": "Nhưng %@ cũng có %lld sách do TextMouth bản mới hơn thêm vào: chúng được giữ nguyên chỗ, và mọi thư mục chứa chúng cũng vậy."
+     },
+     "after": {
+      "other": "Nhưng %@ cũng có %lld sách do phiên bản TextMouth mới hơn thêm vào: chúng được giữ nguyên chỗ, và mọi thư mục chứa chúng cũng vậy."
+     },
+     "why": "natural: phiên bản TextMouth mới hơn, as elsewhere in the catalog"
+    },
+    {
+     "key": "Condition %@ days",
+     "english": "Condition %@ days",
+     "before": "Điều kiện %@ số ngày",
+     "after": "Điều kiện %@, số ngày",
+     "why": "natural: the condition and its control are two noun phrases; a comma lets the label read as one (as French does)"
+    },
+    {
+     "key": "Condition %@ folder",
+     "english": "Condition %@ folder",
+     "before": "Điều kiện %@ thư mục",
+     "after": "Điều kiện %@, thư mục",
+     "why": "natural: the condition and its control are two noun phrases; a comma lets the label read as one (as French does)"
+    },
+    {
+     "key": "Condition %@ format",
+     "english": "Condition %@ format",
+     "before": "Điều kiện %@ định dạng",
+     "after": "Điều kiện %@, định dạng",
+     "why": "natural: the condition and its control are two noun phrases; a comma lets the label read as one (as French does)"
+    },
+    {
+     "key": "Condition %@ includes subfolders",
+     "english": "Condition %@ includes subfolders",
+     "before": "Điều kiện %@ gồm cả thư mục con",
+     "after": "Điều kiện %@, gồm cả thư mục con",
+     "why": "natural: the condition and its control are two noun phrases; a comma lets the label read as one (as French does)"
+    },
+    {
+     "key": "Condition %@ reading state",
+     "english": "Condition %@ reading state",
+     "before": "Điều kiện %@ trạng thái đọc",
+     "after": "Điều kiện %@, trạng thái đọc",
+     "why": "natural: the condition and its control are two noun phrases; a comma lets the label read as one (as French does)"
+    },
+    {
+     "key": "Condition %@ relation",
+     "english": "Condition %@ relation",
+     "before": "Điều kiện %@ quan hệ",
+     "after": "Điều kiện %@, quan hệ",
+     "why": "natural: the condition and its control are two noun phrases; a comma lets the label read as one (as French does)"
+    },
+    {
+     "key": "Condition %@ text",
+     "english": "Condition %@ text",
+     "before": "Điều kiện %@ văn bản",
+     "after": "Điều kiện %@, văn bản",
+     "why": "natural: the condition and its control are two noun phrases; a comma lets the label read as one (as French does)"
+    },
+    {
+     "key": "Continue to Next Book",
+     "english": "Continue to Next Book",
+     "before": "Tiếp tục sang sách kế tiếp",
+     "after": "Tiếp tục sang sách tiếp theo",
+     "why": "term: Next Book is the glossary's Next (Tiếp theo), as the catalog's other next-book strings say"
+    },
+    {
+     "key": "Downloaded. Loading.",
+     "english": "Downloaded. Loading.",
+     "before": "Đã tải về. Đang tải sách.",
+     "after": "Đã tải về. Đang mở sách.",
+     "why": "meaning: after Đã tải về, Đang tải sách is heard as downloading again (tải is both); the book is loading, so Đang mở sách"
+    },
+    {
+     "key": "Duplicate",
+     "english": "Duplicate",
+     "before": "Nhân đôi",
+     "after": "Nhân bản",
+     "why": "term: Apple's Vietnamese Duplicate command is Nhân bản (SwiftUI's menu), not Nhân đôi (double)"
+    },
+    {
+     "key": "Edit Text stops for this book; choose Edit Text again to edit the new reading.",
+     "english": "Edit Text stops for this book; choose Edit Text again to edit the new reading.",
+     "before": "Sửa văn bản dừng lại với sách này; hãy chọn Sửa văn bản lần nữa để sửa cách đọc mới.",
+     "after": "Việc sửa văn bản cho sách này sẽ dừng; hãy chọn Sửa văn bản lần nữa để sửa kết quả đọc lại.",
+     "why": "meaning: the new reading is the re-read's text (kết quả đọc lại), not cách đọc mới; the editing session ends (việc sửa … sẽ dừng), not the command"
+    },
+    {
+     "key": "Everything",
+     "english": "Everything",
+     "before": "Mọi thứ",
+     "after": "mọi thứ",
+     "why": "natural: the object of a title (Chuyển mọi thứ vào Thùng rác) is not capitalized in Vietnamese"
+    },
+    {
+     "key": "Everything in %@",
+     "english": "Everything in %@",
+     "before": "Mọi thứ trong %@",
+     "after": "mọi thứ trong %@",
+     "why": "natural: the object of a title (Chuyển mọi thứ trong “Fiction” vào Thùng rác?) is not capitalized in Vietnamese"
+    },
+    {
+     "key": "Experimental. A sequence of media keys or AirPods controls within a short time window re-arms the last sleep timer, handy after one expires.",
+     "english": "Experimental. A sequence of media keys or AirPods controls within a short time window re-arms the last sleep timer, handy after one expires.",
+     "before": "Thử nghiệm. Một chuỗi phím đa phương tiện hoặc điều khiển AirPods trong một khoảng thời gian ngắn sẽ đặt lại hẹn giờ ngủ gần nhất, tiện khi một bộ hẹn giờ vừa hết.",
+     "after": "Thử nghiệm. Một chuỗi phím đa phương tiện hoặc điều khiển AirPods trong một khoảng thời gian ngắn sẽ khởi động lại hẹn giờ ngủ gần nhất, tiện khi một bộ hẹn giờ vừa hết.",
+     "why": "meaning: re-arms is khởi động lại, as the switch says (cử chỉ khởi động lại bộ hẹn giờ); đặt lại is the glossary's Reset"
+    },
+    {
+     "key": "Failed to rebuild to default",
+     "english": "Failed to rebuild to default",
+     "before": "Không thể xây dựng lại về mặc định",
+     "after": "Không thể đặt lại về vị trí mặc định",
+     "why": "natural: xây dựng lại về mặc định is not Vietnamese; it reports Reset to Default Location (Đặt lại về vị trí mặc định)"
+    },
+    {
+     "key": "Files not read",
+     "english": "Files not read",
+     "before": "Tệp chưa đọc",
+     "after": "Tệp không đọc được",
+     "why": "meaning: the files the comparison could not read; chưa đọc says not yet read (unread)"
+    },
+    {
+     "key": "Folders and the Reading List have no conditions to copy.",
+     "english": "Folders and the Reading List have no conditions to copy.",
+     "before": "Thư mục và Danh sách đọc không có điều kiện để sao chép.",
+     "after": "Chế độ xem Thư mục và Danh sách đọc không có điều kiện để sao chép.",
+     "why": "meaning: a bare Thư mục is heard as folders; the Folders view is named as a view"
+    },
+    {
+     "key": "Folders and the Reading List list what they always have. You can move them, and hide the Reading List.",
+     "english": "Folders and the Reading List list what they always have. You can move them, and hide the Reading List.",
+     "before": "Thư mục và Danh sách đọc luôn liệt kê những gì vốn có của chúng. Bạn có thể di chuyển chúng, và ẩn Danh sách đọc.",
+     "after": "Chế độ xem Thư mục và Danh sách đọc luôn liệt kê những gì vốn có của chúng. Bạn có thể di chuyển chúng, và ẩn Danh sách đọc.",
+     "why": "meaning: a bare Thư mục is heard as folders; the Folders view is named as a view"
+    },
+    {
+     "key": "Folders is always shown: every folder and feed opens there.",
+     "english": "Folders is always shown: every folder and feed opens there.",
+     "before": "Thư mục luôn được hiển thị: mọi thư mục và nguồn cấp đều mở ở đó.",
+     "after": "Chế độ xem Thư mục luôn được hiển thị: mọi thư mục và nguồn cấp đều mở trong đó.",
+     "why": "meaning: Thư mục luôn được hiển thị said folders are always shown; it is the Folders view"
+    },
+    {
+     "key": "Import it again, which asks about the duplicate, and choose Replace Existing so that the copy stored in the data directory takes its place, or remove it from the library, then move the data directory again.",
+     "english": "Import it again, which asks about the duplicate, and choose Replace Existing so that the copy stored in the data directory takes its place, or remove it from the library, then move the data directory again.",
+     "before": "Hãy nhập lại, việc này sẽ hỏi về bản trùng lặp, rồi chọn Thay thế bản hiện có để bản sao lưu trong thư mục dữ liệu thế chỗ, hoặc gỡ nó khỏi thư viện, sau đó di chuyển lại thư mục dữ liệu.",
+     "after": "Hãy nhập lại, việc này sẽ hỏi về bản trùng lặp, rồi chọn Thay thế bản hiện có để bản sao được lưu trong thư mục dữ liệu thế chỗ, hoặc gỡ nó khỏi thư viện, sau đó di chuyển lại thư mục dữ liệu.",
+     "why": "meaning: bản sao lưu reads as a backup (sao lưu); it is the copy stored in the data directory (bản sao được lưu)"
+    },
+    {
+     "key": "In a regular expression, a dollar sign and a group's number, as in $1 or $2, put back what that group matched.",
+     "english": "In a regular expression, a dollar sign and a group's number, as in $1 or $2, put back what that group matched.",
+     "before": "Trong biểu thức chính quy, dấu đô la và số của một nhóm, như $1 hoặc $2, đặt lại phần mà nhóm đó khớp.",
+     "after": "Trong biểu thức chính quy, dấu đô la và số của một nhóm, như $1 hoặc $2, sẽ chèn lại phần mà nhóm đó đã khớp.",
+     "why": "meaning: put back is chèn lại (insert again); đặt lại is the glossary's Reset"
+    },
+    {
+     "key": "In this Mac's Logs folder",
+     "english": "In this Mac's Logs folder",
+     "before": "Trong thư mục Nhật ký của máy Mac này",
+     "after": "Trong thư mục Logs của máy Mac này",
+     "why": "term: Finder shows the folder as Logs (macOS gives it no Vietnamese name), so its name stays, as in Spanish and French"
+    },
+    {
+     "key": "It is the folder of the feed %@. Either way, the feed and its downloads stay, listed in no folder until Feed Info gives the feed another; Delete Feed… on its row deletes it.",
+     "english": "It is the folder of the feed %@. Either way, the feed and its downloads stay, listed in no folder until Feed Info gives the feed another; Delete Feed… on its row deletes it.",
+     "before": "Đây là thư mục của nguồn cấp %@. Dù chọn cách nào, nguồn cấp và các bản tải về của nó vẫn còn, không nằm trong thư mục nào cho đến khi Thông tin nguồn cấp gán cho nó thư mục khác; Xóa nguồn cấp… trên hàng của nó sẽ xóa nguồn cấp.",
+     "after": "Đây là thư mục của nguồn cấp %@. Dù chọn cách nào, nguồn cấp và các bản tải về của nó vẫn còn, không nằm trong thư mục nào cho đến khi bạn gán cho nó thư mục khác trong Thông tin nguồn cấp; lệnh Xóa nguồn cấp… trên hàng của nó sẽ xóa nguồn cấp.",
+     "why": "grammar: a bare command name as a subject reads as an imperative; lệnh names it as the command (Xóa nguồn cấp…, and Feed Info as the place where you give the feed a folder)"
+    },
+    {
+     "key": "It is the folder of the feeds %@. Either way, the feeds and their downloads stay, listed in no folder until Feed Info gives each another; Delete Feed… on a feed's row deletes it.",
+     "english": "It is the folder of the feeds %@. Either way, the feeds and their downloads stay, listed in no folder until Feed Info gives each another; Delete Feed… on a feed's row deletes it.",
+     "before": "Đây là thư mục của các nguồn cấp %@. Dù chọn cách nào, các nguồn cấp và bản tải về của chúng vẫn còn, không nằm trong thư mục nào cho đến khi Thông tin nguồn cấp gán cho mỗi nguồn cấp một thư mục khác; Xóa nguồn cấp… trên hàng của một nguồn cấp sẽ xóa nó.",
+     "after": "Đây là thư mục của các nguồn cấp %@. Dù chọn cách nào, các nguồn cấp và bản tải về của chúng vẫn còn, không nằm trong thư mục nào cho đến khi bạn gán cho mỗi nguồn cấp một thư mục khác trong Thông tin nguồn cấp; lệnh Xóa nguồn cấp… trên hàng của một nguồn cấp sẽ xóa nguồn cấp đó.",
+     "why": "grammar: a bare command name as a subject reads as an imperative; lệnh names it as the command (Xóa nguồn cấp…, and Feed Info as the place where you give each feed a folder)"
+    },
+    {
+     "key": "Its text is replaced by the new reading.",
+     "english": "Its text is replaced by the new reading.",
+     "before": "Văn bản của sách sẽ được thay bằng cách đọc mới.",
+     "after": "Văn bản của sách sẽ được thay bằng kết quả đọc lại.",
+     "why": "meaning: the new reading is the re-read's text (kết quả đọc lại), not cách đọc mới, a new way of reading"
+    },
+    {
+     "key": "Left %@ where it is: episodes and articles stay in their feeds; %@ makes one a book of your library.",
+     "english": "Left %1$@ where it is: episodes and articles stay in their feeds; %2$@ makes one a book of your library.",
+     "before": "Đã để nguyên %1$@: tập và bài viết ở lại trong nguồn cấp của chúng; %2$@ biến một mục thành sách trong thư viện của bạn.",
+     "after": "Đã để nguyên %1$@: tập và bài viết ở lại trong nguồn cấp của chúng; lệnh %2$@ biến một mục thành sách trong thư viện của bạn.",
+     "why": "grammar: a bare command name as a subject reads as an imperative; lệnh names it as the command (%2$@ is Move to Library)"
+    },
+    {
+     "key": "Left %@ where they are: episodes and articles stay in their feeds; %@ makes one a book of your library.",
+     "english": "Left %1$@ where they are: episodes and articles stay in their feeds; %2$@ makes one a book of your library.",
+     "before": "Đã để nguyên %1$@: tập và bài viết ở lại trong nguồn cấp của chúng; %2$@ biến một mục thành sách trong thư viện của bạn.",
+     "after": "Đã để nguyên %1$@: tập và bài viết ở lại trong nguồn cấp của chúng; lệnh %2$@ biến một mục thành sách trong thư viện của bạn.",
+     "why": "grammar: a bare command name as a subject reads as an imperative; lệnh names it as the command (%2$@ is Move to Library)"
+    },
+    {
+     "key": "Make sure its folder can be written to, then try again.",
+     "english": "Make sure its folder can be written to, then try again.",
+     "before": "Hãy đảm bảo thư mục của nó có thể ghi, rồi thử lại.",
+     "after": "Hãy đảm bảo có thể ghi vào thư mục của nó, rồi thử lại.",
+     "why": "grammar: thư mục có thể ghi said the folder can write; it is written to (ghi vào)"
+    },
+    {
+     "key": "Media-control events that trigger the restart. The last one is consumed, not passed to playback, so it can't start audio.",
+     "english": "Media-control events that trigger the restart. The last one is consumed, not passed to playback, so it can't start audio.",
+     "before": "Các sự kiện điều khiển phương tiện kích hoạt việc khởi động lại. Sự kiện cuối cùng bị tiêu thụ, không chuyển đến phát lại, nên không thể bắt đầu phát âm thanh.",
+     "after": "Các sự kiện điều khiển phương tiện kích hoạt việc khởi động lại. Sự kiện cuối cùng được giữ lại, không chuyển đến phát lại, nên không thể bắt đầu phát âm thanh.",
+     "why": "natural: bị tiêu thụ copies consumed (as food is); the event is held back (được giữ lại)"
+    },
+    {
+     "key": "Names that differ only in capitalization or accent encoding refer to the same folder on this disk.",
+     "english": "Names that differ only in capitalization or accent encoding refer to the same folder on this disk.",
+     "before": "Những tên chỉ khác nhau ở chữ hoa chữ thường hoặc cách mã hóa dấu thì chỉ cùng một thư mục trên ổ đĩa này.",
+     "after": "Những tên chỉ khác nhau ở chữ hoa chữ thường hoặc cách mã hóa dấu đều trỏ đến cùng một thư mục trên ổ đĩa này.",
+     "why": "meaning: the second chỉ (point to) was heard as only; trỏ đến says refer to"
+    },
+    {
+     "key": "None",
+     "english": "None",
+     "before": "Không",
+     "after": "Không có",
+     "why": "term: Apple's Vietnamese None is Không có (AppKit), as the next choice says (Không có (dùng chung)); Không alone is No"
+    },
+    {
+     "key": "Nothing checks that this is the right choice. If numbers and punctuation sound wrong, choose another.",
+     "english": "Nothing checks that this is the right choice. If numbers and punctuation sound wrong, choose another.",
+     "before": "Không có gì kiểm tra xem đây có phải lựa chọn đúng không. Nếu số và dấu câu nghe sai, hãy chọn lựa chọn khác.",
+     "after": "Không có cách nào kiểm tra đây có phải là lựa chọn đúng hay không. Nếu số và dấu câu nghe sai, hãy chọn mã khác.",
+     "why": "natural: Không có gì kiểm tra copied Nothing checks; chọn lựa chọn khác repeated itself, and another means another code"
+    },
+    {
+     "key": "Opens %@, the folder the logs are written to now, in Finder.",
+     "english": "Opens %@, the folder the logs are written to now, in Finder.",
+     "before": "Mở %@, thư mục hiện đang ghi nhật ký, trong Finder.",
+     "after": "Mở %@ trong Finder, thư mục mà nhật ký hiện được ghi vào.",
+     "why": "grammar: thư mục hiện đang ghi nhật ký made the folder the writer; the logs are written to it"
+    },
+    {
+     "key": "Paste or type the text here instead, or try again.",
+     "english": "Paste or type the text here instead, or try again.",
+     "before": "Hãy dán hoặc nhập văn bản vào đây thay vào đó, hoặc thử lại.",
+     "after": "Thay vào đó, hãy dán hoặc nhập văn bản vào đây, hoặc thử lại.",
+     "why": "natural: thay vào đó (instead) leads the sentence in Vietnamese, not after vào đây"
+    },
+    {
+     "key": "Reading list: “%@” is %@ in %@ and %@ in %@.",
+     "english": "Reading list: “%1$@” is %2$@ in %3$@ and %4$@ in %5$@.",
+     "before": "Danh sách đọc: “%1$@” là %2$@ trong %3$@ và %4$@ trong %5$@.",
+     "after": "Danh sách đọc: “%1$@” đang %2$@ trong %3$@ và %4$@ trong %5$@.",
+     "why": "grammar: the values are bật and tắt, so the option đang bật, not là bật"
+    },
+    {
+     "key": "Retry is at the top of the Library window.",
+     "english": "Retry is at the top of the Library window.",
+     "before": "Thử lại nằm ở đầu cửa sổ Thư viện.",
+     "after": "Nút Thử lại nằm ở đầu cửa sổ Thư viện.",
+     "why": "grammar: a bare command name as a subject reads as an imperative (Try again is at the top); Nút names it as the button"
+    },
+    {
+     "key": "Set its shortcut with %@ in the %@ tab; the default is %@.",
+     "english": "Set its shortcut with %1$@ in the %2$@ tab; the default is %3$@.",
+     "before": "Đặt phím tắt cho nó bằng %1$@ trong thẻ %2$@; mặc định là %3$@.",
+     "after": "Đặt phím tắt của nó ở mục %1$@ trong tab %2$@; mặc định là %3$@.",
+     "why": "term: Apple's Vietnamese says tab (Đóng Tab), not thẻ; and %1$@ is the action's row, so ở mục %1$@, not bằng %1$@"
+    },
+    {
+     "key": "Show When Applicable",
+     "english": "Show When Applicable",
+     "before": "Hiển thị khi áp dụng",
+     "after": "Hiển thị khi thích hợp",
+     "why": "meaning: khi áp dụng is when applying; When Applicable is khi thích hợp"
+    },
+    {
+     "key": "TextMouth couldn't keep the text you changed in “%@” beside the new reading, so it left the book as it was.",
+     "english": "TextMouth couldn't keep the text you changed in “%@” beside the new reading, so it left the book as it was.",
+     "before": "TextMouth không thể giữ văn bản bạn đã thay đổi trong “%@” cạnh cách đọc mới, nên đã để nguyên cuốn sách.",
+     "after": "TextMouth không thể giữ văn bản bạn đã thay đổi trong “%@” bên cạnh kết quả đọc lại, nên đã để nguyên cuốn sách.",
+     "why": "meaning: the new reading is the re-read's text (kết quả đọc lại), not cách đọc mới, a new way of reading"
+    },
+    {
+     "key": "TextMouth will quit and open again to load it.",
+     "english": "TextMouth will quit and open again to load it.",
+     "before": "TextMouth sẽ thoát và mở lại để tải nó.",
+     "after": "TextMouth sẽ thoát và mở lại để dùng thư viện đó.",
+     "why": "meaning: tải nó is heard as downloading it; TextMouth reopens to use the other library the question names"
+    },
+    {
+     "key": "TextMouth will quit and open again to start it.",
+     "english": "TextMouth will quit and open again to start it.",
+     "before": "TextMouth sẽ thoát và mở lại để bắt đầu nó.",
+     "after": "TextMouth sẽ thoát và mở lại để bắt đầu thư viện mới.",
+     "why": "natural: bắt đầu nó left the object vague; the question is about starting a new library (Bắt đầu thư viện mới)"
+    },
+    {
+     "key": "The %@ of %lld of them are kept.",
+     "english": {
+      "one": "The %@ of %lld of them are kept.",
+      "other": "The %@ of %lld of them are kept."
+     },
+     "before": {
+      "other": "%@ của %lld mục trong số đó được giữ lại."
+     },
+     "after": {
+      "other": "Vẫn giữ lại %@ của %lld mục trong số đó."
+     },
+     "why": "grammar: the list placeholder is lower case (vị trí và dấu trang), so it cannot begin the sentence"
+    },
+    {
+     "key": "The braille is translated to print again with this code. Nothing checks that it is the right choice. If words read wrongly, choose another.",
+     "english": "The braille is translated to print again with this code. Nothing checks that it is the right choice. If words read wrongly, choose another.",
+     "before": "Chữ braille được dịch sang chữ in lại bằng mã này. Không có gì kiểm tra xem đây có phải lựa chọn đúng không. Nếu từ ngữ đọc sai, hãy chọn mã khác.",
+     "after": "Chữ braille được dịch lại sang chữ in bằng mã này. Không có cách nào kiểm tra đây có phải là lựa chọn đúng hay không. Nếu từ ngữ đọc sai, hãy chọn mã khác.",
+     "why": "natural: lại goes with the verb (dịch lại sang chữ in), and Nothing checks reads as there is no way to check"
+    },
+    {
+     "key": "The data directory has no Logs folder, so logs go to %@ until it has one.",
+     "english": "The data directory has no Logs folder, so logs go to %@ until it has one.",
+     "before": "Thư mục dữ liệu không có thư mục Nhật ký, nên nhật ký được ghi vào %@ cho đến khi có.",
+     "after": "Thư mục dữ liệu không có thư mục Logs, nên nhật ký được ghi vào %@ cho đến khi có.",
+     "why": "term: the data directory's folder is named Logs on disk, so its name stays, as in Spanish and French"
+    },
+    {
+     "key": "The data directory's Logs folder can't be written (%@), so logs go to %@ until it can.",
+     "english": "The data directory's Logs folder can't be written (%1$@), so logs go to %2$@ until it can.",
+     "before": "Không ghi được vào thư mục Nhật ký của thư mục dữ liệu (%1$@), nên nhật ký được ghi vào %2$@ cho đến khi ghi được.",
+     "after": "Không ghi được vào thư mục Logs của thư mục dữ liệu (%1$@), nên nhật ký được ghi vào %2$@ cho đến khi ghi được.",
+     "why": "term: the data directory's folder is named Logs on disk, so its name stays, as in Spanish and French"
+    },
+    {
+     "key": "The feed %@ stays, with its downloads, without a folder until Feed Info gives it another.",
+     "english": "The feed %@ stays, with its downloads, without a folder until Feed Info gives it another.",
+     "before": "Nguồn cấp %@ vẫn còn, cùng các bản tải về của nó, không thuộc thư mục nào cho đến khi Thông tin nguồn cấp gán cho nó thư mục khác.",
+     "after": "Nguồn cấp %@ vẫn còn, cùng các bản tải về của nó, không thuộc thư mục nào cho đến khi bạn gán cho nó thư mục khác trong Thông tin nguồn cấp.",
+     "why": "natural: Feed Info is a sheet, not an actor; you give the feed a folder in it (as the chunk 2 sentences now say)"
+    },
+    {
+     "key": "The feeds %@ stay, with their downloads, without folders until Feed Info gives each another.",
+     "english": "The feeds %@ stay, with their downloads, without folders until Feed Info gives each another.",
+     "before": "Các nguồn cấp %@ vẫn còn, cùng các bản tải về của chúng, không thuộc thư mục nào cho đến khi Thông tin nguồn cấp gán cho mỗi nguồn cấp một thư mục khác.",
+     "after": "Các nguồn cấp %@ vẫn còn, cùng các bản tải về của chúng, không thuộc thư mục nào cho đến khi bạn gán cho mỗi nguồn cấp một thư mục khác trong Thông tin nguồn cấp.",
+     "why": "natural: Feed Info is a sheet, not an actor; you give the feed a folder in it (as the chunk 2 sentences now say)"
+    },
+    {
+     "key": "The folders %@ and %@ can't both move into %@: their names mean the same folder on this disk.",
+     "english": "The folders %1$@ and %2$@ can't both move into %3$@: their names mean the same folder on this disk.",
+     "before": "Các thư mục %1$@ và %2$@ không thể cùng chuyển vào %3$@: tên của chúng chỉ cùng một thư mục trên ổ đĩa này.",
+     "after": "Các thư mục %1$@ và %2$@ không thể cùng chuyển vào %3$@: tên của chúng trỏ đến cùng một thư mục trên ổ đĩa này.",
+     "why": "meaning: chỉ cùng một thư mục was heard as only the same folder; trỏ đến says refer to"
+    },
+    {
+     "key": "The index is not changed until you choose %@ or %@, which stay available from %@ at the top of the library.",
+     "english": "The index is not changed until you choose %1$@ or %2$@, which stay available from %3$@ at the top of the library.",
+     "before": "Chỉ mục không thay đổi cho đến khi bạn chọn %1$@ hoặc %2$@, vẫn có sẵn từ %3$@ ở đầu thư viện.",
+     "after": "Chỉ mục không thay đổi cho đến khi bạn chọn %1$@ hoặc %2$@; hai nút này vẫn có sẵn khi bạn chọn %3$@ ở đầu thư viện.",
+     "why": "grammar: the clause vẫn có sẵn từ %3$@ had no subject; the two buttons are reached by choosing Recovery Options"
+    },
+    {
+     "key": "The library isn't available, so logs go to %@ until it is.",
+     "english": "The library isn't available, so logs go to %@ until it is.",
+     "before": "Thư viện không khả dụng, nên nhật ký được ghi vào %@ cho đến khi có.",
+     "after": "Thư viện không khả dụng, nên nhật ký được ghi vào %@ cho đến khi thư viện khả dụng trở lại.",
+     "why": "natural: cho đến khi có (until there is) left the condition unsaid; it is until the library is available again"
+    },
+    {
+     "key": "The most time the whole sequence may take. Shorter windows mean fewer accidental matches but quicker presses.",
+     "english": "The most time the whole sequence may take. Shorter windows mean fewer accidental matches but quicker presses.",
+     "before": "Thời gian tối đa cho cả chuỗi. Cửa sổ ngắn hơn nghĩa là ít khớp nhầm hơn nhưng phải nhấn nhanh hơn.",
+     "after": "Thời gian tối đa cho cả chuỗi. Khoảng thời gian ngắn hơn nghĩa là ít khớp nhầm hơn nhưng phải nhấn nhanh hơn.",
+     "why": "meaning: cửa sổ is a window on the screen (the glossary's Window); a time window is khoảng thời gian, as the slider's label says"
+    },
+    {
+     "key": "The new location, %@, is a link to %@, which cannot be found.",
+     "english": "The new location, %1$@, is a link to %2$@, which cannot be found.",
+     "before": "Vị trí mới, %1$@, là liên kết đến %2$@, không tìm thấy.",
+     "after": "Vị trí mới, %1$@, là liên kết đến %2$@, nhưng không tìm thấy nơi đó.",
+     "why": "grammar: không tìm thấy hung with no subject; the place the link leads to is what cannot be found"
+    },
+    {
+     "key": "Their %@ are kept.",
+     "english": "Their %@ are kept.",
+     "before": "%@ của chúng được giữ lại.",
+     "after": "Vẫn giữ lại %@ của chúng.",
+     "why": "grammar: the list placeholder is lower case (vị trí và dấu trang), so it cannot begin the sentence"
+    },
+    {
+     "key": "There is no view %@. Go to View reaches %lld views.",
+     "english": {
+      "one": "There is no view %@. Go to View reaches %lld view.",
+      "other": "There is no view %@. Go to View reaches %lld views."
+     },
+     "before": {
+      "other": "Không có chế độ xem %@. Đến chế độ xem chỉ tới được %lld chế độ xem."
+     },
+     "after": {
+      "other": "Không có chế độ xem %@. Lệnh Đến chế độ xem chỉ tới được %lld chế độ xem."
+     },
+     "why": "grammar: a bare command name as a subject reads as an imperative; Lệnh names Go to View as the command"
+    },
+    {
+     "key": "Use this after restoring the file from a backup, fixing its permissions, or updating TextMouth to the version that saved it.",
+     "english": "Use this after restoring the file from a backup, fixing its permissions, or updating TextMouth to the version that saved it.",
+     "before": "Hãy dùng việc này sau khi khôi phục tệp từ bản sao lưu, sửa quyền của nó, hoặc cập nhật TextMouth lên phiên bản đã lưu nó.",
+     "after": "Hãy dùng tùy chọn này sau khi khôi phục tệp từ bản sao lưu, sửa quyền của nó, hoặc cập nhật TextMouth lên phiên bản đã lưu nó.",
+     "why": "natural: dùng việc này (use this matter) does not name the choice; this is Try Again, a choice of the recovery sheet"
+    },
+    {
+     "key": "Visibility of %@",
+     "english": "Visibility of %@",
+     "before": "Hiển thị của %@",
+     "after": "Chế độ hiển thị của %@",
+     "why": "natural: Hiển thị của %@ is not a noun phrase; the visibility pop-up is Chế độ hiển thị of the view"
+    },
+    {
+     "key": "When Applicable",
+     "english": "When Applicable",
+     "before": "Khi áp dụng",
+     "after": "Khi thích hợp",
+     "why": "meaning: Khi áp dụng is when applying; When Applicable is Khi thích hợp"
+    },
+    {
+     "key": "When off, the sheet stays open showing the remaining time and a reset button",
+     "english": "When off, the sheet stays open showing the remaining time and a reset button",
+     "before": "Khi tắt, hộp thoại vẫn mở và hiện thời gian còn lại cùng nút đặt lại.",
+     "after": "Khi tắt, hộp thoại vẫn mở và hiển thị thời gian còn lại cùng nút đặt lại.",
+     "why": "meaning: hiện thời gian reads as hiện thời (currently); the glossary's Show is hiển thị"
+    },
+    {
+     "key": "When on, a deleted book's files go to the Trash, where you can recover them until the Trash is emptied.",
+     "english": "When on, a deleted book's files go to the Trash, where you can recover them until the Trash is emptied.",
+     "before": "Khi bật, tệp của sách đã xóa được chuyển vào Thùng rác, nơi bạn có thể khôi phục cho đến khi Thùng rác được làm trống.",
+     "after": "Khi bật, tệp của sách đã xóa được chuyển vào Thùng rác, nơi bạn có thể khôi phục cho đến khi Thùng rác được dọn sạch.",
+     "why": "term: Finder's Vietnamese empties the Trash with dọn sạch (Dọn sạch Thùng rác), not làm trống"
+    },
+    {
+     "key": "Where TextMouth writes its diagnostic logs. %@ keeps them with your books, so they move and sync with the library. %@ keeps them in %@, which never syncs. A change applies from the next line; existing logs stay.",
+     "english": "Where TextMouth writes its diagnostic logs. %1$@ keeps them with your books, so they move and sync with the library. %2$@ keeps them in %3$@, which never syncs. A change applies from the next line; existing logs stay.",
+     "before": "Nơi TextMouth ghi nhật ký chẩn đoán. %1$@ giữ chúng cùng sách của bạn, nên chúng di chuyển và đồng bộ cùng thư viện. %2$@ giữ chúng trong %3$@, nơi không bao giờ đồng bộ. Thay đổi áp dụng từ dòng tiếp theo; nhật ký cũ vẫn còn.",
+     "after": "Nơi TextMouth ghi nhật ký chẩn đoán. Nếu chọn %1$@, nhật ký được giữ cùng sách của bạn, nên chúng di chuyển và đồng bộ cùng thư viện. Nếu chọn %2$@, nhật ký được giữ trong %3$@, nơi không bao giờ đồng bộ. Thay đổi áp dụng từ dòng tiếp theo; nhật ký cũ vẫn còn.",
+     "why": "grammar: the two choice names are place phrases (Bên trong thư mục dữ liệu), which cannot be a subject; Nếu chọn X, as the other choice sentences say"
+    },
+    {
+     "key": "Where none of their words are left, %@, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "english": "Where none of their words are left, %@, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "before": "Khi không còn từ nào của chúng, %@, mỗi mục chuyển đến khoảng cùng điểm trong chương của nó, hoặc đến đoạn gần nhất mà hai cách đọc cùng có.",
+     "after": "Khi không còn từ nào của chúng, %@, mỗi mục chuyển đến khoảng cùng điểm trong chương của nó, hoặc đến đoạn gần nhất mà cả hai bản văn bản đều có.",
+     "why": "meaning: the two readings are the old and the new text (hai bản văn bản), not hai cách đọc, two ways of reading"
+    },
+    {
+     "key": "Where none of their words are left, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "english": "Where none of their words are left, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "before": "Khi không còn từ nào của chúng, mỗi mục chuyển đến khoảng cùng điểm trong chương của nó, hoặc đến đoạn gần nhất mà hai cách đọc cùng có.",
+     "after": "Khi không còn từ nào của chúng, mỗi mục chuyển đến khoảng cùng điểm trong chương của nó, hoặc đến đoạn gần nhất mà cả hai bản văn bản đều có.",
+     "why": "meaning: the two readings are the old and the new text (hai bản văn bản), not hai cách đọc, two ways of reading"
+    },
+    {
+     "key": "With %@, %@.",
+     "english": "With %1$@, %2$@.",
+     "before": "Với %1$@, %2$@.",
+     "after": "Nếu chọn %1$@, %2$@.",
+     "why": "natural: Với before a button's name (a verb phrase) does not read; Nếu chọn says if you choose it, as French does"
+    },
+    {
+     "key": "With %@, the feed and its downloads stay, listed in no folder until Feed Info gives the feed another; Delete Feed… on its row deletes it.",
+     "english": "With %@, the feed and its downloads stay, listed in no folder until Feed Info gives the feed another; Delete Feed… on its row deletes it.",
+     "before": "Với %@, nguồn cấp và các bản tải về của nó vẫn còn, không thuộc thư mục nào cho đến khi Thông tin nguồn cấp gán cho nó thư mục khác; Xóa nguồn cấp… trên hàng của nó sẽ xóa nguồn cấp.",
+     "after": "Nếu chọn %@, nguồn cấp và các bản tải về của nó vẫn còn, không thuộc thư mục nào cho đến khi bạn gán cho nó thư mục khác trong Thông tin nguồn cấp; lệnh Xóa nguồn cấp… trên hàng của nó sẽ xóa nguồn cấp.",
+     "why": "natural: Với before a button's name (a verb phrase) does not read; Nếu chọn says if you choose it, as French does; Feed Info is where you give the feed a folder, and lệnh names Delete Feed… as the subject"
+    },
+    {
+     "key": "With %@, the feeds and their downloads stay, listed in no folder until Feed Info gives each another; Delete Feed… on a feed's row deletes it.",
+     "english": "With %@, the feeds and their downloads stay, listed in no folder until Feed Info gives each another; Delete Feed… on a feed's row deletes it.",
+     "before": "Với %@, các nguồn cấp và bản tải về của chúng vẫn còn, không thuộc thư mục nào cho đến khi Thông tin nguồn cấp gán cho mỗi nguồn cấp một thư mục khác; Xóa nguồn cấp… trên hàng của một nguồn cấp sẽ xóa nó.",
+     "after": "Nếu chọn %@, các nguồn cấp và bản tải về của chúng vẫn còn, không thuộc thư mục nào cho đến khi bạn gán cho mỗi nguồn cấp một thư mục khác trong Thông tin nguồn cấp; lệnh Xóa nguồn cấp… trên hàng của một nguồn cấp sẽ xóa nguồn cấp đó.",
+     "why": "natural: Với before a button's name (a verb phrase) does not read; Nếu chọn says if you choose it, as French does; Feed Info is where you give each feed a folder, and lệnh names Delete Feed… as the subject"
+    },
+    {
+     "key": "With %@, the folder and everything in it leave the library, and %@.",
+     "english": "With %1$@, the folder and everything in it leave the library, and %2$@.",
+     "before": "Với %1$@, thư mục và mọi thứ trong đó rời khỏi thư viện, và %2$@.",
+     "after": "Nếu chọn %1$@, thư mục và mọi thứ trong đó rời khỏi thư viện, và %2$@.",
+     "why": "natural: Với before a button's name (a verb phrase) does not read; Nếu chọn says if you choose it, as French does"
+    },
+    {
+     "key": "With Move Contents Out, the feed's folder moves with the rest.",
+     "english": "With Move Contents Out, the feed's folder moves with the rest.",
+     "before": "Với Chuyển nội dung ra ngoài, thư mục của nguồn cấp được chuyển cùng phần còn lại.",
+     "after": "Nếu chọn Di chuyển nội dung ra ngoài, thư mục của nguồn cấp được di chuyển cùng phần còn lại.",
+     "why": "meaning: the button reads Di chuyển nội dung ra ngoài, so the sentence names it so; natural: Với before a button's name (a verb phrase) does not read; Nếu chọn says if you choose it, as French does"
+    },
+    {
+     "key": "With Move Contents Out, their folders move with the rest.",
+     "english": "With Move Contents Out, their folders move with the rest.",
+     "before": "Với Chuyển nội dung ra ngoài, các thư mục của chúng được chuyển cùng phần còn lại.",
+     "after": "Nếu chọn Di chuyển nội dung ra ngoài, các thư mục của chúng được di chuyển cùng phần còn lại.",
+     "why": "meaning: the button reads Di chuyển nội dung ra ngoài, so the sentence names it so; natural: Với before a button's name (a verb phrase) does not read; Nếu chọn says if you choose it, as French does"
+    },
+    {
+     "key": "With Move Contents Out, they stay in the library and only the folder is deleted.",
+     "english": "With Move Contents Out, they stay in the library and only the folder is deleted.",
+     "before": "Với Chuyển nội dung ra ngoài, chúng vẫn ở trong thư viện và chỉ thư mục bị xóa.",
+     "after": "Nếu chọn Di chuyển nội dung ra ngoài, chúng vẫn ở trong thư viện và chỉ thư mục bị xóa.",
+     "why": "meaning: the button reads Di chuyển nội dung ra ngoài, so the sentence names it so; natural: Với before a button's name (a verb phrase) does not read; Nếu chọn says if you choose it, as French does"
+    },
+    {
+     "key": "chapter %@, with the note “%@”",
+     "english": "chapter %1$@, with the note “%2$@”",
+     "before": "chương %1$@, với ghi chú “%2$@”",
+     "after": "chương %1$@, có ghi chú “%2$@”",
+     "why": "natural: với ghi chú copies with; có ghi chú, beside không có ghi chú of the bookmark with no note"
+    },
+    {
+     "key": "choose Remove Download",
+     "english": "choose Remove Download",
+     "before": "chọn Gỡ bản tải về",
+     "after": "chọn Xóa bản tải về",
+     "why": "term: this is the Finder's own command, which Finder's Vietnamese names Xóa bản tải về (TextMouth's own command is Gỡ bản tải về)"
+    },
+    {
+     "key": "its files go to the Trash, where you can recover them until the Trash is emptied",
+     "english": "its files go to the Trash, where you can recover them until the Trash is emptied",
+     "before": "tệp của nó được chuyển vào Thùng rác, nơi bạn có thể khôi phục cho đến khi Thùng rác được làm trống",
+     "after": "tệp của nó được chuyển vào Thùng rác, nơi bạn có thể khôi phục cho đến khi Thùng rác được dọn sạch",
+     "why": "term: Finder's Vietnamese empties the Trash with dọn sạch (Dọn sạch Thùng rác), not làm trống"
+    },
+    {
+     "key": "opened last",
+     "english": "opened last",
+     "before": "mở gần nhất",
+     "after": "mở sau cùng",
+     "why": "term: the glossary's Opened Last, as the view editor's choice reads (Mở sau cùng)"
+    },
+    {
+     "key": "so its place and bookmarks there were taken from the library index alone.",
+     "english": "so its place and bookmarks there were taken from the library index alone.",
+     "before": "nên vị trí và dấu trang của nó ở đó được lấy chỉ từ chỉ mục thư viện.",
+     "after": "nên vị trí và dấu trang của nó ở đó chỉ được lấy từ chỉ mục thư viện.",
+     "why": "natural: chỉ (only) goes before the verb, away from chỉ mục (index)"
+    },
+    {
+     "key": "their files go to the Trash, where you can recover them until the Trash is emptied",
+     "english": "their files go to the Trash, where you can recover them until the Trash is emptied",
+     "before": "tệp của chúng được chuyển vào Thùng rác, nơi bạn có thể khôi phục cho đến khi Thùng rác được làm trống",
+     "after": "tệp của chúng được chuyển vào Thùng rác, nơi bạn có thể khôi phục cho đến khi Thùng rác được dọn sạch",
+     "why": "term: Finder's Vietnamese empties the Trash with dọn sạch (Dọn sạch Thùng rác), not làm trống"
+    },
+    {
+     "key": "when applicable",
+     "english": "when applicable",
+     "before": "khi áp dụng",
+     "after": "khi thích hợp",
+     "why": "meaning: khi áp dụng is when applying; when applicable is khi thích hợp"
+    }
+   ]
+  }
+ ]
+}
