@@ -81,22 +81,33 @@ enum InterfaceText {
             /// The arguments so far.
             fileprivate(set) var arguments: [Argument] = []
 
+            // The four builders below are never inlined. Inlined, they put a copy of the string growth, the arguments
+            // array, and its appends into every call site that interpolates. In a probe of 400 sites of each kind
+            // compiled with -Osize, a line with `\(text)` fell from 213 to 92 bytes, one with `\(number:)` from 189
+            // to 92, and one with two numbers from 252 to 100; the Release apps shrank by 526,000 bytes (Mac) and
+            // 228,838 (iPhone). `Format.init(stringLiteral:)` stays inlined, which keeps a plain line at 32 bytes.
+
+            /// Room for the literal text, and for the longest specifier (`%lld`) at each interpolation.
+            @inline(never)
             init(literalCapacity: Int, interpolationCount: Int) {
                 format.reserveCapacity(literalCapacity + 4 * interpolationCount)
             }
 
             /// A literal segment: its text with each `%` doubled.
+            @inline(never) // See the note above the initializer.
             mutating func appendLiteral(_ literal: String) {
                 format += Format.escaped(literal)
             }
 
             /// `\(text)`: a string, as `%@`.
+            @inline(never) // See the note above the initializer.
             mutating func appendInterpolation(_ text: some StringProtocol) {
                 format += "%@"
                 arguments.append(.text(String(text)))
             }
 
             /// `\(number: n)`: an integer, as `%lld`. One too large for 64 bits is held at the largest, never trapped on.
+            @inline(never) // See the note above the initializer.
             mutating func appendInterpolation(number: some BinaryInteger) {
                 format += "%lld"
                 arguments.append(.number(Int64(clamping: number)))
