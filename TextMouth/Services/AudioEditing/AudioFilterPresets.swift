@@ -55,40 +55,40 @@ enum PremadeFilterPreset: CaseIterable, Sendable {
         switch self {
         case .removeRumble:
             // Translators: Title of a premade audio filter preset: cuts the lowest rumble from a recording.
-            return String(localized: "Remove Rumble")
+            return InterfaceText.line("premadeFilterPreset.title.removeRumble", "Remove Rumble")
         case .clearerVoice:
             // Translators: Title of a premade audio filter preset: cuts the rumble and lifts the voice's presence.
-            return String(localized: "Clearer Voice")
+            return InterfaceText.line("premadeFilterPreset.title.clearerVoice", "Clearer Voice")
         case .evenOutTheLevel:
             // Translators: Title of a premade audio filter preset: compresses the audio so loud and quiet parts are closer in volume.
-            return String(localized: "Even Out the Level")
+            return InterfaceText.line("premadeFilterPreset.title.evenOutTheLevel", "Even Out the Level")
         case .audiobookLoudness:
             // Translators: Title of a premade audio filter preset: sets the whole audio's loudness to a level for audiobooks.
-            return String(localized: "Audiobook Loudness")
+            return InterfaceText.line("premadeFilterPreset.title.audiobookLoudness", "Audiobook Loudness")
         case .shortenLongPauses:
             // Translators: Title of a premade audio filter preset: makes every pause longer than a second one second long.
-            return String(localized: "Shorten Long Pauses")
+            return InterfaceText.line("premadeFilterPreset.title.shortenLongPauses", "Shorten Long Pauses")
         case .trimSilenceAtBothEnds:
             // Translators: Title of a premade audio filter preset: removes the silence at the start and at the end of the audio.
-            return String(localized: "Trim Silence at Both Ends")
+            return InterfaceText.line("premadeFilterPreset.title.trimSilenceAtBothEnds", "Trim Silence at Both Ends")
         case .fadeIn:
             // Translators: Title of a premade audio filter preset: fades the audio in over one second.
-            return String(localized: "Fade In")
+            return InterfaceText.line("premadeFilterPreset.title.fadeIn", "Fade In")
         case .fadeOut:
             // Translators: Title of a premade audio filter preset: fades out over one second, so it is used on a selection of the last second.
-            return String(localized: "Fade Out (Select the Last Second)")
+            return InterfaceText.line("premadeFilterPreset.title.fadeOut", "Fade Out (Select the Last Second)")
         case .aLittleFaster:
             // Translators: Title of a premade audio filter preset: plays the audio a quarter faster without raising its pitch.
-            return String(localized: "A Little Faster")
+            return InterfaceText.line("premadeFilterPreset.title.aLittleFaster", "A Little Faster")
         case .louder:
             // Translators: Title of a premade audio filter preset: raises the volume by 6 decibels.
-            return String(localized: "Louder")
+            return InterfaceText.line("premadeFilterPreset.title.louder", "Louder")
         case .quieter:
             // Translators: Title of a premade audio filter preset: lowers the volume by 6 decibels.
-            return String(localized: "Quieter")
+            return InterfaceText.line("premadeFilterPreset.title.quieter", "Quieter")
         case .reverse:
             // Translators: Title of a premade audio filter preset: plays the audio backwards.
-            return String(localized: "Reverse")
+            return InterfaceText.line("premadeFilterPreset.title.reverse", "Reverse")
         }
     }
 
@@ -402,13 +402,13 @@ enum AudioFilterPresetError: LocalizedError, Equatable {
         switch self {
         case .blankName:
             // Translators: Said when a filter preset is saved with a blank name.
-            return String(localized: "A filter preset needs a name.")
+            return InterfaceText.line("audioFilterPresetError.blankName", "A filter preset needs a name.")
         case .libraryUnavailable:
             // Translators: Said when the filter presets can't be saved because the library's data folder can't be used.
-            return String(localized: "The library isn't available, so the filter presets can't be saved.")
+            return InterfaceText.line("audioFilterPresetError.libraryUnavailable", "The library isn't available, so the filter presets can't be saved.")
         case .fileArrived:
             // Translators: Said when a filter preset change is not made because the presets file synced in from another Mac while the premade presets stood in for it.
-            return String(localized: "Presets from another Mac just arrived and replaced these. Make the change again.")
+            return InterfaceText.line("audioFilterPresetError.fileArrived", "Presets from another Mac just arrived and replaced these. Make the change again.")
         }
     }
 }

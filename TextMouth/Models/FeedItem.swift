@@ -227,22 +227,22 @@ enum FeedItemState: Equatable, Sendable {
         switch self {
         case .notDownloaded:
             // Translators: The note on a feed's episode or article row, and in a book's row, when its file is not on this Mac. Title case.
-            return String(localized: "Not Downloaded")
+            return InterfaceText.line("feedItemState.visibleNote.notDownloaded", "Not Downloaded")
         case .downloading:
             // Translators: The note on a feed's episode or article row while its file downloads. Title case.
-            return String(localized: "Downloading")
+            return InterfaceText.line("feedItemState.visibleNote.downloading", "Downloading")
         case .waiting:
             // Translators: The note on a feed's episode or article row whose automatic download waits for a network without data limits or for room on this Mac. Title case.
-            return String(localized: "Waiting to Download")
+            return InterfaceText.line("feedItemState.visibleNote.waiting", "Waiting to Download")
         case .failed:
             // Translators: The note on a feed's episode or article row whose last download failed. A reason may follow it. Title case.
-            return String(localized: "Download Failed")
+            return InterfaceText.line("common.downloadFailed", "Download Failed")
         case .downloaded:
             // Translators: The note on a feed's episode or article row whose file is on this Mac. Title case.
-            return String(localized: "Downloaded")
+            return InterfaceText.line("common.downloaded", "Downloaded")
         case .inLibrary:
             // Translators: The note on a feed's episode or article row that was moved into the library as a book of its own. Title case.
-            return String(localized: "In Library")
+            return InterfaceText.line("feedItemState.visibleNote.inLibrary", "In Library")
         }
     }
 

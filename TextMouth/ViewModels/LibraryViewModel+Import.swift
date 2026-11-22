@@ -187,7 +187,7 @@ extension LibraryViewModel {
     /// import back (TODO S04).
     nonisolated static var importWaitingForMoveMessage: String {
         // Translators: Line of the import overlay while a move of the data directory holds an import back. Ends with an ellipsis written as three full stops.
-        String(localized: "Waiting for the data directory move to finish...")
+        InterfaceText.line("libraryViewModel.importWaitingForMoveMessage", "Waiting for the data directory move to finish...")
     }
 
     /// Queues `operation`, one import, on the import queue. While a
@@ -235,11 +235,11 @@ extension LibraryViewModel {
     static func makeDAISYFolderPanel() -> NSOpenPanel {
         let panel = NSOpenPanel()
         // Translators: Title of the panel that chooses folders to import. Title case.
-        panel.title = String(localized: "Import Folder")
+        panel.title = InterfaceText.line("libraryViewModel.makeDAISYFolderPanel.import", "Import Folder")
         // Translators: Message of the panel that chooses folders to import. ncc.html and .opf are file names inside a DAISY book.
-        panel.message = String(localized: "Choose each folder to import: a DAISY book's folder, with its ncc.html or .opf file, or a folder of audio tracks, which becomes one audiobook.")
+        panel.message = InterfaceText.line("libraryViewModel.makeDAISYFolderPanel.audiobook", "Choose each folder to import: a DAISY book's folder, with its ncc.html or .opf file, or a folder of audio tracks, which becomes one audiobook.")
         // Translators: Title of the button of the Import Folder panel that imports the chosen folders.
-        panel.prompt = String(localized: "Import")
+        panel.prompt = InterfaceText.line("common.import", "Import")
         panel.canChooseFiles = false
         panel.canChooseDirectories = true
         panel.allowsMultipleSelection = true

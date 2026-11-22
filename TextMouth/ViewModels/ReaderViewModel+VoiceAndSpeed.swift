@@ -326,53 +326,53 @@ enum VoiceAndSpeedWording {
     static func speedStepLabel(forward: Bool, wordsPerMinute: Int) -> String {
         if forward {
             // Translators: VoiceOver label of the playback bar's button that raises a text book's speed. %lld is the size of one step in words per minute.
-            return String(localized: "Increase speed by \(wordsPerMinute) words per minute")
+            return InterfaceText.line("voiceAndSpeed.speedStepLabel.increase", "Increase speed by \(number: wordsPerMinute) words per minute")
         }
         // Translators: VoiceOver label of the playback bar's button that lowers a text book's speed. %lld is the size of one step in words per minute.
-        return String(localized: "Decrease speed by \(wordsPerMinute) words per minute")
+        return InterfaceText.line("voiceAndSpeed.speedStepLabel.decrease", "Decrease speed by \(number: wordsPerMinute) words per minute")
     }
 
     /// Said after a text book's speed changes: "200 words per minute".
     static func speedAnnouncement(wordsPerMinute: Int) -> String {
         // Translators: Announcement of a text book's new speed after it changed. %lld is the speed in words per minute.
-        String(localized: "\(wordsPerMinute) words per minute")
+        InterfaceText.line("common.countWordsPerMinute", "\(number: wordsPerMinute) words per minute")
     }
 
     /// Said after the pitch changes: "Pitch 1.2". `pitch` is the multiplier
     /// with one decimal.
     static func pitchAnnouncement(_ pitch: String) -> String {
         // Translators: Announcement of the voice's new pitch after it changed. %@ is the pitch multiplier with one decimal, such as 1.2.
-        String(localized: "Pitch \(pitch)")
+        InterfaceText.line("voiceAndSpeed.pitchAnnouncement", "Pitch \(pitch)")
     }
 
     /// Said after a voice is chosen for the book alone.
     static func voiceChanged(to name: String) -> String {
         // Translators: Announcement after a voice was chosen for the open book. %@ is the voice's name.
-        String(localized: "Voice changed to \(name)")
+        InterfaceText.line("voiceAndSpeed.voiceChanged", "Voice changed to \(name)")
     }
 
     /// Said after the book's own voice, speed, and pitch are applied to the global settings.
     static var appliedAsGlobalDefaults: String {
         // Translators: Announcement after the open book's own voice, speed, and pitch were applied as the global settings.
-        String(localized: "Settings applied as global defaults")
+        InterfaceText.line("voiceAndSpeed.appliedAsGlobalDefaults", "Settings applied as global defaults")
     }
 
     /// Said after an audiobook's speed goes back to the normal one: "Audio
     /// speed reset to 1.0 times speed".
     static func audioSpeedReset(to speed: String) -> String {
         // Translators: Announcement after an audiobook's speed returned to normal. %@ is the speed as VoiceOver says it, such as "1.0 times speed".
-        String(localized: "Audio speed reset to \(speed)")
+        InterfaceText.line("voiceAndSpeed.audioSpeedReset", "Audio speed reset to \(speed)")
     }
 
     /// Said after a skipped section is included again.
     static func sectionIncluded(_ heading: String) -> String {
         // Translators: Announcement after a heading's section that was skipped is read again. %@ is the heading's text.
-        String(localized: "Section included: \(heading)")
+        InterfaceText.line("voiceAndSpeed.sectionIncluded", "Section included: \(heading)")
     }
 
     /// Said after a section is set to be skipped.
     static func sectionSkipped(_ heading: String) -> String {
         // Translators: Announcement after a heading's section is set to be skipped. %@ is the heading's text.
-        String(localized: "Section skipped: \(heading)")
+        InterfaceText.line("voiceAndSpeed.sectionSkipped", "Section skipped: \(heading)")
     }
 }

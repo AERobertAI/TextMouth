@@ -30,13 +30,13 @@ enum IOSUnavailable: LocalizedError, LogDescribing, Equatable {
             return "\(name) is not available on iPhone yet." // l10n: no (the callers' English phrase inside an English sentence until their areas convert)
         case .convertingThisKindOfFile:
             // Translators: Error text when the iPhone app is asked to convert an audio file in a way only the Mac's helper program can.
-            return String(localized: "Converting this kind of file isn't available on iPhone yet.")
+            return InterfaceText.line("iosUnavailable.convertingThisKindOfFile", "Converting this kind of file isn't available on iPhone yet.")
         case .editingInAnotherApp:
             // Translators: Error text when the iPhone app is asked to open a file in another app to edit it and take it back.
-            return String(localized: "Editing in another app isn't available on iPhone yet.")
+            return InterfaceText.line("iosUnavailable.editingInAnotherApp", "Editing in another app isn't available on iPhone yet.")
         case .showingLogsInFinder:
             // Translators: What the iPhone's Settings says when asked to show the logs in Finder, which the iPhone does not have.
-            return String(localized: "Showing the logs in Finder isn't available on iPhone yet.")
+            return InterfaceText.line("iosUnavailable.showingLogsInFinder", "Showing the logs in Finder isn't available on iPhone yet.")
         }
     }
 

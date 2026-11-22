@@ -46,19 +46,19 @@ enum OwnAudioWording {
         switch error {
         case .notThisFormat:
             // Translators: Why an audio file could not be converted at import: its bytes are not of the format its extension names. %@ is the file's name.
-            return String(localized: "The audio file \(fileName) is not the kind of file its name says.")
+            return InterfaceText.line("ownAudio.sentence.notThisFormat", "The audio file \(fileName) is not the kind of file its name says.")
         case let .unsupported(reason):
             // Translators: Why an audio file could not be converted at import: it is of a format TextMouth reads, in a form it refuses. %1$@ is the file's name and %2$@ the reason, a clause in English that follows "because" and has no full stop.
-            return String(localized: "TextMouth can't read the audio file \(fileName) because \(reason).")
+            return InterfaceText.line("ownAudio.sentence.unsupported", "TextMouth can't read the audio file \(fileName) because \(reason).")
         case .truncated:
             // Translators: Why an audio file could not be converted at import: the file stops before the audio its header promises. %@ is the file's name.
-            return String(localized: "The audio file \(fileName) ends before its audio does, so it could not be converted.")
+            return InterfaceText.line("ownAudio.sentence.truncated", "The audio file \(fileName) ends before its audio does, so it could not be converted.")
         case .damaged:
             // Translators: Why an audio file could not be converted at import: a checksum failed or a field holds a value no encoder writes. %@ is the file's name.
-            return String(localized: "The audio file \(fileName) is damaged, so it could not be converted.")
+            return InterfaceText.line("ownAudio.sentence.damaged", "The audio file \(fileName) is damaged, so it could not be converted.")
         case .companionDamaged:
             // Translators: Why a hybrid WavPack file could not be converted at import: the correction file beside it (the same name ending in .wvc) is damaged or belongs to another recording. %1$@ is the correction file's name and %2$@ the WavPack file's name.
-            return String(localized: "The correction file \(companionName(of: fileName)) is damaged or belongs to another recording, so \(fileName) could not be converted.")
+            return InterfaceText.line("ownAudio.sentence.companionDamaged", "The correction file \(companionName(of: fileName)) is damaged or belongs to another recording, so \(fileName) could not be converted.")
         }
     }
 

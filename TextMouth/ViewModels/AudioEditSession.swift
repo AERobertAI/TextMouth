@@ -250,7 +250,7 @@ final class AudioEditSession: ObservableObject {
         let used = takeRange ?? AudioTimeRange(start: 0, end: takeLength)
         guard used.isWellFormed, used.end <= takeLength + 0.001 else {
             // Translators: Said when a punch-in's recording is asked to use a stretch that is not inside the recording.
-            throw AudioEditError.invalidEdit(String(localized: "The stretch of the take to use isn't inside the take."))
+            throw AudioEditError.invalidEdit(InterfaceText.line("audioEditSession.stretchTakeUse", "The stretch of the take to use isn't inside the take."))
         }
         // Checked with a stand-in for the take's place, which the history
         // gives it only as the edit is recorded.

@@ -89,7 +89,7 @@ enum AudioSampleFormWording {
     /// What a listener can do about it: the sentence that ends every refusal.
     static var advice: String {
         // Translators: Ends every refusal of an audio file whose samples TextMouth can't decode: what the listener can do about it.
-        String(localized: "Convert it to 16-bit or 24-bit integer samples, then import it again.")
+        InterfaceText.line("audioSampleForm.advice", "Convert it to 16-bit or 24-bit integer samples, then import it again.")
     }
 
     /// The form in words a listener knows, as an adjective of "samples":
@@ -100,9 +100,9 @@ enum AudioSampleFormWording {
         let bits = String(form.bits)
         return form.isFloat
             // Translators: An audio file's sample form, an adjective of "samples" in a refusal such as "uses 16-bit floating-point samples". %@ is the number of bits, an identifier written without digit grouping.
-            ? String(localized: "\(bits)-bit floating-point")
+            ? InterfaceText.line("audioSampleForm.phrase.floating", "\(bits)-bit floating-point")
             // Translators: An audio file's sample form, an adjective of "samples" in a refusal such as "uses 64-bit integer samples". %@ is the number of bits, an identifier written without digit grouping.
-            : String(localized: "\(bits)-bit integer")
+            : InterfaceText.line("audioSampleForm.phrase.integer", "\(bits)-bit integer")
     }
 
     /// What is wrong with a form no decoder reads, as a clause for a log or a
@@ -121,7 +121,7 @@ enum AudioSampleFormWording {
     /// Convert it to 16-bit or 24-bit integer samples, then import it again."
     static func refusal(fileName: String, form: AudioSampleForm) -> String {
         // Translators: Refuses an audio file whose samples TextMouth can't decode, which is not damaged. %1$@ is the file's name and %2$@ its sample form, such as "64-bit integer".
-        let problem = String(localized: "“\(fileName)” uses \(phrase(for: form)) samples, which TextMouth can't play.")
+        let problem = InterfaceText.line("audioSampleForm.refusal", "“\(fileName)” uses \(phrase(for: form)) samples, which TextMouth can't play.")
         return SentenceWording.joined([problem, advice])
     }
 }

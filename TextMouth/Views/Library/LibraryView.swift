@@ -2510,150 +2510,150 @@ enum LibraryListWording {
     /// What VoiceOver calls the View pop-up, whose items are the views' names.
     static var viewPickerLabel: String {
         // Translators: Spoken label of the View pop-up of a Library window, which chooses the view of the library shown, such as Unopened.
-        String(localized: "Library view")
+        InterfaceText.line("libraryList.viewPickerLabel", "Library view")
     }
 
     /// The View pop-up's title.
     static var view: String {
         // Translators: Title of the pop-up in a Library window that chooses the view of the library shown.
-        String(localized: "View")
+        InterfaceText.line("libraryList.view", "View")
     }
 
     /// The search field's prompt.
     static var searchPrompt: String {
         // Translators: Prompt of the Library window's search field, which narrows the listed books.
-        String(localized: "Search books")
+        InterfaceText.line("libraryList.searchPrompt", "Search books")
     }
 
     /// The rotor that moves between books.
     static var booksRotor: String {
         // Translators: Name of the VoiceOver rotor that moves between the books of the Library list.
-        String(localized: "Books")
+        InterfaceText.line("common.books", "Books")
     }
 
     /// The Folders section's header and the rotor that moves between folders.
     static var foldersHeader: String {
         // Translators: Header of the Library list's section of folders, and name of the VoiceOver rotor that moves between them.
-        String(localized: "Folders")
+        InterfaceText.line("libraryList.foldersHeader", "Folders")
     }
 
     /// The toolbar button that goes to the parent folder.
     static var upOneLevel: String {
         // Translators: Toolbar button of a Library window that goes up to the folder that holds the folder shown.
-        String(localized: "Up One Level")
+        InterfaceText.line("common.upOneLevel", "Up One Level")
     }
 
     /// What VoiceOver calls it.
     static var goUpOneFolderLevel: String {
         // Translators: Spoken label of the toolbar button that goes up to the folder that holds the folder shown.
-        String(localized: "Go up one folder level")
+        InterfaceText.line("libraryList.goUpOneFolderLevel", "Go up one folder level")
     }
 
     /// The edit mode toolbar button's title while edit mode is on.
     static var done: String {
         // Translators: Title of the toolbar button that leaves edit mode in the Library list, shown while edit mode is on.
-        String(localized: "Done")
+        InterfaceText.line("common.done", "Done")
     }
 
     /// The edit mode toolbar button's title while edit mode is off.
     static var edit: String {
         // Translators: Title of the toolbar button that enters edit mode in the Library list, for selecting several books.
-        String(localized: "Edit")
+        InterfaceText.line("common.edit", "Edit")
     }
 
     /// What VoiceOver calls the button while edit mode is on.
     static var exitEditMode: String {
         // Translators: Spoken label of the toolbar button that leaves edit mode in the Library list.
-        String(localized: "Exit edit mode")
+        InterfaceText.line("libraryList.exitEditMode", "Exit edit mode")
     }
 
     /// What VoiceOver calls the button while edit mode is off.
     static var enterEditMode: String {
         // Translators: Spoken label of the toolbar button that enters edit mode in the Library list.
-        String(localized: "Enter edit mode")
+        InterfaceText.line("libraryList.enterEditMode", "Enter edit mode")
     }
 
     /// The edit button's hint while edit mode is on.
     static func exitsEditMode(selectedCount: Int) -> String {
         // Translators: Hint of the toolbar's edit mode button while edit mode is on. %lld is how many books are selected.
-        String(localized: "Exits edit mode. \(selectedCount) books selected.")
+        InterfaceText.line("libraryList.exitsEditMode", "Exits edit mode. \(number: selectedCount) books selected.")
     }
 
     /// The edit button's hint while edit mode is off.
     static var entersEditMode: String {
         // Translators: Hint of the toolbar's edit mode button while edit mode is off.
-        String(localized: "Enters edit mode, for selecting several books to move or remove.")
+        InterfaceText.line("libraryList.entersEditMode", "Enters edit mode, for selecting several books to move or remove.")
     }
 
     /// What VoiceOver calls the toolbar's New Folder button.
     static var createNewFolder: String {
         // Translators: Spoken label of the toolbar button that opens the sheet that makes a new folder.
-        String(localized: "Create new folder")
+        InterfaceText.line("libraryList.createNewFolder", "Create new folder")
     }
 
     /// The title of the question about deleting a folder that holds books.
     static var deleteFolderQuestion: String {
         // Translators: Title of the question asked before a folder that holds books or folders is deleted.
-        String(localized: "Delete Folder?")
+        InterfaceText.line("libraryList.deleteFolderQuestion", "Delete Folder?")
     }
 
     /// The answer that moves a folder's contents out before it is deleted.
     static var moveContentsOut: String {
         // Translators: Button of the question about deleting a folder: it moves the folder's books and subfolders to another place, then deletes the folder.
-        String(localized: "Move Contents Out")
+        InterfaceText.line("libraryList.moveContentsOut", "Move Contents Out")
     }
 
     /// The Sort menu's title.
     static var sort: String {
         // Translators: Title of the Library window's toolbar menu that chooses how the books are sorted.
-        String(localized: "Sort")
+        InterfaceText.line("libraryList.sort", "Sort")
     }
 
     /// The Sort menu's item that gives every subfolder this sort.
     static var applySortToSubfolders: String {
         // Translators: Item of the Sort menu that gives every subfolder of the folder shown the sort chosen here.
-        String(localized: "Apply Sort to All Subfolders")
+        InterfaceText.line("libraryList.applySortToSubfolders", "Apply Sort to All Subfolders")
     }
 
     /// The Continue button's visible text.
     static func continueVisible(_ title: String) -> String {
         // Translators: Text of the Continue button at the top of the Library list. %@ is the title of the book last read.
-        String(localized: "Continue: \(title)")
+        InterfaceText.line("libraryList.continueVisible", "Continue: \(title)")
     }
 
     /// The Continue button's hint.
     static var continueHint: String {
         // Translators: Hint of the Continue button at the top of the Library list.
-        String(localized: "Opens the last book you were reading")
+        InterfaceText.line("libraryList.continueHint", "Opens the last book you were reading")
     }
 
     /// What VoiceOver calls the Continue button, before its time.
     static func continueListeningTo(_ title: String) -> String {
         // Translators: Spoken label of the Continue button at the top of the Library list. %@ is the title of the book last read. The time left may follow it.
-        String(localized: "Continue listening to \(title)")
+        InterfaceText.line("libraryList.continueListeningTo", "Continue listening to \(title)")
     }
 
     /// The folder menu's item that renames the folder.
     static var renameFolder: String {
         // Translators: Item of a folder's menu that opens the sheet that renames the folder. The three dots mean a sheet opens.
-        String(localized: "Rename Folder...")
+        InterfaceText.line("libraryList.renameFolder", "Rename Folder...")
     }
 
     /// The folder menu's item that moves the folder.
     static var moveFolder: String {
         // Translators: Item of a folder's menu that opens the sheet that moves the folder under another folder. The three dots mean a sheet opens.
-        String(localized: "Move Folder...")
+        InterfaceText.line("libraryList.moveFolder", "Move Folder...")
     }
 
     /// The folder menu's item that deletes the folder.
     static var deleteFolder: String {
         // Translators: Item of a folder's menu that deletes the folder. The three dots mean a question follows.
-        String(localized: "Delete Folder...")
+        InterfaceText.line("libraryList.deleteFolder", "Delete Folder...")
     }
 
     /// The Open Book choice's hint, which the Add to Library sheet reuses.
     static var importBookHint: String {
         // Translators: Hint of the choice that opens a file picker to import books, in the Add to Library sheet.
-        String(localized: "Opens a file picker to import books in any format TextMouth reads.")
+        InterfaceText.line("libraryList.importBookHint", "Opens a file picker to import books in any format TextMouth reads.")
     }
 }

@@ -37,7 +37,7 @@ enum FeedSearchError: Error, Equatable, Sendable {
             return error.searchMessage
         case .unreadableAnswer:
             // Translators: Why a podcast search failed: the directory's answer could not be read.
-            return String(localized: "The podcast directory sent an answer TextMouth can't read. Try again later.")
+            return InterfaceText.line("feedSearchError.message.unreadableAnswer", "The podcast directory sent an answer TextMouth can't read. Try again later.")
         }
     }
 }
@@ -50,37 +50,37 @@ extension FeedFetchError {
         switch self {
         case .offline:
             // Translators: Why a podcast search failed: this Mac has no internet.
-            return String(localized: "This Mac is offline, so the directory can't be searched. Connect to the internet and try again.")
+            return InterfaceText.line("feedFetchError.searchMessage.offline", "This Mac is offline, so the directory can't be searched. Connect to the internet and try again.")
         case .hostNotFound(let host):
             // Translators: Why a podcast search failed: no server answers at the directory's address. %@ is the server's host name.
-            return String(localized: "The podcast directory at \(host) couldn't be found.")
+            return InterfaceText.line("feedFetchError.searchMessage.hostNotFound", "The podcast directory at \(host) couldn't be found.")
         case .timedOut(let host):
             // Translators: Why a podcast search failed: the directory took too long. The first %@ is the server's host name; %lld is the number of seconds waited.
-            return String(localized: "The podcast directory at \(host) didn't answer for \(Int(FeedNetwork.requestTimeout)) seconds.")
+            return InterfaceText.line("feedFetchError.searchMessage.timedOut", "The podcast directory at \(host) didn't answer for \(number: Int(FeedNetwork.requestTimeout)) seconds.")
         case .needsPassword, .serverError(status: 429, host: _):
             // Translators: Why a podcast search failed: the directory limits searches to about 20 a minute.
-            return String(localized: "The podcast directory refused the search; it allows about 20 a minute. Wait a minute and try again.")
+            return InterfaceText.line("feedFetchError.searchMessage.needsPassword", "The podcast directory refused the search; it allows about 20 a minute. Wait a minute and try again.")
         case .serverError(let status, let host):
             // Translators: Why a podcast search failed: the directory answered with an error. The first %@ is the server's host name; the second is the error's number, an identifier written without digit grouping, such as 503.
-            return String(localized: "The podcast directory at \(host) couldn't answer the search (error \(String(status))). Try again later.")
+            return InterfaceText.line("feedFetchError.searchMessage.serverError", "The podcast directory at \(host) couldn't answer the search (error \(String(status))). Try again later.")
         case .notFound, .gone:
             // Translators: Why a podcast search failed: the directory's address answers that nothing is there.
-            return String(localized: "The podcast directory couldn't answer the search. Try again later.")
+            return InterfaceText.line("feedFetchError.searchMessage.notFound", "The podcast directory couldn't answer the search. Try again later.")
         case .tooLarge:
             // Translators: Why a podcast search failed: the answer is too large.
-            return String(localized: "The podcast directory's answer is larger than TextMouth reads.")
+            return InterfaceText.line("feedFetchError.searchMessage.tooLarge", "The podcast directory's answer is larger than TextMouth reads.")
         case .connectionFailed(let host, let reason):
             // Translators: Why a podcast search failed: the connection failed. The first %@ is the server's host name; the second is the reason, a phrase from the system or from TextMouth, such as "the server sent no answer".
-            return String(localized: "The podcast directory at \(host) couldn't be reached: \(reason)")
+            return InterfaceText.line("feedFetchError.searchMessage.connectionFailed", "The podcast directory at \(host) couldn't be reached: \(reason)")
         case .notAWebAddress:
             // Translators: Why a podcast search failed: the directory's address is not an http or https address.
-            return String(localized: "The search couldn't be sent, because the directory's address isn't a web address.")
+            return InterfaceText.line("feedFetchError.searchMessage.notAWebAddress", "The search couldn't be sent, because the directory's address isn't a web address.")
         case .constrainedNetwork:
             // Translators: Why a podcast search did not run: the network has data limits.
-            return String(localized: "The podcast directory can't be searched on this network, which limits data.")
+            return InterfaceText.line("feedFetchError.searchMessage.constrainedNetwork", "The podcast directory can't be searched on this network, which limits data.")
         case .cancelled:
             // Translators: Why a podcast search ended: it was stopped.
-            return String(localized: "The search was stopped.")
+            return InterfaceText.line("feedFetchError.searchMessage.cancelled", "The search was stopped.")
         }
     }
 }

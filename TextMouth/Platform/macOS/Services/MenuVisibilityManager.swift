@@ -101,47 +101,52 @@ final class MenuVisibilityManager {
     // MARK: - Menu Title Sets
     //
     // Each set contains the title strings of CommandMenus that should only be
-    // visible for that window type. A `CommandMenu("Bookmarks")` literal is a
-    // localization key, so the menu bar shows the key's translation (the
-    // Bookmarks menu reads "Marcadores" in Spanish). Each set therefore holds
-    // every key AND its text in the interface language, or the menu would
-    // stop hiding in any language whose word differs. The keys must match the
-    // strings passed to CommandMenu("...") in MenuCommands.swift.
+    // visible for that window type. A menu shows its title from `MenuWording`
+    // (the same member its `CommandMenu` is given), which reads the interface
+    // language: the Bookmarks menu reads "Marcadores" in Spanish. Each set
+    // therefore holds every title's text in the interface language AND in
+    // English, or the menu would stop hiding in any language whose word
+    // differs. The sets are built from the wording members themselves, so a
+    // menu and its title set can never disagree.
 
-    /// The keys of the CommandMenus that appear only when a reader window is
-    /// focused: the one list the reader's title set is built from.
-    static let readerMenuKeys = ["Playback", "Navigate", "Bookmarks", "Book"] // l10n: no (the CommandMenu keys; the title set adds their localized text)
+    /// The wording of the CommandMenus that appear only when a reader window
+    /// is focused: the one list the reader's title set is built from.
+    static let readerMenuWording: [() -> String] = [
+        { MenuWording.playback }, { MenuWording.navigate }, { MenuWording.bookmarks }, { MenuWording.book }
+    ]
 
-    /// The keys of the CommandMenus that appear only when a library window is
-    /// focused.
-    static let libraryMenuKeys = ["Library"] // l10n: no (the CommandMenu key; the title set adds its localized text)
+    /// The wording of the CommandMenus that appear only when a library window
+    /// is focused.
+    static let libraryMenuWording: [() -> String] = [{ MenuWording.library }]
 
-    /// The titles a menu bar item may show for `keys`: each key as written
-    /// (English, which is what the menu shows when no translation exists),
-    /// its text as the app's own bundle resolves it (exactly what SwiftUI
-    /// puts in the menu bar, whatever `Locale.current` says), and its text in
-    /// `locale`. A computed value rather than a stored one, so a language
+    /// The titles a menu bar item may show for `wording`: each title in the
+    /// interface language in use now (exactly what the `CommandMenu` puts in
+    /// the menu bar), in English (what a menu shows when its language has no
+    /// text, and what the menus were named before), and in each of
+    /// `languages`. A computed value rather than a stored one, so a language
     /// change is never cached away.
     ///
     /// - Parameters:
-    ///   - keys: CommandMenu keys, as written in MenuCommands.swift.
-    ///   - locale: The interface language to read each key in besides the
-    ///     bundle's; tests pass Spanish to prove the Spanish title is in the
-    ///     set.
-    static func titles(for keys: [String], locale: Locale = .current) -> Set<String> {
-        Set(keys.flatMap { key -> [String] in
-            let value = String.LocalizationValue(key)
-            return [key,
-                    String(localized: value),
-                    String(localized: LocalizedStringResource(value, locale: locale))]
+    ///   - wording: Wording members of `MenuWording`, one for each CommandMenu.
+    ///   - languages: Further interface languages to read each title in
+    ///     (codes such as "es"); tests pass Spanish to prove the Spanish title
+    ///     is in the set.
+    static func titles(for wording: [() -> String], languages: [String] = []) -> Set<String> {
+        Set(wording.flatMap { title -> [String] in
+            // The member read under each language in turn: a test's task-local
+            // language makes the engine answer in it, with nothing global changed.
+            let others = (["en"] + languages).map { language in
+                InterfaceLanguage.$testLanguage.withValue(language) { title() }
+            }
+            return [title()] + others
         })
     }
 
     /// Menu titles that should only appear when a reader window is focused
-    static var readerMenuTitles: Set<String> { titles(for: readerMenuKeys) }
+    static var readerMenuTitles: Set<String> { titles(for: readerMenuWording) }
 
     /// Menu titles that should only appear when a library window is focused
-    static var libraryMenuTitles: Set<String> { titles(for: libraryMenuKeys) }
+    static var libraryMenuTitles: Set<String> { titles(for: libraryMenuWording) }
 
     /// All context-specific menu titles (union of all window-type sets).
     /// Standard menus (File, Edit, View, Window, Help) are never touched.
@@ -324,7 +329,7 @@ final class MenuVisibilityManager {
     static func applyVisibility(for windowType: ActiveWindowType?, to mainMenu: NSMenu?) {
         guard let mainMenu = mainMenu else { return }
 
-        // Built once per call: each set holds the keys and their localized text.
+        // Built once per call: each set holds each title in the interface language and in English.
         let readerTitles = readerMenuTitles
         let libraryTitles = libraryMenuTitles
 

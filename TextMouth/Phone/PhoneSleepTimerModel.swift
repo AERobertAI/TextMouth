@@ -84,7 +84,7 @@ enum PhoneSleepTimerModel {
     /// word "Off".
     static var offValue: String {
         // Translators: VoiceOver value of the iPhone reader's Sleep Timer button while no sleep timer runs.
-        String(localized: "Off")
+        InterfaceText.line("common.off", "Off")
     }
 
     /// The reader's Sleep Timer value: "Off", or the Mac's spoken status

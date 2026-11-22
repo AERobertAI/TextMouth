@@ -506,23 +506,23 @@ struct EPUBPackageBuilder {
         // Written into the file for the people who read it, so it follows
         // the interface language of the export (question 10).
         // Translators: The first sentence of the accessibility summary written into an exported EPUB.
-        var sentences = [String(localized: "This book was exported from TextMouth as text only.")]
+        var sentences = [InterfaceText.line("epubPackageBuilder.accessibilitySummary.exported", "This book was exported from TextMouth as text only.")]
         if hasHeadings {
             // Translators: A sentence of the accessibility summary written into an exported EPUB: the book has headings.
-            sentences.append(String(localized: "Its headings are real headings, and the contents list links them."))
+            sentences.append(InterfaceText.line("epubPackageBuilder.accessibilitySummary.links", "Its headings are real headings, and the contents list links them."))
         } else if entryCount == 1 {
             // Translators: A sentence of the accessibility summary written into an exported EPUB: the book has no headings and its contents list has one entry.
-            sentences.append(String(localized: "It has no headings, so the contents list has one entry for the whole book."))
+            sentences.append(InterfaceText.line("epubPackageBuilder.accessibilitySummary.entry", "It has no headings, so the contents list has one entry for the whole book."))
         } else {
             // Translators: A sentence of the accessibility summary written into an exported EPUB: the book has no headings and its contents list has several entries. %lld is the number of entries.
-            sentences.append(String(localized: "It has no headings, so the contents list has \(entryCount) entries for its chapters and the places it marks."))
+            sentences.append(InterfaceText.line("epubPackageBuilder.accessibilitySummary.chapters", "It has no headings, so the contents list has \(number: entryCount) entries for its chapters and the places it marks."))
         }
         if hasPages {
             // Translators: A sentence of the accessibility summary written into an exported EPUB: the book has pages.
-            sentences.append(String(localized: "It has a page list, and the start of each page is marked in the text."))
+            sentences.append(InterfaceText.line("epubPackageBuilder.accessibilitySummary.marked", "It has a page list, and the start of each page is marked in the text."))
         }
         // Translators: The last sentence of the accessibility summary written into an exported EPUB.
-        sentences.append(String(localized: "It has no pictures, sound, or video, and the text of a picture's description is kept as text."))
+        sentences.append(InterfaceText.line("epubPackageBuilder.accessibilitySummary.noMedia", "It has no pictures, sound, or video, and the text of a picture's description is kept as text."))
         return SentenceWording.joined(sentences)
     }
 

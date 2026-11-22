@@ -54,43 +54,43 @@ enum TranscriptionError: LocalizedError, LogDescribing, Equatable {
         switch self {
         case .needsNewerSystem:
             // Translators: Error shown when transcription is tried on a Mac whose system is too old.
-            return String(localized: "Transcription needs macOS 26 or later.")
+            return InterfaceText.line("transcriptionError.needsNewerSystem", "Transcription needs macOS 26 or later.")
         case .unavailableOnThisMac:
             // Translators: Error shown when transcription is tried on a Mac whose hardware cannot run the speech model.
-            return String(localized: "This Mac can't run the speech model that transcription uses.")
+            return InterfaceText.line("transcriptionError.unavailableOnThisMac", "This Mac can't run the speech model that transcription uses.")
         case .unsupportedLanguage(let language):
             // Translators: Error shown when the chosen transcription language cannot be transcribed. %@ is the language's name.
-            return String(localized: "Transcription doesn't support \(language).")
+            return InterfaceText.line("transcriptionError.unsupportedLanguage", "Transcription doesn't support \(language).")
         case .modelNotInstalled(let language):
             // Translators: Error shown when transcription is tried before the language's speech model is downloaded. %@ is the language's name.
-            return String(localized: "The speech model for \(language) isn't on this Mac yet. Download it first.")
+            return InterfaceText.line("transcriptionError.modelNotInstalled", "The speech model for \(language) isn't on this Mac yet. Download it first.")
         case .busy(let title):
             // Translators: Error shown when a transcription is started while another runs. %@ is the title of the audiobook being transcribed.
-            return String(localized: "TextMouth is already transcribing \(title). Try again when that finishes.")
+            return InterfaceText.line("transcriptionError.busy", "TextMouth is already transcribing \(title). Try again when that finishes.")
         case .notAnAudiobook:
             // Translators: Error shown when transcription is tried for a book that is not an audiobook.
-            return String(localized: "Only audiobooks can be transcribed.")
+            return InterfaceText.line("transcriptionError.notAnAudiobook", "Only audiobooks can be transcribed.")
         case .noAudio:
             // Translators: Error shown when transcription is tried for an audiobook with no audio file.
-            return String(localized: "This audiobook has no audio to transcribe.")
+            return InterfaceText.line("transcriptionError.noAudio", "This audiobook has no audio to transcribe.")
         case .fileInCloud(let file):
             // Translators: Error shown when an audio file has not been downloaded from the cloud drive. %@ is the audio file's name.
-            return String(localized: "“\(file)” is only in the cloud. Download the book, then transcribe it.")
+            return InterfaceText.line("transcriptionError.fileInCloud", "“\(file)” is only in the cloud. Download the book, then transcribe it.")
         case .unreadableFile(let file, let reason):
             // Translators: Error shown when an audio file cannot be read. %1$@ is the audio file's name; %2$@ is the reason, a short phrase in English.
-            return String(localized: "“\(file)” couldn't be read: \(reason).")
+            return InterfaceText.line("transcriptionError.unreadableFile", "“\(file)” couldn't be read: \(reason).")
         case .cancelled:
             // Translators: What VoiceOver hears, and the Transcribe Audio sheet shows, when the user cancels a transcription.
-            return String(localized: "Transcription was cancelled.")
+            return InterfaceText.line("transcriptionError.cancelled", "Transcription was cancelled.")
         case .recognitionFailed(let reason):
             // Translators: Error shown when the speech recognizer failed. %@ is the reason, a short phrase in English.
-            return String(localized: "Transcription stopped: \(reason).")
+            return InterfaceText.line("transcriptionError.recognitionFailed", "Transcription stopped: \(reason).")
         case .audioChanged(let reason):
             // Translators: Error shown when the book's audio files changed during a transcription, so the transcript was not saved. %@ is the reason, a short phrase in English.
-            return String(localized: "The book's audio changed while it was being transcribed: \(reason). Transcribe it again.")
+            return InterfaceText.line("transcriptionError.audioChanged", "The book's audio changed while it was being transcribed: \(reason). Transcribe it again.")
         case .bookRemoved:
             // Translators: Error shown when the book was removed from the library during a transcription.
-            return String(localized: "The book left the library during transcription, so its transcript wasn't saved.")
+            return InterfaceText.line("transcriptionError.bookRemoved", "The book left the library during transcription, so its transcript wasn't saved.")
         }
     }
 

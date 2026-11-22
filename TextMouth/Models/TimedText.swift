@@ -292,20 +292,20 @@ enum TimedTextError: LocalizedError, LogDescribing, Equatable {
         switch self {
         case .tooLarge(let byteLimit):
             // Translators: Error shown when a transcript file chosen to attach is too big. %lld is the size limit in megabytes (MB).
-            return String(localized: "The file is over the \(byteLimit / 1_048_576) MB limit for a transcript.")
+            return InterfaceText.line("timedTextError.tooLarge", "The file is over the \(number: byteLimit / 1_048_576) MB limit for a transcript.")
         case .notTimedText(let format):
             // Translators: Error shown when a chosen transcript file's content is not in the format its name says. %@ is the format's name, such as WebVTT, SubRip, or Podcasting 2.0 JSON.
-            return String(localized: "The file isn't a \(format.name) transcript TextMouth can read.")
+            return InterfaceText.line("timedTextError.notTimedText", "The file isn't a \(format.name) transcript TextMouth can read.")
         case .unsupportedVersion(let format, let version):
             // The version is the file's own text, shown as it is.
             // Translators: Error shown when a chosen transcript file is of a version of its format that this app does not read. %1$@ is the format's name, such as Podcasting 2.0 JSON; %2$@ is the version the file gives, written as the file writes it.
-            return String(localized: "The file is a \(format.name) transcript of version \(version), which TextMouth doesn't read.")
+            return InterfaceText.line("timedTextError.unsupportedVersion", "The file is a \(format.name) transcript of version \(version), which TextMouth doesn't read.")
         case .noCues(let format):
             // Translators: Error shown when a chosen transcript file holds no usable timed passage. %@ is the format's name, such as WebVTT or SubRip.
-            return String(localized: "The \(format.name) file holds no timed text TextMouth can use.")
+            return InterfaceText.line("timedTextError.noCues", "The \(format.name) file holds no timed text TextMouth can use.")
         case .tooManyCues(let limit):
             // Translators: Error shown when a chosen transcript file holds more timed passages than the app reads. %lld is the limit, written with the region's digit grouping.
-            return String(localized: "Too many timed passages: the limit is \(limit).")
+            return InterfaceText.line("timedTextError.tooManyCues", "Too many timed passages: the limit is \(number: limit).")
         }
     }
 

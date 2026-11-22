@@ -8,31 +8,31 @@ enum AddToLibraryWording {
     /// The sheet's heading (with the header trait) and its navigation title.
     static var sheetTitle: String {
         // Translators: Heading and navigation title of the sheet that lists the ways to add to the library. Title case.
-        String(localized: "Add to Library")
+        InterfaceText.line("common.addToLibrary", "Add to Library")
     }
 
     /// The toolbar button's title.
     static var buttonTitle: String {
         // Translators: Title of the Library toolbar button that opens the sheet of ways to add to the library. Title case.
-        String(localized: "Add to Library")
+        InterfaceText.line("common.addToLibrary", "Add to Library")
     }
 
     /// The toolbar button's accessibility label.
     static var buttonLabel: String {
         // Translators: VoiceOver label of the Library toolbar button that opens the sheet of ways to add to the library. Title case.
-        String(localized: "Add to Library")
+        InterfaceText.line("common.addToLibrary", "Add to Library")
     }
 
     /// The toolbar button's accessibility hint: what its sheet offers.
     static var buttonHint: String {
         // Translators: VoiceOver hint of the Add to Library toolbar button. Names the five choices the sheet offers, in the order the sheet lists them.
-        String(localized: "Opens a sheet to open a book, import a folder, make a book from text, record audio, or add a feed")
+        InterfaceText.line("addToLibrary.buttonHint", "Opens a sheet to open a book, import a folder, make a book from text, record audio, or add a feed")
     }
 
     /// The sheet's Cancel button.
     static var cancel: String {
         // Translators: Title of the Cancel button of the Add to Library sheet, which closes it.
-        String(localized: "Cancel")
+        InterfaceText.line("common.cancel", "Cancel")
     }
 
     /// What `choice` does, in one line: shown under its button and given as
@@ -42,11 +42,11 @@ enum AddToLibraryWording {
         switch choice {
         case .openBook: return LibraryView.importBookHint
         // Translators: One-line summary and VoiceOver hint of the Import Folder choice of the Add to Library sheet.
-        case .importFolder: return String(localized: "Imports a folder holding a DAISY book or audio tracks as one book.")
+        case .importFolder: return InterfaceText.line("addToLibrary.summary.importFolder", "Imports a folder holding a DAISY book or audio tracks as one book.")
         // Translators: One-line summary and VoiceOver hint of the New from Text choice of the Add to Library sheet.
-        case .newFromText: return String(localized: "Makes a book from text you paste or type.")
+        case .newFromText: return InterfaceText.line("addToLibrary.summary.newFromText", "Makes a book from text you paste or type.")
         // Translators: One-line summary and VoiceOver hint of the Record choice of the Add to Library sheet.
-        case .newRecording: return String(localized: "Records from a microphone into a new audiobook.")
+        case .newRecording: return InterfaceText.line("addToLibrary.summary.newRecording", "Records from a microphone into a new audiobook.")
         case .addFeed: return FeedWording.addFeedButtonHint
         }
     }
@@ -55,7 +55,7 @@ enum AddToLibraryWording {
     /// the window the sheet is in: its summary, then why it does nothing.
     static func unavailableHint(_ choice: AddToLibraryChoice) -> String {
         // Translators: Second sentence of the hint of a dimmed choice of the Add to Library sheet: its menu command does not work in the window the sheet is in. The choice's own summary comes first.
-        let reason = String(localized: "Not available in this window.")
+        let reason = InterfaceText.line("addToLibrary.unavailableHint", "Not available in this window.")
         return SentenceWording.joined([summary(choice), reason])
     }
 

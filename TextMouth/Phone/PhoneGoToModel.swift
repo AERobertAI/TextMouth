@@ -36,13 +36,13 @@ enum PhoneGoToField: Hashable, CaseIterable, Sendable {
         switch self {
         case .page:
             // Translators: VoiceOver label of the Jump button under the Page field of the iPhone's Go To sheet.
-            return String(localized: "Jump to page")
+            return InterfaceText.line("phoneGoToField.jumpLabel.page", "Jump to page")
         case .percent:
             // Translators: VoiceOver label of the Jump button under the Percent field of the iPhone's Go To sheet.
-            return String(localized: "Jump to percent")
+            return InterfaceText.line("phoneGoToField.jumpLabel.percent", "Jump to percent")
         case .time:
             // Translators: VoiceOver label of the Jump button under the Time field of the iPhone's Go To sheet.
-            return String(localized: "Jump to time")
+            return InterfaceText.line("phoneGoToField.jumpLabel.time", "Jump to time")
         }
     }
 }

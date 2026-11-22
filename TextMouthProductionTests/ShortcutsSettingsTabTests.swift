@@ -738,13 +738,12 @@ final class ShortcutLocalizationTests: XCTestCase {
         }
     }
 
-    /// Each menu's title is the key `MenuVisibilityManager` hides it by: the
-    /// reader's four and the Library's one, in English exactly the keys, and
+    /// Each menu's title is one `MenuVisibilityManager` hides it by: the
+    /// reader's four and the Library's one, in English exactly the titles, and
     /// the Edit menu's Find submenu is neither's, so it is never hidden.
     func testEachMenuTitleIsAKeyTheVisibilityManagerHidesBy() {
-        let english = Locale(identifier: "en")
-        let reader = MenuVisibilityManager.titles(for: MenuVisibilityManager.readerMenuKeys, locale: english)
-        let library = MenuVisibilityManager.titles(for: MenuVisibilityManager.libraryMenuKeys, locale: english)
+        let reader = MenuVisibilityManager.titles(for: MenuVisibilityManager.readerMenuWording, languages: ["en"])
+        let library = MenuVisibilityManager.titles(for: MenuVisibilityManager.libraryMenuWording, languages: ["en"])
         for title in [MenuWording.playback, MenuWording.navigate, MenuWording.bookmarks, MenuWording.book] {
             XCTAssertTrue(MenuVisibilityManager.readerMenuTitles.contains(title), title)
             XCTAssertTrue(reader.contains(title), title)

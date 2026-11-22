@@ -79,15 +79,15 @@ enum XMLInputGuard {
                 firstSentence(ofRefusalFor: problem, file: file, in: container),
                 isBook(container)
                     // Translators: Last sentence of why a file inside an EPUB or DAISY book was refused because it defines entities of its own: what to do.
-                    ? String(localized: "Open the book in the program that made it, save it again, then import it again.")
+                    ? InterfaceText.line("xmlInputGuard.refusal.ownDefinitions.book", "Open the book in the program that made it, save it again, then import it again.")
                     // Translators: Last sentence of why a file inside a Word or OpenDocument document was refused because it defines entities of its own: what to do.
-                    : String(localized: "Open the document in the program that made it, save it again, then import it again."),
+                    : InterfaceText.line("xmlInputGuard.refusal.ownDefinitions.document", "Open the document in the program that made it, save it again, then import it again."),
             ])
         case .encoding:
             return SentenceWording.joined([
                 firstSentence(ofRefusalFor: problem, file: file, in: container),
                 // Translators: Last sentence of why a file was refused because of its text encoding: what to do. UTF-8 is an encoding's name and stays as it is.
-                String(localized: "Save it as UTF-8, then import it again."),
+                InterfaceText.line("common.saveItAsUtf8ThenImport", "Save it as UTF-8, then import it again."),
             ])
         }
     }
@@ -98,16 +98,16 @@ enum XMLInputGuard {
         switch (problem, isBook(container)) {
         case (.encoding(let name), true):
             // Translators: First sentence of why a file inside an EPUB or DAISY book was refused: it is in a text encoding TextMouth cannot see through. %1$@ is the file's path inside the book and %2$@ the encoding's name as the file declares it.
-            return String(localized: "TextMouth can't safely read the file “\(file)” in this book, because it is written in the \(name) encoding.")
+            return InterfaceText.line("xmlInputGuard.firstSentence.encoding", "TextMouth can't safely read the file “\(file)” in this book, because it is written in the \(name) encoding.")
         case (.encoding(let name), false):
             // Translators: First sentence of why a file inside a Word or OpenDocument document was refused: it is in a text encoding TextMouth cannot see through. %1$@ is the file's path inside the document and %2$@ the encoding's name as the file declares it.
-            return String(localized: "TextMouth can't safely read the file “\(file)” in this document, because it is written in the \(name) encoding.")
+            return InterfaceText.line("xmlInputGuard.firstSentence.documentEncoding", "TextMouth can't safely read the file “\(file)” in this document, because it is written in the \(name) encoding.")
         case (_, true):
             // Translators: First sentence of why a file inside an EPUB or DAISY book was refused: it defines XML entities of its own, which could make it far larger when read. %@ is the file's path inside the book.
-            return String(localized: "TextMouth can't safely read the file “\(file)” in this book, because it defines entities of its own.")
+            return InterfaceText.line("xmlInputGuard.firstSentence.entities", "TextMouth can't safely read the file “\(file)” in this book, because it defines entities of its own.")
         case (_, false):
             // Translators: First sentence of why a file inside a Word or OpenDocument document was refused: it defines XML entities of its own, which could make it far larger when read. %@ is the file's path inside the document.
-            return String(localized: "TextMouth can't safely read the file “\(file)” in this document, because it defines entities of its own.")
+            return InterfaceText.line("xmlInputGuard.firstSentence.documentEntities", "TextMouth can't safely read the file “\(file)” in this document, because it defines entities of its own.")
         }
     }
 

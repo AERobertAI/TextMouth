@@ -26,19 +26,19 @@ enum DAISYParserError: LocalizedError, LogDescribing {
         switch self {
         case .fileNotFound(let path):
             // Translators: Why a DAISY book could not be imported: there is no file at its path. %@ is the path.
-            return String(localized: "DAISY file not found at: \(path)")
+            return InterfaceText.line("daisyParserError.fileNotFound", "DAISY file not found at: \(path)")
         case .invalidArchive:
             // Translators: Why a DAISY book could not be imported: it could not be opened as a ZIP archive.
-            return String(localized: "The DAISY file could not be opened as a ZIP archive.")
+            return InterfaceText.line("daisyParserError.invalidArchive", "The DAISY file could not be opened as a ZIP archive.")
         case .notDAISYBook:
             // Translators: Why a file could not be imported as a DAISY book: it holds neither a package file (.opf) nor a navigation file (ncc.html). OPF and ncc.html are file names and stay as they are.
-            return String(localized: "Not a valid DAISY book (no OPF or ncc.html found).")
+            return InterfaceText.line("daisyParserError.notDAISYBook", "Not a valid DAISY book (no OPF or ncc.html found).")
         case .missingContent(let msg):
             // Translators: Why a DAISY book could not be imported: a part it needs is missing. %@ is what is missing, a phrase in English.
-            return String(localized: "Missing DAISY content: \(msg)")
+            return InterfaceText.line("daisyParserError.missingContent", "Missing DAISY content: \(msg)")
         case .parseError(let msg):
             // Translators: Why a DAISY book could not be imported: a file inside it could not be read. %@ is the reason, a phrase in English.
-            return String(localized: "DAISY parse error: \(msg)")
+            return InterfaceText.line("daisyParserError.parseError", "DAISY parse error: \(msg)")
         case .malformedXML(let file, let reason):
             return PackageDamage.message(file: file, reason: reason, container: .daisyBook)
         case .unsafeXML(let file, let problem):

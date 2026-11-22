@@ -139,20 +139,20 @@ struct HeadingNavigatorView: View {
         switch (isSkipped, isCurrent) {
         case (false, false):
             // Translators: What VoiceOver says for a heading in the headings list. %1$@ is the heading's text; %2$lld is its level, 1 for the biggest heading.
-            base = String(localized: "\(text) - level \(level)")
+            base = InterfaceText.line("headingNavigatorView.level", "\(text) - level \(number: level)")
         case (true, false):
             // Translators: What VoiceOver says for a heading the user skipped, in the headings list. %1$@ is the heading's text; %2$lld is its level, 1 for the biggest heading.
-            base = String(localized: "Skipped, \(text) - level \(level)")
+            base = InterfaceText.line("headingNavigatorView.skippedLevel", "Skipped, \(text) - level \(number: level)")
         case (false, true):
             // Translators: What VoiceOver says for the heading being read, in the headings list. %1$@ is the heading's text; %2$lld is its level, 1 for the biggest heading.
-            base = String(localized: "\(text) (current heading) - level \(level)")
+            base = InterfaceText.line("headingNavigatorView.currentLevel", "\(text) (current heading) - level \(number: level)")
         case (true, true):
             // Translators: What VoiceOver says for the heading being read when the user skipped it, in the headings list. %1$@ is the heading's text; %2$lld is its level, 1 for the biggest heading.
-            base = String(localized: "Skipped, \(text) (current heading) - level \(level)")
+            base = InterfaceText.line("headingNavigatorView.skippedCurrentLevel", "Skipped, \(text) (current heading) - level \(number: level)")
         }
         guard !suffix.isEmpty else { return base }
         // Translators: A heading's description followed by a detail such as its duration. %1$@ is the description, such as "Chapter One - level 1"; %2$@ is the detail, such as "4 minutes".
-        return String(localized: "\(base), \(suffix)")
+        return InterfaceText.line("sentence.commaJoined", "\(base), \(suffix)")
     }
 
     static func filteredHeadings(_ headings: [Heading], maximumLevel: Int) -> [Heading] {
@@ -177,24 +177,24 @@ struct HeadingNavigatorView: View {
     /// "Headings, 12 headings", counting those the level filter shows.
     nonisolated static func listLabel(headingCount: Int) -> String {
         // Translators: What VoiceOver calls the list of headings, with how many it shows. %lld is the number of headings the level filter shows.
-        String(localized: "Headings, \(headingCount) headings")
+        InterfaceText.line("headingNavigatorView.listLabel", "Headings, \(number: headingCount) headings")
     }
 
     /// The level filter's label, which the screen shows beside it and
     /// VoiceOver speaks as its name.
     nonisolated static var levelFilterLabel: String {
         // Translators: Label of the headings sheet's level filter, which limits the headings shown to those up to a level.
-        String(localized: "Show levels")
+        InterfaceText.line("headingNavigatorView.levelFilterLabel", "Show levels")
     }
     /// The level filter's hint: what choosing does.
     nonisolated static var levelFilterHint: String {
         // Translators: Hint of the headings sheet's level filter: what choosing a level does.
-        String(localized: "Shows only the headings up to the level chosen.")
+        InterfaceText.line("headingNavigatorView.levelFilterHint", "Shows only the headings up to the level chosen.")
     }
     /// The caption the screen shows beside the level filter: its label and a colon.
     nonisolated static var levelFilterCaption: String {
         // Translators: Caption beside the headings sheet's level filter. %@ is the filter's label; the colon follows it as the language writes a label before a control.
-        String(localized: "\(levelFilterLabel):")
+        InterfaceText.line("headingNavigatorView.levelFilterCaption", "\(levelFilterLabel):")
     }
 
     /// The level filter's name for the choice showing levels 1 to
@@ -205,14 +205,14 @@ struct HeadingNavigatorView: View {
     nonisolated static func filterChoiceTitle(maximumLevel: Int) -> String {
         if maximumLevel >= deepestFilterLevel {
             // Translators: Choice of the headings sheet's level filter that shows every level.
-            return String(localized: "All levels")
+            return InterfaceText.line("headingNavigatorView.filterChoiceTitle.allLevels", "All levels")
         }
         if maximumLevel <= 1 {
             // Translators: Choice of the headings sheet's level filter that shows only the biggest headings, level 1.
-            return String(localized: "Level 1")
+            return InterfaceText.line("headingNavigatorView.filterChoiceTitle.level", "Level 1")
         }
         // Translators: Choice of the headings sheet's level filter that shows levels from 1 to a deeper one. %lld is the deepest level shown.
-        return String(localized: "Levels 1 to \(maximumLevel)")
+        return InterfaceText.line("headingNavigatorView.filterChoiceTitle.levels", "Levels 1 to \(number: maximumLevel)")
     }
 
     /// Return the end offset for every heading currently displayed in the
@@ -271,13 +271,13 @@ struct HeadingNavigatorView: View {
             switch self {
             case .timeEstimate:
                 // Translators: Choice of the headings sheet's display picker: each heading shows how long it lasts.
-                return String(localized: "Duration")
+                return InterfaceText.line("common.duration", "Duration")
             case .timeIntoBook:
                 // Translators: Choice of the headings sheet's display picker: each heading shows the time into the book at which it begins.
-                return String(localized: "Time In")
+                return InterfaceText.line("headingDisplayMode.title.timeIntoBook", "Time In")
             case .percentage:
                 // Translators: Choice of the headings sheet's display picker: each heading shows how far through the book it begins, as a percent.
-                return String(localized: "Percentage")
+                return InterfaceText.line("common.percentage", "Percentage")
             }
         }
     }
@@ -287,52 +287,52 @@ struct HeadingNavigatorView: View {
     /// The sheet's heading.
     nonisolated static var sheetTitle: String {
         // Translators: Heading of the headings sheet, which lists a book's headings.
-        String(localized: "Headings")
+        InterfaceText.line("common.headings", "Headings")
     }
     /// The display picker's name.
     nonisolated static var displayPickerTitle: String {
         // Translators: Name of the headings sheet's picker that chooses what each heading shows after its name.
-        String(localized: "Display")
+        InterfaceText.line("common.display", "Display")
     }
     /// What VoiceOver calls the display picker.
     nonisolated static var displayPickerLabel: String {
         // Translators: What VoiceOver calls the headings sheet's picker that chooses what each heading shows after its name.
-        String(localized: "Heading info display mode")
+        InterfaceText.line("headingNavigatorView.displayPickerLabel", "Heading info display mode")
     }
     /// The button that closes the sheet.
     nonisolated static var backToBookTitle: String {
         // Translators: Button of the headings sheet that closes it and returns to the book.
-        String(localized: "Back to Book")
+        InterfaceText.line("common.backToBook", "Back to Book")
     }
     /// That button's hint.
     nonisolated static var backToBookHint: String {
         // Translators: Hint of the headings sheet's Back to Book button.
-        String(localized: "Close the headings screen and return to the book")
+        InterfaceText.line("headingNavigatorView.backToBookHint", "Close the headings screen and return to the book")
     }
     /// What the sheet says when the book has no headings.
     nonisolated static var noHeadingsMessage: String {
         // Translators: Message in the headings sheet when the book has no headings.
-        String(localized: "No headings found in this document.")
+        InterfaceText.line("headingNavigatorView.noHeadingsMessage", "No headings found in this document.")
     }
     /// The name of the rotor that moves among headings by level.
     nonisolated static var levelsRotorName: String {
         // Translators: Name of the VoiceOver rotor that moves among the headings of the headings list.
-        String(localized: "Heading Levels")
+        InterfaceText.line("headingNavigatorView.levelsRotorName", "Heading Levels")
     }
     /// The sheet's navigation title.
     nonisolated static func navigationTitle(bookTitle: String) -> String {
         // Translators: Navigation title of the headings sheet. %@ is the book's title.
-        String(localized: "Headings: \(bookTitle)")
+        InterfaceText.line("headingNavigatorView.navigationTitle", "Headings: \(bookTitle)")
     }
     /// What VoiceOver says for the mark on a skipped heading.
     nonisolated static var skippedMarkLabel: String {
         // Translators: What VoiceOver says for the mark on a heading the user skipped.
-        String(localized: "Skipped")
+        InterfaceText.line("headingNavigatorView.skippedMarkLabel", "Skipped")
     }
     /// What VoiceOver says for the mark on the heading being read.
     nonisolated static var currentMarkLabel: String {
         // Translators: What VoiceOver says for the speaker mark on the heading being read.
-        String(localized: "Currently reading")
+        InterfaceText.line("headingNavigatorView.currentMarkLabel", "Currently reading")
     }
 
     /// A sheet listing `viewModel`'s headings.
@@ -808,7 +808,7 @@ struct HeadingRow: View {
     /// context menu to skip or include this section.").
     var accessibilityHintText: String {
         // Translators: Hint of a heading's row in the headings list: what choosing it does.
-        String(localized: "Goes to this heading and closes the list.")
+        InterfaceText.line("common.goesToThisHeadingAndCloses", "Goes to this heading and closes the list.")
     }
 
     /// The names of a heading row's commands, its VoiceOver actions and its
@@ -817,12 +817,12 @@ struct HeadingRow: View {
     nonisolated static func commandTitles(isSkipped: Bool) -> (goTo: String, toggleSkip: String) {
         (
             // Translators: Name of a heading row's command that goes to the heading, as a VoiceOver action and a context menu item.
-            String(localized: "Go To"),
+            InterfaceText.line("common.goTo", "Go To"),
             isSkipped
                 // Translators: Name of a heading row's command that stops skipping the section, as a VoiceOver action and a context menu item.
-                ? String(localized: "Include Section")
+                ? InterfaceText.line("headingRow.commandTitles.include", "Include Section")
                 // Translators: Name of a heading row's command that makes speech skip the section, as a VoiceOver action and a context menu item.
-                : String(localized: "Skip Section")
+                : InterfaceText.line("headingRow.commandTitles.skip", "Skip Section")
         )
     }
 

@@ -16,13 +16,13 @@ enum TranscriptionWording {
     /// Book menu.
     static var transcribeCommandTitle: String {
         // Translators: Menu item and VoiceOver action that opens the sheet for turning an audiobook's speech into text. The ellipsis means a sheet follows.
-        String(localized: "Transcribe Audio…")
+        InterfaceText.line("transcription.transcribeCommandTitle", "Transcribe Audio…")
     }
     /// The same command once the book has a transcript: it transcribes the
     /// audio again, replacing the transcript, so it is named for that.
     static var retranscribeCommandTitle: String {
         // Translators: Menu item and VoiceOver action, in place of Transcribe Audio, for an audiobook that already has a transcript: it transcribes the audio again and replaces the transcript. The ellipsis means a sheet follows.
-        String(localized: "Retranscribe Audio…")
+        InterfaceText.line("transcription.retranscribeCommandTitle", "Retranscribe Audio…")
     }
     /// The title of the command that opens the Transcribe Audio sheet for a
     /// book that has a transcript when `hasTranscript`, and for one that has
@@ -34,14 +34,14 @@ enum TranscriptionWording {
     /// same places, after a confirmation naming the book.
     static var deleteCommandTitle: String {
         // Translators: Menu item and VoiceOver action that deletes an audiobook's transcript after asking. The ellipsis means a question follows.
-        String(localized: "Delete Transcript…")
+        InterfaceText.line("transcription.deleteCommandTitle", "Delete Transcript…")
     }
 
     /// What a feed episode's transcript's listener is told as they edit or
     /// clean it up: it stays with the episode, not with its download.
     static var feedEpisodeTranscriptNote: String {
         // Translators: Note under a podcast episode's transcript editor and cleanup sheet. Move to Library is the name of a command in the feed's episode menu.
-        String(localized: "The transcript, with your changes, stays with the episode in its feed, even after its download is deleted. Deleting the episode or feed deletes it; Move to Library keeps it as a book.")
+        InterfaceText.line("transcription.feedEpisodeTranscriptNote", "The transcript, with your changes, stays with the episode in its feed, even after its download is deleted. Deleting the episode or feed deletes it; Move to Library keeps it as a book.")
     }
 
     // MARK: Refusals
@@ -51,16 +51,16 @@ enum TranscriptionWording {
     static var oneBookAtATime: String {
         SentenceWording.joined([
             // Translators: First sentence of the alert shown when Transcribe Audio is chosen with several books selected.
-            String(localized: "Transcription works on one audiobook at a time."),
+            InterfaceText.line("transcription.oneBookAtATime.works", "Transcription works on one audiobook at a time."),
             // Translators: Second sentence of the alert shown when Transcribe Audio is chosen with several books selected. Transcribe Audio is the command's name.
-            String(localized: "Select one audiobook, then choose Transcribe Audio again.")
+            InterfaceText.line("transcription.oneBookAtATime.transcribe", "Select one audiobook, then choose Transcribe Audio again.")
         ])
     }
 
     /// Why the command was refused for a book that is not an audiobook.
     static func notAnAudiobook(bookTitle: String) -> String {
         // Translators: Alert shown when Transcribe Audio is chosen for a book that is text, not audio. %@ is the book's title.
-        String(localized: "\(bookTitle) isn't an audiobook; only audiobooks can be transcribed.")
+        InterfaceText.line("transcription.notAnAudiobook", "\(bookTitle) isn't an audiobook; only audiobooks can be transcribed.")
     }
 
     // MARK: The Sheet
@@ -68,28 +68,28 @@ enum TranscriptionWording {
     /// The sheet's heading before a transcription: "Transcribe Moby-Dick".
     static func sheetTitle(bookTitle: String) -> String {
         // Translators: Heading of the Transcribe Audio sheet before transcribing. %@ is the audiobook's title.
-        String(localized: "Transcribe \(bookTitle)")
+        InterfaceText.line("transcription.sheetTitle", "Transcribe \(bookTitle)")
     }
 
     /// The sheet's heading before a book that has a transcript is transcribed
     /// again: "Retranscribe Moby-Dick".
     static func retranscribeSheetTitle(bookTitle: String) -> String {
         // Translators: Heading of the Transcribe Audio sheet for an audiobook that already has a transcript, which transcribing again replaces. %@ is the audiobook's title.
-        String(localized: "Retranscribe \(bookTitle)")
+        InterfaceText.line("transcription.retranscribeSheetTitle", "Retranscribe \(bookTitle)")
     }
 
     /// The sheet's heading while it explains why it cannot transcribe, as
     /// on a system older than macOS 26, or for several books at once.
     static var unavailableTitle: String {
         // Translators: Heading of the Transcribe Audio sheet when it can only explain why transcription is not possible.
-        String(localized: "Transcribe Audio")
+        InterfaceText.line("transcription.transcribeAudio", "Transcribe Audio")
     }
 
     /// The sheet's heading while the book is being transcribed:
     /// "Transcribing Moby-Dick".
     static func progressTitle(bookTitle: String) -> String {
         // Translators: Heading of the Transcribe Audio sheet while the audiobook is being transcribed. %@ is the audiobook's title.
-        String(localized: "Transcribing \(bookTitle)")
+        InterfaceText.line("transcription.progressTitle", "Transcribing \(bookTitle)")
     }
 
     /// The book's audio length, as the sheet shows and speaks it: "Audio:
@@ -98,10 +98,10 @@ enum TranscriptionWording {
     static func audioLength(_ seconds: TimeInterval?) -> String {
         guard let seconds, seconds.isFinite, seconds > 0 else {
             // Translators: Line of the Transcribe Audio sheet before the audiobook's length is known.
-            return String(localized: "Audio: length not known yet.")
+            return InterfaceText.line("transcription.audioLength.known", "Audio: length not known yet.")
         }
         // Translators: Line of the Transcribe Audio sheet giving the audiobook's length. %@ is the length in words, such as "6 hours, 12 minutes, 4 seconds".
-        return String(localized: "Audio: \(TimeFormatting.spoken(seconds)).")
+        return InterfaceText.line("transcription.audioLength.duration", "Audio: \(TimeFormatting.spoken(seconds)).")
     }
 
     /// How long the transcription should take, as the sheet shows and speaks
@@ -109,40 +109,40 @@ enum TranscriptionWording {
     static func estimateLine(forAudio seconds: TimeInterval?) -> String {
         guard let words = TranscriptionEstimate.words(forAudio: seconds) else {
             // Translators: Line of the Transcribe Audio sheet before the audiobook's length is known, so no time estimate can be made.
-            return String(localized: "Time to transcribe: not known yet.")
+            return InterfaceText.line("transcription.estimateLine.known", "Time to transcribe: not known yet.")
         }
         // Translators: Line of the Transcribe Audio sheet estimating how long transcribing will take. %@ is the estimate in words, such as "about 6 minutes" or "less than a minute".
-        return String(localized: "Time to transcribe: \(words).")
+        return InterfaceText.line("transcription.estimateLine.transcribe", "Time to transcribe: \(words).")
     }
 
     /// What the sheet says while it checks the language's speech model.
     static var checking: String {
         // Translators: Line of the Transcribe Audio sheet while it checks whether the language's speech model is on this Mac.
-        String(localized: "Checking the speech model…")
+        InterfaceText.line("transcription.checking", "Checking the speech model…")
     }
 
     /// The language line: "Language: English (United States), installed."
     static func languageLine(name: String, status: String) -> String {
         // Translators: Line of the Transcribe Audio sheet naming the transcription language and whether its speech model is ready. %1$@ is the language's name, such as "English (United States)"; %2$@ is its status: installed, needs download, downloading, or not supported.
-        String(localized: "Language: \(name), \(status).")
+        InterfaceText.line("transcription.languageLine", "Language: \(name), \(status).")
     }
 
     /// How the language line words a model's status.
     static var modelInstalled: String {
         // Translators: Status of a language's speech model that is on this Mac, said after the language's name in the Transcribe Audio sheet and Settings.
-        String(localized: "installed")
+        InterfaceText.line("transcription.modelInstalled", "installed")
     }
     static var modelNeedsDownload: String {
         // Translators: Status of a language's speech model that is not on this Mac yet, said after the language's name in the Transcribe Audio sheet and Settings.
-        String(localized: "needs download")
+        InterfaceText.line("transcription.modelNeedsDownload", "needs download")
     }
     static var modelDownloading: String {
         // Translators: Status of a language's speech model that is downloading now, said after the language's name in the Transcribe Audio sheet.
-        String(localized: "downloading")
+        InterfaceText.line("transcription.modelDownloading", "downloading")
     }
     static var modelUnsupported: String {
         // Translators: Status of a language that the speech recognizer cannot transcribe, said after the language's name in the Transcribe Audio sheet and Settings.
-        String(localized: "not supported")
+        InterfaceText.line("transcription.modelUnsupported", "not supported")
     }
 
     /// The name a language's model download goes by: the language without
@@ -157,20 +157,20 @@ enum TranscriptionWording {
     /// and the download's progress gives no size before it starts.
     static var modelSize: String {
         // Translators: The approximate size of one language's speech model, said in the Download button's label. MB means megabytes.
-        String(localized: "about 140 MB")
+        InterfaceText.line("transcription.modelSize", "about 140 MB")
     }
 
     /// The button that downloads a language's model: "Download the English
     /// model, about 140 MB". Nothing downloads without this press.
     static func downloadTitle(languageName: String) -> String {
         // Translators: Button of the Transcribe Audio sheet that downloads a language's speech model. %1$@ is the language's name, such as "English"; %2$@ is the model's approximate size, such as "about 140 MB".
-        String(localized: "Download the \(languageName) model, \(modelSize)")
+        InterfaceText.line("transcription.downloadTitle", "Download the \(languageName) model, \(modelSize)")
     }
 
     /// What the download button does.
     static var downloadHint: String {
         // Translators: VoiceOver hint of the button that downloads a language's speech model.
-        String(localized: "Downloads the speech model from Apple, kept and shared by macOS. Nothing else is downloaded, and the book's audio never leaves this Mac.")
+        InterfaceText.line("transcription.downloadHint", "Downloads the speech model from Apple, kept and shared by macOS. Nothing else is downloaded, and the book's audio never leaves this Mac.")
     }
 
     /// The download's progress, shown and spoken: "Downloading the English
@@ -179,38 +179,38 @@ enum TranscriptionWording {
     static func downloading(languageName: String, fraction: Double?) -> String {
         guard let fraction else {
             // Translators: Line of the Transcribe Audio sheet while a speech model downloads and its progress is not known yet. %@ is the language's name.
-            return String(localized: "Downloading the \(languageName) model…")
+            return InterfaceText.line("transcription.downloading.model", "Downloading the \(languageName) model…")
         }
         // Translators: Line of the Transcribe Audio sheet, and what VoiceOver hears, while a speech model downloads. %1$@ is the language's name; %2$lld is the percent done, from 0 to 100.
-        return String(localized: "Downloading the \(languageName) model: \(percent(fraction)) percent.")
+        return InterfaceText.line("transcription.downloading.percent", "Downloading the \(languageName) model: \(number: percent(fraction)) percent.")
     }
 
     /// The button that stops a download, and what it does.
     static var cancelDownloadTitle: String {
         // Translators: Button of the Transcribe Audio sheet that stops a speech model's download.
-        String(localized: "Cancel Download")
+        InterfaceText.line("common.cancelDownload", "Cancel Download")
     }
     static var cancelDownloadHint: String {
         // Translators: VoiceOver hint of the Cancel Download button.
-        String(localized: "Stops the download. Nothing is installed.")
+        InterfaceText.line("transcription.cancelDownloadHint", "Stops the download. Nothing is installed.")
     }
 
     /// What VoiceOver hears when a model has downloaded.
     static func downloaded(languageName: String) -> String {
         // Translators: What VoiceOver hears, and the Transcribe Audio sheet shows, when a speech model has finished downloading. %@ is the language's name.
-        String(localized: "The \(languageName) model is downloaded. The book can be transcribed now.")
+        InterfaceText.line("transcription.downloaded", "The \(languageName) model is downloaded. The book can be transcribed now.")
     }
 
     /// What VoiceOver hears, and the sheet shows, when a download stopped.
     static func downloadCancelled(languageName: String) -> String {
         // Translators: What VoiceOver hears, and the Transcribe Audio sheet shows, when a speech model's download was stopped. %@ is the language's name.
-        String(localized: "The \(languageName) model's download was cancelled.")
+        InterfaceText.line("transcription.downloadCancelled", "The \(languageName) model's download was cancelled.")
     }
 
     /// Why a download failed, shown and spoken.
     static func downloadFailed(languageName: String, reason: String) -> String {
         // Translators: What VoiceOver hears, and the Transcribe Audio sheet shows, when a speech model's download failed. %1$@ is the language's name; %2$@ is the system's reason, a sentence.
-        String(localized: "The \(languageName) model couldn't be downloaded: \(reason)")
+        InterfaceText.line("transcription.downloadFailed", "The \(languageName) model couldn't be downloaded: \(reason)")
     }
 
     /// The line naming the transcript a book has already, which
@@ -226,7 +226,7 @@ enum TranscriptionWording {
     /// States)." The sheet's line and Book Information's both begin with it.
     private static func transcribedOn(_ date: Date, languageName: String) -> String {
         // Translators: Sentence in the Transcribe Audio sheet and Book Information saying when and in which language TextMouth made an audiobook's transcript. %1$@ is a date, such as "October 4, 2026"; %2$@ is the language's name.
-        String(localized: "Transcribed on \(day(date)), in \(languageName).")
+        InterfaceText.line("transcription.transcribedOn", "Transcribed on \(day(date)), in \(languageName).")
     }
 
     /// The line naming a transcript the book has from outside TextMouth's
@@ -241,7 +241,7 @@ enum TranscriptionWording {
     /// What each line naming the book's transcript ends with.
     private static var transcribingAgainReplaces: String {
         // Translators: Last sentence of the Transcribe Audio sheet's line about the transcript a book already has.
-        String(localized: "Transcribing again replaces this transcript.")
+        InterfaceText.line("transcription.transcribingAgainReplaces", "Transcribing again replaces this transcript.")
     }
 
     /// Where a transcript from outside came from, as one sentence ending with
@@ -261,32 +261,32 @@ enum TranscriptionWording {
         case .attached:
             if let fileName {
                 // Translators: Sentence saying a transcript came from one file the user attached. %1$@ is the file's name; %2$@ is a date, such as "October 30, 2026".
-                return String(localized: "Attached from “\(fileName)” on \(day).")
+                return InterfaceText.line("transcription.cameFrom.attached.fromNamedOn", "Attached from “\(fileName)” on \(day).")
             }
             if let formatName {
                 // Translators: Sentence saying a transcript came from a file the user attached, whose name is not known. %1$@ is the file format's name, such as WebVTT or SubRip; %2$@ is a date.
-                return String(localized: "Attached from a \(formatName) file on \(day).")
+                return InterfaceText.line("transcription.cameFrom.attached.fromKindFileOn", "Attached from a \(formatName) file on \(day).")
             }
             // Translators: Sentence saying a transcript came from a file the user attached, whose name and format are not known. %@ is a date, such as "October 30, 2026".
-            return String(localized: "Attached from a file on \(day).")
+            return InterfaceText.line("transcription.cameFrom.attached.file", "Attached from a file on \(day).")
         case .imported:
             // One file by its name; several by their formats, when known.
             if let fileName {
                 // Translators: Sentence saying a transcript came from a file found beside the audio when the book was imported. %1$@ is the file's name; %2$@ is a date.
-                return String(localized: "Attached from “\(fileName)” at import, on \(day).")
+                return InterfaceText.line("transcription.cameFrom.imported.attachedImport", "Attached from “\(fileName)” at import, on \(day).")
             }
             if let formatNames {
                 // Translators: Sentence saying a transcript came from files found beside the audio when the book was imported. %1$@ is the files' formats, such as "WebVTT and SubRip"; %2$@ is a date.
-                return String(localized: "Attached from \(formatNames) files at import, on \(day).")
+                return InterfaceText.line("transcription.cameFrom.imported.kindFiles", "Attached from \(formatNames) files at import, on \(day).")
             }
             // Translators: Sentence saying a transcript came from files found beside the audio when the book was imported, whose names and formats are not known. %@ is a date.
-            return String(localized: "Attached from files at import, on \(day).")
+            return InterfaceText.line("transcription.cameFrom.imported.attachedFiles", "Attached from files at import, on \(day).")
         case .podcast:
             // Translators: Sentence saying a podcast episode's transcript is the one the podcast published. %@ is a date.
-            return String(localized: "The podcast's own transcript, downloaded with the episode on \(day).")
+            return InterfaceText.line("transcription.cameFrom.podcast", "The podcast's own transcript, downloaded with the episode on \(day).")
         case nil:
             // Translators: Sentence saying when a transcript was attached, when its origin is not known. %@ is a date.
-            return String(localized: "Attached on \(day).")
+            return InterfaceText.line("transcription.cameFrom.nil", "Attached on \(day).")
         }
     }
 
@@ -295,7 +295,7 @@ enum TranscriptionWording {
     /// again replaces your edits."
     static func editedTranscript(on date: Date) -> String {
         // Translators: Line of the Transcribe Audio sheet warning that transcribing again replaces the user's own edits. %@ is a date, such as "October 5, 2026".
-        String(localized: "You edited this transcript on \(day(date)). Transcribing again replaces your edits.")
+        InterfaceText.line("transcription.editedTranscript", "You edited this transcript on \(day(date)). Transcribing again replaces your edits.")
     }
 
     /// The line warning that transcribing again replaces the user's cleanup
@@ -303,7 +303,7 @@ enum TranscriptionWording {
     /// 2026. Transcribing again replaces the cleanup."
     static func cleanedUpTranscript(on date: Date) -> String {
         // Translators: Line of the Transcribe Audio sheet warning that transcribing again replaces the cleanup the user applied. %@ is a date, such as "October 5, 2026".
-        String(localized: "You cleaned up this transcript on \(day(date)). Transcribing again replaces the cleanup.")
+        InterfaceText.line("transcription.cleanedUpTranscript", "You cleaned up this transcript on \(day(date)). Transcribing again replaces the cleanup.")
     }
 
     /// The line for a book whose transcript, transcript.json, is only in
@@ -313,7 +313,7 @@ enum TranscriptionWording {
     /// of the transcript's text.
     static var transcriptInCloud: String {
         // Translators: Line of the Transcribe Audio sheet when the book's transcript file has not been downloaded from iCloud to this Mac.
-        String(localized: "The transcript is only in iCloud, so TextMouth leaves it. Download the book, then try again.")
+        InterfaceText.line("transcription.transcriptInCloud", "The transcript is only in iCloud, so TextMouth leaves it. Download the book, then try again.")
     }
 
     /// The line for a book whose text, content.md, is only in iCloud: a
@@ -324,7 +324,7 @@ enum TranscriptionWording {
     /// install says (`TranscriptTextError.textOnlyInCloud`).
     static var textInCloud: String {
         // Translators: Line of the Transcribe Audio sheet, and an error, when the book's text file has not been downloaded from iCloud to this Mac.
-        String(localized: "The book's text is only in iCloud, so TextMouth leaves it. Download the book, then try again.")
+        InterfaceText.line("transcription.textInCloud", "The book's text is only in iCloud, so TextMouth leaves it. Download the book, then try again.")
     }
 
     /// The line for a transcript written in a layout this TextMouth does
@@ -333,7 +333,7 @@ enum TranscriptionWording {
         SentenceWording.joined([
             laterVersionSentence,
             // Translators: Last sentence of the Transcribe Audio sheet's line about a transcript made by a later version of TextMouth.
-            String(localized: "Transcribing again replaces it.")
+            InterfaceText.line("transcription.transcriptFromLaterVersion", "Transcribing again replaces it.")
         ])
     }
 
@@ -341,7 +341,7 @@ enum TranscriptionWording {
     /// the sheet's line and Book Information's both begin with.
     private static var laterVersionSentence: String {
         // Translators: Sentence in the Transcribe Audio sheet and Book Information saying the book's transcript was written by a newer version of this app, which this version cannot read.
-        String(localized: "This book has a transcript made by a later version of TextMouth.")
+        InterfaceText.line("transcription.laterVersionSentence", "This book has a transcript made by a later version of TextMouth.")
     }
 
     /// The line saying another book is being transcribed, which keeps
@@ -353,40 +353,40 @@ enum TranscriptionWording {
     /// The sheet's buttons.
     static var transcribeTitle: String {
         // Translators: Button of the Transcribe Audio sheet that starts transcribing the audiobook.
-        String(localized: "Transcribe")
+        InterfaceText.line("transcription.transcribe", "Transcribe")
     }
     /// The button of a book that has a transcript already: "Retranscribe".
     static var transcribeAgainTitle: String {
         // Translators: Button of the Transcribe Audio sheet, in place of Transcribe, for an audiobook that already has a transcript.
-        String(localized: "Retranscribe")
+        InterfaceText.line("transcription.transcribeAgainTitle", "Retranscribe")
     }
     static var cancelTitle: String {
         // Translators: Button that closes a sheet or dialog without doing what it offered.
-        String(localized: "Cancel")
+        InterfaceText.line("common.cancel", "Cancel")
     }
     static var closeTitle: String {
         // Translators: Button that closes a sheet.
-        String(localized: "Close")
+        InterfaceText.line("common.close", "Close")
     }
     static var okTitle: String {
         // Translators: Button that dismisses an alert after reading it.
-        String(localized: "OK")
+        InterfaceText.line("common.ok", "OK")
     }
 
     /// What Transcribe does.
     static var transcribeHint: String {
         // Translators: VoiceOver hint of the Transcribe button.
-        String(localized: "Transcribes the book's audio on this Mac, so VoiceOver and braille can read the narration as text.")
+        InterfaceText.line("transcription.transcribeHint", "Transcribes the book's audio on this Mac, so VoiceOver and braille can read the narration as text.")
     }
     /// What Retranscribe does.
     static var transcribeAgainHint: String {
         // Translators: VoiceOver hint of the Retranscribe button.
-        String(localized: "Transcribes the book's audio again, replacing its transcript.")
+        InterfaceText.line("transcription.transcribeAgainHint", "Transcribes the book's audio again, replacing its transcript.")
     }
     /// What Cancel does before a transcription.
     static var cancelHint: String {
         // Translators: VoiceOver hint of the Cancel button of the Transcribe Audio sheet before transcribing.
-        String(localized: "Closes this without transcribing.")
+        InterfaceText.line("transcription.cancelHint", "Closes this without transcribing.")
     }
 
     /// What VoiceOver hears as the sheet appears, after its focus lands:
@@ -402,10 +402,10 @@ enum TranscriptionWording {
     static func fileLine(_ progress: TranscriptionProgress) -> String {
         guard progress.fileIndex < progress.fileCount else {
             // Translators: Line of the Transcribe Audio sheet once every audio file of the book is transcribed. %lld is the number of files.
-            return String(localized: "All \(progress.fileCount) files")
+            return InterfaceText.line("transcription.fileLine.files", "All \(number: progress.fileCount) files")
         }
         // Translators: Line of the Transcribe Audio sheet saying which audio file of the book is being transcribed. %1$lld is that file's place, from 1; %2$lld is the number of files.
-        return String(localized: "File \(progress.fileIndex + 1) of \(progress.fileCount)")
+        return InterfaceText.line("transcription.fileLine.numberOfTotal", "File \(number: progress.fileIndex + 1) of \(number: progress.fileCount)")
     }
 
     /// The same as `fileLine`, written to follow a comma in the progress
@@ -413,36 +413,36 @@ enum TranscriptionWording {
     private static func fileLineAfterComma(_ progress: TranscriptionProgress) -> String {
         guard progress.fileIndex < progress.fileCount else {
             // Translators: End of the transcription progress bar's spoken value once every audio file is transcribed, after "100 percent, ". %lld is the number of files.
-            return String(localized: "all \(progress.fileCount) files")
+            return InterfaceText.line("transcription.fileLineAfterComma.files", "all \(number: progress.fileCount) files")
         }
         // Translators: End of the transcription progress bar's spoken value, after "40 percent, ", saying which audio file is being transcribed. %1$lld is that file's place, from 1; %2$lld is the number of files.
-        return String(localized: "file \(progress.fileIndex + 1) of \(progress.fileCount)")
+        return InterfaceText.line("transcription.fileLineAfterComma.numberOfTotal", "file \(number: progress.fileIndex + 1) of \(number: progress.fileCount)")
     }
 
     /// How much of the audio is done: "40 minutes of 6 hours, 12 minutes
     /// transcribed".
     static func secondsLine(_ progress: TranscriptionProgress) -> String {
         // Translators: Line of the Transcribe Audio sheet while transcribing. %1$@ is the length of audio transcribed so far, in words such as "40 minutes"; %2$@ is the audiobook's whole length in words, such as "6 hours, 12 minutes".
-        String(localized: "\(TimeFormatting.spoken(progress.secondsDone)) of \(TimeFormatting.spoken(progress.secondsTotal)) transcribed")
+        InterfaceText.line("transcription.secondsLine", "\(TimeFormatting.spoken(progress.secondsDone)) of \(TimeFormatting.spoken(progress.secondsTotal)) transcribed")
     }
 
     /// How long the transcription has run: "Elapsed: 12 seconds".
     static func elapsedLine(_ seconds: TimeInterval) -> String {
         // Translators: Line of the Transcribe Audio sheet while transcribing, saying how long it has run. %@ is a length of time in words, such as "12 seconds".
-        String(localized: "Elapsed: \(TimeFormatting.spoken(seconds))")
+        InterfaceText.line("transcription.elapsedLine", "Elapsed: \(TimeFormatting.spoken(seconds))")
     }
 
     /// What the sheet says before the first file has begun, while the
     /// system loads its speech model.
     static var starting: String {
         // Translators: Line of the Transcribe Audio sheet before the first audio file has begun, while the speech model loads.
-        String(localized: "Starting…")
+        InterfaceText.line("transcription.starting", "Starting…")
     }
 
     /// The progress bar's label.
     static var progressLabel: String {
         // Translators: VoiceOver label of the progress bar in the Transcribe Audio sheet.
-        String(localized: "Transcription progress")
+        InterfaceText.line("transcription.progressLabel", "Transcription progress")
     }
 
     /// The progress bar's value, which VoiceOver reads: "40 percent, file 3
@@ -450,16 +450,16 @@ enum TranscriptionWording {
     static func progressValue(_ progress: TranscriptionProgress?) -> String {
         guard let progress else {
             // Translators: VoiceOver value of the transcription progress bar before the first audio file has begun.
-            return String(localized: "Starting")
+            return InterfaceText.line("common.starting", "Starting")
         }
         // Translators: VoiceOver value of the transcription progress bar. %1$lld is the percent done, from 0 to 100; %2$@ says which audio file is being transcribed, such as "file 3 of 12".
-        return String(localized: "\(progress.percentDone) percent, \(fileLineAfterComma(progress))")
+        return InterfaceText.line("transcription.progressValue", "\(number: progress.percentDone) percent, \(fileLineAfterComma(progress))")
     }
 
     /// What the sheet's Cancel does while the book is transcribed.
     static var stopHint: String {
         // Translators: VoiceOver hint of the Cancel button of the Transcribe Audio sheet while transcribing.
-        String(localized: "Stops transcribing. The book stays as it was.")
+        InterfaceText.line("transcription.stopHint", "Stops transcribing. The book stays as it was.")
     }
 
     // MARK: What VoiceOver Hears
@@ -469,10 +469,10 @@ enum TranscriptionWording {
     static func started(bookTitle: String, audioSeconds: TimeInterval?) -> String {
         guard let estimate = TranscriptionEstimate.words(forAudio: audioSeconds) else {
             // Translators: What VoiceOver hears as a transcription begins, when the audio's length is not known. %@ is the audiobook's title.
-            return String(localized: "Transcribing \(bookTitle).")
+            return InterfaceText.line("transcription.started.untimed", "Transcribing \(bookTitle).")
         }
         // Translators: What VoiceOver hears as a transcription begins. %1$@ is the audiobook's title; %2$@ is the time it should take, such as "about 1 minute".
-        return String(localized: "Transcribing \(bookTitle), \(estimate).")
+        return InterfaceText.line("transcription.started.withEstimate", "Transcribing \(bookTitle), \(estimate).")
     }
 
     /// The quarters a transcription is announced at, in percent.
@@ -482,7 +482,7 @@ enum TranscriptionWording {
     /// transcribed."
     static func milestone(bookTitle: String, percent: Int) -> String {
         // Translators: What VoiceOver hears as a transcription passes a quarter of the audio. %1$@ is the audiobook's title; %2$lld is the percent done: 25, 50, or 75.
-        String(localized: "\(bookTitle): \(percent) percent transcribed.")
+        InterfaceText.line("transcription.milestone", "\(bookTitle): \(number: percent) percent transcribed.")
     }
 
     /// A transcription ended with the transcript saved: "Transcribed
@@ -490,7 +490,7 @@ enum TranscriptionWording {
     /// user's grouping, as in "7,077".
     static func finished(bookTitle: String, wordCount: Int, seconds: TimeInterval) -> String {
         // Translators: What VoiceOver hears when a transcription finishes and the transcript is saved. %1$@ is the audiobook's title; %2$@ is the number of words, such as "7,077 words"; %3$@ is how long it took, such as "51 seconds".
-        String(localized: "Transcribed \(bookTitle): \(words(wordCount)) in \(TimeFormatting.spoken(seconds)).")
+        InterfaceText.line("transcription.finished", "Transcribed \(bookTitle): \(words(wordCount)) in \(TimeFormatting.spoken(seconds)).")
     }
 
     /// Why a transcription stopped, as `TranscriptionError` words it, or as
@@ -498,10 +498,10 @@ enum TranscriptionWording {
     static func failed(_ error: Error) -> String {
         if let transcription = error as? TranscriptionError {
             // Translators: What VoiceOver hears when a transcription stopped for a reason that has no words of its own.
-            return transcription.errorDescription ?? String(localized: "Transcription stopped.")
+            return transcription.errorDescription ?? InterfaceText.line("transcription.failed.stopped", "Transcription stopped.")
         }
         // Translators: What VoiceOver hears when a transcription stopped because of an error from the system. %@ is the system's own sentence.
-        return String(localized: "Transcription stopped: \(error.localizedDescription)")
+        return InterfaceText.line("transcription.failed.withReason", "Transcription stopped: \(error.localizedDescription)")
     }
 
     // MARK: Settings
@@ -509,38 +509,38 @@ enum TranscriptionWording {
     /// The group's heading in Playback settings.
     static var settingsSection: String {
         // Translators: Heading of the group of transcription settings in Playback settings.
-        String(localized: "Transcription")
+        InterfaceText.line("transcription.settingsSection", "Transcription")
     }
     /// The language pop-up's label.
     static var languageLabel: String {
         // Translators: Label of the pop-up in Playback settings that chooses the language audiobooks are transcribed in.
-        String(localized: "Transcription language")
+        InterfaceText.line("transcription.languageLabel", "Transcription language")
     }
     /// What the pop-up chooses.
     static var languagePickerHint: String {
         // Translators: VoiceOver hint of the transcription language pop-up. "needs download" is the status word a language's menu item shows when its speech model is not on this Mac, and Transcribe Audio is the command's name.
-        String(localized: "Sets the transcription language. A language marked needs download downloads only from the Transcribe Audio sheet.")
+        InterfaceText.line("transcription.languagePickerHint", "Sets the transcription language. A language marked needs download downloads only from the Transcribe Audio sheet.")
     }
     /// One language in the pop-up: "English (United States), installed".
     static func languageChoice(name: String, status: String?) -> String {
         guard let status else { return name }
         // Translators: A language's menu item in the transcription language pop-up, with its speech model's status. %1$@ is the language's name, such as "English (United States)"; %2$@ is the status: installed, needs download, or not supported.
-        return String(localized: "\(name), \(status)")
+        return InterfaceText.line("common.nameAndNote", "\(name), \(status)")
     }
     /// The checkbox that offers a transcription after each audiobook import.
     static var offerTitle: String {
         // Translators: Label of the checkbox in Playback settings that makes TextMouth ask about transcribing after each audiobook is imported.
-        String(localized: "Offer to transcribe after importing an audiobook")
+        InterfaceText.line("transcription.offerTitle", "Offer to transcribe after importing an audiobook")
     }
     /// What the checkbox does.
     static var offerHint: String {
         // Translators: VoiceOver hint of the checkbox that offers transcribing after an import. Transcribe Audio is the command's name.
-        String(localized: "Asks after each audiobook import whether to transcribe it. Off, audiobooks are transcribed only with Transcribe Audio.")
+        InterfaceText.line("transcription.offerHint", "Asks after each audiobook import whether to transcribe it. Off, audiobooks are transcribed only with Transcribe Audio.")
     }
     /// Where the language is chosen, said under the sheet's language line.
     static var languageHint: String {
         // Translators: Line under the Transcribe Audio sheet's language line saying where the language is chosen. Settings, Playback, and Transcription are the names of the settings window, its Playback pane, and its Transcription group.
-        String(localized: "Choose the language in Settings, Playback, Transcription.")
+        InterfaceText.line("transcription.languageHint", "Choose the language in Settings, Playback, Transcription.")
     }
 
     // MARK: The Offer After an Import
@@ -548,7 +548,7 @@ enum TranscriptionWording {
     /// The offer's title, as the import question sheet shows it.
     static var offerQuestionTitle: String {
         // Translators: Title of the question asked after an audiobook is imported, offering to transcribe it.
-        String(localized: "Transcribe the Audiobook?")
+        InterfaceText.line("transcription.offerQuestionTitle", "Transcribe the Audiobook?")
     }
 
     /// What the offer asks: "“Moby-Dick” was imported, with 6 hours, 12
@@ -558,36 +558,36 @@ enum TranscriptionWording {
         var sentences: [String] = []
         if let audioSeconds, audioSeconds.isFinite, audioSeconds > 0 {
             // Translators: First sentence of the question offering to transcribe a new audiobook. %1$@ is the audiobook's title; %2$@ is its length in words, such as "6 hours, 12 minutes".
-            sentences.append(String(localized: "“\(bookTitle)” was imported, with \(TimeFormatting.spoken(audioSeconds)) of audio."))
+            sentences.append(InterfaceText.line("transcription.offerMessage.audio", "“\(bookTitle)” was imported, with \(TimeFormatting.spoken(audioSeconds)) of audio."))
         } else {
             // Translators: First sentence of the question offering to transcribe a new audiobook whose length is not known. %@ is the audiobook's title.
-            sentences.append(String(localized: "“\(bookTitle)” was imported."))
+            sentences.append(InterfaceText.line("transcription.offerMessage.imported", "“\(bookTitle)” was imported."))
         }
         if let estimate = TranscriptionEstimate.words(forAudio: audioSeconds) {
             // Translators: Second sentence of the question offering to transcribe a new audiobook. %@ is the time it should take, such as "about 6 minutes" or "less than a minute".
-            sentences.append(String(localized: "Transcribing it takes \(estimate)."))
+            sentences.append(InterfaceText.line("transcription.offerMessage.transcribing", "Transcribing it takes \(estimate)."))
         }
         // Translators: Last sentence of the question offering to transcribe a new audiobook.
-        sentences.append(String(localized: "Transcribe it now?"))
+        sentences.append(InterfaceText.line("transcription.offerMessage.transcribe", "Transcribe it now?"))
         return SentenceWording.joined(sentences)
     }
 
     /// The offer's buttons and what they do.
     static var offerTranscribeTitle: String {
         // Translators: Button of the question offered after an import that opens Transcribe Audio for the new audiobook.
-        String(localized: "Transcribe")
+        InterfaceText.line("transcription.transcribe", "Transcribe")
     }
     static var offerTranscribeHint: String {
         // Translators: VoiceOver hint of the Transcribe button of the question offered after an import. Transcribe Audio is the command's name; Transcribe is the sheet's button.
-        String(localized: "Opens Transcribe Audio, which starts at once if the language's model is on this Mac; otherwise, download it there, then choose Transcribe.")
+        InterfaceText.line("transcription.offerTranscribeHint", "Opens Transcribe Audio, which starts at once if the language's model is on this Mac; otherwise, download it there, then choose Transcribe.")
     }
     static var offerNotNowTitle: String {
         // Translators: Button of the question offered after an import that leaves the audiobook untranscribed for now.
-        String(localized: "Not Now")
+        InterfaceText.line("transcription.offerNotNowTitle", "Not Now")
     }
     static var offerNotNowHint: String {
         // Translators: VoiceOver hint of the Not Now button of the question offered after an import. Transcribe Audio is the command's name.
-        String(localized: "Leaves the audiobook untranscribed; Transcribe Audio does it later.")
+        InterfaceText.line("transcription.offerNotNowHint", "Leaves the audiobook untranscribed; Transcribe Audio does it later.")
     }
 
     // MARK: Delete Transcript
@@ -595,7 +595,7 @@ enum TranscriptionWording {
     /// The confirmation's title: "Delete the Transcript of Moby-Dick?"
     static func deleteConfirmationTitle(bookTitle: String) -> String {
         // Translators: Title of the question asked before an audiobook's transcript is deleted. %@ is the audiobook's title.
-        String(localized: "Delete the Transcript of \(bookTitle)?")
+        InterfaceText.line("transcription.deleteConfirmationTitle", "Delete the Transcript of \(bookTitle)?")
     }
 
     /// What the confirmation explains, saying when the user's own edits go
@@ -603,14 +603,14 @@ enum TranscriptionWording {
     static func deleteConfirmationMessage(isEdited: Bool) -> String {
         var sentences = [
             // Translators: First sentence of the question asked before an audiobook's transcript is deleted.
-            String(localized: "The transcript and the text made from it are deleted."),
+            InterfaceText.line("transcription.deleteConfirmationMessage.text", "The transcript and the text made from it are deleted."),
             whatStays,
             // Translators: Last sentence of the question asked before an audiobook's transcript is deleted, after what stays.
-            String(localized: "The book can be transcribed again.")
+            InterfaceText.line("transcription.deleteConfirmation.transcribed", "The book can be transcribed again.")
         ]
         if isEdited {
             // Translators: Last sentence of the question asked before a transcript is deleted, when the user had edited it.
-            sentences.append(String(localized: "Your edits to the transcript are deleted too."))
+            sentences.append(InterfaceText.line("transcription.deleteConfirmationMessage.edits", "Your edits to the transcript are deleted too."))
         }
         return SentenceWording.joined(sentences)
     }
@@ -620,31 +620,31 @@ enum TranscriptionWording {
     /// are."
     private static var whatStays: String {
         // Translators: Sentence of the question asked before an audiobook's transcript is deleted or replaced by a file's: what stays.
-        String(localized: "The audiobook's audio, your place, and your bookmarks stay as they are.")
+        InterfaceText.line("transcription.whatStays", "The audiobook's audio, your place, and your bookmarks stay as they are.")
     }
 
     /// The confirmation's deleting button.
     static var deleteButtonTitle: String {
         // Translators: Button of the question asked before a transcript is deleted, which deletes it.
-        String(localized: "Delete Transcript")
+        InterfaceText.line("transcription.deleteTranscript", "Delete Transcript")
     }
 
     /// The title of the alert saying why Delete Transcript did nothing.
     static var deleteNoticeTitle: String {
         // Translators: Title of the alert saying why Delete Transcript did nothing.
-        String(localized: "Delete Transcript")
+        InterfaceText.line("transcription.deleteTranscript", "Delete Transcript")
     }
 
     /// What VoiceOver hears once the transcript is deleted.
     static func deleted(bookTitle: String) -> String {
         // Translators: What VoiceOver hears once an audiobook's transcript is deleted. %@ is the audiobook's title.
-        String(localized: "Deleted the transcript of \(bookTitle).")
+        InterfaceText.line("transcription.deleted", "Deleted the transcript of \(bookTitle).")
     }
 
     /// Why the transcript could not be deleted.
     static func deleteFailed(bookTitle: String, reason: String) -> String {
         // Translators: Alert, and what VoiceOver hears, when an audiobook's transcript could not be deleted. %1$@ is the audiobook's title; %2$@ is the reason, a sentence.
-        String(localized: "Couldn't delete the transcript of \(bookTitle): \(reason)")
+        InterfaceText.line("transcription.deleteFailed", "Couldn't delete the transcript of \(bookTitle): \(reason)")
     }
 
     /// Why Delete Transcript waits while the same book is transcribed:
@@ -652,7 +652,7 @@ enum TranscriptionWording {
     /// delete the transcript once it finishes."
     static func deleteWhileTranscribing(bookTitle: String) -> String {
         // Translators: Alert shown when Delete Transcript is chosen for an audiobook that is being transcribed. %@ is the audiobook's title.
-        String(localized: "\(bookTitle) is being transcribed. Cancel it, or delete the transcript once it finishes.")
+        InterfaceText.line("transcription.deleteWhileTranscribing", "\(bookTitle) is being transcribed. Cancel it, or delete the transcript once it finishes.")
     }
 
     // MARK: Attach Transcript
@@ -662,7 +662,7 @@ enum TranscriptionWording {
     /// (FMT23).
     static var attachCommandTitle: String {
         // Translators: Menu item that gives an audiobook a transcript from a WebVTT or SubRip file instead of transcribing it. The ellipsis means a file panel follows.
-        String(localized: "Attach Transcript…")
+        InterfaceText.line("transcription.attachCommandTitle", "Attach Transcript…")
     }
 
     /// What the Open panel asks for: "Choose a WebVTT (.vtt) or SubRip
@@ -671,26 +671,26 @@ enum TranscriptionWording {
     /// book, its times running on across the tracks.
     static func attachPanelMessage(bookTitle: String) -> String {
         // Translators: Message of the file panel opened by Attach Transcript. %@ is the audiobook's title. WebVTT and SubRip are subtitle file formats, and .vtt and .srt their file extensions.
-        String(localized: "Choose a WebVTT (.vtt) or SubRip (.srt) transcript of \(bookTitle), timed from the start of its audio.")
+        InterfaceText.line("transcription.attachPanelMessage", "Choose a WebVTT (.vtt) or SubRip (.srt) transcript of \(bookTitle), timed from the start of its audio.")
     }
 
     /// The Open panel's button, which attaches the file chosen.
     static var attachPanelPrompt: String {
         // Translators: Button of the file panel opened by Attach Transcript, which attaches the chosen file.
-        String(localized: "Attach")
+        InterfaceText.line("transcription.attachPanelPrompt", "Attach")
     }
 
     /// The title of the alert saying why Attach Transcript did nothing, or
     /// why the file chosen was not attached.
     static var attachNoticeTitle: String {
         // Translators: Title of the alert saying why Attach Transcript did nothing or why the chosen file was not attached.
-        String(localized: "Attach Transcript")
+        InterfaceText.line("transcription.attachNoticeTitle", "Attach Transcript")
     }
 
     /// The title of the notice saying why Transcribe Audio did nothing.
     static var transcribeNoticeTitle: String {
         // Translators: Title of the alert saying why Transcribe Audio did nothing.
-        String(localized: "Transcribe Audio")
+        InterfaceText.line("transcription.transcribeAudio", "Transcribe Audio")
     }
 
     /// Why Transcribe Audio waits while a transcript is being attached to
@@ -698,7 +698,7 @@ enum TranscriptionWording {
     /// Moby-Dick. Transcribe it once that finishes."
     static func transcribeWhileAttaching(bookTitle: String) -> String {
         // Translators: Alert shown when Transcribe Audio is chosen for an audiobook that a transcript is being attached to. %@ is the audiobook's title.
-        String(localized: "A transcript is being attached to \(bookTitle). Transcribe it once that finishes.")
+        InterfaceText.line("transcription.transcribeWhileAttaching", "A transcript is being attached to \(bookTitle). Transcribe it once that finishes.")
     }
 
     /// Why Attach Transcript waits while the same book is transcribed:
@@ -706,19 +706,19 @@ enum TranscriptionWording {
     /// attach the transcript once it finishes."
     static func attachWhileTranscribing(bookTitle: String) -> String {
         // Translators: Alert shown when Attach Transcript is chosen for an audiobook that is being transcribed. %@ is the audiobook's title.
-        String(localized: "\(bookTitle) is being transcribed. Cancel it, or attach the transcript once it finishes.")
+        InterfaceText.line("transcription.attachWhileTranscribing", "\(bookTitle) is being transcribed. Cancel it, or attach the transcript once it finishes.")
     }
 
     /// Why a file of another kind than WebVTT or SubRip was not attached.
     static var attachUnknownFormat: String {
         // Translators: Alert explaining why a chosen file was not attached as a transcript. WebVTT and SubRip are subtitle file formats, and .vtt and .srt their file extensions.
-        String(localized: "TextMouth attaches WebVTT (.vtt) and SubRip (.srt) files.")
+        InterfaceText.line("transcription.attachUnknownFormat", "TextMouth attaches WebVTT (.vtt) and SubRip (.srt) files.")
     }
 
     /// Why an item that is not a plain file (a named pipe, say) was not attached.
     static var attachNotAFile: String {
         // Translators: Alert explaining why a chosen item was not attached as a transcript: it is not an ordinary file, such as a folder or a pipe.
-        String(localized: "That item isn't a plain file TextMouth can read.")
+        InterfaceText.line("transcription.attachNotAFile", "That item isn't a plain file TextMouth can read.")
     }
 
     /// Why the file chosen was not attached, `reason` saying it in a
@@ -726,14 +726,14 @@ enum TranscriptionWording {
     /// The file isn't a WebVTT transcript TextMouth can read."
     static func attachFailed(fileName: String, bookTitle: String, reason: String) -> String {
         // Translators: Alert, and what VoiceOver hears, when a chosen file was not attached as a transcript. %1$@ is the file's name; %2$@ is the audiobook's title; %3$@ is the reason, a sentence.
-        String(localized: "“\(fileName)” wasn't attached to \(bookTitle): \(reason)")
+        InterfaceText.line("transcription.attachFailed", "“\(fileName)” wasn't attached to \(bookTitle): \(reason)")
     }
 
     /// The title of the confirmation before a transcript from a file
     /// replaces the book's own: "Replace the Transcript of Moby-Dick?"
     static func replaceConfirmationTitle(bookTitle: String) -> String {
         // Translators: Title of the question asked before a transcript from a file replaces an audiobook's transcript. %@ is the audiobook's title.
-        String(localized: "Replace the Transcript of \(bookTitle)?")
+        InterfaceText.line("transcription.replaceConfirmationTitle", "Replace the Transcript of \(bookTitle)?")
     }
 
     /// What the confirmation explains: the transcript from the file named
@@ -743,16 +743,16 @@ enum TranscriptionWording {
     static func replaceConfirmationMessage(fileName: String, isEdited: Bool, isCleanedUp: Bool) -> String {
         var sentences = [
             // Translators: First sentence of the question asked before a transcript from a file replaces an audiobook's transcript. %@ is the file's name.
-            String(localized: "The transcript from “\(fileName)” replaces the book's transcript and the text made from it."),
+            InterfaceText.line("transcription.replaceConfirmation.replaces", "The transcript from “\(fileName)” replaces the book's transcript and the text made from it."),
             whatStays
         ]
         if isEdited {
             // Translators: Sentence of the question asked before a transcript from a file replaces the book's, when the user had edited it.
-            sentences.append(String(localized: "Your edits to the transcript are replaced too."))
+            sentences.append(InterfaceText.line("transcription.replaceConfirmationMessage.edits", "Your edits to the transcript are replaced too."))
         }
         if isCleanedUp {
             // Translators: Sentence of the question asked before a transcript from a file replaces the book's, when the user had cleaned it up.
-            sentences.append(String(localized: "Its cleanup is replaced too."))
+            sentences.append(InterfaceText.line("transcription.replaceConfirmationMessage.cleanup", "Its cleanup is replaced too."))
         }
         return SentenceWording.joined(sentences)
     }
@@ -760,7 +760,7 @@ enum TranscriptionWording {
     /// The confirmation's replacing button.
     static var replaceButtonTitle: String {
         // Translators: Button of the question asked before a transcript from a file replaces an audiobook's transcript, which replaces it.
-        String(localized: "Replace Transcript")
+        InterfaceText.line("transcription.replaceButtonTitle", "Replace Transcript")
     }
 
     /// What VoiceOver hears as the file's transcript begins to be saved,
@@ -769,7 +769,7 @@ enum TranscriptionWording {
     /// transcription's start is said in ("Transcribing Moby-Dick.").
     static func attaching(fileName: String, bookTitle: String) -> String {
         // Translators: What VoiceOver hears as a transcript file starts to be attached. %1$@ is the file's name; %2$@ is the audiobook's title.
-        String(localized: "Attaching “\(fileName)” to \(bookTitle).")
+        InterfaceText.line("transcription.attaching", "Attaching “\(fileName)” to \(bookTitle).")
     }
 
     /// What VoiceOver hears once the file is attached: "Attached
@@ -783,15 +783,15 @@ enum TranscriptionWording {
     static func attached(fileName: String, bookTitle: String, wordCount: Int, skipped: Int, cut: Int = 0) -> String {
         var sentences = [
             // Translators: What VoiceOver hears once a transcript file is attached. %1$@ is the file's name; %2$@ is the audiobook's title; %3$@ is the number of words, such as "7,077 words".
-            String(localized: "Attached “\(fileName)” to \(bookTitle): \(words(wordCount)).")
+            InterfaceText.line("transcription.attached.toAudiobook", "Attached “\(fileName)” to \(bookTitle): \(words(wordCount)).")
         ]
         if skipped > 0 {
             // Translators: Sentence added to the announcement of an attached transcript when some of the file's timed passages could not be read. %lld is how many.
-            sentences.append(String(localized: "\(skipped) timed passages were unreadable and left out."))
+            sentences.append(InterfaceText.line("transcription.attached.unreadable", "\(number: skipped) timed passages were unreadable and left out."))
         }
         if cut > 0 {
             // Translators: Sentence added to the announcement of an attached transcript when some of the file's timed passages were longer than TextMouth keeps. %lld is how many.
-            sentences.append(String(localized: "\(cut) timed passages were too long and cut short."))
+            sentences.append(InterfaceText.line("transcription.attached.short", "\(number: cut) timed passages were too long and cut short."))
         }
         return SentenceWording.joined(sentences)
     }
@@ -802,7 +802,7 @@ enum TranscriptionWording {
     /// a book's transcript came from.
     static var bookInfoLabel: String {
         // Translators: Label of the detail in Book Information that says where the book's transcript came from.
-        String(localized: "Transcript")
+        InterfaceText.line("common.transcript", "Transcript")
     }
 
     /// What VoiceOver says for the editor's Transcript detail whose line is
@@ -810,7 +810,7 @@ enum TranscriptionWording {
     /// (Details of the read-only sheet are spoken by `FeedInfoValue`.)
     static func bookInfoSpokenDetail(_ line: String) -> String {
         // Translators: What VoiceOver says for a detail of Book Information. %1$@ is the detail's label; %2$@ is its value.
-        String(localized: "\(bookInfoLabel): \(line)")
+        InterfaceText.line("common.valueColonValue", "\(bookInfoLabel): \(line)")
     }
 
     /// What Book Information's detail says of a book's transcript, from what
@@ -847,11 +847,11 @@ enum TranscriptionWording {
         }
         if let edited = transcript.editedAt {
             // Translators: Sentence of Book Information's Transcript detail saying when the user edited the transcript. %@ is a date, such as "October 5, 2026".
-            sentences.append(String(localized: "You edited it on \(day(edited))."))
+            sentences.append(InterfaceText.line("transcription.bookInfoLine.edited", "You edited it on \(day(edited))."))
         }
         if let cleaned = transcript.cleanedUp?.cleanedAt {
             // Translators: Sentence of Book Information's Transcript detail saying when the user cleaned up the transcript. %@ is a date, such as "October 5, 2026".
-            sentences.append(String(localized: "You cleaned it up on \(day(cleaned))."))
+            sentences.append(InterfaceText.line("transcription.bookInfoLine.cleaned", "You cleaned it up on \(day(cleaned))."))
         }
         return SentenceWording.joined(sentences)
     }
@@ -862,7 +862,7 @@ enum TranscriptionWording {
     /// iCloud alone.
     private static var transcriptDetailsInCloud: String {
         // Translators: Book Information's Transcript detail when the transcript file has not been downloaded from the cloud drive.
-        String(localized: "The transcript is only in the cloud. Its details appear once the book is downloaded.")
+        InterfaceText.line("transcription.transcriptDetailsInCloud", "The transcript is only in the cloud. Its details appear once the book is downloaded.")
     }
 
     // MARK: The Library Row
@@ -870,12 +870,12 @@ enum TranscriptionWording {
     /// The note after a transcribed book's title, shown and spoken.
     static var transcribedNote: String {
         // Translators: Note after a book's title in the library, saying the audiobook has a transcript.
-        String(localized: "Transcribed")
+        InterfaceText.line("transcription.transcribedNote", "Transcribed")
     }
     /// The note while the book is being transcribed.
     static var transcribingNote: String {
         // Translators: Note after a book's title in the library, saying the audiobook is being transcribed now.
-        String(localized: "Transcribing")
+        InterfaceText.line("transcription.transcribingNote", "Transcribing")
     }
 
     // MARK: Helpers
@@ -895,7 +895,7 @@ enum TranscriptionWording {
     /// "7,077 words".
     private static func words(_ count: Int) -> String {
         // Translators: A count of the words of a transcript, said in an announcement. %lld is the number of words, written with the region's digit grouping.
-        String(localized: "\(count) words")
+        InterfaceText.line("transcription.words", "\(number: count) words")
     }
 }
 
@@ -925,10 +925,10 @@ enum TranscriptionEstimate {
         guard let seconds = seconds(forAudio: audioSeconds) else { return nil }
         guard seconds >= 45 else {
             // Translators: A time estimate, said after "Time to transcribe:" or inside a sentence, for a transcription that takes under 45 seconds.
-            return String(localized: "less than a minute")
+            return InterfaceText.line("transcriptionEstimate.words", "less than a minute")
         }
         let minutes = max(1, (seconds / 60).rounded())
         // Translators: A time estimate, said after "Time to transcribe:" or inside a sentence. %@ is a length of time in words, such as "6 minutes" or "1 hour, 5 minutes".
-        return String(localized: "about \(TimeFormatting.spoken(minutes * 60))")
+        return InterfaceText.line("common.aboutValue", "about \(TimeFormatting.spoken(minutes * 60))")
     }
 }

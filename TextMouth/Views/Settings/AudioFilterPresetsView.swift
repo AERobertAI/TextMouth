@@ -8,82 +8,82 @@ enum AudioFilterPresetsWording {
     /// The sheet's title.
     static var title: String {
         // Translators: Title of the sheet, opened from Storage settings, that lists the audio editor's filter presets.
-        String(localized: "Filter Presets")
+        InterfaceText.line("audioFilterPresets.title", "Filter Presets")
     }
 
     /// What the presets are.
     static var explanation: String {
         // Translators: Explains the filter presets sheet. Apply Filter is the audio editor's command. "highpass=f=80,volume=3dB" is filter syntax and stays as it is. ffmpeg is the name of a program. "turned on above" refers to the Use ffmpeg for filters switch in Storage settings.
-        String(localized: "Apply Filter lists these in this order. Each is a chain of filters in ffmpeg's syntax, such as highpass=f=80,volume=3dB. TextMouth runs its own filters, plus every ffmpeg filter when ffmpeg is installed and turned on above.")
+        InterfaceText.line("audioFilterPresets.explanation", "Apply Filter lists these in this order. Each is a chain of filters in ffmpeg's syntax, such as highpass=f=80,volume=3dB. TextMouth runs its own filters, plus every ffmpeg filter when ffmpeg is installed and turned on above.")
     }
 
     /// The button that adds a preset.
     static var addButton: String {
         // Translators: Button in the filter presets sheet that adds a new filter preset.
-        String(localized: "Add Preset")
+        InterfaceText.line("audioFilterPresets.addButton", "Add Preset")
     }
 
     /// The button that puts the premade presets back.
     static var resetAllButton: String {
         // Translators: Button in the filter presets sheet that puts back TextMouth's premade presets.
-        String(localized: "Reset All to Defaults")
+        InterfaceText.line("audioFilterPresets.resetAllButton", "Reset All to Defaults")
     }
 
     /// What Reset All does.
     static var resetAllHint: String {
         // Translators: Hint of the Reset All to Defaults button in the filter presets sheet.
-        String(localized: "Puts back TextMouth's premade presets, removing the ones you added.")
+        InterfaceText.line("audioFilterPresets.resetAllHint", "Puts back TextMouth's premade presets, removing the ones you added.")
     }
 
     /// The button that closes the sheet.
     static var doneButton: String {
         // Translators: Button that closes a sheet, such as the filter presets sheet.
-        String(localized: "Done")
+        InterfaceText.line("common.done", "Done")
     }
 
     /// Shown when there are no presets.
     static var noPresets: String {
         // Translators: Shown in the filter presets sheet when the list is empty.
-        String(localized: "No filter presets. Add one, or reset to the defaults.")
+        InterfaceText.line("audioFilterPresets.noPresets", "No filter presets. Add one, or reset to the defaults.")
     }
 
     /// The editor's titles.
     static var newTitle: String {
         // Translators: Title of the editor opened by Add Preset in the filter presets sheet.
-        String(localized: "New Filter Preset")
+        InterfaceText.line("audioFilterPresets.newTitle", "New Filter Preset")
     }
 
     static var editTitle: String {
         // Translators: Title of the editor opened by a filter preset's Edit button.
-        String(localized: "Edit Filter Preset")
+        InterfaceText.line("audioFilterPresets.editTitle", "Edit Filter Preset")
     }
 
     /// The editor's fields.
     static var nameLabel: String {
         // Translators: Label of the name field of a filter preset or an audio marker.
-        String(localized: "Name")
+        InterfaceText.line("common.name", "Name")
     }
 
     static var chainLabel: String {
         // Translators: Label of the field that holds a filter preset's chain of filters, and of the line that shows it in the audio editor's Apply Filter.
-        String(localized: "Chain")
+        InterfaceText.line("common.chain", "Chain")
     }
 
     /// The chain field's hint.
     static var chainHint: String {
         // Translators: Hint of the chain field of a filter preset. ffmpeg is the name of a program.
-        String(localized: "Filters in ffmpeg's syntax, separated by commas; options follow an equals sign, separated by colons.")
+        InterfaceText.line("audioFilterPresets.chainHint", "Filters in ffmpeg's syntax, separated by commas; options follow an equals sign, separated by colons.")
     }
 
     /// The editor's buttons.
     static var saveButton: String {
         // Translators: Button that saves what a sheet or window edited, such as a filter preset or the audio editor's edits.
-        String(localized: "Save")
+        InterfaceText.line("common.save", "Save")
     }
 
     static var cancelButton: String {
         // Translators: Button that closes a sheet or dialog without making its change.
-        String(localized: "Cancel")
+        InterfaceText.line("common.cancel", "Cancel")
     }
 
     /// A preset's row, as VoiceOver reads it: its name, its chain, and
@@ -91,43 +91,43 @@ enum AudioFilterPresetsWording {
     static func row(_ preset: AudioFilterPreset, isChangedPremade: Bool) -> String {
         guard isChangedPremade else { return AudioEditorWording.labeled(preset.title, preset.chain) }
         // Translators: A filter preset's row as VoiceOver reads it, for a premade preset the user changed. %1$@ is the preset's name and %2$@ its chain of filters, in filter syntax.
-        return String(localized: "\(preset.title): \(preset.chain), changed from its default")
+        return InterfaceText.line("audioFilterPresets.row", "\(preset.title): \(preset.chain), changed from its default")
     }
 
     /// Said as a preset moves.
     static func moved(_ name: String, to index: Int, of count: Int) -> String {
         // Translators: Said as a filter preset moves in the list. %1$@ is the preset's name, %2$lld its new place and %3$lld how many presets the list holds.
-        String(localized: "\(name) moved to position \(index + 1) of \(count)")
+        InterfaceText.line("audioFilterPresets.moved", "\(name) moved to position \(number: index + 1) of \(number: count)")
     }
 
     /// Said as a preset is deleted.
     static func deleted(_ name: String) -> String {
         // Translators: Said as a filter preset is deleted. %@ is the preset's name.
-        String(localized: "\(name) deleted")
+        InterfaceText.line("common.valueDeleted", "\(name) deleted")
     }
 
     /// Said as a premade preset is put back as it came.
     static func reset(_ name: String) -> String {
         // Translators: Said as a premade filter preset is put back as it came. %@ is the preset's name.
-        String(localized: "\(name) reset to its default")
+        InterfaceText.line("audioFilterPresets.reset", "\(name) reset to its default")
     }
 
     /// Said as every preset is put back.
     static var resetAll: String {
         // Translators: Said as every filter preset is put back to TextMouth's premade ones.
-        String(localized: "The filter presets are reset to the defaults.")
+        InterfaceText.line("audioFilterPresets.resetAll", "The filter presets are reset to the defaults.")
     }
 
     /// Said as a preset is added.
     static func added(_ name: String) -> String {
         // Translators: Said as a filter preset is added. %@ is the preset's name.
-        String(localized: "Added \(name)")
+        InterfaceText.line("audioFilterPresets.added", "Added \(name)")
     }
 
     /// Said as a preset is saved.
     static func saved(_ name: String) -> String {
         // Translators: Said as an edited filter preset is saved. %@ is the preset's name.
-        String(localized: "Saved \(name)")
+        InterfaceText.line("audioFilterPresets.saved", "Saved \(name)")
     }
 
     /// What the editor says of a chain: that TextMouth's own filters run
@@ -136,19 +136,19 @@ enum AudioFilterPresetsWording {
         let trimmed = chain.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
             // Translators: Shown under a filter preset's chain field while it is empty.
-            return String(localized: "Type a chain of filters.")
+            return InterfaceText.line("audioFilterPresets.chainCheck.type", "Type a chain of filters.")
         }
         do {
             let parsed = try AudioFilterChain.parse(trimmed)
             do {
                 _ = try parsed.builtInFilters()
                 // Translators: Shown under a filter preset's chain field: every filter in it is one TextMouth runs itself.
-                return String(localized: "TextMouth's own filters run this chain.")
+                return InterfaceText.line("audioFilterPresets.chainCheck.ownRun", "TextMouth's own filters run this chain.")
             } catch {
                 return SentenceWording.joined([
                     error.localizedDescription,
                     // Translators: Ends a line under a filter preset's chain field that says why TextMouth's own filters can't run it: only the ffmpeg program can. ffmpeg is the program's name.
-                    String(localized: "It runs only through ffmpeg.")
+                    InterfaceText.line("audioFilterPresets.chainCheck.through", "It runs only through ffmpeg.")
                 ])
             }
         } catch {
@@ -177,19 +177,19 @@ enum AudioFilterPresetCommand: CaseIterable {
         switch self {
         case .edit:
             // Translators: Name of a filter preset's Edit button, also its VoiceOver action and context menu item.
-            return String(localized: "Edit")
+            return InterfaceText.line("common.edit", "Edit")
         case .reset:
             // Translators: Name of a premade filter preset's Reset button, also its VoiceOver action and context menu item: puts the preset back as it came.
-            return String(localized: "Reset")
+            return InterfaceText.line("common.reset", "Reset")
         case .moveUp:
             // Translators: Name of a filter preset's Move Up button, also its VoiceOver action and context menu item.
-            return String(localized: "Move Up")
+            return InterfaceText.line("common.moveUp", "Move Up")
         case .moveDown:
             // Translators: Name of a filter preset's Move Down button, also its VoiceOver action and context menu item.
-            return String(localized: "Move Down")
+            return InterfaceText.line("common.moveDown", "Move Down")
         case .delete:
             // Translators: Name of a filter preset's Delete button, also its VoiceOver action and context menu item.
-            return String(localized: "Delete")
+            return InterfaceText.line("common.delete", "Delete")
         }
     }
 

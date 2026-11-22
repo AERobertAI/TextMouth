@@ -670,16 +670,16 @@ enum FeedItemPackageError: LocalizedError, Equatable {
         switch self {
         case .notAFeedPackage:
             // Translators: Why a feed episode's download could not be deleted: it is not in its feed's folder.
-            return String(localized: "This download isn't in its feed's folder, so TextMouth left its files as they are.")
+            return InterfaceText.line("feedItemPackageError.notAFeedPackage", "This download isn't in its feed's folder, so TextMouth left its files as they are.")
         case .indexNotWritten:
             // Translators: Why a feed episode's download could not be deleted: the list of the feed's downloads could not be saved.
-            return String(localized: "TextMouth couldn't save its list of this feed's downloads, so the download was kept. Try again once the library can be saved.")
+            return InterfaceText.line("feedItemPackageError.indexNotWritten", "TextMouth couldn't save its list of this feed's downloads, so the download was kept. Try again once the library can be saved.")
         case .staysInItsFeed:
             // Translators: Why a feed episode's book cannot be removed from the library: it belongs to its feed. %@ is the name of the Delete Download command, which the sentence recommends.
-            return String(localized: "It belongs to its feed while it is downloaded. \(FeedWording.title(of: .deleteDownload, isArticle: false)) removes its file and keeps its place and bookmarks.")
+            return InterfaceText.line("feedItemPackageError.staysInItsFeed", "It belongs to its feed while it is downloaded. \(FeedWording.title(of: .deleteDownload, isArticle: false)) removes its file and keeps its place and bookmarks.")
         case .earlierTextNotKept:
             // Translators: Why a feed article's new download failed: its earlier text could not be kept beside it.
-            return String(localized: "TextMouth couldn't keep the earlier text beside the new download, so the article stays as it was.")
+            return InterfaceText.line("feedItemPackageError.earlierTextNotKept", "TextMouth couldn't keep the earlier text beside the new download, so the article stays as it was.")
         }
     }
 }

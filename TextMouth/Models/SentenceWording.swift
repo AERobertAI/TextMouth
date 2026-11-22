@@ -29,7 +29,7 @@ enum SentenceWording {
     /// puts a space before the colon).
     static func labelled(_ label: String, _ value: String) -> String {
         // Translators: A label and its value on one line, such as "Elapsed: 1:04". %1$@ is the label and %2$@ its value. English puts a colon and a space between them.
-        String(localized: "\(label): \(value)")
+        InterfaceText.line("common.valueColonValue", "\(label): \(value)")
     }
 
     /// `parts` of a spoken or shown label, in order, joined with commas:
@@ -37,7 +37,7 @@ enum SentenceWording {
     static func commaJoined(_ parts: [String]) -> String {
         parts.dropFirst().reduce(parts.first ?? "") { text, next in
             // Translators: Joins two parts of a label with a comma. %1$@ is the text so far and %2$@ the next part. English puts a comma and a space between them.
-            String(localized: "\(text), \(next)")
+            InterfaceText.line("sentence.commaJoined", "\(text), \(next)")
         }
     }
 
@@ -47,7 +47,7 @@ enum SentenceWording {
     static func semicolonJoined(_ parts: [String]) -> String {
         parts.dropFirst().reduce(parts.first ?? "") { text, next in
             // Translators: Joins two parts of a status line with a semicolon. %1$@ is the text so far and %2$@ the next part. English puts a semicolon and a space between them.
-            String(localized: "\(text); \(next)")
+            InterfaceText.line("common.valueSemicolonValue", "\(text); \(next)")
         }
     }
 
@@ -56,6 +56,6 @@ enum SentenceWording {
     /// `first` and `second` as two sentences of one text.
     private static func pair(_ first: String, _ second: String) -> String {
         // Translators: Joins two whole sentences into one text. %1$@ is the first sentence and %2$@ the second. English puts a space between them; Japanese and Chinese join sentences with no space at all, so change only the separator.
-        String(localized: "\(first) \(second)")
+        InterfaceText.line("sentence.pair", "\(first) \(second)")
     }
 }

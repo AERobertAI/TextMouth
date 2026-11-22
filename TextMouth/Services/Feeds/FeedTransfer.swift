@@ -235,7 +235,7 @@ private final class FeedDownloadTaskDelegate: NSObject, URLSessionDownloadDelega
         } else {
             continuation.resume(throwing: FeedTransferFailure(
                 // Translators: The reason a download from a feed's server failed: it ended and left no file. Follows "<server> couldn't be reached:". Lower case, without a full stop.
-                error: .connectionFailed(host: host, reason: String(localized: "the download ended without a file")),
+                error: .connectionFailed(host: host, reason: InterfaceText.line("feedDownloadTaskDelegate.urlSession", "the download ended without a file")),
                 resumeData: nil
             ))
         }

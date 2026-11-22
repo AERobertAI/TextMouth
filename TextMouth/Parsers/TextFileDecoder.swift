@@ -96,21 +96,21 @@ enum TextEncodingError: LocalizedError, Equatable {
         case let .unsupportedDeclaredEncoding(file, label):
             return SentenceWording.joined([
                 // Translators: First sentence of why a file could not be imported: an HTML file declares a text encoding TextMouth does not know. %1$@ is the file's name and %2$@ the encoding's name as the file spells it.
-                String(localized: "The file “\(file)” declares the text encoding “\(label)”, which TextMouth cannot read."),
+                InterfaceText.line("textEncodingError.unsupportedDeclaredEncoding", "The file “\(file)” declares the text encoding “\(label)”, which TextMouth cannot read."),
                 Self.saveAsUTF8Advice,
             ])
         case let .invalidForDeclaredEncoding(file, label):
             return SentenceWording.joined([
                 // Translators: First sentence of why a file could not be imported: an HTML file declares a text encoding its bytes are not valid in. %1$@ is the file's name and %2$@ the encoding's name as the file spells it.
-                String(localized: "The file “\(file)” declares the text encoding “\(label)”, but it holds bytes that are not valid in that encoding."),
+                InterfaceText.line("textEncodingError.invalidForDeclaredEncoding", "The file “\(file)” declares the text encoding “\(label)”, but it holds bytes that are not valid in that encoding."),
                 Self.saveAsUTF8Advice,
             ])
         case let .invalidForMarkedEncoding(file, encoding):
             return SentenceWording.joined([
                 // Translators: First sentence of why a file could not be imported: it begins with the byte-order mark of a Unicode encoding, but the bytes after it are not valid in that encoding. %1$@ is the file's name; %2$@ and %3$@ are both the encoding's standard name, such as UTF-16LE, which stays as it is.
-                String(localized: "The file “\(file)” is damaged or incomplete: it begins with a \(encoding) byte-order mark, but the rest is not valid \(encoding) text."),
+                InterfaceText.line("textEncodingError.invalidForMarkedEncoding", "The file “\(file)” is damaged or incomplete: it begins with a \(encoding) byte-order mark, but the rest is not valid \(encoding) text."),
                 // Translators: Last sentence of why a file could not be imported because it is damaged or incomplete: what to do.
-                String(localized: "Get a fresh copy of the file, then import it again."),
+                InterfaceText.line("textEncodingError.invalidMarkedEncoding.import", "Get a fresh copy of the file, then import it again."),
             ])
         case let .invalidForChosenEncoding(file, encoding):
             return TextEncodingWording.notValid(in: encoding, subject: Self.fileSubject(file))
@@ -123,13 +123,13 @@ enum TextEncodingError: LocalizedError, Equatable {
     /// sentence that ends two of the failures.
     private static var saveAsUTF8Advice: String {
         // Translators: Last sentence of why an HTML file could not be imported because of its declared text encoding: what to do. UTF-8 is an encoding's name and stays as it is.
-        String(localized: "Save it as UTF-8 text, then import it again.")
+        InterfaceText.line("textEncodingError.saveAsUTF8Advice", "Save it as UTF-8 text, then import it again.")
     }
 
     /// The file as a sentence names it when it begins one: "The file “Ledger.txt”".
     private static func fileSubject(_ file: String) -> String {
         // Translators: Begins a sentence about a file that could not be read in the text encoding chosen for it, such as "The file “Ledger.txt” can't be read as Shift JIS (Japanese): …". %@ is the file's name.
-        String(localized: "The file “\(file)”")
+        InterfaceText.line("textEncodingError.fileSubject", "The file “\(file)”")
     }
 }
 

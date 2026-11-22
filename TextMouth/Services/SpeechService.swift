@@ -1558,7 +1558,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// "Speech stopped").
     nonisolated static var voiceDidNotStartAnnouncement: String {
         // Translators: Announcement when the voice did not start a passage, even on fresh synthesizers, so speech paused there. Play is the name of a button.
-        String(localized: "Speech paused: the voice did not start. Press Play to try again.")
+        InterfaceText.line("speechService.voiceDidNotStartAnnouncement", "Speech paused: the voice did not start. Press Play to try again.")
     }
 
     /// Stop speech at `offset` as a pause, the cursor kept there, once a
@@ -1609,7 +1609,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// from there.
     nonisolated static var engineRefusedAnnouncement: String {
         // Translators: Announcement when the Mac's speech engine refused a text twice and speech ended where it was, in a window with no report sheet to say so.
-        String(localized: "Speech stopped: the Mac's speech engine refused this text.")
+        InterfaceText.line("speechService.engineRefusedAnnouncement", "Speech stopped: the Mac's speech engine refused this text.")
     }
 
     /// Speak again after the system cancelled the live utterance on its own
@@ -2371,12 +2371,12 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     nonisolated static func pitchLabel(_ pitch: Double) -> String {
         if abs(pitch - 1.0) < 0.05 {
             // Translators: The voice pitch when it is the normal one, as the pitch sliders say it. 1.0x means the voice's own pitch, unchanged.
-            return String(localized: "Normal (1.0x)")
+            return InterfaceText.line("speechService.pitchLabel.normal", "Normal (1.0x)")
         }
         // The multiplier with one decimal, then its "x": a pitch that is not the normal one.
         let multiplier = String(format: "%.1f", pitch)
         // Translators: The voice pitch as a multiplier of the voice's own, as the pitch sliders say it, such as "1.2x". %@ is the multiplier with one decimal.
-        return String(localized: "\(multiplier)x")
+        return InterfaceText.line("speechService.pitchLabel.value", "\(multiplier)x")
     }
 
     // MARK: - Position Tracking

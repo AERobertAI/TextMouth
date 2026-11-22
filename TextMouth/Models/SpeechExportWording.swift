@@ -19,7 +19,7 @@ enum SpeechExportWording {
     /// are the formats' names (`SpeechExportFormat.title`).
     static var formatLabel: String {
         // Translators: The label of the pop-up in the Export dialog's spoken audio options that chooses the kind of audio file.
-        String(localized: "Format")
+        InterfaceText.line("common.format", "Format")
     }
     /// What the Format pop-up chooses, spoken after its label and value. An
     /// MP3's table of contents counts its chapters in one byte
@@ -27,7 +27,7 @@ enum SpeechExportWording {
     static var formatHint: String {
         // The limit is a fixed number of the format, written without grouping.
         // Translators: The hint of the Format pop-up in the Export dialog's spoken audio options. M4B, M4A, and MP3 are audio file formats. %@ is the number of chapters an MP3 can have, 255.
-        String(localized: "Chooses the file format. M4B is an audiobook; M4A and MP3 play in more apps. M4B and M4A have a chapter for each heading; an MP3, for the first \(String(MP3Tag.maximumChapters)).")
+        InterfaceText.line("speechExport.formatHint", "Chooses the file format. M4B is an audiobook; M4A and MP3 play in more apps. M4B and M4A have a chapter for each heading; an MP3, for the first \(String(MP3Tag.maximumChapters)).")
     }
 
     /// The line under the Format pop-up while MP3 is chosen for a range of
@@ -35,14 +35,14 @@ enum SpeechExportWording {
     /// is lost, and what keeps it.
     static func mp3ChapterLimit(headings: Int) -> String {
         // Translators: The line under the Format pop-up in the Export dialog's spoken audio options while MP3 is chosen for a range with more headings than an MP3 has chapters. %1$lld is the number of headings in the range and %2$@ the number of chapters an MP3 can have, 255. M4B and MP3 are audio file formats.
-        String(localized: "This range has \(headings) headings, but an MP3 has chapters for the first \(String(MP3Tag.maximumChapters)) only. Choose M4B for a chapter for each.")
+        InterfaceText.line("speechExport.mp3ChapterLimit", "This range has \(number: headings) headings, but an MP3 has chapters for the first \(String(MP3Tag.maximumChapters)) only. Choose M4B for a chapter for each.")
     }
 
     /// The sentence the Export dialog adds after an MP3 of `chapters`
     /// chapters is made, more than an MP3 has chapters for.
     static func mp3ChaptersKept(of chapters: Int) -> String {
         // Translators: A sentence the Export dialog adds after it made an MP3 of more headings than an MP3 has chapters for. %1$@ is the number of chapters an MP3 can have, 255, and %2$lld the number of headings. M4B and MP3 are audio file formats.
-        String(localized: "The MP3 has chapters for the first \(String(MP3Tag.maximumChapters)) of its \(chapters) headings; export as M4B for a chapter for each.")
+        InterfaceText.line("speechExport.mp3ChaptersKept", "The MP3 has chapters for the first \(String(MP3Tag.maximumChapters)) of its \(number: chapters) headings; export as M4B for a chapter for each.")
     }
 
     // MARK: The Range
@@ -50,34 +50,34 @@ enum SpeechExportWording {
     /// The label of the pop-up that chooses where the spoken audio begins.
     static var fromLabel: String {
         // Translators: The label of the pop-up in the Export dialog's spoken audio options that chooses where the spoken audio begins.
-        String(localized: "From")
+        InterfaceText.line("speechExport.fromLabel", "From")
     }
     /// What the From pop-up chooses.
     static var fromHint: String {
         // Translators: The hint of the From pop-up in the Export dialog's spoken audio options.
-        String(localized: "Where the audio begins: the book's beginning, or a heading.")
+        InterfaceText.line("speechExport.fromHint", "Where the audio begins: the book's beginning, or a heading.")
     }
     /// The From pop-up's first item: the book's beginning, with any text
     /// before its first heading.
     static var beginningOfBook: String {
         // Translators: The first item of the From pop-up in the Export dialog's spoken audio options: the start of the book, with any text before its first heading.
-        String(localized: "Beginning of the book")
+        InterfaceText.line("speechExport.beginningOfBook", "Beginning of the book")
     }
 
     /// The label of the pop-up that chooses where the spoken audio ends.
     static var throughLabel: String {
         // Translators: The label of the pop-up in the Export dialog's spoken audio options that chooses where the spoken audio ends.
-        String(localized: "To")
+        InterfaceText.line("speechExport.throughLabel", "To")
     }
     /// What the To pop-up chooses.
     static var throughHint: String {
         // Translators: The hint of the To pop-up in the Export dialog's spoken audio options.
-        String(localized: "The heading whose section ends the audio, with its subheadings, or the end of the book.")
+        InterfaceText.line("speechExport.throughHint", "The heading whose section ends the audio, with its subheadings, or the end of the book.")
     }
     /// The To pop-up's last item: the book's end.
     static var endOfBook: String {
         // Translators: The last item of the To pop-up in the Export dialog's spoken audio options: the end of the book.
-        String(localized: "End of the book")
+        InterfaceText.line("speechExport.endOfBook", "End of the book")
     }
 
     /// `heading` as the From and To pop-ups list it, in the words the
@@ -96,28 +96,28 @@ enum SpeechExportWording {
     /// book has no headings to choose.
     static var noHeadings: String {
         // Translators: Shown in the Export dialog's spoken audio options in place of the From and To pop-ups when the book has no headings.
-        String(localized: "This book has no headings, so all of it is exported.")
+        InterfaceText.line("speechExport.noHeadings", "This book has no headings, so all of it is exported.")
     }
 
     /// Why Export refuses the folder chosen: it is the folder speech exports
     /// keep their spoken chapters in, or inside it, which TextMouth empties.
     static var destinationInKeptChapters: String {
         // Translators: Why the Export dialog refuses the folder chosen: it is the folder where TextMouth keeps the chapters of a spoken audio export, or inside it.
-        String(localized: "Export can't write into the folder where TextMouth keeps spoken chapters, which it empties. Choose another folder.")
+        InterfaceText.line("speechExport.destinationInKeptChapters", "Export can't write into the folder where TextMouth keeps spoken chapters, which it empties. Choose another folder.")
     }
 
     /// What the dialog says under the checkbox, the first time it is checked,
     /// while the book's text is read for its headings.
     static var readingHeadings: String {
         // Translators: Shown under the Text as spoken audio checkbox in the Export dialog while the book's text is read for its headings.
-        String(localized: "Reading the book's headings…")
+        InterfaceText.line("speechExport.readingHeadings", "Reading the book's headings…")
     }
 
     /// What the dialog says under the checkbox when the book's text can't be
     /// read, so there is nothing to speak.
     static var unreadableText: String {
         // Translators: Shown under the Text as spoken audio checkbox in the Export dialog when the book's text can't be read.
-        String(localized: "This book's text can't be read, so it can't be spoken into an audio file.")
+        InterfaceText.line("speechExport.unreadableText", "This book's text can't be read, so it can't be spoken into an audio file.")
     }
 
     // MARK: The Speed and the Pitch
@@ -126,25 +126,25 @@ enum SpeechExportWording {
     /// the word the reader and Settings use for the same words per minute.
     static var speedLabel: String {
         // Translators: The label of the slider in the Export dialog's spoken audio options that sets how fast the voice speaks.
-        String(localized: "Speed")
+        InterfaceText.line("common.speed", "Speed")
     }
     /// The Speed slider's value, shown beside it and spoken as its value:
     /// "200 words per minute". The speed is one the options hold, so a
     /// finite number inside the speeds Settings offers.
     static func speedValue(_ wordsPerMinute: Double) -> String {
         // Translators: The value of the Speed slider in the Export dialog's spoken audio options. %lld is the speed in words per minute.
-        String(localized: "\(Int(wordsPerMinute.rounded())) words per minute")
+        InterfaceText.line("common.countWordsPerMinute", "\(number: Int(wordsPerMinute.rounded())) words per minute")
     }
     /// What the Speed slider sets.
     static var speedHint: String {
         // Translators: The hint of the Speed slider in the Export dialog's spoken audio options.
-        String(localized: "How fast the voice speaks in the file. It starts at the book's speed.")
+        InterfaceText.line("speechExport.speedHint", "How fast the voice speaks in the file. It starts at the book's speed.")
     }
 
     /// The label of the slider that sets how high the voice sounds.
     static var pitchLabel: String {
         // Translators: The label of the slider in the Export dialog's spoken audio options that sets how high the voice sounds.
-        String(localized: "Pitch")
+        InterfaceText.line("common.pitch", "Pitch")
     }
     /// The Pitch slider's value, in the words the reader and Settings use
     /// for a pitch: "Normal (1.0x)", "1.5x".
@@ -154,7 +154,7 @@ enum SpeechExportWording {
     /// What the Pitch slider sets.
     static var pitchHint: String {
         // Translators: The hint of the Pitch slider in the Export dialog's spoken audio options.
-        String(localized: "How high the voice sounds in the file. It starts at the book's pitch.")
+        InterfaceText.line("speechExport.pitchHint", "How high the voice sounds in the file. It starts at the book's pitch.")
     }
 
     // MARK: The Voice and the Licence
@@ -167,14 +167,14 @@ enum SpeechExportWording {
         guard let voice else { return sentence(for: .noVoice) }
         guard !voice.isPersonalVoice else { return sentence(for: .personalVoice(name: voice.name)) }
         // Translators: The line in the Export dialog's spoken audio options naming the voice the book is spoken with. %@ is the voice's name.
-        return String(localized: "Voice: \(voice.name)")
+        return InterfaceText.line("speechExport.voiceLine", "Voice: \(voice.name)")
     }
 
     /// The line about the licence the Mac's voices come with (the user's
     /// answer to question 20 asked for it).
     static var licence: String {
         // Translators: The line in the Export dialog's spoken audio options about the licence the Mac's voices come with.
-        String(localized: "Speech from the Mac's voices is for personal, non-commercial use, under Apple's licence.")
+        InterfaceText.line("speechExport.licence", "Speech from the Mac's voices is for personal, non-commercial use, under Apple's licence.")
     }
 
     // MARK: A File's Name
@@ -183,19 +183,19 @@ enum SpeechExportWording {
     /// "Middlemarch - Audio".
     static var wholeBookName: String {
         // Translators: Part of a spoken audio export's file name, after the book's title: the whole book, as in "Middlemarch - Audio".
-        String(localized: "Audio")
+        InterfaceText.line("common.audio", "Audio")
     }
     /// What the book's beginning is called in a file's name, as one end of
     /// its range: "Middlemarch - Beginning to Chapter 2".
     static var beginningName: String {
         // Translators: Part of a spoken audio export's file name: the beginning of the book as one end of the range, as in "Middlemarch - Beginning to Chapter 2".
-        String(localized: "Beginning")
+        InterfaceText.line("speechExport.beginningName", "Beginning")
     }
     /// What the book's end is called in a file's name, as one end of its
     /// range: "Middlemarch - Chapter 2 to End".
     static var endName: String {
         // Translators: Part of a spoken audio export's file name: the end of the book as one end of the range, as in "Middlemarch - Chapter 2 to End".
-        String(localized: "End")
+        InterfaceText.line("speechExport.endName", "End")
     }
 
     /// An exported file's name, before it is made safe and given its
@@ -211,7 +211,7 @@ enum SpeechExportWording {
     /// Chapter 2").
     static func rangeName(from: String, through: String) -> String {
         // Translators: Part of a spoken audio export's file name: a range of the book. %1$@ is where it begins and %2$@ where it ends, each a heading's words or the beginning or end of the book, as in "Chapter 1 to Chapter 3".
-        String(localized: "\(from) to \(through)")
+        InterfaceText.line("common.valueToValue", "\(from) to \(through)")
     }
 
     // MARK: While an Export Runs, and When It Ends
@@ -225,10 +225,10 @@ enum SpeechExportWording {
         case .speaking(let done, let total, _):
             // Chapter numbers name places in the book, so they are written without grouping.
             // Translators: The progress of a spoken audio export while it speaks the chapters. %1$@ is the number of the chapter being spoken and %2$@ the number of chapters, both written without digit grouping.
-            return String(localized: "Speaking chapter \(String(min(done + 1, total))) of \(String(total))…")
+            return InterfaceText.line("speechExport.progress.speaking", "Speaking chapter \(String(min(done + 1, total))) of \(String(total))…")
         case .encoding:
             // Translators: The progress of a spoken audio export once every chapter is spoken and the audio file is being made.
-            return String(localized: "Encoding the audio file…")
+            return InterfaceText.line("speechExport.progress.encoding", "Encoding the audio file…")
         case .ended:
             return nil
         }
@@ -244,7 +244,7 @@ enum SpeechExportWording {
     /// chapter again.
     static var stopHint: String {
         // Translators: The hint of the Stop button in the Export dialog while a spoken audio export runs.
-        String(localized: "Stops the export and keeps the chapters already spoken until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. Exporting the same range at the same speed and pitch goes on from them.")
+        InterfaceText.line("speechExport.stopHint", "Stops the export and keeps the chapters already spoken until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. Exporting the same range at the same speed and pitch goes on from them.")
     }
 
     /// The sentence an export that ended without its file adds to what the
@@ -256,13 +256,13 @@ enum SpeechExportWording {
         guard done >= total else {
             // Chapter numbers name places in the book, so they are written without grouping.
             // Translators: What the Export dialog says after a spoken audio export ended without its file and kept some of its chapters. %1$@ is how many chapters are kept, %2$lld how many there are, and %3$@ the number of the chapter to go on from, both written without digit grouping.
-            return String(localized: "Kept \(String(done)) of \(total) chapters until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To go on from chapter \(String(done + 1)), export the same range at the same speed and pitch.")
+            return InterfaceText.line("speechExport.kept.chaptersGo", "Kept \(String(done)) of \(number: total) chapters until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To go on from chapter \(String(done + 1)), export the same range at the same speed and pitch.")
         }
         return total == 1
             // Translators: What the Export dialog says after a spoken audio export ended without its file and kept its only chapter.
-            ? String(localized: "Kept the spoken chapter until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To make the audio file from it, export the same range at the same speed and pitch.")
+            ? InterfaceText.line("speechExport.kept.chapter", "Kept the spoken chapter until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To make the audio file from it, export the same range at the same speed and pitch.")
             // Translators: What the Export dialog says after a spoken audio export ended without its file and kept every one of its chapters. %lld is the number of chapters, more than one.
-            : String(localized: "Kept all \(total) spoken chapters until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To make the audio file from them, export the same range at the same speed and pitch.")
+            : InterfaceText.line("speechExport.kept.them", "Kept all \(number: total) spoken chapters until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To make the audio file from them, export the same range at the same speed and pitch.")
     }
 
     // MARK: Text on One Line

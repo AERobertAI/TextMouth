@@ -16,16 +16,16 @@ enum RewindUnit: String, CaseIterable, Codable {
         switch self {
         case .none:
             // Translators: A choice of the Rewind on Resume unit picker: playback resumes where it stopped, with no rewinding.
-            return String(localized: "None")
+            return InterfaceText.line("common.none", "None")
         case .sentence:
             // Translators: A unit of text a picker moves or rewinds by: one sentence. Used by the rewind, skip, and navigation unit pickers.
-            return String(localized: "Sentence")
+            return InterfaceText.line("rewindUnit.title.sentence", "Sentence")
         case .paragraph:
             // Translators: A unit of text a picker moves or rewinds by: one paragraph. Used by the rewind, skip, and navigation unit pickers.
-            return String(localized: "Paragraph")
+            return InterfaceText.line("rewindUnit.title.paragraph", "Paragraph")
         case .heading:
             // Translators: A unit of text a picker moves or rewinds by: one heading. Used by the rewind, skip, and navigation unit pickers.
-            return String(localized: "Heading")
+            return InterfaceText.line("rewindUnit.title.heading", "Heading")
         }
     }
 }
@@ -55,16 +55,16 @@ enum EndOfBookBehavior: String, CaseIterable, Codable {
         switch self {
         case .stop:
             // Translators: A choice of the When a Book Ends picker: the book stops at its end, finished. Play then says it is finished.
-            return String(localized: "Stop")
+            return InterfaceText.line("common.stop", "Stop")
         case .stopAndPlayStartsOver:
             // Translators: A choice of the When a Book Ends picker: the book stops at its end, finished, and Play then starts it again from the beginning.
-            return String(localized: "Stop, and Play Starts Over")
+            return InterfaceText.line("endOfBookBehavior.title.stopAndPlayStartsOver", "Stop, and Play Starts Over")
         case .loop:
             // Translators: A choice of the When a Book Ends picker: the book plays again from its beginning and is never finished.
-            return String(localized: "Loop to Start")
+            return InterfaceText.line("endOfBookBehavior.title.loop", "Loop to Start")
         case .continueNext:
             // Translators: A choice of the When a Book Ends picker: the next book in the folder plays.
-            return String(localized: "Continue to Next Book")
+            return InterfaceText.line("endOfBookBehavior.title.continueNext", "Continue to Next Book")
         }
     }
 
@@ -104,14 +104,14 @@ enum SkipUnit: String, CaseIterable, Codable {
         case .paragraph: return RewindUnit.paragraph.title
         case .page:
             // Translators: A unit a skip or navigation picker moves by: one page of the book, as the book numbers its pages.
-            return String(localized: "Page")
+            return InterfaceText.line("common.page", "Page")
         case .heading: return RewindUnit.heading.title
         case .subheading:
             // Translators: A unit a skip or navigation picker moves by: one subheading, a heading below the main headings.
-            return String(localized: "Subheading")
+            return InterfaceText.line("skipUnit.title.subheading", "Subheading")
         case .bookmark:
             // Translators: A unit a skip or navigation picker moves by: one bookmark.
-            return String(localized: "Bookmark")
+            return InterfaceText.line("skipUnit.title.bookmark", "Bookmark")
         }
     }
 
@@ -152,13 +152,13 @@ enum SkipUnit: String, CaseIterable, Codable {
         switch direction {
         case .forward:
             // Translators: VoiceOver label of the playback bar's menu that picks the unit the forward button moves by. %@ is the unit now chosen, such as "Sentence".
-            return String(localized: "Forward navigation unit: \(title)")
+            return InterfaceText.line("skipUnit.playbackMenuAccessibilityLabel.forward", "Forward navigation unit: \(title)")
         case .backward:
             // Translators: VoiceOver label of the playback bar's menu that picks the unit the backward button moves by. %@ is the unit now chosen, such as "Sentence".
-            return String(localized: "Backward navigation unit: \(title)")
+            return InterfaceText.line("skipUnit.playbackMenuAccessibilityLabel.backward", "Backward navigation unit: \(title)")
         case nil:
             // Translators: VoiceOver label of the playback bar's shared menu that picks the unit both skip buttons move by. %@ is the unit now chosen, such as "Sentence".
-            return String(localized: "Navigation unit: \(title)")
+            return InterfaceText.line("skipUnit.playbackMenuAccessibilityLabel.nil", "Navigation unit: \(title)")
         }
     }
 
@@ -217,13 +217,13 @@ enum PlaybackNavigationUnitControlMode: String, CaseIterable, Codable {
         switch self {
         case .none:
             // Translators: A choice of the playback bar's navigation unit menus setting: no per-book menu, so the global units are used.
-            return String(localized: "None (Use Global)")
+            return InterfaceText.line("playbackNavigationUnitControlMode.none", "None (Use Global)")
         case .shared:
             // Translators: A choice of the playback bar's navigation unit menus setting: one shared menu sets the unit of both skip buttons.
-            return String(localized: "One Unit for Both Directions")
+            return InterfaceText.line("playbackNavigationUnitControlMode.shared", "One Unit for Both Directions")
         case .separate:
             // Translators: A choice of the playback bar's navigation unit menus setting: a menu for each skip button.
-            return String(localized: "Separate Forward and Backward Units")
+            return InterfaceText.line("playbackNavigationUnitControlMode.separate", "Separate Forward and Backward Units")
         }
     }
 }

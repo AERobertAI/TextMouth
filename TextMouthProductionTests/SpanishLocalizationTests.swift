@@ -114,20 +114,18 @@ final class SpanishLocalizationTests: XCTestCase {
     }
 
     /// The menus that hide by title (finding 1 of the pilot's review): the Bookmarks menu reads "Marcadores" in
-    /// Spanish, so the reader's title set must hold it beside the key, or the menu stays over the Library. The
-    /// English set is the four keys, unchanged, and the Library's set holds its own key.
+    /// Spanish, so the reader's title set must hold it beside the English, or the menu stays over the Library. The
+    /// English set is the four titles, unchanged, and the Library's set holds its own.
     @MainActor
     func testTheMenuVisibilitySetsHoldTheSpanishTitles() {
-        let spanish = Locale(identifier: "es")
-        let reader = MenuVisibilityManager.titles(for: MenuVisibilityManager.readerMenuKeys, locale: spanish)
+        let reader = MenuVisibilityManager.titles(for: MenuVisibilityManager.readerMenuWording, languages: ["es"])
         XCTAssertTrue(reader.contains("Marcadores"), "The reader's Spanish menu titles: \(reader.sorted())")
-        // Every key stays, since a menu with no translation shows its key.
-        XCTAssertTrue(Set(MenuVisibilityManager.readerMenuKeys).isSubset(of: reader))
-        let library = MenuVisibilityManager.titles(for: MenuVisibilityManager.libraryMenuKeys, locale: spanish)
-        XCTAssertTrue(library.contains("Library"), "The Library menu keeps its key: \(library.sorted())")
-        // In English the sets are exactly the keys.
-        let english = Locale(identifier: "en")
-        XCTAssertEqual(MenuVisibilityManager.titles(for: MenuVisibilityManager.readerMenuKeys, locale: english),
+        // The English titles stay, since a menu with no translation shows its English.
+        XCTAssertTrue(["Playback", "Navigate", "Bookmarks", "Book"].allSatisfy { reader.contains($0) })
+        let library = MenuVisibilityManager.titles(for: MenuVisibilityManager.libraryMenuWording, languages: ["es"])
+        XCTAssertTrue(library.contains("Library"), "The Library menu keeps its English title: \(library.sorted())")
+        // With no other language the set is exactly the English titles.
+        XCTAssertEqual(MenuVisibilityManager.titles(for: MenuVisibilityManager.readerMenuWording),
                        ["Playback", "Navigate", "Bookmarks", "Book"])
     }
 }

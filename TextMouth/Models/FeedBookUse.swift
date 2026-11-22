@@ -58,20 +58,20 @@ enum FeedBookUse: Equatable, Sendable {
         switch self {
         case .openInReader:
             // Translators: Why a book's download cannot be deleted or replaced yet, as the words after the book's title: it is open in a reader. A request to close it follows.
-            return String(localized: "is open in a reader")
+            return InterfaceText.line("feedBookUse.clause.openInReader", "is open in a reader")
         case .transcribing:
             // Translators: Why a book's download cannot be deleted or replaced yet, as the words after the book's title: it is being transcribed. %@ is what the listener tried, a phrase such as "deleting its download" or "replacing it", which starts the second part of the sentence.
-            return String(localized: "is being transcribed, and \(action) now would lose the transcript")
+            return InterfaceText.line("feedBookUse.clause.transcribing", "is being transcribed, and \(action) now would lose the transcript")
         case .exporting:
             // Translators: Why a book's download cannot be deleted or replaced yet, as the words after the book's title: it is being exported. %@ is what the listener tried, a phrase such as "deleting its download" or "replacing it", which starts the second part of the sentence.
-            return String(localized: "is being exported, and \(action) now would stop the export")
+            return InterfaceText.line("feedBookUse.clause.exporting", "is being exported, and \(action) now would stop the export")
         }
     }
 
     /// The action a deletion of a download names in its clause.
     static var deletingItsDownload: String {
         // Translators: What the listener tried, inside the sentence that says why a feed episode's download cannot be deleted yet: "is being transcribed, and deleting its download now would lose the transcript". Written as a phrase that can follow "and" and start a clause.
-        String(localized: "deleting its download")
+        InterfaceText.line("feedBookUse.deletingItsDownload", "deleting its download")
     }
 
     /// What the listener can do before trying again: "Close it", or "Wait
@@ -80,13 +80,13 @@ enum FeedBookUse: Equatable, Sendable {
         switch self {
         case .openInReader:
             // Translators: What to do before trying again, when a book's download is open in a reader and cannot be deleted or replaced. Followed by ", then try again". Written without a full stop.
-            return String(localized: "Close it")
+            return InterfaceText.line("feedBookUse.remedy.openInReader", "Close it")
         case .transcribing:
             // Translators: What to do before trying again, when a book's download is being transcribed and cannot be deleted or replaced. Written without a full stop.
-            return String(localized: "Wait until the transcription ends, or cancel it")
+            return InterfaceText.line("feedBookUse.remedy.transcribing", "Wait until the transcription ends, or cancel it")
         case .exporting:
             // Translators: What to do before trying again, when a book's download is being exported and cannot be deleted or replaced. Written without a full stop.
-            return String(localized: "Wait until the export ends")
+            return InterfaceText.line("feedBookUse.remedy.exporting", "Wait until the export ends")
         }
     }
 
@@ -105,16 +105,16 @@ enum FeedBookUse: Equatable, Sendable {
     func refusal(of subject: String, doing action: String, retry: String) -> String {
         SentenceWording.joined([
             // Translators: Says why a book's download cannot be deleted or replaced now. The first %@ is the book's title in quotation marks, or "It"; the second is a clause such as "is open in a reader" or "is being transcribed, and deleting its download now would lose the transcript".
-            String(localized: "\(subject) \(clause(doing: action))."),
+            InterfaceText.line("feedBookUse.refusal.period", "\(subject) \(clause(doing: action))."),
             // Translators: What to do about a refusal, then what to do next. The first %@ is a request such as "Close it" or "Wait until the export ends"; the second is the next step, such as "try again" or "choose Delete Feed… again".
-            String(localized: "\(remedy), then \(retry)."),
+            InterfaceText.line("feedBookUse.refusal.then", "\(remedy), then \(retry)."),
         ])
     }
 
     /// The end of a refusal whose command is not named again.
     static var tryAgain: String {
         // Translators: The next step after a refusal, when the listener repeats the command: "Close it, then try again." Written in lower case, without a full stop, to follow "then".
-        String(localized: "try again")
+        InterfaceText.line("feedBookUse.tryAgain", "try again")
     }
 }
 
@@ -138,6 +138,6 @@ struct FeedDownloadInUseError: LocalizedError, Equatable, Sendable {
 
     var errorDescription: String? {
         // Translators: The subject of a refusal when the book is named elsewhere, as in a list of books "Title: It is open in a reader. Close it, then try again." Capitalized, as it starts a sentence.
-        use.refusal(of: String(localized: "It"))
+        use.refusal(of: InterfaceText.line("feedDownloadInUseError.errorDescription", "It"))
     }
 }

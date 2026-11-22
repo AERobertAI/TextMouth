@@ -747,7 +747,7 @@ final class TextRereads {
                 // One whole phrase for each count, as a plural string.
                 let count = self.bookIDs.count
                 // Translators: What the Mac is still doing when the user quits, said after "Quit is waiting for" or the like: books whose text is being read again in another character encoding. %lld is the number of books. Begins in lower case.
-                return String(localized: "reading the text of \(count) books again in another encoding")
+                return InterfaceText.line("textRereads.quitWork", "reading the text of \(number: count) books again in another encoding")
             }
         )
     }

@@ -11,37 +11,37 @@ enum LibraryWindowWording {
     /// The title of the overlay shown while the library's text is extracted.
     static var extractingTextTitle: String {
         // Translators: Title of the overlay that shows progress while TextMouth reads the text of the library's books, at launch or after a change. A progress count follows it.
-        String(localized: "Extracting Text")
+        InterfaceText.line("libraryWindow.extractingTextTitle", "Extracting Text")
     }
 
     /// The button that closes a sheet or answers a question with nothing done.
     static var cancel: String {
         // Translators: Button that closes a sheet or answers a question without doing or changing anything.
-        String(localized: "Cancel")
+        InterfaceText.line("common.cancel", "Cancel")
     }
 
     /// The button that saves the changes made in a sheet.
     static var save: String {
         // Translators: Button that saves the changes made in a sheet.
-        String(localized: "Save")
+        InterfaceText.line("common.save", "Save")
     }
 
     /// The title of the alert about a problem, when it has no more specific title.
     static var errorTitle: String {
         // Translators: Title of an alert about a problem, when the problem has no more specific title.
-        String(localized: "Error")
+        InterfaceText.line("common.error", "Error")
     }
 
     /// The button that dismisses an alert about a problem.
     static var errorDismiss: String {
         // Translators: Button that dismisses an alert about a problem.
-        String(localized: "OK")
+        InterfaceText.line("common.ok", "OK")
     }
 
     /// The message of an alert about a problem, when nothing more is known about it.
     static var unknownError: String {
         // Translators: Message of an alert about a problem, when nothing more is known about it.
-        String(localized: "An unknown error occurred.")
+        InterfaceText.line("common.anUnknownErrorOccurred", "An unknown error occurred.")
     }
 }
 

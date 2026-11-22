@@ -12,7 +12,7 @@ enum FolderNavigationWording {
     /// spoken: "Library, 743 books" after a move to the top.
     nonisolated static var libraryName: String {
         // Translators: The name spoken for the library's top level, the place that holds the folders and the books outside any folder, as in "Library, 743 books" after going to it.
-        String(localized: "Library")
+        InterfaceText.line("common.library", "Library")
     }
 
     /// What the command says when no item lies the way it goes, or only
@@ -22,7 +22,7 @@ enum FolderNavigationWording {
     /// before it in the folder is finished."
     static func nothingThatWay(_ note: String) -> String {
         // Translators: VoiceOver announcement of Next in Folder or Previous in Folder when no item lies that way. %@ is a sentence without its full stop, such as "No more books in folder"; this adds the full stop.
-        String(localized: "\(note).")
+        InterfaceText.line("common.valuePeriod", "\(note).")
     }
 
     /// What the command says when the item that way is a feed's episode (or
@@ -33,16 +33,16 @@ enum FolderNavigationWording {
         switch (direction, item.isArticle) {
         case (.down, false):
             // Translators: VoiceOver announcement of Next in Folder when the next item is a podcast episode that must be downloaded first. %@ is the episode's title.
-            return String(localized: "Downloading the next episode: \(title)")
+            return InterfaceText.line("common.downloadingTheNextEpisodeValue", "Downloading the next episode: \(title)")
         case (.down, true):
             // Translators: VoiceOver announcement of Next in Folder when the next item is a feed's article that must be downloaded first. %@ is the article's title.
-            return String(localized: "Downloading the next article: \(title)")
+            return InterfaceText.line("common.downloadingTheNextArticleValue", "Downloading the next article: \(title)")
         case (.up, false):
             // Translators: VoiceOver announcement of Previous in Folder when the previous item is a podcast episode that must be downloaded first. %@ is the episode's title.
-            return String(localized: "Downloading the previous episode: \(title)")
+            return InterfaceText.line("folderNavigation.downloading.episode", "Downloading the previous episode: \(title)")
         case (.up, true):
             // Translators: VoiceOver announcement of Previous in Folder when the previous item is a feed's article that must be downloaded first. %@ is the article's title.
-            return String(localized: "Downloading the previous article: \(title)")
+            return InterfaceText.line("folderNavigation.downloading.article", "Downloading the previous article: \(title)")
         }
     }
 
@@ -74,28 +74,28 @@ enum FolderNavigationWording {
         switch (direction, isArticle, playbackStopped) {
         case (.down, false, false):
             // Translators: First sentence of the VoiceOver announcement when Next in Folder could not download the next podcast episode. A sentence with the reason follows it.
-            return String(localized: "The next episode could not be downloaded.")
+            return InterfaceText.line("folderNavigation.nextEpisodeFailed", "The next episode could not be downloaded.")
         case (.down, false, true):
             // Translators: First sentence of the VoiceOver announcement when Next in Folder could not download the next podcast episode while a book was playing, so playback was paused. A sentence with the reason follows it.
-            return String(localized: "The next episode could not be downloaded, so playback stopped.")
+            return InterfaceText.line("folderNavigation.nextEpisodeFailedStop", "The next episode could not be downloaded, so playback stopped.")
         case (.down, true, false):
             // Translators: First sentence of the VoiceOver announcement when Next in Folder could not download the next feed article. A sentence with the reason follows it.
-            return String(localized: "The next article could not be downloaded.")
+            return InterfaceText.line("folderNavigation.nextArticleFailed", "The next article could not be downloaded.")
         case (.down, true, true):
             // Translators: First sentence of the VoiceOver announcement when Next in Folder could not download the next feed article while a book was playing, so playback was paused. A sentence with the reason follows it.
-            return String(localized: "The next article could not be downloaded, so playback stopped.")
+            return InterfaceText.line("folderNavigation.nextArticleFailedStop", "The next article could not be downloaded, so playback stopped.")
         case (.up, false, false):
             // Translators: First sentence of the VoiceOver announcement when Previous in Folder could not download the previous podcast episode. A sentence with the reason follows it.
-            return String(localized: "The previous episode could not be downloaded.")
+            return InterfaceText.line("folderNavigation.previousEpisodeFailed", "The previous episode could not be downloaded.")
         case (.up, false, true):
             // Translators: First sentence of the VoiceOver announcement when Previous in Folder could not download the previous podcast episode while a book was playing, so playback was paused. A sentence with the reason follows it.
-            return String(localized: "The previous episode could not be downloaded, so playback stopped.")
+            return InterfaceText.line("folderNavigation.previousEpisodeFailedStop", "The previous episode could not be downloaded, so playback stopped.")
         case (.up, true, false):
             // Translators: First sentence of the VoiceOver announcement when Previous in Folder could not download the previous feed article. A sentence with the reason follows it.
-            return String(localized: "The previous article could not be downloaded.")
+            return InterfaceText.line("folderNavigation.previousArticleFailed", "The previous article could not be downloaded.")
         case (.up, true, true):
             // Translators: First sentence of the VoiceOver announcement when Previous in Folder could not download the previous feed article while a book was playing, so playback was paused. A sentence with the reason follows it.
-            return String(localized: "The previous article could not be downloaded, so playback stopped.")
+            return InterfaceText.line("folderNavigation.previousArticleFailedStop", "The previous article could not be downloaded, so playback stopped.")
         }
     }
 
@@ -111,28 +111,28 @@ enum FolderNavigationWording {
         switch (direction, isArticle, playbackStopped) {
         case (.down, false, false):
             // Translators: VoiceOver announcement when the listener cancelled the download of the next podcast episode that Next in Folder started.
-            return String(localized: "Download of the next episode cancelled.")
+            return InterfaceText.line("folderNavigation.nextEpisodeCancelled", "Download of the next episode cancelled.")
         case (.down, false, true):
             // Translators: VoiceOver announcement when the listener cancelled the download of the next podcast episode that Next in Folder started, while a book was playing, so playback was paused.
-            return String(localized: "Download of the next episode cancelled, so playback stopped.")
+            return InterfaceText.line("folderNavigation.nextEpisodeCancelledStop", "Download of the next episode cancelled, so playback stopped.")
         case (.down, true, false):
             // Translators: VoiceOver announcement when the listener cancelled the download of the next feed article that Next in Folder started.
-            return String(localized: "Download of the next article cancelled.")
+            return InterfaceText.line("folderNavigation.nextArticleCancelled", "Download of the next article cancelled.")
         case (.down, true, true):
             // Translators: VoiceOver announcement when the listener cancelled the download of the next feed article that Next in Folder started, while a book was playing, so playback was paused.
-            return String(localized: "Download of the next article cancelled, so playback stopped.")
+            return InterfaceText.line("folderNavigation.nextArticleCancelledStop", "Download of the next article cancelled, so playback stopped.")
         case (.up, false, false):
             // Translators: VoiceOver announcement when the listener cancelled the download of the previous podcast episode that Previous in Folder started.
-            return String(localized: "Download of the previous episode cancelled.")
+            return InterfaceText.line("folderNavigation.previousEpisodeCancelled", "Download of the previous episode cancelled.")
         case (.up, false, true):
             // Translators: VoiceOver announcement when the listener cancelled the download of the previous podcast episode that Previous in Folder started, while a book was playing, so playback was paused.
-            return String(localized: "Download of the previous episode cancelled, so playback stopped.")
+            return InterfaceText.line("folderNavigation.previousEpisodeCancelledStop", "Download of the previous episode cancelled, so playback stopped.")
         case (.up, true, false):
             // Translators: VoiceOver announcement when the listener cancelled the download of the previous feed article that Previous in Folder started.
-            return String(localized: "Download of the previous article cancelled.")
+            return InterfaceText.line("folderNavigation.previousArticleCancelled", "Download of the previous article cancelled.")
         case (.up, true, true):
             // Translators: VoiceOver announcement when the listener cancelled the download of the previous feed article that Previous in Folder started, while a book was playing, so playback was paused.
-            return String(localized: "Download of the previous article cancelled, so playback stopped.")
+            return InterfaceText.line("folderNavigation.previousArticleCancelledStop", "Download of the previous article cancelled, so playback stopped.")
         }
     }
 }

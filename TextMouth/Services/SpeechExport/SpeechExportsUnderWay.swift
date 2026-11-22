@@ -77,9 +77,9 @@ final class SpeechExportsUnderWay {
                 let count = self.stops.count
                 return count == 1
                     // Translators: One item of the list in the message of a quit that waits for work to finish ("TextMouth is finishing up before it quits: ..."): one spoken audio export is being stopped.
-                    ? String(localized: "stopping a speech export with the chapters it finished kept")
+                    ? InterfaceText.line("speechExportsUnderWay.quitWork.export", "stopping a speech export with the chapters it finished kept")
                     // Translators: One item of the list in the message of a quit that waits for work to finish ("TextMouth is finishing up before it quits: ..."): several spoken audio exports are being stopped. %lld is the number of exports, more than one.
-                    : String(localized: "stopping \(count) speech exports with the chapters they finished kept")
+                    : InterfaceText.line("speechExportsUnderWay.quitWork.they", "stopping \(number: count) speech exports with the chapters they finished kept")
             }
         )
     }

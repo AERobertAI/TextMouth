@@ -118,7 +118,7 @@ struct FeedSettingsView: View {
         refusesNotifications
             ? SentenceWording.joined([
                 // Translators: Ends the notifications setting's hint with a full stop, before the sentence that says notifications are refused. %@ is the hint, without its full stop.
-                String(localized: "\(FeedSettingsWording.notificationsHint)."),
+                InterfaceText.line("common.valuePeriod", "\(FeedSettingsWording.notificationsHint)."),
                 FeedWording.notificationsRefused,
             ])
             : FeedSettingsWording.notificationsHint
@@ -158,71 +158,71 @@ enum FeedSettingsWording {
     /// The first group's heading.
     static var refreshingHeading: String {
         // Translators: Heading of the first group of the Feeds tab of Settings: how feeds are refreshed. Title case.
-        String(localized: "Refreshing")
+        InterfaceText.line("feedSettings.refreshingHeading", "Refreshing")
     }
     /// The second group's heading.
     static var itemsHeading: String {
         // Translators: Heading of the second group of the Feeds tab of Settings: what is listed and downloaded. Title case.
-        String(localized: "Episodes and Articles")
+        InterfaceText.line("feedSettings.itemsHeading", "Episodes and Articles")
     }
     /// The third group's heading.
     static var newItemsHeading: String {
         // Translators: Heading of the third group of the Feeds tab of Settings: alerts and notifications. Title case.
-        String(localized: "When New Episodes Arrive")
+        InterfaceText.line("feedSettings.newItemsHeading", "When New Episodes Arrive")
     }
 
     /// Refreshing at launch.
     static var refreshAtLaunch: String {
         // Translators: Label of the switch in the Feeds tab of Settings that refreshes every feed at launch.
-        String(localized: "Refresh every feed when TextMouth opens")
+        InterfaceText.line("feedSettings.refreshAtLaunch", "Refresh every feed when TextMouth opens")
     }
     /// Its hint: a feed the listener unsubscribed from is never checked
     /// (FR11, branch D).
     static var refreshAtLaunchHint: String {
         // Translators: VoiceOver hint of the switch that refreshes every feed at launch.
-        String(localized: "Checks every subscribed feed once the library has opened")
+        InterfaceText.line("feedSettings.refreshAtLaunchHint", "Checks every subscribed feed once the library has opened")
     }
     /// Refresh All Feeds Now.
     static var refreshAllNow: String {
         // Translators: Title of the button in the Feeds tab of Settings that refreshes every feed at once. Title case.
-        String(localized: "Refresh All Feeds Now")
+        InterfaceText.line("feedSettings.refreshAllNow", "Refresh All Feeds Now")
     }
     /// Its hint, which leaves out the feeds unsubscribed from, as Refresh
     /// All does (board #1816).
     static var refreshAllNowHint: String {
         // Translators: VoiceOver hint of the Refresh All Feeds Now button.
-        String(localized: "Checks every subscribed feed and says what came")
+        InterfaceText.line("feedSettings.refreshAllNowHint", "Checks every subscribed feed and says what came")
     }
     /// What shows, and VoiceOver hears, while every feed is refreshed.
     static var refreshing: String {
         // Translators: What the Feeds tab of Settings shows and VoiceOver says while every feed is being refreshed.
-        String(localized: "Refreshing all feeds…")
+        InterfaceText.line("feedSettings.refreshing", "Refreshing all feeds…")
     }
     /// The note under the group's settings, naming the two a feed may have
     /// of its own.
     static var perFeedNote: String {
         // Translators: The note under the Feeds tab's settings. The first %@ is the name of the List and download choice; the second is the name of the Feed Info sheet.
-        String(localized: "A feed can have its own \(FeedWording.listAndDownloadLabel) choice and its own days before deleting played downloads, in its \(FeedWording.feedInfoName).")
+        InterfaceText.line("feedSettings.perFeedNote", "A feed can have its own \(FeedWording.listAndDownloadLabel) choice and its own days before deleting played downloads, in its \(FeedWording.feedInfoName).")
     }
     /// The refresh alert.
     static var refreshAlert: String {
         // Translators: Label of the switch that shows an alert after a refresh TextMouth made by itself brought new items.
-        String(localized: "Show an alert when a refresh brings new episodes")
+        InterfaceText.line("feedSettings.refreshAlert", "Show an alert when a refresh brings new episodes")
     }
     /// Its hint.
     static var refreshAlertHint: String {
         // Translators: VoiceOver hint of the switch that shows an alert after a refresh TextMouth made by itself.
-        String(localized: "After an automatic refresh, an alert names the feeds with new episodes and articles")
+        InterfaceText.line("feedSettings.refreshAlertHint", "After an automatic refresh, an alert names the feeds with new episodes and articles")
     }
     /// Notifications.
     static var notifications: String {
         // Translators: Label of the switch that posts a notification for each feed with new items after a refresh.
-        String(localized: "Post a notification for each feed with new episodes")
+        InterfaceText.line("feedSettings.notifications", "Post a notification for each feed with new episodes")
     }
     /// Its hint.
     static var notificationsHint: String {
         // Translators: VoiceOver hint of the switch that posts notifications for new items.
-        String(localized: "After an automatic refresh, a notification names each feed with new episodes and articles")
+        InterfaceText.line("feedSettings.notificationsHint", "After an automatic refresh, a notification names each feed with new episodes and articles")
     }
 }
 
@@ -243,10 +243,10 @@ extension FeedWording {
         let noun = ItemNoun.of(newItems)
         let found = newItemsFound(summary.newItemCount, noun)
         // Translators: What VoiceOver says once Refresh All Feeds has refreshed the feeds. The first %@ is how many feeds, such as "3 feeds"; the second is what the refresh found, such as "2 new episodes." or "nothing new.", with its full stop.
-        var sentences = [String(localized: "Refreshed \(CountWording.feeds(summary.reports.count)): \(found)")]
+        var sentences = [InterfaceText.line("feed.refreshedAll.withCounts", "Refreshed \(CountWording.feeds(summary.reports.count)): \(found)")]
         if !summary.failedFeedTitles.isEmpty {
             // Translators: The end of what VoiceOver says after Refresh All Feeds when some feeds could not be refreshed. %@ is a list of their titles.
-            sentences.append(String(localized: "Couldn't refresh \(CountWording.list(summary.failedFeedTitles))."))
+            sentences.append(InterfaceText.line("feed.refreshedAll.couldnt", "Couldn't refresh \(CountWording.list(summary.failedFeedTitles))."))
         }
         return SentenceWording.joined(sentences)
     }
@@ -257,27 +257,27 @@ extension FeedWording {
     static func newItemsFound(_ count: Int, _ noun: ItemNoun) -> String {
         guard count > 0 else {
             // Translators: What Refresh All Feeds found when no feed has anything new, after "Refreshed 3 feeds:". Lower case, with its full stop.
-            return String(localized: "nothing new.")
+            return InterfaceText.line("feed.newItemsFound.nothing", "nothing new.")
         }
         return noun.choose(
             // Translators: What Refresh All Feeds found, after "Refreshed 3 feeds:". %lld is how many new episodes. With its full stop.
-            episode: String(localized: "\(count) new episodes."),
+            episode: InterfaceText.line("feed.newItemsFound.episodes", "\(number: count) new episodes."),
             // Translators: What Refresh All Feeds found, after "Refreshed 3 feeds:". %lld is how many new articles. With its full stop.
-            article: String(localized: "\(count) new articles."),
+            article: InterfaceText.line("feed.newItemsFound.articles", "\(number: count) new articles."),
             // Translators: What Refresh All Feeds found, after "Refreshed 3 feeds:". %lld is how many new items, episodes and articles. With its full stop.
-            item: String(localized: "\(count) new items."))
+            item: InterfaceText.line("feed.newItemsFound.anyKind", "\(number: count) new items."))
     }
 
     /// What Refresh All Feeds says with no feed in the library.
     static var noFeedsToRefresh: String {
         // Translators: What VoiceOver says when Refresh All Feeds finds no feed in the library.
-        String(localized: "There are no feeds to refresh.")
+        InterfaceText.line("feed.noFeedsToRefresh", "There are no feeds to refresh.")
     }
     /// What Refresh All Feeds says when every feed in the library is one
     /// the listener unsubscribed from, which no refresh checks (FR11,
     /// branch D; board #1816).
     static var everyFeedUnsubscribed: String {
         // Translators: What VoiceOver says when Refresh All Feeds finds only unsubscribed feeds. The first %@ is the name of the Resubscribe command; the second is the name of the Feed Info sheet.
-        String(localized: "Every feed is unsubscribed, so none was checked. Choose \(resubscribeTitle) on a feed's row, or in its \(feedInfoName), to check it again.")
+        InterfaceText.line("feed.everyFeedUnsubscribed", "Every feed is unsubscribed, so none was checked. Choose \(resubscribeTitle) on a feed's row, or in its \(feedInfoName), to check it again.")
     }
 }

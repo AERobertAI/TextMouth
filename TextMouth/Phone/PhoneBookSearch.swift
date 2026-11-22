@@ -13,14 +13,14 @@ enum PhoneBookSearchVocabulary {
     /// The button's hint.
     static var buttonHint: String {
         // Translators: Hint of the reader's Search in Book button on the iPhone.
-        String(localized: "Opens a search of the book's text.")
+        InterfaceText.line("phoneBookSearch.buttonHint", "Opens a search of the book's text.")
     }
 
     /// A result row's hint. The Mac's "Activate to navigate to this result"
     /// names a gesture.
     static var rowHint: String {
         // Translators: Hint of a row in the iPhone's Search in Book results: activating it moves the book to that match.
-        String(localized: "Goes to this result.")
+        InterfaceText.line("phoneBookSearch.rowHint", "Goes to this result.")
     }
 
     /// How long typing must pause before a search runs and its count is said:

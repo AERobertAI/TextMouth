@@ -70,7 +70,7 @@ struct LibraryLocation: Equatable {
     /// it, so the window title calls it "All Folders".
     nonisolated static var allFoldersName: String {
         // Translators: Name of the library's top level in the Folders view, where the window title and the folder announcements call it that. It holds every folder.
-        String(localized: "All Folders")
+        InterfaceText.line("libraryLocation.allFoldersName", "All Folders")
     }
 
     /// Whether the location shows its books in an order of its own, which
@@ -127,10 +127,10 @@ struct LibraryLocation: Equatable {
     func windowTitle(sortedBy sort: LibrarySortState) -> String {
         if keepsItsOwnOrder || listsOnlyFeeds {
             // Translators: Title of a Library window that shows a view with one fixed order, such as the Reading List. %@ is the view's name.
-            return String(localized: "Library: \(name)")
+            return InterfaceText.line("libraryLocation.windowTitle.name", "Library: \(name)")
         }
         // Translators: Title of a Library window. %1$@ is the name of the folder or view it shows. %2$@ is its sort, such as "Title Ascending" or "Manual Order".
-        return String(localized: "Library: \(name) (\(sort.titleFragment))")
+        return InterfaceText.line("libraryLocation.windowTitle.nameAndSort", "Library: \(name) (\(sort.titleFragment))")
     }
 }
 
@@ -265,9 +265,9 @@ extension LibrarySortState {
         guard hasDirection else { return field.title }
         return isAscending
             // Translators: A sort, spoken: a sort field and its direction. %@ is the sort field's name, such as Title or Date Added. Used inside announcements and labels about the sort.
-            ? String(localized: "\(field.title), ascending")
+            ? InterfaceText.line("librarySortState.spokenSort.ascending", "\(field.title), ascending")
             // Translators: A sort, spoken: a sort field and its direction. %@ is the sort field's name, such as Title or Date Added. Used inside announcements and labels about the sort.
-            : String(localized: "\(field.title), descending")
+            : InterfaceText.line("librarySortState.spokenSort.descending", "\(field.title), descending")
     }
 
     /// The sort in the window title: "Title Ascending", or "Manual Order".
@@ -275,9 +275,9 @@ extension LibrarySortState {
         guard hasDirection else { return field.title }
         return isAscending
             // Translators: The sort in a Library window's title: a sort field and its direction, ascending. %@ is the sort field's name, such as Title or Date Added.
-            ? String(localized: "\(field.title) Ascending")
+            ? InterfaceText.line("librarySortState.titleFragment.ascending", "\(field.title) Ascending")
             // Translators: The sort in a Library window's title: a sort field and its direction, descending. %@ is the sort field's name, such as Title or Date Added.
-            : String(localized: "\(field.title) Descending")
+            : InterfaceText.line("librarySortState.titleFragment.descending", "\(field.title) Descending")
     }
 
     /// Whether the Sort menu checks `candidate`: only the field shown is.
@@ -291,9 +291,9 @@ extension LibrarySortState {
     var directionCommandTitle: String {
         isAscending
             // Translators: Title of the Sort menu's command that reverses the sort, while the books are sorted ascending. It switches them to descending.
-            ? String(localized: "Sort Descending")
+            ? InterfaceText.line("librarySortState.directionTitle.descending", "Sort Descending")
             // Translators: Title of the Sort menu's command that reverses the sort, while the books are sorted descending. It switches them to ascending.
-            : String(localized: "Sort Ascending")
+            : InterfaceText.line("librarySortState.directionTitle.ascending", "Sort Ascending")
     }
 
     /// Whether the direction command can be chosen: not in manual order.
@@ -305,7 +305,7 @@ extension LibrarySortState {
     /// and the view editor's Order pop-up's, while it is dimmed.
     nonisolated static var manualOrderHasNoDirection: String {
         // Translators: Hint of the Sort menu's direction command, and of the library view editor's order pop-up, while the books are in manual order, which has no ascending or descending.
-        String(localized: "Manual order has no direction")
+        InterfaceText.line("librarySortState.manualOrderHasNoDirection", "Manual order has no direction")
     }
 
     /// The direction command's hint, which VoiceOver speaks and the pointer
@@ -313,7 +313,7 @@ extension LibrarySortState {
     var directionCommandHint: String {
         hasDirection
             // Translators: Hint of the Sort menu's direction command: it reverses the order of the books shown.
-            ? String(localized: "Reverses the order of the books")
+            ? InterfaceText.line("librarySortState.directionCommandHint", "Reverses the order of the books")
             : Self.manualOrderHasNoDirection
     }
 
@@ -321,21 +321,21 @@ extension LibrarySortState {
     /// "Sort books by Manual Order".
     var menuAccessibilityLabel: String {
         // Translators: Spoken label of the Sort button. %@ is the current sort, such as "Title, ascending" or "Manual Order".
-        String(localized: "Sort books by \(spokenSort)")
+        InterfaceText.line("common.sortBooksByValue", "Sort books by \(spokenSort)")
     }
 
     /// What VoiceOver says when the user changes the sort: "Sorted by
     /// Author, descending", or "Sorted by Manual Order".
     var changeAnnouncement: String {
         // Translators: VoiceOver announcement after the sort changes. %@ is the new sort, such as "Author, descending" or "Manual Order".
-        String(localized: "Sorted by \(spokenSort)")
+        InterfaceText.line("common.sortedByValue", "Sorted by \(spokenSort)")
     }
 
     /// What VoiceOver says when the user applies this sort to every
     /// subfolder: "All subfolders now sorted by Title, ascending".
     var subfolderAnnouncement: String {
         // Translators: VoiceOver announcement after the sort is applied to every subfolder. %@ is the sort, such as "Title, ascending".
-        String(localized: "All subfolders now sorted by \(spokenSort)")
+        InterfaceText.line("librarySortState.subfolderAnnouncement", "All subfolders now sorted by \(spokenSort)")
     }
 
     /// The books in this sort's order: the one comparator every library list

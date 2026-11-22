@@ -423,69 +423,69 @@ enum ShortcutsSettingsWording {
     /// `ShortcutWindowKind.navigatesByLetter`).
     static var letterNavigationNote: String {
         // Translators: Note in the Shortcuts tab of Settings. In a Library window, a letter key pressed with no other key jumps to the first book or folder starting with that letter, so a shortcut made of a letter alone, such as W, cannot work in a Library window.
-        String(localized: "In Library windows, a letter alone moves to the first book or folder starting with it, so a shortcut that is a letter alone, such as W, works only in other windows.")
+        InterfaceText.line("shortcutsSettings.letterNavigationNote", "In Library windows, a letter alone moves to the first book or folder starting with it, so a shortcut that is a letter alone, such as W, works only in other windows.")
     }
 
     /// The title of the button that gives every action its defaults again.
     static var resetAllTitle: String {
         // Translators: Button at the end of the Shortcuts tab of Settings that gives every keyboard shortcut its default keys again. It asks to confirm first.
-        String(localized: "Reset to Defaults")
+        InterfaceText.line("common.resetToDefaults", "Reset to Defaults")
     }
 
     /// That button's VoiceOver label.
     static var resetAllLabel: String {
         // Translators: VoiceOver label of the button at the end of the Shortcuts tab of Settings that gives every keyboard shortcut its default keys again.
-        String(localized: "Reset all shortcuts to defaults")
+        InterfaceText.line("shortcutsSettings.resetAllLabel", "Reset all shortcuts to defaults")
     }
 
     /// The title of the alert that asks to confirm the reset of every shortcut.
     static var resetAllAlertTitle: String {
         // Translators: Title of the alert that asks the listener to confirm resetting every keyboard shortcut to its default.
-        String(localized: "Reset Keyboard Shortcuts?")
+        InterfaceText.line("shortcutsSettings.resetAllAlertTitle", "Reset Keyboard Shortcuts?")
     }
 
     /// The alert's button that does the reset.
     static var resetAllConfirm: String {
         // Translators: Button of an alert that confirms resetting every keyboard shortcut to its default.
-        String(localized: "Reset")
+        InterfaceText.line("common.reset", "Reset")
     }
 
     /// The alert's button that leaves the shortcuts as they are.
     static var resetAllCancel: String {
         // Translators: Button that closes a sheet or answers a question without doing or changing anything.
-        String(localized: "Cancel")
+        InterfaceText.line("common.cancel", "Cancel")
     }
 
     /// The alert's message: what is lost.
     static var resetAllAlertMessage: String {
         // Translators: Message of the alert that asks the listener to confirm resetting every keyboard shortcut to its default: the shortcuts they changed are lost.
-        String(localized: "Every shortcut and where it works go back to the defaults. Your own keys are lost.")
+        InterfaceText.line("shortcutsSettings.resetAllAlertMessage", "Every shortcut and where it works go back to the defaults. Your own keys are lost.")
     }
 
     /// What an edited row says after its keys, on screen and to VoiceOver.
     static var edited: String {
         // Translators: Said after the keys of a keyboard shortcut action the listener changed in Settings, to tell it from one that follows the defaults.
-        String(localized: "Edited")
+        InterfaceText.line("shortcutsSettings.edited", "Edited")
     }
 
     /// The title of the button, and of the row's VoiceOver action, that
     /// gives one action back to its defaults.
     static var resetToDefaultTitle: String {
         // Translators: Button in the row of a keyboard shortcut action the listener changed, and the row's VoiceOver action: gives that one action its default keys again.
-        String(localized: "Reset to Default")
+        InterfaceText.line("common.resetToDefault", "Reset to Default")
     }
 
     /// That button's hint.
     static var resetToDefaultHint: String {
         // Translators: VoiceOver hint of the Reset to Default button of one keyboard shortcut action: the action goes back to the default keys, and later versions of TextMouth may change them.
-        String(localized: "Restores this action's default shortcuts, which follow later releases' changes")
+        InterfaceText.line("shortcutsSettings.resetToDefaultHint", "Restores this action's default shortcuts, which follow later releases' changes")
     }
 
     /// What VoiceOver hears after the Shortcuts tab's Reset to Defaults has
     /// been confirmed. It follows the audio filter presets' reset wording.
     static var resetDone: String {
         // Translators: Announced by VoiceOver after the listener confirmed resetting every keyboard shortcut to its default.
-        String(localized: "Shortcuts reset to defaults.")
+        InterfaceText.line("shortcutsSettings.resetDone", "Shortcuts reset to defaults.")
     }
 
     // MARK: Shared Pieces
@@ -494,7 +494,7 @@ enum ShortcutsSettingsWording {
     /// control's label and its time.
     static func labeled(_ label: String, _ value: String) -> String {
         // Translators: A name, a colon, and its value, such as a keyboard shortcut action's name and its keys, or a control's label and its value. %1$@ is the name and %2$@ is the value.
-        String(localized: "\(label): \(value)")
+        InterfaceText.line("common.valueColonValue", "\(label): \(value)")
     }
 
     /// `text` ended as a sentence: with a full stop, unless it ends in a
@@ -503,7 +503,7 @@ enum ShortcutsSettingsWording {
     static func sentence(_ text: String) -> String {
         guard let last = text.last, !"?.…。？！".contains(last) else { return text } // l10n: no (the marks that end a sentence already)
         // Translators: Ends a sentence with its full stop. %@ is the sentence without it. Chinese and Japanese use their own full stop here.
-        return String(localized: "\(text).")
+        return InterfaceText.line("common.valuePeriod", "\(text).")
     }
 
     // MARK: The Recorder
@@ -511,21 +511,21 @@ enum ShortcutsSettingsWording {
     /// The label of the button adding a key.
     static var addShortcutLabel: String {
         // Translators: Label of the button, in a keyboard shortcut action's row in Settings, that adds one more key to the action.
-        String(localized: "Add shortcut")
+        InterfaceText.line("shortcutsSettings.addShortcutLabel", "Add shortcut")
     }
 
     /// A key's button's hint, and the add button's, while not recording:
     /// what pressing it does, never a click (TODO A10).
     static var recordHint: String {
         // Translators: VoiceOver hint of a keyboard shortcut's key button, and of the add shortcut button, in Settings: the next key pressed becomes the shortcut.
-        String(localized: "Records a new shortcut.")
+        InterfaceText.line("shortcutsSettings.recordHint", "Records a new shortcut.")
     }
 
     /// The recorder's label while it records (FR12, section 6.1 of the
     /// design).
     static var recordingLabel: String {
         // Translators: VoiceOver label of a keyboard shortcut's key button while it waits for the new key: pressing a key records it, and pressing the same key twice quickly records a double press.
-        String(localized: "Recording shortcut. Press a key, or press it twice for a double press.")
+        InterfaceText.line("shortcutsSettings.recordingLabel", "Recording shortcut. Press a key, or press it twice for a double press.")
     }
 
     /// The recorder's hint while it records. Every key, VoiceOver's own
@@ -533,34 +533,34 @@ enum ShortcutsSettingsWording {
     /// to stop (TODO A10).
     static var recordingHint: String {
         // Translators: VoiceOver hint of a keyboard shortcut's key button while it waits for the new key: Escape stops recording.
-        String(localized: "Press the new key, or Escape to cancel.")
+        InterfaceText.line("shortcutsSettings.recordingHint", "Press the new key, or Escape to cancel.")
     }
 
     /// What the recorder shows while it records.
     static var recordingPrompt: String {
         // Translators: Shown on a keyboard shortcut's key button while it waits for the new key. The three periods say that a key press is awaited.
-        String(localized: "Press a key...")
+        InterfaceText.line("shortcutsSettings.recordingPrompt", "Press a key...")
     }
 
     /// The recorder's label while it records a menu command's key, one press
     /// of a key with Command or Control (FR12's branch D).
     static var recordingKeyEquivalentLabel: String {
         // Translators: VoiceOver label of a menu command's key button while it waits for the new key: the shortcut of a menu command must be a key held with the Command or Control key.
-        String(localized: "Recording shortcut. Press a key with Command or Control.")
+        InterfaceText.line("shortcutsSettings.recordingKeyEquivalentLabel", "Recording shortcut. Press a key with Command or Control.")
     }
 
     /// The action on a single press's button, and in its context menu, that
     /// makes it a double press.
     static var makeDoublePress: String {
         // Translators: VoiceOver action and context menu item of a keyboard shortcut's key button: changes a single press of the key into the key pressed twice quickly.
-        String(localized: "Make Double Press")
+        InterfaceText.line("shortcutsSettings.makeDoublePress", "Make Double Press")
     }
 
     /// The action on a double press's button, and in its context menu, that
     /// makes it a single press again.
     static var makeSinglePress: String {
         // Translators: VoiceOver action and context menu item of a keyboard shortcut's key button: changes a key pressed twice quickly into a single press of the key.
-        String(localized: "Make Single Press")
+        InterfaceText.line("shortcutsSettings.makeSinglePress", "Make Single Press")
     }
 
     /// The action `binding`'s button offers: Make Single Press for a double
@@ -572,7 +572,7 @@ enum ShortcutsSettingsWording {
     /// The label of the small button that removes one key of an action.
     static func removeShortcutLabel(_ binding: KeyBinding, from action: ShortcutAction) -> String {
         // Translators: VoiceOver label of the button that removes one key from a keyboard shortcut action. %1$@ is the key in words, such as "Command + I", and %2$@ is the action's name.
-        String(localized: "Remove shortcut \(binding.accessibleDisplayString) from \(action.fullTitle)")
+        InterfaceText.line("shortcutsSettings.removeShortcutLabel", "Remove shortcut \(binding.accessibleDisplayString) from \(action.fullTitle)")
     }
 
     /// The most keys `action`'s row records: one for a menu command's or a
@@ -588,7 +588,7 @@ enum ShortcutsSettingsWording {
     /// Command or Control."
     static func refused(_ refusal: ShortcutRefusal, for action: ShortcutAction) -> String {
         // Translators: Announced by VoiceOver when a key cannot become a keyboard shortcut. %1$@ is the key in words, %2$@ is the action's name, and %3$@ is the reason, which starts in lower case.
-        sentence(String(localized: "\(refusal.key.accessibleDisplayString) not recorded for \(action.fullTitle): \(refusal.reason)"))
+        sentence(InterfaceText.line("shortcutsSettings.refused", "\(refusal.key.accessibleDisplayString) not recorded for \(action.fullTitle): \(refusal.reason)"))
     }
 
     // MARK: The Double-Press Time
@@ -596,14 +596,14 @@ enum ShortcutsSettingsWording {
     /// The double-press time stepper's label.
     static var doublePressTimeLabel: String {
         // Translators: Label of the stepper in Settings that sets how soon a second press of a key must follow the first to count as a double press.
-        String(localized: "Double press time")
+        InterfaceText.line("shortcutsSettings.doublePressTimeLabel", "Double press time")
     }
 
     /// The double-press time stepper's hint: what the time is, and what it
     /// costs.
     static var doublePressTimeHint: String {
         // Translators: Hint of the double press time stepper in Settings: what the time is, and that a key that has one action for a single press and another for a double press waits for that time before acting on a single press.
-        String(localized: "How soon a second press must follow the first. A key with different single and double press actions waits this long before its single press acts.")
+        InterfaceText.line("shortcutsSettings.doublePressTimeHint", "How soon a second press must follow the first. A key with different single and double press actions waits this long before its single press acts.")
     }
 
     // MARK: Trying a Double Press (FR12, Section 6.2 of the Design)
@@ -611,19 +611,19 @@ enum ShortcutsSettingsWording {
     /// The title of the button that tries a double press.
     static var tryDoublePressTitle: String {
         // Translators: Button in the Shortcuts tab of Settings that lets the listener press a key twice to find out whether the double press time counts the two presses as a double press.
-        String(localized: "Try a Double Press")
+        InterfaceText.line("shortcutsSettings.tryDoublePressTitle", "Try a Double Press")
     }
 
     /// Its hint.
     static var tryDoublePressHint: String {
         // Translators: VoiceOver hint of the Try a Double Press button: for five seconds key presses are not shortcuts, and TextMouth says whether two presses were a double press.
-        String(localized: "For five seconds, the next two key presses are not shortcuts; TextMouth says whether they make a double press.")
+        InterfaceText.line("shortcutsSettings.tryDoublePressHint", "For five seconds, the next two key presses are not shortcuts; TextMouth says whether they make a double press.")
     }
 
     /// What VoiceOver says as a trial starts.
     static var tryDoublePressPrompt: String {
         // Translators: Announced by VoiceOver when a trial of the double press time starts: asks the listener to press one key twice.
-        String(localized: "Press a key twice.")
+        InterfaceText.line("shortcutsSettings.tryDoublePressPrompt", "Press a key twice.")
     }
 
     /// What VoiceOver says once a trial ends: "Double press.", or how far
@@ -634,22 +634,22 @@ enum ShortcutsSettingsWording {
         switch outcome {
         case .doublePress:
             // Translators: Announced by VoiceOver at the end of a trial of the double press time: the two presses counted as a double press.
-            return String(localized: "Double press.")
+            return InterfaceText.line("shortcutsSettings.trialResult.doublePress", "Double press.")
         case .tooFarApart(let apart):
             let gap = CountWording.secondsToTheTenth(apart)
             let longest = SettingsPolicy.shortcutDoublePressSeconds.range.upperBound
             guard (apart * SettingsPolicy.shortcutDoublePressTenthsPerSecond).rounded() < longest * SettingsPolicy.shortcutDoublePressTenthsPerSecond else {
                 // Translators: Announced by VoiceOver at the end of a trial of the double press time when the two presses were farther apart than the longest time allowed. %1$@ is the time between the presses, such as "2.5 seconds", and %2$@ is the longest time allowed, such as "2 seconds".
-                return String(localized: "Two presses, \(gap) apart. The double press time goes up to \(CountWording.secondsToTheTenth(longest)).")
+                return InterfaceText.line("shortcutsSettings.trialResult.tooFarApart.double", "Two presses, \(gap) apart. The double press time goes up to \(CountWording.secondsToTheTenth(longest)).")
             }
             // Translators: Announced by VoiceOver at the end of a trial of the double press time when the two presses were too far apart for the time set. Both %1$@ and %2$@ are the time between the presses, such as "0.7 seconds"; the listener should set the double press time above it.
-            return String(localized: "Two presses, \(gap) apart. Set the time above \(gap) to count them as one.")
+            return InterfaceText.line("shortcutsSettings.trialResult.tooFarApart.above", "Two presses, \(gap) apart. Set the time above \(gap) to count them as one.")
         case .differentKeys:
             // Translators: Announced by VoiceOver at the end of a trial of the double press time when the two presses were of different keys.
-            return String(localized: "Two different keys, not a double press.")
+            return InterfaceText.line("shortcutsSettings.trialResult.differentKeys", "Two different keys, not a double press.")
         case .noSecondPress:
             // Translators: Announced by VoiceOver at the end of a trial of the double press time when no second press came in time.
-            return String(localized: "No key was pressed twice.")
+            return InterfaceText.line("shortcutsSettings.trialResult.noSecondPress", "No key was pressed twice.")
         }
     }
 
@@ -664,7 +664,7 @@ enum ShortcutsSettingsWording {
         }
         return lastOutcome.map {
             // Translators: Text below the Try a Double Press button after a trial ended. %@ is what the trial found, a whole sentence such as "Double press.".
-            String(localized: "Last try: \(trialResult($0))")
+            InterfaceText.line("shortcutsSettings.trialStatus", "Last try: \(trialResult($0))")
         }
     }
 
@@ -711,19 +711,19 @@ enum ShortcutsSettingsWording {
     /// The sentence saying where a shortcut works: "Works in reader windows."
     static func worksInSentence(_ scope: ShortcutScope) -> String {
         // Translators: Says where a keyboard shortcut works, in a row of the Shortcuts tab or an announcement. %@ names the windows, such as "every window", "Library windows", or "the audio editor".
-        sentence(String(localized: "Works in \(scope.inSentence)"))
+        sentence(InterfaceText.line("shortcutsSettings.worksInSentence", "Works in \(scope.inSentence)"))
     }
 
     /// The Works in pop-up's label (FR12's branch E).
     static var worksInLabel: String {
         // Translators: Label of the pop-up button in a keyboard shortcut action's row that chooses in which windows the shortcut works, such as every window or Library windows.
-        String(localized: "Works in")
+        InterfaceText.line("shortcutsSettings.worksInLabel", "Works in")
     }
 
     /// The Works in pop-up's hint.
     static var worksInHint: String {
         // Translators: VoiceOver hint of the Works in pop-up button of a keyboard shortcut action: choosing a choice makes the action the listener's own, and Reset to Default restores where it works by default.
-        String(localized: "Choosing makes the shortcut yours; Reset to Default restores where it works by default.")
+        InterfaceText.line("shortcutsSettings.worksInHint", "Choosing makes the shortcut yours; Reset to Default restores where it works by default.")
     }
 
     /// What VoiceOver says once a row's Works in choice is made (FR12's
@@ -732,7 +732,7 @@ enum ShortcutsSettingsWording {
     /// "Taken from Show Sleep Timer."
     static func scopeChanged(_ action: ShortcutAction, to scope: ShortcutScope, takenFrom previousOwners: [ShortcutAction]) -> String {
         // Translators: Announced by VoiceOver after the listener chose where a keyboard shortcut works. %1$@ is the action's name and %2$@ names the windows, such as "every window" or "Library windows".
-        var sentences = [String(localized: "\(action.fullTitle) works in \(scope.inSentence).")]
+        var sentences = [InterfaceText.line("shortcutsSettings.scopeChanged", "\(action.fullTitle) works in \(scope.inSentence).")]
         if !previousOwners.isEmpty {
             sentences.append(takenFromSentence(previousOwners))
         }
@@ -743,7 +743,7 @@ enum ShortcutsSettingsWording {
     /// to the one just recorded or moved.
     private static func takenFromSentence(_ previousOwners: [ShortcutAction]) -> String {
         // Translators: Announced by VoiceOver after a key was given to a keyboard shortcut action that another action had. %@ names the action or actions that lost the key, such as "Play / Pause and Where Am I?".
-        sentence(String(localized: "Taken from \(CountWording.list(previousOwners.map(\.fullTitle)))"))
+        sentence(InterfaceText.line("shortcutsSettings.takenFromSentence", "Taken from \(CountWording.list(previousOwners.map(\.fullTitle)))"))
     }
 
     /// What a row says, on screen and to VoiceOver, of the default keys its
@@ -752,7 +752,7 @@ enum ShortcutsSettingsWording {
     static func defaultsHeldElsewhere(_ held: [DefaultKeyHeldElsewhere]) -> String {
         SentenceWording.joined(held.map {
             // Translators: Said in the row of a keyboard shortcut action that has lost its default key to another action. %1$@ is the name of the action that now has the key, and %2$@ is the key in words, such as "Shift + Command + T".
-            sentence(String(localized: "\($0.holder.fullTitle) has its default, \($0.key.accessibleDisplayString)"))
+            sentence(InterfaceText.line("shortcutsSettings.defaultsHeldElsewhere", "\($0.holder.fullTitle) has its default, \($0.key.accessibleDisplayString)"))
         })
     }
 
@@ -760,7 +760,7 @@ enum ShortcutsSettingsWording {
     /// Default".
     static func resetToDefaultLabel(for action: ShortcutAction) -> String {
         // Translators: VoiceOver label of the Reset to Default button in the row of a keyboard shortcut action. %@ is the action's name.
-        String(localized: "Reset \(action.fullTitle) to Default")
+        InterfaceText.line("shortcutsSettings.resetToDefaultLabel", "Reset \(action.fullTitle) to Default")
     }
 
     /// What VoiceOver says once a key is recorded: "Shift + R, recorded for
@@ -788,7 +788,7 @@ enum ShortcutsSettingsWording {
         nowWaitsBefore waitingAction: ShortcutAction? = nil
     ) -> String {
         // Translators: Announced by VoiceOver after a key became a keyboard shortcut. %1$@ is the key in words, such as "Shift + R" or "W twice", and %2$@ is the action's name.
-        var sentences = [sentence(String(localized: "\(key.accessibleDisplayString), recorded for \(action.fullTitle)"))]
+        var sentences = [sentence(InterfaceText.line("shortcutsSettings.sentences", "\(key.accessibleDisplayString), recorded for \(action.fullTitle)"))]
         if !previousOwners.isEmpty {
             sentences.append(takenFromSentence(previousOwners))
         }
@@ -804,7 +804,7 @@ enum ShortcutsSettingsWording {
     /// in case it is pressed twice."
     static func nowWaits(_ key: KeyBinding, before action: ShortcutAction) -> String {
         // Translators: Announced by VoiceOver after a key's double press was given to an action: the key's single press now waits a moment before it acts, in case a second press follows. %1$@ is the key in words, such as "J", and %2$@ is the name of the action of its single press.
-        String(localized: "\(key.stroke.accessibleDisplayString) now waits before \(action.fullTitle), in case it is pressed twice.")
+        InterfaceText.line("shortcutsSettings.nowWaits", "\(key.stroke.accessibleDisplayString) now waits before \(action.fullTitle), in case it is pressed twice.")
     }
 
     /// What VoiceOver says once an action is reset to its default: "Next
@@ -813,7 +813,7 @@ enum ShortcutsSettingsWording {
     /// Library windows."
     static func resetAnnouncement(for action: ShortcutAction, keys: [KeyBinding], worksIn scope: ShortcutScope? = nil) -> String {
         // Translators: Announced by VoiceOver after a keyboard shortcut action was given its default keys again. %1$@ is the action's name and %2$@ is its keys in words, such as "Option + Shift + Command + B", or "No shortcut".
-        let reset = sentence(String(localized: "\(action.fullTitle) reset to default: \(KeyBinding.accessibleDisplayString(for: keys))"))
+        let reset = sentence(InterfaceText.line("shortcutsSettings.resetAnnouncement", "\(action.fullTitle) reset to default: \(KeyBinding.accessibleDisplayString(for: keys))"))
         return scope.map { SentenceWording.joined([reset, worksInSentence($0)]) } ?? reset
     }
 }

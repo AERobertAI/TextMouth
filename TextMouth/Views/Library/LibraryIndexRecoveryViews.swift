@@ -5,27 +5,27 @@ import SwiftUI
 enum LibraryIndexRecoveryText {
     static var title: String {
         // Translators: Heading of the sheet shown when the library index file can't be read.
-        String(localized: "Library Index Could Not Be Read")
+        InterfaceText.line("libraryIndexRecovery.title", "Library Index Could Not Be Read")
     }
 
     /// What the sheet says happened, in five sentences.
     static var summary: String {
         SentenceWording.joined([
             // Translators: First sentence of the library index recovery sheet: what the unreadable file holds.
-            String(localized: "TextMouth could not read its library index, the file that records your folders, sort settings, and the order of your books."),
+            InterfaceText.line("libraryIndexRecovery.summary.settings", "TextMouth could not read its library index, the file that records your folders, sort settings, and the order of your books."),
             // Translators: Second sentence of the library index recovery sheet.
-            String(localized: "The library now shows a temporary list rebuilt from the books on disk."),
+            InterfaceText.line("libraryIndexRecovery.summary.temporary", "The library now shows a temporary list rebuilt from the books on disk."),
             // Translators: Last sentence of the library index recovery sheet: what still works, and what does not until an option is chosen.
-            String(localized: "You can open and read books, and reading positions are still saved with each book, but changes to the library itself are not saved until you choose one of the options below."),
+            InterfaceText.line("libraryIndexRecovery.summary.positions", "You can open and read books, and reading positions are still saved with each book, but changes to the library itself are not saved until you choose one of the options below."),
         ])
     }
 
     static var noCopy: String {
         SentenceWording.joined([
             // Translators: First sentence of the library index recovery sheet when no copy of the unreadable file was saved.
-            String(localized: "TextMouth could not save a copy of the unreadable file."),
+            InterfaceText.line("libraryIndexRecovery.noCopy.unreadable", "TextMouth could not save a copy of the unreadable file."),
             // Translators: Last sentence of the library index recovery sheet when no copy of the unreadable file was saved.
-            String(localized: "The file itself has not been changed."),
+            InterfaceText.line("libraryIndexRecovery.noCopy.changed", "The file itself has not been changed."),
         ])
     }
 
@@ -34,72 +34,72 @@ enum LibraryIndexRecoveryText {
     /// Try Again's title, as the sheet's button shows it and sentences name it.
     static var tryAgainTitle: String {
         // Translators: Button of the library index recovery sheet that reads the index file again. Also the name sentences use for it.
-        String(localized: "Try Again")
+        InterfaceText.line("common.tryAgain", "Try Again")
     }
 
     /// Rebuild Library Index's title, as the sheet's button shows it and sentences name it.
     static var rebuildTitle: String {
         // Translators: Button of the library index recovery sheet that saves the temporary library as the new index. Also the name sentences use for it.
-        String(localized: "Rebuild Library Index")
+        InterfaceText.line("libraryIndexRecovery.rebuildTitle", "Rebuild Library Index")
     }
 
     /// Continue Reading's title.
     static var continueReadingTitle: String {
         // Translators: Button of the library index recovery sheet that closes it so the listener can keep reading.
-        String(localized: "Continue Reading")
+        InterfaceText.line("libraryIndexRecovery.continueReadingTitle", "Continue Reading")
     }
 
     /// Quit TextMouth's title.
     static var quitTitle: String {
         // Translators: Button of the library index recovery sheet that quits TextMouth.
-        String(localized: "Quit TextMouth")
+        InterfaceText.line("common.quitTextmouth", "Quit TextMouth")
     }
 
     /// The banner's button that brings the sheet back, as sentences name it.
     static var recoveryOptionsName: String {
         // Translators: The name sentences use for the button at the top of the library that shows the library index recovery choices again.
-        String(localized: "Recovery Options")
+        InterfaceText.line("libraryIndexRecovery.recoveryOptionsName", "Recovery Options")
     }
 
     /// The banner's button that brings the sheet back.
     static var recoveryOptionsTitle: String {
         // Translators: Button at the top of the library that shows the library index recovery choices again. The three dots show that a sheet opens.
-        String(localized: "Recovery Options...")
+        InterfaceText.line("libraryIndexRecovery.recoveryOptionsTitle", "Recovery Options...")
     }
 
     static var showSavedCopyTitle: String {
         // Translators: Button of the library index recovery sheet that shows the saved copy of the unreadable file in the Finder.
-        String(localized: "Show Saved Copy in Finder")
+        InterfaceText.line("libraryIndexRecovery.showSavedCopyTitle", "Show Saved Copy in Finder")
     }
 
     // MARK: The Sheet's Labels
 
     static var reasonLabel: String {
         // Translators: Label of why the library index could not be read, on the library index recovery sheet.
-        String(localized: "Reason")
+        InterfaceText.line("libraryIndexRecovery.reasonLabel", "Reason")
     }
 
     static var unreadableFileLabel: String {
         // Translators: Label of the path of the unreadable library index file, on the library index recovery sheet.
-        String(localized: "Unreadable file")
+        InterfaceText.line("libraryIndexRecovery.unreadableFileLabel", "Unreadable file")
     }
 
     static var savedCopyLabel: String {
         // Translators: Label of the path of the saved copy of the unreadable library index file, on the library index recovery sheet.
-        String(localized: "Saved copy")
+        InterfaceText.line("libraryIndexRecovery.savedCopyLabel", "Saved copy")
     }
 
     static var lastAttemptLabel: String {
         // Translators: Label of the outcome of the last Try Again or Rebuild Library Index, on the library index recovery sheet.
-        String(localized: "Last attempt")
+        InterfaceText.line("libraryIndexRecovery.lastAttemptLabel", "Last attempt")
     }
 
     static var tryAgain: String {
         SentenceWording.joined([
             // Translators: First sentence of what Try Again does on the library index recovery sheet.
-            String(localized: "Reads the file again."),
+            InterfaceText.line("libraryIndexRecovery.tryAgain.reads", "Reads the file again."),
             // Translators: Last sentence of what Try Again does on the library index recovery sheet: when to use it.
-            String(localized: "Use this after restoring the file from a backup, fixing its permissions, or updating TextMouth to the version that saved it."),
+            InterfaceText.line("libraryIndexRecovery.tryAgain.restoring", "Use this after restoring the file from a backup, fixing its permissions, or updating TextMouth to the version that saved it."),
         ])
     }
 
@@ -110,19 +110,19 @@ enum LibraryIndexRecoveryText {
     static func rebuild(savedCopy: URL?, notKept: LibraryIndexArrangement = []) -> String {
         var sentences = [
             // Translators: First sentence of what Rebuild Library Index does on the library index recovery sheet.
-            String(localized: "Saves the temporary library as the new index, with the reading list and the sort settings TextMouth could read."),
+            InterfaceText.line("libraryIndexRecovery.rebuild.temporary", "Saves the temporary library as the new index, with the reading list and the sort settings TextMouth could read."),
             // Translators: Second sentence of what Rebuild Library Index does: what is lost.
-            String(localized: "Folder placement and manual order that were stored only in the unreadable index are lost from the library."),
+            InterfaceText.line("libraryIndexRecovery.rebuild.placement", "Folder placement and manual order that were stored only in the unreadable index are lost from the library."),
         ]
         if let notRead = notKept.notReadSentence(in: .unreadable) {
             sentences.append(notRead)
         }
         if let savedCopy {
             // Translators: Last sentence of what Rebuild Library Index does: where the old data stays. %@ is the saved copy's path.
-            sentences.append(String(localized: "The saved copy at \(savedCopy.path) keeps the old data."))
+            sentences.append(InterfaceText.line("libraryIndexRecovery.rebuild.saved", "The saved copy at \(savedCopy.path) keeps the old data."))
         } else {
             // Translators: Last sentence of what Rebuild Library Index does when no copy has been saved yet: it saves one first.
-            sentences.append(String(localized: "TextMouth first saves a copy of the old file, and does not rebuild if it cannot."))
+            sentences.append(InterfaceText.line("libraryIndexRecovery.rebuild.cannot", "TextMouth first saves a copy of the old file, and does not rebuild if it cannot."))
         }
         return SentenceWording.joined(sentences)
     }
@@ -130,40 +130,40 @@ enum LibraryIndexRecoveryText {
     static var continueReading: String {
         SentenceWording.joined([
             // Translators: First sentence of what Continue Reading does on the library index recovery sheet.
-            String(localized: "Closes these options so you can keep reading."),
+            InterfaceText.line("libraryIndexRecovery.continueReading.options", "Closes these options so you can keep reading."),
             // Translators: Last sentence of what Continue Reading does. %1$@ and %2$@ are the names of the Try Again and Rebuild Library Index buttons; %3$@ is the name of the Recovery Options button.
-            String(localized: "The index is not changed until you choose \(tryAgainTitle) or \(rebuildTitle), which stay available from \(recoveryOptionsName) at the top of the library."),
+            InterfaceText.line("libraryIndexRecovery.continueReading.available", "The index is not changed until you choose \(tryAgainTitle) or \(rebuildTitle), which stay available from \(recoveryOptionsName) at the top of the library."),
         ])
     }
 
     static var quit: String {
         // Translators: What Quit TextMouth does on the library index recovery sheet.
-        String(localized: "Quits TextMouth without writing the library index, so you can restore the file and open TextMouth again.")
+        InterfaceText.line("libraryIndexRecovery.quit", "Quits TextMouth without writing the library index, so you can restore the file and open TextMouth again.")
     }
 
     static var banner: String {
         SentenceWording.joined([
             // Translators: First sentence of the banner shown at the top of the library while the library index is unreadable.
-            String(localized: "The library index could not be read."),
+            InterfaceText.line("libraryIndexRecovery.banner.read", "The library index could not be read."),
             // Translators: Last sentence of the banner shown at the top of the library while the library index is unreadable.
-            String(localized: "This is a temporary library, and library changes are not being saved."),
+            InterfaceText.line("libraryIndexRecovery.banner.temporary", "This is a temporary library, and library changes are not being saved."),
         ])
     }
 
     /// The Storage settings status while recovering.
     static var settingsStatus: String {
         // Translators: Storage settings status line while the library index can't be read.
-        String(localized: "Library index unreadable")
+        InterfaceText.line("libraryIndexRecovery.settingsStatus", "Library index unreadable")
     }
 
     static var settingsExplanation: String {
         SentenceWording.joined([
             // Translators: First sentence of the Storage settings explanation while the library index can't be read.
-            String(localized: "The library index could not be read, so library changes are not being saved."),
+            InterfaceText.line("libraryIndexRecovery.settingsExplanation.changes", "The library index could not be read, so library changes are not being saved."),
             // Translators: Second sentence of the Storage settings explanation while the library index can't be read. %1$@ and %2$@ are the names of the Try Again and Rebuild Library Index buttons; %3$@ is the name of the Recovery Options button.
-            String(localized: "Choose \(tryAgainTitle) or \(rebuildTitle) from \(recoveryOptionsName) at the top of the Library window."),
+            InterfaceText.line("libraryIndexRecovery.settingsExplanation.choose", "Choose \(tryAgainTitle) or \(rebuildTitle) from \(recoveryOptionsName) at the top of the Library window."),
             // Translators: Last sentence of the Storage settings explanation while the library index can't be read.
-            String(localized: "Until then, changing the location and rebuilding the directory are unavailable."),
+            InterfaceText.line("libraryIndexRecovery.settings.rebuilding", "Until then, changing the location and rebuilding the directory are unavailable."),
         ])
     }
 
@@ -171,12 +171,12 @@ enum LibraryIndexRecoveryText {
 
     static var bannerHint: String {
         // Translators: VoiceOver hint of the Recovery Options button at the top of the library.
-        String(localized: "Shows the choices for recovering the library index")
+        InterfaceText.line("libraryIndexRecovery.bannerHint", "Shows the choices for recovering the library index")
     }
 
     static var bannerLabel: String {
         // Translators: VoiceOver label of the banner at the top of the library while the library index is unreadable.
-        String(localized: "Library index recovery")
+        InterfaceText.line("libraryIndexRecovery.bannerLabel", "Library index recovery")
     }
 }
 

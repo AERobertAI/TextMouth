@@ -60,7 +60,7 @@ final class PhoneReaderVocabularyTests: XCTestCase {
         ))
         XCTAssertEqual(PhoneReaderVocabulary.remainingInHeading(720), "12 minutes remaining in this heading")
         XCTAssertTrue(shared.contains(
-            "String(localized: \"\\(TimeFormatting.spoken(timeRemainingInHeading)) remaining in this heading\""
+            "InterfaceText.line(\"common.valueRemainingInThisHeading\", \"\\(TimeFormatting.spoken(timeRemainingInHeading)) remaining in this heading\""
         ))
     }
 

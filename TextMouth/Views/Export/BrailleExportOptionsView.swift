@@ -14,71 +14,71 @@ enum BrailleExportWording {
     /// (October 20, 2026).
     static var languageHint: String {
         // Translators: The hint of the language pop-up in the Export dialog's braille options.
-        String(localized: "The language of the braille code the book is written in.")
+        InterfaceText.line("brailleExport.languageHint", "The language of the braille code the book is written in.")
     }
     /// What the braille code pop-up does, spoken after its label and value.
     static var codeHint: String {
         // Translators: The hint of the braille code pop-up in the Export dialog's braille options.
-        String(localized: "The braille code the book is written in.")
+        InterfaceText.line("brailleExport.codeHint", "The braille code the book is written in.")
     }
     /// What the contraction pop-up does, spoken after its label and value.
     static var contractionHint: String {
         // Translators: The hint of the contraction pop-up in the Export dialog's braille options.
-        String(localized: "Whether that code's braille is contracted.")
+        InterfaceText.line("brailleExport.contractionHint", "Whether that code's braille is contracted.")
     }
 
     /// The label of the stepper that sets the cells in a line.
     static var cellsLabel: String {
         // Translators: The label of the stepper in the Export dialog's braille options that sets how many braille cells each line holds.
-        String(localized: "Cells per line")
+        InterfaceText.line("brailleExport.cellsLabel", "Cells per line")
     }
     /// What the cells stepper does.
     static var cellsHint: String {
         // Translators: The hint of the Cells per line stepper in the Export dialog's braille options.
-        String(localized: "How many braille cells each line holds, from 18 to 80.")
+        InterfaceText.line("brailleExport.cellsHint", "How many braille cells each line holds, from 18 to 80.")
     }
     /// The cells stepper's spoken value, such as "40 cells".
     static func cellsValue(_ count: Int) -> String {
         // Translators: The value of the Cells per line stepper in the Export dialog's braille options. %lld is the number of braille cells in a line.
-        String(localized: "\(count) cells")
+        InterfaceText.line("brailleExport.cellsValue", "\(number: count) cells")
     }
 
     /// The label of the stepper that sets the lines on a page.
     static var linesLabel: String {
         // Translators: The label of the stepper in the Export dialog's braille options that sets how many lines each braille page holds.
-        String(localized: "Lines per page")
+        InterfaceText.line("brailleExport.linesLabel", "Lines per page")
     }
     /// What the lines stepper does.
     static var linesHint: String {
         // Translators: The hint of the Lines per page stepper in the Export dialog's braille options.
-        String(localized: "How many lines each braille page holds, from 4 to 50.")
+        InterfaceText.line("brailleExport.linesHint", "How many lines each braille page holds, from 4 to 50.")
     }
     /// The lines stepper's spoken value, such as "25 lines".
     static func linesValue(_ count: Int) -> String {
         // Translators: The value of the Lines per page stepper in the Export dialog's braille options. %lld is the number of lines on a page.
-        String(localized: "\(count) lines")
+        InterfaceText.line("brailleExport.linesValue", "\(number: count) lines")
     }
 
     /// The label of the switch that numbers the pages.
     static var numbersLabel: String {
         // Translators: The label of the switch in the Export dialog's braille options that numbers the braille pages.
-        String(localized: "Braille page numbers")
+        InterfaceText.line("brailleExport.numbersLabel", "Braille page numbers")
     }
     /// What the page numbers switch does.
     static var numbersHint: String {
         // Translators: The hint of the Braille page numbers switch in the Export dialog's braille options.
-        String(localized: "Whether each page's last line carries its braille page number.")
+        InterfaceText.line("brailleExport.numbersHint", "Whether each page's last line carries its braille page number.")
     }
 
     /// The label of the pop-up that chooses the line end (BRF only).
     static var lineEndsLabel: String {
         // Translators: The label of the pop-up in the Export dialog's braille options that chooses how each line of a BRF file ends.
-        String(localized: "Line ends")
+        InterfaceText.line("brailleExport.lineEndsLabel", "Line ends")
     }
     /// What the line ends pop-up does.
     static var lineEndsHint: String {
         // Translators: The hint of the Line ends pop-up in the Export dialog's braille options. CR LF is a technical name for a line end.
-        String(localized: "CR LF suits most braille displays and embossers.")
+        InterfaceText.line("brailleExport.lineEndsHint", "CR LF suits most braille displays and embossers.")
     }
     /// The line end of carriage return and line feed, as the pop-up lists it.
     static let crlfName = "CR LF" // l10n: no (a line end's technical name, as a file format writes it)
@@ -100,7 +100,7 @@ enum BrailleExportWording {
     /// (BRAILLE-CODES-RESEARCH-2026-10-25.md, section 8.9).
     static var fileCodeHint: String {
         // Translators: The hint of the braille file characters pop-up in the Export dialog's braille options. BRF and PEF are braille file formats, and North American Braille ASCII and Eurobraille are names of braille character codes.
-        String(localized: "How the BRF writes each braille cell. Most braille displays and embossers read North American Braille ASCII; those set up for German read Eurobraille. To share with a reader elsewhere, export a PEF.")
+        InterfaceText.line("brailleExport.fileCodeHint", "How the BRF writes each braille cell. Most braille displays and embossers read North American Braille ASCII; those set up for German read Eurobraille. To share with a reader elsewhere, export a PEF.")
     }
 
     /// What the options say when the Braille setting's table, `table`, is one
@@ -112,7 +112,7 @@ enum BrailleExportWording {
         let name = BrailleTableCatalog.table(withID: table)?.displayName ?? BrailleTableSource.parse(table).fileName
         let defaultTable = BrailleTableCatalog.description(ofTableID: BrailleTableCatalog.defaultTableID)
         // Translators: Shown in the Export dialog's braille options when the table chosen in Settings can't be used. %1$@ is that table's name as macOS gives it and %2$@ the table the export starts from, in words such as "Unified English Braille, uncontracted".
-        return String(localized: "TextMouth can't use the braille table chosen in Settings, \u{201C}\(name)\u{201D}, so this export starts from \(defaultTable).")
+        return InterfaceText.line("brailleExport.startsFromDefault", "TextMouth can't use the braille table chosen in Settings, \u{201C}\(name)\u{201D}, so this export starts from \(defaultTable).")
     }
 }
 

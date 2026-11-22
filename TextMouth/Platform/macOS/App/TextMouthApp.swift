@@ -91,6 +91,6 @@ enum SceneWording {
     /// own book.
     static var bookReaderTitle: String {
         // Translators: Title of a window in which a book is read, before the window shows its own book's title. Also the name of the window group.
-        String(localized: "Book Reader")
+        InterfaceText.line("scene.bookReaderTitle", "Book Reader")
     }
 }

@@ -75,7 +75,7 @@ struct DocumentTooLargeError: LocalizedError, LogDescribing, Equatable {
 
     var errorDescription: String? {
         // Translators: Why a document could not be imported: it is larger than the most TextMouth reads from one document. %@ is that limit with its unit, such as "64 MB".
-        String(localized: "This document holds more than \(ArchiveFigures.size(limit)), the most TextMouth reads from one document.")
+        InterfaceText.line("documentTooLargeError.errorDescription", "This document holds more than \(ArchiveFigures.size(limit)), the most TextMouth reads from one document.")
     }
 
     /// The failure in English for the debug log (FR34).

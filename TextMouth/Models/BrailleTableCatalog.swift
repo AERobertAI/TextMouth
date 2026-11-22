@@ -169,22 +169,22 @@ struct BrailleTable: Equatable, Hashable, Sendable, Identifiable {
         switch (contraction, grade) {
         case (.no, let grade?):
             // Translators: How a braille table contracts, for a table of one grade that writes every letter out. %@ is the grade, an identifier such as 1.
-            return String(localized: "Uncontracted (Grade \(grade))")
+            return InterfaceText.line("brailleTable.contractionLabel.uncontractedGrade", "Uncontracted (Grade \(grade))")
         case (.no, nil):
             // Translators: How a braille table contracts, for a table with no grade that writes every letter out.
-            return String(localized: "Uncontracted")
+            return InterfaceText.line("brailleTable.contractionLabel.uncontracted", "Uncontracted")
         case (.full, let grade?):
             // Translators: How a braille table contracts, for a table of one grade that shortens words with contractions. %@ is the grade, an identifier such as 2.
-            return String(localized: "Contracted (Grade \(grade))")
+            return InterfaceText.line("brailleTable.contractionLabel.grade", "Contracted (Grade \(grade))")
         case (.full, nil):
             // Translators: How a braille table contracts, for a table with no grade that shortens words with contractions.
-            return String(localized: "Contracted")
+            return InterfaceText.line("brailleTable.contractionLabel.contracted", "Contracted")
         case (.partial, _):
             // Translators: How a braille table contracts: it shortens some words, not all.
-            return String(localized: "Partly contracted")
+            return InterfaceText.line("brailleTable.contractionLabel.partly", "Partly contracted")
         case (.unstated, _):
             // Translators: How a braille table contracts, for a table that says neither its contraction nor its grade: it writes as its own rules define.
-            return String(localized: "As the table defines")
+            return InterfaceText.line("brailleTable.contractionLabel.defines", "As the table defines")
         }
     }
 }
@@ -824,11 +824,11 @@ enum BrailleTableCatalog {
         if table.contraction != .unstated {
             let contraction = label.prefix(1).lowercased() + label.dropFirst()
             // Translators: A braille table in words: its code's name, then how it contracts, in lower case. %1$@ is the code's name, such as Unified English Braille, and %2$@ the contraction, such as uncontracted (Grade 1).
-            words = String(localized: "\(words), \(contraction)")
+            words = InterfaceText.line("common.nameAndNote", "\(words), \(contraction)")
         }
         return language.map {
             // Translators: A braille table in words, then the language it is in. %1$@ is the table in words, such as Unified English Braille, uncontracted, and %2$@ the language's name, such as English.
-            String(localized: "\(words), in \($0)")
+            InterfaceText.line("common.valueInValue", "\(words), in \($0)")
         } ?? words
     }
 }

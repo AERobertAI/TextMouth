@@ -103,7 +103,7 @@ struct ExtractionReport: Equatable, Sendable {
             // Each chapter's problem is a parser's damage reason, in English.
             let problems = omissions.map(describe).joined(separator: "; ")
             // Translators: Warning after an import that left chapters out: how many chapters could not be read, a colon, then each chapter with its file and why, which are in English, separated by semicolons. %1$@ is the count sentence, such as "2 of 14 chapters could not be read", and %2$@ the chapters.
-            sentences.append(String(localized: "\(summary): \(problems)."))
+            sentences.append(InterfaceText.line("extractionReport.message.period", "\(summary): \(problems)."))
         }
         if let pageProblem = pdf?.problem {
             sentences.append(pageProblem)
@@ -111,9 +111,9 @@ struct ExtractionReport: Equatable, Sendable {
         guard sentences.isEmpty else { return SentenceWording.joined(sentences) }
         return pdf == nil
             // Translators: Says that an import read every chapter of a book, with nothing left out.
-            ? String(localized: "Every chapter was read.")
+            ? InterfaceText.line("extractionReport.message.chapter", "Every chapter was read.")
             // Translators: Says that an import read every page of a PDF or of a book of pictures, with nothing left out.
-            : String(localized: "Every page was read.")
+            : InterfaceText.line("extractionReport.message.page", "Every page was read.")
     }
 
     /// `message` in English for the debug log, which stays English whatever
@@ -140,17 +140,17 @@ struct ExtractionReport: Equatable, Sendable {
         // give, and must not claim an impossible one such as "2 of 0".
         guard chapterCount >= omissions.count else {
             // Translators: Starts the warning after an import that left chapters out, when the book's chapter count is not known. %lld is how many chapters could not be read. Has no full stop.
-            return String(localized: "\(omissions.count) chapters could not be read")
+            return InterfaceText.line("extractionReport.summary.count", "\(number: omissions.count) chapters could not be read")
         }
         guard omissions.count == chapterCount else {
             // Translators: Starts the warning after an import that left chapters out: some of the book's chapters could not be read. %1$@ is how many could not be read, with digit grouping, and %2$lld how many chapters the book has, always two or more. Has no full stop.
-            return String(localized: "\(omissions.count.formatted()) of \(chapterCount) chapters could not be read")
+            return InterfaceText.line("extractionReport.summary.value", "\(omissions.count.formatted()) of \(number: chapterCount) chapters could not be read")
         }
         return chapterCount == 1
             // Translators: Starts the warning after an import of a book of one chapter that could not be read. Has no full stop.
-            ? String(localized: "The only chapter could not be read")
+            ? InterfaceText.line("extractionReport.summary.chapter", "The only chapter could not be read")
             // Translators: Starts the warning after an import where none of a book's chapters could be read. %lld is how many chapters the book has, always two or more. Has no full stop.
-            : String(localized: "None of the \(chapterCount) chapters could be read")
+            : InterfaceText.line("extractionReport.summary.none", "None of the \(number: chapterCount) chapters could be read")
     }
 
     /// `summary` in English for the debug log (FR34).

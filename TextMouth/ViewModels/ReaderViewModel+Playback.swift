@@ -993,7 +993,7 @@ extension ReaderViewModel {
     /// its own clock and pauses playback: one counting minutes.
     nonisolated static var sleepTimerExpiredAnnouncement: String {
         // Translators: VoiceOver announcement as a sleep timer of so many minutes runs out and pauses the book.
-        String(localized: "Sleep timer expired. Playback paused.")
+        InterfaceText.line("readerViewModel.sleepTimerExpiredAnnouncement", "Sleep timer expired. Playback paused.")
     }
 
     /// What the listener hears when this reader's sleep timer stops playback
@@ -1007,7 +1007,7 @@ extension ReaderViewModel {
     /// (`handleEndOfBook()`).
     nonisolated static var sleepTimerStoppedAtHeadingEndAnnouncement: String {
         // Translators: VoiceOver announcement as a sleep timer set to End of heading pauses the book where the heading ends.
-        String(localized: "Sleep timer expired at the end of the heading. Playback paused.")
+        InterfaceText.line("readerViewModel.sleepTimerStoppedHeadingEnd", "Sleep timer expired at the end of the heading. Playback paused.")
     }
 
     /// Stop where the chapter just played ended, because this reader's sleep
@@ -2741,7 +2741,7 @@ extension ReaderViewModel {
     /// get past and a fresh launch of TextMouth will.
     nonisolated static var audioStoppedRespondingMessage: String {
         // Translators: Message when playback was stopped because the system's audio stopped responding. Play is the name of a button; TextMouth is the app's name.
-        String(localized: "Playback stopped: the audio stopped responding. Press Play to try again; if it stops again, quit and reopen TextMouth.")
+        InterfaceText.line("readerViewModel.audioStoppedRespondingMessage", "Playback stopped: the audio stopped responding. Press Play to try again; if it stops again, quit and reopen TextMouth.")
     }
 
     /// What the listener is told when the memory guard stopped playback,
@@ -2752,10 +2752,10 @@ extension ReaderViewModel {
         #if os(iOS)
         // The spec's "Words that say Mac": the phone's audio is the system's.
         // Translators: Message on the iPhone when playback was stopped because the app's memory kept growing. %@ is the memory reached, a number such as 3.2, before "GB" (gigabytes).
-        String(localized: "Playback stopped because TextMouth's memory grew to \(MemoryFootprint.gigabytes(footprint)) GB while the audio played, a fault in the system's audio.")
+        InterfaceText.line("readerViewModel.memoryRunawayMessage.system", "Playback stopped because TextMouth's memory grew to \(MemoryFootprint.gigabytes(footprint)) GB while the audio played, a fault in the system's audio.")
         #else
         // Translators: Message on the Mac when playback was stopped because the app's memory kept growing. %@ is the memory reached, a number such as 3.2, before "GB" (gigabytes); macOS is the name of the Mac's system.
-        String(localized: "Playback stopped because TextMouth's memory grew to \(MemoryFootprint.gigabytes(footprint)) GB while the audio played, a fault in macOS's audio.")
+        InterfaceText.line("readerViewModel.memoryRunawayMessage.macos", "Playback stopped because TextMouth's memory grew to \(MemoryFootprint.gigabytes(footprint)) GB while the audio played, a fault in macOS's audio.")
         #endif
     }
 
@@ -2824,22 +2824,22 @@ extension ReaderViewModel {
         case .fileMissing:
             head = bookHasPackage
                 // Translators: First sentence of the message when a chapter's audio file is missing from the book's package. %1$@ is the chapter's number, an identifier written without digit grouping; %2$@ is what went wrong, such as "the file chapter3.mp3 is missing".
-                ? String(localized: "Chapter \(number) could not be played: \(problem) from the book's package.")
+                ? InterfaceText.line("readerViewModel.chapterNotPlayed", "Chapter \(number) could not be played: \(problem) from the book's package.")
                 : chapterCouldNotBePlayed(number: number, problem: problem)
             // Translators: Second sentence of the message when a chapter's audio file is missing: what to do.
-            remedy = String(localized: "Re-import the book to restore it.")
+            remedy = InterfaceText.line("readerViewModel.reImportBookRestore", "Re-import the book to restore it.")
         case .fileUnreadable:
             head = chapterCouldNotBePlayed(number: number, problem: problem)
             // Translators: Second sentence of the message when a chapter's audio file is unreadable: what to do.
-            remedy = String(localized: "Re-import the book to replace it.")
+            remedy = InterfaceText.line("readerViewModel.reImportBookReplace", "Re-import the book to replace it.")
         case .failedDuringPlayback:
             head = chapterCouldNotBePlayed(number: number, problem: problem)
             // Translators: Second sentence of the message when a chapter failed while playing: what to do. Retry is the name of a button.
-            remedy = String(localized: "Choose Retry to try again, or re-import the book if it keeps failing.")
+            remedy = InterfaceText.line("readerViewModel.chooseRetryTry", "Choose Retry to try again, or re-import the book if it keeps failing.")
         case .stalled:
             head = chapterCouldNotBePlayed(number: number, problem: problem)
             // Translators: Second sentence of the message when a chapter's playback stalled: what to do. Retry is the name of a button.
-            remedy = String(localized: "Check that the disk holding your library is connected, then choose Retry.")
+            remedy = InterfaceText.line("readerViewModel.checkDiskHolding", "Check that the disk holding your library is connected, then choose Retry.")
         }
         return SentenceWording.joined([head, remedy])
     }
@@ -2848,7 +2848,7 @@ extension ReaderViewModel {
     /// of the book's package: "Chapter 3 could not be played: <what went wrong>."
     private nonisolated static func chapterCouldNotBePlayed(number: String, problem: String) -> String {
         // Translators: First sentence of the message when a chapter's audio could not be played. %1$@ is the chapter's number, an identifier written without digit grouping; %2$@ is what went wrong, such as "the file is damaged".
-        String(localized: "Chapter \(number) could not be played: \(problem).")
+        InterfaceText.line("readerViewModel.chapterCouldNotBePlayed", "Chapter \(number) could not be played: \(problem).")
     }
 
     /// The error alert's Retry: close the alert and play the failed chapter
@@ -3672,7 +3672,7 @@ extension ReaderViewModel {
             )
             restartSleepTimer(startPlaybackIfNeeded: true)
             // Translators: VoiceOver announcement after the Restart Sleep Timer command started the running sleep timer again.
-            announceToVoiceOver(String(localized: "Timer reset."))
+            announceToVoiceOver(InterfaceText.line("readerViewModel.restartLastSleepTimer.reset", "Timer reset."))
         } else if let last = sleepTimerService.lastUsedDuration {
             // Previous timer ended — re-arm with that duration.
             SleepTimerService.log(
@@ -3681,7 +3681,7 @@ extension ReaderViewModel {
             )
             startSleepTimer(duration: last, startPlaybackIfNeeded: true)
             // Translators: VoiceOver announcement after the Restart Sleep Timer command set the last timer used again. %@ is that timer's name, such as 30 minutes or End of heading.
-            announceToVoiceOver(String(localized: "Timer restarted: \(last.displayName)."))
+            announceToVoiceOver(InterfaceText.line("readerViewModel.restartLastSleepTimer.restarted", "Timer restarted: \(last.displayName)."))
         } else {
             // First-ever press — nothing to repeat.
             SleepTimerService.log(
@@ -3689,7 +3689,7 @@ extension ReaderViewModel {
                 "RESTART_ACTION book=\(bookToken) result=no-previous-duration"
             )
             // Translators: VoiceOver announcement when the Restart Sleep Timer command finds no timer was ever set.
-            announceToVoiceOver(String(localized: "No previous sleep timer to restart."))
+            announceToVoiceOver(InterfaceText.line("readerViewModel.restartLastSleepTimer.none", "No previous sleep timer to restart."))
         }
     }
 

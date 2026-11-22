@@ -27,7 +27,7 @@ enum PhoneHeadingsVocabulary {
     static var rowHint: String {
         // The Mac's row says the same words from its own view, so the key is shared.
         // Translators: Hint of a heading's row in the headings list: what choosing it does.
-        String(localized: "Goes to this heading and closes the list.")
+        InterfaceText.line("common.goesToThisHeadingAndCloses", "Goes to this heading and closes the list.")
     }
 }
 

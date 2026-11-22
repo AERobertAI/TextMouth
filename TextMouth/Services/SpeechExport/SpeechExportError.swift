@@ -28,29 +28,29 @@ enum SpeechExportError: LocalizedError, Equatable {
     /// that send the listener there name, so the two agree in every language.
     private static var voiceButtonName: String {
         // Translators: The name of the Voice button in a book's reader, which opens the book's voice choices.
-        String(localized: "Voice")
+        InterfaceText.line("common.voice", "Voice")
     }
 
     var errorDescription: String? {
         switch self {
         case .personalVoice(let name):
             // Translators: Why a spoken audio export was refused: the book's voice is a Personal Voice. %1$@ is the voice's name and %2$@ the name of the Voice button in the book's reader.
-            return String(localized: "“\(name)” is a Personal Voice, which macOS can't record to a file. Choose another voice with the \(Self.voiceButtonName) button in the reader, then export again.")
+            return InterfaceText.line("speechExportError.personalVoice", "“\(name)” is a Personal Voice, which macOS can't record to a file. Choose another voice with the \(Self.voiceButtonName) button in the reader, then export again.")
         case .noVoice:
             // Translators: Why a spoken audio export was refused: no voice is installed. System Settings, Accessibility, and Spoken Content are the names of macOS settings.
-            return String(localized: "No voice is installed. Add one in System Settings, Accessibility, Spoken Content, then export again.")
+            return InterfaceText.line("speechExportError.noVoice", "No voice is installed. Add one in System Settings, Accessibility, Spoken Content, then export again.")
         case .notEnoughSpace(let needed):
             // Translators: Why a spoken audio export was refused: the disk is too full. %1$@ is the space the export needs and %2$@ the space TextMouth always keeps free, each a size such as 1 GB.
-            return String(localized: "The disk lacks room: this needs about \(Self.size(needed)), and TextMouth keeps \(Self.size(ArchiveLimits.standard.freeSpaceReserve)) free. Free some space, then export again.")
+            return InterfaceText.line("speechExportError.notEnoughSpace", "The disk lacks room: this needs about \(Self.size(needed)), and TextMouth keeps \(Self.size(ArchiveLimits.standard.freeSpaceReserve)) free. Free some space, then export again.")
         case .busy:
             // Translators: Why a spoken audio export was refused: another one is running.
-            return String(localized: "TextMouth exports one spoken audio file at a time. Export this once the current one has finished.")
+            return InterfaceText.line("speechExportError.busy", "TextMouth exports one spoken audio file at a time. Export this once the current one has finished.")
         case .nothingToSpeak:
             // Translators: Why a spoken audio export was refused: the chosen part of the book has no words.
-            return String(localized: "The part of the book chosen has no words to speak.")
+            return InterfaceText.line("speechExportError.nothingToSpeak", "The part of the book chosen has no words to speak.")
         case .headingsChanged:
             // Translators: Why a spoken audio export was refused: the book's headings changed after the Export dialog opened.
-            return String(localized: "The book's headings changed after the dialog opened. Reopen it and choose the range again.")
+            return InterfaceText.line("speechExportError.headingsChanged", "The book's headings changed after the dialog opened. Reopen it and choose the range again.")
         }
     }
 

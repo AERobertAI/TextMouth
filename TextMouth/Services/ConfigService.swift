@@ -1526,13 +1526,13 @@ enum ImportDeleteBehavior: String, Codable, CaseIterable {
         switch self {
         case .keepOriginal:
             // Translators: A choice of the After Importing a Book pop-up in the Storage settings: the original file stays where it was.
-            return String(localized: "Keep Original")
+            return InterfaceText.line("importDeleteBehavior.title.keepOriginal", "Keep Original")
         case .deleteAfterImport:
             // Translators: A choice of the After Importing a Book pop-up in the Storage settings: the original file is deleted once the book is imported.
-            return String(localized: "Delete After Import")
+            return InterfaceText.line("importDeleteBehavior.title.deleteAfterImport", "Delete After Import")
         case .askEachTime:
             // Translators: A choice of the After Importing a Book pop-up in the Storage settings: TextMouth asks what to do with the original file after each import.
-            return String(localized: "Ask Each Time")
+            return InterfaceText.line("importDeleteBehavior.title.askEachTime", "Ask Each Time")
         }
     }
 }

@@ -40,25 +40,25 @@ enum PersistenceSubsystem: CaseIterable, Comparable, Sendable {
         switch self {
         case .libraryIndex:
             // Translators: What the library's saving failure is about, as a noun phrase inside a sentence, with no capital letter, such as "Dismiss the notice about library changes".
-            return String(localized: "library changes")
+            return InterfaceText.line("persistenceSubsystem.topic.libraryIndex", "library changes")
         case .bookRecord:
             // Translators: What the saving failure of books' records is about, as a noun phrase inside a sentence, with no capital letter.
-            return String(localized: "changes to books")
+            return InterfaceText.line("persistenceSubsystem.topic.bookRecord", "changes to books")
         case .statistics:
             // Translators: What the saving failure of the listening statistics is about, as a noun phrase inside a sentence, with no capital letter.
-            return String(localized: "listening statistics")
+            return InterfaceText.line("persistenceSubsystem.topic.statistics", "listening statistics")
         case .configuration:
             // Translators: What the saving failure of the settings is about, as a noun phrase inside a sentence, with no capital letter.
-            return String(localized: "settings")
+            return InterfaceText.line("persistenceSubsystem.topic.configuration", "settings")
         case .substitutions:
             // Translators: What the saving failure of the text substitution rules is about, as a noun phrase inside a sentence, with no capital letter.
-            return String(localized: "text substitution rules")
+            return InterfaceText.line("persistenceSubsystem.topic.substitutions", "text substitution rules")
         case .feedRecords:
             // Translators: What the saving failure of the feed subscriptions is about, as a noun phrase inside a sentence, with no capital letter.
-            return String(localized: "feed subscriptions")
+            return InterfaceText.line("persistenceSubsystem.topic.feedRecords", "feed subscriptions")
         case .originalFileCleanup:
             // Translators: What the failure to remove the original files of imported books is about, as a noun phrase inside a sentence, with no capital letter.
-            return String(localized: "original files")
+            return InterfaceText.line("persistenceSubsystem.topic.originalFileCleanup", "original files")
         }
     }
 
@@ -73,16 +73,16 @@ enum PersistenceSubsystem: CaseIterable, Comparable, Sendable {
     var retryLabel: String {
         self == .originalFileCleanup
             // Translators: VoiceOver label of the failure banner's Retry button for the original files. %@ is what failed, as a noun phrase, such as "original files".
-            ? String(localized: "Retry removing \(topic)")
+            ? InterfaceText.line("persistenceSubsystem.retryLabel.removing", "Retry removing \(topic)")
             // Translators: VoiceOver label of the failure banner's Retry button. %@ is what failed to save, as a noun phrase, such as "settings".
-            : String(localized: "Retry saving \(topic)")
+            : InterfaceText.line("persistenceSubsystem.retryLabel.saving", "Retry saving \(topic)")
     }
 
     /// What VoiceOver says for the banner's Dismiss button: "Dismiss the
     /// notice about settings".
     var dismissLabel: String {
         // Translators: VoiceOver label of the failure banner's Dismiss button. %@ is what the notice is about, as a noun phrase, such as "settings".
-        String(localized: "Dismiss the notice about \(topic)")
+        InterfaceText.line("persistenceSubsystem.dismissLabel", "Dismiss the notice about \(topic)")
     }
 
     /// What VoiceOver says once a retry has settled every failure here:
@@ -91,25 +91,25 @@ enum PersistenceSubsystem: CaseIterable, Comparable, Sendable {
         switch self {
         case .libraryIndex:
             // Translators: Announcement after a retry saved the library changes that had failed to save.
-            return String(localized: "Library changes saved.")
+            return InterfaceText.line("persistenceSubsystem.retried.libraryIndex", "Library changes saved.")
         case .bookRecord:
             // Translators: Announcement after a retry saved the changes to books' records that had failed to save.
-            return String(localized: "Changes to books saved.")
+            return InterfaceText.line("persistenceSubsystem.retried.bookRecord", "Changes to books saved.")
         case .statistics:
             // Translators: Announcement after a retry saved the listening statistics that had failed to save.
-            return String(localized: "Listening statistics saved.")
+            return InterfaceText.line("persistenceSubsystem.retried.statistics", "Listening statistics saved.")
         case .configuration:
             // Translators: Announcement after a retry saved the settings that had failed to save.
-            return String(localized: "Settings saved.")
+            return InterfaceText.line("persistenceSubsystem.retried.configuration", "Settings saved.")
         case .substitutions:
             // Translators: Announcement after a retry saved the text substitution rules that had failed to save.
-            return String(localized: "Text substitution rules saved.")
+            return InterfaceText.line("persistenceSubsystem.retried.substitutions", "Text substitution rules saved.")
         case .feedRecords:
             // Translators: Announcement after a retry saved the feed subscriptions that had failed to save.
-            return String(localized: "Feed subscriptions saved.")
+            return InterfaceText.line("persistenceSubsystem.retried.feedRecords", "Feed subscriptions saved.")
         case .originalFileCleanup:
             // Translators: Announcement after a retry removed the original files of imported books that had failed to be removed.
-            return String(localized: "Original files removed.")
+            return InterfaceText.line("persistenceSubsystem.originalFilesRemoved", "Original files removed.")
         }
     }
 
@@ -122,13 +122,13 @@ enum PersistenceSubsystem: CaseIterable, Comparable, Sendable {
         switch self {
         case .bookRecord:
             // Translators: Sentence after a failure notice: more books' records failed to save too. %lld is how many more.
-            return String(localized: "Changes to \(count) other books could not be saved either.")
+            return InterfaceText.line("persistenceSubsystem.othersSentence.bookRecord", "Changes to \(number: count) other books could not be saved either.")
         case .feedRecords:
             // Translators: Sentence after a failure notice: more feeds' records failed to save too. %lld is how many more.
-            return String(localized: "Changes to \(count) other feeds could not be saved either.")
+            return InterfaceText.line("persistenceSubsystem.othersSentence.feedRecords", "Changes to \(number: count) other feeds could not be saved either.")
         case .originalFileCleanup:
             // Translators: Sentence after a failure notice: more original files could not be removed too. %lld is how many more.
-            return String(localized: "\(count) other original files could not be removed either.")
+            return InterfaceText.line("persistenceSubsystem.others.originalFileCleanup", "\(number: count) other original files could not be removed either.")
         case .libraryIndex, .statistics, .configuration, .substitutions:
             return nil
         }
@@ -232,7 +232,7 @@ struct PersistenceFailure: Identifiable, Sendable {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard let last = trimmed.last else {
             // Translators: Said in place of a reason when the system gave no reason a file could not be saved.
-            return String(localized: "No reason was given.")
+            return InterfaceText.line("persistenceFailure.sentence", "No reason was given.")
         }
         return ".!?".contains(last) ? trimmed : trimmed + "."
     }
@@ -287,25 +287,25 @@ extension PersistenceFailure.Subject {
         switch self {
         case .libraryIndex:
             // Translators: Failure notice: the library's changes could not be saved. %@ is the reason, a sentence from the system.
-            return String(localized: "Library changes could not be saved: \(reason)")
+            return InterfaceText.line("subject.sentence.libraryIndex", "Library changes could not be saved: \(reason)")
         case .bookRecord(_, let title):
             // Translators: Failure notice: a book's changes could not be saved. %1$@ is the book's title; %2$@ is the reason, a sentence from the system.
-            return String(localized: "Changes to “\(title)” could not be saved: \(reason)")
+            return InterfaceText.line("subject.sentence.bookRecord", "Changes to “\(title)” could not be saved: \(reason)")
         case .strandedPackage(_, let title, let location, let home):
             // Translators: Failure notice: a book's files could not be put back after a move failed. %1$@ is the book's title; %2$@ is where its files are now; %3$@ is where they belong; %4$@ is the reason, a sentence from the system.
-            return String(localized: "“\(title)” could not be moved back after a failed move, so its files are at \(location) instead of \(home): \(reason)")
+            return InterfaceText.line("subject.sentence.strandedPackage", "“\(title)” could not be moved back after a failed move, so its files are at \(location) instead of \(home): \(reason)")
         case .statistics:
             // Translators: Failure notice: the listening statistics could not be saved. %@ is the reason, a sentence from the system.
-            return String(localized: "Listening statistics could not be saved: \(reason)")
+            return InterfaceText.line("subject.sentence.statistics", "Listening statistics could not be saved: \(reason)")
         case .configuration:
             // Translators: Failure notice: the settings could not be saved. %@ is the reason, a sentence from the system.
-            return String(localized: "Settings could not be saved: \(reason)")
+            return InterfaceText.line("subject.sentence.configuration", "Settings could not be saved: \(reason)")
         case .substitutions:
             // Translators: Failure notice: the text substitution rules could not be saved. %@ is the reason, a sentence from the system.
-            return String(localized: "Text substitution rules could not be saved: \(reason)")
+            return InterfaceText.line("subject.sentence.substitutions", "Text substitution rules could not be saved: \(reason)")
         case .feedRecord(_, let title):
             // Translators: Failure notice: a feed's changes could not be saved. %1$@ is the feed's title; %2$@ is the reason, a sentence from the system.
-            return String(localized: "Changes to the feed “\(title)” could not be saved: \(reason)")
+            return InterfaceText.line("subject.sentence.feedRecord", "Changes to the feed “\(title)” could not be saved: \(reason)")
         case .originalFile(let path, let movesToTrash):
             return OriginalFileDeletionWording(
                 movesToTrash: movesToTrash,
@@ -364,30 +364,30 @@ enum StorageWorkWaitWording {
         switch (operation, action) {
         case (.movingDataDirectory, .save):
             // Translators: Why a failed save waits: it runs when the move of the data directory ends. "Them" is the changes that could not be saved.
-            return String(localized: "TextMouth saves them once the move of its data directory ends.")
+            return InterfaceText.line("storageWorkWait.sentence.savesMoveEnds", "TextMouth saves them once the move of its data directory ends.")
         case (.movingDataDirectory, .moveBack):
             // Translators: Why a failed move of files waits: it runs when the move of the data directory ends. "Them" is the files.
-            return String(localized: "TextMouth moves them back once the move of its data directory ends.")
+            return InterfaceText.line("storageWorkWait.sentence.movesMoveEnds", "TextMouth moves them back once the move of its data directory ends.")
         case (.rebuildingDirectory, .save):
             // Translators: Why a failed save waits: it runs when the data directory has been rebuilt. "Them" is the changes that could not be saved.
-            return String(localized: "TextMouth saves them once it has finished rebuilding its data directory.")
+            return InterfaceText.line("storageWorkWait.sentence.savesRebuilding", "TextMouth saves them once it has finished rebuilding its data directory.")
         case (.rebuildingDirectory, .moveBack):
             // Translators: Why a failed move of files waits: it runs when the data directory has been rebuilt. "Them" is the files.
-            return String(localized: "TextMouth moves them back once it has finished rebuilding its data directory.")
+            return InterfaceText.line("storageWorkWait.sentence.movesRebuilding", "TextMouth moves them back once it has finished rebuilding its data directory.")
         case (.movingBooksBetweenFolders, .save):
             // Translators: Why a failed save waits: it runs when books have been moved between folders. "Them" is the changes that could not be saved.
-            return String(localized: "TextMouth saves them once it has finished moving books between folders.")
+            return InterfaceText.line("storageWorkWait.sentence.betweenFolders", "TextMouth saves them once it has finished moving books between folders.")
         case (.movingBooksBetweenFolders, .moveBack):
             // Translators: Why a failed move of files waits: it runs when books have been moved between folders. "Them" is the files.
-            return String(localized: "TextMouth moves them back once it has finished moving books between folders.")
+            return InterfaceText.line("storageWorkWait.sentence.movingBetweenFolders", "TextMouth moves them back once it has finished moving books between folders.")
         // A switch ends with TextMouth opening again on the other library,
         // not with the retry: the words say what stays here.
         case (.switchingLibraries, .save):
             // Translators: Why a failed save stays unsaved: TextMouth is switching to another library. "They" is the changes that could not be saved.
-            return String(localized: "TextMouth is opening again on another library, so they stay unsaved in this one.")
+            return InterfaceText.line("storageWorkWait.sentence.unsaved", "TextMouth is opening again on another library, so they stay unsaved in this one.")
         case (.switchingLibraries, .moveBack):
             // Translators: Why a failed move of files stays undone: TextMouth is switching to another library. "They" is the files.
-            return String(localized: "TextMouth is opening again on another library, so they stay where they are in this one.")
+            return InterfaceText.line("storageWorkWait.sentence.where", "TextMouth is opening again on another library, so they stay where they are in this one.")
         }
     }
 }
@@ -422,9 +422,9 @@ struct PersistenceBannerRow: Identifiable, Equatable {
         guard !rows.isEmpty else { return nil }
         let action = rows.contains(where: \.canRetry)
             // Translators: Said after a failure notice: where to find the Retry button.
-            ? String(localized: "Retry is at the top of the Library window.")
+            ? InterfaceText.line("persistenceBannerRow.announcement.retry", "Retry is at the top of the Library window.")
             // Translators: Said after a failure notice: where to find its details.
-            : String(localized: "Details are at the top of the Library window.")
+            : InterfaceText.line("persistenceBannerRow.announcement.details", "Details are at the top of the Library window.")
         return SentenceWording.joined(rows.map(\.text) + [action])
     }
 
@@ -914,7 +914,7 @@ final class PersistenceFailureCenter: ObservableObject {
         let message = stillFailing.isEmpty
             ? subsystems.sortedStably().map(\.retriedAnnouncement)
             // Translators: Announcement when retrying a failed save failed again. The failure notices follow.
-            : [String(localized: "Retry did not succeed.")] + stillFailing.map(\.text)
+            : [InterfaceText.line("persistenceFailureCenter.announceRetryOutcome", "Retry did not succeed.")] + stillFailing.map(\.text)
         VoiceOverAnnouncer.announce(SentenceWording.joined(message))
     }
 
@@ -963,7 +963,7 @@ extension OperationOutcome {
         guard succeeded, !unsaved.isEmpty else { return self }
         let done = message.map(Self.withoutDoneClaim) ?? ""
         // Translators: Sentence that replaces a claim of success when some changes could not be saved. The failure notices follow.
-        let report = [done, String(localized: "Some changes are not saved.")]
+        let report = [done, InterfaceText.line("operationOutcome.confirmingSaves", "Some changes are not saved.")]
             + PersistenceBannerRow.rows(for: unsaved).map(\.text)
         return .failure(SentenceWording.joined(report.filter { !$0.isEmpty }))
     }

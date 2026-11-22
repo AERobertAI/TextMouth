@@ -1269,7 +1269,7 @@ enum LibraryTransitionWording {
     static func completion(movingPackagesOf count: Int) -> String? {
         guard count >= announcedPackageCount else { return nil }
         // Translators: VoiceOver announcement when a move of many books to a folder finishes. %lld is how many books were moved.
-        return String(localized: "Done. Moved \(count) books.")
+        return InterfaceText.line("libraryTransition.completion", "Done. Moved \(number: count) books.")
     }
 
     /// The Move to Folder… command for `targets`, the books a row's commands
@@ -1282,9 +1282,9 @@ enum LibraryTransitionWording {
         guard movable > 0 else { return nil }
         return movable > 1
             // Translators: Title of the command that moves several selected books to a folder, in a row's menu. %lld is how many books it moves.
-            ? String(localized: "Move \(movable) Books to Folder...")
+            ? InterfaceText.line("libraryTransition.moveToFolderTitle", "Move \(number: movable) Books to Folder...")
             // Translators: Title of the command that moves the selected book to a folder, in a row's menu. The three dots mean a sheet opens to choose the folder.
-            : String(localized: "Move to Folder...")
+            : InterfaceText.line("common.moveToFolder", "Move to Folder...")
     }
 
     /// What VoiceOver hears when Move to Folder… leaves feed items titled
@@ -1301,14 +1301,14 @@ enum LibraryTransitionWording {
         // first three and how many more.
         let names = rest > 0
             // Translators: The first three titles of the feed items that were left where they are, then how many others there were. %1$@ is the three titles, in quotes, separated by commas. %2$lld is how many more.
-            ? String(localized: "\(shown.joined(separator: ", ")), and \(rest) more")
+            ? InterfaceText.line("libraryTransition.feedItemsLeft.more", "\(shown.joined(separator: ", ")), and \(number: rest) more")
             : CountWording.list(Array(shown))
         let command = ShortcutAction.moveToLibrary.title
         if titles.count == 1 {
             // Translators: VoiceOver announcement when Move to Folder left one feed item where it is. %1$@ is the item's title, in quotes. %2$@ is the name of the Move to Library command, which makes an item a book of the library.
-            return String(localized: "Left \(names) where it is: episodes and articles stay in their feeds; \(command) makes one a book of your library.")
+            return InterfaceText.line("libraryTransition.feedItemsLeft.episodes", "Left \(names) where it is: episodes and articles stay in their feeds; \(command) makes one a book of your library.")
         }
         // Translators: VoiceOver announcement when Move to Folder left several feed items where they are. %1$@ is the items' titles, in quotes, such as "A", "B", and 2 more. %2$@ is the name of the Move to Library command, which makes an item a book of the library.
-        return String(localized: "Left \(names) where they are: episodes and articles stay in their feeds; \(command) makes one a book of your library.")
+        return InterfaceText.line("libraryTransition.feedItemsLeft.they", "Left \(names) where they are: episodes and articles stay in their feeds; \(command) makes one a book of your library.")
     }
 }

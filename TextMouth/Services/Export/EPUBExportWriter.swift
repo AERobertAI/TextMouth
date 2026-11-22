@@ -38,7 +38,7 @@ struct EPUBExportWriter: TextExportWriter {
     /// What the picker's hint says while this writer is chosen.
     var hint: String {
         // Translators: The hint of the Convert to picker in the Export dialog while EPUB is chosen. Apple Books is an app's name.
-        String(localized: "An e-book with the book's headings, contents, and any page numbers, for Apple Books and other reading apps. It holds no pictures.")
+        InterfaceText.line("epubExportWriter.hint", "An e-book with the book's headings, contents, and any page numbers, for Apple Books and other reading apps. It holds no pictures.")
     }
 
     /// The book's chapters and pages are kept as well as its words.
@@ -115,17 +115,17 @@ struct EPUBExportWriter: TextExportWriter {
         switch code {
         case EIO, EROFS, EACCES, EPERM, ESTALE, ENXIO, ENODEV, ETIMEDOUT:
             // Translators: Why an EPUB export failed: the system gave a reason. %@ is the system's own words, such as "Read-only file system".
-            return String(localized: "The EPUB file could not be written: \(String(cString: strerror(code))).")
+            return InterfaceText.line("epubExportWriter.writeFailureSentence.eio", "The EPUB file could not be written: \(String(cString: strerror(code))).")
         default:
             // Translators: Why an EPUB export failed: the write failed and the disk may be full.
-            return String(localized: "The EPUB file could not be written, because the disk may be full.")
+            return InterfaceText.line("epubExportWriter.writeFailureSentence.other", "The EPUB file could not be written, because the disk may be full.")
         }
     }
 
     /// Why an EPUB export failed when its file did not read back whole.
     static var couldNotBeWritten: String {
         // Translators: Why an EPUB export failed: the file was not written whole.
-        String(localized: "The EPUB file could not be written.")
+        InterfaceText.line("epubExportWriter.couldNotBeWritten", "The EPUB file could not be written.")
     }
 
     /// Writes the package of `document` into a new archive at `url` and

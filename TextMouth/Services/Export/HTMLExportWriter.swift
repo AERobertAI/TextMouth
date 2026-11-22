@@ -20,7 +20,7 @@ struct HTMLExportWriter: TextExportWriter {
     let fileExtension = "html"
     var hint: String {
         // Translators: The hint of the Convert to picker in the Export dialog while HTML is chosen.
-        String(localized: "A web page of the book's text, with a contents list linking each heading.")
+        InterfaceText.line("htmlExportWriter.hint", "A web page of the book's text, with a contents list linking each heading.")
     }
 
     /// Writes the page of `document` as UTF-8 to a new file at `url`; a file

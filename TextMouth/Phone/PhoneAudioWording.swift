@@ -7,6 +7,6 @@ enum PhoneAudioWording {
     /// F7). The book stays as it was, and Play tries again.
     static var cannotPlayNow: String {
         // Translators: Announcement when Play fails on the iPhone because a phone call or another app holds the audio.
-        String(localized: "Can't play: a call or another app is using the audio.")
+        InterfaceText.line("phoneAudio.cannotPlayNow", "Can't play: a call or another app is using the audio.")
     }
 }

@@ -31,19 +31,19 @@ enum SpeechRenderFailure: LocalizedError, Equatable {
         switch self {
         case .refused(let title):
             // Translators: Why a chapter of a spoken audio export could not be spoken. %@ is the chapter's title.
-            return String(localized: "The Mac's speech engine refused to speak part of “\(title)”, even with its brackets made silent.")
+            return InterfaceText.line("speechRenderFailure.refused", "The Mac's speech engine refused to speak part of “\(title)”, even with its brackets made silent.")
         case .noSound(let title):
             // Translators: Why a chapter of a spoken audio export could not be spoken: the voice made no sound. %@ is the chapter's title.
-            return String(localized: "The voice made no sound for “\(title)”. Check that it speaks the book's language.")
+            return InterfaceText.line("speechRenderFailure.noSound", "The voice made no sound for “\(title)”. Check that it speaks the book's language.")
         case .stalled(let title):
             // Translators: Why a chapter of a spoken audio export could not be spoken: the voice stalled. %@ is the chapter's title.
-            return String(localized: "The voice stopped partway through “\(title)”, and TextMouth stopped waiting.")
+            return InterfaceText.line("speechRenderFailure.stalled", "The voice stopped partway through “\(title)”, and TextMouth stopped waiting.")
         case .formatChanged(let title):
             // Translators: Why a chapter of a spoken audio export could not be spoken: the voice changed its audio format. %@ is the chapter's title.
-            return String(localized: "The voice changed its kind of audio partway through “\(title)”.")
+            return InterfaceText.line("speechRenderFailure.formatChanged", "The voice changed its kind of audio partway through “\(title)”.")
         case .unusableVoice:
             // Translators: Why a spoken audio export was refused: the book's voice can't be recorded. %@ is the name of the Voice button in the book's reader.
-            return String(localized: "The book's voice can't be recorded to a file. Choose another voice with the \(Self.voiceButtonName) button in the reader, then export again.")
+            return InterfaceText.line("speechRenderFailure.unusableVoice", "The book's voice can't be recorded to a file. Choose another voice with the \(Self.voiceButtonName) button in the reader, then export again.")
         }
     }
 
@@ -51,7 +51,7 @@ enum SpeechRenderFailure: LocalizedError, Equatable {
     /// that sends the listener there names, as `SpeechExportError` names it.
     private static var voiceButtonName: String {
         // Translators: The name of the Voice button in a book's reader, which opens the book's voice choices.
-        String(localized: "Voice")
+        InterfaceText.line("common.voice", "Voice")
     }
 }
 

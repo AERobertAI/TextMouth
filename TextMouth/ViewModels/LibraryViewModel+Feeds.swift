@@ -446,11 +446,11 @@ enum FeedFolderNaming {
     /// Why no folder was made when the folder chosen to hold it is gone.
     static var parentMissingMessage: String {
         // Translators: Why Subscribe could not make the feed's folder: the folder chosen to hold it was removed from the library.
-        String(localized: "The folder chosen to hold the feed's folder is no longer in the library. Choose another one.")
+        InterfaceText.line("feedFolderNaming.parentMissingMessage", "The folder chosen to hold the feed's folder is no longer in the library. Choose another one.")
     }
     /// Why no folder was made when no name could be used.
     static var notMadeMessage: String {
         // Translators: Why Subscribe could not make the feed's folder, when no better reason is known.
-        String(localized: "TextMouth couldn't make a folder for this feed.")
+        InterfaceText.line("feedFolderNaming.notMadeMessage", "TextMouth couldn't make a folder for this feed.")
     }
 }

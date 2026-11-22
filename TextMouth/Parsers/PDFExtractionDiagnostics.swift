@@ -124,12 +124,12 @@ struct PDFExtractionDiagnostics: Equatable, Sendable {
             // Every page, which for one page is "the PDF's only page".
             return total == 1
                 // Translators: Warning after an import of a PDF whose only page needed text recognition (OCR) where it could not run. %@ is the page and why, such as "page 1 (text recognition is not available)", the reason in English.
-                ? String(localized: "OCR could not run on the PDF's only page, so text found only in its images is missing: \(groups).")
+                ? InterfaceText.line("pdfExtractionDiagnostics.problem.page", "OCR could not run on the PDF's only page, so text found only in its images is missing: \(groups).")
                 // Translators: Warning after an import of a PDF whose every page needed text recognition (OCR) where it could not run. %lld is how many pages the PDF has, two or more. %@ is the pages and why, such as "pages 3 and 7 (text recognition is not available)", the reasons in English.
-                : String(localized: "OCR could not run on all \(total) pages, so text found only in their images is missing: \(groups).")
+                : InterfaceText.line("pdfExtractionDiagnostics.problem.allPages", "OCR could not run on all \(number: total) pages, so text found only in their images is missing: \(groups).")
         }
         // Translators: Warning after an import of a PDF where some pages needed text recognition (OCR) where it could not run. %1$@ is how many of them, one or more, written with digit grouping; %2$lld is how many pages the PDF has, two or more; %3$@ is the pages and why, such as "pages 3 and 7 (text recognition is not available)", the reasons in English.
-        return String(localized: "OCR could not run on \(failed.count.formatted()) of \(total) pages, so text found only in their images is missing: \(groups).")
+        return InterfaceText.line("pdfExtractionDiagnostics.problem.pages", "OCR could not run on \(failed.count.formatted()) of \(number: total) pages, so text found only in their images is missing: \(groups).")
     }
 
     /// `problem` in English for the debug log, which stays English whatever
@@ -197,13 +197,13 @@ struct PDFExtractionDiagnostics: Equatable, Sendable {
         let runs = pageRuns(of: pageNumbers)
         guard !runs.isEmpty else {
             // Translators: Names an empty set of a PDF's pages, in a sentence about which pages were read.
-            return String(localized: "no pages")
+            return InterfaceText.line("pdfExtractionDiagnostics.pagePhrase.noPages", "no pages")
         }
         var items: [String] = []
         for run in runs {
             if let last = run.last {
                 // Translators: A range of three or more consecutive pages of a PDF, in a list of pages. %1$@ is the first page and %2$@ the last, identifiers written without digit grouping.
-                items.append(String(localized: "\(String(run.first)) to \(String(last))"))
+                items.append(InterfaceText.line("common.valueToValue", "\(String(run.first)) to \(String(last))"))
             } else {
                 items.append(String(run.first))
             }
@@ -213,9 +213,9 @@ struct PDFExtractionDiagnostics: Equatable, Sendable {
         let single = runs.count == 1 && runs[0].last == nil
         return single
             // Translators: Names one page of a PDF, in a sentence about which pages were read. %@ is the page's number, an identifier written without digit grouping.
-            ? String(localized: "page \(list)")
+            ? InterfaceText.line("pdfExtractionDiagnostics.pagePhrase.one", "page \(list)")
             // Translators: Names several pages of a PDF, in a sentence about which pages were read. %@ is a list of page numbers and ranges, such as "3 and 7" or "1 to 4, 7, and 9".
-            : String(localized: "pages \(list)")
+            : InterfaceText.line("pdfExtractionDiagnostics.pagePhrase.pages", "pages \(list)")
     }
 
     /// `pagePhrase` in English for the debug log (FR34).
@@ -274,13 +274,13 @@ struct PDFExtractionDiagnostics: Equatable, Sendable {
         var text = ""
         for (index, group) in pagesGroupedByReason.enumerated() {
             // Translators: One group of a PDF's pages that text recognition (OCR) could not run on, with the reason. %1$@ is the pages, such as "pages 3 and 7", and %2$@ the reason, a phrase in English.
-            let item = String(localized: "\(Self.pagePhrase(group.pages)) (\(group.reason))")
+            let item = InterfaceText.line("common.valueInParentheses", "\(Self.pagePhrase(group.pages)) (\(group.reason))")
             // Groups are told one after another, separated by a semicolon.
             if index == 0 {
                 text = item
             } else {
                 // Translators: Joins two groups of a PDF's pages that text recognition (OCR) could not run on, each with its reason: the pages and reason, a semicolon, then the next.
-                text = String(localized: "\(text); \(item)")
+                text = InterfaceText.line("common.valueSemicolonValue", "\(text); \(item)")
             }
         }
         return text

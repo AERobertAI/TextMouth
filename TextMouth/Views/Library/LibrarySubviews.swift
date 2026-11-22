@@ -12,52 +12,52 @@ enum LibrarySubviewWording {
     /// The edit bar's count of books selected, as it shows it.
     static func selectedOf(selected: Int, total: Int) -> String {
         // Translators: Text of the edit bar in the Library list: how many of the listed books are selected. %1$lld is the number selected. %2$lld is how many books are listed.
-        String(localized: "\(selected) of \(total) selected")
+        InterfaceText.line("librarySubview.selectedOf", "\(number: selected) of \(number: total) selected")
     }
 
     /// What the edit bar's selection button says while some books are not selected.
     static var selectAll: String {
         // Translators: Button of the edit bar that selects every listed book.
-        String(localized: "Select All")
+        InterfaceText.line("common.selectAll", "Select All")
     }
 
     /// What the edit bar's selection button says once every book is selected.
     static var deselectAll: String {
         // Translators: Button of the edit bar that deselects every book.
-        String(localized: "Deselect All")
+        InterfaceText.line("librarySubview.deselectAll", "Deselect All")
     }
 
     /// What VoiceOver calls the selection button once every book is selected.
     static var deselectAllBooks: String {
         // Translators: Spoken label of the edit bar's button that deselects every book.
-        String(localized: "Deselect all books")
+        InterfaceText.line("librarySubview.deselectAllBooks", "Deselect all books")
     }
 
     /// What VoiceOver calls the selection button while books are listed.
     static func selectAllLabel(count: Int) -> String {
         // Translators: Spoken label of the edit bar's button that selects every listed book. %lld is how many books are listed.
-        String(localized: "Select all \(count) books")
+        InterfaceText.line("librarySubview.selectAllLabel", "Select all \(number: count) books")
     }
 
     /// What VoiceOver calls the selection button while no book is listed.
     static var selectAllBooks: String {
         // Translators: Spoken label of the edit bar's button that selects every listed book, while no book is listed and the button is dimmed.
-        String(localized: "Select all books")
+        InterfaceText.line("librarySubview.selectAllBooks", "Select all books")
     }
 
     /// What VoiceOver calls the edit bar's Move button.
     static func moveToFolderLabel(count: Int) -> String {
         // Translators: Spoken label of the edit bar's Move button. %lld is how many books are selected.
-        String(localized: "Move \(count) books to folder")
+        InterfaceText.line("librarySubview.moveToFolderLabel", "Move \(number: count) books to folder")
     }
 
     /// What VoiceOver calls the edit bar.
     static func editModeLabel(selected: Int, total: Int) -> String {
         total == 1
             // Translators: Spoken label of the edit bar when one book is listed. %1$lld is how many are selected, 0 or 1. %2$lld is how many are listed, 1.
-            ? String(localized: "Edit mode, \(selected) of \(total) book selected")
+            ? InterfaceText.line("librarySubview.editModeLabel.book", "Edit mode, \(number: selected) of \(number: total) book selected")
             // Translators: Spoken label of the edit bar when several books, or none, are listed. %1$lld is how many are selected. %2$lld is how many are listed.
-            : String(localized: "Edit mode, \(selected) of \(total) books selected")
+            : InterfaceText.line("librarySubview.editModeLabel.books", "Edit mode, \(number: selected) of \(number: total) books selected")
     }
 
     // MARK: Time remaining bar
@@ -65,49 +65,49 @@ enum LibrarySubviewWording {
     /// The bar's time left, as it shows it.
     static func remaining(_ time: String) -> String {
         // Translators: Text of the time bar under the Library list: the time left to read the listed books. %@ is a time, such as 3:20:00.
-        String(localized: "\(time) remaining")
+        InterfaceText.line("common.valueRemaining", "\(time) remaining")
     }
 
     /// The bar's count of books not opened yet, as it shows it.
     static func notYetOpened(count: Int) -> String {
         // Translators: Text of the time bar: how many listed books have not been opened, so their time is unknown. The parentheses are part of the text. %lld is the number of books.
-        String(localized: "(\(count) books not yet opened)")
+        InterfaceText.line("librarySubview.notYetOpened", "(\(number: count) books not yet opened)")
     }
 
     /// The time left, as the bar's spoken label says it.
     static func totalRemaining(_ time: String) -> String {
         // Translators: Part of the time bar's spoken label: the time left for the listed books at the reading speed now set. %@ is a spoken time, such as 3 hours 20 minutes.
-        String(localized: "\(time) total remaining at current speed")
+        InterfaceText.line("librarySubview.totalRemaining", "\(time) total remaining at current speed")
     }
 
     /// The books not opened yet, as the bar's spoken label says it.
     static func notBeenOpened(count: Int) -> String {
         // Translators: Part of the time bar's spoken label: how many listed books have not been opened. %lld is the number of books.
-        String(localized: "\(count) books have not been opened yet")
+        InterfaceText.line("librarySubview.notBeenOpened", "\(number: count) books have not been opened yet")
     }
 
     /// The bar's visible count of books in the cloud.
     static func inCloud(count: Int) -> String {
         // Translators: Text of the time bar: how many listed books are only in the cloud, not downloaded. %lld is the number of books.
-        String(localized: "\(count) books in the cloud")
+        InterfaceText.line("librarySubview.inCloud", "\(number: count) books in the cloud")
     }
 
     /// The bar's visible count of books kept on this Mac.
     static func keptOnThisMac(count: Int) -> String {
         // Translators: Text of the time bar: how many listed books are kept downloaded on this Mac. %lld is the number of books.
-        String(localized: "\(count) books kept on this Mac")
+        InterfaceText.line("librarySubview.keptOnThisMac", "\(number: count) books kept on this Mac")
     }
 
     /// The bar's spoken count of books in the cloud.
     static func spokenInCloud(count: Int) -> String {
         // Translators: Part of the time bar's spoken label: how many listed books are only in the cloud. %lld is the number of books.
-        String(localized: "\(count) books are in the cloud")
+        InterfaceText.line("librarySubview.spokenInCloud", "\(number: count) books are in the cloud")
     }
 
     /// The bar's spoken count of books kept on this Mac.
     static func spokenKept(count: Int) -> String {
         // Translators: Part of the time bar's spoken label: how many listed books are kept downloaded on this Mac. %lld is the number of books.
-        String(localized: "\(count) books are kept on this Mac")
+        InterfaceText.line("librarySubview.spokenKept", "\(number: count) books are kept on this Mac")
     }
 
     // MARK: Breadcrumbs
@@ -115,13 +115,13 @@ enum LibrarySubviewWording {
     /// What VoiceOver calls the breadcrumb that goes to the library's top level.
     static var navigateToLibraryRoot: String {
         // Translators: Spoken label of the first breadcrumb button, which goes to the library's top level.
-        String(localized: "Navigate to library root")
+        InterfaceText.line("librarySubview.navigateToLibraryRoot", "Navigate to library root")
     }
 
     /// What VoiceOver calls a breadcrumb that goes to a folder.
     static func navigateTo(_ folderName: String) -> String {
         // Translators: Spoken label of a breadcrumb button that goes to a folder. %@ is the folder's name.
-        String(localized: "Navigate to \(folderName)")
+        InterfaceText.line("librarySubview.navigateTo", "Navigate to \(folderName)")
     }
 
     // MARK: Rows
@@ -129,67 +129,67 @@ enum LibrarySubviewWording {
     /// What VoiceOver says a folder's row does.
     static var opensTheFolder: String {
         // Translators: Hint of a folder's row in the Library list.
-        String(localized: "Opens the folder.")
+        InterfaceText.line("librarySubview.opensTheFolder", "Opens the folder.")
     }
 
     /// What VoiceOver says a book's row does.
     static var opensTheBook: String {
         // Translators: Hint of a book's row in the Library list.
-        String(localized: "Opens the book.")
+        InterfaceText.line("librarySubview.opensTheBook", "Opens the book.")
     }
 
     /// What VoiceOver says a book's row does in edit mode, while it is not selected.
     static var selectsThisBook: String {
         // Translators: Hint of a book's row in the Library list in edit mode, while the book is not selected.
-        String(localized: "Selects this book.")
+        InterfaceText.line("librarySubview.selectsThisBook", "Selects this book.")
     }
 
     /// What VoiceOver says a book's row does in edit mode, while it is selected.
     static var deselectsThisBook: String {
         // Translators: Hint of a book's row in the Library list in edit mode, while the book is selected.
-        String(localized: "Deselects this book.")
+        InterfaceText.line("librarySubview.deselectsThisBook", "Deselects this book.")
     }
 
     /// The badge on a book never opened.
     static var new: String {
         // Translators: Badge on a book's row in the Library list: the book has never been opened.
-        String(localized: "New")
+        InterfaceText.line("librarySubview.newBadge", "New")
     }
 
     /// The badge on the book open in a window.
     static var nowReading: String {
         // Translators: Badge on a book's row in the Library list: the book is open in a reader window now.
-        String(localized: "Now Reading")
+        InterfaceText.line("librarySubview.nowReading", "Now Reading")
     }
 
     /// The row's first word while its book is selected, in edit mode.
     static var selected: String {
         // Translators: First part of a book's spoken row label in edit mode, when the book is selected.
-        String(localized: "Selected")
+        InterfaceText.line("librarySubview.selected", "Selected")
     }
 
     /// The row's author part.
     static func byAuthor(_ author: String) -> String {
         // Translators: Part of a book's spoken row label, after the title. %@ is the author's name, or Unknown.
-        String(localized: "by \(author)")
+        InterfaceText.line("librarySubview.byAuthor", "by \(author)")
     }
 
     /// A reading progress spoken, "42 percent".
     static func spokenPercent(_ percent: String) -> String {
         // Translators: A book's reading progress as VoiceOver says it. %@ is a whole number, such as 42.
-        String(localized: "\(percent) percent")
+        InterfaceText.line("librarySubview.spokenPercent", "\(percent) percent")
     }
 
     /// A reading progress spoken beside a download's percentage, "42 percent read".
     static func percentRead(_ spokenProgress: String) -> String {
         // Translators: A book's reading progress as VoiceOver says it when the row also says a download's percentage. %@ is the progress, such as 42 percent.
-        String(localized: "\(spokenProgress) read")
+        InterfaceText.line("librarySubview.percentRead", "\(spokenProgress) read")
     }
 
     /// The time left after the reading position, as the row shows it.
     static func left(_ time: String) -> String {
         // Translators: A book's time left to read, as its row shows it. %@ is a time, such as 16:00.
-        String(localized: "\(time) left")
+        InterfaceText.line("common.valueLeft", "\(time) left")
     }
 
     // MARK: Row menu and actions
@@ -197,31 +197,31 @@ enum LibrarySubviewWording {
     /// The row's menu item that moves a book one place up in a manual order.
     static var moveUp: String {
         // Translators: Menu item and VoiceOver action of a book's row that moves the book one place toward the top of an order the user arranges.
-        String(localized: "Move Up")
+        InterfaceText.line("common.moveUp", "Move Up")
     }
 
     /// The row's menu item that moves a book one place down in a manual order.
     static var moveDown: String {
         // Translators: Menu item and VoiceOver action of a book's row that moves the book one place toward the bottom of an order the user arranges.
-        String(localized: "Move Down")
+        InterfaceText.line("common.moveDown", "Move Down")
     }
 
     /// The row's menu item that opens the book.
     static var open: String {
         // Translators: Menu item of a book's row that opens the book in a reader window.
-        String(localized: "Open")
+        InterfaceText.line("common.open", "Open")
     }
 
     /// The row's menu item that shows the book's information.
     static var bookInfo: String {
         // Translators: Menu item of a book's row that opens the sheet with the book's information.
-        String(localized: "Book Info")
+        InterfaceText.line("common.bookInfo", "Book Info")
     }
 
     /// The row's menu item that starts edit mode with the book selected.
     static var select: String {
         // Translators: Menu item of a book's row that starts edit mode with the book selected.
-        String(localized: "Select")
+        InterfaceText.line("common.select", "Select")
     }
 }
 

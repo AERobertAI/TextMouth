@@ -111,14 +111,14 @@ enum FeedItemBookInfoWording {
     /// The sheet's heading, as every Book Info's.
     static var heading: String {
         // Translators: Heading of a book's information sheet, as every Book Information sheet has it. Title case.
-        String(localized: "Book Information")
+        InterfaceText.line("common.bookInformation", "Book Information")
     }
     /// The button that closes the sheet.
     static var done: String { FeedWording.doneTitle }
     /// The sheet's window title, naming the book.
     static func title(of bookTitle: String) -> String {
         // Translators: The window title of the read-only Book Information sheet of a feed's episode or article. %@ is the book's title.
-        String(localized: "Info: \(bookTitle)")
+        InterfaceText.line("common.infoValue", "Info: \(bookTitle)")
     }
 
     /// The line under the heading saying why nothing can be changed, and
@@ -128,9 +128,9 @@ enum FeedItemBookInfoWording {
         let moveName = ShortcutAction.moveToLibrary.title
         return isArticle
             // Translators: The line under the heading of an article's read-only Book Information sheet: why nothing can be changed, and the way out. %@ is the name of the Move to Library command.
-            ? String(localized: "An article's details come from its feed; \(moveName) makes it a book you can edit.")
+            ? InterfaceText.line("feedItemBookInfo.whyReadOnly.article", "An article's details come from its feed; \(moveName) makes it a book you can edit.")
             // Translators: The line under the heading of an episode's read-only Book Information sheet: why nothing can be changed, and the way out. %@ is the name of the Move to Library command.
-            : String(localized: "An episode's details come from its feed; \(moveName) makes it a book you can edit.")
+            : InterfaceText.line("feedItemBookInfo.whyReadOnly.episode", "An episode's details come from its feed; \(moveName) makes it a book you can edit.")
     }
 
     /// What VoiceOver says for the reader's Book Info button: "Edit book
@@ -140,9 +140,9 @@ enum FeedItemBookInfoWording {
     static func readerButtonLabel(readOnly: Bool) -> String {
         readOnly
             // Translators: VoiceOver label of the reader's Book Info button for a feed's episode or article, whose Book Info only shows.
-            ? String(localized: "Show book information")
+            ? InterfaceText.line("feedItemBookInfo.readerButtonLabel.information", "Show book information")
             // Translators: VoiceOver label of the reader's Book Info button for a book the listener can edit.
-            : String(localized: "Edit book metadata")
+            : InterfaceText.line("feedItemBookInfo.readerButtonLabel.metadata", "Edit book metadata")
     }
 
     /// The details of `book`, an episode or article, in the order the sheet
@@ -178,13 +178,13 @@ enum FeedItemBookInfoWording {
             details.append(BookInfoDetail(label: "Format", value: book.format.displayName))
             if let words = book.totalWordCount {
                 // Translators: Label of a book's number of words in its read-only Book Information sheet.
-                details.append(BookInfoDetail(label: String(localized: "Word count"), value: "\(words)"))
+                details.append(BookInfoDetail(label: InterfaceText.line("feedItemBookInfo.wordCount", "Word count"), value: "\(words)"))
             }
         }
         details.append(BookInfoDetail(label: "Added", value: FeedWording.itemDate(book.dateAdded)))
         if let lastOpened = book.lastOpened {
             // Translators: Label of when a book was last opened, in its read-only Book Information sheet.
-            details.append(BookInfoDetail(label: String(localized: "Last opened"), value: FeedWording.itemDate(lastOpened)))
+            details.append(BookInfoDetail(label: InterfaceText.line("feedItemBookInfo.lastOpened", "Last opened"), value: FeedWording.itemDate(lastOpened)))
         }
         return details.filter { !$0.value.isEmpty }
     }

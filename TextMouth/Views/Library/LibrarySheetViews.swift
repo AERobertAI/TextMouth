@@ -13,37 +13,37 @@ enum LibrarySheetWording {
     /// The heading of the Book Information sheet.
     static var bookInformation: String {
         // Translators: Heading of the sheet that shows and edits a book's title and author, and lists its other details.
-        String(localized: "Book Information")
+        InterfaceText.line("common.bookInformation", "Book Information")
     }
 
     /// What VoiceOver says for the author field, before "edited by hand".
     static var bookAuthorLabel: String {
         // Translators: What VoiceOver says for the book information sheet's field for the book's author.
-        String(localized: "Book author")
+        InterfaceText.line("librarySheet.bookAuthorLabel", "Book author")
     }
 
     /// The row that shows when the book was added.
     static var addedRow: String {
         // Translators: Name of the book information sheet's row that shows the date the book was added to the library.
-        String(localized: "Added")
+        InterfaceText.line("librarySheet.addedRow", "Added")
     }
 
     /// The row that shows when the book was last opened.
     static var lastOpenedRow: String {
         // Translators: Name of the book information sheet's row that shows the date the book was last opened.
-        String(localized: "Last Opened")
+        InterfaceText.line("common.lastOpened", "Last Opened")
     }
 
     /// The row that shows how many words the book has.
     static var wordCountRow: String {
         // Translators: Name of the book information sheet's row that shows how many words the book has.
-        String(localized: "Word Count")
+        InterfaceText.line("librarySheet.wordCountRow", "Word Count")
     }
 
     /// The window title of the Book Information sheet.
     static func infoTitle(_ bookTitle: String) -> String {
         // Translators: Window title of the sheet that shows a book's information. %@ is the book's title.
-        String(localized: "Info: \(bookTitle)")
+        InterfaceText.line("common.infoValue", "Info: \(bookTitle)")
     }
 
     // MARK: Folder fields
@@ -51,43 +51,43 @@ enum LibrarySheetWording {
     /// The title of the New Folder sheet and of its fields' group.
     static var newFolderTitle: String {
         // Translators: Heading of the sheet that makes a new folder, and of the group of fields that makes one inside a folder chooser.
-        String(localized: "New Folder")
+        InterfaceText.line("common.newFolder", "New Folder")
     }
 
     /// The name field of a folder sheet.
     static var folderNameField: String {
         // Translators: Name of the text field that holds a folder's name, in the New Folder and Rename Folder sheets.
-        String(localized: "Folder name")
+        InterfaceText.line("common.folderName", "Folder name")
     }
 
     /// What VoiceOver says for the name field of a folder that is made or renamed.
     static var newFolderNameLabel: String {
         // Translators: What VoiceOver says for the text field that holds the name a folder is made or renamed with.
-        String(localized: "New folder name")
+        InterfaceText.line("librarySheet.newFolderNameLabel", "New folder name")
     }
 
     /// The pop-up that chooses a new folder's parent.
     static var parentFolder: String {
         // Translators: Name of the pop-up that chooses the folder a new folder is made in.
-        String(localized: "Parent folder")
+        InterfaceText.line("librarySheet.parentFolder", "Parent folder")
     }
 
     /// What VoiceOver says for the parent pop-up of the new folder's fields in a folder chooser.
     static var parentFolderForNewFolder: String {
         // Translators: What VoiceOver says for the pop-up that chooses the folder a new folder is made in, among a folder chooser's new folder fields.
-        String(localized: "Parent folder for new folder")
+        InterfaceText.line("librarySheet.parentFolderForNewFolder", "Parent folder for new folder")
     }
 
     /// The button that makes the folder.
     static var create: String {
         // Translators: Button that makes the new folder.
-        String(localized: "Create")
+        InterfaceText.line("librarySheet.create", "Create")
     }
 
     /// The button that opens the new folder's fields.
     static var newFolderButton: String {
         // Translators: Button in a folder chooser that shows the fields that make a new folder. The three dots mean more fields open.
-        String(localized: "New Folder...")
+        InterfaceText.line("librarySheet.newFolderButton", "New Folder...")
     }
 
     // MARK: Move
@@ -95,67 +95,67 @@ enum LibrarySheetWording {
     /// The button that moves the books or the folder.
     static var move: String {
         // Translators: Button that moves the books or the folder to the place chosen.
-        String(localized: "Move")
+        InterfaceText.line("librarySheet.move", "Move")
     }
 
     /// The caption of the destination pop-up in the Move sheet.
     static var destinationCaption: String {
         // Translators: Caption of the pop-up that chooses the folder the books move into.
-        String(localized: "Destination")
+        InterfaceText.line("librarySheet.destinationCaption", "Destination")
     }
 
     /// What VoiceOver says for the destination pop-up in the Move sheet.
     static var destinationFolderLabel: String {
         // Translators: What VoiceOver says for the pop-up that chooses the folder the books move into.
-        String(localized: "Destination folder")
+        InterfaceText.line("librarySheet.destinationFolderLabel", "Destination folder")
     }
 
     /// The heading of the Move sheet for one book.
     static func moveTitle(bookTitle: String) -> String {
         // Translators: Heading of the sheet that moves one book to a folder. %@ is the book's title.
-        String(localized: "Move \"\(bookTitle)\"")
+        InterfaceText.line("librarySheet.moveTitle.named", "Move \"\(bookTitle)\"")
     }
 
     /// The heading of the Move sheet for several books.
     static func moveTitle(count: Int) -> String {
         // Translators: Heading of the sheet that moves several books to a folder. %lld is how many books.
-        String(localized: "Move \(count) Books")
+        InterfaceText.line("librarySheet.moveTitle.books", "Move \(number: count) Books")
     }
 
     /// What the Move sheet says while the books move.
     static func movingBooks(count: Int) -> String {
         // Translators: Status shown and spoken in the Move sheet while the books' packages move. %lld is how many books. The three dots mean it is in progress.
-        String(localized: "Moving \(count) books...")
+        InterfaceText.line("librarySheet.movingBooks", "Moving \(number: count) books...")
     }
 
     /// The heading of the sheet that moves a folder under a new parent.
     static func moveTitle(folderName: String) -> String {
         // Translators: Heading of the sheet that moves a folder under a new parent folder. %@ is the folder's name.
-        String(localized: "Move \"\(folderName)\"")
+        InterfaceText.line("librarySheet.moveTitle.named", "Move \"\(folderName)\"")
     }
 
     /// The pop-up that chooses the folder's new parent.
     static var newParentFolder: String {
         // Translators: Caption of the pop-up that chooses the folder a moved folder goes into.
-        String(localized: "New parent folder")
+        InterfaceText.line("librarySheet.newParentFolder", "New parent folder")
     }
 
     /// What VoiceOver says for the new parent pop-up.
     static var destinationParentFolder: String {
         // Translators: What VoiceOver says for the pop-up that chooses the folder a moved folder goes into.
-        String(localized: "Destination parent folder")
+        InterfaceText.line("librarySheet.destinationParentFolder", "Destination parent folder")
     }
 
     /// The window title of the sheet that moves a folder.
     static func moveFolderNavigationTitle(_ name: String) -> String {
         // Translators: Window title of the sheet that moves a folder. %@ is the folder's name.
-        String(localized: "Move Folder: \(name)")
+        InterfaceText.line("librarySheet.moveFolderNavigationTitle", "Move Folder: \(name)")
     }
 
     /// What the sheet says while the folder moves.
     static var movingTheFolder: String {
         // Translators: Status shown and spoken in the sheet that moves a folder, while its books' packages move. The three dots mean it is in progress.
-        String(localized: "Moving the folder...")
+        InterfaceText.line("librarySheet.movingTheFolder", "Moving the folder...")
     }
 
     // MARK: Rename
@@ -163,19 +163,19 @@ enum LibrarySheetWording {
     /// The heading and window title of the Rename Folder sheet.
     static var renameFolderTitle: String {
         // Translators: Heading and window title of the sheet that renames a folder.
-        String(localized: "Rename Folder")
+        InterfaceText.line("librarySheet.renameFolderTitle", "Rename Folder")
     }
 
     /// The button that renames the folder.
     static var rename: String {
         // Translators: Button that gives the folder the new name.
-        String(localized: "Rename")
+        InterfaceText.line("common.rename", "Rename")
     }
 
     /// What the sheet says while the folder is renamed.
     static var renamingTheFolder: String {
         // Translators: Status shown and spoken in the Rename Folder sheet while the folder's books' packages move to the new name. The three dots mean it is in progress.
-        String(localized: "Renaming the folder...")
+        InterfaceText.line("librarySheet.renamingTheFolder", "Renaming the folder...")
     }
 
     // MARK: Delete a folder, moving its contents
@@ -183,43 +183,43 @@ enum LibrarySheetWording {
     /// The heading of the sheet that asks where a deleted folder's contents go.
     static func moveContentsTitle(_ name: String) -> String {
         // Translators: Heading of the sheet that chooses where the books and subfolders of a folder go before it is deleted. %@ is the folder's name.
-        String(localized: "Move Contents of \"\(name)\"")
+        InterfaceText.line("librarySheet.moveContentsTitle", "Move Contents of \"\(name)\"")
     }
 
     /// What the sheet explains under its heading.
     static func moveContentsExplanation(_ name: String) -> String {
         // Translators: Explanation in the sheet that chooses where a folder's contents go before the folder is deleted. %@ is the folder's name.
-        String(localized: "Choose where to move the books and subfolders before deleting \"\(name)\".")
+        InterfaceText.line("librarySheet.moveContentsExplanation", "Choose where to move the books and subfolders before deleting \"\(name)\".")
     }
 
     /// The pop-up that chooses where the contents go.
     static var moveContentsTo: String {
         // Translators: Caption of the pop-up that chooses the folder a deleted folder's books and subfolders move into.
-        String(localized: "Move contents to")
+        InterfaceText.line("librarySheet.moveContentsTo", "Move contents to")
     }
 
     /// What VoiceOver says for that pop-up.
     static var destinationForContents: String {
         // Translators: What VoiceOver says for the pop-up that chooses the folder a deleted folder's books and subfolders move into.
-        String(localized: "Destination for folder contents")
+        InterfaceText.line("librarySheet.destinationForContents", "Destination for folder contents")
     }
 
     /// The button that moves the contents and deletes the folder.
     static var moveContentsAndDelete: String {
         // Translators: Button that moves a folder's books and subfolders to the chosen place and then deletes the folder.
-        String(localized: "Move Contents & Delete Folder")
+        InterfaceText.line("librarySheet.moveContentsAndDelete", "Move Contents & Delete Folder")
     }
 
     /// The window title of that sheet.
     static func moveContentsNavigationTitle(_ name: String) -> String {
         // Translators: Window title of the sheet that chooses where a folder's contents go before it is deleted. %@ is the folder's name.
-        String(localized: "Move Contents: \(name)")
+        InterfaceText.line("librarySheet.moveContentsNavigationTitle", "Move Contents: \(name)")
     }
 
     /// What the sheet says while the contents move.
     static var movingTheFoldersContents: String {
         // Translators: Status shown and spoken while a deleted folder's books and subfolders move to their new place. The three dots mean it is in progress.
-        String(localized: "Moving the folder's contents...")
+        InterfaceText.line("librarySheet.movingTheFoldersContents", "Moving the folder's contents...")
     }
 }
 
@@ -548,7 +548,7 @@ struct OperationFailureNotice: View {
     /// error.
     nonisolated static func accessibilityLabel(for message: String) -> String {
         // Translators: What VoiceOver reads for the reason an operation failed in a sheet: the word Error, then the reason. %@ is the reason.
-        String(localized: "Error: \(message)")
+        InterfaceText.line("common.errorValue", "Error: \(message)")
     }
 
     /// The message a sheet shows after `outcome`: nil after a success, when
@@ -644,7 +644,7 @@ struct NewFolderSheet: View {
     nonisolated static func createdAnnouncement(name: String, parentPath: String) -> String {
         let place = parentPath.isEmpty ? LibraryFolderOption.rootLabel : parentPath
         // Translators: VoiceOver announcement once the New Folder sheet has closed on a folder made. %1$@ is the new folder's name. %2$@ is the place it is in: its parent folder's path, or the name of the library's top level.
-        return String(localized: "Folder \(name) created in \(place).")
+        return InterfaceText.line("newFolderSheet.createdAnnouncement", "Folder \(name) created in \(place).")
     }
 
     var body: some View {
@@ -773,13 +773,13 @@ struct LibraryFolderPicker: View {
     /// two apart.
     nonisolated static var cancelNewFolderTitle: String {
         // Translators: Title of the button, in a folder chooser, that closes the new folder's fields without making a folder. It is not named Cancel, so VoiceOver tells it apart from the sheet's own Cancel.
-        String(localized: "Cancel New Folder")
+        InterfaceText.line("libraryFolderPicker.cancelNewFolderTitle", "Cancel New Folder")
     }
     /// What that button does, for VoiceOver: the fields close, and the
     /// folder chosen in the pop-up stays chosen.
     nonisolated static var cancelNewFolderHint: String {
         // Translators: Hint of the button, in a folder chooser, that closes the new folder's fields: the folder chosen in the pop-up stays chosen.
-        String(localized: "Closes the new folder's fields and keeps the folder chosen.")
+        InterfaceText.line("libraryFolderPicker.cancelNewFolderHint", "Closes the new folder's fields and keeps the folder chosen.")
     }
 
     /// What VoiceOver hears as the new folder's fields close without a
@@ -790,10 +790,10 @@ struct LibraryFolderPicker: View {
     nonisolated static func newFolderCancelledAnnouncement(pickerLabel: String, chosen: String?) -> String {
         guard let chosen else {
             // Translators: VoiceOver announcement when the new folder's fields close without a folder made, and no place is chosen in the pop-up.
-            return String(localized: "New Folder cancelled.")
+            return InterfaceText.line("libraryFolderPicker.newFolderCancelled.alone", "New Folder cancelled.")
         }
         // Translators: VoiceOver announcement when the new folder's fields close without a folder made. %1$@ is the pop-up's spoken label, such as Destination folder. %2$@ is the place still chosen in it.
-        return String(localized: "New Folder cancelled. \(pickerLabel): \(chosen).")
+        return InterfaceText.line("libraryFolderPicker.newFolderCancelled.detail", "New Folder cancelled. \(pickerLabel): \(chosen).")
     }
 
     /// What VoiceOver hears as a folder is made with the fields' Create: the
@@ -804,7 +804,7 @@ struct LibraryFolderPicker: View {
     /// with the fields, would land nowhere and VoiceOver would say nothing.
     nonisolated static func newFolderCreatedAnnouncement(name: String, pickerLabel: String, chosen: String) -> String {
         // Translators: VoiceOver announcement when a folder is made with the new folder's fields. %1$@ is the new folder's name. %2$@ is the pop-up's spoken label, such as Destination folder. %3$@ is the new folder's full path, now chosen in the pop-up.
-        String(localized: "Folder \(name) created. \(pickerLabel): \(chosen).")
+        InterfaceText.line("libraryFolderPicker.newFolderCreatedAnnouncement", "Folder \(name) created. \(pickerLabel): \(chosen).")
     }
 
     /// The picker with its pop-up's `options`, the `newFolderParents` a new

@@ -178,39 +178,39 @@ enum ArchiveBudgetError: LocalizedError, Equatable {
             switch (withNestedArchives, holdsAudioOrArchives) {
             case (false, true):
                 // Translators: Why an import's archive was refused. %1$@ is the size the archive expands to, such as "2 GB"; %2$@ is the limit for archives that hold audio or other archives.
-                return String(localized: "The archive expands to \(size(declared)), more than the \(size(limit)) TextMouth extracts from archives holding audio or other archives.")
+                return InterfaceText.line("archiveBudgetError.expandsPastLimit.holding", "The archive expands to \(size(declared)), more than the \(size(limit)) TextMouth extracts from archives holding audio or other archives.")
             case (false, false):
                 // Translators: Why an import's archive was refused. %1$@ is the size the archive expands to, such as "2 GB"; %2$@ is the limit for archives that hold no audio.
-                return String(localized: "The archive expands to \(size(declared)), more than the \(size(limit)) TextMouth extracts from archives without audio.")
+                return InterfaceText.line("archiveBudgetError.expandsPastLimit.without", "The archive expands to \(size(declared)), more than the \(size(limit)) TextMouth extracts from archives without audio.")
             case (true, true):
                 // Translators: Why an import's archive was refused when it holds other archives. %1$@ is the total size they expand to, such as "2 GB"; %2$@ is the limit for archives that hold audio or other archives.
-                return String(localized: "Together with the archives inside it, the archive expands to \(size(declared)), more than the \(size(limit)) TextMouth extracts from archives holding audio or other archives.")
+                return InterfaceText.line("archiveBudgetError.expandsPastLimit.innerHolding", "Together with the archives inside it, the archive expands to \(size(declared)), more than the \(size(limit)) TextMouth extracts from archives holding audio or other archives.")
             case (true, false):
                 // Translators: Why an import's archive was refused when it holds other archives. %1$@ is the total size they expand to, such as "2 GB"; %2$@ is the limit for archives that hold no audio.
-                return String(localized: "Together with the archives inside it, the archive expands to \(size(declared)), more than the \(size(limit)) TextMouth extracts from archives without audio.")
+                return InterfaceText.line("archiveBudgetError.expandsPastLimit.innerWithout", "Together with the archives inside it, the archive expands to \(size(declared)), more than the \(size(limit)) TextMouth extracts from archives without audio.")
             }
         case let .tooManyEntries(count, limit, withNestedArchives):
             return withNestedArchives
                 // Translators: Why an import's archive was refused when it holds other archives. %1$@ is how many files and folders they hold in all, already formatted; %2$@ is the limit, already formatted.
-                ? String(localized: "Together with the archives inside it, the archive holds \(ArchiveFigures.count(count)) files and folders, more than the \(ArchiveFigures.count(limit)) TextMouth extracts in one import.")
+                ? InterfaceText.line("archiveBudgetError.tooManyEntries.together", "Together with the archives inside it, the archive holds \(ArchiveFigures.count(count)) files and folders, more than the \(ArchiveFigures.count(limit)) TextMouth extracts in one import.")
                 // Translators: Why an import's archive was refused: it holds too many files and folders. %1$@ is how many it holds, already formatted; %2$@ is the limit, already formatted.
-                : String(localized: "The archive holds \(ArchiveFigures.count(count)) files and folders, more than the \(ArchiveFigures.count(limit)) TextMouth extracts in one import.")
+                : InterfaceText.line("archiveBudgetError.tooManyEntries.extracts", "The archive holds \(ArchiveFigures.count(count)) files and folders, more than the \(ArchiveFigures.count(limit)) TextMouth extracts in one import.")
         case let .notEnoughSpace(nestedArchive, needed, available, reserve):
             // The last sentence's "it" is the archive, which the first sentence names.
             // Translators: Last sentence of why an import's archive was refused for want of disk space: what to do. "It" is the archive.
-            let advice = String(localized: "Free up space, then import it again.")
+            let advice = InterfaceText.line("archiveBudgetError.notEnoughSpace.import", "Free up space, then import it again.")
             let sentence = nestedArchive.map {
                 // Translators: First sentence of why an import's archive was refused for want of disk space, when the archive is inside another. %1$@ is the inner archive's name; %2$@ is the size it expands to; %3$@ is the free space; %4$@ is the space TextMouth keeps free.
-                String(localized: "The archive “\($0)” inside it expands to \(size(needed)), but the disk holding the TextMouth library has only \(size(available)) free, and TextMouth keeps \(size(reserve)) of it free.")
+                InterfaceText.line("archiveBudgetError.notEnoughSpace.inside", "The archive “\($0)” inside it expands to \(size(needed)), but the disk holding the TextMouth library has only \(size(available)) free, and TextMouth keeps \(size(reserve)) of it free.")
             // Translators: First sentence of why an import's archive was refused for want of disk space. %1$@ is the size the archive expands to; %2$@ is the free space; %3$@ is the space TextMouth keeps free.
-            } ?? String(localized: "The archive expands to \(size(needed)), but the disk holding the TextMouth library has only \(size(available)) free, and TextMouth keeps \(size(reserve)) of it free.")
+            } ?? InterfaceText.line("archiveBudgetError.notEnoughSpace.expands", "The archive expands to \(size(needed)), but the disk holding the TextMouth library has only \(size(available)) free, and TextMouth keeps \(size(reserve)) of it free.")
             return SentenceWording.joined([sentence, advice])
         case let .extractedPastDeclaredSize(declared):
             return SentenceWording.joined([
                 // Translators: First sentence of why an import's archive stopped extracting: it holds more than it declares. %@ is the size it declares, such as "2 GB".
-                String(localized: "The archive holds more than the \(size(declared)) it declares, so extraction stopped."),
+                InterfaceText.line("archiveBudgetError.pastDeclaredSize", "The archive holds more than the \(size(declared)) it declares, so extraction stopped."),
                 // Translators: Last sentence of why an import's archive stopped extracting: what to do.
-                String(localized: "Get a fresh copy of the archive, then import it again."),
+                InterfaceText.line("archiveBudgetError.pastDeclaredSizeFix", "Get a fresh copy of the archive, then import it again."),
             ])
         }
     }
