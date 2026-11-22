@@ -5,11 +5,10 @@ A converted call looks like this, its translator's note on the line above:
     // Translators: VoiceOver announcement as the next book starts. %@ is the book's title.
     InterfaceText.line("endOfBook.starting", "Starting: \\(title)")
 
-This module finds each such call and reads its ID, its English as the catalog's key (a literal's `%` doubled where the
-literal holds interpolations, `\\(number: n)` as `%lld`, any other interpolation as `%@`, which is what `String(localized:)`
-extracts today), its note, and its place. It refuses what it cannot read exactly (an ID or English that is not one plain
-literal) with a sentence that names the file and line, and it checks each call against `ids.json`: the ID is the key's, or
-the right split's, and the English is a key character for character.
+This module finds each such call and reads its ID, its English as the catalog holds it (a literal's `%` doubled where the
+literal holds interpolations, `\\(number: n)` as `%lld`, any other interpolation as `%@`), its note, and its place. It
+refuses what it cannot read exactly (an ID or English that is not one plain literal) with a sentence that names the file and
+line, and holds each ID to the pattern and the retired list (`problems_of`).
 
 Standard library only; the tools that use it run under Xcode's Python 3.9.
 """
@@ -49,7 +48,7 @@ class Call:
     line: int                     # the 1-based line of the English's literal, which the note sits above
     column: int                   # the 1-based UTF-8 byte column of that literal's first character, as Xcode counts
     id: Optional[str] = None      # the ID literal's text, None when the call's first argument is not a plain literal
-    english: Optional[str] = None  # the English as the catalog's key, None when it is not one plain literal
+    english: Optional[str] = None  # the English as the catalog holds it, None when it is not one plain literal
     note: str = ""                # the translator's note above the line, "" when there is none
     problems: List[str] = field(default_factory=list)  # what stops the call being read exactly
 
@@ -59,7 +58,7 @@ class Call:
 
 
 def english_of(text: str, literal: Literal) -> Optional[str]:
-    """The English of a literal as the catalog's key, from the source `text` it is in: the literal's own text with each `%`
+    """The English of a literal as the catalog holds it, from the source `text` it is in: the literal's own text with each `%`
     doubled when the literal holds interpolations, each `\\(number: n)` as `%lld`, any other interpolation as `%@`. None for
     a literal that cannot be read this way (a multi-line one, or a raw one)."""
     if literal.multiline or text[literal.start] != '"':
@@ -170,18 +169,15 @@ def calls_in_tree(root: Path, only: Optional[Iterable[str]] = None) -> Dict[str,
     return found
 
 
-def problems_of(root: Path, calls_by_file: Dict[str, List[Call]], table: dict, retired: Set[str],
-                notes: bool = True) -> List[str]:
+def problems_of(root: Path, calls_by_file: Dict[str, List[Call]], retired: Set[str], notes: bool = True) -> List[str]:
     """The sentences that name what is wrong with the calls, each starting with `file:line`; none when every call is right.
 
-    A call is right when it is one plain ID literal and one plain English literal; its ID is in the ID pattern, not retired,
-    and the ID `ids.json` gives the key (the call's English, as a key, character for character) at the call's site; its
-    note is above it; and no other call is on its line. With `notes` false the last two are left out (the lint's scanner
-    holds every localized call to them already)."""
+    A call is right when it is one plain ID literal and one plain English literal; its ID is in the ID pattern and not
+    retired; its note is above it; and no other call is on its line. With `notes` false the last two are left out (the
+    lint's scanner holds every localized call to them already). That one ID has one English text is `sync`'s check, which
+    sees every call at once."""
     problems: List[str] = []
-    keys = table.get("ids", {})
     for name, calls in sorted(calls_by_file.items()):
-        lines = (root / name).read_text(encoding="utf-8", errors="replace").split("\n")
         per_line: Dict[int, int] = {}
         for call in calls:
             per_line[call.line] = per_line.get(call.line, 0) + 1
@@ -189,7 +185,7 @@ def problems_of(root: Path, calls_by_file: Dict[str, List[Call]], table: dict, r
             problems += [f"{call.where()}: {problem}" for problem in call.problems]
             if call.id is None or call.english is None:
                 continue
-            problems += id_problems(call, lines, keys, table, retired)
+            problems += id_problems(call, retired)
             if notes and not call.note:
                 problems.append(f"{call.where()}: no `{classify.NOTE_MARKER} ...` line directly above the call")
             if notes and per_line[call.line] > 1:
@@ -197,9 +193,8 @@ def problems_of(root: Path, calls_by_file: Dict[str, List[Call]], table: dict, r
     return problems
 
 
-def id_problems(call: Call, lines: List[str], keys: Dict[str, str], table: dict, retired: Set[str]) -> List[str]:
-    """What is wrong with one readable call's ID against `ids.json`: outside the pattern, retired, or not the ID of its key
-    at its site; or an English that is no key."""
+def id_problems(call: Call, retired: Set[str]) -> List[str]:
+    """What is wrong with one readable call's ID: outside the pattern (or over the longest an ID may be), or retired."""
     assert call.id is not None and call.english is not None
     out: List[str] = []
     if not ids.ID_PATTERN.fullmatch(call.id) or len(call.id) > ids.MAX_ID_LENGTH:
@@ -207,23 +202,4 @@ def id_problems(call: Call, lines: List[str], keys: Dict[str, str], table: dict,
                    f"at most {ids.MAX_ID_LENGTH} characters)")
     if call.id in retired:
         out.append(f"{call.where()}: the ID {call.id!r} is retired and must not be used again")
-    if call.english not in keys:
-        out.append(f"{call.where()}: the English {call.english!r} is not a key in ids.json (character for character)")
-        return out
-    expected = ids.id_for_site(table, call.english, ids.site_at(lines, call.file, call.line, call.english))
-    if expected is None:
-        out.append(f"{call.where()}: no ID in ids.json for the English {call.english!r} at this site "
-                   "(a split key's uses must name it)")
-    elif expected != call.id:
-        out.append(f"{call.where()}: the ID is {call.id!r}, but ids.json gives {expected!r} for {call.english!r} here")
     return out
-
-
-def stringsdata(source: str, calls: Sequence[Call]) -> dict:
-    """The content of a `.stringsdata` file for the calls of one source file: the shape Xcode writes (`source`, `tables`, one
-    entry a key with its note as the `comment` and the English literal's line and column), so that `xcstringstool sync`
-    keeps the key and its note. `source` is the path the file is recorded under."""
-    entries = [{"comment": call.note, "key": call.english,
-                "location": {"startingColumn": call.column, "startingLine": call.line}}
-               for call in calls if call.english is not None]
-    return {"source": source, "tables": {TABLE: entries} if entries else {}, "version": 1}

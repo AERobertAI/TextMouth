@@ -1,6 +1,6 @@
 """The lint's rules for `InterfaceText.line` calls (FR39 phase 5): the English of a call counts as localized, its note is held to
-the rule of `String(localized:)`, its ID must be a literal in the pattern, not retired, and the one ids.json gives its key and
-site, and a tree with no converted file counts what it counted before. Every test builds a tree of its own."""
+the rule of `String(localized:)`, its ID must be a literal in the pattern and not retired (nothing reads ids.json any more), and
+a tree with no converted file counts what it counted before. Every test builds a tree of its own."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from scan_case import TreeCase, VIEW, WORDING, scan_snippet
 
 import ids  # noqa: E402
 
-# A wording file whose one call is right against the ids.json the tests write.
+# A wording file whose one call is right.
 GOOD = '''enum PauseWording {
     // Translators: The title of the pause panel.
     static var title: String { InterfaceText.line("pause.title", "Pause the speech") }
@@ -52,35 +52,23 @@ class LintTests(TreeCase):
         super().setUp()
         # No file has unlocalized text, so the baseline is empty and any gain fails.
         self.write("Models/PauseWording.swift", GOOD)
-        self.write_ids({"Pause the speech": "pause.title"})
         self.assertEqual(self.lint("--rebuild-baseline")[0], 0)
 
-    def write_ids(self, table: dict, splits: dict = None, retired: list = None) -> None:
-        """Writes ids.json (and retired-ids.txt) under the tree's root."""
-        target = ids.table_path(self.root)
+    def write_retired(self, retired: list) -> None:
+        """Writes retired-ids.txt under the tree's root."""
+        target = self.root / ids.RETIRED_PATH
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(ids.dump_table({"version": 1, "ids": table, "splits": splits or {}}), encoding="utf-8")
-        if retired is not None:
-            (self.root / ids.RETIRED_PATH).write_text("".join(f"{r}\n" for r in retired), encoding="utf-8")
+        target.write_text("".join(f"{r}\n" for r in retired), encoding="utf-8")
 
     def test_a_right_call_passes_and_counts_nothing_unlocalized(self) -> None:
         status, out, _err = self.lint()
         self.assertEqual(status, 0, out)
         self.assertIn("l10n lint: ok, 0 unlocalized literals", out)
 
-    def test_a_wrong_id_fails_with_its_place_and_both_ids(self) -> None:
-        self.write_ids({"Pause the speech": "pause.heading"})
+    def test_any_english_passes_it_is_not_looked_up_in_a_table(self) -> None:
+        self.write("Models/PauseWording.swift", GOOD.replace("Pause the speech", "Something else entirely"))
         status, out, _err = self.lint()
-        self.assertEqual(status, 1)
-        self.assertIn(f"{FILE}:3:", out)
-        self.assertIn("'pause.title'", out)
-        self.assertIn("'pause.heading'", out)
-
-    def test_an_english_that_is_not_a_key_fails(self) -> None:
-        self.write_ids({"Something else": "pause.title"})
-        status, out, _err = self.lint()
-        self.assertEqual(status, 1)
-        self.assertIn("not a key in ids.json", out)
+        self.assertEqual(status, 0, out)
 
     def test_an_id_that_is_not_a_literal_fails(self) -> None:
         self.write("Models/PauseWording.swift", GOOD.replace('"pause.title"', "pauseID"))
@@ -90,24 +78,16 @@ class LintTests(TreeCase):
 
     def test_an_id_outside_the_pattern_fails(self) -> None:
         self.write("Models/PauseWording.swift", GOOD.replace("pause.title", "Pause-Title"))
-        self.write_ids({"Pause the speech": "Pause-Title"})
         status, out, _err = self.lint()
         self.assertEqual(status, 1)
         self.assertIn("outside the pattern", out)
 
     def test_a_retired_id_fails(self) -> None:
-        self.write_ids({"Pause the speech": "pause.title"}, retired=["pause.title"])
+        self.write_retired(["pause.title"])
         status, out, _err = self.lint()
         self.assertEqual(status, 1)
         self.assertIn("retired", out)
-
-    def test_a_split_key_must_carry_the_id_of_its_site(self) -> None:
-        splits = {"Pause the speech": [{"id": "pause.title", "sites": [f"{FILE}:SomewhereElse.title"]},
-                                       {"id": "pause.panel", "sites": [f"{FILE}:PauseWording.title"]}]}
-        self.write_ids({"Pause the speech": "pause.title"}, splits)
-        status, out, _err = self.lint()
-        self.assertEqual(status, 1)
-        self.assertIn("'pause.panel'", out)
+        self.assertIn(f"{FILE}:3:", out)
 
     def test_a_missing_note_fails_once_through_the_scanners_rule(self) -> None:
         self.write("Models/PauseWording.swift", GOOD.replace("    // Translators: The title of the pause panel.\n", ""))
