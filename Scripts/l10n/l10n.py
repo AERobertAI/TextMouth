@@ -649,21 +649,58 @@ def sync_manifests(args, manifests, say, output=None):
     return EXIT_PROBLEMS if problems else EXIT_OK
 
 
+def retire_removed_ids(root, before, keys):
+    """Appends to retired-ids.txt every ID of `before` (an ids.json table) whose key is not among `keys`, a removed split key's
+    split IDs included; each is kept out of every later table (an ID is never given again). The file keeps its header and its
+    order: the new IDs go at the end, one a line, sorted. Returns {ID: its old key}, in that order; nothing is written when none."""
+    gone = {}
+    for key, ident in before["ids"].items():
+        if key not in keys:
+            gone[ident] = key
+    for key, uses in before.get("splits", {}).items():
+        if key not in keys:
+            gone.update({use["id"]: key for use in uses})
+    already = idslib.retired_ids(root)
+    fresh = {ident: key for ident, key in sorted(gone.items()) if ident not in already}
+    if fresh:
+        path = root / idslib.RETIRED_PATH
+        text = path.read_text(encoding="utf-8") if path.is_file() else ""
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text + ("" if not text or text.endswith("\n") else "\n") + "".join(f"{ident}\n" for ident in fresh),
+                        encoding="utf-8")
+    return fresh
+
+
 def give_new_keys_ids(catalog_file, locations, say, root=None):
-    """After a sync (FR39): gives each catalog key that has no ID one, by `ids.py`'s rules, so that the build phase that packs the
-    interface text finds an ID for every key. Every existing ID stays (an ID is permanent); `ids.json` is written only when a
-    key got one, and each new ID is printed with its key for the developer to see and commit. Then `ids.py check` must be
-    clean, else its problems are printed. Returns 1 when it is not, else 0. A checkout with no `ids.json` is left alone (the
-    table is how a checkout takes part in FR39)."""
+    """After a sync (FR39): keeps `ids.json` in step with the catalog, so that the build phase that packs the interface text finds
+    an ID for every key and no ID passes to another string.
+
+    - An ID whose key left the catalog is retired first (see `retire_removed_ids`), with its `splits` entry, and printed with its
+      old key; no later key is given it.
+    - Each key with no ID is given one, by `ids.py`'s rules; every existing ID stays (an ID is permanent). Each is printed with
+      its key, for the developer to commit with the code that holds it.
+    - `ids.json` is written only when something changed, and nothing is printed when nothing did.
+    - Then `ids.py check` must be clean, else its problems are printed.
+
+    Returns 1 when the check is not clean, else 0. A checkout with no `ids.json` is left alone (the table is how a checkout takes
+    part in FR39)."""
     root = Path(root or ROOT)
     path = idslib.table_path(root)
     if not path.is_file():
         return 0
     before = idslib.load_table(path)
+    keys = set(catalog.Catalog.load(catalog_file).strings)
+    # Retired before the proposal, which keeps retired IDs out of what it gives new keys.
+    retired = retire_removed_ids(root, before, keys)
     table, _forms = idslib.propose(root, locations, False, catalog_file)
+    table["splits"] = {key: uses for key, uses in table["splits"].items() if key in keys}
     added = {key: ident for key, ident in table["ids"].items() if key not in before["ids"]}
     if table != before:
         path.write_text(idslib.dump_table(table), encoding="utf-8")
+    if retired:
+        say(f"retired-ids.txt: {number(len(retired))} IDs retired, their keys having left the catalog:")
+        for ident, key in retired.items():
+            say(f"  {ident}  {quote(key)}")
     if added:
         say(f"ids.json: {number(len(added))} new IDs, to commit with the code that holds them:")
         for key in sorted(added):

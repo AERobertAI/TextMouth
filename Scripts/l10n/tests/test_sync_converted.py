@@ -258,5 +258,60 @@ class NewKeyIdTests(test_l10n.TemporaryCase):
         self.assertEqual(self.lines, [])
 
 
+class RetireIdTests(NewKeyIdTests):
+    """An ID whose key left the catalog is retired, printed, and never given again."""
+
+    HEADER = "# Retired IDs, one per line.\n"
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.retired = self.root / ids.RETIRED_PATH
+        self.retired.write_text(self.HEADER + "old.one\n", encoding="utf-8")
+
+    def write_table(self, table_ids, splits=None) -> None:
+        """Writes ids.json with these IDs and splits."""
+        self.table.write_text(ids.dump_table({"version": 1, "ids": table_ids, "splits": splits or {}}), encoding="utf-8")
+
+    def test_a_removed_keys_id_is_retired_and_printed_with_its_key(self) -> None:
+        self.write_table({"Converted title": "converted.title", "Gone words": "converted.gone"})
+        self.assertEqual(self.give(), 0)
+        self.assertEqual(self.retired.read_text(), self.HEADER + "old.one\nconverted.gone\n", "appended, the header and order kept")
+        self.assertNotIn("Gone words", json.loads(self.table.read_text())["ids"])
+        self.assertIn('converted.gone  "Gone words"', "\n".join(self.lines))
+        self.assertIn("1 IDs retired", "\n".join(self.lines))
+
+    def test_a_new_key_in_the_same_sync_never_gets_the_retired_id(self) -> None:
+        # The new key's own declaration, ConvertedWording.fresh, would give it converted.fresh: the ID the removed key held.
+        self.write_table({"Converted title": "converted.title", "Gone words": "converted.fresh"})
+        self.assertEqual(self.give(), 0)
+        given = json.loads(self.table.read_text())["ids"]["Brand new words"]
+        self.assertNotEqual(given, "converted.fresh")
+        self.assertIn("converted.fresh", self.retired.read_text())
+
+    def test_a_removed_split_key_retires_all_its_ids_and_its_splits_entry(self) -> None:
+        splits = {"Unknown": [{"id": "converted.author", "sites": [f"{CONVERTED}:A.b"]},
+                              {"id": "converted.length", "sites": [f"{CONVERTED}:C.d"]}]}
+        self.write_table({"Converted title": "converted.title", "Unknown": "converted.author"}, splits)
+        self.assertEqual(self.give(), 0)
+        self.assertEqual(self.retired.read_text(), self.HEADER + "old.one\nconverted.author\nconverted.length\n")
+        table = json.loads(self.table.read_text())
+        self.assertEqual(table["splits"], {})
+        self.assertNotIn("Unknown", table["ids"])
+        self.assertEqual("\n".join(self.lines).count('"Unknown"'), 2)
+
+    def test_a_sync_with_no_change_leaves_both_files_byte_for_byte_unchanged(self) -> None:
+        self.give()
+        ids_before, retired_before = self.table.read_bytes(), self.retired.read_bytes()
+        self.lines.clear()
+        self.assertEqual(self.give(), 0)
+        self.assertEqual((self.table.read_bytes(), self.retired.read_bytes()), (ids_before, retired_before))
+        self.assertEqual(self.lines, [])
+
+    def test_an_id_already_retired_is_not_written_twice(self) -> None:
+        self.write_table({"Converted title": "converted.title", "Gone words": "old.one"})
+        self.give()
+        self.assertEqual(self.retired.read_text(), self.HEADER + "old.one\n")
+
+
 if __name__ == "__main__":
     unittest.main()
