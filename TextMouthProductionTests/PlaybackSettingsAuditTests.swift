@@ -515,13 +515,14 @@ final class PlaybackSettingsAuditTests: XCTestCase {
         withHostedView(
             MiscellaneousSettingsView().environmentObject(settings),
             size: NSSize(width: 600, height: 1200),
-            until: { popUpButtons(in: $0).count == 3 }
+            until: { popUpButtons(in: $0).count == 4 }
         ) { hostingView in
+            // The Interface Language pop-up (FR39) comes first on the tab; the three step pickers follow it.
             let found = popUpButtons(in: hostingView)
-            XCTAssertEqual(found.map(\.label), ["Step 1", "Step 2", "Step 3"])
+            XCTAssertEqual(found.map(\.label), ["Interface Language", "Step 1", "Step 2", "Step 3"])
             XCTAssertEqual(
                 found.map { $0.element.accessibilityValue() as? String },
-                ["Previous track", "Next track", "Play/Pause toggle"]
+                ["System (English)", "Previous track", "Next track", "Play/Pause toggle"]
             )
         }
     }
