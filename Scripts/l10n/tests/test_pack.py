@@ -531,11 +531,23 @@ class InfoPlistStringsTests(PackCase):
         _, said, _ = self.run_main("build", "--catalog", catalog_path, "--out", out)
         self.assertIn("wrote", said)
 
-    def test_a_table_of_apples_that_an_earlier_build_left_is_removed_even_when_the_pack_is_up_to_date(self):
-        out, catalog_path = self.build()
+    def plant_tables(self):
+        """Writes a Localizable.strings and .stringsdict into es.lproj, as an earlier build of the app left them."""
         for name in ("Localizable.strings", "Localizable.stringsdict"):
             (self.folder / "es.lproj" / name).write_text('"a"="b";', encoding="utf-8")
-        _, said, _ = self.run_main("build", "--catalog", catalog_path, "--out", out)
+
+    def test_a_build_without_the_flag_leaves_every_file_beside_the_pack_alone(self):
+        out, catalog_path = self.build()
+        self.plant_tables()
+        self.run_main("build", "--catalog", catalog_path, "--out", out)
+        self.run_main("build", "--catalog", catalog_path, "--out", out, "--force")
+        self.assertEqual(["InfoPlist.strings", "Localizable.strings", "Localizable.stringsdict"],
+                         sorted(path.name for path in (self.folder / "es.lproj").iterdir()))
+
+    def test_a_table_of_apples_that_an_earlier_build_left_is_removed_with_the_flag_even_when_the_pack_is_up_to_date(self):
+        out, catalog_path = self.build()
+        self.plant_tables()
+        _, said, _ = self.run_main("build", "--catalog", catalog_path, "--out", out, "--remove-apple-tables")
         self.assertIn("up to date", said)
         self.assertEqual(["InfoPlist.strings"], sorted(path.name for path in (self.folder / "es.lproj").iterdir()))
 

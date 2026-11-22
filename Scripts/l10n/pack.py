@@ -707,10 +707,12 @@ def remove_apple_tables(folder):
 
 
 def command_build(args):
-    """`build`: refuses or writes the pack and its stamp, or skips when the stamp says nothing changed. First it removes the
-    Apple tables an earlier build left beside the pack (see remove_apple_tables)."""
-    for leftover in remove_apple_tables(Path(args.out).parent):
-        print(f"removed {leftover}: the apps read no table of Apple's")
+    """`build`: refuses or writes the pack and its stamp, or skips when the stamp says nothing changed. Only with
+    --remove-apple-tables (which the app's build phase passes) it first removes the Apple tables an earlier build left beside
+    the pack (see remove_apple_tables); a tool deletes only what it is asked to."""
+    if args.remove_apple_tables:
+        for leftover in remove_apple_tables(Path(args.out).parent):
+            print(f"removed {leftover}: the apps read no table of Apple's")
     stamp = stamp_of(args.catalog, args.max_id_length)
     # The stamp lives beside the pack unless --stamp says elsewhere (the app's build keeps it out of the app).
     stamp_file = Path(args.stamp) if args.stamp else stamp_path(args.out)
@@ -767,6 +769,9 @@ def parser():
     inputs(build)
     build.add_argument("--out", required=True)
     build.add_argument("--force", action="store_true", help="rebuild even when the stamp says nothing changed")
+    build.add_argument("--remove-apple-tables", action="store_true",
+                       help="first remove Localizable.strings and .stringsdict from the .lproj folders beside the pack "
+                            "(the app's build phase passes it: Xcode never cleans a product)")
     build.add_argument("--no-stamp", action="store_true", help="write no stamp and never skip")
     build.add_argument("--stamp", help="where the stamp lives (default: beside the pack, as PACK.stamp)")
     check = commands.add_parser("verify", help="decode a pack and compare every entry with the catalog")

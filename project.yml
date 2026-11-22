@@ -227,13 +227,15 @@ targetTemplates:
   # The same build writes <language>.lproj/InfoPlist.strings for each of the catalog's 25 languages
   # beside the pack: the *.lproj folders (with CFBundleLocalizations in both Info.plists) are what
   # keep the bundle's languages for the system. They hold no entry yet (pack.py's
-  # info_plist_entries is where the Info.plist strings will come from).
+  # info_plist_entries is where the Info.plist strings will come from). The phase passes
+  # --remove-apple-tables: Xcode never cleans a product, so an incremental build would keep the
+  # Localizable tables an earlier build wrote; without the flag pack.py deletes nothing.
   #
   # Script sandboxing is off: the script reads the repository and writes into the product.
   PackInterfaceText:
     postBuildScripts:
       - name: Pack interface text
-        script: /usr/bin/python3 -I -B "$SRCROOT/Scripts/l10n/pack.py" build --catalog "$SRCROOT/TextMouth/Localization/Localizable.xcstrings" --out "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Strings.pack" --stamp "$DERIVED_FILE_DIR/Strings.pack.stamp"
+        script: /usr/bin/python3 -I -B "$SRCROOT/Scripts/l10n/pack.py" build --catalog "$SRCROOT/TextMouth/Localization/Localizable.xcstrings" --out "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Strings.pack" --remove-apple-tables --stamp "$DERIVED_FILE_DIR/Strings.pack.stamp"
         basedOnDependencyAnalysis: false
     settings:
       base:
