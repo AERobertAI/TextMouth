@@ -253,13 +253,16 @@ class PackageTests(TypecheckTestsCase):
 
     def test_the_string_catalog_is_not_an_unhandled_resource_of_either_platforms_app(self):
         # The catalog is a resource of the Xcode apps; SwiftPM warns about every file of a target it does not handle, and a
-        # warning about it is a failure of the type-check, so both platforms' app targets leave its folder out.
+        # warning about it is a failure of the type-check, so both platforms' app targets leave the catalog file out. Only
+        # the file, not its folder: Localization/InterfaceText/ holds the interface-text engine's Swift sources (FR39),
+        # which the type-check must compile.
         for platform in ("macos", "ios"):
             typecheck.prepare_sources(self.repo, self.commit, self.src, census=False, tests=False)
             with mock.patch.object(typecheck, "run", lambda *a, **k: SimpleNamespace(stdout="/platform\n")):
                 typecheck.write_package(self.src, self.folder / "pkgs", platform, "26.0", False)
             block = (self.src / "Package.swift").read_text().split('path: "TextMouth",')[1].split("swiftSettings")[0]
-            self.assertIn('"Localization"', block, platform)
+            self.assertIn('"Localization/Localizable.xcstrings"', block, platform)
+            self.assertNotIn('"Localization"', block, f"{platform}: the folder itself is not left out")
 
     def package_with_strings(self, platform="macos", tests=False):
         """The Package.swift written with the string extraction on, as text; the strings folder is `self.strings`."""
