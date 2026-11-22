@@ -25,7 +25,13 @@ The format, version 1 (little-endian). research/STRINGS-SYSTEM-DESIGN-2026-11-21
   forms in the language's category order (`catalog.PLURAL_CATEGORIES`), joined by U+0001. A plural whose forms are all
   one text is written as that text.
 
-What goes in is exactly what Xcode compiles today: every localization state except `new`.
+What goes in is exactly what Xcode compiled before the switch: every localization state except `new`.
+
+The Info.plist strings (FR39 phase 8). Beside the pack `build` also writes `<language>.lproj/InfoPlist.strings` for each
+of the catalog's languages, English included, since the system reads those (not the pack) for the app's Info.plist
+strings, and the .lproj folders keep the bundle's languages. Each file is replaced, never rewritten in place, and the
+stamp names each by hash. For now each holds only a comment; `info_plist_entries` is where future `infoPlist.*` IDs
+will be read.
 
 The LZMA window. A blob's filter is given a dictionary size equal to the smallest power of two that is at least the
 blob's raw size (and at least 4 KiB), with preset 9 extreme otherwise. For inputs this small it compresses as the 64 MiB
@@ -498,14 +504,62 @@ def stamp_path(out):
 
 
 def is_up_to_date(out, stamp, stamp_file=None):
-    """Whether `out` exists and its stamp equals `stamp` and names the output's own hash (so a changed output rebuilds).
+    """Whether `out` exists and its stamp equals `stamp` and names the output's own hash and each InfoPlist.strings'
+    (so a changed or missing output rebuilds).
 
     The stamp is read from `stamp_file`, or from beside `out` when none is given."""
     try:
         written = json.loads((Path(stamp_file) if stamp_file else stamp_path(out)).read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return False
-    return written == {**stamp, "pack": file_hash(out)} and file_hash(out) is not None
+    if not isinstance(written, dict) or file_hash(out) is None:
+        return False
+    # The stamp also names each InfoPlist.strings by hash; a file that is missing or changed since (a language's folder
+    # emptied, a hand edit) makes the hash differ, so the build runs again and writes it.
+    languages = written.get("infoPlist")
+    if not isinstance(languages, dict):
+        return False
+    current = {language: file_hash(Path(out).parent / f"{language}.lproj" / INFO_PLIST_TABLE) for language in languages}
+    return written == {**stamp, "pack": file_hash(out), "infoPlist": current} and None not in current.values()
+
+
+# ---------------------------------------------------------------------------------------------------------------
+# The Info.plist strings: one InfoPlist.strings in each language's .lproj folder (FR39 phase 8).
+# ---------------------------------------------------------------------------------------------------------------
+
+# The table the system reads the app's Info.plist strings from, in each language's .lproj folder.
+INFO_PLIST_TABLE = "InfoPlist.strings"
+
+
+def info_plist_entries(plan, language):
+    """The Info.plist strings of `language`, as {Info.plist key: text}: THE ONE PLACE they will be read from.
+
+    Empty for now: the app's name is never translated, and the microphone and Apple Events prompts and the document
+    types' names get their IDs (`infoPlist.*`) and translations in a later batch (question 9 of
+    research/STRINGS-SYSTEM-DESIGN-2026-11-21.md). Then this function reads each such ID's entry from `plan`'s blob of
+    `language` and names the Info.plist key it stands for, and nothing else in this file changes: the files below are
+    already written from what it returns."""
+    return {}
+
+
+def quote_strings_text(text):
+    """`text` as the inside of a double-quoted .strings string: a backslash, a quote, and a line break are escaped."""
+    return text.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n")
+
+
+def info_plist_text(plan, language):
+    """The text of `language`'s InfoPlist.strings (UTF-8): a comment that names the tool that writes the file (so nobody
+    edits it by hand), then one `"key" = "text";` line for each entry of `info_plist_entries`, in key order."""
+    lines = [f"/* Written by Scripts/l10n/pack.py from the String Catalog's infoPlist.* IDs ({language}). Do not edit. */"]
+    entries = info_plist_entries(plan, language)
+    lines += [f'"{quote_strings_text(key)}" = "{quote_strings_text(entries[key])}";' for key in sorted(entries)]
+    return "\n".join(lines) + "\n"
+
+
+def info_plist_files(plan, folder):
+    """{path: text} of the InfoPlist.strings for each language of `plan` (English included): `folder`/<language>.lproj/."""
+    return {Path(folder) / f"{name}.lproj" / INFO_PLIST_TABLE: info_plist_text(plan, name)
+            for name, _ in plan.blobs if name not in (IDS_BLOB, NOTES_BLOB)}
 
 
 # ---------------------------------------------------------------------------------------------------------------
@@ -649,11 +703,18 @@ def command_build(args):
     plan = build_plan(args.catalog, args.max_id_length)
     data = build_bytes(plan)
     write_atomically(args.out, data)
-    # The stamp comes only after the pack is in place, so a stamp never vouches for a pack that is not there.
+    # Each language's InfoPlist.strings goes beside the pack, replaced and never rewritten in place, as the pack is.
+    info_files = info_plist_files(plan, Path(args.out).parent)
+    for path, text in info_files.items():
+        write_atomically(path, text)
+    # The stamp comes only after the pack and the files are in place, so a stamp never vouches for what is not there.
     if not args.no_stamp:
-        write_atomically(stamp_file,
-                         json.dumps({**stamp, "pack": hashlib.sha256(data).hexdigest()}, sort_keys=True) + "\n")
-    print(f"wrote {args.out}: {len(data):,} bytes, {len(plan.ids):,} IDs, {len(plan.blobs) - 2} languages")
+        hashes = {path.parent.name.removesuffix(".lproj"): hashlib.sha256(text.encode("utf-8")).hexdigest()
+                  for path, text in info_files.items()}
+        write_atomically(stamp_file, json.dumps({**stamp, "pack": hashlib.sha256(data).hexdigest(), "infoPlist": hashes},
+                                                sort_keys=True) + "\n")
+    print(f"wrote {args.out}: {len(data):,} bytes, {len(plan.ids):,} IDs, {len(plan.blobs) - 2} languages, "
+          f"and {len(info_files)} {INFO_PLIST_TABLE} files")
     return 0
 
 

@@ -424,8 +424,9 @@ class BuildTests(PackCase):
             self.assertNotEqual(before, out.read_bytes())
             self.assertNotEqual(inode, out.stat().st_ino)
             self.assertEqual(before, handle.read())
-        # Nothing but the pack and its stamp is left beside it.
-        self.assertEqual(["Strings.pack", "Strings.pack.stamp", "catalog.xcstrings"], sorted(entry.name for entry in self.folder.iterdir()))
+        # Nothing but the pack, its stamp, and the languages' folders is left beside it.
+        self.assertEqual(["Strings.pack", "Strings.pack.stamp", "catalog.xcstrings", "en.lproj", "es.lproj"],
+                         sorted(entry.name for entry in self.folder.iterdir()))
 
     def test_a_failed_write_leaves_the_old_pack_and_stamp_and_no_temporary_file(self):
         out = self.folder / "Strings.pack"
@@ -439,7 +440,8 @@ class BuildTests(PackCase):
                 self.run_main("build", "--catalog", catalog_path, "--out", out)
         self.assertEqual(pack_before, out.read_bytes())
         self.assertEqual(stamp_before, Path(str(out) + ".stamp").read_bytes())
-        self.assertEqual(["Strings.pack", "Strings.pack.stamp", "catalog.xcstrings"], sorted(entry.name for entry in self.folder.iterdir()))
+        self.assertEqual(["Strings.pack", "Strings.pack.stamp", "catalog.xcstrings", "en.lproj", "es.lproj"],
+                         sorted(entry.name for entry in self.folder.iterdir()))
 
     def test_the_stamp_is_written_only_after_the_pack(self):
         # A write that fails on the pack never reaches the stamp, so a stamp never vouches for a pack that is not there.
@@ -466,6 +468,79 @@ class BuildTests(PackCase):
 # ---------------------------------------------------------------------------------------------------------------
 # The refusals.
 # ---------------------------------------------------------------------------------------------------------------
+
+class InfoPlistStringsTests(PackCase):
+    """The InfoPlist.strings of each language, which `build` writes beside the pack (FR39 phase 8)."""
+
+    def build(self, strings=None, *extra):
+        """Builds a two-language catalog's pack into the case's folder; returns (the pack's path, the catalog's path)."""
+        catalog_path = self.write_catalog(strings or {"a.one": line("One", es="Uno")})
+        out = self.folder / "Strings.pack"
+        code, _, _ = self.run_main("build", "--catalog", catalog_path, "--out", out, *extra)
+        self.assertEqual(0, code)
+        return out, catalog_path
+
+    def table(self, language):
+        """The path of `language`'s InfoPlist.strings beside the pack."""
+        return self.folder / f"{language}.lproj" / pack.INFO_PLIST_TABLE
+
+    def test_each_language_gets_its_table_english_included_and_it_holds_no_entry(self):
+        self.build()
+        for language in ("en", "es"):
+            text = self.table(language).read_text(encoding="utf-8")
+            self.assertTrue(text.startswith("/* Written by Scripts/l10n/pack.py"), language)
+            self.assertIn(f"({language})", text)
+            self.assertNotIn('" = "', text, "no entry yet: the Info.plist strings get their IDs in a later batch")
+        self.assertEqual(["InfoPlist.strings"], sorted(path.name for path in (self.folder / "es.lproj").iterdir()))
+
+    def test_the_hook_writes_its_entries_escaped_in_key_order(self):
+        plan = pack.build_plan(self.write_catalog({"a.one": line("One", es="Uno")}))
+        entries = {"NSMicrophoneUsageDescription": 'Say "hi"\nand a back\\slash', "CFBundleDisplayName": "TextMouth"}
+        with mock.patch.object(pack, "info_plist_entries", lambda _plan, _language: entries):
+            text = pack.info_plist_text(plan, "es")
+        self.assertEqual(['"CFBundleDisplayName" = "TextMouth";',
+                          '"NSMicrophoneUsageDescription" = "Say \\"hi\\"\\nand a back\\\\slash";'], text.splitlines()[1:])
+
+    def test_a_rebuild_replaces_each_table_and_never_rewrites_it_in_place(self):
+        out, catalog_path = self.build()
+        inode = self.table("es").stat().st_ino
+        self.run_main("build", "--catalog", catalog_path, "--out", out, "--force")
+        self.assertNotEqual(inode, self.table("es").stat().st_ino)
+
+    def test_the_stamp_covers_the_tables(self):
+        out, catalog_path = self.build()
+        _, said, _ = self.run_main("build", "--catalog", catalog_path, "--out", out)
+        self.assertIn("up to date", said)
+        # A table changed by hand, and one that is missing, each make the next build write them again.
+        self.table("es").write_text("/* edited */\n", encoding="utf-8")
+        _, said, _ = self.run_main("build", "--catalog", catalog_path, "--out", out)
+        self.assertIn("wrote", said)
+        self.assertTrue(self.table("es").read_text(encoding="utf-8").startswith("/* Written by"))
+        os.replace(self.table("en"), self.folder / "moved-away.strings")
+        _, said, _ = self.run_main("build", "--catalog", catalog_path, "--out", out)
+        self.assertIn("wrote", said)
+        self.assertTrue(self.table("en").is_file())
+
+    def test_a_stamp_without_the_tables_is_not_trusted(self):
+        """The stamp an earlier builder wrote (no `infoPlist` list) makes one build run again and write them."""
+        out, catalog_path = self.build()
+        stamp = Path(str(out) + ".stamp")
+        written = json.loads(stamp.read_text(encoding="utf-8"))
+        del written["infoPlist"]
+        stamp.write_text(json.dumps(written), encoding="utf-8")
+        _, said, _ = self.run_main("build", "--catalog", catalog_path, "--out", out)
+        self.assertIn("wrote", said)
+
+    def test_no_stamp_still_writes_the_tables(self):
+        self.build(None, "--no-stamp")
+        self.assertTrue(self.table("es").is_file())
+
+    def test_a_catalog_with_a_new_language_gets_its_folder(self):
+        out, catalog_path = self.build()
+        self.write_catalog({"a.one": line("One", es="Uno", fr="Un")})
+        self.run_main("build", "--catalog", catalog_path, "--out", out)
+        self.assertTrue(self.table("fr").is_file())
+
 
 class RefusalTests(PackCase):
     """What the builder refuses: it names the key and the language, and writes nothing."""
