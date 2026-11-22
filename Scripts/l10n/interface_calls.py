@@ -20,7 +20,7 @@ import re
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Sequence, Set, Tuple
+from typing import Dict, Iterable, List, Optional, Sequence, Set
 
 HERE = Path(__file__).resolve().parent
 if str(HERE) not in sys.path:
