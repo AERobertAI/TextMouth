@@ -10,8 +10,7 @@
 #      version, revision, and URL still matches the committed file;
 #   3. builds the Release app from scratch (make build SIGN_APP=:, so the app
 #      keeps Xcode's ad hoc signature and the gate never asks for the keychain)
-#      and requires that
-#      the build reports no Swift warning, and that the app it packages,
+#      and requires that the build reports no Swift warning, and that the app it packages,
 #      build/TextMouth.app, which `make install` copies, is no larger than
 #      APP_SIZE_LIMIT_MB megabytes, a limit this script sets once. It warns,
 #      without failing, when the app is larger than APP_SIZE_WARNING_MB, and

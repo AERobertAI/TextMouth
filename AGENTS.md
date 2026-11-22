@@ -66,7 +66,7 @@ The agent:
    The rest of the docs stay the documentation pass's, from the agent's report.
 5. Before reporting, rebases onto `main`, keeping both sides of adjacent-line conflicts (common in `ConfigService`, `SettingsViewModel`, `MenuCommands`, `AppDelegate.applicationShouldTerminate`, and the config test fixtures).
    It type-checks the tests, requests one last train naming every area its change touches, records that train's exact `Executed N tests, with S tests skipped and F failures` line, and releases its claims.
-   When its change could alter the Release build or the app's size, it also runs `make check SIGN_APP=true` (The make check gate, in [Building TextMouth](docs/developer/building.md)).
+   When its change could alter the Release build or the app's size, it also runs `make check` (The make check gate, in [Building TextMouth](docs/developer/building.md)).
 6. Reports: the branch; the commits with hashes and subjects; the files changed; the train's exact result; what it could not verify; its decisions and assumptions; and its findings posted on the board.
    It also reports the documentation wording its changes need, naming the page under `docs/` each sentence belongs on, and the sections `doclib affected` lists for its branch.
 
