@@ -134,8 +134,8 @@ help:
 	@echo "  make ios-size   - Build the iPhone app for a device (Release, unsigned) under the heavy-work lock, then measure it: app, IPA, App Store estimate, biggest files, libraries"
 	@echo "  make l10n-sync  - Read the code's InterfaceText.line calls and bring the String Catalog into step with them (seconds: no build, no lock)"
 	@echo "  make l10n-status - Per language: the strings translated, machine translated, new, needing review, stale, and missing, and the English bytes (LANG_CODE=es for one language)"
-	@echo "  make l10n-size  - The English bytes against the 150,000-byte budget, and each language's shipped size in each format"
-	@echo "  make l10n-check - Check the String Catalog: shipped languages translated, placeholders and plural forms agreeing, a comment on every string, nothing stale, and every lookup of the compact language files equal to Xcode's (run by make check)"
+	@echo "  make l10n-size  - The English bytes against the 150,000-byte budget, and each language's blob in the pack, and the pack's total"
+	@echo "  make l10n-check - Check the String Catalog: shipped languages translated, placeholders and plural forms agreeing, a comment on every string, nothing stale, the bundle's language list equal to the catalog's, every engine lookup equal to Apple's own lookup of tables compiled from the catalog, and the system's choice of language as measured (run by make check)"
 	@echo "  make typecheck-ios - Compile and link the app's sources for iOS with SwiftPM, no iOS platform needed (CENSUS=1 counts every AppKit use left)"
 	@echo "  make typecheck-mac - The same for the Mac, in about two minutes, without xcodebuild"
 	@echo "  make typecheck-tests - The same for the Mac's hosted test target too, before a train request (REF=commit checks that commit)"
@@ -383,8 +383,12 @@ lint-docs:
 ## Check that no Swift file of the app has more interface text that is not
 ## localized than Scripts/l10n/scan-baseline.json records for it, and that no
 ## new file has any (Scripts/l10n/scan.py lint). Text is localized when it is the
-## key of String(localized:), LocalizedStringResource, or a SwiftUI literal such as
-## Text("..."); a line ending with `// l10n: no` is left out on purpose. A failure
+## English of an InterfaceText.line("<ID>", "<English>") call; a line ending with
+## `// l10n: no` is left out on purpose. The lint also fails, in every file, on a
+## lookup into Apple's tables, which no app ships any more (FR39): String(localized:),
+## LocalizedStringResource, String.LocalizationValue, LocalizedStringKey,
+## NSLocalizedString, or a SwiftUI literal such as Text("..."); each would show its
+## key, and its message names InterfaceText.line. A failure
 ## prints each literal, on the lines this branch added (since LINT_BASE) when git
 ## can tell. A branch never edits the baseline (a baseline left high fails nothing): the
 ## merge chain lowers it after every merge (L10N_ARGS=--update-baseline does the same by hand); the

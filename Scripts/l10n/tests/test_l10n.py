@@ -168,37 +168,53 @@ class StatusTests(TemporaryCase):
         self.assertEqual(json.loads(out.getvalue())["languages"]["es"]["missing"], 1)
 
 
-@unittest.skipUnless(HAS_TOOL, "xcstringstool is not installed")
 class SizeTests(TemporaryCase):
-    """`size`: the budget and the compiled files."""
+    """`size`: the budget and the pack's blobs."""
 
-    def run_size(self, path, config=None):
-        """Runs `size` with its output folder in the temporary folder; returns what it printed."""
+    def run_size(self, path, config=None, **extra):
+        """Runs `size` on the catalog at `path`; returns what it printed."""
         out = io.StringIO()
-        with mock.patch.object(l10n, "OUTPUT", self.folder / "build" / "l10n"), contextlib.redirect_stdout(out):
-            l10n.cmd_size(args_for("size", path, config=config or self.folder / "none.json"))
+        with contextlib.redirect_stdout(out):
+            l10n.cmd_size(args_for("size", path, config=config or self.folder / "none.json", **extra))
         return out.getvalue()
 
-    def test_an_empty_catalog_has_nothing_to_compile(self):
+    def test_an_empty_catalog_has_a_pack_of_no_ids(self):
         printed = self.run_size(self.write_catalog({}))
         self.assertIn("English text: 0 bytes of 150,000 (0%); 150,000 under the budget.", printed)
-        self.assertIn("nothing is compiled", printed)
+        self.assertIn("The pack, Strings.pack:", printed)
+        self.assertIn("ids: ", printed)
 
-    def test_each_language_is_compiled_in_both_formats_and_plurals_add_their_file(self):
-        path = self.write_catalog({"Play": entry(es=unit("Reproducir")), "%lld books": entry(es=plural(
-            one=unit("%lld libro"), many=unit("%lld de libros"), other=unit("%lld libros")))})
+    def test_each_language_has_a_blob_in_the_pack_and_the_pack_is_reported(self):
+        path = self.write_catalog({"x.play": entry(en=unit("Play"), es=unit("Reproducir")),
+                                   "x.books": entry(en=plural(one=unit("%lld book"), other=unit("%lld books")),
+                                                    es=plural(one=unit("%lld libro"), many=unit("%lld de libros"),
+                                                              other=unit("%lld libros")))})
         printed = self.run_size(path)
-        self.assertRegex(printed, r"es: text [\d,]+ bytes, binary [\d,]+ bytes")
-        text = (self.folder / "build/l10n/size/text/es.lproj")
-        self.assertTrue((text / "Localizable.strings").exists())
-        self.assertTrue((text / "Localizable.stringsdict").exists(), "a catalog with a plural also compiles a stringsdict")
+        self.assertRegex(printed, r"es: [\d,]+ bytes in the pack \([\d,]+ raw\)")
+        self.assertRegex(printed, r"en: [\d,]+ bytes in the pack")
+        self.assertRegex(printed, r"The pack, Strings.pack: [\d,]+ bytes")
         self.assertIn("catalog file", printed)
+        self.assertNotIn("stringsdict", printed, "the apps ship no Apple table")
+
+    def test_the_json_names_each_blob_and_the_pack_total(self):
+        path = self.write_catalog({"x.play": entry(en=unit("Play"), es=unit("Reproducir"))})
+        data = json.loads(self.run_size(path, json=True))
+        self.assertEqual(sorted(data["blobs"]), ["en", "es", "ids", "notes"])
+        self.assertGreater(data["packBytes"], sum(blob["compressed"] for blob in data["blobs"].values()), "the header and directory too")
+        self.assertEqual(data["blobs"]["ids"]["raw"], len("x.play") + 1)
 
     def test_over_the_budget_is_said(self):
-        path = self.write_catalog({"x" * 200: entry()})
+        path = self.write_catalog({"x.long": entry(en=unit("x" * 200))})
         config = self.folder / "config.json"
         config.write_text(json.dumps({"budgetBytes": 100}))
         self.assertIn("100 over the budget", self.run_size(path, config))
+
+    def test_a_catalog_the_pack_refuses_is_a_refusal_not_a_size(self):
+        # An ID outside the pattern is a refusal of the pack.
+        path = self.write_catalog({"Play": entry(es=unit("Reproducir"))})
+        with self.assertRaises(l10n.Refused) as refused:
+            self.run_size(path)
+        self.assertIn("the pack cannot be built from the catalog", str(refused.exception))
 
 
 class CheckTests(TemporaryCase):
