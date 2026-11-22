@@ -384,37 +384,37 @@ enum MetadataEditorWording {
     /// The sheet's heading.
     static var sheetTitle: String {
         // Translators: Heading of the sheet in which the user edits a book's information (title, author and so on).
-        String(localized: "Book Information")
+        InterfaceText.line("common.bookInformation", "Book Information")
     }
     /// The sheet's navigation title.
     static func navigationTitle(bookTitle: String) -> String {
         // Translators: Navigation title of the book information sheet. %@ is the book's title.
-        String(localized: "Info: \(bookTitle)")
+        InterfaceText.line("common.infoValue", "Info: \(bookTitle)")
     }
     /// The button that closes the sheet without saving.
     static var cancelTitle: String {
         // Translators: Button of the book information sheet that closes it without saving.
-        String(localized: "Cancel")
+        InterfaceText.line("common.cancel", "Cancel")
     }
     /// The button that saves the edits.
     static var saveTitle: String {
         // Translators: Button of the book information sheet that saves the edits.
-        String(localized: "Save")
+        InterfaceText.line("common.save", "Save")
     }
     /// What VoiceOver says for Save in an audiobook's sheet.
     static var saveAudioLabel: String {
         // Translators: What VoiceOver says for the Save button of an audiobook's book information sheet.
-        String(localized: "Save metadata changes")
+        InterfaceText.line("metadataEditor.saveAudioLabel", "Save metadata changes")
     }
     /// The heading of the group of fields the user can change.
     static var editableHeading: String {
         // Translators: Heading of the group of fields of the book information sheet that the user can change.
-        String(localized: "Editable")
+        InterfaceText.line("metadataEditor.editableHeading", "Editable")
     }
     /// The heading of the group of fields the user cannot change.
     static var readOnlyHeading: String {
         // Translators: Heading of the group of fields of the book information sheet that the user cannot change.
-        String(localized: "Read Only")
+        InterfaceText.line("metadataEditor.readOnlyHeading", "Read Only")
     }
 
     // MARK: Editable fields: what the screen shows
@@ -422,42 +422,42 @@ enum MetadataEditorWording {
     /// The title field's name.
     static var titleField: String {
         // Translators: Name of the book information sheet's field for the book's title.
-        String(localized: "Title")
+        InterfaceText.line("common.title", "Title")
     }
     /// The audiobook artist field's name.
     static var artistField: String {
         // Translators: Name of the book information sheet's field for an audiobook's artist.
-        String(localized: "Artist")
+        InterfaceText.line("metadataEditor.artistField", "Artist")
     }
     /// The audiobook album field's name.
     static var albumField: String {
         // Translators: Name of the book information sheet's field for an audiobook's album.
-        String(localized: "Album")
+        InterfaceText.line("metadataEditor.albumField", "Album")
     }
     /// The audiobook genre field's name, which VoiceOver also reads.
     static var genreField: String {
         // Translators: Name of the book information sheet's field for an audiobook's genre; VoiceOver reads it as the field's label.
-        String(localized: "Genre")
+        InterfaceText.line("metadataEditor.genreField", "Genre")
     }
     /// The audiobook year field's name, which VoiceOver also reads.
     static var yearField: String {
         // Translators: Name of the book information sheet's field for an audiobook's year; VoiceOver reads it as the field's label.
-        String(localized: "Year")
+        InterfaceText.line("metadataEditor.yearField", "Year")
     }
     /// The EPUB author field's name, which VoiceOver also reads.
     static var authorField: String {
         // Translators: Name of the book information sheet's field for a book's author; VoiceOver reads it as the field's label.
-        String(localized: "Author")
+        InterfaceText.line("common.author", "Author")
     }
     /// The EPUB publisher field's name, which VoiceOver also reads.
     static var publisherField: String {
         // Translators: Name of the book information sheet's field for a book's publisher; VoiceOver reads it as the field's label.
-        String(localized: "Publisher")
+        InterfaceText.line("metadataEditor.publisherField", "Publisher")
     }
     /// The EPUB publication date field's name.
     static var publicationDateField: String {
         // Translators: Name of the book information sheet's field for a book's publication date.
-        String(localized: "Publication Date")
+        InterfaceText.line("metadataEditor.publicationDateField", "Publication Date")
     }
 
     // MARK: Editable fields: what VoiceOver says
@@ -465,22 +465,22 @@ enum MetadataEditorWording {
     /// What VoiceOver says for the title field.
     static var bookTitleLabel: String {
         // Translators: What VoiceOver says for the book information sheet's field for the book's title.
-        String(localized: "Book title")
+        InterfaceText.line("metadataEditor.bookTitleLabel", "Book title")
     }
     /// What VoiceOver says for an audiobook's artist field.
     static var artistLabel: String {
         // Translators: What VoiceOver says for the book information sheet's field for an audiobook's artist, who may be its narrator.
-        String(localized: "Artist or narrator")
+        InterfaceText.line("metadataEditor.artistLabel", "Artist or narrator")
     }
     /// What VoiceOver says for an audiobook's album field.
     static var albumLabel: String {
         // Translators: What VoiceOver says for the book information sheet's field for an audiobook's album.
-        String(localized: "Album name")
+        InterfaceText.line("metadataEditor.albumLabel", "Album name")
     }
     /// What VoiceOver says for an EPUB's publication date field.
     static var publicationDateLabel: String {
         // Translators: What VoiceOver says for the book information sheet's field for a book's publication date.
-        String(localized: "Publication date")
+        InterfaceText.line("metadataEditor.publicationDateLabel", "Publication date")
     }
 
     // MARK: Read-only rows
@@ -488,63 +488,63 @@ enum MetadataEditorWording {
     /// The audiobook's duration row.
     static var durationRow: String {
         // Translators: Name of the book information sheet's row that shows an audiobook's length.
-        String(localized: "Duration")
+        InterfaceText.line("common.duration", "Duration")
     }
     /// The audiobook's file format row.
     static var formatRow: String {
         // Translators: Name of the book information sheet's row that shows an audiobook's file format.
-        String(localized: "Format")
+        InterfaceText.line("common.format", "Format")
     }
     /// The ISBN row.
     static var isbnRow: String {
         // Translators: Name of the book information sheet's row that shows a book's ISBN, its international book number.
-        String(localized: "ISBN")
+        InterfaceText.line("metadataEditor.isbnRow", "ISBN")
     }
     /// The language row.
     static var languageRow: String {
         // Translators: Name of the book information sheet's row that shows the language a book is written in.
-        String(localized: "Language")
+        InterfaceText.line("common.language", "Language")
     }
     /// The identifier row.
     static var identifierRow: String {
         // Translators: Name of the book information sheet's row that shows a book's identifier, a code that names it.
-        String(localized: "Identifier")
+        InterfaceText.line("metadataEditor.identifierRow", "Identifier")
     }
     /// The EPUB version row.
     static var epubVersionRow: String {
         // Translators: Name of the book information sheet's row that shows which version of the EPUB format the file uses.
-        String(localized: "EPUB Version")
+        InterfaceText.line("metadataEditor.epubVersionRow", "EPUB Version")
     }
 
     /// What VoiceOver says for the duration row.
     static func durationSpoken(_ duration: String) -> String {
         // Translators: What VoiceOver says for the book information sheet's duration row. %@ is the length, such as 9:41:07.
-        String(localized: "Duration: \(duration)")
+        InterfaceText.line("metadataEditor.durationSpoken", "Duration: \(duration)")
     }
     /// What VoiceOver says for the file format row.
     static func formatSpoken(_ format: String) -> String {
         // Translators: What VoiceOver says for the book information sheet's file format row. %@ is the format, such as MP3.
-        String(localized: "File format: \(format)")
+        InterfaceText.line("metadataEditor.formatSpoken", "File format: \(format)")
     }
     /// What VoiceOver says for the ISBN row.
     static func isbnSpoken(_ isbn: String) -> String {
         // Translators: What VoiceOver says for the book information sheet's ISBN row. %@ is the book's ISBN.
-        String(localized: "ISBN: \(isbn)")
+        InterfaceText.line("common.isbnValue", "ISBN: \(isbn)")
     }
     /// What VoiceOver says for the language row.
     static func languageSpoken(_ language: String) -> String {
         // Translators: What VoiceOver says for the book information sheet's language row. %@ is the language code the book gives, such as en.
-        String(localized: "Language: \(language)")
+        InterfaceText.line("metadataEditor.languageSpoken", "Language: \(language)")
     }
     /// What VoiceOver says for the identifier row.
     static func identifierSpoken(_ identifier: String) -> String {
         // Translators: What VoiceOver says for the book information sheet's identifier row. %@ is the book's identifier code.
-        String(localized: "Identifier: \(identifier)")
+        InterfaceText.line("metadataEditor.identifierSpoken", "Identifier: \(identifier)")
     }
     /// What VoiceOver says for the EPUB version row.
     static func epubVersionSpoken(_ version: String) -> String {
         // Translators: What VoiceOver says for the book information sheet's EPUB version row. %@ is the version, such as 3.0.
-        String(localized: "EPUB version: \(version)")
+        InterfaceText.line("metadataEditor.epubVersionSpoken", "EPUB version: \(version)")
     }
 
     // MARK: Hand edits and refusals
@@ -554,7 +554,7 @@ enum MetadataEditorWording {
     /// own: "Book title, edited by hand".
     static var editedByHand: String {
         // Translators: Words that follow a field's name in what VoiceOver says, when the user typed that field's value themselves. Begins in lower case, as it follows a comma.
-        String(localized: "edited by hand")
+        InterfaceText.line("metadataEditor.editedByHand", "edited by hand")
     }
 
     /// The accessibility label of the control for `field`: `label`, with
@@ -562,7 +562,7 @@ enum MetadataEditorWording {
     static func fieldLabel(_ label: String, for field: Book.MetadataField, in handEdits: Book.HandEdits?) -> String {
         guard handEdits?.contains(field) == true else { return label }
         // Translators: What VoiceOver says for a field of the book information sheet that the user edited by hand. %@ is the field's name, such as "Book title".
-        return String(localized: "\(label), edited by hand")
+        return InterfaceText.line("metadataEditor.fieldLabel", "\(label), edited by hand")
     }
 
     /// What the editor says when Save is pressed after the title was
@@ -570,9 +570,9 @@ enum MetadataEditorWording {
     static var titleCleared: String {
         SentenceWording.joined([
             // Translators: First sentence of the message when Save is pressed after the book's title was emptied.
-            String(localized: "Could not save: the book's title is empty."),
+            InterfaceText.line("metadataEditor.titleCleared.empty", "Could not save: the book's title is empty."),
             // Translators: Second sentence of that message: what to do.
-            String(localized: "Type a title, then save again."),
+            InterfaceText.line("metadataEditor.titleCleared.again", "Type a title, then save again."),
         ])
     }
 
@@ -582,9 +582,9 @@ enum MetadataEditorWording {
     static func notInLibrary(title: String) -> String {
         SentenceWording.joined([
             // Translators: First sentence of the message when the book being edited left the library. %@ is the book's title.
-            String(localized: "Could not save metadata: “\(title)” is no longer in the library."),
+            InterfaceText.line("metadataEditor.notInLibrary", "Could not save metadata: “\(title)” is no longer in the library."),
             // Translators: Last sentence of a message that says saving failed: nothing the user edited was saved anywhere.
-            String(localized: "Nothing was changed."),
+            InterfaceText.line("common.nothingWasChanged", "Nothing was changed."),
         ])
     }
 }

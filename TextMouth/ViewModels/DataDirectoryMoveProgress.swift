@@ -284,21 +284,21 @@ enum DataDirectoryMoveRefusal: LocalizedError, Equatable {
             guard quoted.count > 1 else {
                 guard let title = quoted.first else {
                     // Translators: Why a move of the library was refused: a book is open in a reader. "It" is that book.
-                    return String(localized: "The library can't move while a book is open. Close it first.")
+                    return InterfaceText.line("dataDirectoryMoveRefusal.booksOpen.library", "The library can't move while a book is open. Close it first.")
                 }
                 // Translators: Why a move of the library was refused: a book is open in a reader. %@ is the book's title, in quotation marks.
-                return String(localized: "The library can't move while a book is open. Close \(title) first.")
+                return InterfaceText.line("dataDirectoryMoveRefusal.booksOpen.libraryCant", "The library can't move while a book is open. Close \(title) first.")
             }
             return SentenceWording.joined([
                 // Translators: First sentence of why a move of the library was refused: several books are open in readers.
-                String(localized: "The library can't move while books are open."),
+                InterfaceText.line("dataDirectoryMoveRefusal.booksOpen.libraryWhile", "The library can't move while books are open."),
                 // Translators: Last sentence of why a move of the library was refused: which books to close. %@ is their titles in quotation marks, as a short list.
-                String(localized: "Close these first: \(DataDirectoryDestinationChange.listing(quoted))."),
+                InterfaceText.line("dataDirectoryMoveRefusal.booksOpen.these", "Close these first: \(DataDirectoryDestinationChange.listing(quoted))."),
             ])
         case .booksNotDownloaded(let count):
             return SentenceWording.joined([
                 // Translators: First sentence of why a move of the library was refused: some books' files are only in the cloud. %lld is how many books.
-                String(localized: "\(count) books aren't downloaded."),
+                InterfaceText.line("dataDirectoryMoveRefusal.booksNotDownloaded", "\(number: count) books aren't downloaded."),
                 LibraryCloudWording.downloadFirst(count: count),
             ])
         }
@@ -313,93 +313,93 @@ enum DataDirectoryMoveWording {
     /// The sheet's heading.
     static var title: String {
         // Translators: Heading of the sheet that shows the library being moved to another folder.
-        String(localized: "Moving the Library")
+        InterfaceText.line("dataDirectoryMove.title", "Moving the Library")
     }
     /// What VoiceOver calls the progress bar.
     static var progressLabel: String {
         // Translators: VoiceOver label of the progress bar of the library being moved.
-        String(localized: "Moving the library")
+        InterfaceText.line("dataDirectoryMove.progressLabel", "Moving the library")
     }
     /// What VoiceOver calls the Cancel button.
     static var cancelLabel: String {
         // Translators: VoiceOver label of the button that cancels the move of the library.
-        String(localized: "Cancel Move")
+        InterfaceText.line("dataDirectoryMove.cancelLabel", "Cancel Move")
     }
     /// What the Cancel button does.
     static var cancelHint: String {
         // Translators: VoiceOver hint of the button that cancels the move of the library.
-        String(localized: "Stops moving the library. The library stays where it is, and nothing is changed.")
+        InterfaceText.line("dataDirectoryMove.cancelHint", "Stops moving the library. The library stays where it is, and nothing is changed.")
     }
     /// Announced when Cancel is pressed.
     static var cancellingAnnouncement: String {
         // Translators: Announcement when the listener cancels the move of the library.
-        String(localized: "Cancelling the move.")
+        InterfaceText.line("dataDirectoryMove.cancellingAnnouncement", "Cancelling the move.")
     }
     /// Announced when TextMouth is asked to quit during a move.
     static var quitAnnouncement: String {
         // Translators: Announcement when TextMouth is asked to quit during a move of the library.
-        String(localized: "Stopping the library move before quitting.")
+        InterfaceText.line("dataDirectoryMove.quitAnnouncement", "Stopping the library move before quitting.")
     }
     /// Added to the done message when Cancel came too late.
     static var finishedDespiteCancelSentence: String {
         // Translators: Sentence added to the done message of a move of the library when Cancel was pressed after the copy was complete.
-        String(localized: "The copy was already complete when Cancel was pressed, so the move went ahead.")
+        InterfaceText.line("dataDirectoryMove.finishedDespiteCancelSentence", "The copy was already complete when Cancel was pressed, so the move went ahead.")
     }
 
     /// The move sheet's Cancel button: it cancels the move, as `cancelLabel` says to VoiceOver.
     static var cancelTitle: String {
         // Translators: Button of the sheet that shows the library being moved: cancels the move.
-        String(localized: "Cancel")
+        InterfaceText.line("common.cancel", "Cancel")
     }
 
     /// The last sentence of several reasons a move of the data directory was
     /// refused: what to do about the new location.
     static var chooseAnotherLocation: String {
         // Translators: Last sentence of why a move of the data directory was refused: what to do about the new location.
-        String(localized: "Choose another location.")
+        InterfaceText.line("dataDirectoryMove.chooseAnotherLocation", "Choose another location.")
     }
 
     /// Announced when the copy starts: where the library goes.
     static func startAnnouncement(to destination: URL, isResetToDefault: Bool) -> String {
         isResetToDefault
             // Translators: Announcement when the library's move back to the default location starts. %@ is the default location's path.
-            ? String(localized: "Moving the library to the default location, \(destination.path).")
+            ? InterfaceText.line("dataDirectoryMove.startAnnouncement.location", "Moving the library to the default location, \(destination.path).")
             // Translators: Announcement when the library's move starts. %@ is the new location's path.
-            : String(localized: "Moving the library to \(destination.path).")
+            : InterfaceText.line("dataDirectoryMove.startAnnouncement.library", "Moving the library to \(destination.path).")
     }
 
     /// Announced as the copy reaches each quarter.
     static func quarterAnnouncement(percent: Int) -> String {
         // Translators: Announcement as the move of the library reaches each quarter. %lld is the percent done, from 0 to 100.
-        String(localized: "Moving the library, \(percent) percent.")
+        InterfaceText.line("dataDirectoryMove.quarterAnnouncement", "Moving the library, \(number: percent) percent.")
     }
 
     /// Where the library is going, as the sheet says it.
     static func destination(_ destination: URL, isResetToDefault: Bool) -> String {
         isResetToDefault
             // Translators: Line of the move sheet that says where the library is going: the default location. %@ is its path.
-            ? String(localized: "To the default location, \(destination.path)")
+            ? InterfaceText.line("dataDirectoryMove.destination.location", "To the default location, \(destination.path)")
             // Translators: Line of the move sheet that says where the library is going. %@ is the new location's path.
-            : String(localized: "To \(destination.path)")
+            : InterfaceText.line("dataDirectoryMove.destination.value", "To \(destination.path)")
     }
 
     /// What the move is doing, as shown.
     static func status(phase: DataDirectoryMoveProgress.Phase, percent: Int, isCancelling: Bool) -> String {
         if isCancelling {
             // Translators: Status line of the move sheet while the move is being cancelled.
-            return String(localized: "Cancelling the move…")
+            return InterfaceText.line("dataDirectoryMove.status", "Cancelling the move…")
         }
         switch phase {
         case .preparing:
             // Translators: Status line of the move sheet before the copy starts.
-            return String(localized: "Getting ready to move the library…")
+            return InterfaceText.line("dataDirectoryMove.status.preparing", "Getting ready to move the library…")
         case .waiting(let work): return work.waitingMessage
         case .copying:
             // Translators: Status line of the move sheet while the library is copied. %lld is the percent done, from 0 to 100.
-            return String(localized: "Moving the library… \(percent) percent")
+            return InterfaceText.line("dataDirectoryMove.status.copying", "Moving the library… \(number: percent) percent")
         case .finishing:
             // Translators: Status line of the move sheet while the move is being finished.
-            return String(localized: "Finishing the move…")
+            return InterfaceText.line("dataDirectoryMove.status.finishing", "Finishing the move…")
         }
     }
 
@@ -407,19 +407,19 @@ enum DataDirectoryMoveWording {
     static func spokenValue(phase: DataDirectoryMoveProgress.Phase, percent: Int, isCancelling: Bool) -> String {
         if isCancelling {
             // Translators: VoiceOver value of the move's progress bar while the move is being cancelled.
-            return String(localized: "Cancelling")
+            return InterfaceText.line("dataDirectoryMove.spokenValue", "Cancelling")
         }
         switch phase {
         case .preparing:
             // Translators: VoiceOver value of the move's progress bar before the copy starts.
-            return String(localized: "Getting ready")
+            return InterfaceText.line("dataDirectoryMove.spokenValue.preparing", "Getting ready")
         case .waiting(let work): return work.waitingMessage
         case .copying:
             // Translators: VoiceOver value of the move's progress bar while the library is copied. %lld is the percent done, from 0 to 100.
-            return String(localized: "\(percent) percent")
+            return InterfaceText.line("common.countPercent", "\(number: percent) percent")
         case .finishing:
             // Translators: VoiceOver value of the move's progress bar while the move is being finished.
-            return String(localized: "Finishing")
+            return InterfaceText.line("dataDirectoryMove.spokenValue.finishing", "Finishing")
         }
     }
 
@@ -427,9 +427,9 @@ enum DataDirectoryMoveWording {
     static func cancelled(stillAt root: DataDirectoryLocation) -> String {
         SentenceWording.joined([
             // Translators: First sentence of the message after the move of the library was cancelled.
-            String(localized: "Move cancelled."),
+            InterfaceText.line("dataDirectoryMove.cancelled.moveStopped", "Move cancelled."),
             // Translators: Last sentence of the message after the move of the library was cancelled. %@ is the library's path, with where it leads when it is a link.
-            String(localized: "The library is still at \(root.namedDescription)."),
+            InterfaceText.line("dataDirectoryMove.cancelled.library", "The library is still at \(root.namedDescription)."),
         ])
     }
 
@@ -440,10 +440,10 @@ enum DataDirectoryMoveWording {
         switch action {
         case .openBookFile, .newFromText, .importDAISYFolder:
             // Translators: What a Library window says when a command that adds a book is chosen while the library is being moved.
-            return String(localized: "Books can't be added while the library is moving.")
+            return InterfaceText.line("dataDirectoryMove.refusal.openBookFile", "Books can't be added while the library is moving.")
         case .openBookWindow, .continueToNextBook:
             // Translators: What a Library window says when a command that opens a book is chosen while the library is being moved.
-            return String(localized: "Books can't be opened while the library is moving.")
+            return InterfaceText.line("dataDirectoryMove.refusal.openBookWindow", "Books can't be opened while the library is moving.")
         case .openFiles, .goToLibrary:
             // Files opened from Finder are imported once the move is done
             // (the import waits for it, TODO S04), and open then.
@@ -460,9 +460,9 @@ enum DataDirectoryMoveWording {
     static var importAnswerRefusal: String {
         SentenceWording.joined([
             // Translators: First sentence of what an import question says when it is answered while the library is being moved.
-            String(localized: "Import questions can't be answered while the library is moving."),
+            InterfaceText.line("dataDirectoryMove.importAnswerRefusal.questions", "Import questions can't be answered while the library is moving."),
             // Translators: Last sentence of what an import question says when it is answered while the library is being moved.
-            String(localized: "Answer this one when the move ends."),
+            InterfaceText.line("dataDirectoryMove.importAnswerRefusal.when", "Answer this one when the move ends."),
         ])
     }
 }

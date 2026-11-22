@@ -22,13 +22,13 @@ enum FeedItemMoveError: LocalizedError, Equatable {
         switch self {
         case .packageNotManaged:
             // Translators: Why a downloaded feed item could not be moved between its feed's folder and the library, after "“Title” stays in its feed:". Lower case, without a full stop.
-            return String(localized: "its row names no package the library manages")
+            return InterfaceText.line("feedItemMoveError.packageNotManaged", "its row names no package the library manages")
         case .packageMissing:
             // Translators: Why a downloaded feed item could not be moved between its feed's folder and the library: its files are in neither folder. Lower case, without a full stop.
-            return String(localized: "its package is in neither its library folder nor its feed's")
+            return InterfaceText.line("feedItemMoveError.packageMissing", "its package is in neither its library folder nor its feed's")
         case .packageInBothPlaces:
             // Translators: Why a downloaded feed item could not be moved between its feed's folder and the library: its files are in both folders. Lower case, without a full stop.
-            return String(localized: "a package of its name is in both its library folder and its feed's")
+            return InterfaceText.line("feedItemMoveError.packageInBothPlaces", "a package of its name is in both its library folder and its feed's")
         }
     }
 }

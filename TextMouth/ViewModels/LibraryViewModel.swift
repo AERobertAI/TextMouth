@@ -15,17 +15,17 @@ enum LibrarySortField: String, CaseIterable, Codable {
     var title: String {
         switch self {
         // Translators: Name of a way to sort the books: by the title. Shown in the Sort menu, the library view editor, the window title, and in sort announcements.
-        case .title: return String(localized: "Title")
+        case .title: return InterfaceText.line("common.title", "Title")
         // Translators: Name of a way to sort the books: by the author. Shown in the Sort menu, the library view editor, the window title, and in sort announcements.
-        case .author: return String(localized: "Author")
+        case .author: return InterfaceText.line("common.author", "Author")
         // Translators: Name of a way to sort the books: by the date the book was added. Shown in the Sort menu, the library view editor, the window title, and in sort announcements.
-        case .dateAdded: return String(localized: "Date Added")
+        case .dateAdded: return InterfaceText.line("common.dateAdded", "Date Added")
         // Translators: Name of a way to sort the books: by the date the book was last opened. Shown in the Sort menu, the library view editor, the window title, and in sort announcements.
-        case .lastOpened: return String(localized: "Last Opened")
+        case .lastOpened: return InterfaceText.line("common.lastOpened", "Last Opened")
         // Translators: Name of a way to sort the books: by the size of the book's file. Shown in the Sort menu, the library view editor, the window title, and in sort announcements.
-        case .fileSize: return String(localized: "File Size")
+        case .fileSize: return InterfaceText.line("librarySortField.title.fileSize", "File Size")
         // Translators: Name of a way to sort the books: by the order the user arranges by hand, with no direction. Shown in the Sort menu, the library view editor, the window title, and in sort announcements.
-        case .manual: return String(localized: "Manual Order")
+        case .manual: return InterfaceText.line("librarySortField.title.manual", "Manual Order")
         }
     }
 
@@ -923,13 +923,13 @@ enum LibraryViewModelWording {
     /// "The library is still not available. <why>".
     static func stillNotAvailable(_ explanation: String) -> String {
         // Translators: VoiceOver announcement when Try Again on the Library Not Available screen finds the library still missing. %@ is the sentence that says why it is not available.
-        String(localized: "The library is still not available. \(explanation)")
+        InterfaceText.line("libraryViewModel.stillNotAvailable", "The library is still not available. \(explanation)")
     }
 
     /// What VoiceOver hears when the library is found again.
     static var available: String {
         // Translators: VoiceOver announcement when the library, which had been missing, is found again.
-        String(localized: "The library is available.")
+        InterfaceText.line("libraryViewModel.available", "The library is available.")
     }
 
     // MARK: Failure contexts
@@ -940,79 +940,79 @@ enum LibraryViewModelWording {
     /// The context of a folder that could not be created.
     static var couldNotCreateFolder: String {
         // Translators: Start of the error message when a new folder could not be created. The reason follows it after a colon.
-        String(localized: "Could not create folder")
+        InterfaceText.line("libraryViewModel.couldNotCreateFolder", "Could not create folder")
     }
 
     /// The context of books that could not be moved to a folder.
     static var couldNotMoveBooks: String {
         // Translators: Start of the error message when books could not be moved to a folder. The reason follows it after a colon.
-        String(localized: "Could not move books")
+        InterfaceText.line("libraryViewModel.couldNotMoveBooks", "Could not move books")
     }
 
     /// The context of a duplicate's new copy that could not be discarded.
     static var couldNotDiscardDuplicateImport: String {
         // Translators: Start of the error message when the new copy of a duplicate book could not be discarded. The reason follows it after a colon.
-        String(localized: "Could not discard duplicate import")
+        InterfaceText.line("libraryViewModel.couldNotDiscardDuplicateImport", "Could not discard duplicate import")
     }
 
     /// The context of a replacement that could not go ahead.
     static var couldNotReplaceDuplicate: String {
         // Translators: Start of the error message when Replace Existing could not put the new copy in place of the library's copy. The reason follows it after a colon.
-        String(localized: "Could not replace duplicate")
+        InterfaceText.line("libraryViewModel.couldNotReplaceDuplicate", "Could not replace duplicate")
     }
 
     /// The context of the books of an imported ZIP archive that could not be filed in their new folder.
     static var couldNotOrganizeImportedZIPBooks: String {
         // Translators: Start of the error message when the books of an imported ZIP archive could not be moved into the folder made for them. The reason follows it after a colon.
-        String(localized: "Could not organize imported ZIP books")
+        InterfaceText.line("libraryViewModel.organizeZipFailed", "Could not organize imported ZIP books")
     }
 
     /// The context of a folder that could not be deleted with its contents moved out.
     static func couldNotDeleteFolderAndMoveContents(_ name: String) -> String {
         // Translators: Start of the error message when a folder could not be deleted and its contents moved to its parent. %@ is the folder's name. The reason follows it after a colon.
-        String(localized: "Could not delete \"\(name)\" and move its contents")
+        InterfaceText.line("libraryViewModel.deleteFolderFailed", "Could not delete \"\(name)\" and move its contents")
     }
 
     /// The context of a folder's contents that could not be relocated.
     static var couldNotRelocateFolderContents: String {
         // Translators: Start of the error message when the books of a deleted folder could not be moved to their new place. The reason follows it after a colon.
-        String(localized: "Could not relocate folder contents")
+        InterfaceText.line("libraryViewModel.couldNotRelocateFolderContents", "Could not relocate folder contents")
     }
 
     /// What the alert says when a folder to remove has an invalid or changed library path.
     static var couldNotRemoveFolderPathInvalid: String {
         // Translators: Error message when a folder cannot be removed because its place in the library is not valid any more, or it moved.
-        String(localized: "Could not remove folder: its library path is invalid or has changed.")
+        InterfaceText.line("libraryViewModel.couldNotRemoveFolderPathInvalid", "Could not remove folder: its library path is invalid or has changed.")
     }
 
     /// The context of a refused move of the folder named `name`.
     static func couldNotMoveNamedFolder(_ name: String) -> String {
         // Translators: Start of the error message when a folder was refused a move. %@ is the folder's name. The reason follows it after a colon.
-        String(localized: "Could not move \"\(name)\"")
+        InterfaceText.line("libraryViewModel.couldNotMoveNamedFolder", "Could not move \"\(name)\"")
     }
 
     /// The context of a folder move that failed after the library accepted it.
     static var couldNotMoveFolder: String {
         // Translators: Start of the error message when moving a folder failed on disk, and everything was put back. The reason follows it after a colon.
-        String(localized: "Could not move folder")
+        InterfaceText.line("libraryViewModel.couldNotMoveFolder", "Could not move folder")
     }
 
     /// The context of a refused rename of the folder named `name`.
     static func couldNotRenameNamedFolder(_ name: String) -> String {
         // Translators: Start of the error message when a folder was refused a new name. %@ is the folder's current name. The reason follows it after a colon.
-        String(localized: "Could not rename \"\(name)\"")
+        InterfaceText.line("libraryViewModel.couldNotRenameNamedFolder", "Could not rename \"\(name)\"")
     }
 
     /// The context of a folder rename that failed after the library accepted it.
     static var couldNotRenameFolder: String {
         // Translators: Start of the error message when renaming a folder failed on disk, and everything was put back. The reason follows it after a colon.
-        String(localized: "Could not rename folder")
+        InterfaceText.line("libraryViewModel.couldNotRenameFolder", "Could not rename folder")
     }
 
     /// The reason a move is refused when a destination folder's path is not a safe library path.
     static var invalidDestinationFolderPath: String {
         // Translators: Error shown when books or folders cannot be moved because the destination folder's path is not a valid place in the library.
-        String(localized: "A destination folder path is invalid.")
+        InterfaceText.line("libraryViewModel.invalidDestinationFolderPath", "A destination folder path is invalid.")
     }
 
     // MARK: Remove from Library Only
@@ -1022,9 +1022,9 @@ enum LibraryViewModelWording {
     static func removalRefusedHeading(count: Int) -> String {
         count == 1
             // Translators: Heading of the error alert's list when Remove from Library Only could not mark one book's package, so it stays in the library. The book's title and the reason follow on the next line.
-            ? String(localized: "This book could not be removed from the library and remains in it:")
+            ? InterfaceText.line("common.thisBookCouldNotBeRemoved", "This book could not be removed from the library and remains in it:")
             // Translators: Heading of the error alert's list when Remove from Library Only could not mark the packages of several books, so they stay in the library. Each book's title and the reason follow on their own lines.
-            : String(localized: "These books could not be removed from the library and remain in it:")
+            : InterfaceText.line("common.theseBooksCouldNotBeRemoved", "These books could not be removed from the library and remain in it:")
     }
 
     /// The heading of the books Remove from Library Only removed but whose
@@ -1032,8 +1032,8 @@ enum LibraryViewModelWording {
     static func removalRecordLeftHeading(count: Int) -> String {
         count == 1
             // Translators: Heading of the error alert's list when Remove from Library Only removed one book but could not delete the bookInfo.json file in its package. bookInfo.json is a file name. The book's title and the reason follow on the next line.
-            ? String(localized: "This book was removed from the library, but its bookInfo.json file could not be deleted. It stays out of the library:")
+            ? InterfaceText.line("libraryViewModel.removalRecordLeftHeading.stays", "This book was removed from the library, but its bookInfo.json file could not be deleted. It stays out of the library:")
             // Translators: Heading of the error alert's list when Remove from Library Only removed several books but could not delete the bookInfo.json files in their packages. bookInfo.json is a file name. Each book's title and the reason follow on their own lines.
-            : String(localized: "These books were removed from the library, but their bookInfo.json files could not be deleted. They stay out of the library:")
+            : InterfaceText.line("libraryViewModel.removalRecordLeftHeading.these", "These books were removed from the library, but their bookInfo.json files could not be deleted. They stay out of the library:")
     }
 }

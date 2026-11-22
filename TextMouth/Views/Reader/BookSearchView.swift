@@ -10,7 +10,7 @@ enum BookSearchWording {
     /// transcript does not exist yet.
     static func noTranscript(bookTitle: String) -> String {
         // Translators: Said instead of opening Search in Book for an audiobook that has no transcript yet. %@ is the book's title. Transcribe Audio is the name of a command in the Book menu.
-        String(localized: "\(bookTitle) has no transcript to search. Transcribe it first, with Transcribe Audio.")
+        InterfaceText.line("bookSearch.noTranscript", "\(bookTitle) has no transcript to search. Transcribe it first, with Transcribe Audio.")
     }
 
     /// Said instead of opening Search in Book for a loaded audiobook with no
@@ -48,33 +48,33 @@ enum BookSearchWording {
             return canTranscribe && offersTranscription
                 ? noTranscript(bookTitle: bookTitle)
                 // Translators: Said instead of opening Search in Book for an audiobook that has no transcript, where TextMouth cannot make one. %@ is the book's title.
-                : String(localized: "\(bookTitle) has no transcript to search.")
+                : InterfaceText.line("bookSearch.value", "\(bookTitle) has no transcript to search.")
         }
         switch withheld {
         case nil:
             // Translators: Said instead of opening Search in Book when a book's transcript text cannot be searched and no reason is known. %@ is the book's title.
-            return String(localized: "\(bookTitle) has no transcript text to search now.")
+            return InterfaceText.line("bookSearch.noTranscriptTextNow", "\(bookTitle) has no transcript text to search now.")
         case .transcriptInCloud?:
             return SentenceWording.joined([
                 // Translators: Said instead of opening Search in Book when a book's transcript text cannot be searched and no reason is known. %@ is the book's title.
-                String(localized: "\(bookTitle) has no transcript text to search now."),
+                InterfaceText.line("bookSearch.noTranscriptTextNow", "\(bookTitle) has no transcript text to search now."),
                 TranscriptionWording.transcriptInCloud,
             ])
         case .textInCloud?:
             return SentenceWording.joined([
                 // Translators: Said instead of opening Search in Book when a book's transcript text cannot be searched and no reason is known. %@ is the book's title.
-                String(localized: "\(bookTitle) has no transcript text to search now."),
+                InterfaceText.line("bookSearch.noTranscriptTextNow", "\(bookTitle) has no transcript text to search now."),
                 TranscriptionWording.textInCloud,
             ])
         case .audioChanged?:
             // Translators: Said instead of opening Search in Book when the book's audio changed after its transcript was made. %1$@ is the book's title and %2$@ is the reason, a whole sentence that ends with its own full stop.
-            let because = String(localized: "\(bookTitle) has no transcript text to search now, because \(BookTextEditWording.transcriptStaleReason)")
+            let because = InterfaceText.line("bookSearch.because.audioChanged", "\(bookTitle) has no transcript text to search now, because \(BookTextEditWording.transcriptStaleReason)")
             return offersTranscription ? SentenceWording.joined([because, transcribeAgainAdvice]) : because
         case .editHeld(let refusal, let keptCopy)?:
             let why = BookTextEditWording.heldReason(refusal, forAudiobook: true)
             return SentenceWording.joined([
                 // Translators: Said instead of opening Search in Book when the book's edited transcript text was held back. %1$@ is the book's title and %2$@ is the reason, a whole sentence that ends with its own full stop.
-                String(localized: "\(bookTitle) has no transcript text to search now, because its edited text can't be used: \(why)"),
+                InterfaceText.line("bookSearch.noTranscriptTextNowBecause", "\(bookTitle) has no transcript text to search now, because its edited text can't be used: \(why)"),
                 BookTextEditWording.kept(keptCopy),
             ])
         }
@@ -84,7 +84,7 @@ enum BookSearchWording {
     /// can transcribe.
     private static var transcribeAgainAdvice: String {
         // Translators: Advice after the reason a book's transcript cannot be searched because its audio changed: make the transcript again.
-        String(localized: "Transcribe it again, then search the new transcript.")
+        InterfaceText.line("bookSearch.transcribeAgainAdvice", "Transcribe it again, then search the new transcript.")
     }
 
     /// Said once the search sheet has closed after a result was chosen: the
@@ -92,141 +92,141 @@ enum BookSearchWording {
     static func movedTo(time: TimeInterval, location: String?) -> String {
         guard let location else {
             // Translators: Announcement after the reader moved to a search result in a transcribed audiobook. %@ is the time moved to, spoken, such as "1 minute, 5 seconds".
-            return String(localized: "Moved to \(TimeFormatting.spoken(time)).")
+            return InterfaceText.line("bookSearch.movedTo.toTime", "Moved to \(TimeFormatting.spoken(time)).")
         }
         // Translators: Announcement after the reader moved to a search result in a transcribed audiobook. %1$@ is the time moved to, spoken, and %2$@ is where that is, such as a chapter's title.
-        return String(localized: "Moved to \(TimeFormatting.spoken(time)), \(location).")
+        return InterfaceText.line("bookSearch.movedTo.toTimeInChapter", "Moved to \(TimeFormatting.spoken(time)), \(location).")
     }
 
     /// Said by Go Back in a reader that has no saved position to return to.
     static var nothingToGoBackTo: String {
         // Translators: Announcement of Go Back when the reader has no saved position to return to.
-        String(localized: "No previous position to return to.")
+        InterfaceText.line("bookSearch.nothingToGoBackTo", "No previous position to return to.")
     }
 
     /// The search field's hint when the book searched is a transcript.
     static var transcriptFieldHint: String {
         // Translators: VoiceOver hint of the search field in Search in Book when the book searched is a transcribed audiobook.
-        String(localized: "Type to search the book's transcript")
+        InterfaceText.line("bookSearch.transcriptFieldHint", "Type to search the book's transcript")
     }
 
     /// The search field's label.
     static var fieldLabel: String {
         // Translators: Title and VoiceOver label of the search field in Search in Book.
-        String(localized: "Search text")
+        InterfaceText.line("bookSearch.fieldLabel", "Search text")
     }
 
     /// The search field's hint when the book searched is a text book.
     static var fieldHint: String {
         // Translators: VoiceOver hint of the search field in Search in Book when the book searched is a text book.
-        String(localized: "Type to search within the book")
+        InterfaceText.line("bookSearch.fieldHint", "Type to search within the book")
     }
 
     /// The Use Regex switch's label.
     static var regexLabel: String {
         // Translators: VoiceOver label of the Use Regex switch in Search in Book.
-        String(localized: "Use regular expression")
+        InterfaceText.line("bookSearch.regexLabel", "Use regular expression")
     }
 
     /// The Use Regex switch's hint.
     static var regexHint: String {
         // Translators: VoiceOver hint of the Use Regex switch in Search in Book.
-        String(localized: "When enabled, search text is treated as a regular expression")
+        InterfaceText.line("bookSearch.regexHint", "When enabled, search text is treated as a regular expression")
     }
 
     /// The Match Case checkbox's title and VoiceOver label, which Search
     /// Library's checkbox shares.
     static var matchCaseLabel: String {
         // Translators: Title and VoiceOver label of the checkbox in Search in Book and Search Library that makes a match need the search text's capital and small letters.
-        String(localized: "Match Case")
+        InterfaceText.line("bookSearch.matchCaseLabel", "Match Case")
     }
 
     /// The Match Case checkbox's hint.
     static var matchCaseHint: String {
         // Translators: VoiceOver hint of the Match Case checkbox.
-        String(localized: "When checked, matches must use the same upper and lower case")
+        InterfaceText.line("bookSearch.matchCaseHint", "When checked, matches must use the same upper and lower case")
     }
 
     /// The label of the list of results.
     static var resultsLabel: String {
         // Translators: VoiceOver label of the list of results in Search in Book.
-        String(localized: "Search results")
+        InterfaceText.line("bookSearch.resultsLabel", "Search results")
     }
 
     /// The hint of the button that closes the sheet.
     static var backToBookHint: String {
         // Translators: VoiceOver hint of the Back to Book button of Search in Book.
-        String(localized: "Close search and return to the book")
+        InterfaceText.line("bookSearch.backToBookHint", "Close search and return to the book")
     }
 
     /// The sheet's heading and navigation title.
     static var sheetTitle: String {
         // Translators: Heading and navigation title of the Search in Book sheet, and the name of its command.
-        String(localized: "Search in Book")
+        InterfaceText.line("common.searchInBook", "Search in Book")
     }
 
     /// The button that closes the sheet.
     static var backToBookTitle: String {
         // Translators: Title of the button that closes the Search in Book sheet and returns to the book.
-        String(localized: "Back to Book")
+        InterfaceText.line("common.backToBook", "Back to Book")
     }
 
     /// The Use Regex switch's title.
     static var useRegexTitle: String {
         // Translators: Title of the switch in Search in Book that makes the search text a regular expression. Regex is short for regular expression.
-        String(localized: "Use Regex")
+        InterfaceText.line("bookSearch.useRegexTitle", "Use Regex")
     }
 
     /// The display picker's title.
     static var displayTitle: String {
         // Translators: Title of the picker in Search in Book that chooses how each result's position in the book is shown, as a percentage or as a time.
-        String(localized: "Display")
+        InterfaceText.line("common.display", "Display")
     }
 
     /// The display picker's VoiceOver label.
     static var displayModeLabel: String {
         // Translators: VoiceOver label of the picker in Search in Book that chooses how each result's position is shown.
-        String(localized: "Position display mode")
+        InterfaceText.line("bookSearch.displayModeLabel", "Position display mode")
     }
 
     /// The name of the rotor that moves between results.
     static var resultsRotor: String {
         // Translators: Name of the VoiceOver rotor in Search in Book that moves between the search results.
-        String(localized: "Search Results")
+        InterfaceText.line("bookSearch.resultsRotor", "Search Results")
     }
 
     /// A result row's hint.
     static var resultHint: String {
         // Translators: VoiceOver hint of a result's row in Search in Book.
-        String(localized: "Activate to navigate to this result")
+        InterfaceText.line("bookSearch.resultHint", "Activate to navigate to this result")
     }
 
     /// The status line before anything is typed.
     static var statusIdle: String {
         // Translators: Status line of Search in Book before anything is typed.
-        String(localized: "Enter a search term above.")
+        InterfaceText.line("bookSearch.statusIdle", "Enter a search term above.")
     }
 
     /// The status line while a search waits for typing to pause or runs.
     static var statusSearching: String {
         // Translators: Status line of Search in Book while a search waits for typing to pause or runs.
-        String(localized: "Searching…")
+        InterfaceText.line("common.searching", "Searching…")
     }
 
     /// The status line of a finished search: "No matches", "1 match", "212 matches".
     static func statusFound(count: Int) -> String {
         guard count > 0 else {
             // Translators: Status line of Search in Book when a search found nothing.
-            return String(localized: "No matches")
+            return InterfaceText.line("common.noMatches", "No matches")
         }
         // Translators: Status line of Search in Book when a search finished and lists every match. %lld is the number of matches.
-        return String(localized: "\(count) matches")
+        return InterfaceText.line("bookSearch.statusFound", "\(number: count) matches")
     }
 
     /// The status line of a search that stopped at the result limit.
     static func statusTruncated(shown: Int) -> String {
         // Translators: Status line of Search in Book when a search stopped at the result limit. %lld is the number of matches listed.
-        String(localized: "Showing the first \(shown) matches; refine your search")
+        InterfaceText.line("bookSearch.statusTruncated", "Showing the first \(number: shown) matches; refine your search")
     }
 
     /// A row's label when the match is placed by its position in the book as
@@ -234,20 +234,20 @@ enum BookSearchWording {
     static func percentLabel(_ context: String, percent: Double) -> String {
         let number = percent.formatted(.number.precision(.fractionLength(1)))
         // Translators: VoiceOver label of a search result placed by percentage. %1$@ is the match with its context and place, and %2$@ is the percentage through the book with one decimal digit, such as 12.5.
-        return String(localized: "\(context), at \(number) percent of book")
+        return InterfaceText.line("bookSearch.percentLabel", "\(context), at \(number) percent of book")
     }
 
     /// A row's label when the match is placed by an estimated time: "<context>,
     /// at 1 hour, 2 minutes into book".
     static func estimatedTimeLabel(_ context: String, spokenTime: String) -> String {
         // Translators: VoiceOver label of a search result placed by an estimated time. %1$@ is the match with its context and place, and %2$@ is the time into the book, spoken.
-        String(localized: "\(context), at \(spokenTime) into book")
+        InterfaceText.line("bookSearch.estimatedTimeLabel", "\(context), at \(spokenTime) into book")
     }
 
     /// A timed result's label: its context and place, then the time it is heard.
     static func timedLabel(_ context: String, spokenTime: String) -> String {
         // Translators: VoiceOver label and rotor entry of a search result in a transcribed audiobook. %1$@ is the match with its context and place, and %2$@ is the time it is heard, spoken.
-        String(localized: "\(context), at \(spokenTime)")
+        InterfaceText.line("bookSearch.timedLabel", "\(context), at \(spokenTime)")
     }
 
     /// A result's context, then the heading that holds it.
@@ -574,10 +574,10 @@ struct BookSearchView: View {
             switch self {
             case .percentage:
                 // Translators: A segment of the display picker in Search in Book: each result's position is shown as a percentage of the book.
-                return String(localized: "Percentage")
+                return InterfaceText.line("common.percentage", "Percentage")
             case .time:
                 // Translators: A segment of the display picker in Search in Book: each result's position is shown as an estimated time into the book.
-                return String(localized: "Time")
+                return InterfaceText.line("common.time", "Time")
             }
         }
     }

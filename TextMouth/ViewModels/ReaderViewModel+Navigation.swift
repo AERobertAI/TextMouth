@@ -339,45 +339,45 @@ extension ReaderViewModel {
         let words = headingsSharingPlace(with: heading, in: headings).compactMap(\.text.nonBlank)
         let shown = words.isEmpty ? heading.text : words.joined(separator: ", ")
         // Translators: Announcement on arriving at a heading while reading. %@ is the heading's text; where several headings begin at the same place, their texts joined with commas.
-        return String(localized: "Heading: \(shown)")
+        return InterfaceText.line("readerViewModel.headingAnnouncement", "Heading: \(shown)")
     }
 
     /// What VoiceOver hears after a move to the next sentence.
     nonisolated static var nextSentenceAnnouncement: String {
         // Translators: Announcement after the reader moved to the next sentence.
-        String(localized: "Next sentence")
+        InterfaceText.line("readerViewModel.nextSentenceAnnouncement", "Next sentence")
     }
 
     /// What VoiceOver hears after a move to the previous sentence.
     nonisolated static var previousSentenceAnnouncement: String {
         // Translators: Announcement after the reader moved to the previous sentence.
-        String(localized: "Previous sentence")
+        InterfaceText.line("readerViewModel.previousSentenceAnnouncement", "Previous sentence")
     }
 
     /// What VoiceOver hears after a move to the next paragraph.
     nonisolated static var nextParagraphAnnouncement: String {
         // Translators: Announcement after the reader moved to the next paragraph.
-        String(localized: "Next paragraph")
+        InterfaceText.line("readerViewModel.nextParagraphAnnouncement", "Next paragraph")
     }
 
     /// What VoiceOver hears after a move to the previous paragraph.
     nonisolated static var previousParagraphAnnouncement: String {
         // Translators: Announcement after the reader moved to the previous paragraph.
-        String(localized: "Previous paragraph")
+        InterfaceText.line("readerViewModel.previousParagraphAnnouncement", "Previous paragraph")
     }
 
     /// What VoiceOver hears after a move into the next section, when no
     /// heading names it.
     nonisolated static var nextSectionAnnouncement: String {
         // Translators: Announcement after a sentence or paragraph move crossed into the next section of the book, when no heading names it.
-        String(localized: "Next section")
+        InterfaceText.line("readerViewModel.nextSectionAnnouncement", "Next section")
     }
 
     /// What VoiceOver hears after a move into the previous section, when no
     /// heading names it.
     nonisolated static var previousSectionAnnouncement: String {
         // Translators: Announcement after a sentence or paragraph move crossed into the previous section of the book, when no heading names it.
-        String(localized: "Previous section")
+        InterfaceText.line("readerViewModel.previousSectionAnnouncement", "Previous section")
     }
 
     /// The headings of `headings` that begin where `heading` begins, itself

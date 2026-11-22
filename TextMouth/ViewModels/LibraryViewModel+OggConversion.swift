@@ -48,7 +48,7 @@ enum OggConversionWording {
     /// The alert's title.
     static var notEnoughSpaceTitle: String {
         // Translators: Title of the alert that says a book's Ogg audio waits for disk space to be converted to AAC. Title case.
-        String(localized: "Not Enough Space to Convert Audio")
+        InterfaceText.line("oggConversion.notEnoughSpaceTitle", "Not Enough Space to Convert Audio")
     }
 
     /// The alert's message for `books`, each a title and the bytes it needs
@@ -57,14 +57,14 @@ enum OggConversionWording {
     static func notEnoughSpace(_ books: [(title: String, needed: Int64)]) -> String {
         let needs = books.map {
             // Translators: A book's need for free disk space, inside the alert about Ogg audio that waits for space. %1$@ is the book's title and %2$@ the free space it needs, with its unit, such as "4.2 GB".
-            String(localized: "“\($0.title)” needs \(ImportProgressWording.size($0.needed)) free")
+            InterfaceText.line("oggConversion.notEnoughSpace.needs", "“\($0.title)” needs \(ImportProgressWording.size($0.needed)) free")
         }
         let listed = CountWording.list(needs)
         return books.count == 1
             // Translators: Message of the alert about one book's Ogg audio that waits for disk space. %@ is what the book needs, such as "“Harbor Dramas” needs 4.2 GB free".
-            ? String(localized: "\(listed) to convert its Ogg audio to AAC. Free some space, and TextMouth converts it at the next launch.")
+            ? InterfaceText.line("oggConversion.notEnoughSpace.converts", "\(listed) to convert its Ogg audio to AAC. Free some space, and TextMouth converts it at the next launch.")
             // Translators: Message of the alert about several books' Ogg audio that waits for disk space. %@ is what each book needs, listed as a sentence lists them, such as "“A” needs 1 GB free and “B” needs 2 GB free".
-            : String(localized: "\(listed) to convert their Ogg audio to AAC. Free some space, and TextMouth converts them at the next launch.")
+            : InterfaceText.line("oggConversion.notEnoughSpace.their", "\(listed) to convert their Ogg audio to AAC. Free some space, and TextMouth converts them at the next launch.")
     }
 }
 

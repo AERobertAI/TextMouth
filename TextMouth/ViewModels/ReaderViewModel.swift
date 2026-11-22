@@ -2271,31 +2271,31 @@ final class ReaderViewModel: ObservableObject {
         /// The retry button's title for audio that could not be played.
         static var retryWording: String {
             // Translators: Button of the reader's error alert that tries to play the audio again.
-            String(localized: "Retry")
+            InterfaceText.line("common.retry", "Retry")
         }
 
         /// The retry button's title for a chapter that could not be fetched from the cloud.
         static var tryAgainWording: String {
             // Translators: Button of the reader's alert about a chapter that could not be downloaded; it tries the download again.
-            String(localized: "Try Again")
+            InterfaceText.line("common.tryAgain", "Try Again")
         }
 
         /// The title of the alert about a chapter that could not be fetched from the cloud.
         static var chapterNotDownloadedTitle: String {
             // Translators: Title of the reader's alert shown when a chapter of an audiobook could not be downloaded from the cloud.
-            String(localized: "Chapter Not Downloaded")
+            InterfaceText.line("errorAlert.chapterNotDownloadedTitle", "Chapter Not Downloaded")
         }
 
         /// The title of the alert about an error that is not an audio failure.
         static var errorTitle: String {
             // Translators: Title of the reader's alert about a problem that is not an audio failure.
-            String(localized: "Error")
+            InterfaceText.line("common.error", "Error")
         }
 
         /// The title of the alert about audio that could not be played.
         static var playbackProblemTitle: String {
             // Translators: Title of the reader's alert shown when the audio could not be played.
-            String(localized: "Playback Problem")
+            InterfaceText.line("errorAlert.playbackProblemTitle", "Playback Problem")
         }
     }
 

@@ -233,81 +233,81 @@ enum PlaybackControlsWording {
     /// The skip backward button's label. `unit` is the unit's name, such as "15 seconds".
     static func skipBackward(unit: String) -> String {
         // Translators: What VoiceOver says for the playback bar's skip backward button. %@ is the unit it skips by, such as "15 seconds" or "Sentence".
-        String(localized: "Skip backward: \(unit)")
+        InterfaceText.line("playbackControls.skipBackward", "Skip backward: \(unit)")
     }
     /// The skip forward button's label. `unit` is the unit's name, such as "15 seconds".
     static func skipForward(unit: String) -> String {
         // Translators: What VoiceOver says for the playback bar's skip forward button. %@ is the unit it skips by, such as "15 seconds" or "Sentence".
-        String(localized: "Skip forward: \(unit)")
+        InterfaceText.line("playbackControls.skipForward", "Skip forward: \(unit)")
     }
     /// The bookmark button's label while a bookmark is near the place.
     static var removeBookmark: String {
         // Translators: What VoiceOver says for the playback bar's bookmark button while a bookmark is at the place being read; it removes that bookmark.
-        String(localized: "Remove bookmark")
+        InterfaceText.line("playbackControls.removeBookmark", "Remove bookmark")
     }
     /// The bookmark button's label while no bookmark is near the place.
     static var addBookmark: String {
         // Translators: What VoiceOver says for the playback bar's bookmark button while no bookmark is at the place being read; it adds one.
-        String(localized: "Add bookmark")
+        InterfaceText.line("playbackControls.addBookmark", "Add bookmark")
     }
     /// The speed of a text book, spoken: "500 words per minute".
     static func wordsPerMinute(_ words: Int) -> String {
         // Translators: What VoiceOver says for the playback bar's speed of a text book. %lld is the number of words read in a minute.
-        String(localized: "\(words) words per minute")
+        InterfaceText.line("common.countWordsPerMinute", "\(number: words) words per minute")
     }
     /// The label of the whole bar.
     static var groupLabel: String {
         // Translators: What VoiceOver calls the group of playback buttons at the bottom of the reader.
-        String(localized: "Playback controls")
+        InterfaceText.line("playbackControls.groupLabel", "Playback controls")
     }
     /// The play/pause button's label while playing.
     static var pause: String {
         // Translators: Label of the reader's play and pause button while the book plays; it pauses.
-        String(localized: "Pause")
+        InterfaceText.line("common.pause", "Pause")
     }
     /// The play/pause button's label while not playing.
     static var play: String {
         // Translators: Label of the reader's play and pause button while the book is not playing; it plays.
-        String(localized: "Play")
+        InterfaceText.line("common.play", "Play")
     }
     /// The one shared navigation unit menu's label.
     static var unitLabel: String {
         // Translators: Label of the playback bar's menu that sets the unit by which this book moves forward and backward.
-        String(localized: "Navigation unit")
+        InterfaceText.line("playbackControls.unitLabel", "Navigation unit")
     }
     /// The help of the shared navigation unit menu.
     static var unitHelp: String {
         // Translators: Help text of the playback bar's menu that sets the one unit by which this book moves forward and backward.
-        String(localized: "Change this book's forward and backward navigation unit")
+        InterfaceText.line("playbackControls.unitHelp", "Change this book's forward and backward navigation unit")
     }
     /// The forward unit picker's label.
     static var forwardUnitLabel: String {
         // Translators: Label of the menu that sets the unit by which this book moves forward.
-        String(localized: "Forward navigation unit")
+        InterfaceText.line("playbackControls.forwardUnitLabel", "Forward navigation unit")
     }
     /// The backward unit picker's label.
     static var backwardUnitLabel: String {
         // Translators: Label of the menu that sets the unit by which this book moves backward.
-        String(localized: "Backward navigation unit")
+        InterfaceText.line("playbackControls.backwardUnitLabel", "Backward navigation unit")
     }
     /// The menu of both units' label.
     static var unitsLabel: String {
         // Translators: Label of the playback bar's menu that holds separate forward and backward navigation units.
-        String(localized: "Navigation units")
+        InterfaceText.line("playbackControls.unitsLabel", "Navigation units")
     }
     /// The menu of both units' value: each direction's unit.
     static func unitsValue(forward: String, backward: String) -> String {
         // Translators: What VoiceOver says for the value of the menu that holds separate navigation units. %1$@ is the forward unit and %2$@ the backward unit, each such as "15 seconds" or "Sentence".
-        String(localized: "Forward navigation unit: \(forward); backward navigation unit: \(backward)")
+        InterfaceText.line("playbackControls.unitsValue", "Forward navigation unit: \(forward); backward navigation unit: \(backward)")
     }
     /// The menu of both units' hint.
     static var unitsHint: String {
         // Translators: Hint of the playback bar's menu that holds separate forward and backward navigation units.
-        String(localized: "Choose separate forward and backward navigation units for this book")
+        InterfaceText.line("playbackControls.unitsHint", "Choose separate forward and backward navigation units for this book")
     }
     /// The menu of both units' help.
     static var unitsHelp: String {
         // Translators: Help text of the playback bar's menu that holds separate forward and backward navigation units.
-        String(localized: "Change this book's forward and backward navigation units")
+        InterfaceText.line("playbackControls.unitsHelp", "Change this book's forward and backward navigation units")
     }
 }

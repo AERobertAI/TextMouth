@@ -21,16 +21,16 @@ enum MoveToLibraryError: LocalizedError, Equatable {
         switch self {
         case .nothingToMove:
             // Translators: Why Move to Library did nothing: none of the chosen items is an episode or article downloaded in its feed. Follows "Could not move to the library: ".
-            return String(localized: "Only an episode or article downloaded in its feed can move into the library.")
+            return InterfaceText.line("moveToLibraryError.nothingToMove", "Only an episode or article downloaded in its feed can move into the library.")
         case .folderMissing:
             // Translators: Why Move to Library did nothing: the folder chosen was removed from the library. Follows "Could not move to the library: ".
-            return String(localized: "The folder chosen is no longer in the library. Choose another folder.")
+            return InterfaceText.line("moveToLibraryError.folderMissing", "The folder chosen is no longer in the library. Choose another folder.")
         case .libraryUnavailable:
             // Translators: Why Move to Library did nothing: the library's index is being recovered or the data directory is away or moving. Follows "Could not move to the library: ".
-            return String(localized: "The library can't move books now. Try again once it is available.")
+            return InterfaceText.line("moveToLibraryError.libraryUnavailable", "The library can't move books now. Try again once it is available.")
         case .recordNotSaved:
             // Translators: Why Move to Library did nothing: the feed's record could not be saved. Follows "Could not move to the library: ".
-            return String(localized: "TextMouth couldn't save the feed's list of its items, so nothing moved.")
+            return InterfaceText.line("moveToLibraryError.recordNotSaved", "TextMouth couldn't save the feed's list of its items, so nothing moved.")
         }
     }
 }
@@ -52,7 +52,7 @@ extension LibraryViewModel {
     /// library: …".
     static var moveToLibraryFailureContext: String {
         // Translators: Starts every failure of Move to Library, followed by a colon and the reason. Has no full stop.
-        String(localized: "Could not move to the library")
+        InterfaceText.line("libraryViewModel.moveToLibraryFailureContext", "Could not move to the library")
     }
 
     /// The books of `books` Move to Library… can move, each once, in their

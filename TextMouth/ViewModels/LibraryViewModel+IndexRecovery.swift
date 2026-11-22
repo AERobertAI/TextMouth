@@ -40,22 +40,22 @@ struct LibraryIndexArrangement: OptionSet, Equatable, Sendable {
         switch (contains(.readingList), contains(.sortSettings), index) {
         case (true, false, .previous):
             // Translators: Part of the outcome of saving a rebuilt library index: the reading list could not be kept from the old index.
-            return String(localized: "TextMouth could not read the reading list in the previous index.")
+            return InterfaceText.line("libraryIndexArrangement.previous", "TextMouth could not read the reading list in the previous index.")
         case (false, true, .previous):
             // Translators: Part of the outcome of saving a rebuilt library index: the sort settings could not be kept from the old index.
-            return String(localized: "TextMouth could not read the sort settings in the previous index.")
+            return InterfaceText.line("libraryIndexArrangement.notRead.previous", "TextMouth could not read the sort settings in the previous index.")
         case (true, true, .previous):
             // Translators: Part of the outcome of saving a rebuilt library index: neither the reading list nor the sort settings could be kept from the old index.
-            return String(localized: "TextMouth could not read the reading list or the sort settings in the previous index.")
+            return InterfaceText.line("libraryIndexArrangement.notRead.settingsPrevious", "TextMouth could not read the reading list or the sort settings in the previous index.")
         case (true, false, .unreadable):
             // Translators: Part of the library index recovery sheet: the reading list could not be read from the unreadable index.
-            return String(localized: "TextMouth could not read the reading list in the unreadable index.")
+            return InterfaceText.line("libraryIndexArrangement.notRead.unreadable", "TextMouth could not read the reading list in the unreadable index.")
         case (false, true, .unreadable):
             // Translators: Part of the library index recovery sheet: the sort settings could not be read from the unreadable index.
-            return String(localized: "TextMouth could not read the sort settings in the unreadable index.")
+            return InterfaceText.line("libraryIndexArrangement.sortSettingsUnreadable", "TextMouth could not read the sort settings in the unreadable index.")
         case (true, true, .unreadable):
             // Translators: Part of the library index recovery sheet: neither the reading list nor the sort settings could be read from the unreadable index.
-            return String(localized: "TextMouth could not read the reading list or the sort settings in the unreadable index.")
+            return InterfaceText.line("libraryIndexArrangement.readingAndSortUnreadable", "TextMouth could not read the reading list or the sort settings in the unreadable index.")
         case (false, false, _):
             return nil
         }
@@ -94,32 +94,32 @@ enum LibraryIndexRecoveryOutcome: Equatable {
         switch self {
         case .restored(let bookCount):
             // Translators: Outcome of Try Again on the library index recovery sheet: the index could be read. %@ is a count of books, such as "743 books".
-            return String(localized: "The library index was read successfully. Your library has \(CountWording.books(bookCount)), and changes are being saved again.")
+            return InterfaceText.line("libraryIndexRecoveryOutcome.restored", "The library index was read successfully. Your library has \(CountWording.books(bookCount)), and changes are being saved again.")
         case .savedProvisionalLibrary(let bookCount, let preservedCopy, let notKept):
             return SentenceWording.joined([
                 // Translators: Outcome of the library index recovery when the unreadable index had gone and the rebuilt library was saved as the new index. %@ is a count of books, such as "743 books".
-                String(localized: "The unreadable library index is no longer there, so TextMouth saved the library rebuilt from your books as the new index, with \(CountWording.books(bookCount)).")
+                InterfaceText.line("libraryIndexRecoveryOutcome.savedProvisional", "The unreadable library index is no longer there, so TextMouth saved the library rebuilt from your books as the new index, with \(CountWording.books(bookCount)).")
             ] + Self.followingSentences(notKept: notKept, preservedCopy: preservedCopy))
         case .stillUnreadable(let reason):
             return SentenceWording.joined([
                 // Translators: First sentence of the outcome of Try Again on the library index recovery sheet when the index is still unreadable. The reason follows.
-                String(localized: "The library index still could not be read."),
+                InterfaceText.line("libraryIndexRecoveryOutcome.stillUnreadable", "The library index still could not be read."),
                 reason,
             ])
         case .rebuilt(let bookCount, let preservedCopy, let notKept):
             return SentenceWording.joined([
                 // Translators: Outcome of Rebuild Library Index. %@ is a count of books, such as "743 books".
-                String(localized: "The library index was rebuilt with \(CountWording.books(bookCount)).")
+                InterfaceText.line("libraryIndexRecoveryOutcome.rebuilt", "The library index was rebuilt with \(CountWording.books(bookCount)).")
             ] + Self.followingSentences(notKept: notKept, preservedCopy: preservedCopy))
         case .rebuildFailed(let reason):
             return SentenceWording.joined([
                 // Translators: First sentence of the outcome of Rebuild Library Index when it replaced nothing. The reason follows.
-                String(localized: "The library index was not rebuilt."),
+                InterfaceText.line("libraryIndexRecoveryOutcome.rebuildFailed", "The library index was not rebuilt."),
                 reason,
             ])
         case .notRecovering:
             // Translators: Outcome of a library index recovery command when no recovery was in progress.
-            return String(localized: "The library index is already readable.")
+            return InterfaceText.line("libraryIndexRecoveryOutcome.notRecovering", "The library index is already readable.")
         }
     }
 
@@ -133,7 +133,7 @@ enum LibraryIndexRecoveryOutcome: Equatable {
     private static func keptCopySentence(_ preservedCopy: URL?) -> String? {
         guard let preservedCopy else { return nil }
         // Translators: Part of the outcome of saving a rebuilt library index: where the old index's copy is kept. %@ is the copy's path.
-        return String(localized: "The previous index is kept at \(preservedCopy.path).")
+        return InterfaceText.line("libraryIndexRecoveryOutcome.keptCopySentence", "The previous index is kept at \(preservedCopy.path).")
     }
 }
 
