@@ -2,13 +2,11 @@ import XCTest
 @testable import TextMouth
 
 /// The Spanish of the pilot's areas (FR35) as the built Mac app carries it: the sleep timer, bookmarks, and the
-/// Reading List are in the app's `es.lproj`, plural forms included, and a string resource asked for in Spanish reads
-/// its Spanish from there.
+/// Reading List are in the app's `es.lproj`, plural forms included, and a line asked for in Spanish reads its Spanish.
 ///
-/// The suite runs in English, so this reads Spanish the two ways that work inside the test host (the localization
-/// research of November 18, 2026): the compiled files of `es.lproj` in the app bundle, and a
-/// `LocalizedStringResource` whose `locale` is Spanish. `String(localized:locale:)` is not used: its locale only
-/// formats numbers, and it reads the English.
+/// The suite runs in English, so this reads Spanish the two ways that work inside the test host: the compiled files of
+/// `es.lproj` in the app bundle, whose keys are the lines' IDs since the catalog is keyed by ID (FR39 phase 7), and
+/// TextMouth's own engine, `InterfaceText.line(_:_:language:)`, which reads the pack with the language it is given.
 final class SpanishLocalizationTests: XCTestCase {
     /// The app the tests run in, whose bundle carries the compiled catalog.
     private var app: Bundle { Bundle.main }
@@ -33,65 +31,62 @@ final class SpanishLocalizationTests: XCTestCase {
     /// each, every plural string in the `.stringsdict` with its three Spanish categories, and no empty text.
     func testSpanishHoldsTheAreasStrings() throws {
         let strings = try spanishTable("strings")
-        // Key (the English, as the catalog holds it) and its Spanish; the comment names where it comes from.
-        let expected: [(key: String, spanish: String)] = [
-            ("Sleep Timer", "Temporizador de apagado"),  // SleepTimerView.title
-            ("Returns to the book.", "Vuelve al libro."),  // SleepTimerView.closeHint
-            ("Stop at the end of this heading", "Detener al final de este encabezado"),  // SleepTimerView.endOfHeadingLabel
-            ("Sleep timer expired. Playback paused.",
+        // ID (the line's permanent key) and its Spanish; the comment names where it comes from.
+        let expected: [(id: String, spanish: String)] = [
+            ("common.sleepTimer", "Temporizador de apagado"),  // SleepTimerView.title
+            ("sleepTimerView.closeHint", "Vuelve al libro."),  // SleepTimerView.closeHint
+            ("sleepTimerView.endOfHeadingLabel", "Detener al final de este encabezado"),  // SleepTimerView.endOfHeadingLabel
+            ("readerViewModel.sleepTimerExpiredAnnouncement",
              "El temporizador de apagado terminó. Reproducción en pausa."),  // ReaderViewModel.sleepTimerExpiredAnnouncement
-            ("Bookmarks", "Marcadores"),  // BookmarkPanelView.title
-            ("Bookmark %@", "Marcador %@"),  // Bookmark.name; the number is an identifier, so %@, not %lld
-            ("Goes to this bookmark and closes the list.", "Va a este marcador y cierra la lista."),  // BookmarkRow.hint
-            ("Reading List Order", "Orden de la lista de lectura"),  // ReadingListWording.orderName
-            ("Reading list, book %lld of %lld", "Lista de lectura, libro %1$lld de %2$lld"),  // ReadingListReaderWording.place
-            ("No next book in the reading list.",
+            ("common.bookmarks", "Marcadores"),  // BookmarkPanelView.title
+            ("common.bookmarkValue", "Marcador %@"),  // Bookmark.name; the number is an identifier, so %@, not %lld
+            ("bookmarkRow.hint", "Va a este marcador y cierra la lista."),  // BookmarkRow.hint
+            ("readingList.orderName", "Orden de la lista de lectura"),  // ReadingListWording.orderName
+            ("readingListReader.place", "Lista de lectura, libro %1$lld de %2$lld"),  // ReadingListReaderWording.place
+            ("readingListReader.noNeighbor.next",
              "No hay ningún libro siguiente en la lista de lectura."),  // ReadingListReaderWording.noNeighbor
-            ("Restarts the timer at its full length and plays the book.",
+            ("sleepTimerView.resetTimerHint",
              "Reinicia el temporizador con su duración completa y reproduce el libro."),  // SleepTimerView.resetTimerHint
-            ("Keep these books on this Mac", "Conservar estos libros en esta Mac"),  // the glossary's rule: esta Mac (Latin American)
-            ("Remove", "Eliminar"),  // PhoneBookmarksWording.removeButton: removing a bookmark deletes it
+            ("readingList.keepBooksLabel", "Conservar estos libros en esta Mac"),  // the glossary's rule: esta Mac (Latin American)
+            ("common.remove", "Eliminar"),  // PhoneBookmarksWording.removeButton: removing a bookmark deletes it
         ]
         var wrong: [String] = []
-        for (key, spanish) in expected where strings[key] as? String != spanish {
-            wrong.append("\(key): \(strings[key].map { "\($0)" } ?? "missing"), not \(spanish)")
+        for (id, spanish) in expected where strings[id] as? String != spanish {
+            wrong.append("\(id): \(strings[id].map { "\($0)" } ?? "missing"), not \(spanish)")
         }
         XCTAssertTrue(wrong.isEmpty, "es.lproj/Localizable.strings:\n" + wrong.joined(separator: "\n"))
         let empty = strings.filter { ($0.value as? String)?.isEmpty ?? true }.map(\.key)
         XCTAssertTrue(empty.isEmpty, "Empty Spanish text ships for: \(empty)")
 
-        // A fragment inside another area's English sentences has no Spanish until that area converts (finding 3 of the
-        // review): "Downloading the next episodio: ..." read half Spanish. The old keys of the identifiers are gone too.
-        for key in ["article", "episode", "Bookmark %lld",
-                    "Take it off the reading list, or clear %@ in the Reading List's options"] {
-            XCTAssertNil(strings[key], "\(key) must not ship in es.lproj")
-        }
+        // The tables are keyed by ID: every key is an ID (two to four lower camel case segments), never English text, so a
+        // fragment of an English sentence has no entry of its own (finding 3 of the review: "Downloading the next
+        // episodio: ..." read half Spanish).
+        let notIDs = strings.keys.filter { $0.range(of: "^[a-z][A-Za-z0-9]*(\\.[a-z][A-Za-z0-9]*){1,3}$", options: .regularExpression) == nil }
+        XCTAssertTrue(notIDs.isEmpty, "es.lproj holds keys that are not IDs: \(notIDs.sorted().prefix(10))")
         // The Spanish never says este Mac, which is Spain's: this Spanish is Latin American (esta Mac).
         XCTAssertTrue(strings.values.compactMap { $0 as? String }.filter { $0.contains("este Mac") }.isEmpty)
 
         let plurals = try spanishTable("stringsdict")
-        for key in ["%lld minutes", "Set timer for %lld minutes", "Add %lld Books to Reading List", "%lld books were already in it."] {
-            let entry = plurals[key] as? [String: Any]
+        for id in ["common.countMinutes", "sleepTimerView.setTimerLabel", "readingList.addTitle", "readingList.addedAnnouncement.already"] {
+            let entry = plurals[id] as? [String: Any]
             let forms = entry?.values.compactMap { $0 as? [String: Any] }.first
             XCTAssertEqual(
                 Set(["one", "many", "other"]).subtracting(forms?.keys.map { $0 } ?? []), [],
-                "\(key) lacks Spanish plural forms in es.lproj/Localizable.stringsdict: \(String(describing: entry))"
+                "\(id) lacks Spanish plural forms in es.lproj/Localizable.stringsdict: \(String(describing: entry))"
             )
         }
     }
 
-    /// A string resource asked for in Spanish reads the catalog's Spanish: a plain text, a placeholder, and a plural
-    /// in both its categories; asked for in English, the plural reads its English forms, which the catalog ships too.
-    func testAResourceInSpanishReadsItsSpanish() {
-        let spanish = Locale(identifier: "es")
-        let english = Locale(identifier: "en")
-        // Each key is one the app's own code uses (SleepTimerView.title, Bookmark.name, whose number is a String so its key holds %@, and SleepTimerDuration.displayName).
-        XCTAssertEqual(String(localized: LocalizedStringResource("Sleep Timer", locale: spanish)), "Temporizador de apagado")
-        XCTAssertEqual(String(localized: LocalizedStringResource("Bookmark \(String(3))", locale: spanish)), "Marcador 3")
-        XCTAssertEqual(String(localized: LocalizedStringResource("\(1) minutes", locale: spanish)), "1 minuto")
-        XCTAssertEqual(String(localized: LocalizedStringResource("\(30) minutes", locale: spanish)), "30 minutos")
-        XCTAssertEqual(String(localized: LocalizedStringResource("\(1) minutes", locale: english)), "1 minute")
-        XCTAssertEqual(String(localized: LocalizedStringResource("\(30) minutes", locale: english)), "30 minutes")
+    /// A line asked for in Spanish through the engine reads the catalog's Spanish: a plain text, a placeholder, and a plural
+    /// in both its categories; asked for in English, the plural reads its English forms, which the pack ships too.
+    func testALineInSpanishReadsItsSpanish() {
+        // Each ID is one the app's own code uses (SleepTimerView.title, Bookmark.name, whose number is a String so its English holds %@, and SleepTimerDuration.displayName).
+        XCTAssertEqual(InterfaceText.line("common.sleepTimer", "Sleep Timer", language: "es"), "Temporizador de apagado")
+        XCTAssertEqual(InterfaceText.line("common.bookmarkValue", "Bookmark \(String(3))", language: "es"), "Marcador 3")
+        XCTAssertEqual(InterfaceText.line("common.countMinutes", "\(number: 1) minutes", language: "es"), "1 minuto")
+        XCTAssertEqual(InterfaceText.line("common.countMinutes", "\(number: 30) minutes", language: "es"), "30 minutos")
+        XCTAssertEqual(InterfaceText.line("common.countMinutes", "\(number: 1) minutes", language: "en"), "1 minute")
+        XCTAssertEqual(InterfaceText.line("common.countMinutes", "\(number: 30) minutes", language: "en"), "30 minutes")
     }
 
     /// A bookmark's number is an identifier, written as the old code wrote it: "Bookmark 12345", never grouped

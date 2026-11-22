@@ -14,22 +14,21 @@ repository, without building the app:
      English falls back here too), and compares every key in every language: each string's text,
      and each plural string's text at the counts 0, 1, 2, 5, 21, 100, and 1,000,000. Any difference
      fails;
-  4. the third reading (FR39, when the ID table is given, as it is for the repository's catalog): `pack.py build`
-     writes the interface-text pack from the same catalog, into build/l10n-packs/engine, and in each language's
-     process the probe asks the engine (the core files of TextMouth/Localization/InterfaceText/, compiled into the
-     probe) for every ID of every key, and Foundation's `String(localized:)` for the same call, at the 13 counts of
-     TextMouthProductionTests/InterfaceTextShippedPackTests.swift (a key's second number three places on). The two
-     texts must be equal, the engine must report no problem, and the probe prints the number of lookups compared.
+  4. the third reading (FR39): `pack.py build` writes the interface-text pack from the same catalog, into
+     build/l10n-packs/engine, and in each language's process the probe asks the engine (the core files of
+     TextMouth/Localization/InterfaceText/, compiled into the probe) for every ID, with the ID's English from the
+     catalog's `en`, and Apple's tables for the same ID, written by Foundation with the same arguments, at the 13 counts of
+     TextMouthProductionTests/InterfaceTextShippedPackTests.swift (a second number three places on). The two texts must
+     be equal, the engine must report no problem, and the probe prints the number of lookups compared. The catalog is
+     keyed by ID, so nothing maps a key to an ID.
 
 The folders under build/ are overwritten on every run and never deleted by this script; only the
 languages the catalog names are copied and compared, so a leftover folder of a removed language
 changes nothing.
 
-Usage: python3 -I -B Scripts/l10n/verify_packs.py [CATALOG [IDS]]   exit 0 when every lookup is identical
+Usage: python3 -I -B Scripts/l10n/verify_packs.py [CATALOG]   exit 0 when every lookup is identical
 
-CATALOG defaults to the repository's catalog, and then IDS to the repository's ID table (Scripts/l10n/ids.json);
-a test names a small synthetic catalog and a work folder of its own, with an ID table of its own or none (no third
-reading).
+CATALOG defaults to the repository's catalog; a test names a small synthetic catalog and a work folder of its own.
 """
 
 from __future__ import annotations
@@ -66,8 +65,7 @@ PROBE_SOURCES = [
     ROOT / "TextMouthProductionTests" / "InterfaceTextShippedPackTests.swift",
     *ENGINE_SOURCES,
 ]
-# The ID table of the repository's catalog, and the pack builder.
-IDS = HERE / "ids.json"
+# The pack builder.
 PACK_TOOL = HERE / "pack.py"
 WORK = ROOT / "build" / "l10n-packs"
 
@@ -113,8 +111,8 @@ def write_app_info(folder: Path, languages: list[str]) -> None:
     (folder / "Info.plist").write_bytes(plistlib.dumps(info, fmt=plistlib.FMT_XML))
 
 
-def build_engine_pack(catalog: Path, ids: Path, work: Path) -> Path:
-    """Build the interface-text pack of `catalog` (its keys given IDs by `ids`) into `work`/engine/Strings.pack.
+def build_engine_pack(catalog: Path, work: Path) -> Path:
+    """Build the interface-text pack of `catalog` (keyed by ID) into `work`/engine/Strings.pack.
 
     Always rebuilt, without a stamp, so that the pack the probe reads is the one this catalog makes.
     """
@@ -122,18 +120,16 @@ def build_engine_pack(catalog: Path, ids: Path, work: Path) -> Path:
     folder.mkdir(parents=True, exist_ok=True)
     out = folder / "Strings.pack"
     run(
-        [sys.executable, "-I", "-B", str(PACK_TOOL), "build", "--catalog", str(catalog), "--ids", str(ids), "--out",
-         str(out), "--no-stamp"],
+        [sys.executable, "-I", "-B", str(PACK_TOOL), "build", "--catalog", str(catalog), "--out", str(out), "--no-stamp"],
         "building the interface-text pack",
     )
     return out
 
 
-def verify(catalog: Path = CATALOG, work: Path = WORK, ids: Path | None = None) -> int:
-    """Compile `catalog`, compact a copy, and compare every lookup; 0 when all are identical.
-
-    With `ids`, the engine's reading of the pack built from `catalog` is compared too (see the top of this file).
-    The files go under `work`, overwriting what an earlier run left.
+def verify(catalog: Path = CATALOG, work: Path = WORK) -> int:
+    """Compile `catalog`, compact a copy, and compare every lookup, the engine's reading of the pack built from `catalog`
+    included (see the top of this file); 0 when all are identical. The files go under `work`, overwriting what an earlier
+    run left.
     """
     languages = catalog_languages(catalog)
     xcode, compact = work / "xcode", work / "compact"
@@ -155,12 +151,10 @@ def verify(catalog: Path = CATALOG, work: Path = WORK, ids: Path | None = None) 
     for folder in (xcode, compact):
         write_app_info(folder, languages)
 
-    # 3. Every lookup, in both; and, with an ID table, the engine's reading of the pack from the same catalog.
+    # 3. Every lookup, in both; and the engine's reading of the pack from the same catalog.
     probe = build_probe(work)
-    engine_arguments: list[str] = []
-    if ids is not None:
-        pack = build_engine_pack(catalog, ids, work)
-        engine_arguments = ["--pack", str(pack), "--ids", str(ids)]
+    pack = build_engine_pack(catalog, work)
+    engine_arguments = ["--pack", str(pack)]
     done = subprocess.run(
         [str(probe), str(xcode), str(compact), str(catalog), *engine_arguments, *languages],
         capture_output=True, text=True, check=False,
@@ -171,16 +165,14 @@ def verify(catalog: Path = CATALOG, work: Path = WORK, ids: Path | None = None) 
         print("verify_packs: FAILED: a lookup differs between Xcode's files and the compact files, or the engine's text "
               "differs from Xcode's (or the engine reported a problem)", file=sys.stderr)
         return 1
-    third = " and the engine's text equals Xcode's" if ids is not None else ""
-    print(f"verify_packs: ok ({changed} files compacted; every lookup in {', '.join(languages)} is unchanged{third})")
+    print(f"verify_packs: ok ({changed} files compacted; every lookup in {', '.join(languages)} is unchanged "
+          "and the engine's text equals Xcode's)")
     return 0
 
 
 def main() -> int:
-    """The command line: an optional catalog path (the repository's by default) and, for another catalog, an optional ID table."""
-    if len(sys.argv) > 1:
-        return verify(Path(sys.argv[1]), ids=Path(sys.argv[2]) if len(sys.argv) > 2 else None)
-    return verify(CATALOG, ids=IDS)
+    """The command line: an optional catalog path (the repository's by default)."""
+    return verify(Path(sys.argv[1]) if len(sys.argv) > 1 else CATALOG)
 
 
 if __name__ == "__main__":
