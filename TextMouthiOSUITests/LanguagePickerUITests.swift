@@ -41,7 +41,12 @@ final class LanguagePickerUITests: TextMouthUITestCase {
     private func choose(_ predicate: NSPredicate, in app: XCUIApplication) throws {
         tap(app.buttons[Self.row], until: app.navigationBars[Self.row], in: app, what: "the Interface Language row")
         let choice = app.buttons.matching(predicate).firstMatch
-        XCTAssertTrue(choice.appears(within: Self.patience), "No such choice \(predicate):\n\(app.debugDescription)")
+        // The list makes its rows lazily and sorts the languages by their own names, so a language written in another
+        // script (Arabic) is far down the list: swipe up until its row is made and can be tapped, at most fifteen times.
+        for _ in 0..<15 where !(choice.exists && choice.isHittable) {
+            app.swipeUp()
+        }
+        XCTAssertTrue(choice.exists && choice.isHittable, "No such choice \(predicate):\n\(app.debugDescription)")
         choice.tap()
         XCTAssertTrue(app.navigationBars[Self.row].waitForNonExistence(timeout: Self.patience), "The choices stayed open")
     }
