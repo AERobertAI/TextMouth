@@ -245,6 +245,24 @@ final class InterfaceLanguagePickerTests: XCTestCase {
         XCTAssertEqual(menu.userInterfaceLayoutDirection, .leftToRight)
     }
 
+    // MARK: - A text a model keeps
+
+    /// The Record window's status sentence stays on screen, so a switch words it again; a finished sentence the model told
+    /// (and announced) stays as it was.
+    func testTheRecordWindowsStatusIsWordedAgainAfterASwitch() throws {
+        let store = makeStoreRestoringSystem()
+        let harness = try RecordingWindowHarness(test: self, remembered: TestMicrophones.usb.id)
+        XCTAssertEqual(harness.model.status, "Ready to record from Studio Microphone.")
+
+        InterfaceLanguage.choose(.language("es"), store: store, region: "US")
+        let reworded = waitUntil(timeout: 5) { harness.model.status == "Listo para grabar con Studio Microphone." }
+        XCTAssertTrue(reworded, "the status stayed: \(harness.model.status)")
+
+        InterfaceLanguage.choose(.system, store: store)
+        let english = waitUntil(timeout: 5) { harness.model.status == "Ready to record from Studio Microphone." }
+        XCTAssertTrue(english, "the status stayed: \(harness.model.status)")
+    }
+
     // MARK: - System's behavior
 
     /// For anyone who never opens the picker, the language in use is System's: English under hosted tests, the choice is
