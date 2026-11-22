@@ -133,7 +133,8 @@ write_stubs() {
 #                               (a Localizable.strings besides, a table of Apple's),
 #                               apple-dict (a Localizable.stringsdict), apple-loctable
 #                               (a Localizable.loctable), apple-catalog (a
-#                               Localizable.xcstrings), no-infoplist (an empty
+#                               Localizable.xcstrings), xctest-fixture (a fixture
+#                               catalog inside PlugIns/Tests.xctest, which is allowed), no-infoplist (an empty
 #                               folder), or none (no .lproj folder at all)
 #   STUB_TEST_OUTPUT=<file>     test prints <file>
 #   STUB_TEST_STATUS=<number>   test exits with <number> (default 0)
@@ -173,6 +174,7 @@ plant_language_files() {
     apple-dict) printf 'bplist0012345678' > "$1/es.lproj/Localizable.stringsdict" ;;
     apple-loctable) printf 'bplist0012345678' > "$1/es.lproj/Localizable.loctable" ;;
     apple-catalog) printf '{}' > "$1/es.lproj/Localizable.xcstrings" ;;
+    xctest-fixture) mkdir -p "$1/../PlugIns/Tests.xctest/pack"; printf '{}' > "$1/../PlugIns/Tests.xctest/pack/lines.xcstrings" ;;
   esac
 }
 
@@ -960,6 +962,13 @@ real_run_cases() {
   expect_status 1
   expect_report "APPLE TABLE: Contents/Resources/es.lproj/Localizable.xcstrings"
   expect_verdict "check: FAILED: step 3 of 4 (build the Release app): build/TextMouth.app ships a table of Apple's"
+  end_case
+
+  begin_case "a fixture catalog inside a test bundle in PlugIns is no table of the app's: the gate passes"
+  run_gate STUB_LPROJ=xctest-fixture
+  expect_status 0
+  expect_report "build/TextMouth.app holds 1 .lproj folders, each with an InfoPlist.strings, and no table of Apple's"
+  expect_verdict "check: PASSED"
   end_case
 
   begin_case "a Mac app with a language folder that holds no InfoPlist.strings fails the gate, naming the folder"

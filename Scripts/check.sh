@@ -582,7 +582,8 @@ require_language_layout() {
     detail "would require $app to hold no table of Apple's, and an $INFO_PLIST_TABLE in each .lproj folder"
     return 0
   fi
-  tables=$(find "$app_folder" \( "${APPLE_TABLE_NAMES[@]}" \) -type f | sort)
+  # A test bundle in PlugIns/ (*.xctest) holds the tool tests' fixture catalogs, not the app's language files.
+  tables=$(find "$app_folder" -not -path "*/PlugIns/*.xctest/*" \( "${APPLE_TABLE_NAMES[@]}" \) -type f | sort)
   if [[ -n $tables ]]; then
     detail_lines "APPLE TABLE: " "$(sed "s#^$app_folder/##" <<<"$tables")"
     fail "step $step_number of $STEP_COUNT ($step_title): $app ships a table of Apple's (the apps read Strings.pack; the build must not compile the String Catalog)"

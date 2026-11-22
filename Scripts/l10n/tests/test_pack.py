@@ -531,6 +531,14 @@ class InfoPlistStringsTests(PackCase):
         _, said, _ = self.run_main("build", "--catalog", catalog_path, "--out", out)
         self.assertIn("wrote", said)
 
+    def test_a_table_of_apples_that_an_earlier_build_left_is_removed_even_when_the_pack_is_up_to_date(self):
+        out, catalog_path = self.build()
+        for name in ("Localizable.strings", "Localizable.stringsdict"):
+            (self.folder / "es.lproj" / name).write_text('"a"="b";', encoding="utf-8")
+        _, said, _ = self.run_main("build", "--catalog", catalog_path, "--out", out)
+        self.assertIn("up to date", said)
+        self.assertEqual(["InfoPlist.strings"], sorted(path.name for path in (self.folder / "es.lproj").iterdir()))
+
     def test_no_stamp_still_writes_the_tables(self):
         self.build(None, "--no-stamp")
         self.assertTrue(self.table("es").is_file())

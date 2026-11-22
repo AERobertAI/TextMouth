@@ -692,8 +692,25 @@ def write_atomically(path, data):
         raise
 
 
+def remove_apple_tables(folder):
+    """Removes the Localizable.strings and Localizable.stringsdict that an earlier build of the app (before the switch, FR39
+    phase 8) left in the product's .lproj folders under `folder`: Xcode never cleans a product, so an incremental build, or a
+    build folder a machine kept, would ship a table the apps no longer read. Returns the paths removed."""
+    removed = []
+    for lproj in sorted(Path(folder).glob("*.lproj")):
+        for name in ("Localizable.strings", "Localizable.stringsdict"):
+            leftover = lproj / name
+            if leftover.is_file():
+                leftover.unlink()
+                removed.append(leftover)
+    return removed
+
+
 def command_build(args):
-    """`build`: refuses or writes the pack and its stamp, or skips when the stamp says nothing changed."""
+    """`build`: refuses or writes the pack and its stamp, or skips when the stamp says nothing changed. First it removes the
+    Apple tables an earlier build left beside the pack (see remove_apple_tables)."""
+    for leftover in remove_apple_tables(Path(args.out).parent):
+        print(f"removed {leftover}: the apps read no table of Apple's")
     stamp = stamp_of(args.catalog, args.max_id_length)
     # The stamp lives beside the pack unless --stamp says elsewhere (the app's build keeps it out of the app).
     stamp_file = Path(args.stamp) if args.stamp else stamp_path(args.out)

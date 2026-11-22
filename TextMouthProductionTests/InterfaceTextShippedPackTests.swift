@@ -284,6 +284,8 @@ final class InterfaceTextShippedPackTests: XCTestCase {
         var tables: [String] = []
         let walker = FileManager.default.enumerator(at: Bundle.main.bundleURL, includingPropertiesForKeys: nil)
         while let url = walker?.nextObject() as? URL {
+            // The test bundle in PlugIns holds the tool tests' fixture catalogs: it is no part of the app's own language files.
+            if url.lastPathComponent == "PlugIns" { walker?.skipDescendants(); continue }
             if Self.isAppleTable(url.lastPathComponent) { tables.append(url.path) }
         }
         XCTAssertTrue(tables.isEmpty, "Apple's language tables ship in the bundle: \(tables.prefix(Self.listed))")
