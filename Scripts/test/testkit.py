@@ -331,7 +331,9 @@ class Summary:
 _EXECUTED = re.compile(r"^\s*(Executed (\d+) tests?, with (?:\d+ tests? skipped and )?(\d+) failures?.*)$")
 # "/path/File.swift:123: error: -[TextMouthProductionTests.FooTests testBar] : message"
 _TEST_ERROR = re.compile(r"^(.+?\.swift):(\d+): error: -\[(?:[\w.]+\.)?(\w+) (\w+)\] : (.*)$")
-_TEST_FAILED = re.compile(r"^Test Case '-\[(?:[\w.]+\.)?(\w+) (\w+)\]' failed")
+# Found with .search, anywhere in the line: another process's log text can land in front of a result (train 1122-0353 had
+# CoreAudio's message cut in two by a result line), and a failed result with text before it would otherwise name no test.
+_TEST_FAILED = re.compile(r"Test Case '-\[(?:[\w.]+\.)?(\w+) (\w+)\]' failed")
 _COMPILE_ERROR = re.compile(r"^(/.+?\.swift):(\d+):\d+: error: (.*)$")
 # A printed NSError ("error: Error Domain=...") is not one: interleaved output from two processes can leave such a
 # line starting at "error:".
@@ -407,7 +409,7 @@ def summarize_log(text: str, root: Path) -> Summary:
             if key not in failed_order:
                 failed_order.append(key)
             continue
-        match = _TEST_FAILED.match(line)
+        match = _TEST_FAILED.search(line)
         if match:
             key = f"{match.group(1)}.{match.group(2)}"
             if key not in failed_order:
