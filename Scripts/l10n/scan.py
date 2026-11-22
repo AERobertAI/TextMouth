@@ -33,6 +33,10 @@ A translator's note is a `// Translators: <note>` line directly above the line t
 literal (TL15). `lint` fails, in every file, on a `comment:` argument of a localized call (Foundation compiles it into
 the app), on a key with no such line above it, and on a line that holds two keys; the baseline holds these at zero.
 
+The English of an `InterfaceText.line("<ID>", "<English>")` call (FR39) is localized, and its note is held to the same rule. Its ID
+must be a plain literal in the ID pattern, not retired, and the one Scripts/l10n/ids.json gives that English as a key at that
+site (a key that is split has an ID for each use); `lint` fails on one that is not.
+
 A literal is interface text when it is shown or spoken to the user (see swiftscan/classify.py
 for the buckets). It is *localized* when it is the key of a call the compiler extracts
 (String(localized:), LocalizedStringResource, Text("..."), .accessibilityLabel("..."), and the
@@ -60,6 +64,8 @@ HERE = Path(__file__).resolve().parent
 if str(HERE) not in sys.path:
     sys.path.insert(0, str(HERE))
 
+import ids  # noqa: E402
+import interface_calls  # noqa: E402
 from swiftscan import areas, ratchet, report  # noqa: E402
 from swiftscan.classify import FINDING_HELP, NEEDS_COMMENT_HELP, NOTE_PROBLEM_HELP  # noqa: E402
 from swiftscan.scanner import Scan, scan_tree  # noqa: E402
@@ -212,6 +218,10 @@ def cmd_lint(args: argparse.Namespace, scan: Scan, root: Path) -> int:
     problems = ratchet.find_problems(baseline, scan.literals, added_lines(root, args.base) if args.base else None)
     # A translator's note is held at zero in every file, whatever the baseline says (TL15).
     notes = ratchet.note_problems(scan.literals)
+    # The ID of every InterfaceText.line call (FR39) is a literal in the pattern, not retired, and the one ids.json gives its key
+    # at its site; its English is a key, character for character. (Its note is held to the rule above, as a localized call's.)
+    calls = interface_calls.problems_of(root, interface_calls.calls_in_tree(root), ids.load_table(ids.table_path(root)),
+                                        ids.retired_ids(root), notes=False)
     if problems:
         print("\n".join(ratchet.format_problems(problems)))
         vanished = sorted(f for f in baseline if f not in set(scan.files))
@@ -220,7 +230,9 @@ def cmd_lint(args: argparse.Namespace, scan: Scan, root: Path) -> int:
                   + ", ".join(vanished))
     if notes:
         print("\n".join(ratchet.format_note_problems(notes)))
-    if problems or notes:
+    if calls:
+        print("\n".join(calls))
+    if problems or notes or calls:
         return EXIT_FAIL
     lower = sum(1 for f, n in baseline.items() if counts.get(f, 0) < n)
     print(f"l10n lint: ok, {sum(counts.values()):,} unlocalized literals in {len(counts)} files, none above its baseline."
