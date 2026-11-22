@@ -30,10 +30,10 @@ enum NextBookWindow: String, CaseIterable, Codable, Sendable {
         switch self {
         case .thisWindow:
             // Translators: A choice of the Open the next book in pop-up button (Settings, Playback; Feed Info; Folder Settings): the next book opens in the window already open, in place of the book there.
-            return String(localized: "This Window")
+            return InterfaceText.line("nextBookWindow.title.thisWindow", "This Window")
         case .newWindow:
             // Translators: A choice of the Open the next book in pop-up button (Settings, Playback; Feed Info; Folder Settings): the next book opens in a window of its own, and this one stays.
-            return String(localized: "A New Window")
+            return InterfaceText.line("nextBookWindow.title.newWindow", "A New Window")
         }
     }
 }
@@ -173,7 +173,7 @@ enum NextBookWindowWording {
     /// The label of Settings' pop-up button.
     static var globalLabel: String {
         // Translators: Label of the pop-up button in Settings, Playback, and in a folder's settings, choosing where the next book opens; its choices are This Window and A New Window.
-        String(localized: "Open the next book in")
+        InterfaceText.line("nextBookWindow.globalLabel", "Open the next book in")
     }
 
     /// The hint of Settings' pop-up button, also shown under it (FR35's cut:
@@ -181,7 +181,7 @@ enum NextBookWindowWording {
     /// book to another", and said each choice at length).
     static var globalHint: String {
         // Translators: VoiceOver hint of the Open the next book in pop-up button in Settings, Playback, also shown under it. %@ is the name of its choice This Window.
-        String(localized: "Chooses where the next book opens: in this window or a new one. A book open in another window comes forward, and with \(NextBookWindow.thisWindow.title) chosen, this window closes.")
+        InterfaceText.line("nextBookWindow.globalHint", "Chooses where the next book opens: in this window or a new one. A book open in another window comes forward, and with \(NextBookWindow.thisWindow.title) chosen, this window closes.")
     }
 
     // MARK: A Feed's or Folder's Own Choice
@@ -192,13 +192,13 @@ enum NextBookWindowWording {
         switch noun {
         case .episode:
             // Translators: Label of the pop-up button in a podcast feed's Feed Info, choosing where the feed's next episode opens.
-            return String(localized: "Open the next episode in")
+            return InterfaceText.line("nextBookWindow.label.episode", "Open the next episode in")
         case .article:
             // Translators: Label of the pop-up button in a news feed's Feed Info, choosing where the feed's next article opens.
-            return String(localized: "Open the next article in")
+            return InterfaceText.line("nextBookWindow.label.article", "Open the next article in")
         case .item:
             // Translators: Label of the pop-up button in a feed's Feed Info, choosing where the feed's next item opens.
-            return String(localized: "Open the next item in")
+            return InterfaceText.line("nextBookWindow.label.item", "Open the next item in")
         case .book:
             return globalLabel
         }
@@ -211,7 +211,7 @@ enum NextBookWindowWording {
     static func title(_ choice: NextBookWindow?, global: NextBookWindow) -> String {
         guard let choice else {
             // Translators: A choice of the Open the next book in pop-up button in Feed Info and Folder Settings: do as Settings says. %@ is the name of the choice Settings has now, such as This Window.
-            return String(localized: "Use the global setting (\(global.title))")
+            return InterfaceText.line("common.useTheGlobalSettingValue", "Use the global setting (\(global.title))")
         }
         return choice.title
     }
@@ -230,16 +230,16 @@ enum NextBookWindowWording {
         switch noun {
         case .episode:
             // Translators: VoiceOver hint of the Open the next episode in pop-up button in a podcast feed's Feed Info.
-            return String(localized: "Chooses where this feed's next episode opens.")
+            return InterfaceText.line("nextBookWindow.enabledHint.episode", "Chooses where this feed's next episode opens.")
         case .article:
             // Translators: VoiceOver hint of the Open the next article in pop-up button in a news feed's Feed Info.
-            return String(localized: "Chooses where this feed's next article opens.")
+            return InterfaceText.line("nextBookWindow.enabledHint.article", "Chooses where this feed's next article opens.")
         case .item:
             // Translators: VoiceOver hint of the Open the next item in pop-up button in a feed's Feed Info.
-            return String(localized: "Chooses where this feed's next item opens.")
+            return InterfaceText.line("nextBookWindow.enabledHint.item", "Chooses where this feed's next item opens.")
         case .book:
             // Translators: VoiceOver hint of the Open the next book in pop-up button in a folder's settings.
-            return String(localized: "Chooses where this folder's next book opens.")
+            return InterfaceText.line("nextBookWindow.enabledHint.folder", "Chooses where this folder's next book opens.")
         }
     }
 
@@ -251,16 +251,16 @@ enum NextBookWindowWording {
         switch noun {
         case .episode:
             // Translators: VoiceOver hint of the dimmed Open the next episode in pop-up button in a podcast feed's Feed Info: when it can be used.
-            return String(localized: "Available only while this feed's episodes go on to another episode when one ends")
+            return InterfaceText.line("nextBookWindow.unavailableHint.episode", "Available only while this feed's episodes go on to another episode when one ends")
         case .article:
             // Translators: VoiceOver hint of the dimmed Open the next article in pop-up button in a news feed's Feed Info: when it can be used.
-            return String(localized: "Available only while this feed's articles go on to another article when one ends")
+            return InterfaceText.line("nextBookWindow.unavailableHint.article", "Available only while this feed's articles go on to another article when one ends")
         case .item:
             // Translators: VoiceOver hint of the dimmed Open the next item in pop-up button in a feed's Feed Info: when it can be used.
-            return String(localized: "Available only while this feed's items go on to another item when one ends")
+            return InterfaceText.line("nextBookWindow.unavailableHint.item", "Available only while this feed's items go on to another item when one ends")
         case .book:
             // Translators: VoiceOver hint of the dimmed Open the next book in pop-up button in a folder's settings: when it can be used.
-            return String(localized: "Available only while this folder's books go on to another book when one ends")
+            return InterfaceText.line("nextBookWindow.unavailableHint.folder", "Available only while this folder's books go on to another book when one ends")
         }
     }
 }

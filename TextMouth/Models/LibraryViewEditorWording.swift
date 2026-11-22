@@ -12,47 +12,47 @@ enum LibraryViewEditorWording {
     /// The sheet's title for a new view.
     static var newTitle: String {
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The sheet's title for a new view.
-        String(localized: "New View")
+        InterfaceText.line("libraryViewEditor.newTitle", "New View")
     }
     /// The sheet's title for a view being changed.
     static func editTitle(_ name: String) -> String {
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The sheet's title for a view being changed. Placeholders in order: name.
-        String(localized: "Edit \(name)")
+        InterfaceText.line("libraryViewEditor.editTitle", "Edit \(name)")
     }
     /// The Library tab's button that makes a view.
     static var newViewButton: String {
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The Library tab's button that makes a view.
-        String(localized: "New View…")
+        InterfaceText.line("libraryViewEditor.newViewButton", "New View…")
     }
     /// Its hint.
     static var newViewHint: String {
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. Its hint.
-        String(localized: "Makes a view of your own from the conditions you choose.")
+        InterfaceText.line("libraryViewEditor.newViewHint", "Makes a view of your own from the conditions you choose.")
     }
     /// The Library tab's button that changes the view selected.
     static var editButton: String {
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The Library tab's button that changes the view selected.
-        String(localized: "Edit…")
+        InterfaceText.line("libraryViewEditor.editButton", "Edit…")
     }
     /// Its hint.
     static var editHint: String {
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. Its hint.
-        String(localized: "Changes the view's name, what it lists, its conditions, its sort, and its limit.")
+        InterfaceText.line("libraryViewEditor.editHint", "Changes the view's name, what it lists, its conditions, its sort, and its limit.")
     }
     /// Its hint for Folders and the Reading List, when it is dimmed.
     static var editDisabledHint: String {
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. Its hint for Folders and the Reading List, when it is dimmed.
-        String(localized: "Folders and the Reading List list what they always have. You can move them, and hide the Reading List.")
+        InterfaceText.line("libraryViewEditor.editDisabledHint", "Folders and the Reading List list what they always have. You can move them, and hide the Reading List.")
     }
     /// The button that closes the sheet, changing nothing.
     static var cancel: String {
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The button that closes the sheet, changing nothing.
-        String(localized: "Cancel")
+        InterfaceText.line("common.cancel", "Cancel")
     }
     /// The button that saves the view.
     static var save: String {
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The button that saves the view.
-        String(localized: "Save")
+        InterfaceText.line("common.save", "Save")
     }
 
     // MARK: - Name and Kinds
@@ -60,31 +60,31 @@ enum LibraryViewEditorWording {
     /// The name field's label.
     static var nameLabel: String {
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The name field's label.
-        String(localized: "Name")
+        InterfaceText.line("common.name", "Name")
     }
     /// The label of the checkboxes saying what the view lists.
     static var listsLabel: String {
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The label of the checkboxes saying what the view lists.
-        String(localized: "Lists")
+        InterfaceText.line("libraryViewEditor.listsLabel", "Lists")
     }
     /// A kind of row as its checkbox names it: "Books", "Episodes",
     /// "Articles", or "Feeds".
     static func kindName(_ kind: LibraryViewItemKind) -> String {
         switch kind {
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of row as its checkbox names it: "Books", "Episodes", "Articles", or "Feeds". This is the case .books.
-        case .books: return String(localized: "Books")
+        case .books: return InterfaceText.line("common.books", "Books")
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of row as its checkbox names it: "Books", "Episodes", "Articles", or "Feeds". This is the case .episodes.
-        case .episodes: return String(localized: "Episodes")
+        case .episodes: return InterfaceText.line("common.episodes", "Episodes")
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of row as its checkbox names it: "Books", "Episodes", "Articles", or "Feeds". This is the case .articles.
-        case .articles: return String(localized: "Articles")
+        case .articles: return InterfaceText.line("common.articles", "Articles")
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of row as its checkbox names it: "Books", "Episodes", "Articles", or "Feeds". This is the case .feeds.
-        case .feeds: return String(localized: "Feeds")
+        case .feeds: return InterfaceText.line("common.feeds", "Feeds")
         }
     }
     /// What conditions test, under the kinds.
     static var listsCaption: String {
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. What conditions test, under the kinds.
-        String(localized: "Conditions about books test books, episodes, and articles; conditions about feeds test feeds. A condition never hides a row it does not test.")
+        InterfaceText.line("libraryViewEditor.listsCaption", "Conditions about books test books, episodes, and articles; conditions about feeds test feeds. A condition never hides a row it does not test.")
     }
 
     // MARK: - Matching
@@ -92,14 +92,14 @@ enum LibraryViewEditorWording {
     /// The match pop-up's label.
     static var matchLabel: String {
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The match pop-up's label.
-        String(localized: "Match")
+        InterfaceText.line("libraryViewEditor.matchLabel", "Match")
     }
     /// A match as its pop-up names it.
     static func matchName(_ match: LibraryViewMatch) -> String {
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A match as its pop-up names it. This is the form for the first case of the condition.
-        match == .all ? String(localized: "All Conditions") :
+        match == .all ? InterfaceText.line("libraryViewEditor.matchName.conditions", "All Conditions") :
             // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A match as its pop-up names it. This is the form for the other case of the condition.
-            String(localized: "Any Condition")
+            InterfaceText.line("libraryViewEditor.matchName.condition", "Any Condition")
     }
 
     // MARK: - Conditions
@@ -107,34 +107,34 @@ enum LibraryViewEditorWording {
     /// The heading above the conditions.
     static var conditionsHeader: String {
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The heading above the conditions.
-        String(localized: "Conditions")
+        InterfaceText.line("libraryViewEditor.conditionsHeader", "Conditions")
     }
     /// What the editor says while the view has no condition.
     static var noConditions: String {
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. What the editor says while the view has no condition.
-        String(localized: "No conditions: the view lists every item of the kinds chosen.")
+        InterfaceText.line("libraryViewEditor.noConditions", "No conditions: the view lists every item of the kinds chosen.")
     }
     /// A kind of test as a condition's test pop-up names it.
     static func testName(_ kind: LibraryViewCondition.Kind) -> String {
         switch kind {
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of test as a condition's test pop-up names it. This is the case .format.
-        case .format: return String(localized: "Format")
+        case .format: return InterfaceText.line("common.format", "Format")
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of test as a condition's test pop-up names it. This is the case .folder.
-        case .folder: return String(localized: "Folder")
+        case .folder: return InterfaceText.line("common.folder", "Folder")
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of test as a condition's test pop-up names it. This is the case .readingState.
-        case .readingState: return String(localized: "Reading State")
+        case .readingState: return InterfaceText.line("libraryViewEditor.testName.readingState", "Reading State")
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of test as a condition's test pop-up names it. This is the case .inReadingList.
-        case .inReadingList: return String(localized: "Reading List")
+        case .inReadingList: return InterfaceText.line("common.readingList", "Reading List")
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of test as a condition's test pop-up names it. This is the case .addedWithin.
-        case .addedWithin: return String(localized: "Date Added")
+        case .addedWithin: return InterfaceText.line("common.dateAdded", "Date Added")
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of test as a condition's test pop-up names it. This is the case .openedWithin.
-        case .openedWithin: return String(localized: "Date Opened")
+        case .openedWithin: return InterfaceText.line("libraryViewEditor.testName.openedWithin", "Date Opened")
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of test as a condition's test pop-up names it. This is the case .titleOrAuthorContains.
-        case .titleOrAuthorContains: return String(localized: "Title or Author")
+        case .titleOrAuthorContains: return InterfaceText.line("libraryViewEditor.testName.titleOrAuthorContains", "Title or Author")
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of test as a condition's test pop-up names it. This is the case .hasNewItems.
-        case .hasNewItems: return String(localized: "New Items")
+        case .hasNewItems: return InterfaceText.line("common.newItems", "New Items")
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of test as a condition's test pop-up names it. This is the case .subscribed.
-        case .subscribed: return String(localized: "Subscription")
+        case .subscribed: return InterfaceText.line("libraryViewEditor.testName.subscribed", "Subscription")
         }
     }
     /// A condition's relation as its relation pop-up names it, by its test
@@ -143,116 +143,116 @@ enum LibraryViewEditorWording {
         switch kind {
         case .format, .folder, .readingState:
             // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A condition's relation as its relation pop-up names it, by its test and whether it is negated. This is the form for the first case of the condition.
-            return isNegated ? String(localized: "Is Not") :
+            return isNegated ? InterfaceText.line("libraryViewEditor.relationName.format.not", "Is Not") :
                 // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A condition's relation as its relation pop-up names it, by its test and whether it is negated. This is the form for the other case of the condition.
-                String(localized: "Is")
+                InterfaceText.line("libraryViewEditor.relationName.format.is", "Is")
         case .inReadingList:
             // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A condition's relation as its relation pop-up names it, by its test and whether it is negated. This is the form for the first case of the condition.
-            return isNegated ? String(localized: "Not in the Reading List") :
+            return isNegated ? InterfaceText.line("libraryViewEditor.relationName.inReadingList.not", "Not in the Reading List") :
                 // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A condition's relation as its relation pop-up names it, by its test and whether it is negated. This is the form for the other case of the condition.
-                String(localized: "In the Reading List")
+                InterfaceText.line("libraryViewEditor.inReadingList.title", "In the Reading List")
         case .addedWithin, .openedWithin:
             // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A condition's relation as its relation pop-up names it, by its test and whether it is negated. This is the form for the first case of the condition.
-            return isNegated ? String(localized: "Not Within the Last") :
+            return isNegated ? InterfaceText.line("libraryViewEditor.relationName.addedWithin.not", "Not Within the Last") :
                 // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A condition's relation as its relation pop-up names it, by its test and whether it is negated. This is the form for the other case of the condition.
-                String(localized: "Within the Last")
+                InterfaceText.line("libraryViewEditor.relationName.addedWithin.last", "Within the Last")
         case .titleOrAuthorContains:
             // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A condition's relation as its relation pop-up names it, by its test and whether it is negated. This is the form for the first case of the condition.
-            return isNegated ? String(localized: "Does Not Contain") :
+            return isNegated ? InterfaceText.line("libraryViewEditor.relationName.doesNotContain", "Does Not Contain") :
                 // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A condition's relation as its relation pop-up names it, by its test and whether it is negated. This is the form for the other case of the condition.
-                String(localized: "Contains")
+                InterfaceText.line("libraryViewEditor.relationName.contains", "Contains")
         case .hasNewItems:
             // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A condition's relation as its relation pop-up names it, by its test and whether it is negated. This is the form for the first case of the condition.
-            return isNegated ? String(localized: "Has None New") :
+            return isNegated ? InterfaceText.line("libraryViewEditor.relationName.hasNewItems.none", "Has None New") :
                 // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A condition's relation as its relation pop-up names it, by its test and whether it is negated. This is the form for the other case of the condition.
-                String(localized: "Has New Episodes or Articles")
+                InterfaceText.line("libraryViewEditor.hasNewItems.episodes", "Has New Episodes or Articles")
         case .subscribed:
             // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A condition's relation as its relation pop-up names it, by its test and whether it is negated. This is the form for the first case of the condition.
-            return isNegated ? String(localized: "Unsubscribed") :
+            return isNegated ? InterfaceText.line("common.unsubscribed", "Unsubscribed") :
                 // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A condition's relation as its relation pop-up names it, by its test and whether it is negated. This is the form for the other case of the condition.
-                String(localized: "Subscribed")
+                InterfaceText.line("libraryViewEditor.relationName.subscribed", "Subscribed")
         }
     }
     /// A reading state as the pop-up names it.
     static func stateName(_ state: LibraryReadingState) -> String {
         switch state {
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A reading state as the pop-up names it. This is the case .unopened.
-        case .unopened: return String(localized: "Unopened")
+        case .unopened: return InterfaceText.line("common.unopened", "Unopened")
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A reading state as the pop-up names it. This is the case .inProgress.
-        case .inProgress: return String(localized: "In Progress")
+        case .inProgress: return InterfaceText.line("libraryViewEditor.stateName.inProgress", "In Progress")
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A reading state as the pop-up names it. This is the case .finished.
-        case .finished: return String(localized: "Finished")
+        case .finished: return InterfaceText.line("common.finished", "Finished")
         }
     }
     /// The test pop-up's spoken label: "Condition 2".
     static func conditionLabel(_ number: Int) -> String {
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The test pop-up's spoken label: "Condition 2". %@ is the condition's number, an identifier written without digit grouping.
-        String(localized: "Condition \(String(number))")
+        InterfaceText.line("libraryViewEditor.conditionLabel", "Condition \(String(number))")
     }
     /// The relation pop-up's spoken label.
     static func relationLabel(_ number: Int) -> String {
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The relation pop-up's spoken label. %@ is the condition's number, an identifier written without digit grouping.
-        String(localized: "Condition \(String(number)) relation")
+        InterfaceText.line("libraryViewEditor.relationLabel", "Condition \(String(number)) relation")
     }
     /// The format pop-up's spoken label.
     static func formatLabel(_ number: Int) -> String {
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The format pop-up's spoken label. %@ is the condition's number, an identifier written without digit grouping.
-        String(localized: "Condition \(String(number)) format")
+        InterfaceText.line("libraryViewEditor.formatLabel", "Condition \(String(number)) format")
     }
     /// The folder pop-up's spoken label.
     static func folderLabel(_ number: Int) -> String {
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The folder pop-up's spoken label. %@ is the condition's number, an identifier written without digit grouping.
-        String(localized: "Condition \(String(number)) folder")
+        InterfaceText.line("libraryViewEditor.folderLabel", "Condition \(String(number)) folder")
     }
     /// The subfolders checkbox's visible title.
     static var subfoldersTitle: String {
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The subfolders checkbox's visible title.
-        String(localized: "Including Subfolders")
+        InterfaceText.line("libraryViewEditor.subfoldersTitle", "Including Subfolders")
     }
     /// The subfolders checkbox's spoken label.
     static func subfoldersLabel(_ number: Int) -> String {
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The subfolders checkbox's spoken label. %@ is the condition's number, an identifier written without digit grouping.
-        String(localized: "Condition \(String(number)) includes subfolders")
+        InterfaceText.line("libraryViewEditor.subfoldersLabel", "Condition \(String(number)) includes subfolders")
     }
     /// The reading state pop-up's spoken label.
     static func readingStateLabel(_ number: Int) -> String {
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The reading state pop-up's spoken label. %@ is the condition's number, an identifier written without digit grouping.
-        String(localized: "Condition \(String(number)) reading state")
+        InterfaceText.line("libraryViewEditor.readingStateLabel", "Condition \(String(number)) reading state")
     }
     /// The days field's spoken label.
     static func daysLabel(_ number: Int) -> String {
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The days field's spoken label. %@ is the condition's number, an identifier written without digit grouping.
-        String(localized: "Condition \(String(number)) days")
+        InterfaceText.line("libraryViewEditor.daysLabel", "Condition \(String(number)) days")
     }
     /// The caption after the days field.
     static var daysCaption: String {
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The caption after the days field.
-        String(localized: "days")
+        InterfaceText.line("libraryViewEditor.daysCaption", "days")
     }
     /// The text field's spoken label.
     static func textLabel(_ number: Int) -> String {
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The text field's spoken label. %@ is the condition's number, an identifier written without digit grouping.
-        String(localized: "Condition \(String(number)) text")
+        InterfaceText.line("libraryViewEditor.textLabel", "Condition \(String(number)) text")
     }
     /// The remove button's visible title.
     static var removeTitle: String {
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The remove button's visible title.
-        String(localized: "Remove")
+        InterfaceText.line("common.remove", "Remove")
     }
     /// The remove button's spoken label.
     static func removeLabel(_ number: Int) -> String {
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The remove button's spoken label. %@ is the condition's number, an identifier written without digit grouping.
-        String(localized: "Remove condition \(String(number))")
+        InterfaceText.line("libraryViewEditor.removeLabel", "Remove condition \(String(number))")
     }
     /// The button that adds a condition.
     static var addCondition: String {
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The button that adds a condition.
-        String(localized: "Add Condition")
+        InterfaceText.line("libraryViewEditor.addCondition", "Add Condition")
     }
     /// Its hint at the limit, when it is dimmed.
     static var conditionLimitHint: String {
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. Its hint at the limit, when it is dimmed. Placeholders in order: LibraryViewFilter.conditionLimit.
-        String(localized: "A view holds at most \(LibraryViewFilter.conditionLimit) conditions.")
+        InterfaceText.line("libraryViewEditor.conditionLimitHint", "A view holds at most \(number: LibraryViewFilter.conditionLimit) conditions.")
     }
 
     // MARK: - After the Conditions
@@ -260,72 +260,72 @@ enum LibraryViewEditorWording {
     /// The checkbox that keeps one item per feed.
     static var onePerFeedTitle: String {
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The checkbox that keeps one item per feed.
-        String(localized: "Only the Latest from Each Feed")
+        InterfaceText.line("libraryViewEditor.onePerFeedTitle", "Only the Latest from Each Feed")
     }
     /// Its hint.
     static var onePerFeedHint: String {
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. Its hint.
-        String(localized: "Of each feed's episodes and articles, lists only the one you opened last.")
+        InterfaceText.line("libraryViewEditor.onePerFeedHint", "Of each feed's episodes and articles, lists only the one you opened last.")
     }
     /// Its hint while the view lists no episodes or articles, when it is
     /// dimmed (review of October 31, 2026, finding 6).
     static var onePerFeedUnavailableHint: String {
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. Its hint while the view lists no episodes or articles, when it is dimmed (review of October 31, 2026, finding 6).
-        String(localized: "Applies only to a view that lists episodes or articles.")
+        InterfaceText.line("libraryViewEditor.onePerFeedUnavailableHint", "Applies only to a view that lists episodes or articles.")
     }
     /// Show at Most's hint while the view lists feeds alone, when it is
     /// dimmed (finding 6).
     static var limitUnavailableHint: String {
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. Show at Most's hint while the view lists feeds alone, when it is dimmed (finding 6).
-        String(localized: "A limit chooses among books, episodes, and articles, never feeds.")
+        InterfaceText.line("libraryViewEditor.limitUnavailableHint", "A limit chooses among books, episodes, and articles, never feeds.")
     }
     /// The sort field pop-up's label.
     static var sortByLabel: String {
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The sort field pop-up's label.
-        String(localized: "Sort By")
+        InterfaceText.line("libraryViewEditor.sortByLabel", "Sort By")
     }
     /// The direction pop-up's label.
     static var orderLabel: String {
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The direction pop-up's label.
-        String(localized: "Order")
+        InterfaceText.line("libraryViewEditor.orderLabel", "Order")
     }
     /// A direction as the pop-up names it.
     static func orderName(ascending: Bool) -> String {
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A direction as the pop-up names it. This is the form for the first case of the condition.
-        ascending ? String(localized: "Ascending") :
+        ascending ? InterfaceText.line("libraryViewEditor.orderName.ascending", "Ascending") :
             // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A direction as the pop-up names it. This is the form for the other case of the condition.
-            String(localized: "Descending")
+            InterfaceText.line("libraryViewEditor.orderName.descending", "Descending")
     }
     /// What stands for the sort while the view lists feeds alone.
     static var feedsOnlySortNote: String {
         let hint = LibraryViewPickerWording.feedsOrderHint
         // Translators: Library view editor: the note shown in place of the sort choice while the view lists feeds alone. %@ is a sentence without its full stop, saying feeds are always listed by title; this adds the full stop.
-        return String(localized: "\(hint).")
+        return InterfaceText.line("common.valuePeriod", "\(hint).")
     }
     /// The limit checkbox.
     static var limitTitle: String {
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The limit checkbox.
-        String(localized: "Show at Most")
+        InterfaceText.line("libraryViewEditor.limitTitle", "Show at Most")
     }
     /// The limit field's spoken label.
     static var limitFieldLabel: String {
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The limit field's spoken label.
-        String(localized: "Most rows shown")
+        InterfaceText.line("libraryViewEditor.limitFieldLabel", "Most rows shown")
     }
     /// The pop-up of which rows a limit keeps.
     static var chosenByLabel: String {
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The pop-up of which rows a limit keeps.
-        String(localized: "Chosen By")
+        InterfaceText.line("libraryViewEditor.chosenByLabel", "Chosen By")
     }
     /// A limit's order as its pop-up names it.
     static func limitOrderName(_ order: LibraryViewLimit.Order) -> String {
         switch order {
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A limit's order as its pop-up names it. This is the case .lastOpened.
-        case .lastOpened: return String(localized: "Opened Last")
+        case .lastOpened: return InterfaceText.line("libraryViewEditor.limitOrderName.lastOpened", "Opened Last")
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A limit's order as its pop-up names it. This is the case .dateAdded.
-        case .dateAdded: return String(localized: "Added Last")
+        case .dateAdded: return InterfaceText.line("libraryViewEditor.limitOrderName.dateAdded", "Added Last")
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A limit's order as its pop-up names it. This is the case .viewSort.
-        case .viewSort: return String(localized: "First in the Sort")
+        case .viewSort: return InterfaceText.line("libraryViewEditor.limitOrderName.viewSort", "First in the Sort")
         }
     }
 
@@ -334,37 +334,37 @@ enum LibraryViewEditorWording {
     /// Save's problem with no name.
     static var nameMissing: String {
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. Save's problem with no name.
-        String(localized: "Give the view a name.")
+        InterfaceText.line("libraryViewEditor.nameMissing", "Give the view a name.")
     }
     /// Save's problem with a name too long.
     static var nameTooLong: String {
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. Save's problem with a name too long. Placeholders in order: LibraryViewDefinition.nameLimit.
-        String(localized: "A view's name can be at most \(LibraryViewDefinition.nameLimit) characters.")
+        InterfaceText.line("libraryViewEditor.nameTooLong", "A view's name can be at most \(number: LibraryViewDefinition.nameLimit) characters.")
     }
     /// Save's problem with a name another view has.
     static func nameTaken(_ name: String) -> String {
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. Save's problem with a name another view has. Placeholders in order: name.
-        String(localized: "Another view is already named \(name). Choose another name.")
+        InterfaceText.line("libraryViewEditor.nameTaken", "Another view is already named \(name). Choose another name.")
     }
     /// Save's problem with no kind listed.
     static var nothingListed: String {
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. Save's problem with no kind listed.
-        String(localized: "Choose at least one kind of item for the view to list.")
+        InterfaceText.line("libraryViewEditor.nothingListed", "Choose at least one kind of item for the view to list.")
     }
     /// Save's problem with a title or author condition looking for nothing.
     static func textMissing(_ number: Int) -> String {
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. Save's problem with a title or author condition looking for nothing. %@ is the condition's number, an identifier written without digit grouping.
-        String(localized: "Condition \(String(number)) needs the text to look for.")
+        InterfaceText.line("libraryViewEditor.textMissing", "Condition \(String(number)) needs the text to look for.")
     }
     /// What VoiceOver says once a changed view is saved.
     static func saved(_ name: String) -> String {
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. What VoiceOver says once a changed view is saved. Placeholders in order: name.
-        String(localized: "Saved \(name).")
+        InterfaceText.line("libraryViewEditor.saved", "Saved \(name).")
     }
     /// What VoiceOver says once a new view is added, with its place.
     static func added(_ name: String, number: Int, count: Int) -> String {
         // Translators: Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. What VoiceOver says once a new view is added, with its place. Placeholders in order: name, number, count.
-        String(localized: "Added \(name), \(number) of \(count).")
+        InterfaceText.line("libraryViewEditor.added", "Added \(name), \(number: number) of \(number: count).")
     }
 
     // MARK: - The Count
@@ -389,11 +389,11 @@ enum LibraryViewEditorWording {
         if feeds > 0 { parts.append(CountWording.feeds(feeds)) }
         if parts.isEmpty {
             // Translators: Library view editor: what the sheet says of a draft view that lists nothing at the moment.
-            return String(localized: "Lists nothing now.")
+            return InterfaceText.line("libraryViewEditor.count.nothing", "Lists nothing now.")
         }
         let list = CountWording.list(parts)
         // Translators: Library view editor: what the sheet says of a draft view's contents. %@ is a list of counts, such as "23 books and 2 feeds".
-        return String(localized: "Lists \(list).")
+        return InterfaceText.line("libraryViewEditor.count.lists", "Lists \(list).")
     }
 
     // MARK: - A Filter Described
@@ -412,30 +412,30 @@ enum LibraryViewEditorWording {
         var text: String
         if conditions.isEmpty {
             // Translators: Library view editor: the start of a filter's description, which says what a view lists. %@ is a list of the kinds it lists in lower case, such as "books and feeds". A description ends with a full stop added later.
-            text = String(localized: "Lists \(kinds)")
+            text = InterfaceText.line("libraryViewEditor.description.kinds", "Lists \(kinds)")
         } else {
             let list = filter.match == .all ? CountWording.list(conditions) : listWithOr(conditions)
             // Translators: Library view editor: the start of a filter's description, which says what a view lists and its conditions. %1$@ is a list of the kinds it lists in lower case, such as "books and feeds"; %2$@ is its conditions joined by "and" or "or". A description ends with a full stop added later.
-            text = String(localized: "Lists \(kinds): \(list)")
+            text = InterfaceText.line("libraryViewEditor.description.kindsAndConditions", "Lists \(kinds): \(list)")
         }
         // One per feed and a limit are said only where they apply (review of
         // October 31, 2026, finding 6), each after a semicolon.
         var tails: [String] = []
         if filter.onePerFeed, !filter.lists.isDisjoint(with: [.episodes, .articles]) {
             // Translators: Library view editor: a clause at the end of a filter's description, said when the view lists only the newest item of each feed.
-            tails.append(String(localized: "only the latest from each feed"))
+            tails.append(InterfaceText.line("libraryViewEditor.description.latest", "only the latest from each feed"))
         }
         if let limit = filter.limit, filter.listsItems {
             let order = limitOrderNameInSentence(limit.chosenBy)
             // Translators: Library view editor: a clause at the end of a filter's description, said when the view shows only some rows. %1$lld is how many rows at most, a count; %2$@ is how they are chosen, in lower case, such as "opened last".
-            tails.append(String(localized: "at most \(limit.count), \(order)"))
+            tails.append(InterfaceText.line("libraryViewEditor.description.most", "at most \(number: limit.count), \(order)"))
         }
         for tail in tails {
             // Translators: Library view editor: adds one more clause to a filter's description. %1$@ is the description so far and %2$@ the clause added after a semicolon.
-            text = String(localized: "\(text); \(tail)")
+            text = InterfaceText.line("common.valueSemicolonValue", "\(text); \(tail)")
         }
         // Translators: Library view editor: ends a filter's description with a full stop. %@ is the whole description.
-        return String(localized: "\(text).")
+        return InterfaceText.line("common.valuePeriod", "\(text).")
     }
 
     /// A kind of row in lower case, inside a description: "books",
@@ -444,16 +444,16 @@ enum LibraryViewEditorWording {
         switch kind {
         case .books:
             // Translators: Library view editor: the kind of row books, in lower case inside a filter's description such as "Lists books and feeds".
-            return String(localized: "books")
+            return InterfaceText.line("libraryViewEditor.kindNameInSentence.books", "books")
         case .episodes:
             // Translators: Library view editor: the kind of row podcast episodes, in lower case inside a filter's description such as "Lists books and episodes".
-            return String(localized: "episodes")
+            return InterfaceText.line("libraryViewEditor.kindNameInSentence.episodes", "episodes")
         case .articles:
             // Translators: Library view editor: the kind of row news articles, in lower case inside a filter's description such as "Lists books and articles".
-            return String(localized: "articles")
+            return InterfaceText.line("libraryViewEditor.kindNameInSentence.articles", "articles")
         case .feeds:
             // Translators: Library view editor: the kind of row feeds, in lower case inside a filter's description such as "Lists books and feeds".
-            return String(localized: "feeds")
+            return InterfaceText.line("libraryViewEditor.kindNameInSentence.feeds", "feeds")
         }
     }
 
@@ -463,20 +463,20 @@ enum LibraryViewEditorWording {
         switch order {
         case .lastOpened:
             // Translators: Library view editor: how a view's limit chooses rows, in lower case inside a filter's description: the books opened most recently.
-            return String(localized: "opened last")
+            return InterfaceText.line("libraryViewEditor.lastOpened", "opened last")
         case .dateAdded:
             // Translators: Library view editor: how a view's limit chooses rows, in lower case inside a filter's description: the items added most recently.
-            return String(localized: "added last")
+            return InterfaceText.line("libraryViewEditor.dateAdded", "added last")
         case .viewSort:
             // Translators: Library view editor: how a view's limit chooses rows, in lower case inside a filter's description: the first rows of the view's own sort.
-            return String(localized: "first in the sort")
+            return InterfaceText.line("libraryViewEditor.viewSort", "first in the sort")
         }
     }
 
     /// The name a folder condition gives a folder no longer in the library.
     static var missingFolder: String {
         // Translators: Library view editor: the name a folder condition gives a folder that is no longer in the library, inside a filter's description such as "folder is a folder no longer in the library".
-        String(localized: "a folder no longer in the library")
+        InterfaceText.line("libraryViewEditor.missingFolder", "a folder no longer in the library")
     }
 
     /// One condition as a description says it: "format is EPUB", "not opened
@@ -489,38 +489,38 @@ enum LibraryViewEditorWording {
             let name = format.displayName
             return not
                 // Translators: Library view editor: a condition inside a filter's description. %@ is a book format's name, such as EPUB.
-                ? String(localized: "format is not \(name)")
+                ? InterfaceText.line("libraryViewEditor.phrase.format.formatNot", "format is not \(name)")
                 // Translators: Library view editor: a condition inside a filter's description. %@ is a book format's name, such as EPUB.
-                : String(localized: "format is \(name)")
+                : InterfaceText.line("libraryViewEditor.phrase.format.equals", "format is \(name)")
         case .folder(let id, let includingSubfolders):
             let name = folderName(id)
             switch (not, includingSubfolders) {
             case (false, false):
                 // Translators: Library view editor: a condition inside a filter's description. %@ is a library folder's path, Library Root, or a note that it is gone.
-                return String(localized: "folder is \(name)")
+                return InterfaceText.line("libraryViewEditor.phrase.folder.equals", "folder is \(name)")
             case (false, true):
                 // Translators: Library view editor: a condition inside a filter's description. %@ is a library folder's path, Library Root, or a note that it is gone. The folders below it count too.
-                return String(localized: "folder is \(name), including subfolders")
+                return InterfaceText.line("libraryViewEditor.phrase.folder.including", "folder is \(name), including subfolders")
             case (true, false):
                 // Translators: Library view editor: a condition inside a filter's description. %@ is a library folder's path, Library Root, or a note that it is gone.
-                return String(localized: "folder is not \(name)")
+                return InterfaceText.line("libraryViewEditor.phrase.folder.folderNot", "folder is not \(name)")
             case (true, true):
                 // Translators: Library view editor: a condition inside a filter's description. %@ is a library folder's path, Library Root, or a note that it is gone. The folders below it count too.
-                return String(localized: "folder is not \(name), including subfolders")
+                return InterfaceText.line("libraryViewEditor.folder.notIncludingSubfolders", "folder is not \(name), including subfolders")
             }
         case .readingState(let state):
             let name = stateName(state)
             return not
                 // Translators: Library view editor: a condition inside a filter's description. %@ is a reading state's name: Unopened, In Progress, or Finished.
-                ? String(localized: "reading state is not \(name)")
+                ? InterfaceText.line("libraryViewEditor.phrase.readingState.readingNot", "reading state is not \(name)")
                 // Translators: Library view editor: a condition inside a filter's description. %@ is a reading state's name: Unopened, In Progress, or Finished.
-                : String(localized: "reading state is \(name)")
+                : InterfaceText.line("libraryViewEditor.phrase.readingState.equals", "reading state is \(name)")
         case .inReadingList:
             return not
                 // Translators: Library view editor: a condition inside a filter's description: the item is not in the Reading List.
-                ? String(localized: "not in the reading list")
+                ? InterfaceText.line("libraryViewEditor.phrase.inReadingList.not", "not in the reading list")
                 // Translators: Library view editor: a condition inside a filter's description: the item is in the Reading List.
-                : String(localized: "in the reading list")
+                : InterfaceText.line("libraryViewEditor.phrase.inReadingList.member", "in the reading list")
         case .addedWithin(let days):
             return addedPhrase(days: days, negated: not)
         case .openedWithin(let days):
@@ -528,21 +528,21 @@ enum LibraryViewEditorWording {
         case .titleOrAuthorContains(let text):
             return not
                 // Translators: Library view editor: a condition inside a filter's description. %@ is the text the listener typed to look for.
-                ? String(localized: "title or author does not contain “\(text)”")
+                ? InterfaceText.line("libraryViewEditor.titleOrAuthorContains.contain", "title or author does not contain “\(text)”")
                 // Translators: Library view editor: a condition inside a filter's description. %@ is the text the listener typed to look for.
-                : String(localized: "title or author contains “\(text)”")
+                : InterfaceText.line("libraryViewEditor.titleOrAuthorContains.matches", "title or author contains “\(text)”")
         case .hasNewItems:
             return not
                 // Translators: Library view editor: a condition inside a filter's description: a feed has no new episodes or articles.
-                ? String(localized: "has none new")
+                ? InterfaceText.line("libraryViewEditor.phrase.hasNewItems.none", "has none new")
                 // Translators: Library view editor: a condition inside a filter's description: a feed has new episodes or articles.
-                : String(localized: "has new episodes or articles")
+                : InterfaceText.line("libraryViewEditor.phrase.hasNewItems.episodes", "has new episodes or articles")
         case .subscribed:
             return not
                 // Translators: Library view editor: a condition inside a filter's description: the listener is not subscribed to the feed.
-                ? String(localized: "unsubscribed")
+                ? InterfaceText.line("libraryViewEditor.phrase.subscribed.unsubscribed", "unsubscribed")
                 // Translators: Library view editor: a condition inside a filter's description: the listener is subscribed to the feed.
-                : String(localized: "subscribed")
+                : InterfaceText.line("libraryViewEditor.phrase.subscribed.active", "subscribed")
         }
     }
 
@@ -552,16 +552,16 @@ enum LibraryViewEditorWording {
         switch (negated, days == 1) {
         case (false, true):
             // Translators: Library view editor: a condition inside a filter's description: the item was added today.
-            return String(localized: "added today")
+            return InterfaceText.line("libraryViewEditor.addedPhrase.today", "added today")
         case (true, true):
             // Translators: Library view editor: a condition inside a filter's description: the item was not added today.
-            return String(localized: "not added today")
+            return InterfaceText.line("libraryViewEditor.addedPhrase.notToday", "not added today")
         case (false, false):
             // Translators: Library view editor: a condition inside a filter's description. %lld is a number of days, a count.
-            return String(localized: "added within the last \(days) days")
+            return InterfaceText.line("libraryViewEditor.addedPhrase.withinLastDays", "added within the last \(number: days) days")
         case (true, false):
             // Translators: Library view editor: a condition inside a filter's description. %lld is a number of days, a count.
-            return String(localized: "not added within the last \(days) days")
+            return InterfaceText.line("libraryViewEditor.addedPhrase.notWithinLastDays", "not added within the last \(number: days) days")
         }
     }
 
@@ -571,16 +571,16 @@ enum LibraryViewEditorWording {
         switch (negated, days == 1) {
         case (false, true):
             // Translators: Library view editor: a condition inside a filter's description: the book was opened today.
-            return String(localized: "opened today")
+            return InterfaceText.line("libraryViewEditor.openedPhrase.today", "opened today")
         case (true, true):
             // Translators: Library view editor: a condition inside a filter's description: the book was not opened today.
-            return String(localized: "not opened today")
+            return InterfaceText.line("libraryViewEditor.openedPhrase.notToday", "not opened today")
         case (false, false):
             // Translators: Library view editor: a condition inside a filter's description. %lld is a number of days, a count.
-            return String(localized: "opened within the last \(days) days")
+            return InterfaceText.line("libraryViewEditor.openedPhrase.withinLastDays", "opened within the last \(number: days) days")
         case (true, false):
             // Translators: Library view editor: a condition inside a filter's description. %lld is a number of days, a count.
-            return String(localized: "not opened within the last \(days) days")
+            return InterfaceText.line("libraryViewEditor.openedPhrase.notWithinLastDays", "not opened within the last \(number: days) days")
         }
     }
 

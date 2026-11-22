@@ -15,67 +15,67 @@ enum FFmpegImportWording {
     /// The name "WMA".
     private static var wma: String {
         // Translators: The name of the Windows Media Audio format, as people say it. Inside sentences about importing a file of that format.
-        String(localized: "WMA")
+        InterfaceText.line("ffmpegImport.wma", "WMA")
     }
 
     /// The name "WMV video".
     private static var wmv: String {
         // Translators: The name of the Windows Media Video format, as people say it. Inside sentences about importing a file of that format.
-        String(localized: "WMV video")
+        InterfaceText.line("ffmpegImport.wmv", "WMV video")
     }
 
     /// The name "Windows Media".
     private static var windowsMedia: String {
         // Translators: The name of the Windows Media container format, as people say it. Inside sentences about importing a file of that format.
-        String(localized: "Windows Media")
+        InterfaceText.line("ffmpegImport.windowsMedia", "Windows Media")
     }
 
     /// The name "Speex".
     private static var speex: String {
         // Translators: The name of the Speex speech format. Inside sentences about importing a file of that format.
-        String(localized: "Speex")
+        InterfaceText.line("ffmpegImport.speex", "Speex")
     }
 
     /// The name "Musepack".
     private static var musepack: String {
         // Translators: The name of the Musepack audio format. Inside sentences about importing a file of that format.
-        String(localized: "Musepack")
+        InterfaceText.line("ffmpegImport.musepack", "Musepack")
     }
 
     /// The name "WebM".
     private static var webM: String {
         // Translators: The name of the WebM format. Inside sentences about importing a file of that format.
-        String(localized: "WebM")
+        InterfaceText.line("ffmpegImport.webM", "WebM")
     }
 
     /// The name "Matroska".
     private static var matroska: String {
         // Translators: The name of the Matroska container format, as people say it. Inside sentences about importing a file of that format.
-        String(localized: "Matroska")
+        InterfaceText.line("ffmpegImport.matroska", "Matroska")
     }
 
     /// The name "AVI video".
     private static var avi: String {
         // Translators: The name of the AVI video format, as people say it. Inside sentences about importing a file of that format.
-        String(localized: "AVI video")
+        InterfaceText.line("ffmpegImport.avi", "AVI video")
     }
 
     /// The name "Flash video".
     private static var flashVideo: String {
         // Translators: The name of the Flash video format, as people say it. Inside sentences about importing a file of that format.
-        String(localized: "Flash video")
+        InterfaceText.line("ffmpegImport.flashVideo", "Flash video")
     }
 
     /// The name "RealMedia".
     private static var realMedia: String {
         // Translators: The name of the RealMedia format. Inside sentences about importing a file of that format.
-        String(localized: "RealMedia")
+        InterfaceText.line("ffmpegImport.realMedia", "RealMedia")
     }
 
     /// The name "Ogg".
     private static var ogg: String {
         // Translators: The name of the Ogg container format. Inside sentences about importing a file of that format.
-        String(localized: "Ogg")
+        InterfaceText.line("ffmpegImport.ogg", "Ogg")
     }
 
     /// The name of the format of a file named with `fileExtension` (in any
@@ -110,7 +110,7 @@ enum FFmpegImportWording {
         if let container { return kindName(of: container) }
         return fileExtension.isEmpty
             // Translators: Stands for the name of a file's format inside a sentence about importing it, when the file's name and its bytes name none, as in "TextMouth can't read “Clip” as this format."
-            ? String(localized: "this format")
+            ? InterfaceText.line("common.thisFormat", "this format")
             : fileExtension.uppercased()
     }
 
@@ -137,9 +137,9 @@ enum FFmpegImportWording {
     static func reinstallAdvice(importingBook: Bool = false) -> String {
         importingBook
             // Translators: Advice ending the notice about a book's files that TextMouth's own converter could not read because the converter is missing from the app.
-            ? String(localized: "Install TextMouth again, then import the book again.")
+            ? InterfaceText.line("ffmpegImport.reinstallAdvice.book", "Install TextMouth again, then import the book again.")
             // Translators: Advice ending the sentences about a file that TextMouth's own converter could not read because the converter is missing from the app.
-            : String(localized: "Install TextMouth again, then import the file again.")
+            : InterfaceText.line("ffmpegImport.reinstallAdvice.file", "Install TextMouth again, then import the file again.")
     }
 
     /// Why a file of the format `kind` was not imported when the converter
@@ -149,7 +149,7 @@ enum FFmpegImportWording {
     /// again, then import the file again."
     static func helperMissing(kind: String) -> String {
         // Translators: Why a file was not imported: the converter TextMouth carries is missing from the app, which only a damaged copy is. %@ is the name of the file's format, such as WMA or Matroska. Advice to install the app again follows.
-        let why = String(localized: "TextMouth can't convert \(kind) files because its converter is missing from the app.")
+        let why = InterfaceText.line("ffmpegImport.helperMissing", "TextMouth can't convert \(kind) files because its converter is missing from the app.")
         return SentenceWording.joined([why, reinstallAdvice()])
     }
 
@@ -165,14 +165,14 @@ enum FFmpegImportWording {
     /// ("AVI video") or "a" ("WMA").
     static func notRecognized(fileName: String, kind: String) -> String {
         // Translators: Why a file was not imported: its bytes are not of the format its name says, or are damaged. %1$@ is the file's name and %2$@ the name of the format its name says, such as WMA or AVI video.
-        String(localized: "TextMouth can't read “\(fileName)” as \(kind). It may be damaged, or named for another format.")
+        InterfaceText.line("ffmpegImport.notRecognized", "TextMouth can't read “\(fileName)” as \(kind). It may be damaged, or named for another format.")
     }
 
     /// Why a file was not imported that holds no sound, such as a video
     /// without a sound track: "“Clip.mkv” holds no sound to import."
     static func noSound(fileName: String) -> String {
         // Translators: Why a file was not imported: it holds no sound, such as a video without a sound track. %@ is the file's name.
-        String(localized: "“\(fileName)” holds no sound to import.")
+        InterfaceText.line("ffmpegImport.noSound", "“\(fileName)” holds no sound to import.")
     }
 
     /// Why a file was not imported whose sound is in a codec TextMouth's
@@ -181,7 +181,7 @@ enum FFmpegImportWording {
     /// audio TextMouth does not read."
     static func soundNotDecoded(fileName: String) -> String {
         // Translators: Why a file was not imported: its sound is in a codec TextMouth does not decode. %@ is the file's name.
-        String(localized: "TextMouth can't convert the sound of “\(fileName)”: it is in a kind of audio it does not read.")
+        InterfaceText.line("ffmpegImport.soundNotDecoded", "TextMouth can't convert the sound of “\(fileName)”: it is in a kind of audio it does not read.")
     }
 
     /// Why a file was not imported whose sound changes its rate or its
@@ -193,7 +193,7 @@ enum FFmpegImportWording {
     /// than TextMouth can follow."
     static func formChanged(fileName: String) -> String {
         // Translators: Why a file was not imported: its sound changes its sample rate or its number of channels partway through, by more than the converter can follow. %@ is the file's name.
-        String(localized: "TextMouth can't convert “\(fileName)”: its sound changes rate or channels partway through, by more than it can follow.")
+        InterfaceText.line("ffmpegImport.formChanged", "TextMouth can't convert “\(fileName)”: its sound changes rate or channels partway through, by more than it can follow.")
     }
 
     /// Why the iPhone stopped a conversion because the app's memory grew
@@ -224,7 +224,7 @@ enum FFmpegImportWording {
     /// sound is stored in one piece too large for TextMouth to decode."
     static func frameTooLarge(fileName: String) -> String {
         // Translators: Why a file was not imported: one frame of its sound holds more samples than TextMouth decodes at once. %@ is the file's name.
-        String(localized: "TextMouth can't convert “\(fileName)”: part of its sound is in one piece too large to decode.")
+        InterfaceText.line("ffmpegImport.frameTooLarge", "TextMouth can't convert “\(fileName)”: part of its sound is in one piece too large to decode.")
     }
 
     /// Why a file was not imported when the converter stopped unexpectedly
@@ -233,7 +233,7 @@ enum FFmpegImportWording {
     /// unexpectedly while reading “Lecture.wma”. The file may be damaged."
     static func crashed(fileName: String) -> String {
         // Translators: Why a file was not imported: TextMouth's converter stopped unexpectedly while reading it, as a damaged file can make it do. %@ is the file's name.
-        String(localized: "TextMouth's converter stopped unexpectedly while reading “\(fileName)”. The file may be damaged.")
+        InterfaceText.line("ffmpegImport.crashed", "TextMouth's converter stopped unexpectedly while reading “\(fileName)”. The file may be damaged.")
     }
 
     /// Why a file was not imported when the converter could not confine
@@ -243,7 +243,7 @@ enum FFmpegImportWording {
     /// the file. Install TextMouth again, then import the file again."
     static func notConfined(fileName: String) -> String {
         // Translators: Why a file was not imported: TextMouth's converter could not confine itself before reading it, so it did not read the file. %@ is the file's name. Advice to install the app again follows.
-        let why = String(localized: "TextMouth's converter could not make itself safe before reading “\(fileName)”, so it did not read the file.")
+        let why = InterfaceText.line("ffmpegImport.notConfined", "TextMouth's converter could not make itself safe before reading “\(fileName)”, so it did not read the file.")
         return SentenceWording.joined([why, reinstallAdvice()])
     }
 
@@ -252,7 +252,7 @@ enum FFmpegImportWording {
     /// end of “Lecture.wma”, so it could not be imported."
     static func endedEarly(fileName: String) -> String {
         // Translators: Why a file was not imported: TextMouth's converter ended before the end of its sound, with no error. %@ is the file's name.
-        String(localized: "TextMouth's converter stopped before the end of “\(fileName)”, so it could not be imported.")
+        InterfaceText.line("ffmpegImport.endedEarly", "TextMouth's converter stopped before the end of “\(fileName)”, so it could not be imported.")
     }
 
     /// Why a file was not imported when what the converter gave back for it
@@ -262,7 +262,7 @@ enum FFmpegImportWording {
     /// file again."
     static func unreadableStream(fileName: String) -> String {
         // Translators: Why a file was not imported: what TextMouth's converter gave back was not audio TextMouth reads, which only a damaged copy of the app could make. %@ is the file's name. Advice to install the app again follows.
-        let why = String(localized: "TextMouth's converter gave back audio of “\(fileName)” that TextMouth could not read.")
+        let why = InterfaceText.line("ffmpegImport.unreadableStream", "TextMouth's converter gave back audio of “\(fileName)” that TextMouth could not read.")
         return SentenceWording.joined([why, reinstallAdvice()])
     }
 
@@ -279,7 +279,7 @@ enum FFmpegImportWording {
     /// audio converted from Talk.webm failed its check: it lasts no time."
     static var convertedFileIsSilent: String {
         // Translators: The reason inside "The audio converted from <file> failed its check: <reason>.": the converted file has no length at all. Starts with a lowercase letter and has no full stop, which the sentence adds.
-        String(localized: "it lasts no time")
+        InterfaceText.line("ffmpegImport.convertedFileIsSilent", "it lasts no time")
     }
 
     /// What the iPhone's FFmpeg engine names its work by in its two sentences
@@ -300,10 +300,10 @@ enum FFmpegImportWording {
         // One file is named alone; several are counted and listed, set off by commas.
         if names.count == 1 {
             // Translators: Notice that part of one file's sound could not be decoded and the book keeps it as silence. %@ is the file's name in curly quotes.
-            return String(localized: "Part of \(leftOutFiles(names)) could not be decoded and is kept as silence.")
+            return InterfaceText.line("ffmpegImport.partlyDecodedNotice.silence", "Part of \(leftOutFiles(names)) could not be decoded and is kept as silence.")
         }
         // Translators: Notice that part of several files' sound could not be decoded and the book keeps it as silence. %1$lld is the number of files and %2$@ their names in curly quotes, listed as a sentence lists them.
-        return String(localized: "Part of \(names.count) files, \(leftOutList(names)), could not be decoded and is kept as silence.")
+        return InterfaceText.line("ffmpegImport.partlyDecodedNotice.files", "Part of \(number: names.count) files, \(leftOutList(names)), could not be decoded and is kept as silence.")
     }
 
     // MARK: - Tracks Left Out of a Book
@@ -318,7 +318,7 @@ enum FFmpegImportWording {
         let named = names.prefix(leftOutNamedLimit).map { "“\($0)”" }
         let more = names.count > named.count
             // Translators: Last item of a list of the files a book left out, counting the files not named. %lld is how many more there are.
-            ? [String(localized: "\(names.count - named.count) more")]
+            ? [InterfaceText.line("common.countMore", "\(number: names.count - named.count) more")]
             : []
         return CountWording.list(named + more)
     }
@@ -330,7 +330,7 @@ enum FFmpegImportWording {
         let listed = leftOutList(names)
         guard names.count != 1 else { return listed }
         // Translators: The files a book left out, counted and named, inside a sentence: the count, a comma, then their names. %1$lld is the number of files and %2$@ their names in curly quotes, listed as a sentence lists them.
-        return String(localized: "\(names.count) files, \(listed)")
+        return InterfaceText.line("ffmpegImport.leftOutFiles", "\(number: names.count) files, \(listed)")
     }
 
     /// What a book of several tracks says of `names`, files only FFmpeg
@@ -349,9 +349,9 @@ enum FFmpegImportWording {
             let files = leftOutFiles(names)
             let why = names.count == 1
                 // Translators: Notice that a book left out one file that only TextMouth's own converter reads, because the converter is missing from the app. %@ is the file's name in curly quotes. Advice to install the app again follows.
-                ? String(localized: "TextMouth left out \(files), which needs TextMouth's converter, missing from the app.")
+                ? InterfaceText.line("ffmpegImport.missing.needs", "TextMouth left out \(files), which needs TextMouth's converter, missing from the app.")
                 // Translators: Notice that a book left out several files that only TextMouth's own converter reads, because the converter is missing from the app. %@ is the files' count and names, such as "2 files, “a.avi” and “b.wmv”". Advice to install the app again follows.
-                : String(localized: "TextMouth left out \(files), which need TextMouth's converter, missing from the app.")
+                : InterfaceText.line("ffmpegImport.missing.need", "TextMouth left out \(files), which need TextMouth's converter, missing from the app.")
             return SentenceWording.joined([why, reinstallAdvice(importingBook: true)])
         }
     }
@@ -365,9 +365,9 @@ enum FFmpegImportWording {
         let files = leftOutFiles(names)
         return names.count == 1
             // Translators: Notice that a book left out one file that holds no sound TextMouth can read. %@ is the file's name in curly quotes.
-            ? String(localized: "TextMouth left out \(files), which holds no sound it can read.")
+            ? InterfaceText.line("ffmpegImport.leftOutHoldingNoSound.holds", "TextMouth left out \(files), which holds no sound it can read.")
             // Translators: Notice that a book left out several files that hold no sound TextMouth can read. %@ is the files' count and names, such as "2 files, “a.spx” and “b.spx”".
-            : String(localized: "TextMouth left out \(files), which hold no sound it can read.")
+            : InterfaceText.line("ffmpegImport.leftOutHoldingNoSound.hold", "TextMouth left out \(files), which hold no sound it can read.")
     }
 
     /// The notice of a book of several tracks that left out files only

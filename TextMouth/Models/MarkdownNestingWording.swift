@@ -10,6 +10,6 @@ enum MarkdownNestingWording {
     /// read (`MarkupGuard.Limits.deepestNesting`).
     static func nestsTooDeeply(limit: Int) -> String {
         // Translators: Verb phrase inside the sentences that refuse a text of Markdown that nests too deeply. %lld is the deepest nesting read, a count of levels. The subject comes before it and a clause follows.
-        String(localized: "nests quotes, lists, or emphasis more than \(limit) levels deep")
+        InterfaceText.line("markdownNesting.nestsTooDeeply", "nests quotes, lists, or emphasis more than \(number: limit) levels deep")
     }
 }

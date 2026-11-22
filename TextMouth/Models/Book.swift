@@ -80,39 +80,39 @@ enum BookFormat: String, Codable, CaseIterable {
         switch self {
         case .epub: return "EPUB"
         // Translators: Name of the book format of a plain text file (.txt), shown in a book's information, the format column, and the duplicate finder.
-        case .txt: return String(localized: "Plain Text")
+        case .txt: return InterfaceText.line("bookFormat.displayName.txt", "Plain Text")
         // Translators: Name of the book format of a Markdown file (.md), shown in a book's information, the format column, and the duplicate finder.
-        case .markdown: return String(localized: "Markdown")
+        case .markdown: return InterfaceText.line("common.markdown", "Markdown")
         case .html: return "HTML"
         // Translators: Name of the book format of a Safari web archive (.webarchive), shown in a book's information, the format column, and the duplicate finder.
-        case .webarchive: return String(localized: "Web Archive")
+        case .webarchive: return InterfaceText.line("bookFormat.displayName.webarchive", "Web Archive")
         case .ssml: return "SSML"
         // Translators: Name of the book format of a Microsoft Word document (.docx), shown in a book's information, the format column, and the duplicate finder.
-        case .docx: return String(localized: "Word Document")
+        case .docx: return InterfaceText.line("bookFormat.displayName.docx", "Word Document")
         // Translators: Name of the book format of a Rich Text Format file (.rtf), shown in a book's information, the format column, and the duplicate finder.
-        case .rtf: return String(localized: "Rich Text")
+        case .rtf: return InterfaceText.line("bookFormat.displayName.rtf", "Rich Text")
         // Translators: Name of the book format of a Rich Text Format package with attachments (.rtfd), shown in a book's information, the format column, and the duplicate finder.
-        case .rtfd: return String(localized: "Rich Text with Attachments")
+        case .rtfd: return InterfaceText.line("bookFormat.displayName.rtfd", "Rich Text with Attachments")
         // Translators: Name of the book format of an old Microsoft Word document (.doc), from Word 97 to 2003, shown in a book's information, the format column, and the duplicate finder.
-        case .doc: return String(localized: "Word 97-2003 Document")
+        case .doc: return InterfaceText.line("bookFormat.displayName.doc", "Word 97-2003 Document")
         // Translators: Name of the book format of an OpenDocument text file (.odt), shown in a book's information, the format column, and the duplicate finder.
-        case .odt: return String(localized: "OpenDocument Text")
+        case .odt: return InterfaceText.line("bookFormat.displayName.odt", "OpenDocument Text")
         // Translators: Name of the book format of a Word 2003 XML document, shown in a book's information, the format column, and the duplicate finder.
-        case .wordml: return String(localized: "Word 2003 XML")
+        case .wordml: return InterfaceText.line("bookFormat.displayName.wordml", "Word 2003 XML")
         // Translators: Name of the book format of a braille file (.brf or .brl), shown in a book's information, the format column, and the duplicate finder.
-        case .braille: return String(localized: "Braille")
+        case .braille: return InterfaceText.line("common.braille", "Braille")
         case .daisy: return "DAISY"
         case .pdf: return "PDF"
         // Translators: Name of the book format of an audiobook, a book made of audio files, shown in a book's information, the format column, and the duplicate finder.
-        case .audio: return String(localized: "Audio")
+        case .audio: return InterfaceText.line("common.audio", "Audio")
         // Translators: Name of the book format of a Kindle book in the MOBI format (MOBI is a format name), shown in a book's information, the format column, and the duplicate finder.
-        case .mobi: return String(localized: "Kindle Book (MOBI)")
+        case .mobi: return InterfaceText.line("bookFormat.displayName.mobi", "Kindle Book (MOBI)")
         // Translators: Name of the book format of a Kindle book in the KFX format (KFX is a format name), shown in a book's information, the format column, and the duplicate finder.
-        case .kfx: return String(localized: "Kindle Book (KFX)")
+        case .kfx: return InterfaceText.line("bookFormat.displayName.kfx", "Kindle Book (KFX)")
         // Translators: Name of the book format of a picture of a page (a PNG, JPEG, HEIC, or TIFF photograph or scan) that text recognition reads, shown in a book's information, the format column, and the duplicate finder.
-        case .picture: return String(localized: "Picture")
+        case .picture: return InterfaceText.line("bookFormat.displayName.picture", "Picture")
         // Translators: Name of the book format of a comic book archive (.cbz), a ZIP of pictures (CBZ is a format name), shown in a book's information, the format column, and the duplicate finder.
-        case .comic: return String(localized: "Comic Book Archive (CBZ)")
+        case .comic: return InterfaceText.line("bookFormat.displayName.comic", "Comic Book Archive (CBZ)")
         }
     }
 
@@ -1181,7 +1181,7 @@ struct Book: Identifiable, Codable, Hashable, KeepsUnknownKeys {
     nonisolated static func displayAuthor(_ author: String) -> String {
         author == unknownAuthor
             // Translators: The author shown for a book whose author nothing names, in the library's author column and a book's information.
-            ? String(localized: "Unknown")
+            ? InterfaceText.line("book.unknownAuthor", "Unknown")
             : author
     }
 
@@ -2763,7 +2763,7 @@ struct Bookmark: Identifiable, Codable, Hashable, KeepsUnknownKeys {
     /// says it after a move to it: "Bookmark 3". Localized (FR35).
     var name: String {
         // Translators: A bookmark's name, by its number: the first line of its row in the Bookmarks list, and what VoiceOver says after a move to it. %@ is the bookmark's number, an identifier written without digit grouping.
-        String(localized: "Bookmark \(String(number))")
+        InterfaceText.line("common.bookmarkValue", "Bookmark \(String(number))")
     }
 
     /// Concise label shared by bookmark rows and the bookmarks rotor, such as
@@ -2781,16 +2781,16 @@ struct Bookmark: Identifiable, Codable, Hashable, KeepsUnknownKeys {
         switch (headingText?.nonBlank, label.isEmpty ? nil : label) {
         case let (heading?, note?):
             // Translators: VoiceOver label of a bookmark's row in the Bookmarks list and its rotor. %1$@ is the bookmark's number, an identifier written without digit grouping; %2$@ the heading it is under; %3$@ its note, written by the listener; %4$@ the day it was added, such as October 9, 2026.
-            return String(localized: "Bookmark \(String(number)), \(heading), Note: \(note), added \(dateText)")
+            return InterfaceText.line("bookmark.accessibilityLabel.headingNoteAdded", "Bookmark \(String(number)), \(heading), Note: \(note), added \(dateText)")
         case let (heading?, nil):
             // Translators: VoiceOver label of a bookmark's row in the Bookmarks list and its rotor, for a bookmark with no note. %1$@ is the bookmark's number, an identifier written without digit grouping; %2$@ the heading it is under; %3$@ the day it was added, such as October 9, 2026.
-            return String(localized: "Bookmark \(String(number)), \(heading), added \(dateText)")
+            return InterfaceText.line("bookmark.accessibilityLabel.headingAdded", "Bookmark \(String(number)), \(heading), added \(dateText)")
         case let (nil, note?):
             // Translators: VoiceOver label of a bookmark's row in the Bookmarks list and its rotor, for a bookmark under no heading. %1$@ is the bookmark's number, an identifier written without digit grouping; %2$@ its note, written by the listener; %3$@ the day it was added, such as October 9, 2026.
-            return String(localized: "Bookmark \(String(number)), Note: \(note), added \(dateText)")
+            return InterfaceText.line("bookmark.accessibilityLabel.numberNoteAdded", "Bookmark \(String(number)), Note: \(note), added \(dateText)")
         case (nil, nil):
             // Translators: VoiceOver label of a bookmark's row in the Bookmarks list and its rotor, for a bookmark with no note under no heading. %1$@ is the bookmark's number, an identifier written without digit grouping; %2$@ the day it was added, such as October 9, 2026.
-            return String(localized: "Bookmark \(String(number)), added \(dateText)")
+            return InterfaceText.line("bookmark.accessibilityLabel.numberAdded", "Bookmark \(String(number)), added \(dateText)")
         }
     }
 

@@ -244,9 +244,9 @@ struct LibraryViewDefinitionList: Equatable, Sendable {
             // string, so a translation may put "Copy" before the name.
             let named: (String) -> String = number == 1
                 // Translators: Name Duplicate gives a copy of a Library view. %@ is the name of the view that was copied, such as "Unopened"; the copy is "Unopened Copy".
-                ? { String(localized: "\($0) Copy") }
+                ? { InterfaceText.line("libraryViewDefinitionList.copyName.first", "\($0) Copy") }
                 // Translators: Name Duplicate gives a second or later copy of a Library view, the first copy's name being taken. %1$@ is the name of the view that was copied. %2$@ is the copy's number, 2 or more, an identifier written without digit grouping.
-                : { String(localized: "\($0) Copy \(String(number))") }
+                : { InterfaceText.line("libraryViewDefinitionList.copyName.numbered", "\($0) Copy \(String(number))") }
             // What the pattern adds to a name, so the base is cut to leave
             // room for it under the name limit.
             let room = max(LibraryViewDefinition.nameLimit - named("").count, 0)

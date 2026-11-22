@@ -160,11 +160,11 @@ struct PagePosition: Equatable, Sendable {
         // "Page 12 of 1200", so both numbers read alike.
         if let page {
             // Translators: Where the reader is in a book that has pages. %1$@ is the page's label (a number or a roman numeral, an identifier written without digit grouping); %2$@ is the number of pages, written without digit grouping.
-            return String(localized: "Page \(page.label) of \(String(total))")
+            return InterfaceText.line("pagePosition.label.numberOfTotal", "Page \(page.label) of \(String(total))")
         }
         if let firstLabel {
             // Translators: Where the reader is before the first page of a book that has pages. %@ is the first page's label, an identifier.
-            return String(localized: "Before page \(firstLabel)")
+            return InterfaceText.line("pagePosition.label.before", "Before page \(firstLabel)")
         }
         return ""
     }

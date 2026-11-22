@@ -25,7 +25,7 @@ enum InProcessEngineWording {
         // owner names its work; the watchdog words its reason) until those convert.
         let reason = WatchedProcess.KillReason.tookTooLong(seconds: max(1, seconds)).words // l10n: no (inside this sentence until the watchdog's area converts)
         // Translators: Said when a library call inside the iPhone app ran too long and was abandoned. %1$@ is the work's name, such as "the braille translation" (English until its area converts); %2$@ is why it was stopped, such as "it ran longer than 11 seconds" (English until the watchdog's area converts). Read after an import's own words.
-        return String(localized: "TextMouth stopped \(work) because \(reason), and won't try again until TextMouth is closed and opened again.")
+        return InterfaceText.line("inProcessEngine.abandoned", "TextMouth stopped \(work) because \(reason), and won't try again until TextMouth is closed and opened again.")
     }
 
     /// A call refused because an earlier one was abandoned: "TextMouth
@@ -33,6 +33,6 @@ enum InProcessEngineWording {
     /// and won't try again until TextMouth is closed and opened again."
     static func refused(_ work: String) -> String {
         // Translators: Said when a library call inside the iPhone app is refused because an earlier one was abandoned for taking too long. %@ is the work's name, such as "the braille translation" (English until its area converts). Read after an import's own words.
-        String(localized: "TextMouth stopped \(work) earlier because it took too long, and won't try again until TextMouth is closed and opened again.")
+        InterfaceText.line("inProcessEngine.refused", "TextMouth stopped \(work) earlier because it took too long, and won't try again until TextMouth is closed and opened again.")
     }
 }

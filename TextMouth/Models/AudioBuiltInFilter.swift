@@ -203,7 +203,7 @@ enum AudioBuiltInFilter: Equatable, Sendable {
                 throw AudioFilterError.badValue(
                     filter: "loudnorm", option: "linear", value: values["linear"] ?? "false",
                     // Translators: What the loudnorm filter's linear option accepts, said at the end of a refusal such as "The loudnorm filter's linear can't be “false”: <this>." Written without its full stop.
-                    expected: String(localized: "TextMouth's own loudnorm normalizes with one gain, so it takes only true")
+                    expected: InterfaceText.line("audioBuiltInFilter.ownLoudnormNormalizes", "TextMouth's own loudnorm normalizes with one gain, so it takes only true")
                 )
             }
             // LRA is taken as ffmpeg takes it, and has nothing to do in
@@ -399,9 +399,9 @@ enum AudioBuiltInFilter: Equatable, Sendable {
             let high = AudioBuiltInFilter.written(range.upperBound)
             return whole
                 // Translators: What a whole-number option of a filter accepts, said at the end of a refusal such as "The afade filter's duration can't be “x”: <this>." Written without its full stop. %1$@ is the lowest number allowed and %2$@ the highest, already written.
-                ? String(localized: "give a whole number from \(low) to \(high)")
+                ? InterfaceText.line("valueReader.expectedNumber.whole", "give a whole number from \(low) to \(high)")
                 // Translators: What a number option of a filter accepts, said at the end of a refusal such as "The volume filter's volume can't be “x”: <this>." Written without its full stop. %1$@ is the lowest number allowed and %2$@ the highest, already written.
-                : String(localized: "give a number from \(low) to \(high)")
+                : InterfaceText.line("valueReader.expectedNumber.give", "give a number from \(low) to \(high)")
         }
 
         /// The option `name` as a linear amplitude within `range`: a plain
@@ -417,7 +417,7 @@ enum AudioBuiltInFilter: Equatable, Sendable {
             }
             guard let value, value.isFinite, range.contains(value) else {
                 // Translators: What a volume option of a filter accepts, said at the end of a refusal such as "The volume filter's volume can't be “x”: <this>." Written without its full stop. The examples are filter syntax.
-                throw bad(name, text, expected: String(localized: "give a number, such as 0.5, or decibels, such as -6dB"))
+                throw bad(name, text, expected: InterfaceText.line("valueReader.amplitude", "give a number, such as 0.5, or decibels, such as -6dB"))
             }
             return value
         }
@@ -433,7 +433,7 @@ enum AudioBuiltInFilter: Equatable, Sendable {
             guard let text = values[name] else { return nil }
             guard let seconds = Self.duration(text.trimmingCharacters(in: .whitespaces)), range.contains(seconds) else {
                 // Translators: What a time option of a filter accepts, said at the end of a refusal such as "The afade filter's duration can't be “x”: <this>." Written without its full stop. The examples are filter syntax.
-                throw bad(name, text, expected: String(localized: "give a time such as 2.5, 250ms, or 0:01:30"))
+                throw bad(name, text, expected: InterfaceText.line("valueReader.optionalSeconds", "give a time such as 2.5, 250ms, or 0:01:30"))
             }
             return seconds
         }
@@ -444,7 +444,7 @@ enum AudioBuiltInFilter: Equatable, Sendable {
             guard let text = values[name] else { return fallback }
             guard let choice = Choice(rawValue: text.trimmingCharacters(in: .whitespaces)) else {
                 // Translators: What a choice option of a filter accepts, said at the end of a refusal such as "The afade filter's type can't be “x”: <this>." Written without its full stop. %@ is the allowed values, filter syntax, as a list such as "in, out".
-                throw bad(name, text, expected: String(localized: "give one of \(Choice.allCases.map(\.rawValue).formatted(.list(type: .and, width: .narrow)))"))
+                throw bad(name, text, expected: InterfaceText.line("valueReader.choice", "give one of \(Choice.allCases.map(\.rawValue).formatted(.list(type: .and, width: .narrow)))"))
             }
             return choice
         }
@@ -456,7 +456,7 @@ enum AudioBuiltInFilter: Equatable, Sendable {
             case "1", "true", "yes", "on": return true
             case "0", "false", "no", "off": return false
             // Translators: What an on-or-off option of a filter accepts, said at the end of a refusal such as "The loudnorm filter's dual_mono can't be “x”: <this>." Written without its full stop.
-            default: throw bad(name, text, expected: String(localized: "give true or false"))
+            default: throw bad(name, text, expected: InterfaceText.line("valueReader.flag.other", "give true or false"))
             }
         }
 
