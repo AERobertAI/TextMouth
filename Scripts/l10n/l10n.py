@@ -52,6 +52,8 @@ sys.path.insert(0, str(HERE.parent / "agents"))
 import catalog  # noqa: E402  (imported by path, after sys.path is set)
 import repo_paths  # noqa: E402
 import glossary as glossarylib  # noqa: E402
+import ids as idslib  # noqa: E402
+import interface_calls  # noqa: E402
 import merge  # noqa: E402
 import reach  # noqa: E402
 import translate  # noqa: E402
@@ -89,6 +91,10 @@ LEFT_OUT_FILE = "left-out.json"
 # that says what the run found (both defined by typecheck.py; repeated here because that script is run, not imported).
 STRINGS_FOLDER_LINE = "Strings folder: "
 STRINGS_MANIFEST = "manifest.json"
+# The folder, inside a strings folder, where `sync` writes the `.stringsdata` files of the converted calls (FR39).
+CONVERTED_FOLDER = "converted"
+# How many of the converted calls' problems a refusal lists.
+CONVERTED_PROBLEMS_SHOWN = 15
 # The configuration's defaults: no language ships until Spanish is translated; the English budget in bytes (the
 # user's 150 KB for the interface text) only reports until the cutting is done.
 # The configuration has no `syncPaths`: the globs of the converted files are in SYNC_PATHS_FILE (see load_sync_paths).
@@ -299,6 +305,43 @@ def check_manifests(manifests):
         if found != expected:
             raise Refused(f"the {PLATFORM_NAMES[manifest['platform']]} run wrote {found} .stringsdata files for {expected} Swift files "
                           f"({manifest['folder']}): two files of one name, or a build that stopped early; its strings would be incomplete")
+
+
+def add_converted_calls(manifests, root=None):
+    """The transition's half of a sync (FR39): the `InterfaceText.line` calls of each run's sources, written as `.stringsdata`
+    files beside the compiler's, so that `xcstringstool sync` keeps the keys and notes of the files already converted (the
+    compiler no longer sees their keys, and the catalog must not mark them stale).
+
+    Each call is first checked against `ids.json` (read from `root`, this checkout's by default): its ID must be the ID of its
+    key, or of the right split, its English the key character for character, and it must be one plain literal each with a
+    note above. A Refused names the problems and nothing is written; otherwise one file for each source that holds calls is
+    written under the run's strings folder in CONVERTED_FOLDER, and listed in the run's `files`, so that the places and
+    notes are read like the compiler's. Returns how many calls were read (counting a file both apps compile once for each)."""
+    root = Path(root or ROOT)
+    table = idslib.load_table(idslib.table_path(root))
+    retired = idslib.retired_ids(root)
+    total, added = 0, []
+    problems = []
+    for manifest in manifests:
+        source_root = Path(manifest["sourceRoot"])
+        by_file = interface_calls.calls_in_tree(source_root)
+        problems += interface_calls.problems_of(source_root, by_file, table, retired)
+        added.append((manifest, source_root, by_file))
+        total += sum(len(calls) for calls in by_file.values())
+    if problems:
+        shown = sorted(set(problems))
+        raise Refused(f"{number(len(shown))} problems in the InterfaceText.line calls, so nothing was synced:\n"
+                      + "\n".join(shown[:CONVERTED_PROBLEMS_SHOWN])
+                      + (f"\nand {number(len(shown) - CONVERTED_PROBLEMS_SHOWN)} more" if len(shown) > CONVERTED_PROBLEMS_SHOWN else ""))
+    for manifest, source_root, by_file in added:
+        for name, calls in by_file.items():
+            relative = f"{CONVERTED_FOLDER}/{name.replace('/', '__')}.stringsdata"
+            target = Path(manifest["folder"]) / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            data = interface_calls.stringsdata(str(source_root / name), calls)
+            target.write_text(json.dumps(data, indent=1, sort_keys=True, ensure_ascii=False) + "\n", encoding="utf-8")
+            manifest["files"].append(relative)
+    return total
 
 
 def read_stringsdata(path):
@@ -538,6 +581,10 @@ def sync_manifests(args, manifests, say, output=None):
     """The sync itself, from two strings folders' manifests: checks them, merges them into each catalog that has a table in
     them, writes the locations, and prints what changed. Returns the exit status."""
     check_manifests(manifests)
+    # The calls of converted files (FR39), checked and written as .stringsdata files, before anything else is written.
+    converted = add_converted_calls(manifests)
+    if converted:
+        say(f"read {number(converted)} InterfaceText.line calls and checked each against ids.json")
     config = load_config(args.config, ROOT)
     in_sync_paths = path_matcher(config["syncPaths"])
     places, by_platform, everything, files = collect(sorted(manifests, key=lambda m: m["platform"]), in_sync_paths)
@@ -577,7 +624,9 @@ def sync_manifests(args, manifests, say, output=None):
     left_out = {table: sorted(everything[table] - set(places.get(table, {}))) for table in everything}
     say_left_out(say, config, found, left_out)
     per_app = ", ".join(f"{PLATFORM_NAMES[p]} {number(sum(len(k) for k in by_platform[p].values()))}" for p in PLATFORMS)
-    say(f"kept {number(sum(found.values()))} strings of {number(len(files) - 1)} converted files ({per_app}; some are in both)")
+    # The files the compiler wrote: all but the placeholder first in the list and the converted calls' own.
+    xcode_files = sum(1 for file in files[1:] if Path(file).parent.name != CONVERTED_FOLDER)
+    say(f"kept {number(sum(found.values()))} strings of {number(xcode_files)} converted files ({per_app}; some are in both)")
     for table, report in reports.items():
         say(f"{table}: {number(len(report.added))} added, {number(len(report.stale))} became stale, "
             f"{number(len(report.revived))} no longer stale, {number(len(report.removed))} removed")
