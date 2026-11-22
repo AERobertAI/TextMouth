@@ -75,6 +75,12 @@ class Literal:
     findings: Tuple[str, ...] = ()  # what the conversion must restructure, see classify.findings_of
     needs_comment: bool = False    # a SwiftUI literal the compiler extracts with no comment, see classify.needs_comment
     note_problem: str = ""         # what is wrong with the literal's translator's note, see classify.note_problem
+    # The literal's pieces in order: each stretch of its own text (escapes resolved) as a str, each interpolation as None;
+    # the interpolations' places as (offset of its backslash, offset just past its closing parenthesis). Together they let
+    # a tool tell a `%@` the code wrote from the placeholder an interpolation leaves in `text`. Multi-line literals
+    # dedent as a whole, so their pieces are not the text's; a tool that needs them refuses a multi-line literal.
+    pieces: Tuple[Optional[str], ...] = ()
+    interps: Tuple[Tuple[int, int], ...] = ()
 
 
 class Lexer:
@@ -309,6 +315,9 @@ class Lexer:
         escape = "\\" + "#" * hashes
         stop = self._stop_pattern(close, escape, multiline)
         pieces: List[str] = []
+        # Which entries of `pieces` are interpolations, and where each one lies, for `Literal.pieces` and `Literal.interps`.
+        holes: Set[int] = set()
+        spans: List[Tuple[int, int]] = []
         has_interp = False
         while i < n:
             m = stop.search(s, i)
@@ -331,10 +340,13 @@ class Lexer:
             if s[k] == "(":
                 # An interpolation: lex its code, which may hold strings of its own.
                 has_interp = True
+                holes.add(len(pieces))
                 pieces.append(PLACEHOLDER)
                 # The frame of its own keeps a colon or comma inside it from changing the label or
                 # the argument index of the call the literal is an argument of.
+                hole_start = i
                 i = self._lex_code(k + 1, ")", list(stack) + [{"ch": "i"}], True)
+                spans.append((hole_start, i))
             elif s[k] == "u" and k + 1 < n and s[k + 1] == "{" and s.find("}", k) > 0:
                 end = s.find("}", k)
                 try:
@@ -355,6 +367,10 @@ class Lexer:
         if multiline:
             text = dedent_multiline(text).replace(_CONTINUATION + "\n", "")
         self._record(start, i, text, has_interp, multiline, stack, in_interp)
+        # The literal just recorded is the last of the list (an interpolation's own literals were recorded before it).
+        recorded = self.out[-1]
+        recorded.pieces = tuple(None if index in holes else piece for index, piece in enumerate(pieces))
+        recorded.interps = tuple(spans)
         return i
 
     def _record(self, start: int, end: int, text: str, has_interp: bool, multiline: bool,
