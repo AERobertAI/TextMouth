@@ -42,6 +42,7 @@ import argparse
 import hashlib
 import json
 import lzma
+import os
 import re
 import struct
 import sys
@@ -653,6 +654,28 @@ def refuse(error):
     return 1
 
 
+def write_atomically(path, data):
+    """Writes `data` to `path` so that nobody ever sees, or holds a mapping of, a half-written file.
+
+    The bytes go to a temporary file beside `path` and `os.replace` puts it in place in one step. The engine
+    memory-maps the pack, and a file rewritten in place under a running process can end that process with SIGBUS;
+    a replaced file leaves the old one whole for whoever has it mapped. The temporary file is removed on any failure
+    (and only then: on success it is `path`).
+    """
+    path = Path(path)
+    temporary = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    try:
+        temporary.write_bytes(data if isinstance(data, bytes) else data.encode("utf-8"))
+        os.replace(temporary, path)
+    except BaseException:
+        # Whatever stopped the write (a full disk, a signal), leave nothing behind and let the failure through.
+        try:
+            temporary.unlink()
+        except OSError:
+            pass
+        raise
+
+
 def command_build(args):
     """`build`: refuses or writes the pack and its stamp, or skips when the stamp says nothing changed."""
     stamp = stamp_of(args.catalog, args.ids, args.max_id_length)
@@ -661,10 +684,11 @@ def command_build(args):
         return 0
     plan = build_plan(args.catalog, args.ids, args.max_id_length)
     data = build_bytes(plan)
-    Path(args.out).write_bytes(data)
+    write_atomically(args.out, data)
+    # The stamp comes only after the pack is in place, so a stamp never vouches for a pack that is not there.
     if not args.no_stamp:
-        stamp_path(args.out).write_text(json.dumps({**stamp, "pack": hashlib.sha256(data).hexdigest()}, sort_keys=True) + "\n",
-                                        encoding="utf-8")
+        write_atomically(stamp_path(args.out),
+                         json.dumps({**stamp, "pack": hashlib.sha256(data).hexdigest()}, sort_keys=True) + "\n")
     print(f"wrote {args.out}: {len(data):,} bytes, {len(plan.ids):,} IDs, {len(plan.blobs) - 2} languages")
     return 0
 
@@ -672,7 +696,7 @@ def command_build(args):
 def command_corrupt_fixture(args):
     """`corrupt-fixture`: writes the test-only pack whose English blob is not UTF-8."""
     plan = build_plan(args.catalog, args.ids, args.max_id_length)
-    Path(args.out).write_bytes(build_corrupt_utf8_pack_for_tests(plan))
+    write_atomically(args.out, build_corrupt_utf8_pack_for_tests(plan))
     print(f"wrote {args.out}: A CORRUPT PACK, for tests only")
     return 0
 
