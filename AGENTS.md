@@ -66,7 +66,7 @@ The agent:
    The rest of the docs stay the documentation pass's, from the agent's report.
 5. Before reporting, rebases onto `main`, keeping both sides of adjacent-line conflicts (common in `ConfigService`, `SettingsViewModel`, `MenuCommands`, `AppDelegate.applicationShouldTerminate`, and the config test fixtures).
    It type-checks the tests, requests one last train naming every area its change touches, records that train's exact `Executed N tests, with S tests skipped and F failures` line, and releases its claims.
-   When its change could alter the Release build or the app's size, it also runs `make check SIGN_APP=true` (The make check gate, in [Building TextMouth](docs/developer/building.md)).
+   When its change could alter the Release build or the app's size, it also runs `make check` (The make check gate, in [Building TextMouth](docs/developer/building.md)).
 6. Reports: the branch; the commits with hashes and subjects; the files changed; the train's exact result; what it could not verify; its decisions and assumptions; and its findings posted on the board.
    It also reports the documentation wording its changes need, naming the page under `docs/` each sentence belongs on, and the sections `doclib affected` lists for its branch.
 
@@ -81,7 +81,7 @@ The agent:
   Rebase an old branch before any hosted test run on this Mac, or the test host can take the user's AirPods.
   The mechanisms of both are in [The hosted-test sandbox](docs/architecture/state/hosted-test-sandbox.md).
 - Check a braille rule that an agent states against BANA, ICEB, or `lou_translate` on the repo's tables, and build test cells from liblouis forward, not by hand.
-- Run every `make check` with `SIGN_APP=true`: without it `codesign` waits on the login keychain while holding the heavy lock.
+- `make check` builds with `SIGN_APP=:` and never asks for the keychain; it needs no `SIGN_APP` of its own.
 - Write times from `date`, never from a guess.
 
 ## Where things stand
