@@ -714,77 +714,77 @@ enum SubstitutionsWording {
     /// The switch's title and label.
     static var enableTitle: String {
         // Translators: Title and VoiceOver label of the switch in the Substitutions settings that turns text substitution rules on.
-        String(localized: "Enable text substitutions")
+        InterfaceText.line("substitutions.enableTitle", "Enable text substitutions")
     }
     /// The switch's hint.
     static var enableHint: String {
         // Translators: VoiceOver hint of the Enable text substitutions switch in the Substitutions settings.
-        String(localized: "Applies the rules to text before it is spoken")
+        InterfaceText.line("substitutions.enableHint", "Applies the rules to text before it is spoken")
     }
     /// The button that adds a rule.
     static var addRuleTitle: String {
         // Translators: Title of the button in the Substitutions settings that opens the editor for a new substitution rule.
-        String(localized: "Add Rule")
+        InterfaceText.line("substitutions.addRuleTitle", "Add Rule")
     }
     /// The same button's VoiceOver label.
     static var addRuleLabel: String {
         // Translators: VoiceOver label of the Add Rule button in the Substitutions settings.
-        String(localized: "Add a new substitution rule")
+        InterfaceText.line("substitutions.addRuleLabel", "Add a new substitution rule")
     }
     /// The button that resets the rules.
     static var resetTitle: String {
         // Translators: Title of the button in the Substitutions settings that replaces every rule with TextMouth's default rules, after asking.
-        String(localized: "Reset to Defaults")
+        InterfaceText.line("common.resetToDefaults", "Reset to Defaults")
     }
     /// The same button's VoiceOver label.
     static var resetLabel: String {
         // Translators: VoiceOver label of the Reset to Defaults button in the Substitutions settings.
-        String(localized: "Reset all rules to factory defaults")
+        InterfaceText.line("substitutions.resetLabel", "Reset all rules to factory defaults")
     }
     /// Reset to Defaults' hint: what it does, and that it asks first.
     static var resetHint: String {
         // Translators: VoiceOver hint of the Reset to Defaults button in the Substitutions settings.
-        String(localized: "Asks first, then replaces every rule with the defaults.")
+        InterfaceText.line("substitutions.resetHint", "Asks first, then replaces every rule with the defaults.")
     }
     /// The title of the alert Reset to Defaults asks with.
     static var resetConfirmationTitle: String {
         // Translators: Title of the question asked before the Substitutions settings replace every rule with the defaults.
-        String(localized: "Reset Text Rules to Defaults?")
+        InterfaceText.line("substitutions.resetConfirmationTitle", "Reset Text Rules to Defaults?")
     }
     /// The alert's button that goes ahead.
     static var resetButton: String {
         // Translators: Title of the button that goes ahead in the question asked before the Substitutions settings replace every rule with the defaults.
-        String(localized: "Reset")
+        InterfaceText.line("common.reset", "Reset")
     }
     /// A button that cancels.
     static var cancelTitle: String {
         // Translators: Title of a button that cancels, in the Substitutions settings' question and rule editor.
-        String(localized: "Cancel")
+        InterfaceText.line("common.cancel", "Cancel")
     }
     /// A button that dismisses an alert.
     static var okTitle: String {
         // Translators: Title of the button that dismisses the alert telling the result of importing or exporting pronunciation rules.
-        String(localized: "OK")
+        InterfaceText.line("common.ok", "OK")
     }
     /// What the list says while it holds no rule.
     static var emptyHeading: String {
         // Translators: Shown in the Substitutions settings while the list holds no rule.
-        String(localized: "No substitution rules.")
+        InterfaceText.line("substitutions.emptyHeading", "No substitution rules.")
     }
     /// The line under that.
     static var emptyHint: String {
         // Translators: Shown under "No substitution rules." in the Substitutions settings.
-        String(localized: "Add rules to change how text is spoken. They apply top to bottom.")
+        InterfaceText.line("substitutions.emptyHint", "Add rules to change how text is spoken. They apply top to bottom.")
     }
     /// A rule's context-menu item that turns it off.
     static var disableTitle: String {
         // Translators: Title of the context menu item that turns a substitution rule off.
-        String(localized: "Disable")
+        InterfaceText.line("substitutions.disableTitle", "Disable")
     }
     /// A rule's context-menu item that turns it on.
     static var enableRuleTitle: String {
         // Translators: Title of the context menu item that turns a substitution rule on.
-        String(localized: "Enable")
+        InterfaceText.line("substitutions.enableRuleTitle", "Enable")
     }
 
     // MARK: Counts and Announcements
@@ -799,42 +799,42 @@ enum SubstitutionsWording {
         let defaults = defaultRulesCounted(defaultCount)
         return SentenceWording.joined([
             // Translators: First sentence of the message of the question asked before the Substitutions settings replace every rule with the defaults. %1$@ is the number of rules in the list with their noun, such as "15 rules", and %2$@ is the number of default rules with their noun, such as "16 default rules".
-            String(localized: "The \(rules) in the list will be replaced by TextMouth's \(defaults)."),
+            InterfaceText.line("substitutions.resetConfirmationMessage.replaced", "The \(rules) in the list will be replaced by TextMouth's \(defaults)."),
             // Translators: Last sentence of the message of the question asked before the Substitutions settings replace every rule with the defaults.
-            String(localized: "Rules you added or changed will be lost."),
+            InterfaceText.line("substitutions.resetConfirmationMessage.changed", "Rules you added or changed will be lost."),
         ])
     }
     /// `count` rules: "1 rule", "15 rules".
     private static func rulesCounted(_ count: Int) -> String {
         // Translators: A count of substitution rules inside a longer sentence. %lld is the number of rules.
-        String(localized: "\(count) rules")
+        InterfaceText.line("substitutions.rulesCounted", "\(number: count) rules")
     }
     /// `count` default rules: "1 default rule", "16 default rules".
     private static func defaultRulesCounted(_ count: Int) -> String {
         // Translators: A count of TextMouth's default substitution rules inside a longer sentence. %lld is the number of default rules.
-        String(localized: "\(count) default rules")
+        InterfaceText.line("substitutions.defaultRulesCounted", "\(number: count) default rules")
     }
     /// The footer's count of the rules: "1 rule (1 enabled)", "15 rules (12
     /// enabled)".
     static func ruleCount(rules: Int, enabled: Int) -> String {
         // Translators: The footer of the Substitutions settings: how many rules the list holds and how many of them are turned on. %1$lld is the number of rules, which the noun agrees with, and %2$@ is the number enabled.
-        String(localized: "\(rules) rules (\(enabled.formatted()) enabled)")
+        InterfaceText.line("substitutions.ruleCount", "\(number: rules) rules (\(enabled.formatted()) enabled)")
     }
     /// The footer's help on reordering, naming both ways to do it and the
     /// Move commands exactly as their buttons and VoiceOver actions do.
     static func reorderInstructions(moveUp: String, moveDown: String) -> String {
         // Translators: Help in the footer of the Substitutions settings on reordering rules. %1$@ and %2$@ are the titles of the Move Up and Move Down commands, which stay as those commands show them.
-        String(localized: "Use \(moveUp) and \(moveDown), or drag, to reorder. Rules apply top to bottom.")
+        InterfaceText.line("substitutions.reorderInstructions", "Use \(moveUp) and \(moveDown), or drag, to reorder. Rules apply top to bottom.")
     }
     /// What VoiceOver says after a rule moves, counting positions from one.
     static func moved(ruleName: String, position: Int, count: Int) -> String {
         // Translators: Announcement after a substitution rule moves in the list. %1$@ is the rule's name, %2$@ is its new place counting from one, and %3$@ is how many rules the list holds.
-        String(localized: "\(ruleName) moved to position \(position.formatted()) of \(count.formatted())")
+        InterfaceText.line("substitutions.moved", "\(ruleName) moved to position \(position.formatted()) of \(count.formatted())")
     }
     /// What VoiceOver says after a delete.
     static func deleted(ruleName: String) -> String {
         // Translators: Announcement after a substitution rule is deleted. %@ is the rule's name.
-        String(localized: "\(ruleName) deleted")
+        InterfaceText.line("common.valueDeleted", "\(ruleName) deleted")
     }
 
     // MARK: The Rule Commands
@@ -842,22 +842,22 @@ enum SubstitutionsWording {
     /// The Edit command's name.
     static var editTitle: String {
         // Translators: Name of the command that opens a substitution rule's editor: a row button's label and tooltip, a VoiceOver action, and a context menu item.
-        String(localized: "Edit")
+        InterfaceText.line("common.edit", "Edit")
     }
     /// The Move Up command's name.
     static var moveUpTitle: String {
         // Translators: Name of the command that moves a substitution rule up the list: a row button's label and tooltip, a VoiceOver action, and a context menu item.
-        String(localized: "Move Up")
+        InterfaceText.line("common.moveUp", "Move Up")
     }
     /// The Move Down command's name.
     static var moveDownTitle: String {
         // Translators: Name of the command that moves a substitution rule down the list: a row button's label and tooltip, a VoiceOver action, and a context menu item.
-        String(localized: "Move Down")
+        InterfaceText.line("common.moveDown", "Move Down")
     }
     /// The Delete command's name.
     static var deleteTitle: String {
         // Translators: Name of the command that deletes a substitution rule: a row button's label and tooltip, a VoiceOver action, and a context menu item.
-        String(localized: "Delete")
+        InterfaceText.line("common.delete", "Delete")
     }
 
     // MARK: A Rule's Row
@@ -865,62 +865,62 @@ enum SubstitutionsWording {
     /// What a row shows for a replacement of nothing.
     static var skipMark: String {
         // Translators: Shown in a substitution rule's row where its replacement would be, when the rule skips the matched text.
-        String(localized: "(skip)")
+        InterfaceText.line("substitutions.skipMark", "(skip)")
     }
     /// The small tag of a rule that is a regular expression.
     static var regexTag: String {
         // Translators: A small tag in a substitution rule's row: the rule's pattern is a regular expression. Short for regular expression, in lower case.
-        String(localized: "regex")
+        InterfaceText.line("substitutions.regexTag", "regex")
     }
     /// The small tag of a rule that is case sensitive.
     static var caseTag: String {
         // Translators: A small tag in a substitution rule's row: the rule is case sensitive. A capital and a small letter of the language's alphabet.
-        String(localized: "Aa")
+        InterfaceText.line("substitutions.caseTag", "Aa")
     }
     /// The small tag of a rule that matches whole words only.
     static var wordTag: String {
         // Translators: A small tag in a substitution rule's row: the rule matches whole words only. In lower case.
-        String(localized: "word")
+        InterfaceText.line("substitutions.wordTag", "word")
     }
     /// What a rule is called when it has neither a name nor a pattern.
     static var untitledRule: String {
         // Translators: The name a substitution rule is given in lists and announcements when it has neither a name nor a pattern.
-        String(localized: "Untitled rule")
+        InterfaceText.line("substitutions.untitledRule", "Untitled rule")
     }
     /// The label of a rule's enable checkbox.
     static func enableLabel(_ name: String) -> String {
         // Translators: VoiceOver label of the checkbox that turns a substitution rule on or off. %@ is the rule's name.
-        String(localized: "Enable \(name)")
+        InterfaceText.line("substitutions.enableLabel", "Enable \(name)")
     }
     /// The pattern, as a row's spoken label says it.
     static func patternPart(_ pattern: String) -> String {
         // Translators: A part of a substitution rule's spoken summary. %@ is the rule's pattern.
-        String(localized: "Pattern: \(pattern)")
+        InterfaceText.line("substitutions.patternPart", "Pattern: \(pattern)")
     }
     /// What a rule that skips says.
     static var skipPart: String {
         // Translators: A part of a substitution rule's spoken summary: the rule removes the text it matches.
-        String(localized: "Action: skip")
+        InterfaceText.line("substitutions.skipPart", "Action: skip")
     }
     /// What a rule that replaces says.
     static func replacePart(_ replacement: String) -> String {
         // Translators: A part of a substitution rule's spoken summary. %@ is the replacement text.
-        String(localized: "Replace with: \(replacement)")
+        InterfaceText.line("substitutions.replacePart", "Replace with: \(replacement)")
     }
     /// A regular expression rule's part of the spoken summary.
     static var regexPart: String {
         // Translators: A part of a substitution rule's spoken summary: the pattern is a regular expression.
-        String(localized: "Regular expression")
+        InterfaceText.line("substitutions.regularExpression", "Regular expression")
     }
     /// A case sensitive rule's part of the spoken summary.
     static var casePart: String {
         // Translators: A part of a substitution rule's spoken summary: capital and small letters are told apart.
-        String(localized: "Case sensitive")
+        InterfaceText.line("substitutions.caseSensitive", "Case sensitive")
     }
     /// A whole word rule's part of the spoken summary.
     static var wholeWordPart: String {
         // Translators: A part of a substitution rule's spoken summary: the rule matches whole words only.
-        String(localized: "Whole word only")
+        InterfaceText.line("substitutions.wholeWordPart", "Whole word only")
     }
 
     // MARK: The Editor
@@ -929,131 +929,131 @@ enum SubstitutionsWording {
     static func editorTitle(isNew: Bool) -> String {
         guard isNew else {
             // Translators: Heading and navigation title of the editor of an existing substitution rule.
-            return String(localized: "Edit Substitution Rule")
+            return InterfaceText.line("substitutions.editorTitle.edit", "Edit Substitution Rule")
         }
         // Translators: Heading and navigation title of the editor of a new substitution rule.
-        return String(localized: "Add Substitution Rule")
+        return InterfaceText.line("substitutions.editorTitle.addSubstitution", "Add Substitution Rule")
     }
     /// The name field's placeholder.
     static var namePrompt: String {
         // Translators: Placeholder of the field that names a substitution rule in the rule editor.
-        String(localized: "Name (optional)")
+        InterfaceText.line("substitutions.namePrompt", "Name (optional)")
     }
     /// The name field's VoiceOver label.
     static var nameLabel: String {
         // Translators: VoiceOver label of the field that names a substitution rule in the rule editor.
-        String(localized: "Rule name")
+        InterfaceText.line("substitutions.nameLabel", "Rule name")
     }
     /// The pattern field's placeholder.
     static var patternPrompt: String {
         // Translators: Placeholder of the field that holds a substitution rule's search pattern in the rule editor.
-        String(localized: "Pattern")
+        InterfaceText.line("substitutions.patternPrompt", "Pattern")
     }
     /// The pattern field's VoiceOver label.
     static var patternLabel: String {
         // Translators: VoiceOver label of the field that holds a substitution rule's search pattern in the rule editor.
-        String(localized: "Search pattern")
+        InterfaceText.line("substitutions.patternLabel", "Search pattern")
     }
     /// The replacement field's placeholder.
     static var replacementPrompt: String {
         // Translators: Placeholder of the field that holds a substitution rule's replacement text in the rule editor. Leaving it empty removes the matched text.
-        String(localized: "Replacement (empty to skip)")
+        InterfaceText.line("substitutions.replacementPrompt", "Replacement (empty to skip)")
     }
     /// The replacement field's VoiceOver label.
     static var replacementLabel: String {
         // Translators: VoiceOver label of the replacement field in the substitution rule editor.
-        String(localized: "Replacement text. Leave empty to skip matched text.")
+        InterfaceText.line("substitutions.replacementLabel", "Replacement text. Leave empty to skip matched text.")
     }
     /// The replacement field's hint: how a regular expression's replacement
     /// puts back what a group of its pattern matched. The dollar sign is
     /// named in words as well, since VoiceOver speaks "$1" as "one dollar".
     static var replacementHint: String {
         // Translators: VoiceOver hint of the replacement field in the substitution rule editor. $1 and $2 are written as in regular expressions and stay as written.
-        String(localized: "In a regular expression, a dollar sign and a group's number, as in $1 or $2, put back what that group matched.")
+        InterfaceText.line("substitutions.replacementHint", "In a regular expression, a dollar sign and a group's number, as in $1 or $2, put back what that group matched.")
     }
     /// The label of the pattern's error.
     static func patternErrorLabel(_ error: String) -> String {
         // Translators: VoiceOver label of the message that says a substitution rule's pattern is not a valid regular expression. %@ is the message.
-        String(localized: "Pattern error: \(error)")
+        InterfaceText.line("substitutions.patternErrorLabel", "Pattern error: \(error)")
     }
     /// The message about a pattern that is not a regular expression.
     static func invalidRegex(_ reason: String) -> String {
         // Translators: Shown in the substitution rule editor when the pattern is not a valid regular expression. %@ is the reason the system gives, which may be in English. Regex is short for regular expression.
-        String(localized: "Invalid regex: \(reason)")
+        InterfaceText.line("substitutions.invalidRegex", "Invalid regex: \(reason)")
     }
     /// The regular expression switch's title.
     static var regexTitle: String {
         // Translators: Title of the switch in the substitution rule editor that makes the pattern a regular expression.
-        String(localized: "Regular expression")
+        InterfaceText.line("substitutions.regularExpression", "Regular expression")
     }
     /// The same switch's VoiceOver label.
     static var regexLabel: String {
         // Translators: VoiceOver label of the Regular expression switch in the substitution rule editor.
-        String(localized: "Use regular expression matching")
+        InterfaceText.line("substitutions.regexLabel", "Use regular expression matching")
     }
     /// The same switch's VoiceOver hint.
     static var regexHint: String {
         // Translators: VoiceOver hint of the Regular expression switch in the substitution rule editor. \b is regular expression syntax and stays as written.
-        String(localized: "When enabled, use \\b in the pattern for word boundaries")
+        InterfaceText.line("substitutions.regexHint", "When enabled, use \\b in the pattern for word boundaries")
     }
     /// The case sensitive switch's title.
     static var caseTitle: String {
         // Translators: Title of the switch in the substitution rule editor that makes the pattern tell capital and small letters apart.
-        String(localized: "Case sensitive")
+        InterfaceText.line("substitutions.caseSensitive", "Case sensitive")
     }
     /// The same switch's VoiceOver label.
     static var caseLabel: String {
         // Translators: VoiceOver label of the Case sensitive switch in the substitution rule editor.
-        String(localized: "Case sensitive matching")
+        InterfaceText.line("substitutions.caseLabel", "Case sensitive matching")
     }
     /// The whole word switch's title and label.
     static var wholeWordTitle: String {
         // Translators: Title and VoiceOver label of the switch in the substitution rule editor that makes the pattern match whole words only.
-        String(localized: "Match whole word only")
+        InterfaceText.line("substitutions.wholeWordTitle", "Match whole word only")
     }
     /// The same switch's VoiceOver hint.
     static var wholeWordHint: String {
         // Translators: VoiceOver hint of the Match whole word only switch in the substitution rule editor.
-        String(localized: "Skips matches next to letters, digits, or underscores")
+        InterfaceText.line("substitutions.wholeWordHint", "Skips matches next to letters, digits, or underscores")
     }
     /// The test input field's placeholder.
     static var testInputPrompt: String {
         // Translators: Placeholder of the field in the substitution rule editor where text is typed to test the rule on.
-        String(localized: "Test input")
+        InterfaceText.line("substitutions.testInputPrompt", "Test input")
     }
     /// The test input field's VoiceOver label.
     static var testInputLabel: String {
         // Translators: VoiceOver label of the test input field in the substitution rule editor.
-        String(localized: "Test input text")
+        InterfaceText.line("substitutions.testInputLabel", "Test input text")
     }
     /// The test result as the screen shows it.
     static func resultText(_ result: String) -> String {
         // Translators: The text a substitution rule made of the test input, shown in the rule editor. %@ is the result.
-        String(localized: "Result: \(result)")
+        InterfaceText.line("substitutions.resultText", "Result: \(result)")
     }
     /// The test result as VoiceOver reads it.
     static func testResultLabel(_ result: String) -> String {
         // Translators: VoiceOver label of the text a substitution rule made of the test input. %@ is the result.
-        String(localized: "Test result: \(result)")
+        InterfaceText.line("substitutions.testResultLabel", "Test result: \(result)")
     }
     /// The test button's title, and the test group's heading.
     static var testTitle: String {
         // Translators: Title of the button that tests a substitution rule on the input, and the heading of the group that holds it, in the rule editor.
-        String(localized: "Test")
+        InterfaceText.line("substitutions.testTitle", "Test")
     }
     /// The test button's VoiceOver label.
     static var testButtonLabel: String {
         // Translators: VoiceOver label of the Test button in the substitution rule editor.
-        String(localized: "Test this rule against the input")
+        InterfaceText.line("substitutions.testButtonLabel", "Test this rule against the input")
     }
     /// The button that adds a new rule.
     static var addTitle: String {
         // Translators: Title of the button that adds a new substitution rule, in the rule editor.
-        String(localized: "Add")
+        InterfaceText.line("common.add", "Add")
     }
     /// The button that saves an edited rule.
     static var saveTitle: String {
         // Translators: Title of the button that saves an edited substitution rule, in the rule editor.
-        String(localized: "Save")
+        InterfaceText.line("common.save", "Save")
     }
 }

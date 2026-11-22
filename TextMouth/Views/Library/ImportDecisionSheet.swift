@@ -234,9 +234,9 @@ struct ImportDecisionChoiceWording: Equatable {
     static var keepBoth: ImportDecisionChoiceWording {
         ImportDecisionChoiceWording(
             // Translators: Title and VoiceOver label of the button of the duplicate-book question that keeps both copies. Title case.
-            title: String(localized: "Keep Both"),
+            title: InterfaceText.line("importDecisionChoice.keepBoth.title", "Keep Both"),
             // Translators: VoiceOver hint of the Keep Both button of the duplicate-book question.
-            hint: String(localized: "Adds the new copy to the library as a separate book.")
+            hint: InterfaceText.line("importDecisionChoice.keepBoth.separate", "Adds the new copy to the library as a separate book.")
         )
     }
     /// A duplicate: replace the library's copy. The hint says what the new
@@ -245,9 +245,9 @@ struct ImportDecisionChoiceWording: Equatable {
     static var replaceExisting: ImportDecisionChoiceWording {
         ImportDecisionChoiceWording(
             // Translators: Title and VoiceOver label of the button of the duplicate-book question that replaces the copy in the library. Title case.
-            title: String(localized: "Replace Existing"),
+            title: InterfaceText.line("importDecisionChoice.replace", "Replace Existing"),
             // Translators: VoiceOver hint of the Replace Existing button of the duplicate-book question, when both copies are of one kind. "The existing copy" is the copy in the library.
-            hint: String(localized: "Puts the new copy in place of the one already in the library, keeping the existing copy's reading position, bookmarks, and settings.")
+            hint: InterfaceText.line("importDecisionChoice.replaceExisting", "Puts the new copy in place of the one already in the library, keeping the existing copy's reading position, bookmarks, and settings.")
         )
     }
     /// A duplicate whose copies are an audiobook and a book that is not:
@@ -256,9 +256,9 @@ struct ImportDecisionChoiceWording: Equatable {
     static var replaceExistingAcrossKinds: ImportDecisionChoiceWording {
         ImportDecisionChoiceWording(
             // Translators: Title and VoiceOver label of the button of the duplicate-book question that replaces the copy in the library. Title case.
-            title: String(localized: "Replace Existing"),
+            title: InterfaceText.line("importDecisionChoice.replace", "Replace Existing"),
             // Translators: VoiceOver hint of the Replace Existing button of the duplicate-book question, when one copy is an audiobook and the other is not. "The existing copy" is the copy in the library.
-            hint: String(localized: "Puts the new copy in place of the one already in the library, keeping only the existing copy's folder and place on the reading list.")
+            hint: InterfaceText.line("importDecisionChoice.replaceExistingAcrossKinds", "Puts the new copy in place of the one already in the library, keeping only the existing copy's folder and place on the reading list.")
         )
     }
 
@@ -271,18 +271,18 @@ struct ImportDecisionChoiceWording: Equatable {
     static var cancelDuplicate: ImportDecisionChoiceWording {
         ImportDecisionChoiceWording(
             // Translators: Title and VoiceOver label of the Cancel button of the duplicate-book question.
-            title: String(localized: "Cancel"),
+            title: InterfaceText.line("common.cancel", "Cancel"),
             // Translators: VoiceOver hint of the Cancel button of the duplicate-book question.
-            hint: String(localized: "Discards the new copy. The library stays as it was.")
+            hint: InterfaceText.line("importDecisionChoice.cancelDuplicate", "Discards the new copy. The library stays as it was.")
         )
     }
     /// An original file: keep it.
     static var keepOriginal: ImportDecisionChoiceWording {
         ImportDecisionChoiceWording(
             // Translators: Title and VoiceOver label of the button that keeps the original file of a book just imported. Title case.
-            title: String(localized: "Keep"),
+            title: InterfaceText.line("common.keep", "Keep"),
             // Translators: VoiceOver hint of the Keep button of the question about the original file.
-            hint: String(localized: "Leaves the original file where it is.")
+            hint: InterfaceText.line("importDecisionChoice.keepOriginal", "Leaves the original file where it is.")
         )
     }
     /// An original file: delete it, to the Trash or permanently, as
@@ -294,24 +294,24 @@ struct ImportDecisionChoiceWording: Equatable {
     static var createFolder: ImportDecisionChoiceWording {
         ImportDecisionChoiceWording(
             // Translators: Title and VoiceOver label of the button that puts the books of a ZIP archive in a new folder. Title case.
-            title: String(localized: "Create Folder"),
+            title: InterfaceText.line("importDecisionChoice.createFolder.title", "Create Folder"),
             // Translators: VoiceOver hint of the Create Folder button of the ZIP archive question. "This name" is the name in the folder name field.
-            hint: String(localized: "Moves the imported books into a new folder with this name.")
+            hint: InterfaceText.line("importDecisionChoice.createFolder.imported", "Moves the imported books into a new folder with this name.")
         )
     }
     /// A ZIP archive's books: leave them where they are.
     static var declineFolder: ImportDecisionChoiceWording {
         ImportDecisionChoiceWording(
             // Translators: Title and VoiceOver label of the button that leaves the books of a ZIP archive where they are. Title case.
-            title: String(localized: "No Thanks"),
+            title: InterfaceText.line("importDecisionChoice.declineFolder.thanks", "No Thanks"),
             // Translators: VoiceOver hint of the No Thanks button of the ZIP archive question.
-            hint: String(localized: "Leaves the imported books where they are.")
+            hint: InterfaceText.line("importDecisionChoice.declineFolder.imported", "Leaves the imported books where they are.")
         )
     }
     /// The label of a ZIP archive's folder name field.
     static var folderNameLabel: String {
         // Translators: Label of the field where the name of the new folder for a ZIP archive's books is typed.
-        String(localized: "Folder name")
+        InterfaceText.line("common.folderName", "Folder name")
     }
     /// An audiobook just imported: transcribe it (FR05).
     static var transcribe: ImportDecisionChoiceWording {

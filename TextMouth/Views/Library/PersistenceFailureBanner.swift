@@ -69,27 +69,27 @@ struct PersistenceFailureBannerRowView: View {
     static var dismissHint: String {
         SentenceWording.joined([
             // Translators: First sentence of the VoiceOver hint of the failure banner's Dismiss button.
-            String(localized: "Hides this notice without saving anything."),
+            InterfaceText.line("persistenceFailureBannerRowView.hidesNotice", "Hides this notice without saving anything."),
             // Translators: Last sentence of the VoiceOver hint of the failure banner's Dismiss button.
-            String(localized: "It appears again if the problem returns after it clears."),
+            InterfaceText.line("persistenceFailureBannerRowView.returnsIfProblem", "It appears again if the problem returns after it clears."),
         ])
     }
 
     /// The banner's VoiceOver label.
     static var bannerLabel: String {
         // Translators: VoiceOver label of the banner at the top of the library that lists problems saving or removing files.
-        String(localized: "Storage problems")
+        InterfaceText.line("persistenceFailureBannerRowView.bannerLabel", "Storage problems")
     }
 
     /// The Retry button's title.
     static var retryTitle: String {
         // Translators: Button on a failure notice that tries to save again.
-        String(localized: "Retry")
+        InterfaceText.line("common.retry", "Retry")
     }
 
     /// The Dismiss button's title.
     static var dismissTitle: String {
         // Translators: Button on a failure notice that hides it.
-        String(localized: "Dismiss")
+        InterfaceText.line("persistenceFailureBannerRowView.dismissTitle", "Dismiss")
     }
 }

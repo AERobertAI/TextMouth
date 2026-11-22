@@ -86,12 +86,12 @@ enum CompareLibrariesSheetWording {
     /// The label of the progress bar shown while the comparison runs.
     static var comparingLabel: String {
         // Translators: VoiceOver label of the progress bar of the Compare Libraries sheet while the two copies of the library are being compared.
-        String(localized: "Comparing")
+        InterfaceText.line("compareLibrariesSheet.comparingLabel", "Comparing")
     }
 
     /// The label of the list of differences found.
     static var differencesLabel: String {
         // Translators: VoiceOver label of the list of differences the Compare Libraries sheet found between the two copies of the library.
-        String(localized: "Differences")
+        InterfaceText.line("compareLibrariesSheet.differencesLabel", "Differences")
     }
 }

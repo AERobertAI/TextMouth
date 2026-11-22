@@ -7,13 +7,13 @@ enum DataDirectoryUnavailableText {
     /// The screen's heading, and the Library window's title meanwhile.
     static var title: String {
         // Translators: Heading of the screen shown in place of the library when its folder can't be used, and the Library window's title meanwhile.
-        String(localized: "Library Not Available")
+        InterfaceText.line("dataDirectoryUnavailable.title", "Library Not Available")
     }
     /// The heading while TextMouth is getting the library's files from the
     /// cloud, which it opens by itself when they arrive.
     static var gettingTitle: String {
         // Translators: Heading of the screen shown while TextMouth gets the library's files from the cloud; the library opens by itself when they arrive.
-        String(localized: "Getting Your Library")
+        InterfaceText.line("dataDirectoryUnavailable.gettingTitle", "Getting Your Library")
     }
 
     /// The heading for `reason`: "Getting Your Library" while the files are
@@ -24,27 +24,27 @@ enum DataDirectoryUnavailableText {
     /// What the full path of the data directory is labelled.
     static var locationLabel: String {
         // Translators: Label of the library's full folder path on the Library Not Available screen.
-        String(localized: "Location")
+        InterfaceText.line("common.location", "Location")
     }
     /// The button that checks the data directory again.
     static var tryAgain: String {
         // Translators: Button on the Library Not Available screen that checks the library's folder again.
-        String(localized: "Try Again")
+        InterfaceText.line("common.tryAgain", "Try Again")
     }
     /// What Try Again does.
     static var tryAgainHint: String {
         // Translators: VoiceOver hint of Try Again on the Library Not Available screen.
-        String(localized: "Checks the library's location again, and opens the library when it is there.")
+        InterfaceText.line("dataDirectoryUnavailable.tryAgainHint", "Checks the library's location again, and opens the library when it is there.")
     }
     /// The button that quits.
     static var quit: String {
         // Translators: Button on the Library Not Available screen that quits TextMouth.
-        String(localized: "Quit TextMouth")
+        InterfaceText.line("common.quitTextmouth", "Quit TextMouth")
     }
     /// What Quit TextMouth does.
     static var quitHint: String {
         // Translators: VoiceOver hint of Quit TextMouth on the Library Not Available screen.
-        String(localized: "Quits TextMouth without changing anything in the library's location.")
+        InterfaceText.line("dataDirectoryUnavailable.quitHint", "Quits TextMouth without changing anything in the library's location.")
     }
 
     /// The way to another library, under the reason: Storage settings and
@@ -54,13 +54,13 @@ enum DataDirectoryUnavailableText {
     /// Storage, and choose Choose Another Library or Use Default Location."
     static var anotherFolderPointer: String {
         // Translators: Sentence on the Library Not Available screen that points to the way to another library. Settings and Storage are the names of the settings window and its tab; %1$@ and %2$@ are the names of two buttons in Storage settings, as they show them.
-        String(localized: "To use another folder, open Settings, Storage, and choose \(buttonName(StorageLocationWording.chooserTitle(isLibraryAvailable: false))) or \(buttonName(StorageLocationWording.useDefaultTitle)).")
+        InterfaceText.line("dataDirectoryUnavailable.anotherFolderPointer", "To use another folder, open Settings, Storage, and choose \(buttonName(StorageLocationWording.chooserTitle(isLibraryAvailable: false))) or \(buttonName(StorageLocationWording.useDefaultTitle)).")
     }
 
     /// What VoiceOver hears when the screen appears: the heading, then why.
     static func announcement(for reason: DataDirectoryUnavailability) -> String {
         // Translators: What VoiceOver says when the Library Not Available screen appears. %1$@ is the screen's heading; %2$@ is why the library can't be used.
-        String(localized: "\(title(for: reason)). \(reason.explanation)")
+        InterfaceText.line("common.valuePeriodValue", "\(title(for: reason)). \(reason.explanation)")
     }
 
     /// What the window says when an app-wide action reaches it while the
@@ -70,10 +70,10 @@ enum DataDirectoryUnavailableText {
         switch action {
         case .openBookFile, .newFromText, .importDAISYFolder, .openFiles:
             // Translators: What the Library window says when a command that adds a book is chosen while the library can't be used.
-            return String(localized: "Books can't be added while the library isn't available.")
+            return InterfaceText.line("dataDirectoryUnavailable.refusal.openBookFile", "Books can't be added while the library isn't available.")
         case .openBookWindow, .continueToNextBook:
             // Translators: What the Library window says when a command that opens a book is chosen while the library can't be used.
-            return String(localized: "Books can't be opened while the library isn't available.")
+            return InterfaceText.line("dataDirectoryUnavailable.refusal.openBookWindow", "Books can't be opened while the library isn't available.")
         case .goToLibrary:
             return nil
         }
@@ -102,10 +102,10 @@ enum DataDirectoryUnavailableText {
         guard !sentences.isEmpty else { return nil }
         if unnamedBooks > 0 {
             // Translators: An entry in the list of what was not opened: books the listener asked to open that have no file name. %lld is how many books. The English one form is "one book from the library".
-            names.append(String(localized: "\(unnamedBooks) books from the library"))
+            names.append(InterfaceText.line("dataDirectoryUnavailable.heldRefusal.library", "\(number: unnamedBooks) books from the library"))
         }
         // Translators: Sentence on the Library Not Available screen that lists what was not opened. %@ is the list of file names and counts of books, separated by commas.
-        let detail = names.isEmpty ? [] : [String(localized: "Not opened: \(SentenceWording.commaJoined(names)).")]
+        let detail = names.isEmpty ? [] : [InterfaceText.line("dataDirectoryUnavailable.heldRefusal.opened", "Not opened: \(SentenceWording.commaJoined(names)).")]
         return SentenceWording.joined(sentences + detail)
     }
 

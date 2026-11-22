@@ -17,7 +17,7 @@ enum LibraryBookInfo {
     /// What the sheet says while some details wait for a download.
     static var cloudOnlyNote: String {
         // Translators: Note in Book Information when the book's file is only in the cloud, so the sheet shows the details the library keeps and the others wait for a download.
-        String(localized: "Some details appear once the book is downloaded.")
+        InterfaceText.line("libraryBookInfo.cloudOnlyNote", "Some details appear once the book is downloaded.")
     }
 
     /// Whether the book's file was only in the cloud, so the sheet shows the
@@ -36,9 +36,9 @@ enum LibraryBookInfo {
         guard isCloudOnly, writesToFile else { return nil }
         return SentenceWording.joined([
             // Translators: First sentence of the message when Save in Book Information is refused because the book's EPUB file is only in the cloud, and writing to the file is on. EPUB is a format name.
-            String(localized: "The book's EPUB file is only in the cloud, so it can't be written until the book is downloaded."),
+            InterfaceText.line("libraryBookInfo.writeRefusal.downloaded", "The book's EPUB file is only in the cloud, so it can't be written until the book is downloaded."),
             // Translators: Second sentence of the message when Save in Book Information is refused because the book's EPUB file is only in the cloud: what to do.
-            String(localized: "Turn off writing to the file, or download the book first."),
+            InterfaceText.line("libraryBookInfo.writeRefusal.download", "Turn off writing to the file, or download the book first."),
         ])
     }
 }

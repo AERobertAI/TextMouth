@@ -162,19 +162,19 @@ enum ReadingStatsViewWording {
     /// The heading of the tiles of listening time.
     static var listeningTimeHeader: String {
         // Translators: Heading of the section of Settings, Stats that shows the listening time of today, this week, and all time.
-        String(localized: "Listening Time")
+        InterfaceText.line("readingStatsView.listeningTimeHeader", "Listening Time")
     }
 
     /// The heading of the tiles of progress.
     static var progressHeader: String {
         // Translators: Heading of the section of Settings, Stats that shows the listening streak and the number of books finished.
-        String(localized: "Progress")
+        InterfaceText.line("common.progress", "Progress")
     }
 
     /// The heading of the list of the books finished most recently.
     static var recentlyFinishedHeader: String {
         // Translators: Heading of the section of Settings, Stats that lists the books finished most recently, each with the date.
-        String(localized: "Recently Finished")
+        InterfaceText.line("readingStatsView.recentlyFinishedHeader", "Recently Finished")
     }
 
     /// What VoiceOver reads for a row of Recently Finished: "Moby Dick,
@@ -182,6 +182,6 @@ enum ReadingStatsViewWording {
     static func finishedRowLabel(title: String, date: Date) -> String {
         let when = date.formatted(date: .long, time: .omitted)
         // Translators: VoiceOver label of a row of Recently Finished in Settings, Stats. %1$@ is the book's title; %2$@ is the date it was finished, such as November 18, 2026.
-        return String(localized: "\(title), finished \(when)")
+        return InterfaceText.line("readingStatsView.finishedRowLabel", "\(title), finished \(when)")
     }
 }

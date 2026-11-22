@@ -12,106 +12,106 @@ enum TextInputWording {
     /// The first word of the default title of a book made from pasted text.
     static var defaultTitleName: String {
         // Translators: The first word of the title a book made from pasted text is given until the user types another, followed by the date and time, as in "Paste 2026-10-04 06:30".
-        String(localized: "Paste")
+        InterfaceText.line("common.paste", "Paste")
     }
 
     /// The sentence both Open in Editor failures end with.
     static var pasteOrTypeInstead: String {
         // Translators: Second sentence of the announcement when Open in Editor failed: what to do instead.
-        String(localized: "Paste or type the text here instead, or try again.")
+        InterfaceText.line("textInput.pasteOrTypeInstead", "Paste or type the text here instead, or try again.")
     }
 
     /// The caption beside the title field, which VoiceOver skips.
     static var titleCaption: String {
         // Translators: Caption beside the title field of the New Book from Text sheet. VoiceOver skips it; the field has its own label.
-        String(localized: "Title:")
+        InterfaceText.line("textInput.titleCaption", "Title:")
     }
 
     /// The caption beside the author field, which VoiceOver skips.
     static var authorCaption: String {
         // Translators: Caption beside the author field of the New Book from Text sheet. VoiceOver skips it; the field has its own label.
-        String(localized: "Author:")
+        InterfaceText.line("textInput.authorCaption", "Author:")
     }
 
     /// The button that puts the clipboard's text in the editor.
     static var pasteFromClipboard: String {
         // Translators: Button of the New Book from Text sheet that replaces the text with the text on the system clipboard.
-        String(localized: "Paste from Clipboard")
+        InterfaceText.line("textInput.pasteFromClipboard", "Paste from Clipboard")
     }
 
     /// The hint of that button.
     static var pasteHint: String {
         // Translators: Hint of the Paste from Clipboard button of the New Book from Text sheet.
-        String(localized: "Replaces the text with the text on the clipboard")
+        InterfaceText.line("textInput.pasteHint", "Replaces the text with the text on the clipboard")
     }
 
     /// The button that opens the text in the user's own editor.
     static var openInEditor: String {
         // Translators: Button of the New Book from Text sheet that opens the text in another app's text editor.
-        String(localized: "Open in Editor")
+        InterfaceText.line("textInput.openInEditor", "Open in Editor")
     }
 
     /// The hint of that button.
     static var openInEditorHint: String {
         // Translators: Hint of the Open in Editor button of the New Book from Text sheet.
-        String(localized: "Opens the text in an external editor")
+        InterfaceText.line("textInput.openInEditorHint", "Opens the text in an external editor")
     }
 
     /// The button that brings the editor's saved file back.
     static var reloadFromEditor: String {
         // Translators: Button of the New Book from Text sheet that reads the text again from the file the other app's editor saved. Shown after Open in Editor.
-        String(localized: "Reload from Editor")
+        InterfaceText.line("textInput.reloadFromEditor", "Reload from Editor")
     }
 
     /// The hint of that button.
     static var reloadHint: String {
         // Translators: Hint of the Reload from Editor button of the New Book from Text sheet.
-        String(localized: "Reloads the text from the editor's file")
+        InterfaceText.line("textInput.reloadHint", "Reloads the text from the editor's file")
     }
 
     /// The text area's label.
     static var textContentLabel: String {
         // Translators: Spoken label of the text area of the New Book from Text sheet.
-        String(localized: "Text content")
+        InterfaceText.line("textInput.textContentLabel", "Text content")
     }
 
     /// The text area's hint.
     static var textContentHint: String {
         // Translators: Hint of the text area of the New Book from Text sheet.
-        String(localized: "Enter or paste the text for the new book")
+        InterfaceText.line("textInput.textContentHint", "Enter or paste the text for the new book")
     }
 
     /// The text area's value: how much text it holds.
     static func textContentValue(characterCount: Int) -> String {
         characterCount == 0
             // Translators: Spoken value of the text area of the New Book from Text sheet while it holds no text.
-            ? String(localized: "Empty")
+            ? InterfaceText.line("textInput.textContentValue.empty", "Empty")
             // Translators: Spoken value of the text area of the New Book from Text sheet: how many characters it holds. %lld is the number of characters.
-            : String(localized: "\(characterCount) characters")
+            : InterfaceText.line("textInput.textContentValue.characters", "\(number: characterCount) characters")
     }
 
     /// The hint of the Cancel button.
     static var cancelHint: String {
         // Translators: Hint of the Cancel button of the New Book from Text sheet.
-        String(localized: "Closes this view without making a book")
+        InterfaceText.line("textInput.cancelHint", "Closes this view without making a book")
     }
 
     /// The button that adds the new book.
     static var addToLibrary: String {
         // Translators: Button of the New Book from Text sheet that adds the new book to the library.
-        String(localized: "Add to Library")
+        InterfaceText.line("common.addToLibrary", "Add to Library")
     }
 
     /// The hint of that button while there is no text to add.
     static var addDisabledHint: String {
         // Translators: Hint of the Add to Library button of the New Book from Text sheet while the text area is empty and the button is dimmed.
-        String(localized: "Enter some text first.")
+        InterfaceText.line("textInput.addDisabledHint", "Enter some text first.")
     }
 
     /// The sheet's window title.
     static var windowTitle: String {
         // Translators: Window title of the sheet that makes a new book from typed or pasted text.
-        String(localized: "New Book from Text")
+        InterfaceText.line("textInput.windowTitle", "New Book from Text")
     }
 }
 
@@ -141,9 +141,9 @@ enum TextImportPolicy {
     static var noClipboardTextAnnouncement: String {
         SentenceWording.joined([
             // Translators: First sentence of the announcement when Paste from Clipboard finds no text on the clipboard.
-            String(localized: "The clipboard has no text to paste, so the text is unchanged."),
+            InterfaceText.line("textImportPolicy.noClipboardText.unchanged", "The clipboard has no text to paste, so the text is unchanged."),
             // Translators: Second sentence of the announcement when Paste from Clipboard finds no text on the clipboard: what to do.
-            String(localized: "Copy some text, then paste again."),
+            InterfaceText.line("textImportPolicy.noClipboardText.again", "Copy some text, then paste again."),
         ])
     }
 
@@ -152,7 +152,7 @@ enum TextImportPolicy {
     static var editorOpenFailedAnnouncement: String {
         SentenceWording.joined([
             // Translators: First sentence of the announcement when Open in Editor could not write the text to a file for the editor.
-            String(localized: "Could not open the text in an editor, because its file could not be written."),
+            InterfaceText.line("textImportPolicy.editorOpenFailedAnnouncement", "Could not open the text in an editor, because its file could not be written."),
             TextInputWording.pasteOrTypeInstead,
         ])
     }
@@ -162,7 +162,7 @@ enum TextImportPolicy {
     static var editorNotOpenedAnnouncement: String {
         SentenceWording.joined([
             // Translators: First sentence of the announcement when Open in Editor wrote the file but no app opened it, as when nothing on this Mac opens plain text files.
-            String(localized: "Could not open the text in an editor, because no app opened its file."),
+            InterfaceText.line("textImportPolicy.editorNotOpenedAnnouncement", "Could not open the text in an editor, because no app opened its file."),
             TextInputWording.pasteOrTypeInstead,
         ])
     }
@@ -173,9 +173,9 @@ enum TextImportPolicy {
     static var reloadFailedAnnouncement: String {
         SentenceWording.joined([
             // Translators: First sentence of the announcement when Reload from Editor could not read the editor's file back.
-            String(localized: "Could not read the text back from the editor's file, so the text here is unchanged."),
+            InterfaceText.line("textImportPolicy.reloadFailed.unchanged", "Could not read the text back from the editor's file, so the text here is unchanged."),
             // Translators: Second sentence of the announcement when Reload from Editor could not read the editor's file back: what to do. %1$@ is the name of the Reload from Editor button. %2$@ is the name of the Open in Editor button.
-            String(localized: "Save the file in the editor, then choose \(TextInputWording.reloadFromEditor) again, or choose \(TextInputWording.openInEditor) to start again."),
+            InterfaceText.line("textImportPolicy.reloadFailedAnnouncement.choose", "Save the file in the editor, then choose \(TextInputWording.reloadFromEditor) again, or choose \(TextInputWording.openInEditor) to start again."),
         ])
     }
 
@@ -184,9 +184,9 @@ enum TextImportPolicy {
     static var reloadMayBeMisreadAnnouncement: String {
         SentenceWording.joined([
             // Translators: First sentence of the note after Reload from Editor read a file whose text encoding nothing in it tells.
-            String(localized: "The text was reloaded, but the editor's file does not say what encoding it is in, so some characters may be wrong."),
+            InterfaceText.line("textImportPolicy.reloadMayBeMisread.characters", "The text was reloaded, but the editor's file does not say what encoding it is in, so some characters may be wrong."),
             // Translators: Second sentence of the note after Reload from Editor read a file whose text encoding nothing in it tells: what to do. UTF-8 is the name of a text encoding. %@ is the name of the Reload from Editor button.
-            String(localized: "Check the text, or save the file in the editor as UTF-8 and choose \(TextInputWording.reloadFromEditor) again."),
+            InterfaceText.line("textImportPolicy.reloadMayBeMisread.choose", "Check the text, or save the file in the editor as UTF-8 and choose \(TextInputWording.reloadFromEditor) again."),
         ])
     }
 
