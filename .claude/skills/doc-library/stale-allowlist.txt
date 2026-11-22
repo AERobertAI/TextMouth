@@ -17,6 +17,8 @@
 .github/test-request.json
 # SwiftPM's build folder of the test package; the Makefile removes it, git ignores it
 TextMouthTests/.build
+# The interface-text pack, which the build phase "Pack interface text" writes into each built app (FR39)
+Strings.pack
 
 # --- Reverse-DNS bundle identifiers (com.textmouth.TextMouth.iOS) ---
 com.*
@@ -95,6 +97,7 @@ Timer
 ListFormatter
 Locale
 LocalizedError
+LocalizedStringResource
 DecodingError
 DateFormatter
 Bundle

@@ -204,7 +204,7 @@ Delete a kept sandbox when you are done with it.
 - `SpanishUITests` (the iPhone interface tests, on GitHub only) starts the app with `-AppleLanguages (es) -AppleLocale es_ES` and compares what VoiceOver is given, in order, with the catalog's Spanish.
   Each expected word carries the key it comes from, so a failure that names what the app gave instead shows an English start at once.
   They check the Sleep Timer and Bookmarks sheets, opened by their Spanish names, once the reader's Spanish Play button is there (`launchIntoTheReader(playLabel:loadingValue:)`).
-- `LanguagePackTests`, in both apps, compares every lookup of the app's language folders with the catalog, plurals at seven counts ([the compact language files](localization.md#the-compact-language-files)).
+- `InterfaceTextShippedPackTests`, in both apps, compares every entry and lookup of the shipped pack with the catalog, plurals at 13 counts ([what the apps ship](localization.md#what-the-apps-ship)).
 - `AccessibleControl.title` is a hosted control's accessibility title, which VoiceOver reads beside its label.
   A test can require it empty, because a hidden title that repeats the label is read twice ("Adjust minutes, Adjust minutes").
 - `RunLoopWaiting.swift`, shared with the iPhone's unit tests, has `waitForMainQueueTurn()`, and `waitForMainQueueTurnAsync()` for a test that is `async`.
