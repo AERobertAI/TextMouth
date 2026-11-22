@@ -41,6 +41,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+# No bytecode beside the scripts it imports (the policy of Scripts/agents/tests/test_bytecode_policy.py).
+sys.dont_write_bytecode = True
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import compact_packs  # noqa: E402  (imported by path, after sys.path is set)
