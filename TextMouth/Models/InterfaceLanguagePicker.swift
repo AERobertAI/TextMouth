@@ -29,20 +29,29 @@ enum InterfaceLanguagePickerWording {
     /// The first choice: follow the system, named with the language that gives.
     static func systemChoice(language: String) -> String {
         // Translators: The first choice of the interface language picker, which follows the system's language. %@ is the name of the language the system gives, such as English, written in its own language.
-        InterfaceText.line("interfaceLanguage.systemChoice", "System (\(language))")
+        withoutIsolates(InterfaceText.line("interfaceLanguage.systemChoice", "System (\(language))"))
     }
 
     /// One language's choice: its own name first, then its name in the interface language, so that someone who switched
     /// to a language they cannot read still finds their own.
     static func languageChoice(ownName: String, interfaceName: String) -> String {
         // Translators: One choice of the interface language picker. The first %@ is the language's name in that language (Español); the second is its name in the language the interface now speaks (Spanish). Keep the own name first.
-        InterfaceText.line("interfaceLanguage.languageChoice", "\(ownName), \(interfaceName)")
+        withoutIsolates(InterfaceText.line("interfaceLanguage.languageChoice", "\(ownName), \(interfaceName)"))
     }
 
     /// What VoiceOver announces after a switch, in the language switched to.
     static func announcement(language: String) -> String {
         // Translators: VoiceOver announcement after the person switches the interface language, spoken in the new language. %@ is the new language's name in its own language.
-        InterfaceText.line("interfaceLanguage.announcement", "Interface language: \(language)")
+        withoutIsolates(InterfaceText.line("interfaceLanguage.announcement", "Interface language: \(language)"))
+    }
+
+    /// `text` without the invisible isolates (U+2068 and U+2069) that Foundation wraps around an argument holding
+    /// right-to-left text. The picker's labels are names alone, which show in the right order in both directions without
+    /// them, and a label that began with an invisible mark would defeat a pop-up's type-select (how someone who switched
+    /// to a language they cannot read finds their own by its first letter) and could show as a mark on a braille display.
+    /// Every other interface text keeps Foundation's isolates, as before: this is the one place the picker removes them.
+    static func withoutIsolates(_ text: String) -> String {
+        text.filter { $0 != "\u{2068}" && $0 != "\u{2069}" }
     }
 }
 

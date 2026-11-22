@@ -66,7 +66,8 @@ final class LanguagePickerUITests: TextMouthUITestCase {
         // "About" and "Version" in the catalog's Spanish, on the screen that was open: it was worded again in place.
         let spanish = try waitForLabel("Acerca de", in: app)
         XCTAssertTrue(spanish.contains { $0.label == "Versión" || $0.label.hasPrefix("Versión") }, "Spanish Settings: \(Self.describe(spanish))")
-        let languageRow = try XCTUnwrap(spanish.first { $0.label == Self.row })
+        // The row is a button; the section's heading carries the same words and no value, and comes first.
+        let languageRow = try XCTUnwrap(spanish.first { $0.label == Self.row && $0.type == .button })
         XCTAssertEqual(languageRow.value, "Español", "The row says the language by its own name")
         keepScreenshot(of: app, named: "Settings in Spanish")
 

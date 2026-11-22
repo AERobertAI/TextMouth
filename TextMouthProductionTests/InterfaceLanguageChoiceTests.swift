@@ -340,12 +340,16 @@ final class InterfaceLanguageChoiceTests: XCTestCase {
 
     /// A figure is written with the interface language's grouping, not the system's region's.
     func testFiguresFollowTheInterfaceLanguage() {
+        let store = makeStoreRestoringSystem()
         XCTAssertEqual(1_234_567.interfaceFormatted(), "1,234,567")
-        InterfaceLanguage.$scopedLanguage.withValue("de") {
-            XCTAssertEqual(1_234_567.interfaceFormatted(), "1.234.567")
-            XCTAssertEqual(Int64(12_345).interfaceFormatted(), "12.345")
-            XCTAssertEqual(ArchiveFigures.count(12_345), "12.345")
-        }
+        // After a live switch the locale keeps the system's region, so the region decides the grouping: a German interface
+        // on a Mac in Germany groups with points, and on a Mac in the United States with commas, as Foundation does.
+        InterfaceLanguage.choose(.language("de"), store: store, region: "DE")
+        XCTAssertEqual(1_234_567.interfaceFormatted(), "1.234.567")
+        XCTAssertEqual(Int64(12_345).interfaceFormatted(), "12.345")
+        XCTAssertEqual(ArchiveFigures.count(12_345), "12.345")
+        InterfaceLanguage.choose(.language("de"), store: store, region: "US")
+        XCTAssertEqual(1_234_567.interfaceFormatted(), "1,234,567")
     }
 
     /// A date and a list are written in the interface language: its month names and its "and".
