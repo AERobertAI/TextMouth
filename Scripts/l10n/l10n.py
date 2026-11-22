@@ -37,6 +37,7 @@ Standard library only.
 """
 import argparse
 import json
+import plistlib
 import re
 import subprocess
 import sys
@@ -486,6 +487,33 @@ def check_catalog(cat, config, found=None):
     return problems, note
 
 
+# The Mac app's Info.plist, from a checkout's root: it names the bundle's languages (FR39), and `sync-info-plist.py` carries
+# the key to the iPhone's.
+MAC_INFO_PLIST = Path("TextMouth/Resources/Info.plist")
+
+
+def bundle_languages(cat):
+    """The languages the app bundle must list in CFBundleLocalizations for `cat`: English (the source language) first, then
+    the catalog's other languages in code-point order."""
+    return [cat.source_language] + cat.languages()
+
+
+def bundle_language_problems(cat, plist):
+    """The sentences about the Mac's Info.plist at `plist` (a path) when its CFBundleLocalizations is not exactly
+    `bundle_languages(cat)`: with no Apple language table in the bundle that list is what offers each language to the
+    system, so a language added to the catalog alone would never be offered. Empty when the list is right."""
+    wanted = bundle_languages(cat)
+    try:
+        listed = plistlib.loads(Path(plist).read_bytes()).get("CFBundleLocalizations")
+    except (OSError, ValueError) as error:
+        return [f"{plist} cannot be read to compare its CFBundleLocalizations with the catalog's languages: {error}"]
+    if listed == wanted:
+        return []
+    return [f"the Mac's Info.plist ({plist}) lists the languages {listed} in CFBundleLocalizations, and the catalog's are "
+            f"{wanted} (English first, then the rest in code-point order; write the key there, then run "
+            f"Scripts/ios/sync-info-plist.py for the iPhone's)"]
+
+
 def glossary_warnings(cat, glossary, languages):
     """The sentences about translations (finished ones, in each of `languages`) that do not use the translation the glossary
     gives for a term of their English, or that drop a name the glossary says is never translated (`apply` refuses that, but a
@@ -534,6 +562,11 @@ def cmd_check(args):
     found, code_problems = None, []
     if code_root is not None:
         found, _calls, code_problems = syncing.read_code(code_root)
+        # The bundle's languages are the catalog's (FR39), as the code the catalog is checked against says. A checkout named
+        # with --code-root that has no Info.plist is a fixture of a test: nothing to compare.
+        plist = code_root / MAC_INFO_PLIST
+        if plist.exists() or not args.code_root:
+            code_problems += bundle_language_problems(cat, plist)
     problems, note = check_catalog(cat, config, found)
     problems = code_problems + problems
     # The rest reads the strings that are whole (check_catalog has reported the others).
