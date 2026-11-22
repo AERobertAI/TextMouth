@@ -43,8 +43,11 @@ final class LanguagePickerUITests: TextMouthUITestCase {
         let choice = app.buttons.matching(predicate).firstMatch
         // The list makes its rows lazily and sorts the languages by their own names, so a language written in another
         // script (Arabic) is far down the list: swipe up until its row is made and can be tapped, at most fifteen times.
+        // The swipe is made on the sheet's own list (the last list in the tree: the screen under the sheet has one too), not on
+        // the whole app, whose swipe can drag the sheet itself, and stops if the sheet is gone.
         for _ in 0..<15 where !(choice.exists && choice.isHittable) {
-            app.swipeUp()
+            guard app.navigationBars[Self.row].exists, let list = app.collectionViews.allElementsBoundByIndex.last else { break }
+            list.swipeUp()
         }
         XCTAssertTrue(choice.exists && choice.isHittable, "No such choice \(predicate):\n\(app.debugDescription)")
         choice.tap()
