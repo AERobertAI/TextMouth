@@ -274,8 +274,7 @@ Run `make check` before merging.
 It also reports the size of the Release app it built, build/TextMouth.app, the app `make install` copies, counted as Finder counts it (the sizes of its files, a megabyte being a million bytes), as in "build/TextMouth.app is 17.9 MB (17,888,466 bytes), within the 30 MB limit".
 It warns, without failing, above 30 MB and fails above 40 MB, limits set once, as APP_SIZE_WARNING_MB and APP_SIZE_LIMIT_MB in Scripts/check.sh, which `app-size.py` reads for the iPhone app too ([the gate's step](#the-iphone-app-in-the-gate)).
 It lists the size of each language file of both apps, and fails on one left in XML ([the compact language files](localization.md#the-compact-language-files)).
-Its Release build signs the app as `make build` does, which needs this Mac's login keychain unlocked: with it locked, codesign waits for a password nobody can type, and the gate hangs in codesign.
-In a session that cannot answer the prompt, run `make check SIGN_APP=true`, which skips only the signing (`make install` on the user's Mac signs as always).
+Its Release build runs `make build SIGN_APP=:`, so the app keeps Xcode's ad hoc signature and the gate never asks for the keychain (`make install` builds and signs its own app).
 It repeats, once each, the PERFORMANCE WARNING: and PERFORMANCE SKIPPED: lines those tests print; neither kind fails the gate, since a number more than twice its baseline has already failed its test.
 Both builds start from scratch: the gate first removes `build/DerivedData/Build` and `TextMouthTests/.build`, keeping the package checkouts, because xcodebuild prints a file's warnings only when it compiles that file.
 It prints one line per step and ends with PASSED or FAILED, with full logs in `build/check/` and the Release build's in `build/xcodebuild-Release.log`.

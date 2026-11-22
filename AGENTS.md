@@ -81,7 +81,7 @@ The agent:
   Rebase an old branch before any hosted test run on this Mac, or the test host can take the user's AirPods.
   The mechanisms of both are in [The hosted-test sandbox](docs/architecture/state/hosted-test-sandbox.md).
 - Check a braille rule that an agent states against BANA, ICEB, or `lou_translate` on the repo's tables, and build test cells from liblouis forward, not by hand.
-- Run every `make check` with `SIGN_APP=true`: without it `codesign` waits on the login keychain while holding the heavy lock.
+- `make check` builds with `SIGN_APP=:` and never asks for the keychain; it needs no `SIGN_APP` of its own.
 - Write times from `date`, never from a guess.
 
 ## Where things stand
