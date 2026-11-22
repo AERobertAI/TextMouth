@@ -19,7 +19,10 @@
 #      of each app must be compact (TL16): each `.strings` UTF-8 text or binary and each
 #      `.stringsdict` binary, as the build phase "Compact language files"
 #      writes them (Scripts/l10n/compact_packs.py); the gate reports each
-#      file's size and fails on one still in XML. Still in step 3, a
+#      file's size and fails on one still in XML. Each app must also hold exactly
+#      one interface-text pack, Strings.pack, in its resources folder, of at most
+#      PACK_LIMIT_BYTES (1.5 MB), as the build phase "Pack interface text" writes
+#      it (FR39; Scripts/l10n/pack.py); the gate reports its size. Still in step 3, a
 #      plain run (not --without-tests) then builds the iPhone app for a device
 #      (Scripts/ios/app-size.py build) and holds it to the same two limits: a
 #      warning above APP_SIZE_WARNING_MB and a failure above APP_SIZE_LIMIT_MB,
@@ -144,6 +147,9 @@ readonly IOS_APP="build/ios-size-DerivedData/Build/Products/Release-iphoneos/Tex
 readonly MAC_RESOURCES="$RELEASE_APP/Contents/Resources"
 # The tool that writes the language files compact and checks that they are (TL16).
 readonly COMPACT_TOOL="Scripts/l10n/compact_packs.py"
+# The interface-text pack's name, and the most bytes it may hold (1.5 MB of a million bytes; it is 1.28 MB today).
+readonly PACK_NAME="Strings.pack"
+readonly PACK_LIMIT_BYTES=1500000
 # The Release app's two size limits, in megabytes of a million bytes. Its
 # developer's real limit is 30 MB and its strict one 40 MB (November 16, 2026,
 # when FFmpeg was built in: the 20 MB of before was a target to optimize
@@ -579,6 +585,34 @@ require_language_files_compact() {
   fi
 }
 
+# require_one_interface_pack <app folder> <resources folder> <app name>: the app
+# holds exactly one Strings.pack, in its resources folder, and it is no larger
+# than PACK_LIMIT_BYTES. A missing pack means the build phase "Pack interface
+# text" did not run (every line would show English); a second one is a stray
+# copy that would ship twice; a pack over the limit means the budget is spent
+# (FR39). Reports the pack's size.
+require_one_interface_pack() {
+  local app_folder=$1 resources=$2 app=$3 found count size
+  if (( dry_run )); then
+    detail "would require $app to hold exactly one $PACK_NAME of at most $PACK_LIMIT_BYTES bytes"
+    return 0
+  fi
+  found=$(find "$app_folder" -name "$PACK_NAME" -type f)
+  count=$(grep -c . <<<"$found" || true)
+  if (( count != 1 )); then
+    detail_lines "| " "$found"
+    fail "step $step_number of $STEP_COUNT ($step_title): $app holds $count files named $PACK_NAME, not one (the build phase \"Pack interface text\", Scripts/l10n/pack.py, writes exactly one into its resources)"
+  fi
+  if [[ $found != "$resources/$PACK_NAME" ]]; then
+    fail "step $step_number of $STEP_COUNT ($step_title): $app holds its $PACK_NAME at ${found#"$app_folder"/}, not in its resources folder"
+  fi
+  size=$(wc -c < "$found" | tr -d ' ')
+  detail "$app's $PACK_NAME is $size bytes (the limit is $PACK_LIMIT_BYTES)"
+  if (( size > PACK_LIMIT_BYTES )); then
+    fail "step $step_number of $STEP_COUNT ($step_title): $app's $PACK_NAME is $size bytes, over the $PACK_LIMIT_BYTES-byte limit"
+  fi
+}
+
 # require_ios_app_within_size_limit: builds the iPhone app for a device and
 # measures it with Scripts/ios/app-size.py, which counts the app's size as
 # app_size does and has the same two limits (its own tests check that they
@@ -758,11 +792,13 @@ main() {
   require_app_within_size_limit
   require_app_free_of_mac_paths
   require_language_files_compact "$MAC_RESOURCES" "$RELEASE_APP"
+  require_one_interface_pack "$RELEASE_APP" "$MAC_RESOURCES" "$RELEASE_APP"
   if [[ ${GITHUB_ACTIONS:-} == true ]]; then
     detail "the iPhone app is not built or measured on a GitHub runner (GITHUB_ACTIONS=true); the trains measure it there"
   else
     require_ios_app_within_size_limit
     require_language_files_compact "$IOS_APP" "the iPhone app"
+    require_one_interface_pack "$IOS_APP" "$IOS_APP" "the iPhone app"
   fi
 
   if (( without_tests )); then

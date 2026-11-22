@@ -123,6 +123,10 @@ write_stubs() {
 #                               bytes (at least 600); empty packages none
 #   STUB_APP_TEXT=<text>        build also writes <text> into the app, as
 #                               Contents/Resources/planted.txt
+#   STUB_PACK=<form>            the interface-text pack build packages (and, as STUB_IOS_PACK, the iPhone
+#                               app's): ok (the default, 8 bytes), none, twice (a second copy in a
+#                               Frameworks folder), misplaced (not in the resources folder), or big
+#                               (1,500,001 bytes, written sparse)
 #   STUB_LPROJ=<form>           the language files build packages in the app, in
 #                               Contents/Resources/es.lproj: compact (the default),
 #                               binary-strings (a .strings written as a binary list,
@@ -139,11 +143,25 @@ with_root() {
   sed "s#@ROOT@#$(pwd -P)#g" "$1"
 }
 
+# plant_pack <resources folder> <form>: writes the interface-text pack there as the build phase
+# does (8 bytes), or not at all (none), or twice (a copy in a sibling Frameworks folder), or in
+# the wrong place (misplaced: in a subfolder), or over the limit (big: 1,500,001 bytes, sparse).
+plant_pack() {
+  case $2 in
+    none) return 0 ;;
+    misplaced) mkdir -p "$1/Elsewhere"; printf 'TMSP0000' > "$1/Elsewhere/Strings.pack"; return 0 ;;
+    big) dd if=/dev/zero of="$1/Strings.pack" bs=1 count=0 seek=1500001 2>/dev/null; return 0 ;;
+  esac
+  printf 'TMSP0000' > "$1/Strings.pack"
+  case $2 in twice) mkdir -p "$1/../Frameworks"; printf 'TMSP0000' > "$1/../Frameworks/Strings.pack" ;; esac
+}
+
 # plant_language_files <resources folder> <form>: writes es.lproj's two files
 # there as the build phase leaves them (a text .strings of 8 bytes and a
 # binary .stringsdict of 16), or with one left in XML, or none at all.
 plant_language_files() {
   mkdir -p "$1"
+  plant_pack "$1" "${3:-ok}"
   case $2 in none) return 0 ;; esac
   mkdir -p "$1/es.lproj"
   case $2 in
@@ -184,8 +202,8 @@ case $target in
       mkdir -p build/TextMouth.app/Contents/MacOS
       head -c 600 /dev/zero > build/TextMouth.app/Contents/Info.plist
       # The language files count toward the size, so the executable is sized to leave the total at STUB_APP_BYTES.
-      plant_language_files build/TextMouth.app/Contents/Resources "${STUB_LPROJ:-compact}"
-      language_bytes=$(cat build/TextMouth.app/Contents/Resources/es.lproj/* 2>/dev/null | wc -c)
+      plant_language_files build/TextMouth.app/Contents/Resources "${STUB_LPROJ:-compact}" "${STUB_PACK:-ok}"
+      language_bytes=$(cat build/TextMouth.app/Contents/Resources/es.lproj/* build/TextMouth.app/Contents/Resources/Strings.pack build/TextMouth.app/Contents/Frameworks/Strings.pack build/TextMouth.app/Contents/Resources/Elsewhere/Strings.pack 2>/dev/null | wc -c)
       dd if=/dev/zero of=build/TextMouth.app/Contents/MacOS/TextMouth bs=1 count=0 \
         seek=$(( STUB_APP_BYTES - 600 - language_bytes )) 2>/dev/null
       if [ -n "${STUB_APP_TEXT:-}" ]; then
@@ -272,6 +290,22 @@ with open(os.environ["STUB_LOG"], "a") as log:
 form = os.environ.get("STUB_IOS_LPROJ", "compact")
 app = "build/ios-size-DerivedData/Build/Products/Release-iphoneos/TextMouth.app"
 os.makedirs(app, exist_ok=True)
+# The interface-text pack STUB_IOS_PACK names: ok (the default), none, twice, misplaced, or big.
+pack = os.environ.get("STUB_IOS_PACK", "ok")
+if pack == "misplaced":
+    os.makedirs(app + "/Elsewhere", exist_ok=True)
+    with open(app + "/Elsewhere/Strings.pack", "wb") as out:
+        out.write(b"TMSP0000")
+elif pack != "none":
+    with open(app + "/Strings.pack", "wb") as out:
+        if pack == "big":
+            out.truncate(1500001)
+        else:
+            out.write(b"TMSP0000")
+    if pack == "twice":
+        os.makedirs(app + "/Frameworks", exist_ok=True)
+        with open(app + "/Frameworks/Strings.pack", "wb") as out:
+            out.write(b"TMSP0000")
 if form != "none":
     folder = app + "/es.lproj"
     os.makedirs(folder, exist_ok=True)
@@ -948,11 +982,64 @@ real_run_cases() {
   expect_verdict "check: FAILED: step 3 of 3 (build the Release app): the iPhone app ships a language file that is not compact"
   end_case
 
+  begin_case "a Release app and an iPhone app with one small Strings.pack pass, and the gate reports each pack's size (FR39)"
+  run_gate
+  expect_status 0
+  expect_report "build/TextMouth.app's Strings.pack is 8 bytes (the limit is 1500000)"
+  expect_report "the iPhone app's Strings.pack is 8 bytes (the limit is 1500000)"
+  expect_verdict "check: PASSED"
+  end_case
+
+  begin_case "a Mac app with no Strings.pack fails the gate (the build phase did not run)"
+  run_gate STUB_PACK=none
+  expect_status 1
+  expect_verdict "check: FAILED: step 3 of 4 (build the Release app): build/TextMouth.app holds 0 files named Strings.pack, not one (the build phase \"Pack interface text\", Scripts/l10n/pack.py, writes exactly one into its resources)"
+  end_case
+
+  begin_case "a Mac app with a second Strings.pack fails the gate"
+  run_gate STUB_PACK=twice
+  expect_status 1
+  expect_verdict "check: FAILED: step 3 of 4 (build the Release app): build/TextMouth.app holds 2 files named Strings.pack, not one (the build phase \"Pack interface text\", Scripts/l10n/pack.py, writes exactly one into its resources)"
+  end_case
+
+  begin_case "a Mac app whose Strings.pack is not in its resources folder fails the gate"
+  run_gate STUB_PACK=misplaced
+  expect_status 1
+  expect_verdict "check: FAILED: step 3 of 4 (build the Release app): build/TextMouth.app holds its Strings.pack at Contents/Resources/Elsewhere/Strings.pack, not in its resources folder"
+  end_case
+
+  begin_case "a Mac app whose Strings.pack is a byte over 1.5 MB fails the gate"
+  run_gate STUB_PACK=big
+  expect_status 1
+  expect_report "build/TextMouth.app's Strings.pack is 1500001 bytes (the limit is 1500000)"
+  expect_verdict "check: FAILED: step 3 of 4 (build the Release app): build/TextMouth.app's Strings.pack is 1500001 bytes, over the 1500000-byte limit"
+  end_case
+
+  begin_case "an iPhone app with no Strings.pack fails the gate"
+  run_gate STUB_IOS_PACK=none
+  expect_status 1
+  expect_verdict "check: FAILED: step 3 of 4 (build the Release app): the iPhone app holds 0 files named Strings.pack, not one (the build phase \"Pack interface text\", Scripts/l10n/pack.py, writes exactly one into its resources)"
+  end_case
+
+  begin_case "an iPhone app with a second Strings.pack fails the gate"
+  run_gate STUB_IOS_PACK=twice
+  expect_status 1
+  expect_verdict "check: FAILED: step 3 of 4 (build the Release app): the iPhone app holds 2 files named Strings.pack, not one (the build phase \"Pack interface text\", Scripts/l10n/pack.py, writes exactly one into its resources)"
+  end_case
+
+  begin_case "an iPhone app whose Strings.pack is over 1.5 MB fails the gate"
+  run_gate STUB_IOS_PACK=big
+  expect_status 1
+  expect_verdict "check: FAILED: step 3 of 4 (build the Release app): the iPhone app's Strings.pack is 1500001 bytes, over the 1500000-byte limit"
+  end_case
+
   begin_case "a dry run says it would require every language file to be compact"
   run_gate -- --dry-run
   expect_status 0
   expect_report "would require every language file of build/TextMouth.app to be compact"
   expect_report "would require every language file of the iPhone app to be compact"
+  expect_report "would require build/TextMouth.app to hold exactly one Strings.pack of at most 1500000 bytes"
+  expect_report "would require the iPhone app to hold exactly one Strings.pack of at most 1500000 bytes"
   end_case
 
   begin_case "a Release app of exactly the warning size passes with no warning"
