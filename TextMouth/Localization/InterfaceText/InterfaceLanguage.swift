@@ -11,7 +11,7 @@ enum InterfaceLanguage {
     struct State: Sendable, Equatable {
         /// One of the languages the app carries (`PluralRules.categories`' keys), `en` when the person's are none.
         let language: String
-        /// The locale numbers and dates are formatted with. Under System it is `Locale.current`, which a per-app
+        /// The locale numbers and dates are formatted with. Under System it is `Locale.autoupdatingCurrent`, which a per-app
         /// language setting leaves as the language with the system's region.
         let locale: Locale
     }
@@ -47,11 +47,13 @@ enum InterfaceLanguage {
 
     /// The state under System. In a process that hosts tests it is English formatted with `en_US`, so the suite's
     /// interface text does not follow the language of the Mac it runs on; otherwise it is the first language of
-    /// `Bundle.main.preferredLocalizations` that the app carries, formatted with `Locale.current`.
+    /// `Bundle.main.preferredLocalizations` that the app carries, formatted with `Locale.autoupdatingCurrent`: it follows
+    /// a change of region while the app runs, as Apple's `String(localized:)` does by reading `Locale.current` at every
+    /// call, so a number is written the same way by both.
     static func systemState(
         isHostedTest: Bool = TextMouthRuntime.current.isHostedTest,
         preferredLocalizations: [String] = Bundle.main.preferredLocalizations,
-        currentLocale: Locale = .current
+        currentLocale: Locale = .autoupdatingCurrent
     ) -> State {
         if isHostedTest { return State(language: "en", locale: Locale(identifier: "en_US")) }
         return State(language: resolve(preferredLocalizations.first), locale: currentLocale)
