@@ -186,12 +186,6 @@ def describe(keys, limit=10):
     return shown + (f", and {len(keys) - limit} more" if len(keys) > limit else "")
 
 
-def describe(keys, limit=10):
-    """Up to `limit` keys, quoted and joined, with the count of the rest."""
-    shown = ", ".join(quote(key) for key in keys[:limit])
-    return shown + (f", and {len(keys) - limit} more" if len(keys) > limit else "")
-
-
 def stamp_of(root):
     """The stamp of the code a locations file is made from: {"commit", "treeId"} of `root`'s HEAD (both None when git cannot
     say), which `todo` compares with its own checkout's (see locations_note)."""
@@ -232,7 +226,9 @@ def cmd_sync(args):
         raise Refused(f"{number(len(problems))} problems in the InterfaceText.line calls, so nothing was synced:\n" + "\n".join(shown)
                       + (f"\nand {number(len(problems) - len(shown))} more" if len(problems) > len(shown) else ""))
     report = syncing.sync_catalog(cat, found)
-    cat.save(catalog_path(args))
+    # Only a changed catalog is written: a write makes Xcode rebuild it, so a sync with nothing to do leaves the file alone.
+    if report.changed():
+        cat.save(catalog_path(args))
     say(f"read {number(len(calls))} InterfaceText.line calls with {number(len(found))} IDs")
     say_report(report, say, args.verbose)
     destination = Path(args.locations) if args.locations else OUTPUT / LOCATIONS_FILE

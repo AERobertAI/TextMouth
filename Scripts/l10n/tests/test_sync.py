@@ -256,6 +256,27 @@ class SyncCommandTests(SyncCase):
         self.assertIn("0 added, 0 became stale, 0 no longer stale, 0 changed their English", out)
         self.assertEqual(self.catalog.read_text(encoding="utf-8"), text)
 
+    def test_a_second_sync_leaves_the_catalogs_bytes_and_modification_time_alone(self):
+        self.run_sync()
+        before = (self.catalog.read_bytes(), self.catalog.stat().st_mtime_ns)
+        status, _, _ = self.run_sync()
+        self.assertEqual(status, 0)
+        self.assertEqual((self.catalog.read_bytes(), self.catalog.stat().st_mtime_ns), before)
+
+    def test_a_sync_with_nothing_to_do_does_not_even_rewrite_a_catalog_in_another_layout(self):
+        self.run_sync()
+        # Valid JSON in a layout of its own: only a change in the strings may make the sync write the file.
+        self.catalog.write_text(json.dumps(json.loads(self.catalog.read_text(encoding="utf-8"))), encoding="utf-8")
+        before = self.catalog.read_bytes()
+        self.run_sync()
+        self.assertEqual(self.catalog.read_bytes(), before)
+
+    def test_the_locations_are_written_every_time(self):
+        self.run_sync()
+        self.locations.write_text("{}", encoding="utf-8")
+        self.run_sync()
+        self.assertIn("library.title", self.locations.read_text(encoding="utf-8"))
+
     def test_the_catalog_is_written_in_the_tools_layout(self):
         self.run_sync()
         text = self.catalog.read_text(encoding="utf-8")
