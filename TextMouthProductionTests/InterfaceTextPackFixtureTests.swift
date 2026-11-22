@@ -73,7 +73,14 @@ final class InterfaceTextPackFixtureTests: XCTestCase {
         let lines = InterfaceTextEngine(tables: try pack("lines.pack"), report: log.sink)
         let name = "Ana", pages = 3
         XCTAssertEqual(interfaceLine(lines, "fixture.number", "Page \(number: pages)", language: "es"), "Página 3")
-        XCTAssertEqual(interfaceLine(lines, "fixture.reorder", "\(name) read \(number: pages) pages", language: "ar"), "قرأ Ana 3 صفحة")
+        // Foundation wraps a `%@` argument in direction isolates (U+2066 to U+2069) when the format starts with
+        // right-to-left text, as Apple's `String(localized:)` does, and the engine hands the text to Foundation. The mark
+        // is U+2068 on the Mac and another isolate on the iPhone (train 1121-1946), so the test strips all four and
+        // asks that some were there.
+        let reordered = interfaceLine(lines, "fixture.reorder", "\(name) read \(number: pages) pages", language: "ar")
+        let isolates = Set("\u{2066}\u{2067}\u{2068}\u{2069}".unicodeScalars)
+        XCTAssertEqual(String(String.UnicodeScalarView(reordered.unicodeScalars.filter { !isolates.contains($0) })), "قرأ Ana 3 صفحة")
+        XCTAssertTrue(reordered.unicodeScalars.contains { isolates.contains($0) }, "Foundation isolates the argument: \(reordered.debugDescription)")
         XCTAssertEqual(interfaceLine(lines, "fixture.englishOnly", "Only English", language: "ja"), "Only English")
         let plurals = InterfaceTextEngine(tables: try pack("plurals.pack"), report: log.sink)
         let one = 1, five = 5
