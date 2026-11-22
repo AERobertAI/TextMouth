@@ -1,32 +1,33 @@
 #!/usr/bin/env python3
-"""Proves that compacting the language files, and reading them through TextMouth's own engine, leave every lookup
-unchanged (TL16, TL18, FR34, FR39).
+"""Proves that TextMouth's own engine, reading the interface-text pack, says in every language what Apple's lookup would say
+of the String Catalog's tables, and that the system's choice of language is unchanged by a bundle that ships no table
+(TL16, TL18, FR34, FR39).
 
-Run by `make l10n-check` (and so by `make check`), against the String Catalog in the
-repository, without building the app:
+Run by `make l10n-check` (and so by `make check`), against the String Catalog in the repository, without building the app.
+Since the switch (FR39 phase 8) neither app ships a table of Apple's, so the tables here exist only to be compared with:
 
-  1. `xcrun xcstringstool compile` writes the language files as Xcode ships them
-     (the same compiler Xcode's build step runs), into build/l10n-packs/xcode;
-  2. a copy of those files is compacted by `compact_packs.py`, into build/l10n-packs/compact;
+  1. `xcrun xcstringstool compile` writes Apple's language files from the catalog (the same compiler Xcode's build used to
+     run), into build/l10n-packs/apple;
+  2. `pack.py build` writes the interface-text pack from the same catalog, into build/l10n-packs/engine, with the
+     `<language>.lproj/InfoPlist.strings` files the apps' bundles hold;
   3. a small Swift program (Scripts/l10n/pack-probe/main.swift, compiled with the lookups of
-     TextMouthProductionTests/LanguagePackTests.swift) reads both folders as the app's main bundle,
-     one language at a time with every language in the bundle (so a lookup that falls back to
-     English falls back here too), and compares every key in every language: each string's text,
-     and each plural string's text at the counts 0, 1, 2, 5, 21, 100, and 1,000,000. Any difference
-     fails;
-  4. the third reading (FR39): `pack.py build` writes the interface-text pack from the same catalog, into
-     build/l10n-packs/engine, and in each language's process the probe asks the engine (the core files of
-     TextMouth/Localization/InterfaceText/, compiled into the probe) for every ID, with the ID's English from the
-     catalog's `en`, and Apple's tables for the same ID, written by Foundation with the same arguments, at the 13 counts of
-     TextMouthProductionTests/InterfaceTextShippedPackTests.swift (a second number three places on). The two texts must
-     be equal, the engine must report no problem, and the probe prints the number of lookups compared. The catalog is
-     keyed by ID, so nothing maps a key to an ID.
+     TextMouthProductionTests/LanguagePackTests.swift and the engine's core files) runs a copy of itself in the folder of
+     step 1, which makes the folder `Bundle.main`, once for each language with `-AppleLanguages (language)`. The folder holds
+     every language, so a lookup that a language's table lacks falls back to English's, as Apple's lookup does. In each
+     process the probe asks the engine for every ID at the 13 counts of
+     TextMouthProductionTests/InterfaceTextShippedPackTests.swift (a second number three places on), and Apple's tables for
+     the same ID, written by Foundation with the same arguments. The two texts must be equal and the engine must report no
+     problem;
+  4. the system's choice of language (the design's "Language choice"): the folder of step 2 is laid out as the apps'
+     bundles are, an Info.plist with `CFBundleLocalizations` and an `.lproj` for each language, no table. For each preference
+     list of PREFERENCES the probe runs a copy there and prints `Bundle.main.preferredLocalizations.first`, and the same in the
+     folder of step 1, which holds the tables besides. Each must be what the design measured, and the two must agree.
 
-The folders under build/ are overwritten on every run and never deleted by this script; only the
-languages the catalog names are copied and compared, so a leftover folder of a removed language
-changes nothing.
+The folders under build/ are overwritten on every run and never deleted by this script; only the languages the catalog names
+are compared, so a leftover folder of a removed language changes nothing.
 
-Usage: python3 -I -B Scripts/l10n/verify_packs.py [CATALOG]   exit 0 when every lookup is identical
+Usage: python3 -I -B Scripts/l10n/verify_packs.py [CATALOG]   exit 0 when every lookup is identical and every choice is as
+measured
 
 CATALOG defaults to the repository's catalog; a test names a small synthetic catalog and a work folder of its own.
 """
@@ -35,7 +36,7 @@ from __future__ import annotations
 
 import json
 import plistlib
-import shutil
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -43,8 +44,6 @@ from pathlib import Path
 # No bytecode beside the scripts it imports (the policy of Scripts/agents/tests/test_bytecode_policy.py).
 sys.dont_write_bytecode = True
 HERE = Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE))
-import compact_packs  # noqa: E402  (imported by path, after sys.path is set)
 
 ROOT = HERE.parent.parent
 CATALOG = ROOT / "TextMouth" / "Localization" / "Localizable.xcstrings"
@@ -69,6 +68,24 @@ PROBE_SOURCES = [
 PACK_TOOL = HERE / "pack.py"
 WORK = ROOT / "build" / "l10n-packs"
 
+# The system's choice (the design's "Language choice", System): each preference list (languages separated by commas, in
+# order) and the language `Bundle.main.preferredLocalizations.first` chooses, as measured. The last group is every language
+# the catalog has, which must choose itself.
+PREFERENCES = {
+    "zh-Hant-TW": "zh-Hant", "zh-Hant-HK": "zh-Hant", "zh-HK": "zh-Hant", "zh-TW": "zh-Hant", "zh-MO": "zh-Hant",
+    "zh-CN": "zh-Hans", "zh-SG": "zh-Hans", "zh": "zh-Hans",
+    "pt-PT": "pt-BR", "pt": "pt-BR", "pt-AO": "pt-BR",
+    "es-419": "es", "es-MX": "es", "es-US": "es",
+    "iw": "he",
+    # Norwegian Bokmal alone has no interface: the development region, English; with Swedish after it, Swedish.
+    "nb": "en", "nb,sv": "sv",
+    # Catalan with Spanish after it gives Spanish; Hindi in Latin script is not Hindi.
+    "ca,es": "es", "hi-Latn": "en",
+    # A language the interface lacks gives the development region, and a region of one it has gives that language.
+    "en-GB": "en", "de-AT": "de", "fr-CA": "fr", "ru-RU": "ru", "ar-SA": "ar", "ko-KR": "ko", "ja-JP": "ja",
+    "xx": "en",
+}
+
 
 def run(command: list[str], what: str) -> subprocess.CompletedProcess:
     """Run a command, capturing its output; stop with its output when it fails."""
@@ -82,6 +99,15 @@ def catalog_languages(catalog: Path = CATALOG) -> list[str]:
     """The languages `catalog` holds a localization for, sorted."""
     strings = json.loads(catalog.read_text(encoding="utf-8"))["strings"]
     return sorted({language for entry in strings.values() for language in entry.get("localizations", {})})
+
+
+def expected_preferences(languages: list[str]) -> dict[str, str]:
+    """The preference lists to try and the language each must choose: PREFERENCES, and each of `languages` choosing itself
+    (a catalog of fewer languages leaves out the measured lists whose answer it lacks)."""
+    wanted = {lists: chosen for lists, chosen in PREFERENCES.items()
+              if all(language in languages for language in {chosen, "en"})}
+    wanted.update({language: language for language in languages})
+    return wanted
 
 
 def build_probe(work: Path = WORK) -> Path:
@@ -98,10 +124,11 @@ def build_probe(work: Path = WORK) -> Path:
 
 
 def write_app_info(folder: Path, languages: list[str]) -> None:
-    """Write the Info.plist that makes `folder` an app's resources: English the development region, as the app's is.
+    """Write the Info.plist that makes `folder` an app's resources: English the development region, and `languages` in
+    CFBundleLocalizations, as the apps' own Info.plists have them.
 
     The probe runs from a copy of itself placed in the folder, so the folder is that run's main bundle; the
-    development region decides which table a lookup falls back to.
+    development region decides which language a person with none of the bundle's gets.
     """
     info = {
         "CFBundleDevelopmentRegion": "en",
@@ -112,7 +139,8 @@ def write_app_info(folder: Path, languages: list[str]) -> None:
 
 
 def build_engine_pack(catalog: Path, work: Path) -> Path:
-    """Build the interface-text pack of `catalog` (keyed by ID) into `work`/engine/Strings.pack.
+    """Build the interface-text pack of `catalog` (keyed by ID) into `work`/engine/Strings.pack, with the InfoPlist.strings of
+    each language beside it, as the apps' build does.
 
     Always rebuilt, without a stamp, so that the pack the probe reads is the one this catalog makes.
     """
@@ -126,47 +154,79 @@ def build_engine_pack(catalog: Path, work: Path) -> Path:
     return out
 
 
+def preferred_languages(probe: Path, folder: Path, lists: list[str]) -> dict[str, str]:
+    """The language `Bundle.main.preferredLocalizations.first` chooses in `folder` for each preference list of `lists`
+    (languages separated by commas), as the probe reports it."""
+    done = run([str(probe), "--preferences", str(folder), *lists], "the probe's choice of language")
+    found = dict(re.findall(r"^PREFERRED (\S+) -> (\S+)$", done.stdout, re.MULTILINE))
+    missing = [lists_ for lists_ in lists if lists_ not in found]
+    if missing:
+        sys.exit(f"verify_packs: the probe reported no choice for {missing}:\n{done.stdout}{done.stderr}")
+    return found
+
+
+def check_preferences(probe: Path, app: Path, apple: Path, languages: list[str]) -> list[str]:
+    """The sentences about the system's choice of language that differ from what the design measured, or between the app's
+    layout (`app`: Info.plist and the .lproj folders, no table) and the folder with the tables (`apple`); the results are
+    printed, one line for each preference list. Empty when every choice is as measured."""
+    wanted = expected_preferences(languages)
+    lists = sorted(wanted)
+    in_app = preferred_languages(probe, app, lists)
+    with_tables = preferred_languages(probe, apple, lists)
+    problems = []
+    for choice in lists:
+        verdict = "ok" if in_app[choice] == wanted[choice] else "DIFFERENT"
+        print(f"verify_packs: system choice for {choice}: {in_app[choice]} (measured {wanted[choice]}; with the tables {with_tables[choice]}): {verdict}")
+        if in_app[choice] != wanted[choice]:
+            problems.append(f"preferences {choice}: the app's layout chooses {in_app[choice]}, the design measured {wanted[choice]}")
+        if with_tables[choice] != in_app[choice]:
+            problems.append(f"preferences {choice}: {in_app[choice]} with no table, {with_tables[choice]} with the tables")
+    return problems
+
+
 def verify(catalog: Path = CATALOG, work: Path = WORK) -> int:
-    """Compile `catalog`, compact a copy, and compare every lookup, the engine's reading of the pack built from `catalog`
-    included (see the top of this file); 0 when all are identical. The files go under `work`, overwriting what an earlier
-    run left.
+    """Compile `catalog` into Apple's tables, build its pack, and compare every lookup (the engine's reading of the pack
+    against Apple's tables, in every language) and the system's choice of language (see the top of this file); 0 when all
+    are as they should be. The files go under `work`, overwriting what an earlier run left.
     """
     languages = catalog_languages(catalog)
-    xcode, compact = work / "xcode", work / "compact"
-    for folder in (xcode, compact):
-        folder.mkdir(parents=True, exist_ok=True)
+    apple = work / "apple"
+    apple.mkdir(parents=True, exist_ok=True)
 
-    # 1. The files as Xcode ships them (xcstringstool warns about ambiguous plurals; the sync tools report those).
-    run(["xcrun", "xcstringstool", "compile", "--output-directory", str(xcode), str(catalog)], "xcstringstool compile")
-
-    # 2. A compacted copy, language by language, overwriting what an earlier run left.
+    # 1. Apple's tables, as Xcode used to compile them (xcstringstool warns about ambiguous plurals; the sync tools report
+    # those), and the Info.plist that makes the folder a bundle holding every language.
+    run(["xcrun", "xcstringstool", "compile", "--output-directory", str(apple), str(catalog)], "xcstringstool compile")
     for language in languages:
-        source = xcode / f"{language}.lproj"
-        if not source.is_dir():
+        if not (apple / f"{language}.lproj").is_dir():
             sys.exit(f"verify_packs: xcstringstool wrote no {language}.lproj for the catalog's language {language}")
-        shutil.copytree(source, compact / source.name, dirs_exist_ok=True)
-    changed, errors = compact_packs.compact_folder(compact)
-    if errors:
-        sys.exit("verify_packs: compact_packs refused:\n" + "\n".join(errors))
-    for folder in (xcode, compact):
-        write_app_info(folder, languages)
+    write_app_info(apple, languages)
 
-    # 3. Every lookup, in both; and the engine's reading of the pack from the same catalog.
+    # 2. The pack, and the app's own layout: the InfoPlist.strings folders and an Info.plist, no table.
     probe = build_probe(work)
     pack = build_engine_pack(catalog, work)
-    engine_arguments = ["--pack", str(pack)]
+    write_app_info(pack.parent, languages)
+
+    # 3. Every lookup: the engine's reading of the pack against Apple's tables.
     done = subprocess.run(
-        [str(probe), str(xcode), str(compact), str(catalog), *engine_arguments, *languages],
+        [str(probe), str(apple), str(catalog), "--pack", str(pack), *languages],
         capture_output=True, text=True, check=False,
     )
     sys.stdout.write(done.stdout)
     sys.stderr.write(done.stderr)
     if done.returncode != 0:
-        print("verify_packs: FAILED: a lookup differs between Xcode's files and the compact files, or the engine's text "
-              "differs from Xcode's (or the engine reported a problem)", file=sys.stderr)
+        print("verify_packs: FAILED: the engine's text differs from Apple's tables (or the engine reported a problem)",
+              file=sys.stderr)
         return 1
-    print(f"verify_packs: ok ({changed} files compacted; every lookup in {', '.join(languages)} is unchanged "
-          "and the engine's text equals Xcode's)")
+
+    # 4. The system's choice of language, in the app's own layout.
+    problems = check_preferences(probe, pack.parent, apple, languages)
+    if problems:
+        print("verify_packs: FAILED: the system's choice of language is not what the design measured:", file=sys.stderr)
+        for sentence in problems:
+            print(f"  {sentence}", file=sys.stderr)
+        return 1
+    print(f"verify_packs: ok (every lookup in {', '.join(languages)} equals Apple's table, and the system chooses as "
+          "measured in a bundle with no table)")
     return 0
 
 

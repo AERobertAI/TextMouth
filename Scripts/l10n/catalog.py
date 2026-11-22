@@ -420,7 +420,7 @@ PLURAL_CATEGORIES = {
     **{code: _ONE_MANY_OTHER for code in ("es", "fr", "it", "pt", "pt-PT", "ca", "gl")},
     # Other alone: Chinese, Japanese, Korean, and the languages with no plural. Vietnamese too: CLDR 49 gives it a `one`
     # for 0 and 1, but Apple's Foundation (macOS 26.3, November 20, 2026) still picks `other` for every count, and
-    # Foundation is what picks the form, so the table follows it (`PluralRules`, TextMouth/Localization/InterfaceText/PluralRules.swift, which LanguagePackTests checks against Apple's rule).
+    # Foundation is what picks the form, so the table follows it (`PluralRules`, TextMouth/Localization/InterfaceText/PluralRules.swift, which InterfaceTextTests checks against Apple's rule).
     **{code: _ONLY_OTHER for code in ("ja", "zh", "zh-Hans", "zh-Hant", "ko", "id", "ms", "th", "vi")},
     # One, few, many, and other: the Slavic languages that decline by count.
     **{code: _SLAVIC for code in ("ru", "uk", "pl", "cs", "sk")},
