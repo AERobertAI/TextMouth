@@ -259,7 +259,11 @@ final class InterfaceTextShippedPackTests: XCTestCase {
         switch entry {
         case .absent: return .absent
         case .plain(let text): return .plain(InterfaceTextProof.withPositions(text))
-        case .plural(let forms): return .plural(forms.map(InterfaceTextProof.withPositions))
+        case .plural(let forms):
+            // A plural whose forms all read alike is a plain text: the pack writes it so in every language, while
+            // Xcode's English table keeps nine of them as plurals (a finding of the first train, 1121-2027).
+            let numbered = forms.map(InterfaceTextProof.withPositions)
+            return Set(numbered).count == 1 ? .plain(numbered[0]) : .plural(numbered)
         }
     }
 
