@@ -644,7 +644,34 @@ def sync_manifests(args, manifests, say, output=None):
     destination.write_text(json.dumps({EXTRACTED_KEY: stamp, **places}, indent=1, sort_keys=True, ensure_ascii=False) + "\n", encoding="utf-8")
     say(f"wrote {destination.name}: the files and lines of {number(sum(found.values()))} strings, in {destination.parent}")
     write_left_out(destination.parent / LEFT_OUT_FILE, config, found, left_out)
+    if reports.get(TABLE) is not None:
+        problems += give_new_keys_ids(catalog_path(args), destination, say)
     return EXIT_PROBLEMS if problems else EXIT_OK
+
+
+def give_new_keys_ids(catalog_file, locations, say, root=None):
+    """After a sync (FR39): gives each catalog key that has no ID one, by `ids.py`'s rules, so that the build phase that packs the
+    interface text finds an ID for every key. Every existing ID stays (an ID is permanent); `ids.json` is written only when a
+    key got one, and each new ID is printed with its key for the developer to see and commit. Then `ids.py check` must be
+    clean, else its problems are printed. Returns 1 when it is not, else 0. A checkout with no `ids.json` is left alone (the
+    table is how a checkout takes part in FR39)."""
+    root = Path(root or ROOT)
+    path = idslib.table_path(root)
+    if not path.is_file():
+        return 0
+    before = idslib.load_table(path)
+    table, _forms = idslib.propose(root, locations, False, catalog_file)
+    added = {key: ident for key, ident in table["ids"].items() if key not in before["ids"]}
+    if table != before:
+        path.write_text(idslib.dump_table(table), encoding="utf-8")
+    if added:
+        say(f"ids.json: {number(len(added))} new IDs, to commit with the code that holds them:")
+        for key in sorted(added):
+            say(f"  {added[key]}  {quote(key)}")
+    problems = idslib.check(root, catalog_file)
+    for problem in problems:
+        say(f"ids.json: {problem}")
+    return 1 if problems else 0
 
 
 def left_out_summary(config, found, left_out):

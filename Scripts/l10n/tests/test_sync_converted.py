@@ -194,5 +194,69 @@ class ConvertedSyncTests(ConvertedCase):
         self.assertFalse(self.locations.exists(), "no locations were written")
 
 
+class NewKeyIdTests(test_l10n.TemporaryCase):
+    """After a sync, a key with no ID is given one and printed; a key set that is all identified changes nothing."""
+
+    SOURCE = """enum ConvertedWording {
+    // Translators: The title.
+    static var title: String { InterfaceText.line("converted.title", "Converted title") }
+    // Translators: A new line, written after the IDs were made.
+    static var fresh: String { String(localized: "Brand new words") }
+}
+"""
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.root = self.folder / "checkout"
+        source = self.root / CONVERTED
+        source.parent.mkdir(parents=True)
+        source.write_text(self.SOURCE, encoding="utf-8")
+        self.catalog = self.root / ids.CATALOG_PATH
+        self.catalog.parent.mkdir(parents=True)
+        test_l10n.make_catalog({"Converted title": {}, "Brand new words": {}}).save(self.catalog)
+        self.table = ids.table_path(self.root)
+        self.table.parent.mkdir(parents=True)
+        self.table.write_text(ids.dump_table({"version": 1, "ids": {"Converted title": "converted.title"}, "splits": {}}),
+                              encoding="utf-8")
+        self.lines = []
+
+    def give(self) -> int:
+        """Runs the step as a sync does and returns its problem count."""
+        return l10n.give_new_keys_ids(self.catalog, self.folder / "none-locations.json", self.lines.append, self.root)
+
+    def test_a_new_key_gets_exactly_its_id_and_the_old_one_stays(self) -> None:
+        self.assertEqual(self.give(), 0)
+        table = json.loads(self.table.read_text())
+        self.assertEqual(table["ids"]["Converted title"], "converted.title")
+        self.assertEqual(sorted(table["ids"]), ["Brand new words", "Converted title"])
+        self.assertTrue(ids.ID_PATTERN.fullmatch(table["ids"]["Brand new words"]))
+        self.assertTrue(table["ids"]["Brand new words"].startswith("converted."), "from its declaration, as ids.py forms it")
+
+    def test_each_new_id_is_printed_with_its_key(self) -> None:
+        self.give()
+        text = "\n".join(self.lines)
+        self.assertIn("1 new IDs", text)
+        self.assertIn(json.loads(self.table.read_text())["ids"]["Brand new words"] + '  "Brand new words"', text)
+
+    def test_with_no_new_key_ids_json_is_byte_for_byte_unchanged_and_nothing_is_printed(self) -> None:
+        self.give()
+        before = self.table.read_bytes()
+        self.lines.clear()
+        self.assertEqual(self.give(), 0)
+        self.assertEqual(self.table.read_bytes(), before)
+        self.assertEqual(self.lines, [])
+
+    def test_a_table_that_fails_the_check_fails_the_step(self) -> None:
+        self.table.write_text(ids.dump_table({"version": 1, "ids": {"Converted title": "Bad_ID"}, "splits": {}}), encoding="utf-8")
+        self.assertEqual(self.give(), 1)
+        self.assertIn("ids.json: ID outside the pattern: 'Bad_ID'", "\n".join(self.lines))
+
+    def test_a_checkout_with_no_ids_json_is_left_alone(self) -> None:
+        self.table.unlink()
+        self.assertEqual(self.give(), 0)
+        self.assertFalse(self.table.exists())
+        self.assertEqual(self.lines, [])
+
+
 if __name__ == "__main__":
     unittest.main()

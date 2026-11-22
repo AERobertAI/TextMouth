@@ -597,10 +597,11 @@ def main_checkout() -> Optional[Path]:
     return Path(common).parent if common else None
 
 
-def propose(root: Path, locations_path: Optional[Path], fresh: bool) -> Tuple[dict, Dict[str, Tuple[List[str], str]]]:
+def propose(root: Path, locations_path: Optional[Path], fresh: bool,
+            catalog_file: Optional[Path] = None) -> Tuple[dict, Dict[str, Tuple[List[str], str]]]:
     """The table for `root`: its existing IDs kept (unless `fresh`), every other key given one. Also returns how each new
-    key was formed."""
-    cat = catalog.Catalog.load(root / CATALOG_PATH)
+    key was formed. The keys are the catalog's (`catalog_file`, else the one under `root`)."""
+    cat = catalog.Catalog.load(catalog_file or root / CATALOG_PATH)
     keys = sorted(cat.strings)
     table = {"version": TABLE_VERSION, "ids": {}, "splits": {}} if fresh else load_table(table_path(root))
     sites = collect_sites(root, keys, load_locations(locations_path))
@@ -622,11 +623,12 @@ def propose(root: Path, locations_path: Optional[Path], fresh: bool) -> Tuple[di
 # ---------------------------------------------------------------------------------------------- check
 
 
-def check(root: Path) -> List[str]:
-    """The problems of ids.json under `root`, as sentences; none when it is clean."""
+def check(root: Path, catalog_file: Optional[Path] = None) -> List[str]:
+    """The problems of ids.json under `root`, as sentences; none when it is clean. The keys are the catalog's
+    (`catalog_file`, else the one under `root`)."""
     problems: List[str] = []
     table = load_table(table_path(root))
-    cat = catalog.Catalog.load(root / CATALOG_PATH)
+    cat = catalog.Catalog.load(catalog_file or root / CATALOG_PATH)
     keys = set(cat.strings)
     ids: Dict[str, str] = table.get("ids", {})
     splits: Dict[str, list] = table.get("splits", {})
