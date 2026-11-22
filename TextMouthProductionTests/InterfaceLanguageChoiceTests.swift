@@ -1,0 +1,252 @@
+import XCTest
+@testable import TextMouth
+
+/// Tests of the person's choice of interface language (FR39, the picker's phase): the store in `AppleLanguages`, the
+/// locale a live switch builds, the state at launch, and the switch itself.
+///
+/// Every test that switches puts System back when it ends, so no later test runs in another language, and every store
+/// is a sandboxed one: no test writes the real app domain, whose `AppleLanguages` the installed app reads.
+final class InterfaceLanguageChoiceTests: XCTestCase {
+    // MARK: - Support
+
+    /// A new, empty sandboxed store for this test, discarded when the test ends.
+    private func makeStore() -> InterfaceLanguageStore {
+        let preferences = SandboxedPreferences("languageChoice")
+        addTeardownBlock { preferences.discard() }
+        return InterfaceLanguageStore(defaults: preferences.defaults, domain: preferences.file.deletingPathExtension().path)
+    }
+
+    /// Switches the process back to System when the test ends, whatever it switched to.
+    private func restoreSystemWhenDone(store: InterfaceLanguageStore) {
+        addTeardownBlock { InterfaceLanguage.choose(.system, store: store) }
+    }
+
+    // MARK: - The store
+
+    func testAnEmptyStoreIsSystem() {
+        XCTAssertEqual(makeStore().choice(), .system)
+        XCTAssertNil(makeStore().storedLanguages())
+    }
+
+    func testALanguageWritesItsCodeAlone() {
+        let store = makeStore()
+        store.save(.language("es"))
+        XCTAssertEqual(store.storedLanguages(), ["es"])
+        XCTAssertEqual(store.choice(), .language("es"))
+        store.save(.language("zh-Hant"))
+        XCTAssertEqual(store.storedLanguages(), ["zh-Hant"])
+        XCTAssertEqual(store.choice(), .language("zh-Hant"))
+    }
+
+    func testSystemRemovesTheKey() {
+        let store = makeStore()
+        store.save(.language("ar"))
+        store.save(.system)
+        XCTAssertNil(store.storedLanguages())
+        XCTAssertNil(store.defaults.persistentDomain(forName: store.domain)?[InterfaceLanguageStore.key])
+        XCTAssertEqual(store.choice(), .system)
+    }
+
+    /// A choice made in System Settings or the iPhone's Settings (the system writes the key itself) shows in the picker.
+    func testTheSystemsOwnSettingIsTheChoice() {
+        let store = makeStore()
+        store.defaults.set(["pt-BR"], forKey: InterfaceLanguageStore.key)
+        XCTAssertEqual(store.choice(), .language("pt-BR"))
+        store.defaults.set(["es-419"], forKey: InterfaceLanguageStore.key)
+        XCTAssertEqual(store.choice(), .language("es"), "the system writes a region with the language, which the app carries as its language")
+    }
+
+    func testAValueTheAppDoesNotCarryIsSystem() {
+        let store = makeStore()
+        store.defaults.set(["xx"], forKey: InterfaceLanguageStore.key)
+        XCTAssertEqual(store.choice(), .system)
+        store.defaults.set(["nb", "es"], forKey: InterfaceLanguageStore.key)
+        XCTAssertEqual(store.choice(), .system, "only the first entry counts: the list is in priority order")
+        store.defaults.set([] as [String], forKey: InterfaceLanguageStore.key)
+        XCTAssertEqual(store.choice(), .system)
+        store.defaults.set("es", forKey: InterfaceLanguageStore.key)
+        XCTAssertEqual(store.choice(), .system, "not a list")
+    }
+
+    func testEveryCarriedLanguageRoundTripsThroughTheStore() {
+        let store = makeStore()
+        for language in PluralRules.categories.keys {
+            store.save(.language(language))
+            XCTAssertEqual(store.choice(), .language(language))
+        }
+    }
+
+    /// The store reads its own domain, never the global list or a launch argument: `object(forKey:)` of a standard
+    /// store would answer with those.
+    func testTheStoreReadsItsOwnDomainOnly() {
+        let store = makeStore()
+        XCTAssertNotNil(Locale.preferredLanguages.first, "the Mac has languages, which the store must not read")
+        XCTAssertEqual(store.choice(), .system)
+    }
+
+    // MARK: - The real domain
+
+    /// A hosted run never touches the real domain of the app's bundle identifier: the process's store is a sandboxed
+    /// one, and a switch through it leaves the real `AppleLanguages` exactly as it was.
+    func testAHostedRunLeavesTheRealDomainUntouched() throws {
+        let bundleIdentifier = try XCTUnwrap(Bundle.main.bundleIdentifier)
+        let realKey = InterfaceLanguageStore.key
+        let before = UserDefaults.standard.persistentDomain(forName: bundleIdentifier)?[realKey] as? [String]
+
+        let processStore = InterfaceLanguageStore()
+        XCTAssertNotEqual(processStore.domain, bundleIdentifier, "the hosted process's store is not the app's domain")
+        XCTAssertTrue(processStore.domain.contains(TextMouthRuntime.sandboxNamePrefix), "it is in the sandbox: \(processStore.domain)")
+        XCTAssertFalse(processStore.defaults === UserDefaults.standard)
+
+        restoreSystemWhenDone(store: processStore)
+        InterfaceLanguage.choose(.language("es"))
+        XCTAssertEqual(processStore.storedLanguages(), ["es"], "the sandbox took the write")
+        InterfaceLanguage.choose(.language("ar"))
+        InterfaceLanguage.choose(.system)
+        XCTAssertNil(processStore.storedLanguages())
+
+        let after = UserDefaults.standard.persistentDomain(forName: bundleIdentifier)?[realKey] as? [String]
+        XCTAssertEqual(after, before, "the real domain's AppleLanguages is as it was")
+    }
+
+    // MARK: - The locale of a live switch
+
+    func testTheLocaleKeepsTheLanguageAndTheSystemsRegion() {
+        XCTAssertEqual(InterfaceLanguage.locale(for: "es", region: "US").identifier, "es_US")
+        XCTAssertEqual(InterfaceLanguage.locale(for: "es", region: "MX").identifier, "es_MX")
+        XCTAssertEqual(InterfaceLanguage.locale(for: "de", region: "CH").identifier, "de_CH")
+    }
+
+    func testPortugueseLosesItsRegionAndTakesTheSystems() {
+        let locale = InterfaceLanguage.locale(for: "pt-BR", region: "PT")
+        XCTAssertEqual(locale.identifier, "pt_PT")
+        XCTAssertEqual(locale.language.languageCode?.identifier, "pt")
+    }
+
+    func testChineseKeepsItsScript() {
+        let simplified = InterfaceLanguage.locale(for: "zh-Hans", region: "TW")
+        XCTAssertEqual(simplified.language.languageCode?.identifier, "zh")
+        XCTAssertTrue(simplified.identifier.hasPrefix("zh-Hans"), simplified.identifier)
+        XCTAssertEqual(simplified.region?.identifier, "TW")
+        let traditional = InterfaceLanguage.locale(for: "zh-Hant", region: "CN")
+        XCTAssertTrue(traditional.identifier.hasPrefix("zh-Hant"), traditional.identifier)
+        XCTAssertEqual(traditional.region?.identifier, "CN")
+    }
+
+    /// Persian writes Latin digits outside Iran and Afghanistan, as Foundation does for a per-app Persian.
+    func testPersianHasLatinDigitsOutsideIranAndAfghanistan() {
+        for region in ["US", "GB", "DE", "EG"] {
+            XCTAssertEqual(InterfaceLanguage.locale(for: "fa", region: region).numberingSystem.identifier, "latn", region)
+        }
+        for region in ["IR", "AF", "ir"] {
+            XCTAssertNotEqual(InterfaceLanguage.locale(for: "fa", region: region).numberingSystem.identifier, "latn", region)
+        }
+        XCTAssertEqual(InterfaceLanguage.locale(for: "ar", region: "US").numberingSystem.identifier, "latn")
+    }
+
+    /// The two cases the design records as differing from Foundation's own locale until the next launch: this rule's
+    /// answer is pinned, so a change to it shows. (Foundation keeps the region's digits for Persian in Saudi Arabia and
+    /// Persian digits for Urdu in Iran; from the next launch, Foundation's own locale is used and the difference is gone.)
+    func testTheTwoKnownDifferencesFromFoundationAreRecorded() {
+        XCTAssertEqual(InterfaceLanguage.locale(for: "fa", region: "SA").numberingSystem.identifier, "latn")
+        XCTAssertEqual(InterfaceLanguage.locale(for: "ur", region: "IR").identifier, "ur_IR")
+        XCTAssertEqual(InterfaceLanguage.locale(for: "ur", region: "IR").language.languageCode?.identifier, "ur")
+    }
+
+    /// A scope's locale is the same rule with the United States as the region, so the tests' own comparisons stand.
+    func testAScopesLocaleIsTheRuleWithTheUnitedStates() {
+        for language in PluralRules.categories.keys {
+            XCTAssertEqual(InterfaceLanguage.locale(forScope: language), InterfaceLanguage.locale(for: language, region: "US"), language)
+        }
+    }
+
+    // MARK: - Right to left
+
+    func testTheRightToLeftLanguages() {
+        let rightToLeft = PluralRules.categories.keys.filter { InterfaceLanguage.state(forScope: $0).isRightToLeft }
+        XCTAssertEqual(Set(rightToLeft), ["ar", "fa", "he", "ur"])
+    }
+
+    // MARK: - The state a choice gives
+
+    func testALiveSwitchToALanguage() {
+        let state = InterfaceLanguage.liveState(for: .language("es"), hostsTestBundle: false, region: "MX", preferredLanguages: ["en-US"])
+        XCTAssertEqual(state, InterfaceLanguage.State(language: "es", locale: Locale(identifier: "es_MX")))
+    }
+
+    func testALiveSwitchToSystemResolvesTheSystemsLanguages() {
+        func language(_ preferred: [String]) -> String {
+            InterfaceLanguage.liveState(for: .system, hostsTestBundle: false, region: "US", preferredLanguages: preferred).language
+        }
+        XCTAssertEqual(language(["es-419", "en"]), "es")
+        XCTAssertEqual(language(["zh-Hant-TW"]), "zh-Hant")
+        XCTAssertEqual(language(["zh-Hans-CN"]), "zh-Hans")
+        XCTAssertEqual(language(["fr-CA"]), "fr")
+        XCTAssertEqual(language(["xx", "ru"]), "ru", "the first language the app carries")
+        XCTAssertEqual(language(["xx"]), "en", "none carried gives English")
+        XCTAssertEqual(language([]), "en")
+    }
+
+    func testUnderHostedTestsSystemIsEnglishWithTheUnitedStates() {
+        let state = InterfaceLanguage.liveState(for: .system, hostsTestBundle: true, region: "FR", preferredLanguages: ["es"])
+        XCTAssertEqual(state, InterfaceLanguage.State(language: "en", locale: Locale(identifier: "en_US")))
+    }
+
+    func testUnderHostedTestsALanguageUsesTheUnitedStatesUnlessToldOtherwise() {
+        let state = InterfaceLanguage.liveState(for: .language("fa"), hostsTestBundle: true, preferredLanguages: [])
+        XCTAssertEqual(state, InterfaceLanguage.State(language: "fa", locale: InterfaceLanguage.locale(forScope: "fa")))
+    }
+
+    // MARK: - The launch
+
+    /// A chosen language gives its state at once, with Foundation's own locale, which is the per-app language's.
+    func testTheLaunchReadsTheChoiceBeforeTheFirstLookup() {
+        let store = makeStore()
+        store.save(.language("ar"))
+        let egypt = Locale(identifier: "ar_EG")
+        let state = InterfaceLanguage.launchState(choice: store.choice(), hostsTestBundle: false, preferredLocalizations: ["en"], currentLocale: egypt)
+        XCTAssertEqual(state, InterfaceLanguage.State(language: "ar", locale: egypt))
+    }
+
+    func testTheLaunchUnderSystemIsTodaysSystemState() {
+        let locale = Locale(identifier: "es_US")
+        let launch = InterfaceLanguage.launchState(choice: .system, hostsTestBundle: false, preferredLocalizations: ["es", "en"], currentLocale: locale)
+        let today = InterfaceLanguage.systemState(hostsTestBundle: false, preferredLocalizations: ["es", "en"], currentLocale: locale)
+        XCTAssertEqual(launch, today)
+        let hosted = InterfaceLanguage.launchState(choice: .system, hostsTestBundle: true, preferredLocalizations: ["es"], currentLocale: locale)
+        XCTAssertEqual(hosted, InterfaceLanguage.State(language: "en", locale: Locale(identifier: "en_US")))
+    }
+
+    func testTheLaunchUnderHostedTestsGivesAChosenLanguageTheScopesLocale() {
+        let state = InterfaceLanguage.launchState(choice: .language("es"), hostsTestBundle: true, preferredLocalizations: ["en"], currentLocale: Locale(identifier: "en_GB"))
+        XCTAssertEqual(state, InterfaceLanguage.state(forScope: "es"))
+    }
+
+    // MARK: - The switch
+
+    /// A switch swaps one whole state: language and locale together, and lookups follow at once; back to System, English.
+    func testASwitchSwapsOneWholeState() {
+        let store = makeStore()
+        restoreSystemWhenDone(store: store)
+        XCTAssertEqual(InterfaceLanguage.current.language, "en")
+        XCTAssertEqual(MenuWording.bookmarks, "Bookmarks")
+
+        let spanish = InterfaceLanguage.choose(.language("es"), store: store, region: "US")
+        XCTAssertEqual(InterfaceLanguage.current, spanish)
+        XCTAssertEqual(spanish, InterfaceLanguage.State(language: "es", locale: Locale(identifier: "es_US")))
+        XCTAssertEqual(MenuWording.bookmarks, "Marcadores")
+        XCTAssertEqual(store.choice(), .language("es"))
+
+        InterfaceLanguage.choose(.system, store: store)
+        XCTAssertEqual(InterfaceLanguage.current.language, "en")
+        XCTAssertEqual(MenuWording.bookmarks, "Bookmarks")
+        XCTAssertEqual(store.choice(), .system)
+    }
+
+    /// Without a choice made, System's behavior is today's: English under hosted tests, and the suite's English
+    /// assertions pass unchanged.
+    func testNobodyWhoNeverOpensThePickerSeesAChange() {
+        XCTAssertEqual(InterfaceLanguage.current, InterfaceLanguage.systemState())
+        XCTAssertEqual(InterfaceLanguageStore().choice(), .system, "the hosted process's store holds no choice")
+    }
+}
