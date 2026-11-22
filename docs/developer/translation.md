@@ -174,8 +174,9 @@ A person or an agent follows these steps from the start.
 Twenty-one languages were added this way, in two waves.
 
 1. Choose the code Xcode uses for the language: `zh-Hant` and `pt-BR` carry a script or region, `hi` does not.
-2. Add its plural categories to `PLURAL_CATEGORIES` in `Scripts/l10n/catalog.py`, and the same to the table in `LanguagePackTests.swift`, after checking the rule Foundation on this macOS applies, not only CLDR's: Vietnamese has `other` alone in Foundation, though CLDR 49 gives it `one`.
-   Probe it with `LanguagePackPluralRules`; `test_plural_rules_swift.py` fails when the two tables differ, and `Scripts/l10n/tests/test_catalog.py` keeps the catalog's.
+2. Add its plural categories to `PLURAL_CATEGORIES` in `Scripts/l10n/catalog.py`, and its rule to `PluralRules` (`TextMouth/Localization/InterfaceText/PluralRules.swift`).
+   Check the rule Foundation on this macOS applies, not only CLDR's: Vietnamese has `other` alone in Foundation, though CLDR 49 gives it `one`.
+   `LanguagePackTests` checks the table against Apple's rule at run time; `test_plural_rules_swift.py` fails when the two tables differ, and `Scripts/l10n/tests/test_catalog.py` keeps the catalog's.
 3. Add the language's text to every glossary term in `Scripts/l10n/glossary.json`, each marked `"check": true`, with the glossary's tests green (`Scripts/l10n/tests/test_glossary_file.py`).
    One agent for each language does this, so every translator of the language later uses the same words.
 4. Write the language's rules for translators, as the sections of [The interface languages](translation-languages.md) do: the address (register), the command form of menu items and buttons, the hints, the quotation marks, and how a sentence ends.

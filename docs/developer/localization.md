@@ -29,7 +29,7 @@ A key is the English text, and keys are app-wide: one translation serves every p
 A word with two meanings gets a key of its own only when a translator says so.
 
 ## The compact language files
-<!-- id: localization-compact-files; keys: TL16, compact_packs.py, verify_packs.py, LanguagePackTests, binary stringsdict, Compact language files, ENABLE_USER_SCRIPT_SANDBOXING, LanguagePackPluralRules; src: Scripts/l10n/compact_packs.py, Scripts/l10n/verify_packs.py, Scripts/l10n/pack-probe/main.swift, TextMouthProductionTests/LanguagePackTests.swift, project.yml, Scripts/check.sh -->
+<!-- id: localization-compact-files; keys: TL16, compact_packs.py, verify_packs.py, LanguagePackTests, binary stringsdict, Compact language files, ENABLE_USER_SCRIPT_SANDBOXING, PluralRules; src: Scripts/l10n/compact_packs.py, Scripts/l10n/verify_packs.py, Scripts/l10n/pack-probe/main.swift, TextMouthProductionTests/LanguagePackTests.swift, project.yml, Scripts/check.sh -->
 
 Xcode writes each language's files as XML property lists, and the last build phase of both apps, "Compact language files" (`Scripts/l10n/compact_packs.py`), rewrites them before Xcode signs the app, in every configuration.
 Each `.strings` becomes the UTF-8 text form, `"key"="value";` with no whitespace, its keys in code-point order so every build writes the same bytes.
@@ -41,7 +41,7 @@ Three checks hold it:
 - `LanguagePackTests`, on both apps, checks the built app's files are compact and every lookup equals the catalog;
 - `make check` fails when a file of either app is left in XML.
 
-A new language needs its plural rule in `LanguagePackPluralRules`, or `LanguagePackTests` fails and names it.
+A new language needs its plural rule in `PluralRules` (`TextMouth/Localization/InterfaceText/PluralRules.swift`), or `LanguagePackTests` fails and names it.
 Compact, the eleven languages ship 4,810,232 bytes together, against 6,925,064 as Xcode writes them.
 By language, the files hold English 42,341, Spanish 466,619, Italian 462,144, French 494,321, Brazilian Portuguese 467,335, and German 452,004 bytes.
 The rest are Russian 580,548, Ukrainian 582,169, Simplified Chinese 372,313, Japanese 462,727, and Korean 427,711 bytes.
