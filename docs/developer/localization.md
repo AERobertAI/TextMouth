@@ -58,11 +58,11 @@ Converting a sentence whole grows the English by about a fifth before any cut, b
 ## The commands
 <!-- id: localization-commands; keys: make l10n-sync, l10n-status, l10n-check, lint-l10n, plural, prune, reach, scan.py show; status: incomplete; issues: TL14; src: Makefile, Scripts/l10n/l10n.py, Scripts/l10n/scan.py, Scripts/l10n/reach.py -->
 
-- `make l10n-sync` (`REF=commit`, or `WORKTREE=1` for uncommitted work) extracts the strings of both apps and merges them into the catalog.
+- `make l10n-sync` reads the code's `InterfaceText.line` calls and brings the catalog into step with them, in about two seconds (below).
 - `make l10n-status` counts each language's strings by state (`LANG_CODE=es` for one), `make l10n-size` is the size report, and `make l10n-check` checks the catalog: comments, placeholders, plural forms, empty values, stale strings, and malformed parts, and that compacting changes no lookup.
   `make check` runs `l10n-check`.
 - `make lint-l10n` is the scanner's ratchet (below).
-- `l10n.py plural KEY --lang en --one "..." --other "..."` writes a string's plural forms.
+- `l10n.py plural ID --lang en --one "..." --other "..."` writes a string's plural forms.
   Give every count sentence English `one` and `other`, even one that never says one, since `apply` refuses plural forms for a key whose English has none.
   That is a limit to lift later (TL14), as is `plural`'s refusal of a plural that agrees with a second number.
 - `l10n.py prune` deletes the stale strings a cut leaves, which `check` otherwise reports until someone does; `prune --all` and `--dry-run` are in [Translating TextMouth](translation.md#syncing-pruning-and-the-test-classes).
@@ -73,16 +73,13 @@ Converting a sentence whole grows the English by about a fifth before any cut, b
 - `todo` and `apply` are the translators' commands; see [Translating TextMouth](translation.md).
 - The l10n tools' speed tests (`Scripts/l10n/tests`) time their own CPU (`time.process_time`), not the clock, so a busy Mac cannot fail them.
 
-## The extraction and the lock
-<!-- id: localization-extraction-lock; keys: typecheck.py --emit-strings, -emit-localized-strings, stringsdata, heavy-work lock, locations.json, sync time; src: Scripts/ios/typecheck.py, Scripts/l10n/l10n.py, Scripts/agents/heavy_lock.py -->
+## How the sync reads the code
+<!-- id: localization-sync-reads-code; keys: sync, lexer, InterfaceText.line, refusals, stale, needs_review, locations.json, sync time; src: Scripts/l10n/sync.py, Scripts/l10n/interface_calls.py, Scripts/l10n/l10n.py -->
 
-`sync` runs `Scripts/ios/typecheck.py --emit-strings` for the Mac and for the iPhone.
-The compiler writes one `.stringsdata` file for each Swift file into a folder of its own under `build/l10n/stringsdata/`, and `sync` merges both folders.
-Each extraction takes the heavy-work lock itself, so never wrap `sync` in `run_locked.py`, and it takes about four minutes (157 to 340 seconds measured), so run it once for a batch of edits.
-`--worktree` extracts the tree as it is, so one commit can hold the code and the catalog it needs.
-The build folders are never deleted during a run: each sync leaves about 7 MB, which the orchestrator clears afterwards.
-`sync` keeps only the strings of the files `Scripts/l10n/sync-paths.txt` lists, one glob a line, and a glob that matches no file is refused.
-It also writes `build/l10n/locations.json`, which `todo` reads.
+`sync` reads every `InterfaceText.line("<ID>", "<English>")` call in `TextMouth/` with the lexer (`Scripts/l10n/sync.py`), in about two seconds, with no build and no heavy-work lock.
+A new ID gets its English as `en` and its note as the comment; an ID the code no longer has is marked stale; an ID whose English changed gets the new `en`, and every other language `needs_review`.
+It refuses, and writes nothing, an ID outside the pattern or retired, one ID with two English texts, a call with no note above it, two calls on one line, and an ID or English that is not one plain literal.
+It writes the catalog only when something changed, and `build/l10n/locations.json`, which `todo` reads, every time.
 
 ## The scanner's ratchet
 <!-- id: localization-scanner-ratchet; keys: scan-baseline.json, lint-l10n, ratchet, merge chain, L10N_LINT_FAILED, --update-baseline, // l10n: no; src: Scripts/l10n/scan.py, Scripts/l10n/scan-baseline.json, Scripts/l10n/swiftscan/ratchet.py, Scripts/agents/merge-chain.sh, Makefile -->
@@ -104,13 +101,6 @@ Define the driver once for each clone with `make l10n-merge-driver`; without it 
 Two waves that add the same short key ("Cancel") each write a comment for it, and the driver merges the two comments into one sorted list, as `xcstringstool sync` writes them.
 Values, states, and plural forms that both sides changed still conflict.
 [Translating TextMouth](translation.md#the-catalogs-merge-driver) describes the driver in full.
-
-## The sync paths file
-<!-- id: localization-sync-paths; keys: sync-paths.txt, union merge, unsorted, sorted, test_syncpaths, globs; src: Scripts/l10n/sync-paths.txt, Scripts/l10n/tests/test_syncpaths.py, .gitattributes -->
-
-Each wave added the globs of its own files to `Scripts/l10n/sync-paths.txt`, and now that every file is converted the file holds one line, `TextMouth/**` (0d0a0d544), so a new file is synced without an edit here.
-Git merges the file by union, which kept both sides' lines where each added them, so two waves that added at the same place left the file out of order.
-`test_syncpaths` keeps the file sorted, and fails until someone sorts it again (e057b6036 did, after the pilot's merge): after a merge that touches the file, sort it before the suite.
 
 ## The pilot's patterns
 <!-- id: localization-pilot-patterns; keys: conversion patterns, wording enum, plural string, glued sentence, announcement, logName, FR35; src: TextMouth/Models/EndOfBookWording.swift, TextMouth/Models/NextBookWindow.swift, TextMouth/Models/ReadingListReaderWording.swift, TextMouth/Models/Book.swift, TextMouth/Services/SleepTimerService.swift, TextMouth/Views/Reader/SleepTimerView.swift, TextMouth/Views/Reader/BookmarkPanelView.swift -->
@@ -187,12 +177,12 @@ The waves added these to the pilot's patterns (the numbering above goes on); eac
   Rewrite each to check that the phone's word equals the Mac's static and that the Mac's source shows the static (7235ee4c4); search the tests for each converted file's name, since the English will not find them.
 
 ## What a wave puts in its brief
-<!-- id: localization-wave-brief; keys: wave, conversion area, train request, sync-paths globs, code and catalog together, reach; src: Scripts/l10n/l10n.py, Scripts/l10n/reach.py, Scripts/l10n/sync-paths.txt, Scripts/agents/build-train.py -->
+<!-- id: localization-wave-brief; keys: wave, conversion area, train request, code and catalog together, reach; src: Scripts/l10n/l10n.py, Scripts/l10n/reach.py, Scripts/agents/build-train.py -->
 
-- The exact files, the globs to add to `sync-paths.txt`, and the shared files of which only the area's own text may change.
+- The exact files, and the shared files of which only the area's own text may change.
 - The patterns above, and the rules that bite.
 - English unchanged in the conversion: about 5,600 test assertions compare it, and only tests that read source text change.
-- The commands, in order: `scan.py show FILE` until it shows nothing; `l10n.py sync --worktree`; `plural` for each count that can be one; `check`; the type-checks.
+- The commands, in order: `scan.py show FILE` until it shows nothing; `make l10n-sync`; `plural` for each count that can be one; `check`; the type-checks.
 - Code and catalog committed together, area by area.
 - The train request: the classes `reach` finds, the iPhone bundle, and every test class whose file names a converted file; the `phone` area whenever an iPhone file or a shared file changed.
 - Cutting the text (a step of its own, whose cuts the user hears first) and translating it (the translators' work) are separate steps.

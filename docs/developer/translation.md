@@ -54,12 +54,9 @@ Run every command as `python3 -I -B Scripts/l10n/l10n.py COMMAND`; `--help` afte
 A translation more than three times as long as an English of at least 12 characters is only a warning, and so is a different number of line breaks inside the text.
 
 ## Syncing, pruning, and the test classes
-<!-- id: translation-around-the-steps; keys: sync-paths.txt, syncPaths, prune, reach, stale, test classes, scan.py show; src: Scripts/l10n/l10n.py, Scripts/l10n/reach.py, Scripts/l10n/sync-paths.txt, Scripts/l10n/scan.py -->
+<!-- id: translation-around-the-steps; keys: sync, prune, reach, stale, test classes, scan.py show; src: Scripts/l10n/l10n.py, Scripts/l10n/sync.py, Scripts/l10n/reach.py, Scripts/l10n/scan.py -->
 
-`sync` keeps only the strings found in the files that `Scripts/l10n/sync-paths.txt` lists, one glob a line.
-Blank lines and `#` comments are skipped, and repeats are dropped; a glob that matches no file is refused.
-Each conversion wave adds its own lines there, kept sorted, and `.gitattributes` merges the file by union, so two waves never conflict.
-An old `config.json` that still has a `syncPaths` key is refused with a sentence naming that file.
+`sync` reads every Swift file of `TextMouth/`, so a new file needs no list (see [Localizing TextMouth's code](localization.md#how-the-sync-reads-the-code)).
 
 - After a cut, `check` fails until the strings the code no longer has are gone.
   `prune` deletes the stale strings that hold no translation in any language and prints each key; `prune --all` deletes every stale string, and `prune --dry-run` lists them and writes nothing.
