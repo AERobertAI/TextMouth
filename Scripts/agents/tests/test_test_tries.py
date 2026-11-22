@@ -76,6 +76,15 @@ class RunAreaSummaryTests(unittest.TestCase):
         self.assertIn("RETRIED CountWordingTests.testFlaky passed on try 2 of 3", lines)
         self.assertEqual(lines[-1], "FAILED")
 
+    def test_a_failed_result_with_text_in_front_of_it_still_names_the_test(self):
+        """Another process's log text before a result line (no error line printed) must not hide which test failed."""
+        lines = summary_of(
+            "Test Case '-[TextMouthProductionTests.AUITests testX]' started.\n"
+            "2026-11-22 09:10:26.3+0000 TextMouth[1:2] [AMCP] skippingTest Case "
+            "'-[TextMouthProductionTests.AUITests testX]' failed (0.161 seconds).\n"
+            "Executed 1 test, with 1 failure (0 unexpected) in 0.2 (0.2) seconds\n")
+        self.assertIn("FAILED AUITests.testX", lines)
+
     def test_a_crash_is_still_a_crash_and_a_failure(self):
         lines = summary_of(retry_logs.FAILED_ALL_TRIES_AND_A_CRASH)
         self.assertTrue(any(line.startswith("CRASH") for line in lines))

@@ -157,6 +157,35 @@ class ReadingTheLogTests(unittest.TestCase):
         self.assertEqual(parsed["cases"], {"AUITests.testX": "passed"})
         self.assertEqual(parsed["failures"], [])
 
+    def test_a_result_with_another_process_text_in_front_of_it_is_found(self):
+        """Train 1122-0353: CoreAudio's log line was cut in two by the test's result line, which printed after its text on the
+        same line. The test passed; it must not be called unfinished."""
+        parsed = self.parsed(
+            "Test Case '-[TextMouthiOSTests.KF8ReviewFixTests testABookOfOneDocumentWhoseGuideNamesItIsNotRefused]' started.\n"
+            "2026-11-22 09:10:26.302366+0000 TextMouth[43561:114022] [AMCP]          HALC_ProxyIOContext.cpp:1623  "
+            "HALC_ProxyIOContext::IOWorkLoop: skippingTest Case '-[TextMouthiOSTests.KF8ReviewFixTests "
+            "testABookOfOneDocumentWhoseGuideNamesItIsNotRefused]' passed (0.161 seconds).\n"
+            " cycle due to overload\n")
+        self.assertEqual(parsed["cases"], {"KF8ReviewFixTests.testABookOfOneDocumentWhoseGuideNamesItIsNotRefused": "passed"})
+        self.assertEqual(parsed["failures"], [])
+
+    def test_a_start_with_log_text_in_front_of_it_still_counts_as_started(self):
+        parsed = self.parsed("2026-11-22 09:10:26.1+0000 TextMouth[1:2] [AMCP] noiseTest Case "
+                             "'-[TextMouthiOSTests.IOSRuntimeTests testB]' started.\n")
+        self.assertEqual(parsed["failures"], [
+            f"FAILED IOSRuntimeTests.testB (TextMouthiOSTests) at (no location): {uitests.UNFINISHED}"])
+
+    def test_a_started_test_with_no_result_anywhere_is_still_unfinished(self):
+        parsed = self.parsed("Test Case '-[TextMouthiOSTests.IOSRuntimeTests testB]' started.\n"
+                             "some noise from another process\nTest Case '-[TextMouthiOSTests.IOSRuntimeTests testC]' started.\n"
+                             "noiseTest Case '-[TextMouthiOSTests.IOSRuntimeTests testC]' passed (0.1 seconds).\n")
+        self.assertEqual(parsed["cases"], {"IOSRuntimeTests.testB": "failed", "IOSRuntimeTests.testC": "passed"})
+        self.assertEqual(len(parsed["failures"]), 1)
+
+    def test_an_xcodebuild_result_with_text_in_front_of_it_is_found(self):
+        parsed = self.parsed("noiseTest case 'AUITests.testX()' failed on 'iPhone 17 - X (1)' (1.0 seconds)\n")
+        self.assertEqual(parsed["cases"], {"AUITests.testX": "failed"})
+
     def test_a_test_printed_twice_counts_once(self):
         parsed = self.parsed("Test Case '-[M.AUITests testX]' passed (1.0 seconds).\n"
                              "Test case 'AUITests.testX()' passed on 'iPhone 17 - X (1)' (1.0 seconds)\n")

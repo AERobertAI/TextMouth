@@ -303,11 +303,16 @@ def test_environment():
 # One test's result in an xcodebuild log, in the two forms Xcode prints: the test process's own,
 # "Test Case '-[TextMouthiOSUITests.ReaderUITests testX]' passed (3.4 seconds).", and xcodebuild's,
 # "Test case 'ReaderUITests.testX()' passed on 'iPhone 17 - TextMouthiOS (4242)' (3.4 seconds)".
-CASE_OBJC = re.compile(r"^Test Case '-\[(?:([A-Za-z0-9_]+)\.)?([A-Za-z0-9_]+) ([A-Za-z0-9_]+)\]' (passed|failed|skipped) \(", re.M)
-CASE_SWIFT = re.compile(r"^Test case '([A-Za-z0-9_]+)\.([A-Za-z0-9_]+)\(\)' (passed|failed|skipped) on ", re.M)
+# These three patterns find a test's start and result ANYWHERE in a line, not only at its start: another process's log text
+# can land in front of one. Train 1122-0353's log had "...HALC_ProxyIOContext::IOWorkLoop: skippingTest Case '-[...
+# testABookOfOneDocumentWhoseGuideNamesItIsNotRefused]' passed (0.161 seconds)." (CoreAudio's message cut in two by the
+# result), and an anchored pattern called that passing test unfinished. The quoted "Test Case '-[" text is specific enough
+# that no other line holds it.
+CASE_OBJC = re.compile(r"Test Case '-\[(?:([A-Za-z0-9_]+)\.)?([A-Za-z0-9_]+) ([A-Za-z0-9_]+)\]' (passed|failed|skipped) \(")
+CASE_SWIFT = re.compile(r"Test case '([A-Za-z0-9_]+)\.([A-Za-z0-9_]+)\(\)' (passed|failed|skipped) on ")
 # A test the test process began: "Test Case '-[TextMouthiOSUITests.ReaderUITests testX]' started." A test that began and has no
 # outcome line was cut off: the host app crashed in the middle of it, or the time limit stopped the run there.
-CASE_STARTED = re.compile(r"^Test Case '-\[(?:([A-Za-z0-9_]+)\.)?([A-Za-z0-9_]+) ([A-Za-z0-9_]+)\]' started\.", re.M)
+CASE_STARTED = re.compile(r"Test Case '-\[(?:([A-Za-z0-9_]+)\.)?([A-Za-z0-9_]+) ([A-Za-z0-9_]+)\]' started\.")
 # What the summary says of a test that began and never finished, in place of a failure message.
 UNFINISHED = "started and never finished (the host app crashed, or the run was stopped, in the middle of it)"
 # A failure the test process printed: "<path>:<line>: error: -[Module.Class test] : <message>".
