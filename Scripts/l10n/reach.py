@@ -1,11 +1,12 @@
 """reach.py: the hosted test classes a branch's localization could break (`l10n.py reach`, TL13).
 
-A conversion wave rewrites interface text as `String(localized: "...")` under a `// Translators: ...` line. Tests that compare the English text,
+A conversion wave rewrites interface text as `String(localized: "...")` (or, since FR39, `InterfaceText.line("<ID>", "...")`) under a
+`// Translators: ...` line. Tests that compare the English text,
 or read a converted file's source, can then fail. This finds them for the train request (`build-train.py request --classes`),
 from the branch's own diff, with no type name written in. It covers the Mac tests (TextMouthProductionTests) and the iPhone
 unit tests (TextMouthiOSTests), each class under the bundle that runs it. A class is reached when its file:
 
-- holds an English text the branch localized: each `String(localized: "...")` the branch adds, cut at its first
+- holds an English text the branch localized: each `String(localized: "...")` or `InterfaceText.line("<ID>", "...")` the branch adds, cut at its first
   interpolation, kept when MIN_PHRASE characters or more remain (so a short word such as "Done" does not reach everything);
 - names a file the branch converted (one whose added lines hold a `String(localized:`), by its path or its file name, since
   tests read the source of such files;
@@ -28,8 +29,9 @@ MIN_PHRASE = 12
 # What the bundles are called in the results: the key of each, its test folder's name in the testkit, and its heading.
 MAC, PHONE = "mac", "phone"
 HEADINGS = {MAC: "Mac tests (TextMouthProductionTests)", PHONE: "iPhone unit tests (TextMouthiOSTests; request the area `phone`)"}
-# A localized text in Swift source: the literal after `String(localized:`, with escapes still in it.
-LOCALIZED = re.compile(r'String\(localized: "((?:[^"\\]|\\.)*)"')
+# A localized text in Swift source, with escapes still in it: the literal after `String(localized:`, or the English (the
+# literal after the ID) of an `InterfaceText.line("<ID>", "...")` call (FR39), which a converted file holds.
+LOCALIZED = re.compile(r'(?:String\(localized: |InterfaceText\.line\(\s*"[^"\\]*",\s*)"((?:[^"\\]|\\.)*)"')
 # How many matching type names a reason lists.
 SHOWN_NAMES = 5
 

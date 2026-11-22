@@ -173,6 +173,8 @@ class Localizer:
         """Whether the literal is localized by the call it is an argument of."""
         if lit.in_interp or lit.call is None or lit.label == "comment":
             return False
+        if is_interface_text_english(lit):
+            return True
         spec = KEY_CALLS.get(lit.call)
         if spec is not None:
             labels, positional, whole = spec
@@ -184,6 +186,12 @@ class Localizer:
                     (label is not None and lit.label == label):
                 return True
         return False
+
+
+def is_interface_text_english(lit: Literal) -> bool:
+    """Whether the literal is the English of an `InterfaceText.line(id, english)` call (FR39): the call's second argument,
+    unlabelled. TextMouth's own lookup localizes it, so it counts as localized as the key of `String(localized:)` does."""
+    return lit.call == "line" and lit.receiver == "InterfaceText" and lit.label is None and lit.arg_index == 1
 
 
 def _is_log_name(name: Optional[str]) -> bool:
@@ -214,6 +222,9 @@ def classify(lit: Literal, wording_file: bool, localizer: Localizer) -> Tuple[st
     # the compiler extracts `Text("\(a): \(b)")` and `Stepper("")` too.
     if localizer.is_key(lit):
         return "ui", "localized-key"
+    # The other literals of an InterfaceText.line call (its ID, and the language of a title set) are code, never text to translate.
+    if lit.call == "line" and lit.receiver == "InterfaceText":
+        return "code", "interface-text-argument"
     if not any(ch.isalpha() for ch in text):
         return "code", "no-letters"
     # Logging, by the call or by the function the literal is in.
@@ -337,13 +348,18 @@ NOTE_PROBLEM_HELP = {
 }
 
 
-def has_note(lines: List[str], line: int) -> bool:
-    """Whether the 1-based `line` has a translator's note directly above it: the line before it, less its indentation,
-    starts with NOTE_MARKER and holds a note after it."""
+def note_text(lines: List[str], line: int) -> str:
+    """The translator's note directly above the 1-based `line`: the line before it, less its indentation, must start with
+    NOTE_MARKER; the note is the text after the marker, stripped. "" when there is no such line or it holds no note."""
     if not 2 <= line <= len(lines) + 1:
-        return False
+        return ""
     above = lines[line - 2].strip()
-    return above.startswith(NOTE_MARKER) and bool(above[len(NOTE_MARKER):].strip())
+    return above[len(NOTE_MARKER):].strip() if above.startswith(NOTE_MARKER) else ""
+
+
+def has_note(lines: List[str], line: int) -> bool:
+    """Whether the 1-based `line` has a translator's note directly above it (see `note_text`)."""
+    return bool(note_text(lines, line))
 
 
 def note_problem(lit: Literal, lines: List[str]) -> str:

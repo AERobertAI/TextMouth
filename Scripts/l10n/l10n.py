@@ -52,6 +52,8 @@ sys.path.insert(0, str(HERE.parent / "agents"))
 import catalog  # noqa: E402  (imported by path, after sys.path is set)
 import repo_paths  # noqa: E402
 import glossary as glossarylib  # noqa: E402
+import ids as idslib  # noqa: E402
+import interface_calls  # noqa: E402
 import merge  # noqa: E402
 import reach  # noqa: E402
 import translate  # noqa: E402
@@ -89,6 +91,10 @@ LEFT_OUT_FILE = "left-out.json"
 # that says what the run found (both defined by typecheck.py; repeated here because that script is run, not imported).
 STRINGS_FOLDER_LINE = "Strings folder: "
 STRINGS_MANIFEST = "manifest.json"
+# The folder, inside a strings folder, where `sync` writes the `.stringsdata` files of the converted calls (FR39).
+CONVERTED_FOLDER = "converted"
+# How many of the converted calls' problems a refusal lists.
+CONVERTED_PROBLEMS_SHOWN = 15
 # The configuration's defaults: no language ships until Spanish is translated; the English budget in bytes (the
 # user's 150 KB for the interface text) only reports until the cutting is done.
 # The configuration has no `syncPaths`: the globs of the converted files are in SYNC_PATHS_FILE (see load_sync_paths).
@@ -299,6 +305,43 @@ def check_manifests(manifests):
         if found != expected:
             raise Refused(f"the {PLATFORM_NAMES[manifest['platform']]} run wrote {found} .stringsdata files for {expected} Swift files "
                           f"({manifest['folder']}): two files of one name, or a build that stopped early; its strings would be incomplete")
+
+
+def add_converted_calls(manifests, root=None):
+    """The transition's half of a sync (FR39): the `InterfaceText.line` calls of each run's sources, written as `.stringsdata`
+    files beside the compiler's, so that `xcstringstool sync` keeps the keys and notes of the files already converted (the
+    compiler no longer sees their keys, and the catalog must not mark them stale).
+
+    Each call is first checked against `ids.json` (read from `root`, this checkout's by default): its ID must be the ID of its
+    key, or of the right split, its English the key character for character, and it must be one plain literal each with a
+    note above. A Refused names the problems and nothing is written; otherwise one file for each source that holds calls is
+    written under the run's strings folder in CONVERTED_FOLDER, and listed in the run's `files`, so that the places and
+    notes are read like the compiler's. Returns how many calls were read (counting a file both apps compile once for each)."""
+    root = Path(root or ROOT)
+    table = idslib.load_table(idslib.table_path(root))
+    retired = idslib.retired_ids(root)
+    total, added = 0, []
+    problems = []
+    for manifest in manifests:
+        source_root = Path(manifest["sourceRoot"])
+        by_file = interface_calls.calls_in_tree(source_root)
+        problems += interface_calls.problems_of(source_root, by_file, table, retired)
+        added.append((manifest, source_root, by_file))
+        total += sum(len(calls) for calls in by_file.values())
+    if problems:
+        shown = sorted(set(problems))
+        raise Refused(f"{number(len(shown))} problems in the InterfaceText.line calls, so nothing was synced:\n"
+                      + "\n".join(shown[:CONVERTED_PROBLEMS_SHOWN])
+                      + (f"\nand {number(len(shown) - CONVERTED_PROBLEMS_SHOWN)} more" if len(shown) > CONVERTED_PROBLEMS_SHOWN else ""))
+    for manifest, source_root, by_file in added:
+        for name, calls in by_file.items():
+            relative = f"{CONVERTED_FOLDER}/{name.replace('/', '__')}.stringsdata"
+            target = Path(manifest["folder"]) / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            data = interface_calls.stringsdata(str(source_root / name), calls)
+            target.write_text(json.dumps(data, indent=1, sort_keys=True, ensure_ascii=False) + "\n", encoding="utf-8")
+            manifest["files"].append(relative)
+    return total
 
 
 def read_stringsdata(path):
@@ -538,6 +581,10 @@ def sync_manifests(args, manifests, say, output=None):
     """The sync itself, from two strings folders' manifests: checks them, merges them into each catalog that has a table in
     them, writes the locations, and prints what changed. Returns the exit status."""
     check_manifests(manifests)
+    # The calls of converted files (FR39), checked and written as .stringsdata files, before anything else is written.
+    converted = add_converted_calls(manifests)
+    if converted:
+        say(f"read {number(converted)} InterfaceText.line calls and checked each against ids.json")
     config = load_config(args.config, ROOT)
     in_sync_paths = path_matcher(config["syncPaths"])
     places, by_platform, everything, files = collect(sorted(manifests, key=lambda m: m["platform"]), in_sync_paths)
@@ -577,7 +624,9 @@ def sync_manifests(args, manifests, say, output=None):
     left_out = {table: sorted(everything[table] - set(places.get(table, {}))) for table in everything}
     say_left_out(say, config, found, left_out)
     per_app = ", ".join(f"{PLATFORM_NAMES[p]} {number(sum(len(k) for k in by_platform[p].values()))}" for p in PLATFORMS)
-    say(f"kept {number(sum(found.values()))} strings of {number(len(files) - 1)} converted files ({per_app}; some are in both)")
+    # The files the compiler wrote: all but the placeholder first in the list and the converted calls' own.
+    xcode_files = sum(1 for file in files[1:] if Path(file).parent.name != CONVERTED_FOLDER)
+    say(f"kept {number(sum(found.values()))} strings of {number(xcode_files)} converted files ({per_app}; some are in both)")
     for table, report in reports.items():
         say(f"{table}: {number(len(report.added))} added, {number(len(report.stale))} became stale, "
             f"{number(len(report.revived))} no longer stale, {number(len(report.removed))} removed")
@@ -595,7 +644,71 @@ def sync_manifests(args, manifests, say, output=None):
     destination.write_text(json.dumps({EXTRACTED_KEY: stamp, **places}, indent=1, sort_keys=True, ensure_ascii=False) + "\n", encoding="utf-8")
     say(f"wrote {destination.name}: the files and lines of {number(sum(found.values()))} strings, in {destination.parent}")
     write_left_out(destination.parent / LEFT_OUT_FILE, config, found, left_out)
+    if reports.get(TABLE) is not None:
+        problems += give_new_keys_ids(catalog_path(args), destination, say)
     return EXIT_PROBLEMS if problems else EXIT_OK
+
+
+def retire_removed_ids(root, before, keys):
+    """Appends to retired-ids.txt every ID of `before` (an ids.json table) whose key is not among `keys`, a removed split key's
+    split IDs included; each is kept out of every later table (an ID is never given again). The file keeps its header and its
+    order: the new IDs go at the end, one a line, sorted. Returns {ID: its old key}, in that order; nothing is written when none."""
+    gone = {}
+    for key, ident in before["ids"].items():
+        if key not in keys:
+            gone[ident] = key
+    for key, uses in before.get("splits", {}).items():
+        if key not in keys:
+            gone.update({use["id"]: key for use in uses})
+    already = idslib.retired_ids(root)
+    fresh = {ident: key for ident, key in sorted(gone.items()) if ident not in already}
+    if fresh:
+        path = root / idslib.RETIRED_PATH
+        text = path.read_text(encoding="utf-8") if path.is_file() else ""
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text + ("" if not text or text.endswith("\n") else "\n") + "".join(f"{ident}\n" for ident in fresh),
+                        encoding="utf-8")
+    return fresh
+
+
+def give_new_keys_ids(catalog_file, locations, say, root=None):
+    """After a sync (FR39): keeps `ids.json` in step with the catalog, so that the build phase that packs the interface text finds
+    an ID for every key and no ID passes to another string.
+
+    - An ID whose key left the catalog is retired first (see `retire_removed_ids`), with its `splits` entry, and printed with its
+      old key; no later key is given it.
+    - Each key with no ID is given one, by `ids.py`'s rules; every existing ID stays (an ID is permanent). Each is printed with
+      its key, for the developer to commit with the code that holds it.
+    - `ids.json` is written only when something changed, and nothing is printed when nothing did.
+    - Then `ids.py check` must be clean, else its problems are printed.
+
+    Returns 1 when the check is not clean, else 0. A checkout with no `ids.json` is left alone (the table is how a checkout takes
+    part in FR39)."""
+    root = Path(root or ROOT)
+    path = idslib.table_path(root)
+    if not path.is_file():
+        return 0
+    before = idslib.load_table(path)
+    keys = set(catalog.Catalog.load(catalog_file).strings)
+    # Retired before the proposal, which keeps retired IDs out of what it gives new keys.
+    retired = retire_removed_ids(root, before, keys)
+    table, _forms = idslib.propose(root, locations, False, catalog_file)
+    table["splits"] = {key: uses for key, uses in table["splits"].items() if key in keys}
+    added = {key: ident for key, ident in table["ids"].items() if key not in before["ids"]}
+    if table != before:
+        path.write_text(idslib.dump_table(table), encoding="utf-8")
+    if retired:
+        say(f"retired-ids.txt: {number(len(retired))} IDs retired, their keys having left the catalog:")
+        for ident, key in retired.items():
+            say(f"  {ident}  {quote(key)}")
+    if added:
+        say(f"ids.json: {number(len(added))} new IDs, to commit with the code that holds them:")
+        for key in sorted(added):
+            say(f"  {added[key]}  {quote(key)}")
+    problems = idslib.check(root, catalog_file)
+    for problem in problems:
+        say(f"ids.json: {problem}")
+    return 1 if problems else 0
 
 
 def left_out_summary(config, found, left_out):

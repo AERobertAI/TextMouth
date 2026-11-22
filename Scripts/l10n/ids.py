@@ -32,6 +32,7 @@ if str(HERE) not in sys.path:
 
 import catalog  # noqa: E402
 from swiftscan import scanner  # noqa: E402
+from swiftscan.lexer import Literal  # noqa: E402
 
 # Where the files live, relative to the repository root.
 CATALOG_PATH = "TextMouth/Localization/Localizable.xcstrings"
@@ -183,20 +184,23 @@ def load_locations(path: Optional[Path]) -> Dict[str, List[dict]]:
     return json.loads(path.read_text(encoding="utf-8")).get("Localizable", {})
 
 
-def collect_sites(root: Path, strings: Iterable[str], locations: Optional[Dict[str, List[dict]]] = None) -> List[Site]:
-    """Every localized call of `root`'s sources, tied to its catalog key and its declaration.
+def literal_sites(root: Path, strings: Iterable[str], locations: Optional[Dict[str, List[dict]]] = None,
+                  only_files: Optional[Set[str]] = None) -> Iterable[Tuple[Literal, Site]]:
+    """Every `String(localized:)`-style call of `root`'s sources as (its literal, its site): the literal's place and text,
+    and the key and declaration it belongs to.
 
-    A literal's key is the one key of that text; where `%@` and `%lld` keys read alike, the translator's note decides,
-    then `locations` (when given); a literal still undecided is left without a key."""
+    A literal's key is the one key of that text among `strings`; where `%@` and `%lld` keys read alike, the translator's
+    note decides, then `locations` (when given); a literal still undecided is left without a key. With `only_files`
+    (paths relative to `root`), only the calls of those files are given, though every file is scanned (the scan needs the
+    whole tree to know which functions take a localized resource)."""
     strings = set(strings)
     by_text: Dict[str, Set[str]] = defaultdict(set)
     for key in strings:
         by_text[normalize_key(key)].add(key)
     by_spot = {(spot["file"], spot["line"]): key for key, spots in (locations or {}).items() for spot in spots}
     source: Dict[str, List[str]] = {}
-    sites: List[Site] = []
     for lit in scanner.scan_tree(root).literals:
-        if lit.rule != "localized-key":
+        if lit.rule != "localized-key" or (only_files is not None and lit.file not in only_files):
             continue
         if lit.file not in source:
             source[lit.file] = (root / lit.file).read_text(encoding="utf-8", errors="replace").split("\n")
@@ -209,10 +213,29 @@ def collect_sites(root: Path, strings: Iterable[str], locations: Optional[Dict[s
             key = pick_by_note(candidates, note) if candidates else None
             if key is None:
                 key = by_spot.get((lit.file, lit.line))
-        types, member, case = declarations_at(lines, lit.line)
-        owner = owner_type(types, lit.file)
-        sites.append(Site(lit.file, lit.line, key, owner, member or "init", case))
-    return sites
+        yield lit, site_at(lines, lit.file, lit.line, key)
+
+
+def site_at(lines: Sequence[str], file: str, line: int, key: Optional[str]) -> Site:
+    """The site of the call on the 1-based `line` of a file's `lines`: the declaration around it, and the `key` it holds."""
+    types, member, case = declarations_at(lines, line)
+    return Site(file, line, key, owner_type(types, file), member or "init", case)
+
+
+def collect_sites(root: Path, strings: Iterable[str], locations: Optional[Dict[str, List[dict]]] = None) -> List[Site]:
+    """Every localized call of `root`'s sources, tied to its catalog key and its declaration (see `literal_sites`)."""
+    return [site for _lit, site in literal_sites(root, strings, locations)]
+
+
+def id_for_site(table: dict, key: str, site: Site) -> Optional[str]:
+    """The ID that a call at `site` holding `key` must carry: the key's own ID, or, for a key that is split, the ID of the
+    one use that names the site (see `Site.selectors`). None when the key has no ID, or when no use or several name
+    the site."""
+    uses = table.get("splits", {}).get(key)
+    if not uses:
+        return table.get("ids", {}).get(key)
+    covering = [use["id"] for use in uses if set(use["sites"]) & set(site.selectors())]
+    return covering[0] if len(covering) == 1 else None
 
 
 def owner_type(types: Sequence[str], file: str) -> str:
@@ -574,10 +597,11 @@ def main_checkout() -> Optional[Path]:
     return Path(common).parent if common else None
 
 
-def propose(root: Path, locations_path: Optional[Path], fresh: bool) -> Tuple[dict, Dict[str, Tuple[List[str], str]]]:
+def propose(root: Path, locations_path: Optional[Path], fresh: bool,
+            catalog_file: Optional[Path] = None) -> Tuple[dict, Dict[str, Tuple[List[str], str]]]:
     """The table for `root`: its existing IDs kept (unless `fresh`), every other key given one. Also returns how each new
-    key was formed."""
-    cat = catalog.Catalog.load(root / CATALOG_PATH)
+    key was formed. The keys are the catalog's (`catalog_file`, else the one under `root`)."""
+    cat = catalog.Catalog.load(catalog_file or root / CATALOG_PATH)
     keys = sorted(cat.strings)
     table = {"version": TABLE_VERSION, "ids": {}, "splits": {}} if fresh else load_table(table_path(root))
     sites = collect_sites(root, keys, load_locations(locations_path))
@@ -599,11 +623,12 @@ def propose(root: Path, locations_path: Optional[Path], fresh: bool) -> Tuple[di
 # ---------------------------------------------------------------------------------------------- check
 
 
-def check(root: Path) -> List[str]:
-    """The problems of ids.json under `root`, as sentences; none when it is clean."""
+def check(root: Path, catalog_file: Optional[Path] = None) -> List[str]:
+    """The problems of ids.json under `root`, as sentences; none when it is clean. The keys are the catalog's
+    (`catalog_file`, else the one under `root`)."""
     problems: List[str] = []
     table = load_table(table_path(root))
-    cat = catalog.Catalog.load(root / CATALOG_PATH)
+    cat = catalog.Catalog.load(catalog_file or root / CATALOG_PATH)
     keys = set(cat.strings)
     ids: Dict[str, str] = table.get("ids", {})
     splits: Dict[str, list] = table.get("splits", {})
