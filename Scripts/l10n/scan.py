@@ -38,10 +38,15 @@ must be a plain literal in the ID pattern and not in Scripts/l10n/retired-ids.tx
 has one English, and that the catalog holds it, are `l10n.py sync` and `check`'s.)
 
 A literal is interface text when it is shown or spoken to the user (see swiftscan/classify.py
-for the buckets). It is *localized* when it is the key of a call the compiler extracts
-(String(localized:), LocalizedStringResource, Text("..."), .accessibilityLabel("..."), and the
-others), *marked* when its line ends with the comment `// l10n: no` (an identifier, a name the
-system gives, a test hook), and *unlocalized* otherwise.
+for the buckets). It is *localized* when it is the English of an InterfaceText.line call, *marked*
+when its line ends with the comment `// l10n: no` (an identifier, a name the system gives, a test
+hook), and *unlocalized* otherwise.
+
+No table of Apple's ships in either app (FR39 phase 8), so a lookup into one would show its key.
+`lint` fails, in every file of TextMouth/, on String(localized:), AttributedString(localized:),
+LocalizedStringResource, String.LocalizationValue, LocalizedStringKey, NSLocalizedString, and a SwiftUI
+literal key (Text("..."), Button("..."), .accessibilityLabel("..."), and the other calls the compiler
+extracts), naming InterfaceText.line in its message (apple_lookups.py). The baseline holds these at zero.
 
 Exit status: 0 when the command did its work (for lint: nothing got worse), 1 when lint found a
 file that gained unlocalized text, 2 for a command line that names nothing or gives a bad
@@ -64,6 +69,7 @@ HERE = Path(__file__).resolve().parent
 if str(HERE) not in sys.path:
     sys.path.insert(0, str(HERE))
 
+import apple_lookups  # noqa: E402
 import ids  # noqa: E402
 import interface_calls  # noqa: E402
 from swiftscan import areas, ratchet, report  # noqa: E402
@@ -221,6 +227,8 @@ def cmd_lint(args: argparse.Namespace, scan: Scan, root: Path) -> int:
     # The ID of every InterfaceText.line call (FR39) is a literal in the pattern and not retired. (Its note is held to the rule
     # above, as a localized call's.)
     calls = interface_calls.problems_of(root, interface_calls.calls_in_tree(root), ids.retired_ids(root), notes=False)
+    # No table of Apple's ships (FR39 phase 8), so a lookup into one would show its key: each is refused, in every file.
+    lookups = apple_lookups.problems_of(apple_lookups.in_tree(root, scan.literals))
     if problems:
         print("\n".join(ratchet.format_problems(problems)))
         vanished = sorted(f for f in baseline if f not in set(scan.files))
@@ -231,7 +239,9 @@ def cmd_lint(args: argparse.Namespace, scan: Scan, root: Path) -> int:
         print("\n".join(ratchet.format_note_problems(notes)))
     if calls:
         print("\n".join(calls))
-    if problems or notes or calls:
+    if lookups:
+        print("\n".join(lookups))
+    if problems or notes or calls or lookups:
         return EXIT_FAIL
     lower = sum(1 for f, n in baseline.items() if counts.get(f, 0) < n)
     print(f"l10n lint: ok, {sum(counts.values()):,} unlocalized literals in {len(counts)} files, none above its baseline."

@@ -1,8 +1,9 @@
-"""The scanner names the SwiftUI literals that are extracted without a comment (TL13).
+"""The scanner names the SwiftUI literals that are extracted without a comment (TL13), and the lint refuses them (FR39 phase 8).
 
-The compiler extracts `Text("...")`, `Button("...")`, and the others as localized keys, but only `Text` can take a comment, and
-`l10n.py check` refuses a string with none once its file is synced. `scan.py show` lists them in a section of their own. They
-stay counted as localized: the lint and the baseline do not change.
+The compiler extracts `Text("...")`, `Button("...")`, and the others as localized keys, but only `Text` can take a comment.
+`scan.py show` lists them in a section of their own. Since no app ships a table of Apple's, each is an `apple-lookup` that would
+show its key: it is counted neither localized nor unlocalized (the baseline does not change), and `lint` fails on it, naming
+InterfaceText.line. (The file keeps the name of the section it first tested.)
 """
 
 from __future__ import annotations
@@ -14,6 +15,7 @@ import unittest
 from pathlib import Path
 
 from scan_case import REPO, TreeCase, run_main, scan_snippet
+from swiftscan.classify import NEEDS_COMMENT_HELP
 
 
 def bare(code: str) -> list:
@@ -65,9 +67,9 @@ class NeedsCommentTests(unittest.TestCase):
     def test_a_ternary_of_two_literals_lists_both(self) -> None:
         self.assertEqual(bare('Button(isNew ? "Add" : "Save") { go() }'), [("Button", "Add"), ("Button", "Save")])
 
-    def test_a_listed_literal_is_still_counted_localized_and_not_unlocalized(self) -> None:
+    def test_a_listed_literal_is_an_apple_lookup_and_not_unlocalized(self) -> None:
         lit = scan_snippet('Text("Sleep Timer")')[0]
-        self.assertEqual((lit.status, lit.needs_comment), ("localized", True))
+        self.assertEqual((lit.status, lit.needs_comment), ("apple-lookup", True))
 
     def test_a_label_on_the_literal_other_than_the_key_is_not_listed(self) -> None:
         self.assertEqual(bare('Button(action: go, label: "Go there")'), [])
@@ -105,7 +107,8 @@ class ShowTests(TreeCase):
         self.write("Views/SleepPanel.swift", self.CODE)
         status, out, _err = run_main("--root", str(self.root), "show", "TextMouth/Views/SleepPanel.swift")
         self.assertEqual(status, 0)
-        self.assertIn("extracted with no translator's note: write a `// Translators: ...` line directly above it, or move it into a wording static with `String(localized:)` and a note above (2):", out)
+        self.assertIn(f"{NEEDS_COMMENT_HELP} (2):", out)
+        self.assertIn("InterfaceText.line", NEEDS_COMMENT_HELP)
         self.assertIn('line 4 [Text] "Sleep Timer"', out)
         self.assertIn('line 7 [Button] "Cancel"', out)
         extracted = out.split("translator's notes missing")[0]
@@ -115,7 +118,7 @@ class ShowTests(TreeCase):
     def test_show_has_no_section_for_a_file_without_such_literals(self) -> None:
         self.write("Views/Plain.swift", 'import SwiftUI\nstruct A: View { var body: some View { Text("Hi", comment: "c") } }\n')
         _status, out, _err = run_main("--root", str(self.root), "show", "TextMouth/Views/Plain.swift")
-        self.assertNotIn("extracted with no translator's note", out)
+        self.assertNotIn(NEEDS_COMMENT_HELP, out)
 
     def test_show_json_names_them(self) -> None:
         self.write("Views/SleepPanel.swift", self.CODE)
@@ -124,14 +127,17 @@ class ShowTests(TreeCase):
         self.assertEqual([(item["line"], item["call"], item["text"]) for item in data["extractedWithoutComment"]],
                          [(4, "Text", "Sleep Timer"), (7, "Button", "Cancel")])
 
-    def test_the_lints_counts_do_not_change(self) -> None:
-        """The literals are localized, so a baseline of zero passes and the counts name no file."""
+    def test_the_lints_counts_do_not_change_and_the_lint_refuses_each_literal(self) -> None:
+        """The literals are counted neither localized nor unlocalized, so the counts name no file; the lint fails on each,
+        naming the line and InterfaceText.line."""
         self.write("Views/SleepPanel.swift", self.NOTED)
         self.assertEqual(self.lint("--rebuild-baseline")[0], 0)
         self.assertEqual(json.loads(self.baseline.read_text(encoding="utf-8"))["files"], {}, "no file has unlocalized text")
         status, out, _err = self.lint()
-        self.assertEqual(status, 0, out)
-        self.assertIn("0 unlocalized literals", out)
+        self.assertEqual(status, 1, out)
+        for line, call in ((5, 'Text("...")'), (7, 'Text("...")'), (9, 'Button("...")'), (11, 'Label("...")')):
+            self.assertIn(f"TextMouth/Views/SleepPanel.swift:{line}: {call} reads Apple's tables", out)
+        self.assertIn('InterfaceText.line("<ID>", "<English>")', out)
 
     def test_the_repositorys_lint_still_passes_against_its_baseline(self) -> None:
         done = subprocess.run([sys.executable, "-I", "-B", str(Path(REPO) / "Scripts/l10n/scan.py"), "lint", "--base", "HEAD"],

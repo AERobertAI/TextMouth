@@ -61,8 +61,8 @@ class LintTests(TreeCase):
     def test_a_new_file_with_only_localized_marked_or_uncounted_text_passes(self) -> None:
         self.write("Views/NewView.swift", (
             'import SwiftUI\nstruct NewView: View {\n    var body: some View {\n'
-            '        // Translators: A label on the pause panel\n        Text("Pause the speech")\n'
-            '        // Translators: The button that resumes\n        Button("Resume") { go() }\n    }\n    let hook = "A name the tests use" // l10n: no\n'
+            '        // Translators: A label on the pause panel\n        Text(verbatim: PauseWording.label)\n'
+            '        // Translators: The button that resumes\n        Button(PauseWording.resume) { go() }\n    }\n    let hook = "A name the tests use" // l10n: no\n'
             '    let key = "pause.button"\n    func trace() { print("Tracing the pause button") }\n}\n'))
         self.assertEqual(self.lint()[0], 0)
 
@@ -77,7 +77,7 @@ class LintTests(TreeCase):
         self.assertEqual(self.baseline_counts(), {"TextMouth/Models/PauseWording.swift": 1})
 
     def test_a_file_that_reaches_zero_leaves_the_baseline(self) -> None:
-        self.write("Models/PauseWording.swift", 'enum PauseWording {\n    // Translators: A title\n    static var one: String { String(localized: "First sentence of text") }\n}\n')
+        self.write("Models/PauseWording.swift", 'enum PauseWording {\n    // Translators: A title\n    static var one: String { InterfaceText.line("pause.one", "First sentence of text") }\n}\n')
         status, out, _err = self.lint("--update-baseline")
         self.assertEqual(status, 0)
         self.assertIn("2 -> 0 (left the baseline)", out)

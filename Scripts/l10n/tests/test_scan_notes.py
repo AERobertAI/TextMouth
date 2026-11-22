@@ -138,7 +138,7 @@ class LintTests(TreeCase):
     """`scan.py lint` and `scan.py show` hold the notes at zero in every file."""
 
     OLD = 'enum PauseWording {\n    static var one: String { String(localized: "Pause", comment: "A button") }\n}\n'
-    NEW = 'enum PauseWording {\n    // Translators: A button\n    static var one: String { String(localized: "Pause") }\n}\n'
+    NEW = 'enum PauseWording {\n    // Translators: A button\n    static var one: String { InterfaceText.line("pause.one", "Pause") }\n}\n'
 
     def test_a_tree_with_a_comment_argument_fails_the_lint_with_its_line(self) -> None:
         self.write("Models/PauseWording.swift", self.OLD)
