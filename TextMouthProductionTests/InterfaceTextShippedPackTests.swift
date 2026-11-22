@@ -5,15 +5,16 @@ import XCTest
 @testable import TextMouth
 #endif
 
-/// What the two proofs that the interface-text pack says what Apple's tables say have in common (FR39, phase 4): the
-/// counts a line is asked for, and the call an ID makes. Apple's tables are keyed by ID since the catalog was (phase 7), so
-/// both proofs look an ID up in them, and take its English (the call's format) from the catalog's `en`.
+/// What the two proofs that the interface-text pack says what the catalog says have in common (FR39): the counts a line is
+/// asked for, and the call an ID makes. The harness (`make l10n-check`) takes an ID's English (the call's format) from the
+/// catalog's `en` and Apple's text from tables compiled from the catalog; the hosted test, below, takes both from the
+/// catalog.
 ///
 /// `Scripts/l10n/verify_packs.py` (run by `make l10n-check`) compiles this file with the probe
 /// `Scripts/l10n/pack-probe/main.swift` and the engine's core files (`-D PACK_PROBE`, which leaves the test class
-/// below out), and compares the engine's text with Xcode's in a process of each language. `InterfaceTextShippedPackTests`,
-/// below, compares the `Strings.pack` the test host ships with the tables the host ships, in the Mac app and, since the
-/// iPhone's unit bundle shares this file, in the iPhone app.
+/// below out), and compares the engine's text with Apple's lookup in a folder compiled from the catalog, in a process of
+/// each language. `InterfaceTextShippedPackTests`, below, compares the `Strings.pack` the test host ships with the
+/// repository's catalog, in the Mac app and, since the iPhone's unit bundle shares this file, in the iPhone app.
 ///
 /// Foundation only apart from the test class, and no stored state, so it compiles in a command-line tool.
 enum InterfaceTextProof {
@@ -112,27 +113,25 @@ enum InterfaceTextProof {
 
 #if !PACK_PROBE
 
-/// The interface-text pack (`Strings.pack`) as the built app ships it, in both apps, against the language tables the
-/// same app ships (FR39, phase 4), until Apple's tables leave at the switch. It succeeds the pack's part of
-/// `LanguagePackTests` the way the engine will succeed Apple's lookup.
+/// The interface-text pack (`Strings.pack`) as the built app ships it, in both apps, against the repository's String
+/// Catalog (FR39, phases 4 and 8), and the bundle's layout. It is the hosted test that Apple's tables are gone and the
+/// pack says what the catalog says.
 ///
-/// - **Every entry** of the pack in every language equals what the tables hold: the text, or the plural forms by
-///   category. A key the tables lack in a language reads as its key (English), which the pack writes as no entry (or
-///   as the key itself, the squeeze `compact_packs.py` makes in the tables).
-/// - **Every lookup** through the engine equals `String(format:locale:arguments:)` of the table's form, which
-///   `PluralRules` picks, at the 13 counts of `InterfaceTextProof`, with the locale a test gives that language
+/// - **Every entry** of the pack in every language equals the catalog's text, or its plural forms by category, with the
+///   positions of the specifiers read alike. An ID the catalog has no text for in a language has no entry there (the engine
+///   shows the English), and a plural whose forms all read alike is one plain text, as `pack.py` writes it.
+/// - **Every lookup** through the engine equals `String(format:locale:arguments:)` of the catalog's form for the count,
+///   which `PluralRules` picks, at the 13 counts of `InterfaceTextProof`, with the locale a test gives that language
 ///   (`InterfaceLanguage.locale(forScope:)`: the language with the United States as its region, as `es_US`).
+/// - **The bundle** lists the 25 languages, holds an `InfoPlist.strings` in each language's folder, and ships no
+///   `Localizable` table of Apple's anywhere.
 ///
 /// **The plural trap.** In a process whose locale is English, Foundation may choose a stringsdict's plural form by the
-/// locale's rules rather than the table's language, so a Russian table read through `String(localized:)` or
-/// `Bundle.localizedString` could be judged by English's rules. This test never asks Foundation to choose a form:
-/// the tables' own property lists are read as data (`NSStringLocalizedFormatKey` names the plural variable and the
-/// language's forms sit beside it), `PluralRules` picks the form, and Foundation only writes it, with an explicit
-/// locale that is the table's language. And Apple's own rule is checked against `PluralRules` where it is meant to
-/// be, in `LanguagePackTests.testApplesPluralRuleAgreesWithTheTableForEveryLanguage`, which asks it in each language
-/// from a bundle of its own and now covers these counts too (`LanguagePackTests.pluralProbeCounts`).
+/// locale's rules rather than the table's language. This test never asks Foundation to choose a form: `PluralRules` picks
+/// it, and Foundation only writes it, with an explicit locale that is the language's. Apple's own rule is checked against
+/// `PluralRules` where it is meant to be, in `InterfaceTextTests.testApplesPluralRuleAgreesWithTheTableForEveryLanguage`.
 ///
-/// Shared with the iPhone's unit bundle (project.yml), so GitHub checks the iPhone app's pack too.
+/// Shared with the iPhone's unit bundle (project.yml), so GitHub checks the iPhone app's pack and bundle too.
 final class InterfaceTextShippedPackTests: XCTestCase {
     /// The most differences a failure lists.
     private static let listed = 10
@@ -140,8 +139,8 @@ final class InterfaceTextShippedPackTests: XCTestCase {
     /// The folder of the app's resources: Contents/Resources in the Mac app, the bundle itself on the iPhone.
     private var resources: URL { Bundle.main.resourceURL ?? Bundle.main.bundleURL }
 
-    /// What every test needs: the shipped pack, the repository's catalog (the English of each ID), and the languages of the
-    /// tables.
+    /// What every test needs: the shipped pack, the repository's catalog (the English and the text of each ID), and the
+    /// catalog's languages.
     private struct Shipped {
         let pack: InterfaceTextPack
         let ids: [String]
@@ -149,82 +148,24 @@ final class InterfaceTextShippedPackTests: XCTestCase {
         let languages: [String]
     }
 
-    /// The pack the host ships, the repository's catalog, and the languages of the host's tables; fails with what is
-    /// missing.
+    /// The pack the host ships and the repository's catalog; fails with what is missing.
     private func shipped() throws -> Shipped {
         let packURL = resources.appendingPathComponent("\(InterfaceTextPack.resourceName).\(InterfaceTextPack.resourceExtension)")
         XCTAssertTrue(FileManager.default.fileExists(atPath: packURL.path), "the host ships no Strings.pack in \(resources.path)")
         let pack = try InterfaceTextPack(contentsOf: packURL)
         let catalog = try LanguagePackCatalog.load()
-        let languages = LanguagePackLookups.languages(in: resources)
-        XCTAssertTrue(languages.contains("es"), "the app's language folders: \(languages), in \(resources.path)")
         let list = try pack.idList()
-        return Shipped(pack: pack, ids: (0..<list.count).map { list.id(at: $0) }, catalog: catalog, languages: languages)
+        return Shipped(pack: pack, ids: (0..<list.count).map { list.id(at: $0) }, catalog: catalog, languages: catalog.languages)
     }
 
-    // MARK: - The tables, as data
-
-    /// One language's tables read as data: its plural forms by key (the stringsdict's property list) and its bundle,
-    /// which Apple's own parser answers for the plain texts.
-    private struct Tables {
-        let language: String
-        let bundle: Bundle
-        /// The stringsdict's entries: key, then the dictionary of the plural variable and its forms.
-        let plurals: [String: [String: Any]]
-
-        /// Reads `language`'s tables from the `*.lproj` folder in `resources`.
-        init(language: String, in resources: URL) throws {
-            self.language = language
-            guard let bundle = LanguagePackLookups.bundle(language: language, in: resources) else {
-                throw InterfaceTextProof.Failure("no \(language).lproj in \(resources.path)")
-            }
-            self.bundle = bundle
-            let url = resources.appendingPathComponent("\(language).lproj/Localizable.stringsdict")
-            if let data = try? Data(contentsOf: url) {
-                let list = try PropertyListSerialization.propertyList(from: data, options: [], format: nil)
-                plurals = list as? [String: [String: Any]] ?? [:]
-            } else {
-                plurals = [:]
-            }
-        }
-
-        /// The table's entry for `key`: the plural forms in the language's category order, the plain text, or nil when
-        /// the table has none. Throws when a stringsdict entry is not the one shape Xcode writes.
-        func entry(forKey key: String) throws -> InterfaceTextEntry? {
-            if let plural = plurals[key] {
-                guard let format = plural["NSStringLocalizedFormatKey"] as? String,
-                      let variable = Self.variable(in: format), let forms = plural[variable] as? [String: Any],
-                      let categories = PluralRules.categories[language]
-                else { throw InterfaceTextProof.Failure("\(language): the stringsdict entry of \(key.debugDescription) is not `%#@variable@` and its forms") }
-                let ordered = try categories.map { category -> String in
-                    guard let form = forms[category] as? String else {
-                        throw InterfaceTextProof.Failure("\(language): the stringsdict entry of \(key.debugDescription) has no \(category) form")
-                    }
-                    return form
-                }
-                return .plural(ordered)
-            }
-            return LanguagePackLookups.simpleText(bundle, key: key).map { .plain($0) }
-        }
-
-        /// The variable a plural entry's format names, when the format is exactly `%#@name@` or `%2$#@name@`.
-        private static func variable(in format: String) -> String? {
-            guard format.hasSuffix("@"), let marker = format.range(of: "#@") else { return nil }
-            let before = format[format.startIndex..<marker.lowerBound]
-            guard before == "%" || (before.hasPrefix("%") && before.hasSuffix("$") && before.dropFirst().dropLast().allSatisfy(\.isNumber)) else { return nil }
-            return String(format[marker.upperBound..<format.index(before: format.endIndex)])
-        }
-    }
-
-    /// `entry` with its specifiers given positions (`InterfaceTextProof.withPositions`), so that Xcode's numbered forms
-    /// and the pack's unnumbered ones compare equal when they read alike.
+    /// `entry` with its specifiers given positions (`InterfaceTextProof.withPositions`), so that forms that read alike
+    /// compare equal whether or not they number their specifiers.
     private func positioned(_ entry: InterfaceTextEntry) -> InterfaceTextEntry {
         switch entry {
         case .absent: return .absent
         case .plain(let text): return .plain(InterfaceTextProof.withPositions(text))
         case .plural(let forms):
-            // A plural whose forms all read alike is a plain text: the pack writes it so in every language, while
-            // Xcode's English table keeps nine of them as plurals (a finding of the first train, 1121-2027).
+            // A plural whose forms all read alike is a plain text: the pack writes it so in every language.
             let numbered = forms.map(InterfaceTextProof.withPositions)
             return Set(numbered).count == 1 ? .plain(numbered[0]) : .plural(numbered)
         }
@@ -232,33 +173,30 @@ final class InterfaceTextShippedPackTests: XCTestCase {
 
     // MARK: - Every entry
 
-    /// The pack holds every ID of the table, once, and the host's tables are of the languages the pack knows (the 25 the
-    /// plural rules name), each of which has a blob in the pack.
+    /// The pack holds every ID of the catalog, once, and a blob for each of the catalog's languages, which are the 25 the
+    /// plural rules name.
     func testThePackHoldsEveryLineAndEveryLanguage() throws {
         let host = try shipped()
         XCTAssertEqual(host.ids, host.catalog.texts.keys.sorted(), "the pack's IDs are the catalog's")
-        XCTAssertEqual(host.languages, PluralRules.categories.keys.sorted(), "the tables' languages are the plural rules'")
+        XCTAssertEqual(host.languages, PluralRules.categories.keys.sorted(), "the catalog's languages are the plural rules'")
         XCTAssertEqual(host.languages.count, 25)
         for language in host.languages { XCTAssertTrue(host.pack.hasLanguage(language), "the pack has no \(language) blob") }
     }
 
-    /// Every entry of every language of the pack equals the table's text or plural forms for its ID, once the
-    /// numbered specifiers of Xcode's plurals and the pack's unnumbered ones are read alike. An ID the table lacks in a
-    /// language has no translation there: the pack has no entry for it (the engine shows the English).
-    func testEveryEntryEqualsTheTables() throws {
+    /// Every entry of every language of the pack equals the catalog's text or plural forms for its ID, the specifiers'
+    /// positions read alike. An ID the catalog has no text for in a language has no translation there: the pack has no
+    /// entry for it (the engine shows the English).
+    func testEveryEntryEqualsTheCatalog() throws {
         let host = try shipped()
         var compared = 0
         var wrong: [String] = []
         for language in host.languages {
-            let tables = try Tables(language: language, in: resources)
             let entries = try host.pack.entries(language: language)
             for (position, id) in host.ids.enumerated() {
-                let got = entries[position]
                 compared += 1
-                if let want = try tables.entry(forKey: id) {
-                    if positioned(got) != positioned(want) { wrong.append("\(language) \(id): pack \(got), tables \(want)") }
-                } else if got != .absent {
-                    wrong.append("\(language) \(id): pack \(got), tables none (no translation)")
+                let want = host.catalog.entry(of: id, language: language)
+                if positioned(entries[position]) != positioned(want) {
+                    wrong.append("\(language) \(id): pack \(entries[position]), catalog \(want)")
                 }
             }
         }
@@ -269,8 +207,8 @@ final class InterfaceTextShippedPackTests: XCTestCase {
     // MARK: - Every lookup
 
     /// Every lookup through the engine, for every ID of every language at every asking, equals Foundation's
-    /// `String(format:locale:arguments:)` of the table's form for the same call. The time is printed for the report.
-    func testEveryLookupEqualsFoundationsFormatOfTheTablesForm() throws {
+    /// `String(format:locale:arguments:)` of the catalog's form for the same call. The time is printed for the report.
+    func testEveryLookupEqualsFoundationsFormatOfTheCatalogsForm() throws {
         let host = try shipped()
         let log = InterfaceTextReportLog()
         let engine = InterfaceTextEngine(tables: host.pack, report: log.sink)
@@ -279,16 +217,15 @@ final class InterfaceTextShippedPackTests: XCTestCase {
         var wrong: [String] = []
         for language in host.languages {
             let locale = InterfaceLanguage.locale(forScope: language)
-            let tables = try Tables(language: language, in: resources)
-            // English is the tables' fallback for a key a language lacks, as it is the app's (Bundle's own choice).
-            let english = language == "en" ? nil : try Tables(language: "en", in: resources)
             for id in host.ids {
                 // The ID's English, as the code writes it: the call's format.
                 guard let source = host.catalog.english(of: id) else { wrong.append("\(language) \(id): the catalog has no English"); continue }
-                // The table's entry, and the language whose plural rules choose its form.
-                let own = try tables.entry(forKey: id)
-                let entry = try own ?? english?.entry(forKey: id) ?? .plain(source)
-                let rules = own == nil && english != nil ? "en" : language
+                // The catalog's entry, else English's (the engine's fallback), else the call's own English; and the language
+                // whose plural rules choose the form: the entry's own, or English's for the fallback.
+                let own = host.catalog.entry(of: id, language: language)
+                let english = language == "en" ? InterfaceTextEntry.absent : host.catalog.entry(of: id, language: "en")
+                let entry: InterfaceTextEntry = own != .absent ? own : (english != .absent ? english : .plain(source))
+                let rules = own == .absent ? "en" : language
                 for asking in 0..<InterfaceTextProof.askings(ofEnglish: source) {
                     guard let call = InterfaceTextProof.call(forEnglish: source, asking: asking) else {
                         wrong.append("\(language) \(id): the lookups cannot feed this English")
@@ -321,6 +258,46 @@ final class InterfaceTextShippedPackTests: XCTestCase {
             pattern = forms.indices.contains(position) ? forms[position] : forms[forms.count - 1]
         }
         return call.arguments.isEmpty ? pattern : String(format: pattern, locale: locale, arguments: call.formatterArguments)
+    }
+
+    // MARK: - The bundle
+
+    /// The files a bundle must not hold, by name: Apple's language tables of text (`Localizable.strings`, its plural
+    /// `.stringsdict`), the compiled form of a catalog (`.loctable`), and the catalog itself (`.xcstrings`). The pack
+    /// carries every line, so a file of these in either app would be a leftover of the build.
+    private static func isAppleTable(_ name: String) -> Bool {
+        name == "Localizable.strings" || name == "Localizable.stringsdict" || name.hasSuffix(".loctable") || name.hasSuffix(".xcstrings")
+    }
+
+    /// The bundle lists the catalog's 25 languages (`CFBundleLocalizations`), each language's `.lproj` holds its
+    /// `InfoPlist.strings` (which `pack.py` writes), and no Apple table of the lines ships anywhere in the bundle.
+    func testTheBundleKeepsItsLanguagesAndShipsNoAppleTable() throws {
+        let host = try shipped()
+        // `Bundle.main.localizations` also lists "Base" in a bundle that has such a folder; the interface has none.
+        let listed = Set(Bundle.main.localizations).subtracting(["Base"])
+        XCTAssertEqual(listed, Set(host.languages), "Bundle.main.localizations is the catalog's languages: \(Bundle.main.localizations)")
+        XCTAssertEqual(listed.count, 25)
+        for language in host.languages {
+            let table = resources.appendingPathComponent("\(language).lproj/InfoPlist.strings")
+            XCTAssertTrue(FileManager.default.fileExists(atPath: table.path), "\(language).lproj has no InfoPlist.strings in \(resources.path)")
+        }
+        var tables: [String] = []
+        let walker = FileManager.default.enumerator(at: Bundle.main.bundleURL, includingPropertiesForKeys: nil)
+        while let url = walker?.nextObject() as? URL {
+            if Self.isAppleTable(url.lastPathComponent) { tables.append(url.path) }
+        }
+        XCTAssertTrue(tables.isEmpty, "Apple's language tables ship in the bundle: \(tables.prefix(Self.listed))")
+    }
+
+    /// The test of the bundle test: what counts as one of Apple's tables, by name, and what does not (the pack, and the
+    /// `InfoPlist.strings` each language keeps).
+    func testWhichFilesAreAppleTables() {
+        for name in ["Localizable.strings", "Localizable.stringsdict", "Localizable.loctable", "Localizable.xcstrings", "Other.xcstrings"] {
+            XCTAssertTrue(Self.isAppleTable(name), name)
+        }
+        for name in ["Strings.pack", "InfoPlist.strings", "Info.plist", "Localizable", "es.lproj"] {
+            XCTAssertFalse(Self.isAppleTable(name), name)
+        }
     }
 
     // MARK: - The helpers
