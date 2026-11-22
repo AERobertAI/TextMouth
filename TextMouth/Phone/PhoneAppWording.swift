@@ -14,19 +14,19 @@ enum PhoneAppWording {
     /// The alert's title, when the library names no kind of problem.
     static var errorTitle: String {
         // Translators: Title of an alert about a problem, when the problem has no more specific title.
-        String(localized: "Error")
+        InterfaceText.line("common.error", "Error")
     }
 
     /// The button that dismisses the alert.
     static var errorDismiss: String {
         // Translators: Button that dismisses an alert about a problem.
-        String(localized: "OK")
+        InterfaceText.line("common.ok", "OK")
     }
 
     /// The alert's message, when the library gives none.
     static var unknownError: String {
         // Translators: Message of an alert about a problem, when nothing more is known about it.
-        String(localized: "An unknown error occurred.")
+        InterfaceText.line("common.anUnknownErrorOccurred", "An unknown error occurred.")
     }
 
     // MARK: Every Sheet and Question
@@ -35,19 +35,19 @@ enum PhoneAppWording {
     /// done or changed: the Mac's "Cancel", said once for every phone view.
     static var cancel: String {
         // Translators: Button that closes a sheet or answers a question without doing or changing anything.
-        String(localized: "Cancel")
+        InterfaceText.line("common.cancel", "Cancel")
     }
 
     /// The toolbar button that closes a sheet that has nothing to cancel.
     static var close: String {
         // Translators: Button that closes a sheet, such as the sleep timer sheet over a book's reader.
-        String(localized: "Close")
+        InterfaceText.line("common.close", "Close")
     }
 
     /// The button that saves a sheet's edits: the Mac's "Save".
     static var save: String {
         // Translators: Button that saves the changes made in a sheet.
-        String(localized: "Save")
+        InterfaceText.line("common.save", "Save")
     }
 
     // MARK: The First Screen (the spec's)
@@ -55,13 +55,13 @@ enum PhoneAppWording {
     /// The navigation title of the Library.
     static var libraryTitle: String {
         // Translators: Title of the first screen, the list of the user's books and folders.
-        String(localized: "Library")
+        InterfaceText.line("common.library", "Library")
     }
 
     /// The one row of a library with no books.
     static var emptyLibrary: String {
         // Translators: The only row of an empty library. "Add to Library" is the name of the button that adds a book, so keep it the same as that button's label.
-        String(localized: "Your library is empty. Add to Library adds a book.")
+        InterfaceText.line("phoneApp.emptyLibrary", "Your library is empty. Add to Library adds a book.")
     }
 
     // MARK: The Bare Reader
@@ -70,15 +70,15 @@ enum PhoneAppWording {
     static func playButton(isPlaying: Bool) -> String {
         isPlaying
             // Translators: Label of the button that pauses the book while it is playing.
-            ? String(localized: "Pause")
+            ? InterfaceText.line("common.pause", "Pause")
             // Translators: Label of the button that starts playing the book.
-            : String(localized: "Play")
+            : InterfaceText.line("common.play", "Play")
     }
 
     /// The Play button's value while the book loads (the spec's).
     static var loading: String {
         // Translators: Value of the Play button while the book is loading, spoken by VoiceOver.
-        String(localized: "Loading")
+        InterfaceText.line("phoneApp.loading", "Loading")
     }
 
     // MARK: Reopening at Launch
@@ -88,6 +88,6 @@ enum PhoneAppWording {
     /// review's F4, in its words).
     static func closedWhileOpening(_ title: String) -> String {
         // Translators: Announced at launch after the app closed while it was opening a book. %@ is the book's title, which is not opened again.
-        String(localized: "TextMouth closed while opening \(title), so it wasn't reopened.")
+        InterfaceText.line("phoneApp.closedWhileOpening", "TextMouth closed while opening \(title), so it wasn't reopened.")
     }
 }

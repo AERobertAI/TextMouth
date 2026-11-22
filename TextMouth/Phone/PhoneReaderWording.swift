@@ -19,25 +19,25 @@ enum PhoneReaderWording {
         switch unit {
         case .seconds10, .seconds15, .seconds30, .seconds60:
             // Translators: Hint of the iPhone reader's Play button while the navigation unit is a length of time. %lld is how many seconds a move covers: 10, 15, 30, or 60.
-            String(localized: "Moves back or forward by \(unit.seconds ?? 0) seconds.")
+            InterfaceText.line("phoneReader.playHint.seconds", "Moves back or forward by \(number: unit.seconds ?? 0) seconds.")
         case .sentence:
             // Translators: Hint of the iPhone reader's Play button while the navigation unit is a sentence.
-            String(localized: "Moves back or forward by sentence.")
+            InterfaceText.line("phoneReader.playHint.sentence", "Moves back or forward by sentence.")
         case .paragraph:
             // Translators: Hint of the iPhone reader's Play button while the navigation unit is a paragraph.
-            String(localized: "Moves back or forward by paragraph.")
+            InterfaceText.line("phoneReader.playHint.paragraph", "Moves back or forward by paragraph.")
         case .page:
             // Translators: Hint of the iPhone reader's Play button while the navigation unit is a page of the book.
-            String(localized: "Moves back or forward by page.")
+            InterfaceText.line("phoneReader.playHint.page", "Moves back or forward by page.")
         case .heading:
             // Translators: Hint of the iPhone reader's Play button while the navigation unit is a heading.
-            String(localized: "Moves back or forward by heading.")
+            InterfaceText.line("phoneReader.playHint.heading", "Moves back or forward by heading.")
         case .subheading:
             // Translators: Hint of the iPhone reader's Play button while the navigation unit is a subheading.
-            String(localized: "Moves back or forward by subheading.")
+            InterfaceText.line("phoneReader.playHint.subheading", "Moves back or forward by subheading.")
         case .bookmark:
             // Translators: Hint of the iPhone reader's Play button while the navigation unit is a bookmark.
-            String(localized: "Moves back or forward by bookmark.")
+            InterfaceText.line("phoneReader.playHint.bookmark", "Moves back or forward by bookmark.")
         }
     }
 
@@ -46,7 +46,7 @@ enum PhoneReaderWording {
     /// Navigation unit's hint.
     static var navigationUnitHint: String {
         // Translators: Hint of the iPhone reader's Navigation unit control.
-        String(localized: "Chooses what Play and the skip buttons move by.")
+        InterfaceText.line("phoneReader.navigationUnitHint", "Chooses what Play and the skip buttons move by.")
     }
 
     /// A text book's speed control's hint, naming the Mac's step of 25 words
@@ -56,7 +56,7 @@ enum PhoneReaderWording {
     @MainActor
     static var textSpeedHint: String {
         // Translators: Hint of the iPhone reader's speed control for a text book. %lld is the step, in words a minute.
-        String(localized: "Changes the speed in steps of \(Int(ReaderViewModel.speechSpeedStep)) words per minute.")
+        InterfaceText.line("phoneReader.textSpeedHint", "Changes the speed in steps of \(number: Int(ReaderViewModel.speechSpeedStep)) words per minute.")
     }
 
     // MARK: The Heading Buttons
@@ -64,13 +64,13 @@ enum PhoneReaderWording {
     /// Previous Heading's hint.
     static var previousHeadingHint: String {
         // Translators: Hint of the iPhone reader's Previous Heading button.
-        String(localized: "Moves to the previous heading, keeping the navigation unit.")
+        InterfaceText.line("phoneReader.previousHeadingHint", "Moves to the previous heading, keeping the navigation unit.")
     }
 
     /// Next Heading's hint.
     static var nextHeadingHint: String {
         // Translators: Hint of the iPhone reader's Next Heading button.
-        String(localized: "Moves to the next heading, keeping the navigation unit.")
+        InterfaceText.line("phoneReader.nextHeadingHint", "Moves to the next heading, keeping the navigation unit.")
     }
 
     // MARK: Book Content
@@ -79,14 +79,14 @@ enum PhoneReaderWording {
     /// place in the text.
     static var bookContentPausedHint: String {
         // Translators: Hint of the iPhone reader's book text while the book is paused: activating it plays from the place VoiceOver is at.
-        String(localized: "Plays from here.")
+        InterfaceText.line("phoneReader.bookContentPausedHint", "Plays from here.")
     }
 
     /// Book content's hint while the book plays, when activating brings the
     /// text to the sentence being spoken.
     static var bookContentPlayingHint: String {
         // Translators: Hint of the iPhone reader's book text while the book plays: activating it moves VoiceOver to the sentence being spoken.
-        String(localized: "Brings the text to the sentence being spoken.")
+        InterfaceText.line("phoneReader.bookContentPlayingHint", "Brings the text to the sentence being spoken.")
     }
 
     /// Book content's text for an audiobook with no transcript: "This
@@ -95,7 +95,7 @@ enum PhoneReaderWording {
     /// shown.
     static func audiobookHasNoText(heading: String?) -> String {
         // Translators: Text of the iPhone reader's book content for an audiobook that has no transcript.
-        let sentence = String(localized: "This audiobook has no text.")
+        let sentence = InterfaceText.line("phoneReader.audiobookHasNoText", "This audiobook has no text.")
         guard let heading = heading?.nonBlank else { return sentence }
         return SentenceWording.joined([sentence, Self.sentence(heading)])
     }
@@ -113,13 +113,13 @@ enum PhoneReaderWording {
     /// The name of Book content's rotor that moves by sentence.
     static var sentencesRotor: String {
         // Translators: Name of the VoiceOver rotor on the iPhone reader's book text that moves between sentences.
-        String(localized: "Sentences")
+        InterfaceText.line("phoneReader.sentencesRotor", "Sentences")
     }
 
     /// The name of Play's rotor that moves by page.
     static var pagesRotor: String {
         // Translators: Name of the VoiceOver rotor on the iPhone reader's Play button that moves between pages.
-        String(localized: "Pages")
+        InterfaceText.line("common.pages", "Pages")
     }
 
     // MARK: The Grid's Buttons
@@ -127,25 +127,25 @@ enum PhoneReaderWording {
     /// Bookmarks' hint.
     static var bookmarksHint: String {
         // Translators: Hint of the iPhone reader's Bookmarks button.
-        String(localized: "Opens the list of bookmarks.")
+        InterfaceText.line("phoneReader.bookmarksHint", "Opens the list of bookmarks.")
     }
 
     /// Headings' hint.
     static var headingsHint: String {
         // Translators: Hint of the iPhone reader's Headings button.
-        String(localized: "Opens the list of headings.")
+        InterfaceText.line("phoneReader.headingsHint", "Opens the list of headings.")
     }
 
     /// The Go To button's label.
     static var goTo: String {
         // Translators: Label of the iPhone reader's button that opens the Go To sheet, and that sheet's title.
-        String(localized: "Go To")
+        InterfaceText.line("phoneReader.goTo", "Go To")
     }
 
     /// Go To's hint.
     static var goToHint: String {
         // Translators: Hint of the iPhone reader's Go To button.
-        String(localized: "Goes to a page, a percent, or a time.")
+        InterfaceText.line("phoneReader.goToHint", "Goes to a page, a percent, or a time.")
     }
 
     /// Return's hint. The Mac's "Go back to where you were before browsing
@@ -153,13 +153,13 @@ enum PhoneReaderWording {
     /// keeps the place.
     static var returnHint: String {
         // Translators: Hint of the iPhone reader's Return button.
-        String(localized: "Goes back to where the last jump began.")
+        InterfaceText.line("phoneReader.returnHint", "Goes back to where the last jump began.")
     }
 
     /// Sleep Timer's hint.
     static var sleepTimerHint: String {
         // Translators: Hint of the iPhone reader's Sleep Timer button.
-        String(localized: "Opens the sleep timer.")
+        InterfaceText.line("phoneReader.sleepTimerHint", "Opens the sleep timer.")
     }
 
     /// Sleep Timer's value while no timer runs: the sleep timer's own
@@ -174,7 +174,7 @@ enum PhoneReaderWording {
         guard position.count > 0 else { return "" }
         guard let number = position.number else { return position.label }
         // Translators: Value of the iPhone reader's Headings button: the place of the heading among the book's headings. %1$lld is the heading's number and %2$lld how many headings the book has.
-        let place = String(localized: "\(number) of \(position.count)")
+        let place = InterfaceText.line("phoneReader.headingsValue", "\(number: number) of \(number: position.count)")
         guard let text = position.headingText else { return place }
         return SentenceWording.commaJoined([text, place])
     }
@@ -190,9 +190,9 @@ enum PhoneReaderWording {
         if unit.isTimeBased {
             return forward
                 // Translators: What the iPhone reader says when a move forward by a length of time has nothing left to move to.
-                ? String(localized: "End of the book.")
+                ? InterfaceText.line("phoneReader.nothingThatWay.endBook", "End of the book.")
                 // Translators: What the iPhone reader says when a move back by a length of time has nothing before it.
-                : String(localized: "Start of the book.")
+                : InterfaceText.line("phoneReader.nothingThatWay.start", "Start of the book.")
         }
         return forward ? nothingNext(unit) : nothingPrevious(unit)
     }
@@ -244,7 +244,7 @@ enum PhoneReaderWording {
     /// value: "2 hours, 13 minutes in".
     static func timeIntoRecording(_ time: TimeInterval) -> String {
         // Translators: Part of the iPhone reader's Where Am I? for an audiobook: how far into the recording the place is. %@ is the time in words, as in "2 hours, 13 minutes in".
-        String(localized: "\(TimeFormatting.spoken(time)) in")
+        InterfaceText.line("phoneReader.timeIntoRecording", "\(TimeFormatting.spoken(time)) in")
     }
 
     // MARK: Nothing That Way, One Sentence for Each Unit
@@ -255,22 +255,22 @@ enum PhoneReaderWording {
         switch unit {
         case .paragraph:
             // Translators: What the iPhone reader says when a move forward by paragraph has no next paragraph.
-            String(localized: "No next paragraph.")
+            InterfaceText.line("phoneReader.nothingNext.paragraph", "No next paragraph.")
         case .page:
             // Translators: What the iPhone reader says when a move forward by page has no next page.
-            String(localized: "No next page.")
+            InterfaceText.line("phoneReader.nothingNext.page", "No next page.")
         case .heading:
             // Translators: What the iPhone reader says when a move forward by heading has no next heading.
-            String(localized: "No next heading.")
+            InterfaceText.line("phoneReader.nothingNext.heading", "No next heading.")
         case .subheading:
             // Translators: What the iPhone reader says when a move forward by subheading has no next subheading.
-            String(localized: "No next subheading.")
+            InterfaceText.line("phoneReader.nothingNext.subheading", "No next subheading.")
         case .bookmark:
             // Translators: What the iPhone reader says when a move forward by bookmark has no next bookmark.
-            String(localized: "No next bookmark.")
+            InterfaceText.line("phoneReader.nothingNext.bookmark", "No next bookmark.")
         default:
             // Translators: What the iPhone reader says when a move forward by sentence has no next sentence.
-            String(localized: "No next sentence.")
+            InterfaceText.line("phoneReader.nothingNext.other", "No next sentence.")
         }
     }
 
@@ -279,22 +279,22 @@ enum PhoneReaderWording {
         switch unit {
         case .paragraph:
             // Translators: What the iPhone reader says when a move back by paragraph has no previous paragraph.
-            String(localized: "No previous paragraph.")
+            InterfaceText.line("phoneReader.nothingPrevious.paragraph", "No previous paragraph.")
         case .page:
             // Translators: What the iPhone reader says when a move back by page has no previous page.
-            String(localized: "No previous page.")
+            InterfaceText.line("phoneReader.nothingPrevious.page", "No previous page.")
         case .heading:
             // Translators: What the iPhone reader says when a move back by heading has no previous heading.
-            String(localized: "No previous heading.")
+            InterfaceText.line("phoneReader.nothingPrevious.heading", "No previous heading.")
         case .subheading:
             // Translators: What the iPhone reader says when a move back by subheading has no previous subheading.
-            String(localized: "No previous subheading.")
+            InterfaceText.line("phoneReader.nothingPrevious.subheading", "No previous subheading.")
         case .bookmark:
             // Translators: What the iPhone reader says when a move back by bookmark has no previous bookmark.
-            String(localized: "No previous bookmark.")
+            InterfaceText.line("phoneReader.nothingPrevious.bookmark", "No previous bookmark.")
         default:
             // Translators: What the iPhone reader says when a move back by sentence has no previous sentence.
-            String(localized: "No previous sentence.")
+            InterfaceText.line("phoneReader.nothingPrevious.other", "No previous sentence.")
         }
     }
 

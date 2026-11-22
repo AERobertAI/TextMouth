@@ -154,7 +154,7 @@ enum PhoneImportRefusal: LocalizedError, Equatable, Sendable {
         default:
             return ext.isEmpty
                 // Translators: Stands for the name of a file's format inside a sentence about importing it, when the file's name and its bytes name none, as in "TextMouth can't read “Clip” as this format."
-                ? String(localized: "this format")
+                ? InterfaceText.line("common.thisFormat", "this format")
                 : ext.uppercased()
         }
     }

@@ -38,10 +38,10 @@ enum PhoneImportWording {
         case 0: return nil
         case 1:
             // Translators: What VoiceOver says once as one file or folder starts to import on the iPhone. %@ is its name, as in "Importing Dune".
-            return String(localized: "Importing \(names[0])")
+            return InterfaceText.line("phoneImport.importing", "Importing \(names[0])")
         default:
             // Translators: What VoiceOver says once as several files or folders start to import on the iPhone. %lld is how many, always two or more.
-            return String(localized: "Importing \(names.count) books")
+            return InterfaceText.line("phoneImport.importing.other", "Importing \(number: names.count) books")
         }
     }
 
@@ -51,14 +51,14 @@ enum PhoneImportWording {
     /// down, before the shared import can read it: "Downloading “Dune”".
     static func downloading(_ name: String) -> String {
         // Translators: Line of the iPhone's import progress card while a file that is only in iCloud comes down. %@ is the file's name, as in "Downloading “Dune”".
-        String(localized: "Downloading “\(name)”")
+        InterfaceText.line("phoneImport.downloading", "Downloading “\(name)”")
     }
 
     /// What VoiceOver says when a download made no progress for the copy's
     /// stall limit, and the copy was cancelled.
     static func downloadFailed(_ name: String) -> String {
         // Translators: What VoiceOver says when a file's download from iCloud stalled and the import was cancelled. %@ is the file's name.
-        String(localized: "“\(name)” couldn't be downloaded from iCloud. Check the connection, then add it again.")
+        InterfaceText.line("phoneImport.downloadFailed", "“\(name)” couldn't be downloaded from iCloud. Check the connection, then add it again.")
     }
 
     // MARK: - An Import TextMouth's Closing Stopped
@@ -80,16 +80,16 @@ enum PhoneImportWording {
         if names.count <= namedStoppedImports {
             let list = CountWording.list(names.map { "“\($0)”" })
             // Translators: First sentence of what VoiceOver says at launch when TextMouth had closed during imports. %@ is the quoted names of one to three files, joined as a list, as in "“Dune” and “Emma”".
-            stopped = String(localized: "Importing \(list) was stopped when TextMouth closed.")
+            stopped = InterfaceText.line("phoneImport.stoppedWhenClosed.importing", "Importing \(list) was stopped when TextMouth closed.")
         } else {
             // Translators: First sentence of what VoiceOver says at launch when TextMouth had closed during the import of four or more files. %lld is how many.
-            stopped = String(localized: "Importing \(names.count) books was stopped when TextMouth closed.")
+            stopped = InterfaceText.line("phoneImport.stoppedWhenClosed.books", "Importing \(number: names.count) books was stopped when TextMouth closed.")
         }
         let again = names.count == 1
             // Translators: Last sentence of what VoiceOver says at launch when TextMouth had closed during the import of one file.
-            ? String(localized: "Add it again.")
+            ? InterfaceText.line("phoneImport.stoppedWhenClosed.again", "Add it again.")
             // Translators: Last sentence of what VoiceOver says at launch when TextMouth had closed during the import of several files.
-            : String(localized: "Add them again.")
+            : InterfaceText.line("phoneImport.stoppedWhenClosed.them", "Add them again.")
         return SentenceWording.joined([stopped, again])
     }
 
@@ -98,7 +98,7 @@ enum PhoneImportWording {
     /// The next step every refusal gives.
     static var refusalNextStep: String {
         // Translators: Last sentence of every refusal of a file the iPhone app can't import yet: the Mac can add it, and the book then comes to the iPhone.
-        String(localized: "Add it on your Mac, then send the book here.")
+        InterfaceText.line("phoneImport.refusalNextStep", "Add it on your Mac, then send the book here.")
     }
 
     /// The refusal of audio the import would convert, which the phone has no
@@ -108,7 +108,7 @@ enum PhoneImportWording {
     /// nil `name` says "This file".
     static func convertedAudioRefusal(_ name: String?, kind: String) -> String {
         // Translators: First sentence of the refusal of an audio file the iPhone can't convert. %1$@ is the file's quoted name, or "This file". %2$@ is the audio format's name, as in "Ogg".
-        let refusal = String(localized: "\(subject(name)) is in \(kind), which TextMouth on iPhone can't play yet.")
+        let refusal = InterfaceText.line("phoneImport.convertedAudioRefusal", "\(subject(name)) is in \(kind), which TextMouth on iPhone can't play yet.")
         return SentenceWording.joined([refusal, refusalNextStep])
     }
 
@@ -117,7 +117,7 @@ enum PhoneImportWording {
     /// iPhone can't read yet. Add it on your Mac, then send the book here."
     static func wordSixOrNinetyFiveRefusal(_ name: String?) -> String {
         // Translators: First sentence of the refusal of a Word 6 or Word 95 document, which the iPhone can't read. %@ is the file's quoted name, or "This file".
-        let refusal = String(localized: "\(subject(name)) is a Word 6 or Word 95 document, which TextMouth on iPhone can't read yet.")
+        let refusal = InterfaceText.line("phoneImport.wordSixOrNinetyFiveRefusal", "\(subject(name)) is a Word 6 or Word 95 document, which TextMouth on iPhone can't read yet.")
         return SentenceWording.joined([refusal, refusalNextStep])
     }
 
@@ -128,7 +128,7 @@ enum PhoneImportWording {
     /// table and reads the braille; the book it sends brings its text.
     static func macBrailleTableRefusal(_ name: String?, table: String) -> String {
         // Translators: First sentence of the refusal of a braille book that needs a braille table only a Mac has. %1$@ is the file's quoted name, or "This file". %2$@ is the table's file name, as in "fr-bfu-g2.ctb".
-        let refusal = String(localized: "\(subject(name)) needs “\(table)”, one of a Mac's own braille tables, which TextMouth on iPhone doesn't have.")
+        let refusal = InterfaceText.line("phoneImport.macBrailleTableRefusal", "\(subject(name)) needs “\(table)”, one of a Mac's own braille tables, which TextMouth on iPhone doesn't have.")
         return SentenceWording.joined([refusal, refusalNextStep])
     }
 
@@ -137,7 +137,7 @@ enum PhoneImportWording {
     private static func subject(_ name: String?) -> String {
         guard let name, !name.isEmpty else {
             // Translators: Stands for a file's name at the start of a sentence about refusing it, when no name is known: "This file is in Ogg, which...".
-            return String(localized: "This file")
+            return InterfaceText.line("phoneImport.subject", "This file")
         }
         return "“\(name)”"
     }
@@ -171,6 +171,6 @@ enum PhoneImportWording {
     /// (`AddToLibraryWording.buttonLabel`).
     static var addToLibraryButtonHint: String {
         // Translators: Hint of the iPhone Library's Add to Library button.
-        String(localized: "Opens options to open a book or import a folder.")
+        InterfaceText.line("phoneImport.addToLibraryButtonHint", "Opens options to open a book or import a folder.")
     }
 }

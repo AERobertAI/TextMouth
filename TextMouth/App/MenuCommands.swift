@@ -4,51 +4,51 @@ import SwiftUI
 
 /// The titles of the menu bar's own menus, in the interface language. Each
 /// `CommandMenu` shows its title as a String, so the menu bar reads what this
-/// says. `MenuVisibilityManager` hides a menu by its title, matching the key
-/// below (the English text), the text in the app's bundle, and the text in a
-/// locale (`titles(for:locale:)`), so each key here is listed in its
-/// `readerMenuKeys` or `libraryMenuKeys`; a test checks they agree.
+/// says. `MenuVisibilityManager` hides a menu by its title, matching the
+/// title in the interface language and in English (`titles(for:languages:)`),
+/// so each member here is listed in its `readerMenuWording` or
+/// `libraryMenuWording`; a test checks they agree.
 enum MenuWording {
     /// The Edit menu's Find submenu, which holds Search Library.
     static var find: String {
         // Translators: Title of the Find submenu of the Edit menu, which holds the command that searches the whole library.
-        String(localized: "Find")
+        InterfaceText.line("common.find", "Find")
     }
 
     /// The Playback menu, which only reader windows show.
     static var playback: String {
         // Translators: Title of the Playback menu in the menu bar, which holds the commands that play, pause, skip, and change the speed. Only a reader window shows it.
-        String(localized: "Playback")
+        InterfaceText.line("common.playback", "Playback")
     }
 
     /// The Navigate menu, which only reader windows show.
     static var navigate: String {
         // Translators: Title of the Navigate menu in the menu bar, which holds the commands that move around a book, such as Go to Library and Next Heading. Only a reader window shows it.
-        String(localized: "Navigate")
+        InterfaceText.line("menu.navigate", "Navigate")
     }
 
     /// The Library menu, which only Library windows show.
     static var library: String {
         // Translators: Title of the Library menu in the menu bar, which holds the commands for the library's books and folders. Only a Library window shows it.
-        String(localized: "Library")
+        InterfaceText.line("common.library", "Library")
     }
 
     /// The Bookmarks menu, which only reader windows show.
     static var bookmarks: String {
         // Translators: Title of the Bookmarks menu in the menu bar, which holds the commands that add and move between a book's bookmarks. Only a reader window shows it.
-        String(localized: "Bookmarks")
+        InterfaceText.line("common.bookmarks", "Bookmarks")
     }
 
     /// The Book menu, which only reader windows show.
     static var book: String {
         // Translators: Title of the Book menu in the menu bar, which holds the commands about the open book, such as exporting or editing it. Only a reader window shows it.
-        String(localized: "Book")
+        InterfaceText.line("common.book", "Book")
     }
 
     /// The Library menu's Move to Folder command, which asks for the folder.
     static var moveToFolder: String {
         // Translators: Menu command of the Library menu that moves the selected books into a folder, asking which one. The three periods say that a question follows.
-        String(localized: "Move to Folder...")
+        InterfaceText.line("common.moveToFolder", "Move to Folder...")
     }
 }
 

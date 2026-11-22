@@ -11,7 +11,7 @@ enum QuitHoldWording {
     /// The panel's title.
     static var title: String {
         // Translators: Title of the panel TextMouth shows, and the start of what it says aloud, while it finishes work before quitting.
-        String(localized: "Quitting TextMouth")
+        InterfaceText.line("quitHold.title", "Quitting TextMouth")
     }
 
     /// The words for `phrases`, what each piece of work is doing
@@ -19,7 +19,7 @@ enum QuitHoldWording {
     /// quits afterwards.
     static func message(finishing phrases: [String]) -> String {
         // Translators: Panel text and announcement while TextMouth finishes work before quitting. %@ is the list of what is under way, such as "saving the library and keeping downloads", already joined in the language's own list style.
-        String(localized: "TextMouth is finishing up before it quits: \(list(phrases)). It quits when that is done.")
+        InterfaceText.line("quitHold.message", "TextMouth is finishing up before it quits: \(list(phrases)). It quits when that is done.")
     }
 
     /// The words for `works`, each as it describes itself now.
