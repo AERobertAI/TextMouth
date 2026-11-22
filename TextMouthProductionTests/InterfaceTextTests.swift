@@ -461,6 +461,25 @@ extension InterfaceTextTests {
         XCTAssertTrue(log.messages[0].contains("nobody.knows"), log.messages[0])
     }
 
+    /// The entry point for an ID that is not a literal (tools and tests) answers as the `StaticString` one does: the
+    /// pack's text, an argument formatted, the person's own line, and an unknown ID shown in English and reported once.
+    func testARuntimeIDAnswersAsALiteralDoes() {
+        let log = InterfaceTextReportLog()
+        let engine = makeInterfaceTextEngine(["book.by": ["es": "%2$@ de %1$@"], "greeting.hello": ["es": "Hola"]], log: log)
+        let title = "Quijote", author = "Cervantes"
+        let english: InterfaceText.Format = "\(title) by \(author)"
+        let locale = InterfaceLanguage.locale(forTesting: "es")
+        let runtimeID = ["book", "by"].joined(separator: ".")
+        XCTAssertEqual(engine.text(runtimeID: runtimeID, english: english, language: "es", locale: locale), "Cervantes de Quijote")
+        XCTAssertEqual(engine.text(runtimeID: runtimeID, english: english, language: "es", locale: locale),
+                       interfaceLine(engine, "book.by", english))
+        engine.setOverrides(["es": ["greeting.hello": .plain("Buenas")]])
+        XCTAssertEqual(engine.text(runtimeID: "greeting.hello", english: "Hello", language: "es", locale: locale), "Buenas")
+        for _ in 0..<2 { XCTAssertEqual(engine.text(runtimeID: "nobody.knows", english: "Never seen", language: "es", locale: locale), "Never seen") }
+        XCTAssertEqual(log.messages.count, 1)
+        XCTAssertTrue(log.messages[0].contains("nobody.knows"), log.messages[0])
+    }
+
     func testALanguageThePackLacksShowsEnglishAndReportsOnce() {
         let log = InterfaceTextReportLog()
         let engine = makeInterfaceTextEngine(["greeting.hello": ["es": "Hola"]], log: log)

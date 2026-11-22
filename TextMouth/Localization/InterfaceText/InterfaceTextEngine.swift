@@ -135,9 +135,23 @@ final class InterfaceTextEngine: Sendable {
     /// The text of the line `id` in `language`, whose English the code holds as `english`, formatted with `locale`.
     /// Safe from any thread; never traps.
     func text(id: StaticString, english: InterfaceText.Format, language: String, locale: Locale) -> String {
+        id.withUTF8Buffer { text(idBytes: $0, english: english, language: language, locale: locale) }
+    }
+
+    /// The same lookup for an ID that is not a literal: a runtime `String`. Only tools and tests use it (the pack
+    /// probe of `make l10n-check` and the hosted test of the shipped pack walk every ID of the pack); the app's own
+    /// calls pass a `StaticString`, so a sync tool can read every ID from the source.
+    func text(runtimeID id: String, english: InterfaceText.Format, language: String, locale: Locale) -> String {
+        Array(id.utf8).withUnsafeBufferPointer { text(idBytes: $0, english: english, language: language, locale: locale) }
+    }
+
+    /// The lookup both entry points share, on the ID's UTF-8 bytes, which are compared in place and turned into a
+    /// `String` only when the person has lines of their own or a problem is reported.
+    private func text(idBytes: UnsafeBufferPointer<UInt8>, english: InterfaceText.Format, language: String, locale: Locale) -> String {
         let count = english.firstNumber
         let snapshot = locked { $0.snapshot(language: language, needsEnglish: count != nil, open: open) }
-        let index = snapshot.ids?.index(of: id)
+        let index = snapshot.ids?.index(ofUTF8: idBytes)
+        let id = LazyID(idBytes)
         if index == nil, let ids = snapshot.ids, !ids.isEmpty {
             noteProblem("the pack has no line \(id)")  // l10n: no (English text for the debug log, never shown)
         }
@@ -160,15 +174,15 @@ final class InterfaceTextEngine: Sendable {
     }
 
     /// The person's own entry for `id` in `language`, if the person has one.
-    private func ownLine(_ id: StaticString, in snapshot: Snapshot) -> InterfaceTextEntry? {
-        snapshot.overrides.isEmpty ? nil : snapshot.overrides["\(id)"]
+    private func ownLine(_ id: LazyID, in snapshot: Snapshot) -> InterfaceTextEntry? {
+        snapshot.overrides.isEmpty ? nil : snapshot.overrides[id.text]
     }
 
     /// The text of `entry` for the call's first number if it passes the specifier check, else nil after reporting it.
     /// A pack entry's verdict is kept in its table; the person's own line is checked each time, since the lines can
     /// change under the same ID.
     private func chosenText(
-        _ entry: InterfaceTextEntry, own: Bool, id: StaticString, index: Int?, table: LanguageTable?,
+        _ entry: InterfaceTextEntry, own: Bool, id: LazyID, index: Int?, table: LanguageTable?,
         english: InterfaceText.Format, language: String
     ) -> String? {
         let kinds = { FormatSpecifiers.kinds(of: english.arguments) }
@@ -249,6 +263,21 @@ extension InterfaceTextEngine {
             return nil
         }
     }
+}
+
+/// An ID's bytes, which become a `String` only when asked (for the person's own lines and for a report), so a plain
+/// lookup allocates nothing for its ID.
+private struct LazyID: CustomStringConvertible {
+    let bytes: UnsafeBufferPointer<UInt8>
+
+    init(_ bytes: UnsafeBufferPointer<UInt8>) {
+        self.bytes = bytes
+    }
+
+    /// The ID as a string.
+    var text: String { String(decoding: bytes, as: UTF8.self) }
+
+    var description: String { text }
 }
 
 private extension InterfaceTextIDList {
