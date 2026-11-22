@@ -41,6 +41,16 @@ extension InterfaceText {
         problemHook.withLockUnchecked { $0 = hook }
     }
 
+    /// Sends the engine's problems to the debug log, as `INTERFACE_TEXT_PROBLEM: <sentence>` event lines
+    /// (`LogContentPolicyTests` lists the tag with the others). Both apps call it once at launch, before the first
+    /// lookup. The sentences are English and hold no user content: an ID, a language code, and the system's reason a
+    /// file could not be read.
+    static func reportProblemsToDiagnosticLog() {
+        reportProblems { problem in
+            DiagnosticLog.event(.app, "INTERFACE_TEXT_PROBLEM: \(problem)")
+        }
+    }
+
     /// Passes `problem` to the hook the app set, if it set one.
     fileprivate static func reportProblem(_ problem: String) {
         let hook = problemHook.withLockUnchecked { $0 }

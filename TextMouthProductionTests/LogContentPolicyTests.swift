@@ -412,6 +412,9 @@ final class LogContentPolicyTests: XCTestCase {
         // A C library's call in the iPhone app abandoned past its time (DR34, `InProcessEngine`), after
         // which its engine refuses every call until TextMouth is closed and opened again.
         "IN_PROCESS_CALL_ABANDONED",
+        // The interface-text engine's problems (FR39): a missing or damaged Strings.pack, an unknown ID, or a text
+        // that fails its check, each once, in English, from InterfaceText.reportProblemsToDiagnosticLog.
+        "INTERFACE_TEXT_PROBLEM",
     ]
 
     /// Each tag still begins a string literal in the app's code, so none was

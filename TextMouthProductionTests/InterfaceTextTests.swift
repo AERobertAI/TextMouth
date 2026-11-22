@@ -712,8 +712,9 @@ extension InterfaceTextTests {
         XCTAssertEqual(InterfaceLanguage.locale(forTesting: "fa").numberingSystem.identifier, "latn")
     }
 
-    /// The call a view makes: no pack ships yet, so every line shows the call's English in every language.
-    func testTheCallShowsEnglishWhileNoPackShips() {
+    /// The call a view makes, for an ID the shipped pack does not hold (a made-up one): every language shows the call's
+    /// English, whether the host ships a pack (it does since the "Pack interface text" phase) or not.
+    func testTheCallShowsEnglishForAnIDThePackLacks() {
         let count = 3
         XCTAssertEqual(InterfaceText.line("interfaceTextTests.sample", "Count: \(number: count), 100%"), "Count: 3, 100%")
         XCTAssertEqual(InterfaceText.line("interfaceTextTests.sample", "Count: \(number: count), 100%", language: "es"), "Count: 3, 100%")
