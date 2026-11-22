@@ -890,7 +890,8 @@ def check_language(cat, language):
         if not units:
             problems.append(f"{label}: missing translation")
             continue
-        english = {unit.path: unit.value for unit in cat.units(key, cat.source_language)}
+        english = translate.english_values(cat, key)
+        reference = translate.reference_of(english)
         for unit in units:
             where = f" ({unit.path})" if unit.path else ""
             if not unit.value.strip():
@@ -899,7 +900,7 @@ def check_language(cat, language):
                 problems.append(f"{label}{where}: not translated (state {unit.state})")
             else:
                 problems += [f"{label}{where}: {sentence}"
-                             for sentence in translate.unit_placeholder_problems(english, key, unit, language)]
+                             for sentence in translate.unit_placeholder_problems(english, reference, unit, language)]
         problems += [f"{label}: {sentence}" for sentence in plural_problems(units, english, required)]
         problems += [f"{label}: {sentence}" for sentence in substitution_problems(cat, key, language)]
     return problems
@@ -960,8 +961,9 @@ def check_catalog(cat, config):
     for key in cat.translatable():
         if not str(cat.strings[key].get("comment", "")).strip():
             problems.append(f"{quote(key)}: no comment for the translators (write a \"{NOTE_MARKER} ...\" line above its literal in the code, then sync)")
-        for sentence in catalog.placeholder_problems(key):
-            problems.append(f"{quote(key)}: the English key's placeholders cannot be read: {sentence}")
+        for text in cat.english_forms(key):
+            for sentence in catalog.placeholder_problems(text):
+                problems.append(f"{quote(key)}: the English's placeholders cannot be read: {sentence}")
     for key, entry in sorted(cat.strings.items()):
         if cat.is_stale(entry):
             problems.append(f"{quote(key)}: stale (the code no longer has it; `prune` deletes it, `prune --all` even with a translation)")
@@ -983,11 +985,12 @@ def glossary_warnings(cat, glossary, languages):
     warnings = []
     for language in languages:
         for key in cat.translatable():
-            english = {unit.path: unit.value for unit in cat.units(key, cat.source_language)}
+            english = translate.english_values(cat, key)
+            fallback = translate.reference_of(english)
             for unit in cat.units(key, language):
                 if not catalog.unit_done(unit):
                     continue
-                reference = english_text_for(english, key, unit)
+                reference = english_text_for(english, fallback, unit)
                 label = f"{language} {quote(key)}" + (f" ({unit.path})" if unit.path else "")
                 unused = glossary.unused_terms(reference, unit.value, language)
                 if unused:
@@ -1005,11 +1008,12 @@ def precision_warnings(cat, languages):
     warnings = []
     for language in languages:
         for key in cat.translatable():
-            english = {unit.path: unit.value for unit in cat.units(key, cat.source_language)}
+            english = translate.english_values(cat, key)
+            fallback = translate.reference_of(english)
             for unit in cat.units(key, language):
                 if catalog.unit_done(unit):
                     label = f"{language} {quote(key)}" + (f" ({unit.path})" if unit.path else "")
-                    warnings += [f"{label}: {sentence}" for sentence in translate.unit_precision_warnings(english, key, unit)]
+                    warnings += [f"{label}: {sentence}" for sentence in translate.unit_precision_warnings(english, fallback, unit)]
     return warnings
 
 

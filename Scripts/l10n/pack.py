@@ -166,7 +166,7 @@ def compile_localization(localization, language, where, problems):
         return None
     if unit is not None:
         # An empty value ships as no entry: the reader uses English, as it does for a string with no translation.
-        return None if unit.get("state", "new") == "new" else (unit.get("value", "") or None)
+        return (unit.get("value", "") or None) if catalog.counts_as_text(unit.get("state", "new")) else None
     if plural is None:
         return None
     return compile_plural(plural, language, where, problems)
@@ -187,7 +187,7 @@ def compile_plural(plural, language, where, problems):
             problems.append(f"{where}: the {category} form holds a variation or substitution, which the pack cannot hold")
             return None
         unit = node.get("stringUnit", {})
-        if unit.get("state", "new") != "new":
+        if catalog.counts_as_text(unit.get("state", "new")):
             forms[category] = unit.get("value", "")
     if not forms:
         return None

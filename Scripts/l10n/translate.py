@@ -71,10 +71,30 @@ def check_state(state):
 # The English of a string, and what a localization holds.
 # ---------------------------------------------------------------------------------------------------------------
 
-def english_text_for(english, key, unit):
+def english_values(cat, key):
+    """{unit path: value} of string `key`'s English: its `en` units that count as text (Catalog.english_units), or, while
+    the catalog is keyed by its English (Catalog.KEY_IS_ENGLISH_FALLBACK), the key as the one plain text of an entry with none."""
+    values = {unit.path: unit.value for unit in cat.english_units(key)}
+    if not values and catalog.KEY_IS_ENGLISH_FALLBACK:
+        values[""] = key
+    return values
+
+
+def reference_of(english):
+    """The English text a string's placeholders are measured against, from `english` ({path: value}): the text itself, or a
+    plural's `other` form (the form that always shows the number), else the last form by path; "" for no English at all.
+    This is what the key was before the catalog was keyed by ID."""
+    if "" in english:
+        return english[""]
+    if "plural.other" in english:
+        return english["plural.other"]
+    return english[sorted(english)[-1]] if english else ""
+
+
+def english_text_for(english, reference, unit):
     """The English text a translation unit is compared with: the English unit at the same path; else, for a plural form
-    the English lacks (Spanish's `many`), the English `other` of the same variation; else the English as a whole, or the
-    key when the catalog holds no English localization (the key is the English text). `english` is {path: value}."""
+    the English lacks (Spanish's `many`), the English `other` of the same variation; else the English as a whole, or
+    `reference` (see reference_of) when nothing else fits. `english` is {path: value}."""
     if unit.path in english:
         return english[unit.path]
     if unit.category:
@@ -85,35 +105,37 @@ def english_text_for(english, key, unit):
         return english[""]
     if english:
         return english[sorted(english)[0]]
-    return key
+    return reference
 
 
-def unit_placeholder_problems(english, key, unit, language):
+def unit_placeholder_problems(english, reference, unit, language):
     """The sentences about the placeholders of one finished unit of `language` (what `check` tests): a top-level plural form
-    is compared with the key, and a `one` form may drop the number where the language's `one` means exactly 1 (see
+    is compared with the English's reference text (see reference_of), and a `one` form may drop the number where the language's `one` means exactly 1 (see
     plural_form_problems); any other unit is compared with the English text of the same place (english_text_for).
     `english` is {path: value} of the English units."""
     if unit.category and unit.path == f"plural.{unit.category}":
-        return catalog.compare_placeholders(key, unit.value, unit.category == "one" and catalog.one_is_exactly_one(language))
-    return catalog.compare_placeholders(english_text_for(english, key, unit), unit.value)
+        return catalog.compare_placeholders(reference, unit.value, unit.category == "one" and catalog.one_is_exactly_one(language))
+    return catalog.compare_placeholders(english_text_for(english, reference, unit), unit.value)
 
 
-def unit_precision_warnings(english, key, unit):
+def unit_precision_warnings(english, reference, unit):
     """The warnings about the number formats of one finished unit (`%.1f` written `%.3f`): a top-level plural form is
-    compared with the key, as unit_placeholder_problems does, and any other unit with the English text of its place."""
-    reference = key if unit.category and unit.path == f"plural.{unit.category}" else english_text_for(english, key, unit)
-    return catalog.precision_warnings(reference, unit.value)
+    compared with the reference text, as unit_placeholder_problems does, and any other unit with the English text of its place."""
+    text = reference if unit.category and unit.path == f"plural.{unit.category}" else english_text_for(english, reference, unit)
+    return catalog.precision_warnings(text, unit.value)
 
 
 def english_shape(cat, key):
     """What the English of string `key` is: ("plain", text) for one text (the key itself when the catalog holds no English
     localization of it), ("plural", {category: text}) for plural forms, or ("other", reason) for a form this module does
-    not write (device variations, substitutions)."""
-    units = [unit for unit in cat.units(key, cat.source_language)]
+    not write (device variations, substitutions), or ("other", reason) for a string with no English at all."""
+    units = cat.english_units(key)
     if not units:
-        return "plain", key
+        if catalog.KEY_IS_ENGLISH_FALLBACK:
+            return "plain", key
+        return "other", "the string has no English text (`en`); run sync after the code has it"
     if len(units) == 1 and units[0].path == "":
-        return "plain", units[0].value or key
+        return "plain", units[0].value
     if all(unit.category and unit.path == f"plural.{unit.category}" for unit in units):
         return "plural", {unit.category: unit.value for unit in units}
     return "other", "its English has device variations or substitutions, which the translation tools do not write yet"
@@ -121,11 +143,11 @@ def english_shape(cat, key):
 
 def english_form(cat, key, category):
     """The English text a plural form `category` of `key` is compared with: the English form of that category, else its
-    `other`, else the key. (The key alone when the catalog has no English plural forms.)"""
+    `other`, else the reference text (reference_of: the English text of a plain string, "" for none)."""
     shape, english = english_shape(cat, key)
     if shape == "plural":
-        return english.get(category, english.get("other", key))
-    return english if shape == "plain" else key
+        return english.get(category, english.get("other", reference_of(english_values(cat, key))))
+    return english if shape == "plain" else reference_of(english_values(cat, key))
 
 
 def protected_forms(existing):
@@ -199,34 +221,35 @@ def form_problems(english, text, reference=None, may_drop_numbers=False):
     return problems + catalog.compare_placeholders(english if reference is None else reference, text, may_drop_numbers)
 
 
-def numberless_problem(key):
-    """The sentence that says a key cannot have plural forms because it has no number placeholder (`%lld`, `%d`, `%f`) for
-    them to vary on, or None."""
-    return None if catalog.has_number(key) else (
-        "a plural variation needs a number placeholder (%lld, %d, %f) in the key, and this key has none")
+def numberless_problem(reference):
+    """The sentence that says a string cannot have plural forms because its English (`reference`, see reference_of) has no
+    number placeholder (`%lld`, `%d`, `%f`) for them to vary on, or None."""
+    return None if catalog.has_number(reference) else (
+        "a plural variation needs a number placeholder (%lld, %d, %f) in the English, and it has none")
 
 
-def plural_form_problems(language, key, category, text, english):
-    """The sentences about the plural form `category` of `key` in `language` (`text`, against `english`, the English form of
-    that category): every form is compared with the key's placeholders, and a `one` form may leave out the number when the
+def plural_form_problems(language, reference, category, text, english):
+    """The sentences about the plural form `category` in `language` (`text`, against `english`, the English form of
+    that category): every form is compared with the reference text's placeholders (see reference_of), and a `one` form may leave out the number when the
     language's `one` means exactly 1 ("Un libro"): French's covers 0 and Russian's 21, so theirs must show the number."""
-    return form_problems(english, text, reference=key,
+    return form_problems(english, text, reference=reference,
                          may_drop_numbers=category == "one" and catalog.one_is_exactly_one(language))
 
 
 def plural_problems(cat, key, language, forms):
-    """The sentences that say why `forms` ({category: text}) cannot be the plural forms of `key` in `language`: a key with
-    no number, a form the language does not use, a missing form, an empty form, and a form whose placeholders differ from
-    the key's (a `one` form may drop the number where the language allows it, see plural_form_problems). The English forms
-    are compared with the key; another language's with the key too, and its edges with the English form of the same
-    category."""
+    """The sentences that say why `forms` ({category: text}) cannot be the plural forms of `key` in `language`: English
+    with no number, a form the language does not use, a missing form, an empty form, and a form whose placeholders differ
+    from the English's reference text (see reference_of; a `one` form may drop the number where the language allows it, see
+    plural_form_problems). The English forms are compared with the reference; another language's with the reference too, and
+    its edges with the English form of the same category."""
+    reference = reference_of(english_values(cat, key))
     problems = category_problems(language, forms)
-    if numberless_problem(key):
-        problems.append(numberless_problem(key))
+    if numberless_problem(reference):
+        problems.append(numberless_problem(reference))
     for category, text in forms.items():
-        english = key if language == cat.source_language else english_form(cat, key, category)
+        english = reference if language == cat.source_language else english_form(cat, key, category)
         problems += [f"the {category} form: {sentence}"
-                     for sentence in plural_form_problems(language, key, category, text, english)]
+                     for sentence in plural_form_problems(language, reference, category, text, english)]
     return problems
 
 
@@ -278,15 +301,23 @@ def english_as_text(english):
     return english if isinstance(english, str) else " | ".join(english[category] for category in sorted(english))
 
 
+def english_reference_text(english):
+    """The text of an English (a string, or {category: text}) that its placeholders are measured against: itself, or a
+    plural's `other` form, else its last form (see reference_of, which does the same for {path: value})."""
+    if isinstance(english, str):
+        return english
+    return english.get("other") or (english[sorted(english)[-1]] if english else "")
+
+
 def english_texts(english):
     """The texts an English holds: itself, or each of its plural forms."""
     return [english] if isinstance(english, str) else [english[category] for category in sorted(english)]
 
 
-def slot_signature(key):
-    """The placeholders of `key` as something comparable: its slots and their types, sorted. Two strings with the same
+def slot_signature(text):
+    """The placeholders of the English `text` as something comparable: its slots and their types, sorted. Two strings with the same
     signature take the same arguments."""
-    return tuple(sorted((str(slot), kind) for slot, kind in catalog.slots(key)[0].items()))
+    return tuple(sorted((str(slot), kind) for slot, kind in catalog.slots(text)[0].items()))
 
 
 def trigrams(folded):
@@ -308,8 +339,8 @@ class EarlierIndex:
     CANDIDATES = 40
 
     def __init__(self, cat, language, stale):
-        """`stale` is {stale key: its English as one text}; the earlier translation of each is read from `cat` in
-        `language`. A stale string with no translation there is left out."""
+        """`stale` is {stale key: its English (a string, or {category: text})}; the earlier translation of each is read from
+        `cat` in `language`. A stale string with no translation there is left out."""
         self.cat, self.language = cat, language
         self.entries = {}
         self.by_piece = {}
@@ -317,8 +348,9 @@ class EarlierIndex:
         for key in sorted(stale):
             if translation_of(cat, key, language) is None:
                 continue
-            folded = stale[key].casefold()
-            self.entries[key] = (stale[key], folded, slot_signature(key))
+            folded = english_as_text(stale[key]).casefold()
+            self.entries[key] = (english_as_text(stale[key]), folded, slot_signature(english_reference_text(stale[key])),
+                                 english_reference_text(stale[key]))
             pieces = trigrams(folded)
             for piece in pieces:
                 self.by_piece.setdefault(piece, []).append(key)
@@ -329,7 +361,7 @@ class EarlierIndex:
         """The earlier translation whose English is most like `english` (the English of `key`), or None: `{"key",
         "english", "placeholders", "translation", "similarity"}`."""
         folded = english_as_text(english).casefold()
-        signature = slot_signature(key)
+        signature = slot_signature(english_reference_text(english))
         pieces = trigrams(folded)
         shared = {}
         for piece in pieces:
@@ -356,23 +388,23 @@ class EarlierIndex:
         if best is None:
             return None
         return {"key": best, "english": self.entries[best][0],
-                "placeholders": [placeholder.raw for placeholder in catalog.placeholders(best)],
+                "placeholders": [placeholder.raw for placeholder in catalog.placeholders(self.entries[best][3])],
                 "translation": translation_of(self.cat, best, self.language), "similarity": round(best_ratio, 2)}
 
 
-def key_fragments(key):
-    """The pieces of text a key is made of between its placeholders, a line break, and quotation marks, stripped, as long as
-    two characters or more: what a Swift literal of the key still spells out when its values are interpolated."""
-    pieces = [part for piece in catalog.literal_pieces(key) for part in re.split(r'[\n"]', piece)]
+def key_fragments(english):
+    """The pieces of text an English is made of between its placeholders, a line break, and quotation marks, stripped, as long
+    as two characters or more: what a Swift literal of the English still spells out when its values are interpolated."""
+    pieces = [part for piece in catalog.literal_pieces(english) for part in re.split(r'[\n"]', piece)]
     return [piece.strip() for piece in pieces if len(piece.strip()) >= 2]
 
 
-def context_of(places, root, cache, key=None, trusted=True):
+def context_of(places, root, cache, english=None, trusted=True):
     """The uses of a string for a batch: for up to CONTEXT_USES of its `places` ([{"file", "line"}] from locations.json),
     preferring different files, `{"file", "line", "firstLine", "code"}` with the line and CONTEXT_RADIUS lines around it,
     read from `root`. A file that cannot be read, or that lies outside `root`, gives its place without code. The code is
-    left out too when `key` is given and none of its text (see key_fragments) is within those lines: the line numbers are
-    from another version of the code, and a wrong context misleads more than none. A key with no text of its own ("%lld")
+    left out too when `english` (the reference text, see english_reference_text) is given and none of its text (see key_fragments) is within those lines: the line numbers are
+    from another version of the code, and a wrong context misleads more than none. An English with no text of its own ("%lld")
     cannot be checked, so its code is shown only when `trusted` (the locations are from this code). `cache` is {file: lines},
     shared between strings so each file is read once."""
     chosen, seen = [], set()
@@ -381,7 +413,7 @@ def context_of(places, root, cache, key=None, trusted=True):
             chosen.append(place)
             seen.add(place["file"])
     chosen += [place for place in places if place not in chosen][:CONTEXT_USES - len(chosen)]
-    fragments = key_fragments(key) if key is not None else []
+    fragments = key_fragments(english) if english is not None else []
     uses = []
     for place in chosen:
         use = {"file": place["file"], "line": place["line"]}
@@ -392,7 +424,7 @@ def context_of(places, root, cache, key=None, trusted=True):
             if fragments:
                 shown = any(fragment in code for fragment in fragments)
             else:
-                shown = trusted or key is None
+                shown = trusted or english is None
             if shown:
                 use["firstLine"] = first
                 use["code"] = code
@@ -423,10 +455,10 @@ def batch_item(cat, key, language, glossary, places, root, cache, earlier, trust
         return None, english
     texts = english_texts(english)
     item = {"key": key, "english": english, "comment": str(cat.strings[key].get("comment", ""))}
-    item["placeholders"] = [placeholder.raw for placeholder in catalog.placeholders(texts[0] if shape == "plain" else key)]
+    item["placeholders"] = [placeholder.raw for placeholder in catalog.placeholders(english_reference_text(english))]
     if shape == "plural":
         item["pluralCategories"] = list(catalog.plural_categories(language))
-    item["context"] = context_of(places, root, cache, key, trusted)
+    item["context"] = context_of(places, root, cache, english_reference_text(english), trusted)
     seen, terms = set(), []
     for text in texts:
         for term in glossary.terms_in(text, language):
@@ -468,15 +500,15 @@ def build_batch(cat, language, glossary, locations, root, keys=None, limit=DEFAU
             elif key not in pending:
                 skipped.append({"key": key, "reason": "nothing to translate (done, stale, or not to be translated)"})
         pending = [key for key in pending if key in set(wanted)]
-    earlier = EarlierIndex(cat, language, {key: english_as_text(english_shape(cat, key)[1]) for key, entry in cat.strings.items()
+    earlier = EarlierIndex(cat, language, {key: english_shape(cat, key)[1] for key, entry in cat.strings.items()
                                            if cat.is_stale(entry) and english_shape(cat, key)[0] != "other"})
     items, cache, remaining = [], {}, 0
     for index, key in enumerate(pending):
         if limit and len(items) >= limit:
             remaining = len(pending) - index
             break
-        if not key.strip():
-            # An empty key is a literal the compiler found (an empty label, say): there is no text to translate.
+        if not reference_of(english_values(cat, key)).strip():
+            # An empty English is a literal the compiler found (an empty label, say): there is no text to translate.
             skipped.append({"key": key, "reason": "the text is empty"})
             continue
         item, reason = batch_item(cat, key, language, glossary, locations.get(key, []), root, cache, earlier, trusted)
@@ -538,15 +570,16 @@ def item_problems(cat, item, language, glossary):
             problems.append("the English has no plural forms, so the translation must be one text (give the English its "
                             "forms with `plural --lang en` first)")
         problems += category_problems(language, translation)
-        if numberless_problem(key):
-            problems.append(numberless_problem(key))
+        reference = english_reference_text(english) if shape == "plural" else reference_of(english_values(cat, key))
+        if numberless_problem(reference):
+            problems.append(numberless_problem(reference))
         for category, text in translation.items():
             if not isinstance(text, str):
                 problems.append(f"the {category} form is not text")
                 continue
             form_english = english_form(cat, key, category)
             found, warned = text_problems(glossary, form_english, text, keep,
-                                          plural_form_problems(language, key, category, text, form_english))
+                                          plural_form_problems(language, reference, category, text, form_english))
             problems += [f"the {category} form: {sentence}" for sentence in found]
             warnings += [f"the {category} form: {sentence}" for sentence in warned]
     elif isinstance(translation, str):

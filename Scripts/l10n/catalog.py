@@ -532,6 +532,17 @@ class Unit:
             other.path, other.category, other.state, other.value)
 
 
+# Until the catalog is keyed by ID (FR39 phase 7's re-key), a string with no English of its own has its key for English.
+# The re-key's output turns this off: from then on every entry holds its English in `en`, and an entry without one is a
+# problem, never the key.
+KEY_IS_ENGLISH_FALLBACK = True
+
+
+def counts_as_text(state):
+    """Whether a unit in `state` is text the apps ship: every state but `new`, which Xcode (and the pack) leave out."""
+    return state != "new"
+
+
 def unit_done(unit):
     """Whether `unit` is a finished translation: its state is `translated` or `machine_translated`, and its value is
     not empty (an empty value ships as empty text)."""
@@ -712,11 +723,18 @@ class Catalog:
         localization = self.strings[key].get("localizations", {}).get(language)
         return _walk(localization, "") if localization else []
 
+    def english_units(self, key):
+        """The Units of string `key`'s English that count as text: those of its source-language localization that are not
+        in state `new` (Xcode compiles none of those, and neither does the pack) and hold a value. This is the one place
+        the rule is written; `pack.compile_localization` asks `counts_as_text` of each state the same way."""
+        return [unit for unit in self.units(key, self.source_language) if counts_as_text(unit.state) and unit.value]
+
     def english_forms(self, key):
         """The English values of string `key`, one for each plural, device, or substitution form its source-language
-        localization holds, or the key itself when it holds none (the key is the English text)."""
-        values = [unit.value for unit in self.units(key, self.source_language) if unit.value]
-        return values or [key]
+        localization holds (see english_units), or, while KEY_IS_ENGLISH_FALLBACK stands, the key itself when it holds
+        none (the catalog is keyed by its English until the re-key)."""
+        values = [unit.value for unit in self.english_units(key)]
+        return values or ([key] if KEY_IS_ENGLISH_FALLBACK else [])
 
     def english_texts(self):
         """The English text of the catalog: the set of `english_forms` of every string that is to be translated and is
