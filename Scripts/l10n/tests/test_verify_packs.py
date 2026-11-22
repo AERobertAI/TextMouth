@@ -11,6 +11,7 @@ Two catalogs are used: the repository's own, and a small synthetic one
 (only `other`), Russian (`one`, `few`, `many`, `other`), and French (`one` covering 0), plus the
 awkward cases of the squeeze (an entry equal to its key, a plural string whose forms are one text).
 """
+import json
 import plistlib
 import shutil
 import subprocess
@@ -224,6 +225,79 @@ class SqueezeCatalogTests(VerifyPacksCase):
         self.assertIn('fr "%lld books" at 0', output)
         self.assertIn('fr "%lld books" at 1:', output)
         self.assertNotIn('fr "%lld books" at 2:', output)
+
+
+class EngineReadingTests(VerifyPacksCase):
+    """The third reading (FR39): the engine's text from the interface-text pack equals Xcode's `String(localized:)`.
+
+    Only the synthetic catalog runs here, so no unit test of the tools runs the repository's real pack through the
+    engine: that is `make l10n-check`'s, after the hosted test of the shipped pack has passed on GitHub.
+    """
+
+    catalog = SQUEEZE_CATALOG
+
+    def engine_arguments(self, catalog=None):
+        """Builds the interface-text pack of `catalog` (the case's own by default), giving each key an ID, and returns the
+        probe's arguments that name the pack and the table."""
+        catalog = catalog or self.catalog
+        keys = json.loads(Path(catalog).read_text(encoding="utf-8"))["strings"]
+        table = self.root / "ids.json"
+        ids = {key: f"probe.key{number}" for number, key in enumerate(sorted(keys))}
+        table.write_text(json.dumps({"version": 1, "ids": ids}), encoding="utf-8")
+        pack = verify_packs.build_engine_pack(Path(catalog), table, self.root)
+        return ["--pack", str(pack), "--ids", str(table)]
+
+    def run_engine_probe(self, catalog=None):
+        """Run the probe with the engine's reading on the compiled and compact folders, the pack built from `catalog`
+        (the case's own by default); returns (status, output)."""
+        done = subprocess.run(
+            [str(self.probe), str(self.xcode), str(self.compact), str(self.catalog), *self.engine_arguments(catalog),
+             *self.languages],
+            capture_output=True, text=True, check=False,
+        )
+        return done.returncode, done.stdout + done.stderr
+
+    def test_the_engine_reads_every_key_as_xcode_does(self):
+        """The engine's text equals `String(localized:)` for every ID, in every language, at every count."""
+        status, output = self.run_engine_probe()
+        self.assertEqual(status, 0, output)
+        self.assertRegex(output, r"probe: engine compared [1-9][0-9]* lookups in %d languages" % len(self.languages))
+        self.assertIn(": 0 different, 0 keys the lookups cannot feed, 0 problems reported", output)
+
+    def test_each_language_reports_its_lookups_and_locale(self):
+        """One line a language: its lookups, its time, and the locale both sides wrote with."""
+        _, output = self.run_engine_probe()
+        for language in self.languages:
+            self.assertRegex(output, r"probe: engine %s: [1-9][0-9]* lookups in [0-9.]+ s with [A-Za-z_@=-]+: 0 different" % language)
+
+    def test_a_pack_that_says_something_else_is_reported(self):
+        """The engine reading is not vacuous: a pack built from a catalog with one Russian text changed differs from
+        what Xcode ships, and the probe names the language and the key."""
+        strings = json.loads(Path(self.catalog).read_text(encoding="utf-8"))
+        changed = None
+        for key, entry in sorted(strings["strings"].items()):
+            unit = entry.get("localizations", {}).get("ru", {}).get("stringUnit")
+            if unit and unit.get("state") != "new" and "%" not in key:
+                unit["value"] += " (changed)"
+                changed = key
+                break
+        self.assertIsNotNone(changed, "the catalog has no plain Russian string to change")
+        altered = self.root / "altered.xcstrings"
+        altered.write_text(json.dumps(strings), encoding="utf-8")
+        status, output = self.run_engine_probe(altered)
+        self.assertEqual(status, 1, output)
+        self.assertIn("ENGINE DIFFERENT: ru ", output)
+        self.assertIn(f'"{changed}"', output)
+        self.assertNotIn("ENGINE DIFFERENT: ja ", output)
+
+    def test_a_pack_named_without_its_table_is_a_usage_error(self):
+        """--pack without --ids stops the probe with status 2 rather than comparing nothing."""
+        done = subprocess.run(
+            [str(self.probe), str(self.xcode), str(self.compact), str(self.catalog), "--pack", "x.pack", *self.languages],
+            capture_output=True, text=True, check=False,
+        )
+        self.assertEqual(done.returncode, 2)
+        self.assertIn("--pack and --ids go together", done.stdout + done.stderr)
 
 
 class FallbackCatalogTests(VerifyPacksCase):
