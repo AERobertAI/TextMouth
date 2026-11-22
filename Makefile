@@ -89,7 +89,8 @@ PERFORMANCE_STRICT =
 # signed with the same certificate from one build to the next; an ad hoc
 # signature changes with every build, so macOS would ask again each time.
 # `make build` signs the app it packages, so `make install`, `make run`, and
-# `make open` all use the signed app. The hosted tests build their own app
+# `make open` all use the signed app. `make check` builds with `SIGN_APP=:`,
+# so its app is ad hoc signed. The hosted tests build their own app
 # with signing off, as before.
 SIGN_APP = Scripts/make-signing-identity.sh --sign-app
 
