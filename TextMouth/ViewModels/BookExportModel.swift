@@ -158,9 +158,12 @@ final class BookExportModel: ObservableObject, Identifiable {
     @Published var checked: Set<BookExportKind> = []
     /// The folder the items go to.
     @Published var destination: URL
+    /// How the last export's summary is worded, kept so that `summary` is made in the interface language in use when the
+    /// dialog shows it, and follows a switch of language (FR39).
+    @Published private var summaryWording: (() -> String)?
     /// What the last export said, kept in the dialog when it did not do
     /// everything asked.
-    @Published private(set) var summary: String?
+    var summary: String? { summaryWording?() }
     /// The Convert to picker's choice for each kind that has one: a writer's
     /// `id`. A kind not here is on Markdown, so a dialog nobody touched
     /// exports as it always has. The transcript's picker (FMT23) keeps its
@@ -745,10 +748,10 @@ final class BookExportModel: ObservableObject, Identifiable {
         presentingFrom dialog: PlatformWindow? = nil
     ) async -> BookExportOutcome? {
         guard canExport else { return nil }
-        let earlier = (phase: phase, summary: summary)
+        let earlier = (phase: phase, summary: summaryWording)
         let cancellation = BookExportCancellation()
         self.cancellation = cancellation
-        summary = nil
+        summaryWording = nil
         phase = .exporting(done: 0, total: 0)
         // A braille table just chosen in the options may still be checked.
         // Waiting for it is part of exporting (review R5, F3): Stop is offered
@@ -759,7 +762,7 @@ final class BookExportModel: ObservableObject, Identifiable {
         await BrailleTableChoiceChecks.shared.finished(unless: cancellation)
         guard !cancellation.isCancelled else {
             self.cancellation = nil
-            (phase, summary) = earlier
+            (phase, summaryWording) = earlier
             return nil
         }
         let kinds = checked
@@ -776,7 +779,7 @@ final class BookExportModel: ObservableObject, Identifiable {
         guard !Self.isInsideDataDirectory(folder) else {
             self.cancellation = nil
             phase = earlier.phase
-            summary = BookExportWording.destinationInLibrary
+            summaryWording = { BookExportWording.destinationInLibrary }
             VoiceOverAnnouncer.announce(BookExportWording.destinationInLibrary, from: window)
             return nil
         }
@@ -786,7 +789,7 @@ final class BookExportModel: ObservableObject, Identifiable {
         guard !Self.isFolder(folder, inside: speechEnvironment.storeRoot) else {
             self.cancellation = nil
             phase = earlier.phase
-            summary = SpeechExportWording.destinationInKeptChapters
+            summaryWording = { SpeechExportWording.destinationInKeptChapters }
             VoiceOverAnnouncer.announce(SpeechExportWording.destinationInKeptChapters, from: window)
             return nil
         }
@@ -852,19 +855,34 @@ final class BookExportModel: ObservableObject, Identifiable {
         self.cancellation = nil
         speechProgress = nil
         phase = .finished(outcome)
+        // The finished sentence is made from values taken now, by a closure that can be run again in another language.
+        let latest = speechRecord.latest
+        let format = speechFormat
+        let words: () -> String = { Self.finishedWords(outcome, folder: folder, latest: latest, speechFormat: format) }
+        summaryWording = Self.didEverything(outcome) ? nil : words
+        VoiceOverAnnouncer.announce(words(), from: window)
+        return outcome
+    }
+
+    /// The sentence an export's end says: what was exported, what speech kept, and, for an MP3 with more chapters than it
+    /// has chapters for, that. Made from values, so it can be made again in another interface language.
+    private static func finishedWords(
+        _ outcome: BookExportOutcome,
+        folder: URL,
+        latest: SpeechExportProgress?,
+        speechFormat: SpeechExportFormat?
+    ) -> String {
         var words = BookExportWording.finished(outcome, folderName: BookExportWording.folderName(of: folder))
-        if case .ended(let kept, let total)? = speechRecord.latest,
+        if case .ended(let kept, let total)? = latest,
            let keptWords = SpeechExportWording.kept(done: kept, total: total) {
             words += " " + keptWords
         }
         // An MP3 made of more chapters than it has chapters for says so.
-        if speechFormat == .mp3, case .ended(_, let chapters)? = speechRecord.latest, chapters > MP3Tag.maximumChapters,
+        if speechFormat == .mp3, case .ended(_, let chapters)? = latest, chapters > MP3Tag.maximumChapters,
            outcome.exported.contains(where: { $0.pathExtension == SpeechExportFormat.mp3.fileExtension }) {
             words += " " + SpeechExportWording.mp3ChaptersKept(of: chapters)
         }
-        summary = Self.didEverything(outcome) ? nil : words
-        VoiceOverAnnouncer.announce(words, from: window)
-        return outcome
+        return words
     }
 
     /// Shows that `done` files of `total` are exported, while the export is

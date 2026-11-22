@@ -82,7 +82,7 @@ enum InterfaceLanguagePicker {
     }
 
     /// The language System gives now: English under hosted tests, as everywhere else System is there.
-    static func systemLanguageNow(preferredLanguages: [String] = Locale.preferredLanguages) -> String {
+    static func systemLanguageNow(preferredLanguages: [String] = InterfaceLanguage.globalLanguages()) -> String {
         InterfaceLanguage.liveState(for: .system, preferredLanguages: preferredLanguages).language
     }
 
@@ -144,7 +144,7 @@ enum InterfaceLanguagePicker {
         preferredLanguages: [String]? = nil
     ) -> InterfaceLanguage.State {
         let state = InterfaceLanguage.choose(choice, store: store, region: region, preferredLanguages: preferredLanguages)
-        let name = announcedName(of: choice, options: options(interfaceLanguage: state.language, systemLanguage: systemLanguageNow(preferredLanguages: preferredLanguages ?? Locale.preferredLanguages)))
+        let name = announcedName(of: choice, options: options(interfaceLanguage: state.language, systemLanguage: systemLanguageNow(preferredLanguages: preferredLanguages ?? InterfaceLanguage.globalLanguages())))
         // Read in the language now in use, which is the new one: the lookup follows the state just swapped.
         VoiceOverAnnouncer.announce(InterfaceLanguagePickerWording.announcement(language: name))
         return state

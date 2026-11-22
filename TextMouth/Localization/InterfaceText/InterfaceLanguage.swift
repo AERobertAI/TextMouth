@@ -106,7 +106,7 @@ enum InterfaceLanguage {
     ) -> State {
         // Saved first: System's language is read from the system's list once this app's own entry is gone.
         store.save(choice)
-        let state = liveState(for: choice, region: region, preferredLanguages: preferredLanguages ?? Locale.preferredLanguages)
+        let state = liveState(for: choice, region: region, preferredLanguages: preferredLanguages ?? globalLanguages())
         select(state)
         return state
     }
@@ -131,12 +131,22 @@ enum InterfaceLanguage {
         return State(language: language, locale: locale(for: language, region: regionCode))
     }
 
-    /// The language System gives for `preferredLanguages`: Foundation's own choice among the languages the app carries,
-    /// the same one `Bundle.main.preferredLocalizations` makes at launch, but from an explicit list because the bundle
-    /// keeps its answer from launch. English when none matches: English leads the list, so it is what no match falls
-    /// back to.
-    static func systemLanguage(preferredLanguages: [String]) -> String {
-        let carried = ["en"] + PluralRules.categories.keys.filter { $0 != "en" }.sorted()
+    /// The person's languages as the system keeps them, for System to resolve: the global `AppleLanguages` (this app's own
+    /// entry, which the picker writes, is in another domain and never part of it), else `Locale.preferredLanguages`,
+    /// where the platform keeps no global list in the app's reach.
+    static func globalLanguages() -> [String] {
+        let global = UserDefaults.standard.persistentDomain(forName: UserDefaults.globalDomain)?[InterfaceLanguageStore.key]
+        if let list = global as? [String], !list.isEmpty { return list }
+        return Locale.preferredLanguages
+    }
+
+    /// The language System gives for `preferredLanguages`: Foundation's own choice among the bundle's languages
+    /// (`localizations`, the bundle's own when nil), the same matching `Bundle.main.preferredLocalizations` makes at launch,
+    /// from an explicit list because the bundle keeps its answer from launch. English when none matches: English leads the
+    /// list when the bundle's languages are not given, so it is what no match falls back to.
+    static func systemLanguage(preferredLanguages: [String], localizations: [String]? = nil) -> String {
+        let bundled = (localizations ?? Bundle.main.localizations).filter { $0 != "Base" }
+        let carried = bundled.isEmpty ? ["en"] + PluralRules.categories.keys.filter { $0 != "en" }.sorted() : bundled
         return resolve(Bundle.preferredLocalizations(from: carried, forPreferences: preferredLanguages).first)
     }
 

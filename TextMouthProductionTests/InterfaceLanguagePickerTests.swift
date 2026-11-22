@@ -263,6 +263,22 @@ final class InterfaceLanguagePickerTests: XCTestCase {
         XCTAssertTrue(english, "the status stayed: \(harness.model.status)")
     }
 
+    /// The import overlay's extraction line and the move sheet's notice are made when read, so they follow a switch.
+    func testKeptSentencesFollowASwitch() {
+        let store = makeStoreRestoringSystem()
+        var state = ImportProgressState()
+        state.receive(
+            .extracting(archive: "a.zip", progress: ArchiveExtractionProgress(entriesDone: 1, entries: 2, bytesDone: 1, bytes: 2)),
+            at: Date()
+        )
+        let english = state.message
+        XCTAssertTrue(english.hasPrefix("Extracting “a.zip”"), english)
+        InterfaceLanguage.choose(.language("es"), store: store, region: "US")
+        XCTAssertTrue(state.message.hasPrefix("Extrayendo “a.zip”"), state.message)
+        InterfaceLanguage.choose(.system, store: store)
+        XCTAssertEqual(state.message, english)
+    }
+
     // MARK: - System's behavior
 
     /// For anyone who never opens the picker, the language in use is System's: English under hosted tests, the choice is

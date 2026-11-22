@@ -202,6 +202,25 @@ final class InterfaceLanguageChoiceTests: XCTestCase {
         XCTAssertEqual(language(["xx"]), "en", "none carried gives English")
     }
 
+    /// The design's measured cases of Foundation's own matching among the 25 languages, through `systemLanguage`.
+    func testSystemResolvesAsFoundationDoesAmongTheBundlesLanguages() {
+        let bundled = ["en"] + PluralRules.categories.keys.filter { $0 != "en" }.sorted()
+        func language(_ preferred: [String]) -> String {
+            InterfaceLanguage.systemLanguage(preferredLanguages: preferred, localizations: bundled)
+        }
+        XCTAssertEqual(language(["zh-Hant-TW"]), "zh-Hant")
+        XCTAssertEqual(language(["zh-HK"]), "zh-Hant")
+        XCTAssertEqual(language(["zh-CN"]), "zh-Hans")
+        XCTAssertEqual(language(["pt-PT"]), "pt-BR")
+        XCTAssertEqual(language(["es-419"]), "es")
+        XCTAssertEqual(language(["es-MX"]), "es")
+        XCTAssertEqual(language(["iw"]), "he")
+        XCTAssertEqual(language(["nb"]), "en", "not carried: the development region")
+        XCTAssertEqual(language(["nb", "sv"]), "sv")
+        XCTAssertEqual(language(["ca", "es"]), "es")
+        XCTAssertEqual(language(["hi-Latn"]), "en")
+    }
+
     func testUnderHostedTestsSystemIsEnglishWithTheUnitedStates() {
         let state = InterfaceLanguage.liveState(for: .system, hostsTestBundle: true, region: "FR", preferredLanguages: ["es"])
         XCTAssertEqual(state, InterfaceLanguage.State(language: "en", locale: Locale(identifier: "en_US")))
