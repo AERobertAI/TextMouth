@@ -1055,6 +1055,7 @@ targets:
       - TextMouthProductionTests/ImportRefusalTestSupport.swift
       - TextMouthProductionTests/InProcessEngineTests.swift
       - TextMouthProductionTests/InterfaceTextPackFixtureTests.swift
+      - TextMouthProductionTests/InterfaceTextShippedPackTests.swift
       - TextMouthProductionTests/InterfaceTextTests.swift
       - TextMouthProductionTests/KF8Fixture.swift
       - TextMouthProductionTests/KF8LayoutTests.swift
