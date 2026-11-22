@@ -18,10 +18,10 @@ extension InterfaceText {
     }
 
     /// The text of the line `id` in `language`, for tests and for title sets (a menu's title in another language).
-    /// Under the language already in use it formats with the system's locale, else with `locale(forTesting:)`.
+    /// Under the language already in use it formats with the system's locale, else with `locale(forScope:)`.
     nonisolated static func line(_ id: StaticString, _ english: Format, language: String) -> String {
         let current = InterfaceLanguage.current
-        return line(id, english, state: current.language == language ? current : InterfaceLanguage.state(forTesting: language))
+        return line(id, english, state: current.language == language ? current : InterfaceLanguage.state(forScope: language))
     }
 
     /// The one place a lookup meets the shared engine.
