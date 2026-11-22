@@ -425,12 +425,29 @@ class InterfaceTestsTests(RemoteTrainCase):
         self.assertEqual(self.run_train(), "ran")
         request = self.pushed_request(self.pushed_refs()["refs/heads/TestBuild"])
         self.assertEqual((request["classes"], request["ios_ui_classes"]), ([], ["IOSRuntimeTests"]),
-                         "a unit class goes to the iPhone job, not to the Mac")
+                         "an iPhone-only unit class goes to the iPhone job, not to the Mac")
         alpha = self.result_of("alpha")
         self.assertIn("unit tests (TextMouthiOSTests): 19 ran, 0 skipped, 1 failed", alpha)
         self.assertIn("interface tests (TextMouthiOSUITests): 33 ran", alpha)
         self.assertIn("Failures in the iPhone test classes you asked for: 1", alpha)
         self.assertIn("Verdict: PASSED", (next(train.TRAINS.iterdir()) / "summary.md").read_text())
+
+    def test_a_class_the_two_bundles_share_runs_on_the_mac_and_on_the_iphone(self):
+        # A Mac test file that project.yml lists for the iPhone's unit bundle: its class is in both bundles. Before
+        # November 21, 2026 the train sent such a class to the iPhone job only, so a request that named one without an
+        # area covering it never ran it on the Mac.
+        files = {**self.FILES,
+                 "TextMouthProductionTests/FeedParserTests.swift": "final class FeedParserTests: XCTestCase {\n    func testA() {}\n}\n",
+                 "project.yml": ("targets:\n  TextMouthiOSTests:\n    sources:\n      - TextMouthiOSTests\n"
+                                 "      - TextMouthProductionTests/FeedParserTests.swift\n    settings:\n      base:\n        X: y\n")}
+        self.patch(train, known_names=lambda cwd: ({"all", "stats"}, {"FooTests", "FeedParserTests", "SearchUITests"}))
+        self.branch("alpha", files, areas=["stats"], classes=["FooTests", "FeedParserTests", "SearchUITests"])
+        self.gh_runs(results(PASSING_SUMMARY, PASSING_LOG))
+        self.assertEqual(self.run_train(), "ran")
+        request = self.pushed_request(self.pushed_refs()["refs/heads/TestBuild"])
+        self.assertEqual((request["classes"], request["ios_ui_classes"]),
+                         (["FooTests", "FeedParserTests"], ["FeedParserTests", "SearchUITests"]),
+                         "the shared class runs in both places; the interface class on the iPhone only")
 
     def test_the_summary_and_the_log_are_kept_in_the_trains_folder(self):
         self.branch("alpha", self.FILES, areas=["stats"], classes=["SearchUITests"])
