@@ -12,6 +12,7 @@
    "fixes": [
     {
      "key": "%@ also holds %lld books a newer TextMouth added, which are kept.",
+     "id": "folderRemoval.keptBooksChoiceSentences",
      "english": {
       "one": "%@ also holds %lld book a newer TextMouth added, which is kept.",
       "other": "%@ also holds %lld books a newer TextMouth added, which are kept."
@@ -28,6 +29,7 @@
     },
     {
      "key": "%@ has %@.",
+     "id": "libraryComparison.value",
      "english": "%1$@ has %2$@.",
      "before": "%1$@ के पास %2$@ है।",
      "after": "%1$@ में: %2$@।",
@@ -35,6 +37,7 @@
     },
     {
      "key": "%@ has %@; %@ has %@.",
+     "id": "libraryComparison.hasPair",
      "english": "%1$@ has %2$@; %3$@ has %4$@.",
      "before": "%1$@ के पास %2$@ है; %3$@ के पास %4$@ है।",
      "after": "%1$@ में: %2$@; %3$@ में: %4$@।",
@@ -42,6 +45,7 @@
     },
     {
      "key": "%@ is the newer. It has %@.",
+     "id": "libraryComparison.isNewer",
      "english": "%1$@ is the newer. It has %2$@.",
      "before": "%1$@ नया है। उसमें %2$@ है।",
      "after": "%1$@ नई है। उसमें: %2$@।",
@@ -49,6 +53,7 @@
     },
     {
      "key": "%@ wasn't asked for again, because the drive hasn't answered an earlier read",
+     "id": "libraryComparison.shortReason.stillBeingFetched",
      "english": "%@ wasn't asked for again, because the drive hasn't answered an earlier read",
      "before": "%@ दोबारा नहीं माँगी गई, क्योंकि ड्राइव ने पिछली रीड का उत्तर नहीं दिया है",
      "after": "%@ दोबारा नहीं माँगी गई, क्योंकि ड्राइव ने पढ़ने के पिछले अनुरोध का उत्तर नहीं दिया है",
@@ -56,6 +61,7 @@
     },
     {
      "key": "%@, any subfolders, and the %lld books inside will be removed from the library.",
+     "id": "folderRemoval.confirmationMessage.other",
      "english": {
       "one": "%@, any subfolders, and the %lld book inside will be removed from the library.",
       "other": "%@, any subfolders, and the %lld books inside will be removed from the library."
@@ -72,6 +78,7 @@
     },
     {
      "key": "%@, any subfolders, and the book inside will be removed from the library.",
+     "id": "folderRemoval.confirmationMessage.inside",
      "english": "%@, any subfolders, and the book inside will be removed from the library.",
      "before": "%@, इसके सभी सबफ़ोल्डर और अंदर की पुस्तक लाइब्रेरी से हटा दी जाएगी।",
      "after": "%@, इसके सभी सबफ़ोल्डर और अंदर की पुस्तक लाइब्रेरी से हटा दिए जाएँगे।",
@@ -79,6 +86,7 @@
     },
     {
      "key": "%lld views need a newer TextMouth. They are kept as they are, and not offered.",
+     "id": "libraryViewsSettings.unreadableCaption",
      "english": {
       "one": "%lld view needs a newer TextMouth. It is kept as it is, and not offered.",
       "other": "%lld views need a newer TextMouth. They are kept as they are, and not offered."
@@ -95,6 +103,7 @@
     },
     {
      "key": "And %lld more copies, which the log lists.",
+     "id": "conflictCopy.message",
      "english": {
       "one": "And %lld more copy, which the log lists.",
       "other": "And %lld more copies, which the log lists."
@@ -111,6 +120,7 @@
     },
     {
      "key": "And %lld more files couldn't be read.",
+     "id": "libraryComparison.moreUnreadSentence",
      "english": {
       "one": "And %lld more file couldn't be read.",
       "other": "And %lld more files couldn't be read."
@@ -127,6 +137,7 @@
     },
     {
      "key": "Another view is already named %@. Choose another name.",
+     "id": "libraryViewEditor.nameTaken",
      "english": "Another view is already named %@. Choose another name.",
      "before": "एक और दृश्य का नाम पहले से %@ है। कोई दूसरा नाम चुनें।",
      "after": "किसी अन्य दृश्य का नाम पहले से %@ है। कोई दूसरा नाम चुनें।",
@@ -134,6 +145,7 @@
     },
     {
      "key": "Another view is named %@. Rename it first, then restore this view.",
+     "id": "libraryViewsSettings.restoreNameTaken",
      "english": "Another view is named %@. Rename it first, then restore this view.",
      "before": "एक और दृश्य का नाम %@ है। पहले उसका नाम बदलें, फिर इस दृश्य को पुनर्स्थापित करें।",
      "after": "किसी अन्य दृश्य का नाम %@ है। पहले उसका नाम बदलें, फिर इस दृश्य को पुनर्स्थापित करें।",
@@ -141,6 +153,7 @@
     },
     {
      "key": "Automatically start playing when you navigate to a heading, bookmark, or search result.",
+     "id": "settings.autoPlayExplanation",
      "english": "Automatically start playing when you navigate to a heading, bookmark, or search result.",
      "before": "जब आप किसी हेडिंग, बुकमार्क या खोज परिणाम पर जाएँ, तो अपने आप चलाना शुरू करें।",
      "after": "जब आप किसी हेडिंग, बुकमार्क या खोज परिणाम पर जाते हैं, तो प्लेबैक अपने आप शुरू हो जाता है।",
@@ -148,6 +161,7 @@
     },
     {
      "key": "But %@ also holds %lld books a newer TextMouth added: they are kept where they are, and so is every folder that holds one.",
+     "id": "folderRemoval.keptBooksConfirmationSentences",
      "english": {
       "one": "But %@ also holds %lld book a newer TextMouth added: it is kept where it is, and so is every folder that holds it.",
       "other": "But %@ also holds %lld books a newer TextMouth added: they are kept where they are, and so is every folder that holds one."
@@ -164,6 +178,7 @@
     },
     {
      "key": "Choose Retry Saving, then try again.",
+     "id": "libraryViewModel.message.choose",
      "english": "Choose Retry Saving, then try again.",
      "before": "“फिर से सहेजें” चुनें, फिर से प्रयास करें।",
      "after": "“फिर से सहेजें” चुनें, फिर दोबारा प्रयास करें।",
@@ -171,6 +186,7 @@
     },
     {
      "key": "Deleted %@ permanently.",
+     "id": "removalMode.completionSentence.deletePermanently",
      "english": "Deleted %@ permanently.",
      "before": "%@ स्थायी रूप से मिटा दिया गया।",
      "after": "स्थायी रूप से मिटाया गया: %@।",
@@ -178,6 +194,7 @@
     },
     {
      "key": "Downloading %@",
+     "id": "common.downloadingValue",
      "english": "Downloading %@",
      "before": "%@ डाउनलोड हो रहा है",
      "after": "डाउनलोड हो रहा है: %@",
@@ -185,6 +202,7 @@
     },
     {
      "key": "Folder placement and manual order that were stored only in the unreadable index are lost from the library.",
+     "id": "libraryIndexRecovery.rebuild.placement",
      "english": "Folder placement and manual order that were stored only in the unreadable index are lost from the library.",
      "before": "फ़ोल्डर की स्थिति और मैन्युअल क्रम, जो केवल अपठनीय इंडेक्स में संग्रहीत थे, लाइब्रेरी से खो जाते हैं।",
      "after": "फ़ोल्डर की स्थिति और मैनुअल क्रम, जो केवल अपठनीय इंडेक्स में संग्रहीत थे, लाइब्रेरी से खो जाते हैं।",
@@ -192,6 +210,7 @@
     },
     {
      "key": "Folders is always shown: every folder and feed opens there.",
+     "id": "libraryViewsSettings.foldersVisibilityHint",
      "english": "Folders is always shown: every folder and feed opens there.",
      "before": "फ़ोल्डर हमेशा दिखाए जाते हैं: हर फ़ोल्डर और फ़ीड वहीं खुलता है।",
      "after": "“फ़ोल्डर” दृश्य हमेशा दिखाया जाता है: हर फ़ोल्डर और फ़ीड वहीं खुलता है।",
@@ -199,6 +218,7 @@
     },
     {
      "key": "It holds %@.",
+     "id": "common.itHoldsValue",
      "english": "It holds %@.",
      "before": "इसमें %@ हैं।",
      "after": "इसमें: %@।",
@@ -206,6 +226,7 @@
     },
     {
      "key": "It holds %@; library.json holds %@.",
+     "id": "conflictCopy.libraryHolds",
      "english": "It holds %1$@; library.json holds %2$@.",
      "before": "इसमें %1$@ हैं; library.json में %2$@ हैं।",
      "after": "इसमें: %1$@; library.json में: %2$@।",
@@ -213,6 +234,7 @@
     },
     {
      "key": "It holds %@; the index holds %@.",
+     "id": "conflictCopy.feedIndexHolds",
      "english": "It holds %1$@; the index holds %2$@.",
      "before": "इसमें %1$@ हैं; इंडेक्स में %2$@ हैं।",
      "after": "इसमें: %1$@; इंडेक्स में: %2$@।",
@@ -220,6 +242,7 @@
     },
     {
      "key": "It holds the feed “%@” with %@.",
+     "id": "conflictCopy.feedRecordHolds.named",
      "english": "It holds the feed “%1$@” with %2$@.",
      "before": "इसमें फ़ीड “%1$@” है, जिसमें %2$@ हैं।",
      "after": "इसमें फ़ीड “%1$@” है: %2$@।",
@@ -227,6 +250,7 @@
     },
     {
      "key": "It holds the feed “%@” with %@; the record holds %@.",
+     "id": "conflictCopy.feedRecordHolds.namedIndexHolds",
      "english": "It holds the feed “%1$@” with %2$@; the record holds %3$@.",
      "before": "इसमें फ़ीड “%1$@” है, जिसमें %2$@ हैं; रिकॉर्ड में %3$@ हैं।",
      "after": "इसमें फ़ीड “%1$@” है: %2$@; रिकॉर्ड में: %3$@।",
@@ -234,6 +258,7 @@
     },
     {
      "key": "It holds the record of “%@”: %@; the record holds %@.",
+     "id": "conflictCopy.bookRecordHolds.ofBookIndexHolds",
      "english": "It holds the record of “%1$@”: %2$@; the record holds %3$@.",
      "before": "इसमें “%1$@” का रिकॉर्ड है: %2$@; रिकॉर्ड में %3$@ है।",
      "after": "इसमें “%1$@” का रिकॉर्ड है: %2$@; रिकॉर्ड में: %3$@।",
@@ -241,6 +266,7 @@
     },
     {
      "key": "Its name, conditions, sort, and limit go back to TextMouth's own. Its place in the list and when it is offered stay as they are.",
+     "id": "libraryViewsSettings.restoreMessage",
      "english": "Its name, conditions, sort, and limit go back to TextMouth's own. Its place in the list and when it is offered stay as they are.",
      "before": "इसका नाम, शर्तें, क्रम और सीमा TextMouth के अपने मूल्यों पर लौट जाते हैं। सूची में इसका स्थान और यह कब पेश किया जाता है, जैसा है वैसा रहता है।",
      "after": "इसका नाम, शर्तें, क्रम और सीमा फिर वही हो जाते हैं जो TextMouth ने दिए थे। सूची में इसका स्थान और इसे कब पेश किया जाता है, दोनों जैसे हैं वैसे ही रहते हैं।",
@@ -248,6 +274,7 @@
     },
     {
      "key": "Its place, bookmarks, and transcript, if it has any, are kept, and it can be downloaded again.",
+     "id": "feedDownloadRemoval.keptSentence.transcript",
      "english": "Its place, bookmarks, and transcript, if it has any, are kept, and it can be downloaded again.",
      "before": "इसका स्थान, बुकमार्क और ट्रांसक्रिप्ट, यदि है, रखे जाते हैं, और इसे फिर से डाउनलोड किया जा सकता है।",
      "after": "इसका स्थान, बुकमार्क और ट्रांसक्रिप्ट, यदि कोई हों, रखे जाते हैं, और इसे फिर से डाउनलोड किया जा सकता है।",
@@ -255,6 +282,7 @@
     },
     {
      "key": "Keeping %@ on this Mac",
+     "id": "libraryCloud.keepStarted.keeping",
      "english": "Keeping %@ on this Mac",
      "before": "%@ को इस Mac पर रखा जा रहा है",
      "after": "इस Mac पर रखा जा रहा है: %@",
@@ -262,6 +290,7 @@
     },
     {
      "key": "Make sure its folder can be written to, then try again.",
+     "id": "libraryIndexRecoveryError.couldNotPreserveFix",
      "english": "Make sure its folder can be written to, then try again.",
      "before": "सुनिश्चित करें कि उसके फ़ोल्डर में लिखा जा सकता है, फिर से प्रयास करें।",
      "after": "सुनिश्चित करें कि उसके फ़ोल्डर में लिखा जा सकता है, फिर दोबारा प्रयास करें।",
@@ -269,6 +298,7 @@
     },
     {
      "key": "Move %@ to Trash",
+     "id": "removalMode.buttonTitle.moveToTrash.named",
      "english": "Move %@ to Trash",
      "before": "%@ को ट्रैश में भेजें",
      "after": "%@ ट्रैश में भेजें",
@@ -276,6 +306,7 @@
     },
     {
      "key": "Move %@ to the Trash",
+     "id": "removalMode.spokenLabel.moveToTrash",
      "english": "Move %@ to the Trash",
      "before": "%@ को ट्रैश में भेजें",
      "after": "%@ ट्रैश में भेजें",
@@ -283,6 +314,7 @@
     },
     {
      "key": "Moved %@ to the Trash.",
+     "id": "removalMode.completionSentence.moveToTrash",
      "english": "Moved %@ to the Trash.",
      "before": "%@ को ट्रैश में भेज दिया गया।",
      "after": "ट्रैश में भेजा गया: %@।",
@@ -290,6 +322,7 @@
     },
     {
      "key": "Moves data back to the default location at ~/.TextMouth",
+     "id": "storageSettings.resetToDefaultHint",
      "english": "Moves data back to the default location at ~/.TextMouth",
      "before": "डेटा को ~/.TextMouth पर डिफ़ॉल्ट स्थान पर वापस ले जाता है।",
      "after": "डेटा को डिफ़ॉल्ट स्थान ~/.TextMouth पर वापस ले जाता है।",
@@ -297,6 +330,7 @@
     },
     {
      "key": "None (Use Global)",
+     "id": "playbackNavigationUnitControlMode.none",
      "english": "None (Use Global)",
      "before": "कोई नहीं (वैश्विक उपयोग करें)",
      "after": "कोई नहीं (वैश्विक सेटिंग)",
@@ -304,6 +338,7 @@
     },
     {
      "key": "Nothing could be compared with the copy in %@, because a file the comparison needs couldn't be read.",
+     "id": "libraryComparison.nothingCompared.because",
      "english": "Nothing could be compared with the copy in %@, because a file the comparison needs couldn't be read.",
      "before": "%@ में मौजूद कॉपी से कुछ भी तुलना नहीं की जा सकी, क्योंकि तुलना के लिए ज़रूरी एक फ़ाइल पढ़ी नहीं जा सकी।",
      "after": "%@ में मौजूद कॉपी से कोई तुलना नहीं की जा सकी, क्योंकि तुलना के लिए ज़रूरी एक फ़ाइल पढ़ी नहीं जा सकी।",
@@ -311,6 +346,7 @@
     },
     {
      "key": "Only rewind if the pause was longer than the threshold",
+     "id": "settings.smartModeHint",
      "english": "Only rewind if the pause was longer than the threshold",
      "before": "विराम सीमा से लंबा होने पर ही पीछे जाएँ।",
      "after": "विराम सीमा से लंबा होने पर ही पीछे जाता है।",
@@ -318,6 +354,7 @@
     },
     {
      "key": "Opened Last",
+     "id": "libraryViewEditor.limitOrderName.lastOpened",
      "english": "Opened Last",
      "before": "आख़िर में खोली गई",
      "after": "सबसे बाद में खोला गया",
@@ -325,6 +362,7 @@
     },
     {
      "key": "Remove %@ from the library",
+     "id": "libraryRemoveCommand.accessibilityLabel",
      "english": "Remove %@ from the library",
      "before": "%@ को लाइब्रेरी से हटाएँ",
      "after": "%@ लाइब्रेरी से हटाएँ",
@@ -332,6 +370,7 @@
     },
     {
      "key": "Remove %@ from the library and keep the files",
+     "id": "removalMode.spokenLabel.keepFiles",
      "english": "Remove %@ from the library and keep the files",
      "before": "%@ को लाइब्रेरी से हटाएँ और फ़ाइलें रखें",
      "after": "%@ लाइब्रेरी से हटाएँ और फ़ाइलें रखें",
@@ -339,6 +378,7 @@
     },
     {
      "key": "Removed %@ from the library.",
+     "id": "removalMode.completionSentence.keepFiles",
      "english": "Removed %@ from the library.",
      "before": "%@ को लाइब्रेरी से हटा दिया गया।",
      "after": "लाइब्रेरी से हटाया गया: %@।",
@@ -346,6 +386,7 @@
     },
     {
      "key": "Removed the downloads of %@",
+     "id": "libraryCloud.removedDownloads",
      "english": "Removed the downloads of %@",
      "before": "%@ के डाउनलोड हटाए गए",
      "after": "डाउनलोड हटाए गए: %@",
@@ -353,6 +394,7 @@
     },
     {
      "key": "Search the library",
+     "id": "librarySearch.fieldLabel",
      "english": "Search the library",
      "before": "लाइब्रेरी खोजें",
      "after": "लाइब्रेरी में खोजें",
@@ -360,6 +402,7 @@
     },
     {
      "key": "Shift+Skip (Secondary)",
+     "id": "settings.shiftSkipHeader",
      "english": "Shift+Skip (Secondary)",
      "before": "शिफ़्ट+जाएँ (द्वितीयक)",
      "after": "शिफ़्ट+आगे-पीछे जाएँ (द्वितीयक)",
@@ -367,6 +410,7 @@
     },
     {
      "key": "Stopped keeping %@ on this Mac",
+     "id": "libraryCloud.stoppedKeeping.onThisMac",
      "english": "Stopped keeping %@ on this Mac",
      "before": "%@ को इस Mac पर रखना बंद किया गया",
      "after": "इस Mac पर रखना बंद किया गया: %@",
@@ -374,6 +418,7 @@
     },
     {
      "key": "Test this rule against the input",
+     "id": "substitutions.testButtonLabel",
      "english": "Test this rule against the input",
      "before": "इस नियम को इनपुट पर परखता है",
      "after": "इस नियम को इनपुट पर परखें",
@@ -381,6 +426,7 @@
     },
     {
      "key": "TextMouth could not move %@ to the current library format.",
+     "id": "legacyMigrationReport.userSummary.move",
      "english": "TextMouth could not move %@ to the current library format.",
      "before": "TextMouth %@ को मौजूदा लाइब्रेरी फ़ॉर्मैट में नहीं ले जा सका।",
      "after": "TextMouth %@ को मौजूदा लाइब्रेरी फ़ॉर्मैट में स्थानांतरित नहीं कर सका।",
@@ -388,6 +434,7 @@
     },
     {
      "key": "TextMouth could not record the removal in its package, %@.",
+     "id": "libraryRemovalError.couldNotMarkPackage",
      "english": "TextMouth could not record the removal in its package, %@.",
      "before": "TextMouth अपने पैकेज %@ में हटाने को दर्ज नहीं कर सका।",
      "after": "TextMouth हटाने की जानकारी उसके पैकेज %@ में दर्ज नहीं कर सका।",
@@ -395,6 +442,7 @@
     },
     {
      "key": "TextMouth is opening again on another library, so they stay unsaved in this one.",
+     "id": "storageWorkWait.sentence.unsaved",
      "english": "TextMouth is opening again on another library, so they stay unsaved in this one.",
      "before": "TextMouth दूसरी लाइब्रेरी पर फिर से खुल रहा है, इसलिए वे इसमें असहेजे रहते हैं।",
      "after": "TextMouth दूसरी लाइब्रेरी पर फिर से खुल रहा है, इसलिए वे इसमें बिना सहेजे रह जाते हैं।",
@@ -402,6 +450,7 @@
     },
     {
      "key": "TextMouth moved %@ to the current library format, but with a problem:",
+     "id": "legacyMigrationReport.userSummary.problem",
      "english": "TextMouth moved %@ to the current library format, but with a problem:",
      "before": "TextMouth ने %@ को मौजूदा लाइब्रेरी फ़ॉर्मैट में ले जाया, लेकिन एक समस्या के साथ:",
      "after": "TextMouth ने %@ को मौजूदा लाइब्रेरी फ़ॉर्मैट में स्थानांतरित किया, लेकिन एक समस्या के साथ:",
@@ -409,6 +458,7 @@
     },
     {
      "key": "TextMouth moved %@ to the current library format, but with problems:",
+     "id": "legacyMigrationReport.userSummary.problems",
      "english": "TextMouth moved %@ to the current library format, but with problems:",
      "before": "TextMouth ने %@ को मौजूदा लाइब्रेरी फ़ॉर्मैट में ले जाया, लेकिन कुछ समस्याओं के साथ:",
      "after": "TextMouth ने %@ को मौजूदा लाइब्रेरी फ़ॉर्मैट में स्थानांतरित किया, लेकिन कुछ समस्याओं के साथ:",
@@ -416,6 +466,7 @@
     },
     {
      "key": "TextMouth needs the drive “%@” connected to open the library.",
+     "id": "storage.driveSentence",
      "english": "TextMouth needs the drive “%@” connected to open the library.",
      "before": "लाइब्रेरी खोलने के लिए TextMouth को ड्राइव “%@” कनेक्ट चाहिए।",
      "after": "TextMouth को लाइब्रेरी खोलने के लिए ड्राइव “%@” का कनेक्ट होना ज़रूरी है।",
@@ -423,6 +474,7 @@
     },
     {
      "key": "The %@ in the list will be replaced by TextMouth's %@.",
+     "id": "substitutions.resetConfirmationMessage.replaced",
      "english": "The %1$@ in the list will be replaced by TextMouth's %2$@.",
      "before": "सूची के %1$@ की जगह TextMouth के %2$@ आ जाएँगे।",
      "after": "सूची में मौजूद %1$@ हटकर TextMouth के %2$@ आ जाएँगे।",
@@ -430,6 +482,7 @@
     },
     {
      "key": "The Hobbit sorts among the H's and shows as Hobbit, The. Typing H finds it among the H's.",
+     "id": "leadingArticle.description.ignoredForBoth",
      "english": "The Hobbit sorts among the H's and shows as Hobbit, The. Typing H finds it among the H's.",
      "before": "The Hobbit, H के बीच क्रमबद्ध होता है और Hobbit, The के रूप में दिखता है। H टाइप करने पर वह H के बीच मिलता है।",
      "after": "The Hobbit को H वाले शीर्षकों के बीच क्रमबद्ध किया जाता है और वह Hobbit, The के रूप में दिखता है। H टाइप करने पर वह H वाले शीर्षकों में मिलता है।",
@@ -437,6 +490,7 @@
     },
     {
      "key": "The downloads of %@ weren't removed: %@",
+     "id": "libraryCloud.downloadsWerentRemoved",
      "english": "The downloads of %1$@ weren't removed: %2$@",
      "before": "%1$@ के डाउनलोड नहीं हटाए गए: %2$@",
      "after": "डाउनलोड नहीं हटाए गए, %1$@: %2$@",
@@ -444,6 +498,7 @@
     },
     {
      "key": "The folder %@ holds a different library, so nothing was compared.",
+     "id": "libraryComparison.differentLibrarySentence",
      "english": "The folder %@ holds a different library, so nothing was compared.",
      "before": "फ़ोल्डर %@ में कोई दूसरी लाइब्रेरी है, इसलिए कुछ भी तुलना नहीं की गई।",
      "after": "फ़ोल्डर %@ में कोई दूसरी लाइब्रेरी है, इसलिए कोई तुलना नहीं की गई।",
@@ -451,6 +506,7 @@
     },
     {
      "key": "The library index was rebuilt with %@.",
+     "id": "libraryIndexRecoveryOutcome.rebuilt",
      "english": "The library index was rebuilt with %@.",
      "before": "लाइब्रेरी इंडेक्स %@ के साथ फिर से बनाया गया।",
      "after": "लाइब्रेरी इंडेक्स फिर से बनाया गया: %@।",
@@ -458,6 +514,7 @@
     },
     {
      "key": "The unreadable library index is no longer there, so TextMouth saved the library rebuilt from your books as the new index, with %@.",
+     "id": "libraryIndexRecoveryOutcome.savedProvisional",
      "english": "The unreadable library index is no longer there, so TextMouth saved the library rebuilt from your books as the new index, with %@.",
      "before": "अपठनीय लाइब्रेरी इंडेक्स अब वहाँ नहीं है, इसलिए TextMouth ने आपकी पुस्तकों से फिर से बनाई गई लाइब्रेरी को नए इंडेक्स के रूप में सहेजा, %@ के साथ।",
      "after": "अपठनीय लाइब्रेरी इंडेक्स अब वहाँ नहीं है, इसलिए TextMouth ने आपकी पुस्तकों से फिर से बनाई गई लाइब्रेरी को नए इंडेक्स के रूप में सहेजा: %@।",
@@ -465,6 +522,7 @@
     },
     {
      "key": "Their places, bookmarks, and transcripts, if they have any, are kept, and they can be downloaded again.",
+     "id": "feedDownloadRemoval.keptSentence.transcripts",
      "english": "Their places, bookmarks, and transcripts, if they have any, are kept, and they can be downloaded again.",
      "before": "उनके स्थान, बुकमार्क और ट्रांसक्रिप्ट, यदि हैं, रखे जाते हैं, और उन्हें फिर से डाउनलोड किया जा सकता है।",
      "after": "उनके स्थान, बुकमार्क और ट्रांसक्रिप्ट, यदि कोई हों, रखे जाते हैं, और उन्हें फिर से डाउनलोड किया जा सकता है।",
@@ -472,6 +530,7 @@
     },
     {
      "key": "Titles sort, and are found by typing, as they are written: The Hobbit is among the T's.",
+     "id": "leadingArticle.description.partOfTitle",
      "english": "Titles sort, and are found by typing, as they are written: The Hobbit is among the T's.",
      "before": "शीर्षक वैसे ही क्रमबद्ध होते हैं, और टाइप करके वैसे ही खोजे जाते हैं, जैसे वे लिखे हैं: The Hobbit, T में आता है।",
      "after": "शीर्षक वैसे ही क्रमबद्ध होते हैं, और टाइप करके वैसे ही खोजे जाते हैं, जैसे वे लिखे हैं: The Hobbit T वाले शीर्षकों में आता है।",
@@ -479,6 +538,7 @@
     },
     {
      "key": "Tries again to save every change that could not be saved",
+     "id": "storageSettings.retrySavingHint",
      "english": "Tries again to save every change that could not be saved",
      "before": "जो हर बदलाव सहेजा नहीं जा सका, उसे फिर से सहेजने का प्रयास करता है।",
      "after": "जो भी बदलाव सहेजे नहीं जा सके, उन सभी को फिर से सहेजने का प्रयास करता है।",
@@ -486,6 +546,7 @@
     },
     {
      "key": "Unread: %@ wasn't asked for again, because the drive hasn't answered an earlier read, %@",
+     "id": "libraryComparison.sentence.stillBeingFetched",
      "english": "Unread: %1$@ wasn't asked for again, because the drive hasn't answered an earlier read, %2$@",
      "before": "न पढ़ी गई: ड्राइव ने पिछली रीड का उत्तर नहीं दिया, इसलिए %1$@ दोबारा नहीं माँगी गई, %2$@",
      "after": "न पढ़ी गई: ड्राइव ने पढ़ने के पिछले अनुरोध का उत्तर नहीं दिया, इसलिए %1$@ दोबारा नहीं माँगी गई, %2$@",
@@ -493,6 +554,7 @@
     },
     {
      "key": "When off, removing a book will %@ at once.",
+     "id": "removalPreferences.confirmationExplanation.once",
      "english": "When off, removing a book will %@ at once.",
      "before": "बंद होने पर, पुस्तक हटाने पर तुरंत यह होता है: %@।",
      "after": "बंद होने पर, पुस्तक हटाने का अर्थ है तुरंत %@।",
@@ -500,6 +562,7 @@
     },
     {
      "key": "When resuming playback, rewind to the start of this unit",
+     "id": "settings.rewindUnitHint",
      "english": "When resuming playback, rewind to the start of this unit",
      "before": "प्लेबैक फिर शुरू करते समय, इस इकाई की शुरुआत तक पीछे जाएँ।",
      "after": "प्लेबैक फिर शुरू करते समय, इस इकाई की शुरुआत तक पीछे जाता है।",
@@ -507,6 +570,7 @@
     },
     {
      "key": "With %@, %@.",
+     "id": "removalChoice.optionSentence",
      "english": "With %1$@, %2$@.",
      "before": "%1$@ के साथ, %2$@।",
      "after": "“%1$@” चुनने पर, %2$@।",
@@ -514,6 +578,7 @@
     },
     {
      "key": "With %@, the feed and its downloads stay, listed in no folder until Feed Info gives the feed another; Delete Feed… on its row deletes it.",
+     "id": "folderRemoval.feedsChoiceSentences.downloads",
      "english": "With %@, the feed and its downloads stay, listed in no folder until Feed Info gives the feed another; Delete Feed… on its row deletes it.",
      "before": "“%@” के साथ, फ़ीड और उसके डाउनलोड बने रहते हैं, और तब तक किसी फ़ोल्डर में सूचीबद्ध नहीं होते जब तक “फ़ीड जानकारी” उसे दूसरा फ़ोल्डर न दे; उसकी पंक्ति पर “फ़ीड मिटाएँ…” उसे मिटा देता है।",
      "after": "“%@” चुनने पर, फ़ीड और उसके डाउनलोड बने रहते हैं, और तब तक किसी फ़ोल्डर में सूचीबद्ध नहीं होते जब तक “फ़ीड जानकारी” उसे दूसरा फ़ोल्डर न दे; उसकी पंक्ति पर “फ़ीड मिटाएँ…” उसे मिटा देता है।",
@@ -521,6 +586,7 @@
     },
     {
      "key": "With %@, the feeds and their downloads stay, listed in no folder until Feed Info gives each another; Delete Feed… on a feed's row deletes it.",
+     "id": "folderRemoval.feedsChoiceSentences.each",
      "english": "With %@, the feeds and their downloads stay, listed in no folder until Feed Info gives each another; Delete Feed… on a feed's row deletes it.",
      "before": "“%@” के साथ, फ़ीड और उनके डाउनलोड बने रहते हैं, और तब तक किसी फ़ोल्डर में सूचीबद्ध नहीं होते जब तक “फ़ीड जानकारी” हर एक को दूसरा फ़ोल्डर न दे; किसी फ़ीड की पंक्ति पर “फ़ीड मिटाएँ…” उसे मिटा देता है।",
      "after": "“%@” चुनने पर, फ़ीड और उनके डाउनलोड बने रहते हैं, और तब तक किसी फ़ोल्डर में सूचीबद्ध नहीं होते जब तक “फ़ीड जानकारी” हर एक को दूसरा फ़ोल्डर न दे; किसी फ़ीड की पंक्ति पर “फ़ीड मिटाएँ…” उसे मिटा देता है।",
@@ -528,6 +594,7 @@
     },
     {
      "key": "With %@, the folder and everything in it leave the library, and %@.",
+     "id": "folderRemoval.choiceMessage.everything",
      "english": "With %1$@, the folder and everything in it leave the library, and %2$@.",
      "before": "“%1$@” के साथ, फ़ोल्डर और उसमें सब कुछ लाइब्रेरी से हट जाता है, और %2$@।",
      "after": "“%1$@” चुनने पर, फ़ोल्डर और उसमें मौजूद सब कुछ लाइब्रेरी से हट जाता है, और %2$@।",
@@ -535,6 +602,7 @@
     },
     {
      "key": "With Move Contents Out, the feed's folder moves with the rest.",
+     "id": "folderRemoval.feedsChoiceSentences.moves",
      "english": "With Move Contents Out, the feed's folder moves with the rest.",
      "before": "“सामग्री बाहर ले जाएँ” के साथ, फ़ीड का फ़ोल्डर बाकी के साथ चला जाता है।",
      "after": "“सामग्री बाहर ले जाएँ” चुनने पर, फ़ीड का फ़ोल्डर बाकी के साथ चला जाता है।",
@@ -542,6 +610,7 @@
     },
     {
      "key": "With Move Contents Out, their folders move with the rest.",
+     "id": "folderRemoval.feedsChoiceSentences.contents",
      "english": "With Move Contents Out, their folders move with the rest.",
      "before": "“सामग्री बाहर ले जाएँ” के साथ, उनके फ़ोल्डर बाकी के साथ चले जाते हैं।",
      "after": "“सामग्री बाहर ले जाएँ” चुनने पर, उनके फ़ोल्डर बाकी के साथ चले जाते हैं।",
@@ -549,6 +618,7 @@
     },
     {
      "key": "With Move Contents Out, they stay in the library and only the folder is deleted.",
+     "id": "folderRemoval.choiceMessage.contents",
      "english": "With Move Contents Out, they stay in the library and only the folder is deleted.",
      "before": "“सामग्री बाहर ले जाएँ” के साथ, वे लाइब्रेरी में रहते हैं और केवल फ़ोल्डर मिटाया जाता है।",
      "after": "“सामग्री बाहर ले जाएँ” चुनने पर, वे लाइब्रेरी में रहते हैं और केवल फ़ोल्डर मिटाया जाता है।",
@@ -556,6 +626,7 @@
     },
     {
      "key": "another Mac",
+     "id": "librarySessionLease.anotherMac",
      "english": "another Mac",
      "before": "दूसरा Mac",
      "after": "अन्य Mac",
@@ -563,6 +634,7 @@
     },
     {
      "key": "chosen",
+     "id": "textEncoding.chosenNote",
      "english": "chosen",
      "before": "चुना गया",
      "after": "चुनी गई",
@@ -570,6 +642,7 @@
     },
     {
      "key": "so TextMouth can't tell whether the two copies are one library, and compared nothing.",
+     "id": "libraryComparison.identityMarker.compared",
      "english": "so TextMouth can't tell whether the two copies are one library, and compared nothing.",
      "before": "इसलिए TextMouth यह नहीं बता सकता कि दोनों कॉपी एक ही लाइब्रेरी हैं या नहीं, और उसने कुछ भी तुलना नहीं की।",
      "after": "इसलिए TextMouth यह नहीं बता सकता कि दोनों कॉपी एक ही लाइब्रेरी हैं या नहीं, और उसने किसी चीज़ की तुलना नहीं की।",
@@ -577,6 +650,7 @@
     },
     {
      "key": "so nothing in %@ was compared.",
+     "id": "libraryComparison.sentence.libraryIndex.compared",
      "english": "so nothing in %@ was compared.",
      "before": "इसलिए %@ में कुछ भी तुलना नहीं की गई।",
      "after": "इसलिए %@ में किसी भी चीज़ की तुलना नहीं की गई।",
@@ -584,6 +658,7 @@
     },
     {
      "key": "this copy",
+     "id": "names.sheet.copy",
      "english": "this copy",
      "before": "यह कॉपी",
      "after": "वर्तमान कॉपी",
@@ -602,6 +677,7 @@
    "fixes": [
     {
      "key": "%@ %lld of %lld",
+     "id": "importDecision.counted",
      "english": "%1$@ %2$lld of %3$lld",
      "before": "%1$@ — %2$lld में से %3$lld",
      "after": "%1$@ — %3$lld में से %2$lld",
@@ -609,6 +685,7 @@
     },
     {
      "key": "%@ files can't hold chapter markers, so its %lld chapter markers are left out of this file.",
+     "id": "audioEditor.chaptersLeftOut",
      "english": {
       "one": "%@ files can't hold chapter markers, so its chapter marker is left out of this file.",
       "other": "%@ files can't hold chapter markers, so its %lld chapter markers are left out of this file."
@@ -625,6 +702,7 @@
     },
     {
      "key": "%lld edits are undone. Redo brings them back until you make another edit.",
+     "id": "audioEditor.revertExplanation.another",
      "english": {
       "one": "%lld edit is undone. Redo brings them back until you make another edit.",
       "other": "%lld edits are undone. Redo brings them back until you make another edit."
@@ -641,6 +719,7 @@
     },
     {
      "key": "%lld timed passages were too long and cut short.",
+     "id": "transcription.attached.short",
      "english": {
       "one": "%lld timed passage was too long and cut short.",
       "other": "%lld timed passages were too long and cut short."
@@ -657,6 +736,7 @@
     },
     {
      "key": "%lld timed passages were unreadable and left out.",
+     "id": "transcription.attached.unreadable",
      "english": {
       "one": "%lld timed passage was unreadable and left out.",
       "other": "%lld timed passages were unreadable and left out."
@@ -673,6 +753,7 @@
     },
     {
      "key": "A feed address, such as a link ending in .rss or .xml, or a web page that names its feed.",
+     "id": "feed.addressHelp",
      "english": "A feed address, such as a link ending in .rss or .xml, or a web page that names its feed.",
      "before": "फ़ीड का पता, जैसे .rss या .xml पर समाप्त होने वाला लिंक, या ऐसा वेब पृष्ठ जो अपने फ़ीड का नाम बताता हो।",
      "after": "फ़ीड का पता, जैसे .rss या .xml पर समाप्त होने वाला लिंक, या ऐसा वेब पृष्ठ जो अपने फ़ीड का पता बताता हो।",
@@ -680,6 +761,7 @@
     },
     {
      "key": "All %lld files",
+     "id": "transcription.fileLine.files",
      "english": {
       "one": "All %lld file",
       "other": "All %lld files"
@@ -696,6 +778,7 @@
     },
     {
      "key": "Couldn't refresh %@.",
+     "id": "feed.refreshedAll.couldnt",
      "english": "Couldn't refresh %@.",
      "before": "%@ रीफ़्रेश नहीं हो सके।",
      "after": "%@ को रीफ़्रेश नहीं किया जा सका।",
@@ -703,6 +786,7 @@
     },
     {
      "key": "Deleted %@.",
+     "id": "common.deletedValue",
      "english": "Deleted %@.",
      "before": "%@ मिटाया गया।",
      "after": "%@ को मिटा दिया गया।",
@@ -710,6 +794,7 @@
     },
     {
      "key": "Every article listed, newest %lld downloaded",
+     "id": "feed.itemPolicyTitle.newestDownloadedArticle",
      "english": {
       "one": "Every article listed, newest %lld downloaded",
       "other": "Every article listed, newest %lld downloaded"
@@ -726,6 +811,7 @@
     },
     {
      "key": "Every episode listed, newest %lld downloaded",
+     "id": "feed.itemPolicyTitle.newestDownloadedEpisode",
      "english": {
       "one": "Every episode listed, newest %lld downloaded",
       "other": "Every episode listed, newest %lld downloaded"
@@ -742,6 +828,7 @@
     },
     {
      "key": "Every item listed, newest %lld downloaded",
+     "id": "feed.itemPolicyTitle.newestDownloadedItem",
      "english": {
       "one": "Every item listed, newest %lld downloaded",
       "other": "Every item listed, newest %lld downloaded"
@@ -758,6 +845,7 @@
     },
     {
      "key": "Import cancelled after %@.",
+     "id": "zipImportCancellation.sentence.afterBooks",
      "english": "Import cancelled after %@.",
      "before": "%@ के बाद आयात रद्द किया गया।",
      "after": "%@ पूरी होने के बाद आयात रद्द किया गया।",
@@ -765,6 +853,7 @@
     },
     {
      "key": "It holds %@, which TextMouth does not import.",
+     "id": "importProgress.noBooksFound",
      "english": "It holds %@, which TextMouth does not import.",
      "before": "इसमें %@ हैं, जिन्हें TextMouth आयात नहीं करता।",
      "after": "इसमें ऐसी फ़ाइलें हैं जिन्हें TextMouth आयात नहीं करता: %@।",
@@ -772,6 +861,7 @@
     },
     {
      "key": "Its %lld chapter markers couldn't be written into the file, so it has none.",
+     "id": "audioEditor.chapterMarkersNotWritten",
      "english": {
       "one": "Its chapter marker couldn't be written into the file, so it has none.",
       "other": "Its %lld chapter markers couldn't be written into the file, so it has none."
@@ -788,6 +878,7 @@
     },
     {
      "key": "Only the newest %lld listed",
+     "id": "feed.itemPolicyTitle.onlyNewestListed",
      "english": {
       "one": "Only the newest %lld listed",
       "other": "Only the newest %lld listed"
@@ -804,6 +895,7 @@
     },
     {
      "key": "Part of %lld files, %@, could not be decoded and is kept as silence.",
+     "id": "ffmpegImport.partlyDecodedNotice.files",
      "english": {
       "one": "Part of %lld file, %@, could not be decoded and is kept as silence.",
       "other": "Part of %lld files, %@, could not be decoded and is kept as silence."
@@ -820,6 +912,7 @@
     },
     {
      "key": "Recovered recordings",
+     "id": "recording.recoveredHeading",
      "english": "Recovered recordings",
      "before": "बरामद रिकॉर्डिंग",
      "after": "पुनर्प्राप्त रिकॉर्डिंग",
@@ -827,6 +920,7 @@
     },
     {
      "key": "Refreshed %@: %@",
+     "id": "feed.refreshedAll.withCounts",
      "english": "Refreshed %1$@: %2$@",
      "before": "%1$@ रीफ़्रेश किए गए: %2$@",
      "after": "%1$@ को रीफ़्रेश किया गया: %2$@",
@@ -834,6 +928,7 @@
     },
     {
      "key": "Save WordPerfect documents as Word or HTML files in a program that reads them, such as LibreOffice, then import those.",
+     "id": "refusedFormatAdvice.wordPerfect",
      "english": "Save WordPerfect documents as Word or HTML files in a program that reads them, such as LibreOffice, then import those.",
      "before": "WordPerfect दस्तावेज़ों को ऐसे प्रोग्राम में, जो उन्हें पढ़ सके, जैसे LibreOffice, Word या HTML फ़ाइलों के रूप में सहेजें, फिर उन्हें आयात करें।",
      "after": "WordPerfect दस्तावेज़ों को उन्हें पढ़ने वाले किसी प्रोग्राम (जैसे LibreOffice) में Word या HTML फ़ाइलों के रूप में सहेजें, फिर उन्हें आयात करें।",
@@ -841,6 +936,7 @@
     },
     {
      "key": "TextMouth can't read “%@” as %@. It may be damaged, or named for another format.",
+     "id": "ffmpegImport.notRecognized",
      "english": "TextMouth can't read “%1$@” as %2$@. It may be damaged, or named for another format.",
      "before": "TextMouth “%1$@” को %2$@ के रूप में नहीं पढ़ सकता। यह क्षतिग्रस्त हो सकती है, या इसका नाम किसी दूसरे फ़ॉर्मैट के लिए रखा गया है।",
      "after": "TextMouth “%1$@” को %2$@ के रूप में नहीं पढ़ सकता। हो सकता है कि यह क्षतिग्रस्त हो, या इसका नाम किसी दूसरे फ़ॉर्मैट का हो।",
@@ -848,6 +944,7 @@
     },
     {
      "key": "TextMouth does not open RAR archives. Unpack them, then import what they hold.",
+     "id": "refusedFormatAdvice.rarArchive",
      "english": "TextMouth does not open RAR archives. Unpack them, then import what they hold.",
      "before": "TextMouth RAR आर्काइव नहीं खोलता। उन्हें खोलें, फिर जो उनमें है उसे आयात करें।",
      "after": "TextMouth RAR आर्काइव नहीं खोलता। उनकी फ़ाइलें निकालें, फिर उन्हें आयात करें।",
@@ -855,6 +952,7 @@
     },
     {
      "key": "TextMouth doesn't read chapter markers back from %@ files, so this book won't list its %lld chapter markers once saved.",
+     "id": "audioEditor.chaptersNotReadBack",
      "english": {
       "one": "TextMouth doesn't read chapter markers back from %@ files, so this book won't list its chapter marker once saved.",
       "other": "TextMouth doesn't read chapter markers back from %@ files, so this book won't list its %lld chapter markers once saved."
@@ -871,6 +969,7 @@
     },
     {
      "key": "TextMouth left out %@, which hold no sound it can read.",
+     "id": "ffmpegImport.leftOutHoldingNoSound.hold",
      "english": "TextMouth left out %@, which hold no sound it can read.",
      "before": "TextMouth ने %@ छोड़ दिए, जिनमें कोई ऐसी ध्वनि नहीं है जिसे वह पढ़ सके।",
      "after": "TextMouth ने %@ छोड़ दीं, जिनमें कोई ऐसी ध्वनि नहीं है जिसे वह पढ़ सके।",
@@ -878,6 +977,7 @@
     },
     {
      "key": "TextMouth left out %@, which need TextMouth's converter, missing from the app.",
+     "id": "ffmpegImport.missing.need",
      "english": "TextMouth left out %@, which need TextMouth's converter, missing from the app.",
      "before": "TextMouth ने %@ छोड़ दिए, जिन्हें TextMouth का कनवर्टर चाहिए, जो ऐप से गायब है।",
      "after": "TextMouth ने %@ छोड़ दीं, जिन्हें TextMouth का कनवर्टर चाहिए, जो ऐप से गायब है।",
@@ -885,6 +985,7 @@
     },
     {
      "key": "That isn't a web address. Enter a feed's address, or the address of a page that names one.",
+     "id": "feedSubscribeError.message.invalidAddress",
      "english": "That isn't a web address. Enter a feed's address, or the address of a page that names one.",
      "before": "वह वेब पता नहीं है। फ़ीड का पता, या ऐसे पृष्ठ का पता दर्ज करें जो किसी फ़ीड का नाम बताता हो।",
      "after": "वह वेब पता नहीं है। फ़ीड का पता, या ऐसे पृष्ठ का पता दर्ज करें जो किसी फ़ीड का पता बताता हो।",
@@ -892,6 +993,7 @@
     },
     {
      "key": "That page doesn't name a feed.",
+     "id": "feedSubscribeError.message.pageNamesNoFeed",
      "english": "That page doesn't name a feed.",
      "before": "वह पृष्ठ किसी फ़ीड का नाम नहीं बताता।",
      "after": "वह पृष्ठ किसी फ़ीड का पता नहीं बताता।",
@@ -899,6 +1001,7 @@
     },
     {
      "key": "That page names %lld feeds. Choose one, then Subscribe.",
+     "id": "feed.choosePrompt",
      "english": {
       "one": "That page names %lld feed. Choose one, then Subscribe.",
       "other": "That page names %lld feeds. Choose one, then Subscribe."
@@ -915,6 +1018,7 @@
     },
     {
      "key": "The address of %@ doesn't hold a feed TextMouth can read.",
+     "id": "feedRefreshError.message.parse.address",
      "english": "The address of %@ doesn't hold a feed TextMouth can read.",
      "before": "%@ का पता ऐसा फ़ीड नहीं रखता जिसे TextMouth पढ़ सके।",
      "after": "%@ के पते पर ऐसा कोई फ़ीड नहीं है जिसे TextMouth पढ़ सके।",
@@ -922,6 +1026,7 @@
     },
     {
      "key": "The article leaves the list for good; the book it became in your library stays.",
+     "id": "feed.deleteItemMessage.article",
      "english": "The article leaves the list for good; the book it became in your library stays.",
      "before": "लेख हमेशा के लिए सूची से हट जाता है; वह जो पुस्तक बन गया था, आपकी लाइब्रेरी में बनी रहती है।",
      "after": "लेख हमेशा के लिए सूची से हट जाता है; उससे बनी पुस्तक आपकी लाइब्रेरी में बनी रहती है।",
@@ -929,6 +1034,7 @@
     },
     {
      "key": "The disk is too full to keep this audio for pasting.",
+     "id": "audioEditor.diskTooFullToKeepClip",
      "english": "The disk is too full to keep this audio for pasting.",
      "before": "इस ऑडियो को पेस्ट करने के लिए रखने हेतु डिस्क बहुत भरी है।",
      "after": "डिस्क इतनी भरी है कि इस ऑडियो को पेस्ट के लिए रखा नहीं जा सकता।",
@@ -936,6 +1042,7 @@
     },
     {
      "key": "The episode leaves the list for good; the book it became in your library stays.",
+     "id": "feed.deleteItemMessage.episode",
      "english": "The episode leaves the list for good; the book it became in your library stays.",
      "before": "एपिसोड हमेशा के लिए सूची से हट जाता है; वह जो पुस्तक बन गया था, आपकी लाइब्रेरी में बनी रहती है।",
      "after": "एपिसोड हमेशा के लिए सूची से हट जाता है; उससे बनी पुस्तक आपकी लाइब्रेरी में बनी रहती है।",
@@ -943,6 +1050,7 @@
     },
     {
      "key": "Too long to keep for pasting. To move it, paste right after cutting.",
+     "id": "audioEditor.cutTooLongToPaste",
      "english": "Too long to keep for pasting. To move it, paste right after cutting.",
      "before": "पेस्ट के लिए रखने हेतु बहुत लंबा है। इसे ले जाने के लिए, काटने के तुरंत बाद पेस्ट करें।",
      "after": "यह इतना लंबा है कि पेस्ट के लिए रखा नहीं जा सकता। इसे ले जाने के लिए, काटने के तुरंत बाद पेस्ट करें।",
@@ -950,6 +1058,7 @@
     },
     {
      "key": "Transcribing %@, %@.",
+     "id": "transcription.started.withEstimate",
      "english": "Transcribing %1$@, %2$@.",
      "before": "%1$@ को ट्रांसक्राइब किया जा रहा है; इसमें %2$@ लगेंगे।",
      "after": "%1$@ को ट्रांसक्राइब किया जा रहा है; इसमें %2$@ का समय लगेगा।",
@@ -957,6 +1066,7 @@
     },
     {
      "key": "Transcribing it takes %@.",
+     "id": "transcription.offerMessage.transcribing",
      "english": "Transcribing it takes %@.",
      "before": "इसे ट्रांसक्राइब करने में %@ लगेंगे।",
      "after": "इसे ट्रांसक्राइब करने में %@ का समय लगेगा।",
@@ -964,6 +1074,7 @@
     },
     {
      "key": "all %lld files",
+     "id": "transcription.fileLineAfterComma.files",
      "english": {
       "one": "all %lld file",
       "other": "all %lld files"
@@ -980,6 +1091,7 @@
     },
     {
      "key": "the top of your library",
+     "id": "feed.movedToLibrary.topLibrary",
      "english": "the top of your library",
      "before": "आपकी लाइब्रेरी का शीर्ष स्तर",
      "after": "आपकी लाइब्रेरी के शीर्ष स्तर",
@@ -987,6 +1099,7 @@
     },
     {
      "key": "“%@” changed while it was being replaced, so TextMouth left both copies as they are. Choose Replace Existing again.",
+     "id": "duplicateCopy.changedWhileReplacing",
      "english": "“%@” changed while it was being replaced, so TextMouth left both copies as they are. Choose Replace Existing again.",
      "before": "“%@” बदले जाने के दौरान बदल गई, इसलिए TextMouth ने दोनों प्रतियाँ जैसी थीं वैसी ही रहने दीं। “मौजूदा को बदलें” फिर से चुनें।",
      "after": "“%@” की जगह नई प्रति रखते समय उसमें बदलाव हो गया, इसलिए TextMouth ने दोनों प्रतियाँ जैसी थीं वैसी ही रहने दीं। “मौजूदा को बदलें” फिर से चुनें।",
@@ -994,6 +1107,7 @@
     },
     {
      "key": "“%@” is a pronunciation lexicon, not a playlist.",
+     "id": "playlistImport.pronunciationLexicon.notPlaylist",
      "english": "“%@” is a pronunciation lexicon, not a playlist.",
      "before": "“%@” उच्चारण लेक्सिकॉन है, प्लेलिस्ट नहीं।",
      "after": "“%@” उच्चारण लेक्सिकन है, प्लेलिस्ट नहीं।",
@@ -1001,6 +1115,7 @@
     },
     {
      "key": "“%@” is recording. Stop or discard it with Clear Selection, then quit.",
+     "id": "audioEditor.quitWhileRecording",
      "english": "“%@” is recording. Stop or discard it with Clear Selection, then quit.",
      "before": "“%@” में रिकॉर्डिंग हो रही है। “रोकें” से रोकें या “चयन हटाएँ” से त्याग दें, फिर छोड़ें।",
      "after": "“%@” में रिकॉर्डिंग हो रही है। “रोकें” से रोकें या “चयन हटाएँ” से त्याग दें, फिर TextMouth छोड़ें।",
@@ -1008,6 +1123,7 @@
     },
     {
      "key": "“%@” is still working. Quit once the change is done.",
+     "id": "audioEditor.quitWhileWorking",
      "english": "“%@” is still working. Quit once the change is done.",
      "before": "“%@” में अभी काम चल रहा है। बदलाव पूरा होने पर छोड़ें।",
      "after": "“%@” में अभी काम चल रहा है। बदलाव पूरा होने पर TextMouth छोड़ें।",
@@ -1026,6 +1142,7 @@
    "fixes": [
     {
      "key": "%@ has its default, %@",
+     "id": "shortcutsSettings.defaultsHeldElsewhere",
      "english": "%1$@ has its default, %2$@",
      "before": "%1$@ के पास अपना डिफ़ॉल्ट, %2$@, है",
      "after": "इसका डिफ़ॉल्ट, %2$@, %1$@ के पास है",
@@ -1033,6 +1150,7 @@
     },
     {
      "key": "%@ needs “%@”, one of a Mac's own braille tables, which TextMouth on iPhone doesn't have.",
+     "id": "phoneImport.macBrailleTableRefusal",
      "english": "%1$@ needs “%2$@”, one of a Mac's own braille tables, which TextMouth on iPhone doesn't have.",
      "before": "%1$@ को “%2$@” चाहिए, जो Mac की अपनी ब्रेल टेबल में से एक है और iPhone पर TextMouth में नहीं है।",
      "after": "%1$@ को “%2$@” चाहिए, जो Mac की अपनी ब्रेल टेबलों में से एक है और iPhone पर TextMouth में नहीं है।",
@@ -1040,6 +1158,7 @@
     },
     {
      "key": "%@ nests too deeply",
+     "id": "bookExportDeepChapter.title",
      "english": "%@ nests too deeply",
      "before": "%@ बहुत गहराई तक नेस्ट है",
      "after": "%@ बहुत गहराई तक नेस्टेड है",
@@ -1047,6 +1166,7 @@
     },
     {
      "key": "%@ of %lld chapters could not be read",
+     "id": "extractionReport.summary.value",
      "english": {
       "one": "%@ of %lld chapter could not be read",
       "other": "%@ of %lld chapters could not be read"
@@ -1063,6 +1183,7 @@
     },
     {
      "key": "%@ through the book",
+     "id": "readerView.throughTheBook",
      "english": "%@ through the book",
      "before": "पुस्तक का %@ भाग",
      "after": "पुस्तक का %@ पूरा",
@@ -1070,6 +1191,7 @@
     },
     {
      "key": "About",
+     "id": "phoneSettings.aboutSection",
      "english": "About",
      "before": "इसके बारे में",
      "after": "परिचय",
@@ -1077,6 +1199,7 @@
     },
     {
      "key": "Adds an Export button to each reader's toolbar. File, Export works either way.",
+     "id": "bookExport.settingHint",
      "english": "Adds an Export button to each reader's toolbar. File, Export works either way.",
      "before": "हर रीडर के टूलबार में एक निर्यात बटन जोड़ता है। फ़ाइल, निर्यात करें दोनों तरह से काम करता है।",
      "after": "हर रीडर के टूलबार में एक निर्यात बटन जोड़ता है। “फ़ाइल” मेनू का “निर्यात करें” दोनों तरह से काम करता है।",
@@ -1084,6 +1207,7 @@
     },
     {
      "key": "Afterwards, Play tries the passage again",
+     "id": "speechRefusal.closeHint",
      "english": "Afterwards, Play tries the passage again",
      "before": "इसके बाद “चलाएँ” अंश को फिर से प्रयास करता है।",
      "after": "इसके बाद “चलाएँ” अंश को फिर से चलाने का प्रयास करता है।",
@@ -1091,6 +1215,7 @@
     },
     {
      "key": "Chapter %@ could not be played: %@ from the book's package.",
+     "id": "readerViewModel.chapterNotPlayed",
      "english": "Chapter %1$@ could not be played: %2$@ from the book's package.",
      "before": "अध्याय %1$@ चलाया नहीं जा सका: पुस्तक के पैकेज से %2$@।",
      "after": "अध्याय %1$@ चलाया नहीं जा सका: पुस्तक के पैकेज में %2$@।",
@@ -1098,6 +1223,7 @@
     },
     {
      "key": "Chooses what Play and the skip buttons move by.",
+     "id": "phoneReader.navigationUnitHint",
      "english": "Chooses what Play and the skip buttons move by.",
      "before": "चुनता है कि चलाएँ और आगे-पीछे जाने के बटन किस इकाई से चलें।",
      "after": "चुनता है कि “चलाएँ” और आगे-पीछे जाने के बटन किस इकाई से चलें।",
@@ -1105,6 +1231,7 @@
     },
     {
      "key": "Couldn't export %@.",
+     "id": "bookExport.failureSentence.oneFile",
      "english": "Couldn't export %@.",
      "before": "%@ निर्यात नहीं हो सका।",
      "after": "निर्यात नहीं हो सका: %@।",
@@ -1112,6 +1239,7 @@
     },
     {
      "key": "Couldn't export %@. The first was %@.",
+     "id": "bookExport.failureSentence.other",
      "english": "Couldn't export %1$@. The first was %2$@.",
      "before": "%1$@ निर्यात नहीं हो सके। पहला %2$@ था।",
      "after": "%1$@ निर्यात नहीं हो सके। पहला: %2$@।",
@@ -1119,6 +1247,7 @@
     },
     {
      "key": "Exporting %lld of %@…",
+     "id": "bookExport.progress.exportingCount",
      "english": "Exporting %1$lld of %2$@…",
      "before": "%2$@ में से %1$lld निर्यात हो रहे हैं…",
      "after": "निर्यात हो रहा है: %2$@ में से %1$lld…",
@@ -1126,6 +1255,7 @@
     },
     {
      "key": "For five seconds, the next two key presses are not shortcuts; TextMouth says whether they make a double press.",
+     "id": "shortcutsSettings.tryDoublePressHint",
      "english": "For five seconds, the next two key presses are not shortcuts; TextMouth says whether they make a double press.",
      "before": "पाँच सेकंड तक अगली दो कुंजी-प्रेस शॉर्टकट नहीं होतीं; TextMouth बताता है कि वे दो बार दबाना बनीं या नहीं।",
      "after": "पाँच सेकंड तक अगली दो बार कुंजी दबाने पर शॉर्टकट नहीं चलते; TextMouth बताता है कि यह दो बार दबाना माना गया या नहीं।",
@@ -1133,6 +1263,7 @@
     },
     {
      "key": "From",
+     "id": "speechExport.fromLabel",
      "english": "From",
      "before": "से",
      "after": "कहाँ से",
@@ -1140,6 +1271,7 @@
     },
     {
      "key": "Kept %@ of %lld chapters until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To go on from chapter %@, export the same range at the same speed and pitch.",
+     "id": "speechExport.kept.chaptersGo",
      "english": {
       "one": "Kept %@ of %lld chapter until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To go on from chapter %@, export the same range at the same speed and pitch.",
       "other": "Kept %@ of %lld chapters until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To go on from chapter %@, export the same range at the same speed and pitch."
@@ -1156,6 +1288,7 @@
     },
     {
      "key": "Make Double Press",
+     "id": "shortcutsSettings.makeDoublePress",
      "english": "Make Double Press",
      "before": "दो बार दबाना बनाएँ",
      "after": "दो बार दबाने में बदलें",
@@ -1163,6 +1296,7 @@
     },
     {
      "key": "Make Single Press",
+     "id": "shortcutsSettings.makeSinglePress",
      "english": "Make Single Press",
      "before": "एक बार दबाना बनाएँ",
      "after": "एक बार दबाने में बदलें",
@@ -1170,6 +1304,7 @@
     },
     {
      "key": "Minimize All",
+     "id": "keyBinding.localizedSystemCommand.minimizeAll",
      "english": "Minimize All",
      "before": "सभी छोटा करें",
      "after": "सभी को छोटा करें",
@@ -1177,6 +1312,7 @@
     },
     {
      "key": "Navigate",
+     "id": "menu.navigate",
      "english": "Navigate",
      "before": "नेविगेट",
      "after": "नेविगेट करें",
@@ -1184,6 +1320,7 @@
     },
     {
      "key": "Open the book once, then try again.",
+     "id": "bookTextEdit.cannotBegin.missing.again",
      "english": "Open the book once, then try again.",
      "before": "पुस्तक को एक बार खोलें, फिर से प्रयास करें।",
      "after": "पुस्तक को एक बार खोलें, फिर दोबारा प्रयास करें।",
@@ -1191,6 +1328,7 @@
     },
     {
      "key": "Pause playback after:",
+     "id": "sleepTimerView.newTimerNote.playback",
      "english": "Pause playback after:",
      "before": "इसके बाद प्लेबैक पॉज़ करें:",
      "after": "इतनी देर बाद प्लेबैक पॉज़ करें:",
@@ -1198,6 +1336,7 @@
     },
     {
      "key": "Percent through the book",
+     "id": "readerTime.percentFieldLabel",
      "english": "Percent through the book",
      "before": "पुस्तक में कितने प्रतिशत आगे",
      "after": "पुस्तक में प्रतिशत स्थिति",
@@ -1205,6 +1344,7 @@
     },
     {
      "key": "Read Only",
+     "id": "metadataEditor.readOnlyHeading",
      "english": "Read Only",
      "before": "केवल पढ़ने योग्य",
      "after": "केवल पढ़ने के लिए",
@@ -1212,6 +1352,7 @@
     },
     {
      "key": "Recording shortcut. Press a key, or press it twice for a double press.",
+     "id": "shortcutsSettings.recordingLabel",
      "english": "Recording shortcut. Press a key, or press it twice for a double press.",
      "before": "शॉर्टकट दर्ज किया जा रहा है। कोई कुंजी दबाएँ, या दो बार दबाने के लिए उसे दो बार दबाएँ।",
      "after": "शॉर्टकट दर्ज किया जा रहा है। कोई कुंजी दबाएँ, या दो बार दबाने वाले शॉर्टकट के लिए उसे दो बार दबाएँ।",
@@ -1219,6 +1360,7 @@
     },
     {
      "key": "Still starting: %@",
+     "id": "endOfBook.stillStarting",
      "english": "Still starting: %@",
      "before": "अभी शुरू हो रही है: %@",
      "after": "अभी भी शुरू हो रही है: %@",
@@ -1226,6 +1368,7 @@
     },
     {
      "key": "Stop At",
+     "id": "sleepTimerView.stopAtHeading",
      "english": "Stop At",
      "before": "इस जगह रोकें",
      "after": "कहाँ रोकें",
@@ -1233,6 +1376,7 @@
     },
     {
      "key": "Switch to a Library or book window, then choose Export again.",
+     "id": "bookExport.noWindowInFront",
      "english": "Switch to a Library or book window, then choose Export again.",
      "before": "लाइब्रेरी या पुस्तक की विंडो पर जाएँ, फिर निर्यात करें दोबारा चुनें।",
      "after": "लाइब्रेरी या पुस्तक की विंडो पर जाएँ, फिर “निर्यात करें” दोबारा चुनें।",
@@ -1240,6 +1384,7 @@
     },
     {
      "key": "Text not updated: the edited transcript of %@ adds words to a chapter with no speech, where they can't be kept. Remove them and save again; the book keeps its old text until then.",
+     "id": "bookTextEdit.refused.wordsWithoutSentences",
      "english": "Text not updated: the edited transcript of %@ adds words to a chapter with no speech, where they can't be kept. Remove them and save again; the book keeps its old text until then.",
      "before": "टेक्स्ट अपडेट नहीं हुआ: %@ की संपादित ट्रांसक्रिप्ट ऐसे अध्याय में शब्द जोड़ती है जिसमें कोई बोली नहीं है, जहाँ उन्हें रखा नहीं जा सकता। उन्हें हटाएँ और फिर से सहेजें; तब तक पुस्तक का पुराना टेक्स्ट बना रहता है।",
      "after": "टेक्स्ट अपडेट नहीं हुआ: %@ की संपादित ट्रांसक्रिप्ट ऐसे अध्याय में शब्द जोड़ती है जिसमें कुछ भी बोला नहीं गया है, जहाँ उन्हें रखा नहीं जा सकता। उन्हें हटाएँ और फिर से सहेजें; तब तक पुस्तक का पुराना टेक्स्ट बना रहता है।",
@@ -1247,6 +1392,7 @@
     },
     {
      "key": "Text not updated: the original file of %@ changed too. The book's text is read from it again the next time the book opens.",
+     "id": "bookTextEdit.refused.sourceChanged",
      "english": "Text not updated: the original file of %@ changed too. The book's text is read from it again the next time the book opens.",
      "before": "टेक्स्ट अपडेट नहीं हुआ: %@ की मूल फ़ाइल भी बदल गई। पुस्तक अगली बार खुलने पर उसका टेक्स्ट उसी से फिर से पढ़ा जाता है।",
      "after": "टेक्स्ट अपडेट नहीं हुआ: %@ की मूल फ़ाइल भी बदल गई। अगली बार पुस्तक खुलने पर उसका टेक्स्ट उसी से फिर से पढ़ा जाएगा।",
@@ -1254,6 +1400,7 @@
     },
     {
      "key": "Text not updated: the transcript of %@ changed too. The book's text is written from it again the next time the book opens.",
+     "id": "bookTextEdit.refused.transcriptChanged",
      "english": "Text not updated: the transcript of %@ changed too. The book's text is written from it again the next time the book opens.",
      "before": "टेक्स्ट अपडेट नहीं हुआ: %@ की ट्रांसक्रिप्ट भी बदल गई। पुस्तक अगली बार खुलने पर उसका टेक्स्ट उसी से फिर से लिखा जाता है।",
      "after": "टेक्स्ट अपडेट नहीं हुआ: %@ की ट्रांसक्रिप्ट भी बदल गई। अगली बार पुस्तक खुलने पर उसका टेक्स्ट उसी से फिर से लिखा जाएगा।",
@@ -1261,6 +1408,7 @@
     },
     {
      "key": "The chosen table is one of this Mac's VoiceOver braille tables (liblouis %@).",
+     "id": "brailleSettings.source.voiceoverLiblouis",
      "english": "The chosen table is one of this Mac's VoiceOver braille tables (liblouis %@).",
      "before": "चुनी गई टेबल इस Mac की VoiceOver ब्रेल टेबल में से एक है (liblouis %@)।",
      "after": "चुनी गई टेबल इस Mac की VoiceOver ब्रेल टेबलों में से एक है (liblouis %@)।",
@@ -1268,6 +1416,7 @@
     },
     {
      "key": "The chosen table is one of this Mac's VoiceOver braille tables.",
+     "id": "brailleSettings.source.voiceoverTables",
      "english": "The chosen table is one of this Mac's VoiceOver braille tables.",
      "before": "चुनी गई टेबल इस Mac की VoiceOver ब्रेल टेबल में से एक है।",
      "after": "चुनी गई टेबल इस Mac की VoiceOver ब्रेल टेबलों में से एक है।",
@@ -1275,6 +1424,7 @@
     },
     {
      "key": "This file's markup would take TextMouth far too long to read.",
+     "id": "markupRefusal.tooMuchWork",
      "english": "This file's markup would take TextMouth far too long to read.",
      "before": "इस फ़ाइल का मार्कअप TextMouth को पढ़ने में बहुत अधिक समय लेगा।",
      "after": "इस फ़ाइल के मार्कअप को पढ़ने में TextMouth को बहुत अधिक समय लगेगा।",
@@ -1282,6 +1432,7 @@
     },
     {
      "key": "This range has %lld headings, but an MP3 has chapters for the first %@ only. Choose M4B for a chapter for each.",
+     "id": "speechExport.mp3ChapterLimit",
      "english": {
       "one": "This range has %lld heading, but an MP3 has chapters for the first %@ only. Choose M4B for a chapter for each.",
       "other": "This range has %lld headings, but an MP3 has chapters for the first %@ only. Choose M4B for a chapter for each."
@@ -1298,6 +1449,7 @@
     },
     {
      "key": "To",
+     "id": "speechExport.throughLabel",
      "english": "To",
      "before": "तक",
      "after": "कहाँ तक",
@@ -1305,6 +1457,7 @@
     },
     {
      "key": "Toggle Bookmark",
+     "id": "shortcutAction.title.addBookmark",
      "english": "Toggle Bookmark",
      "before": "बुकमार्क चालू/बंद करें",
      "after": "बुकमार्क जोड़ें/हटाएँ",
@@ -1312,6 +1465,7 @@
     },
     {
      "key": "Try a Double Press",
+     "id": "shortcutsSettings.tryDoublePressTitle",
      "english": "Try a Double Press",
      "before": "दो बार दबाने का प्रयास करें",
      "after": "दो बार दबाकर देखें",
@@ -1319,6 +1473,7 @@
     },
     {
      "key": "Type a title, then save again.",
+     "id": "metadataEditor.titleCleared.again",
      "english": "Type a title, then save again.",
      "before": "शीर्षक टाइप करें, फिर से सहेजें।",
      "after": "शीर्षक टाइप करें, फिर दोबारा सहेजें।",
@@ -1326,6 +1481,7 @@
     },
     {
      "key": "Type straight quotation marks: in TextEdit, turn off Smart Quotes under Edit, Substitutions.",
+     "id": "bookManifestEdit.explanation.quotation",
      "english": "Type straight quotation marks: in TextEdit, turn off Smart Quotes under Edit, Substitutions.",
      "before": "सीधे उद्धरण चिह्न टाइप करें: TextEdit में, संपादित करें, प्रतिस्थापन के अंतर्गत स्मार्ट कोटेशन बंद करें।",
      "after": "सीधे उद्धरण चिह्न टाइप करें: TextEdit के “संपादित करें” मेनू में, “प्रतिस्थापन” के अंतर्गत “स्मार्ट कोटेशन” बंद करें।",
@@ -1333,6 +1489,7 @@
     },
     {
      "key": "When %lld minutes or less are left, downloads the next book if it is not on this Mac yet",
+     "id": "listeningOptions.predownloadHint.book",
      "english": {
       "one": "When %lld minute or less is left, downloads the next book if it is not on this Mac yet",
       "other": "When %lld minutes or less are left, downloads the next book if it is not on this Mac yet"
@@ -1349,6 +1506,7 @@
     },
     {
      "key": "With \"%@\", Play on a finished book says it is finished; with \"%@\", Play starts it again from the beginning.",
+     "id": "endOfBook.playOnAFinishedBookCaption",
      "english": "With \"%1$@\", Play on a finished book says it is finished; with \"%2$@\", Play starts it again from the beginning.",
      "before": "“%1$@” के साथ, पूरी हो चुकी पुस्तक पर चलाएँ बताता है कि वह पूरी हो चुकी है; “%2$@” के साथ, चलाएँ उसे शुरुआत से फिर शुरू करता है।",
      "after": "“%1$@” के साथ, पूरी हो चुकी पुस्तक पर “चलाएँ” बताता है कि वह पूरी हो चुकी है; “%2$@” के साथ, “चलाएँ” उसे शुरुआत से फिर शुरू करता है।",
@@ -1356,6 +1514,7 @@
     },
     {
      "key": "Writes this and every other too-deeply nested chapter of this export as plain paragraphs of lines, without asking again.",
+     "id": "bookExportDeepChapter.exportAllAsWrittenHint",
      "english": "Writes this and every other too-deeply nested chapter of this export as plain paragraphs of lines, without asking again.",
      "before": "इस निर्यात के इस और हर दूसरे बहुत गहरे नेस्ट अध्याय को बिना दोबारा पूछे पंक्तियों के सादे अनुच्छेदों के रूप में लिखता है।",
      "after": "इस निर्यात के इस और हर दूसरे बहुत गहराई तक नेस्टेड अध्याय को बिना दोबारा पूछे पंक्तियों के सादे अनुच्छेदों के रूप में लिखता है।",
@@ -1363,6 +1522,7 @@
     },
     {
      "key": "it adds words to a chapter with no speech, where they can't be kept. Remove them and save again, and the text shows.",
+     "id": "bookTextEdit.heldReason.wordsWithoutSentences",
      "english": "it adds words to a chapter with no speech, where they can't be kept. Remove them and save again, and the text shows.",
      "before": "वह ऐसे अध्याय में शब्द जोड़ता है जिसमें कोई बोली नहीं है, जहाँ उन्हें रखा नहीं जा सकता। उन्हें हटाएँ और फिर से सहेजें, तब टेक्स्ट दिखेगा।",
      "after": "वह ऐसे अध्याय में शब्द जोड़ता है जिसमें कुछ भी बोला नहीं गया है, जहाँ उन्हें रखा नहीं जा सकता। उन्हें हटाएँ और फिर से सहेजें, तब टेक्स्ट दिखेगा।",

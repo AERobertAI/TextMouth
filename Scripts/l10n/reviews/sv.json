@@ -12,6 +12,7 @@
    "fixes": [
     {
      "key": "%@ also holds %lld books a newer TextMouth added, which are kept.",
+     "id": "folderRemoval.keptBooksChoiceSentences",
      "english": {
       "one": "%@ also holds %lld book a newer TextMouth added, which is kept.",
       "other": "%@ also holds %lld books a newer TextMouth added, which are kept."
@@ -28,6 +29,7 @@
     },
     {
      "key": "%lld books kept on this Mac",
+     "id": "librarySubview.keptOnThisMac",
      "english": {
       "one": "%lld book kept on this Mac",
       "other": "%lld books kept on this Mac"
@@ -44,6 +46,7 @@
     },
     {
      "key": "%lld files couldn't be read, so the comparison may be missing differences.",
+     "id": "libraryComparison.unreadCountSentence.couldnt",
      "english": {
       "one": "%lld file couldn't be read, so the comparison may be missing differences.",
       "other": "%lld files couldn't be read, so the comparison may be missing differences."
@@ -60,6 +63,7 @@
     },
     {
      "key": "%lld views need a newer TextMouth. They are kept as they are, and not offered.",
+     "id": "libraryViewsSettings.unreadableCaption",
      "english": {
       "one": "%lld view needs a newer TextMouth. It is kept as it is, and not offered.",
       "other": "%lld views need a newer TextMouth. They are kept as they are, and not offered."
@@ -76,6 +80,7 @@
     },
     {
      "key": "A move shifts one book at a time, and several are selected. Select one book, then try again.",
+     "id": "manualBookOrder.severalBooksToMoveAnnouncement",
      "english": "A move shifts one book at a time, and several are selected. Select one book, then try again.",
      "before": "En flytt flyttar en bok i taget, och flera är markerade. Markera en bok och försök igen.",
      "after": "Det går bara att flytta en bok i taget, och flera är markerade. Markera en bok och försök igen.",
@@ -83,6 +88,7 @@
     },
     {
      "key": "Added Last",
+     "id": "libraryViewEditor.limitOrderName.dateAdded",
      "english": "Added Last",
      "before": "Senast tillagd",
      "after": "Senast tillagda",
@@ -90,6 +96,7 @@
     },
     {
      "key": "Always offers a view all the time. When Applicable offers it only while it lists something: the Reading List while it holds a book, episode, or article, and Feeds while there is a feed. Hidden leaves it out. A window keeps its view until you choose another.",
+     "id": "libraryViewsSettings.visibilityCaption",
      "english": "Always offers a view all the time. When Applicable offers it only while it lists something: the Reading List while it holds a book, episode, or article, and Feeds while there is a feed. Hidden leaves it out. A window keeps its view until you choose another.",
      "before": "Alltid erbjuder en vy hela tiden. När det är tillämpligt erbjuder den bara medan den listar något: Läslistan medan den innehåller en bok, ett avsnitt eller en artikel, och Flöden medan det finns ett flöde. Dold utelämnar den. Ett fönster behåller sin vy tills du väljer en annan.",
      "after": "”Alltid” erbjuder en vy hela tiden. ”När det är tillämpligt” erbjuder den bara medan den listar något: Läslistan medan den innehåller en bok, ett avsnitt eller en artikel, och Flöden medan det finns ett flöde. ”Dold” utelämnar den. Ett fönster behåller sin vy tills du väljer en annan.",
@@ -97,6 +104,7 @@
     },
     {
      "key": "But %@ also holds %lld books a newer TextMouth added: they are kept where they are, and so is every folder that holds one.",
+     "id": "folderRemoval.keptBooksConfirmationSentences",
      "english": {
       "one": "But %@ also holds %lld book a newer TextMouth added: it is kept where it is, and so is every folder that holds it.",
       "other": "But %@ also holds %lld books a newer TextMouth added: they are kept where they are, and so is every folder that holds one."
@@ -113,6 +121,7 @@
     },
     {
      "key": "Choose Retry Saving, then try again.",
+     "id": "libraryViewModel.message.choose",
      "english": "Choose Retry Saving, then try again.",
      "before": "Välj Försök spara igen och försök sedan igen.",
      "after": "Välj ”Försök spara igen” och försök sedan igen.",
@@ -120,6 +129,7 @@
     },
     {
      "key": "Compare Libraries in Storage settings lists every difference.",
+     "id": "libraryComparison.newerCopySentence.libraries",
      "english": "Compare Libraries in Storage settings lists every difference.",
      "before": "Jämför bibliotek under Lagring i inställningarna listar varje skillnad.",
      "after": "”Jämför bibliotek” under Lagring i inställningarna listar varje skillnad.",
@@ -127,6 +137,7 @@
     },
     {
      "key": "Comparing",
+     "id": "compareLibrariesSheet.comparingLabel",
      "english": "Comparing",
      "before": "Jämför",
      "after": "Jämförelse",
@@ -134,6 +145,7 @@
     },
     {
      "key": "Condition %@ needs the text to look for.",
+     "id": "libraryViewEditor.textMissing",
      "english": "Condition %@ needs the text to look for.",
      "before": "Villkor %@ behöver texten att leta efter.",
      "after": "Villkor %@ behöver en text att söka efter.",
@@ -141,6 +153,7 @@
     },
     {
      "key": "Could not relocate folder contents",
+     "id": "libraryViewModel.couldNotRelocateFolderContents",
      "english": "Could not relocate folder contents",
      "before": "Det gick inte att flytta mappens innehåll till sin nya plats",
      "after": "Det gick inte att flytta mappens innehåll",
@@ -148,6 +161,7 @@
     },
     {
      "key": "Download of the next article cancelled, so playback stopped.",
+     "id": "folderNavigation.nextArticleCancelledStop",
      "english": "Download of the next article cancelled, so playback stopped.",
      "before": "Hämtningen av nästa artikel avbröts, så uppspelningen stoppades.",
      "after": "Nedladdningen av nästa artikel avbröts, så uppspelningen stoppades.",
@@ -155,6 +169,7 @@
     },
     {
      "key": "Download of the next article cancelled.",
+     "id": "folderNavigation.nextArticleCancelled",
      "english": "Download of the next article cancelled.",
      "before": "Hämtningen av nästa artikel avbröts.",
      "after": "Nedladdningen av nästa artikel avbröts.",
@@ -162,6 +177,7 @@
     },
     {
      "key": "Download of the next episode cancelled, so playback stopped.",
+     "id": "folderNavigation.nextEpisodeCancelledStop",
      "english": "Download of the next episode cancelled, so playback stopped.",
      "before": "Hämtningen av nästa avsnitt avbröts, så uppspelningen stoppades.",
      "after": "Nedladdningen av nästa avsnitt avbröts, så uppspelningen stoppades.",
@@ -169,6 +185,7 @@
     },
     {
      "key": "Download of the next episode cancelled.",
+     "id": "folderNavigation.nextEpisodeCancelled",
      "english": "Download of the next episode cancelled.",
      "before": "Hämtningen av nästa avsnitt avbröts.",
      "after": "Nedladdningen av nästa avsnitt avbröts.",
@@ -176,6 +193,7 @@
     },
     {
      "key": "Download of the previous article cancelled, so playback stopped.",
+     "id": "folderNavigation.previousArticleCancelledStop",
      "english": "Download of the previous article cancelled, so playback stopped.",
      "before": "Hämtningen av föregående artikel avbröts, så uppspelningen stoppades.",
      "after": "Nedladdningen av föregående artikel avbröts, så uppspelningen stoppades.",
@@ -183,6 +201,7 @@
     },
     {
      "key": "Download of the previous article cancelled.",
+     "id": "folderNavigation.previousArticleCancelled",
      "english": "Download of the previous article cancelled.",
      "before": "Hämtningen av föregående artikel avbröts.",
      "after": "Nedladdningen av föregående artikel avbröts.",
@@ -190,6 +209,7 @@
     },
     {
      "key": "Download of the previous episode cancelled, so playback stopped.",
+     "id": "folderNavigation.previousEpisodeCancelledStop",
      "english": "Download of the previous episode cancelled, so playback stopped.",
      "before": "Hämtningen av föregående avsnitt avbröts, så uppspelningen stoppades.",
      "after": "Nedladdningen av föregående avsnitt avbröts, så uppspelningen stoppades.",
@@ -197,6 +217,7 @@
     },
     {
      "key": "Download of the previous episode cancelled.",
+     "id": "folderNavigation.previousEpisodeCancelled",
      "english": "Download of the previous episode cancelled.",
      "before": "Hämtningen av föregående avsnitt avbröts.",
      "after": "Nedladdningen av föregående avsnitt avbröts.",
@@ -204,6 +225,7 @@
     },
     {
      "key": "Download progress",
+     "id": "readerCloud.progressLabel",
      "english": "Download progress",
      "before": "Hämtningsförlopp",
      "after": "Nedladdningsförlopp",
@@ -211,6 +233,7 @@
     },
     {
      "key": "Edit Text stops for this book; choose Edit Text again to edit the new reading.",
+     "id": "textEncoding.stopsEditingNote",
      "english": "Edit Text stops for this book; choose Edit Text again to edit the new reading.",
      "before": "Redigera text stoppas för den här boken; välj Redigera text igen för att redigera den nya läsningen.",
      "after": "”Redigera text” avslutas för den här boken; välj ”Redigera text” igen för att redigera den nya läsningen.",
@@ -218,6 +241,7 @@
     },
     {
      "key": "Everything",
+     "id": "removal.everythingObject",
      "english": "Everything",
      "before": "Allt",
      "after": "allt",
@@ -225,6 +249,7 @@
     },
     {
      "key": "Everything in %@",
+     "id": "removal.everythingInObject",
      "english": "Everything in %@",
      "before": "Allt i %@",
      "after": "allt i %@",
@@ -232,6 +257,7 @@
     },
     {
      "key": "Folder placement and manual order that were stored only in the unreadable index are lost from the library.",
+     "id": "libraryIndexRecovery.rebuild.placement",
      "english": "Folder placement and manual order that were stored only in the unreadable index are lost from the library.",
      "before": "Mappplacering och manuell ordning som bara lagrades i det oläsliga indexet går förlorade från biblioteket.",
      "after": "Mappplacering och manuell ordning som bara lagrades i det oläsbara indexet går förlorade från biblioteket.",
@@ -239,6 +265,7 @@
     },
     {
      "key": "Gesture time window",
+     "id": "miscellaneousSettings.timeWindowLabel",
      "english": "Gesture time window",
      "before": "Gesttidsfönster",
      "after": "Tidsfönster för gesten",
@@ -246,6 +273,7 @@
     },
     {
      "key": "Ignored When Typing",
+     "id": "leadingArticle.name.ignoredWhenTyping",
      "english": "Ignored When Typing",
      "before": "Ignoreras vid inskrivning",
      "after": "Ignoreras vid skrivning",
@@ -253,6 +281,7 @@
     },
     {
      "key": "Ignored When Typing and Sorting",
+     "id": "leadingArticle.name.ignoredWhenTypingAndSorting",
      "english": "Ignored When Typing and Sorting",
      "before": "Ignoreras vid inskrivning och sortering",
      "after": "Ignoreras vid skrivning och sortering",
@@ -260,6 +289,7 @@
     },
     {
      "key": "Import it again, which asks about the duplicate, and choose Replace Existing so that the copy stored in the data directory takes its place, or remove it from the library, then move the data directory again.",
+     "id": "dataDirectoryMigrationError.bookOutsideFix",
      "english": "Import it again, which asks about the duplicate, and choose Replace Existing so that the copy stored in the data directory takes its place, or remove it from the library, then move the data directory again.",
      "before": "Importera den igen, vilket frågar om dubbletten, och välj Ersätt befintlig så att kopian i datamappen ersätts, eller ta bort den från biblioteket, och flytta sedan datamappen igen.",
      "after": "Importera den igen – då får du en fråga om dubbletten – och välj ”Ersätt befintlig” så att kopian som lagras i datamappen tar dess plats, eller ta bort den från biblioteket, och flytta sedan datamappen igen.",
@@ -267,6 +297,7 @@
     },
     {
      "key": "It is the folder of the feed %@. Either way, the feed and its downloads stay, listed in no folder until Feed Info gives the feed another; Delete Feed… on its row deletes it.",
+     "id": "folderRemoval.ownFeedsChoiceSentences.downloads",
      "english": "It is the folder of the feed %@. Either way, the feed and its downloads stay, listed in no folder until Feed Info gives the feed another; Delete Feed… on its row deletes it.",
      "before": "Det är mappen för flödet %@. Oavsett val finns flödet och dess nedladdningar kvar, utan mapp, tills Flödesinformation ger flödet en ny; Radera flöde… på dess rad raderar det.",
      "after": "Det är mappen för flödet %@. Oavsett val finns flödet och dess nedladdningar kvar, utan mapp, tills Flödesinformation ger flödet en ny; ”Radera flöde…” på dess rad raderar det.",
@@ -274,6 +305,7 @@
     },
     {
      "key": "It is the folder of the feeds %@. Either way, the feeds and their downloads stay, listed in no folder until Feed Info gives each another; Delete Feed… on a feed's row deletes it.",
+     "id": "folderRemoval.ownFeedsChoiceSentences.their",
      "english": "It is the folder of the feeds %@. Either way, the feeds and their downloads stay, listed in no folder until Feed Info gives each another; Delete Feed… on a feed's row deletes it.",
      "before": "Det är mappen för flödena %@. Oavsett val finns flödena och deras nedladdningar kvar, utan mapp, tills Flödesinformation ger vart och ett en ny; Radera flöde… på ett flödes rad raderar det.",
      "after": "Det är mappen för flödena %@. Oavsett val finns flödena och deras nedladdningar kvar, utan mapp, tills Flödesinformation ger vart och ett en ny; ”Radera flöde…” på ett flödes rad raderar det.",
@@ -281,6 +313,7 @@
     },
     {
      "key": "Left %@ where it is: episodes and articles stay in their feeds; %@ makes one a book of your library.",
+     "id": "libraryTransition.feedItemsLeft.episodes",
      "english": "Left %1$@ where it is: episodes and articles stay in their feeds; %2$@ makes one a book of your library.",
      "before": "%@ lämnades kvar där den är: avsnitt och artiklar stannar i sina flöden; %@ gör ett av dem till en bok i ditt bibliotek.",
      "after": "%@ lämnades kvar där den är: avsnitt och artiklar stannar i sina flöden; ”%@” gör ett av dem till en bok i ditt bibliotek.",
@@ -288,6 +321,7 @@
     },
     {
      "key": "Left %@ where they are: episodes and articles stay in their feeds; %@ makes one a book of your library.",
+     "id": "libraryTransition.feedItemsLeft.they",
      "english": "Left %1$@ where they are: episodes and articles stay in their feeds; %2$@ makes one a book of your library.",
      "before": "%@ lämnades kvar där de är: avsnitt och artiklar stannar i sina flöden; %@ gör ett av dem till en bok i ditt bibliotek.",
      "after": "%@ lämnades kvar där de är: avsnitt och artiklar stannar i sina flöden; ”%@” gör ett av dem till en bok i ditt bibliotek.",
@@ -295,6 +329,7 @@
     },
     {
      "key": "Most rows shown",
+     "id": "libraryViewEditor.limitFieldLabel",
      "english": "Most rows shown",
      "before": "Flest rader som visas",
      "after": "Högsta antal rader",
@@ -302,6 +337,7 @@
     },
     {
      "key": "Neither has newer places or books the other lacks, but they differ in other ways.",
+     "id": "libraryComparison.newerCopySentence.differ",
      "english": "Neither has newer places or books the other lacks, but they differ in other ways.",
      "before": "Ingen har nyare platser eller böcker som den andra saknar, men de skiljer sig åt på andra sätt.",
      "after": "Ingen av dem har nyare platser eller böcker som den andra saknar, men de skiljer sig åt på andra sätt.",
@@ -309,6 +345,7 @@
     },
     {
      "key": "Neither is newer: each has changes the other lacks.",
+     "id": "libraryComparison.newerCopySentence.changes",
      "english": "Neither is newer: each has changes the other lacks.",
      "before": "Ingen är nyare: var och en har ändringar som den andra saknar.",
      "after": "Ingen av dem är nyare: var och en har ändringar som den andra saknar.",
@@ -316,6 +353,7 @@
     },
     {
      "key": "None of the %@ selected books is kept on this Mac by your choice, and %lld is kept for the reading list.",
+     "id": "libraryCloud.noneSelectedBooksKeptMacChoice",
      "english": {
       "one": "None of the %@ selected books is kept on this Mac by your choice, and %lld is kept for the reading list.",
       "other": "None of the %@ selected books is kept on this Mac by your choice, and %lld are kept for the reading list."
@@ -332,6 +370,7 @@
     },
     {
      "key": "Opened Last",
+     "id": "libraryViewEditor.limitOrderName.lastOpened",
      "english": "Opened Last",
      "before": "Öppnad senast",
      "after": "Senast öppnade",
@@ -339,6 +378,7 @@
     },
     {
      "key": "Retry is at the top of the Library window.",
+     "id": "persistenceBannerRow.announcement.retry",
      "english": "Retry is at the top of the Library window.",
      "before": "Försök igen finns högst upp i biblioteksfönstret.",
      "after": "”Försök igen” finns högst upp i biblioteksfönstret.",
@@ -346,6 +386,7 @@
     },
     {
      "key": "Stop, and Play Starts Over",
+     "id": "endOfBookBehavior.title.stopAndPlayStartsOver",
      "english": "Stop, and Play Starts Over",
      "before": "Stoppa, och Spela upp börjar om",
      "after": "Stoppa och börja om vid nästa uppspelning",
@@ -353,6 +394,7 @@
     },
     {
      "key": "Stopping the library move before quitting.",
+     "id": "dataDirectoryMove.quitAnnouncement",
      "english": "Stopping the library move before quitting.",
      "before": "Stoppar flytten av biblioteket innan avslut.",
      "after": "Stoppar flytten av biblioteket innan TextMouth avslutas.",
@@ -360,6 +402,7 @@
     },
     {
      "key": "Switching loses the changes TextMouth couldn't save while the library isn't available.",
+     "id": "storage.unsavedSentence",
      "english": "Switching loses the changes TextMouth couldn't save while the library isn't available.",
      "before": "Ett byte förlorar ändringarna som TextMouth inte kunde spara medan biblioteket inte är tillgängligt.",
      "after": "Om du byter förlorar du ändringarna som TextMouth inte kunde spara medan biblioteket inte är tillgängligt.",
@@ -367,6 +410,7 @@
     },
     {
      "key": "Take it off the reading list, or clear %@ in the Reading List's options first.",
+     "id": "libraryCloud.letGoOfOneBookFirst",
      "english": "Take it off the reading list, or clear %@ in the Reading List's options first.",
      "before": "Ta bort den från läslistan, eller rensa %@ i läslistans alternativ först.",
      "after": "Ta bort den från läslistan, eller avmarkera ”%@” i läslistans alternativ först.",
@@ -374,6 +418,7 @@
     },
     {
      "key": "TextMouth could not check whether to move it to the Trash.",
+     "id": "legacyMigrationError.trashPreferenceUnavailable",
      "english": "TextMouth could not check whether to move it to the Trash.",
      "before": "TextMouth kunde inte kontrollera om den skulle flyttas till papperskorgen.",
      "after": "TextMouth kunde inte kontrollera om den skulle läggas i papperskorgen.",
@@ -381,6 +426,7 @@
     },
     {
      "key": "TextMouth could not read its library index, the file that records your folders, sort settings, and the order of your books.",
+     "id": "libraryIndexRecovery.summary.settings",
      "english": "TextMouth could not read its library index, the file that records your folders, sort settings, and the order of your books.",
      "before": "TextMouth kunde inte läsa sitt biblioteksindex, filen som registrerar dina mappar, sorteringsinställningar och bokordning.",
      "after": "TextMouth kunde inte läsa sitt biblioteksindex, filen som lagrar dina mappar, sorteringsinställningar och böckernas ordning.",
@@ -388,6 +434,7 @@
     },
     {
      "key": "TextMouth could not record the removal in its package, %@.",
+     "id": "libraryRemovalError.couldNotMarkPackage",
      "english": "TextMouth could not record the removal in its package, %@.",
      "before": "TextMouth kunde inte registrera borttagningen i dess paket, %@.",
      "after": "TextMouth kunde inte registrera borttagningen i bokens paket, %@.",
@@ -395,6 +442,7 @@
     },
     {
      "key": "TextMouth first saves a copy of the old file, and does not rebuild if it cannot.",
+     "id": "libraryIndexRecovery.rebuild.cannot",
      "english": "TextMouth first saves a copy of the old file, and does not rebuild if it cannot.",
      "before": "TextMouth sparar först en kopia av den gamla filen och bygger inte om om det inte går.",
      "after": "TextMouth sparar först en kopia av den gamla filen och bygger bara om när kopian har sparats.",
@@ -402,6 +450,7 @@
     },
     {
      "key": "TextMouth is opening again on another library, so they stay unsaved in this one.",
+     "id": "storageWorkWait.sentence.unsaved",
      "english": "TextMouth is opening again on another library, so they stay unsaved in this one.",
      "before": "TextMouth öppnas igen på ett annat bibliotek, så de förblir osparade i det här.",
      "after": "TextMouth öppnas igen med ett annat bibliotek, så de förblir osparade i det här.",
@@ -409,6 +458,7 @@
     },
     {
      "key": "TextMouth is opening again on another library, so they stay where they are in this one.",
+     "id": "storageWorkWait.sentence.where",
      "english": "TextMouth is opening again on another library, so they stay where they are in this one.",
      "before": "TextMouth öppnas igen på ett annat bibliotek, så de ligger kvar där de är i det här.",
      "after": "TextMouth öppnas igen med ett annat bibliotek, så de ligger kvar där de är i det här.",
@@ -416,6 +466,7 @@
     },
     {
      "key": "TextMouth is reading “%@” again with other braille file characters. Try again when that finishes.",
+     "id": "brailleFileCode.readingAgainRefusal",
      "english": "TextMouth is reading “%@” again with other braille file characters. Try again when that finishes.",
      "before": "TextMouth läser ”%@” igen med andra punktskriftsfilstecken. Försök igen när det är klart.",
      "after": "TextMouth läser ”%@” igen med andra punktskriftstecken. Försök igen när det är klart.",
@@ -423,6 +474,7 @@
     },
     {
      "key": "TextMouth is switching to another library and opening again on it.",
+     "id": "storageBusyError.switchingLibraries",
      "english": "TextMouth is switching to another library and opening again on it.",
      "before": "TextMouth byter till ett annat bibliotek och öppnas igen på det.",
      "after": "TextMouth byter till ett annat bibliotek och öppnas igen med det.",
@@ -430,6 +482,7 @@
     },
     {
      "key": "TextMouth moves them back once it has finished rebuilding its data directory.",
+     "id": "storageWorkWait.sentence.movesRebuilding",
      "english": "TextMouth moves them back once it has finished rebuilding its data directory.",
      "before": "TextMouth flyttar tillbaka dem när det har byggt klart om sin datamapp.",
      "after": "TextMouth flyttar tillbaka dem när ombyggnaden av datamappen är klar.",
@@ -437,6 +490,7 @@
     },
     {
      "key": "TextMouth reads its file as it reads a file you add: in the encoding the file names, or else the one TextMouth finds.",
+     "id": "textEncoding.automaticNote",
      "english": "TextMouth reads its file as it reads a file you add: in the encoding the file names, or else the one TextMouth finds.",
      "before": "TextMouth läser sin fil som en fil du lägger till: med den teckenkodning som filen anger, annars den som TextMouth hittar.",
      "after": "TextMouth läser bokens fil som en fil du lägger till: med den teckenkodning som filen anger, annars den som TextMouth hittar.",
@@ -444,6 +498,7 @@
     },
     {
      "key": "TextMouth saves them once it has finished rebuilding its data directory.",
+     "id": "storageWorkWait.sentence.savesRebuilding",
      "english": "TextMouth saves them once it has finished rebuilding its data directory.",
      "before": "TextMouth sparar dem när det har byggt klart om sin datamapp.",
      "after": "TextMouth sparar dem när ombyggnaden av datamappen är klar.",
@@ -451,6 +506,7 @@
     },
     {
      "key": "That would put %@ %lld levels deep, but folders nest at most %lld levels.",
+     "id": "folderOperationConflict.tooDeep",
      "english": {
       "one": "That would put %@ %lld level deep, but folders nest at most %lld levels.",
       "other": "That would put %@ %lld levels deep, but folders nest at most %lld levels."
@@ -467,6 +523,7 @@
     },
     {
      "key": "The Hobbit sorts among the H's and shows as Hobbit, The. Typing H finds it among the H's.",
+     "id": "leadingArticle.description.ignoredForBoth",
      "english": "The Hobbit sorts among the H's and shows as Hobbit, The. Typing H finds it among the H's.",
      "before": "The Hobbit sorteras bland H och visas som Hobbit, The. Att skriva H hittar den bland H.",
      "after": "The Hobbit sorteras bland H och visas som Hobbit, The. Om du skriver H hittas den bland H.",
@@ -474,6 +531,7 @@
     },
     {
      "key": "The braille is translated to print again with this code. Nothing checks that it is the right choice. If words read wrongly, choose another.",
+     "id": "brailleCode.translatedAgainNote",
      "english": "The braille is translated to print again with this code. Nothing checks that it is the right choice. If words read wrongly, choose another.",
      "before": "Punktskriften översätts till vanlig skrift igen med den här koden. Inget kontrollerar att det är rätt val. Om ord läses fel, välj en annan.",
      "after": "Punktskriften översätts till svartskrift igen med den här koden. Inget kontrollerar att det är rätt val. Om ord läses fel, välj en annan.",
@@ -481,6 +539,7 @@
     },
     {
      "key": "The folders %@ and %@ can't both move into %@: their names mean the same folder on this disk.",
+     "id": "folderOperationConflict.namesCollide",
      "english": "The folders %1$@ and %2$@ can't both move into %3$@: their names mean the same folder on this disk.",
      "before": "Mapparna %@ och %@ kan inte båda flyttas till %@: deras namn betyder samma mapp på den här disken.",
      "after": "Mapparna %@ och %@ kan inte båda flyttas till %@: deras namn syftar på samma mapp på den här disken.",
@@ -488,6 +547,7 @@
     },
     {
      "key": "The reading list still keeps it downloaded",
+     "id": "libraryCloud.stoppedKeeping.downloaded",
      "english": "The reading list still keeps it downloaded",
      "before": "Läslistan håller fortfarande den hämtad",
      "after": "Läslistan håller den fortfarande hämtad",
@@ -495,6 +555,7 @@
     },
     {
      "key": "The reading list still keeps them downloaded",
+     "id": "libraryCloud.stoppedKeeping.readingList",
      "english": "The reading list still keeps them downloaded",
      "before": "Läslistan håller fortfarande dem hämtade",
      "after": "Läslistan håller dem fortfarande hämtade",
@@ -502,6 +563,7 @@
     },
     {
      "key": "The reading list, the folders' sorts and listening options, and any book whose files aren't in this folder yet won't be in it.",
+     "id": "libraryFileWait.confirmation.index.listening",
      "english": "The reading list, the folders' sorts and listening options, and any book whose files aren't in this folder yet won't be in it.",
      "before": "Läslistan, mapparnas sorteringar och lyssningsalternativ, och alla böcker vars filer inte finns i den här mappen än kommer inte att finnas i det.",
      "after": "Läslistan, mapparnas sorteringar och lyssningsalternativ och de böcker vars filer inte finns i den här mappen än kommer inte att finnas med i det.",
@@ -509,6 +571,7 @@
     },
     {
      "key": "Then take it off the reading list, or clear %@ in the Reading List's options.",
+     "id": "libraryCloud.thenLetGoOfOneBook",
      "english": "Then take it off the reading list, or clear %@ in the Reading List's options.",
      "before": "Ta sedan bort den från läslistan, eller rensa %@ i läslistans alternativ.",
      "after": "Ta sedan bort den från läslistan, eller avmarkera ”%@” i läslistans alternativ.",
@@ -516,6 +579,7 @@
     },
     {
      "key": "There is no view %@. Go to View reaches %lld views.",
+     "id": "libraryViewPicker.noView",
      "english": {
       "one": "There is no view %@. Go to View reaches %lld view.",
       "other": "There is no view %@. Go to View reaches %lld views."
@@ -532,6 +596,7 @@
     },
     {
      "key": "Titles sort, and are found by typing, as they are written: The Hobbit is among the T's.",
+     "id": "leadingArticle.description.partOfTitle",
      "english": "Titles sort, and are found by typing, as they are written: The Hobbit is among the T's.",
      "before": "Titlar sorteras, och hittas genom att skriva, som de är skrivna: The Hobbit finns bland T.",
      "after": "Titlar sorteras, och hittas när du skriver, som de är skrivna: The Hobbit finns bland T.",
@@ -539,6 +604,7 @@
     },
     {
      "key": "To let it go, take it off the reading list, or clear %@ in the Reading List's options.",
+     "id": "libraryCloud.howToLetGo.reading",
      "english": "To let it go, take it off the reading list, or clear %@ in the Reading List's options.",
      "before": "För att släppa den, ta bort den från läslistan eller rensa %@ i läslistans alternativ.",
      "after": "För att släppa den, ta bort den från läslistan eller avmarkera ”%@” i läslistans alternativ.",
@@ -546,6 +612,7 @@
     },
     {
      "key": "To let them go, take them off the reading list, or clear %@ in the Reading List's options.",
+     "id": "libraryCloud.howToLetGo.them",
      "english": "To let them go, take them off the reading list, or clear %@ in the Reading List's options.",
      "before": "För att släppa dem, ta bort dem från läslistan eller rensa %@ i läslistans alternativ.",
      "after": "För att släppa dem, ta bort dem från läslistan eller avmarkera ”%@” i läslistans alternativ.",
@@ -553,6 +620,7 @@
     },
     {
      "key": "To use another folder, open Settings, Storage, and choose %@ or %@.",
+     "id": "dataDirectoryUnavailable.anotherFolderPointer",
      "english": "To use another folder, open Settings, Storage, and choose %1$@ or %2$@.",
      "before": "För att använda en annan mapp, öppna Inställningar, Lagring och välj %1$@ eller %2$@.",
      "after": "För att använda en annan mapp, öppna ”Inställningar” > ”Lagring” och välj %1$@ eller %2$@.",
@@ -560,6 +628,7 @@
     },
     {
      "key": "Tries again to save every change that could not be saved",
+     "id": "storageSettings.retrySavingHint",
      "english": "Tries again to save every change that could not be saved",
      "before": "Försöker spara varje ändring som inte kunde sparas igen.",
      "after": "Försöker igen att spara varje ändring som inte kunde sparas.",
@@ -567,6 +636,7 @@
     },
     {
      "key": "Waiting for book analysis to finish...",
+     "id": "storageWork.waitingMessage.contentAnalysis",
      "english": "Waiting for book analysis to finish...",
      "before": "Väntar på att boksanalysen ska bli klar...",
      "after": "Väntar på att analysen av böckerna ska bli klar...",
@@ -574,6 +644,7 @@
     },
     {
      "key": "When a book is deleted, %@.",
+     "id": "removalPreferences.deletionSummary",
      "english": "When a book is deleted, %@.",
      "before": "När en bok raderas, %@.",
      "after": "När en bok raderas: %@.",
@@ -581,6 +652,7 @@
     },
     {
      "key": "When off, removing a book will %@ at once.",
+     "id": "removalPreferences.confirmationExplanation.once",
      "english": "When off, removing a book will %@ at once.",
      "before": "När den är avstängd kommer borttagning av en bok att %@ direkt.",
      "after": "När den är avstängd och du tar bort en bok kommer TextMouth att %@ direkt.",
@@ -588,6 +660,7 @@
     },
     {
      "key": "When on, removing a book first asks whether to %@ or keep them in the TextMouth library folder.",
+     "id": "removalPreferences.confirmation.whether",
      "english": "When on, removing a book first asks whether to %@ or keep them in the TextMouth library folder.",
      "before": "När den är på frågar borttagning av en bok först om du vill %@ eller behålla dem i TextMouths biblioteksmapp.",
      "after": "När den är på och du tar bort en bok frågar TextMouth först om du vill %@ eller behålla dem i TextMouths biblioteksmapp.",
@@ -595,6 +668,7 @@
     },
     {
      "key": "Where TextMouth writes its diagnostic logs. %@ keeps them with your books, so they move and sync with the library. %@ keeps them in %@, which never syncs. A change applies from the next line; existing logs stay.",
+     "id": "logsSettings.pickerHint",
      "english": "Where TextMouth writes its diagnostic logs. %1$@ keeps them with your books, so they move and sync with the library. %2$@ keeps them in %3$@, which never syncs. A change applies from the next line; existing logs stay.",
      "before": "Var TextMouth skriver sina diagnostikloggar. %1$@ behåller dem med dina böcker, så de flyttas och synkas med biblioteket. %2$@ behåller dem i %3$@, som aldrig synkas. En ändring gäller från nästa rad; befintliga loggar finns kvar.",
      "after": "Var TextMouth skriver sina diagnostikloggar. ”%1$@” sparar dem tillsammans med dina böcker, så de flyttas och synkas med biblioteket. ”%2$@” sparar dem i %3$@, som aldrig synkas. En ändring gäller från nästa rad; befintliga loggar finns kvar.",
@@ -602,6 +676,7 @@
     },
     {
      "key": "With %@, %@.",
+     "id": "removalChoice.optionSentence",
      "english": "With %1$@, %2$@.",
      "before": "Med %@ gäller: %@.",
      "after": "Med ”%@” gäller: %@.",
@@ -609,6 +684,7 @@
     },
     {
      "key": "With %@, the feed and its downloads stay, listed in no folder until Feed Info gives the feed another; Delete Feed… on its row deletes it.",
+     "id": "folderRemoval.feedsChoiceSentences.downloads",
      "english": "With %@, the feed and its downloads stay, listed in no folder until Feed Info gives the feed another; Delete Feed… on its row deletes it.",
      "before": "Med %@ finns flödet och dess nedladdningar kvar, utan mapp tills Flödesinformation ger flödet en ny; Radera flöde… på dess rad raderar det.",
      "after": "Med ”%@” finns flödet och dess nedladdningar kvar, utan mapp tills Flödesinformation ger flödet en ny; ”Radera flöde…” på dess rad raderar det.",
@@ -616,6 +692,7 @@
     },
     {
      "key": "With %@, the feeds and their downloads stay, listed in no folder until Feed Info gives each another; Delete Feed… on a feed's row deletes it.",
+     "id": "folderRemoval.feedsChoiceSentences.each",
      "english": "With %@, the feeds and their downloads stay, listed in no folder until Feed Info gives each another; Delete Feed… on a feed's row deletes it.",
      "before": "Med %@ finns flödena och deras nedladdningar kvar, utan mapp tills Flödesinformation ger vart och ett en ny; Radera flöde… på ett flödes rad raderar det.",
      "after": "Med ”%@” finns flödena och deras nedladdningar kvar, utan mapp tills Flödesinformation ger vart och ett en ny; ”Radera flöde…” på ett flödes rad raderar det.",
@@ -623,6 +700,7 @@
     },
     {
      "key": "With %@, the folder and everything in it leave the library, and %@.",
+     "id": "folderRemoval.choiceMessage.everything",
      "english": "With %1$@, the folder and everything in it leave the library, and %2$@.",
      "before": "Med %@ lämnar mappen och allt i den biblioteket, och %@.",
      "after": "Med ”%@” lämnar mappen och allt i den biblioteket, och %@.",
@@ -630,6 +708,7 @@
     },
     {
      "key": "With Move Contents Out, the feed's folder moves with the rest.",
+     "id": "folderRemoval.feedsChoiceSentences.moves",
      "english": "With Move Contents Out, the feed's folder moves with the rest.",
      "before": "Med Flytta ut innehållet flyttas flödets mapp med resten.",
      "after": "Med ”Flytta ut innehållet” flyttas flödets mapp med resten.",
@@ -637,6 +716,7 @@
     },
     {
      "key": "With Move Contents Out, their folders move with the rest.",
+     "id": "folderRemoval.feedsChoiceSentences.contents",
      "english": "With Move Contents Out, their folders move with the rest.",
      "before": "Med Flytta ut innehållet flyttas deras mappar med resten.",
      "after": "Med ”Flytta ut innehållet” flyttas deras mappar med resten.",
@@ -644,6 +724,7 @@
     },
     {
      "key": "With Move Contents Out, they stay in the library and only the folder is deleted.",
+     "id": "folderRemoval.choiceMessage.contents",
      "english": "With Move Contents Out, they stay in the library and only the folder is deleted.",
      "before": "Med Flytta ut innehållet finns de kvar i biblioteket och bara mappen raderas.",
      "after": "Med ”Flytta ut innehållet” finns de kvar i biblioteket och bara mappen raderas.",
@@ -651,6 +732,7 @@
     },
     {
      "key": "subscribed",
+     "id": "libraryViewEditor.phrase.subscribed.active",
      "english": "subscribed",
      "before": "prenumererar",
      "after": "med prenumeration",
@@ -658,6 +740,7 @@
     },
     {
      "key": "unsubscribed",
+     "id": "libraryViewEditor.phrase.subscribed.unsubscribed",
      "english": "unsubscribed",
      "before": "prenumererar inte",
      "after": "utan prenumeration",
@@ -665,6 +748,7 @@
     },
     {
      "key": "use the drive's own command to keep the book only online",
+     "id": "bookCloud.onlineOnlyCommand.other",
      "english": "use the drive's own command to keep the book only online",
      "before": "använd molndrivenhetens eget kommando för att bara behålla boken online",
      "after": "använd molntjänstens eget kommando för att bara behålla boken online",
@@ -683,6 +767,7 @@
    "fixes": [
     {
      "key": "%@ are in your library, unsubscribed. Choose %@ on a feed's row, or in its %@, to check it again.",
+     "id": "feed.importFoundUnsubscribed",
      "english": "%1$@ are in your library, unsubscribed. Choose %2$@ on a feed's row, or in its %3$@, to check it again.",
      "before": "%1$@ finns i ditt bibliotek, utan prenumeration. Välj %2$@ på flödets rad, eller i dess %3$@, för att kontrollera dem igen.",
      "after": "%1$@ finns i ditt bibliotek, utan prenumeration. Välj %2$@ på ett flödes rad, eller i dess %3$@, för att kontrollera det igen.",
@@ -690,6 +775,7 @@
     },
     {
      "key": "%@ failed: %@",
+     "id": "importFailure.failedSentence",
      "english": "%1$@ failed: %2$@",
      "before": "Misslyckades vid steget %1$@: %2$@",
      "after": "Steget ”%1$@” misslyckades: %2$@",
@@ -697,6 +783,7 @@
     },
     {
      "key": "%lld edits are undone. Redo brings them back until you make another edit.",
+     "id": "audioEditor.revertExplanation.another",
      "english": {
       "one": "%lld edit is undone. Redo brings them back until you make another edit.",
       "other": "%lld edits are undone. Redo brings them back until you make another edit."
@@ -713,6 +800,7 @@
     },
     {
      "key": "%lld were subscribed already.",
+     "id": "opmlImportSummary.sentence.already",
      "english": {
       "one": "%lld was subscribed already.",
       "other": "%lld were subscribed already."
@@ -729,6 +817,7 @@
     },
     {
      "key": "After an automatic refresh, a notification names each feed with new episodes and articles",
+     "id": "feedSettings.notificationsHint",
      "english": "After an automatic refresh, a notification names each feed with new episodes and articles",
      "before": "Efter en automatisk uppdatering nämns varje flöde med nya avsnitt och artiklar i en avisering.",
      "after": "Efter en automatisk uppdatering nämner en notis varje flöde med nya avsnitt och artiklar.",
@@ -736,6 +825,7 @@
     },
     {
      "key": "Already at the end.",
+     "id": "audioEditor.atEnd",
      "english": "Already at the end.",
      "before": "Redan vid slutet.",
      "after": "Redan i slutet.",
@@ -743,6 +833,7 @@
     },
     {
      "key": "Already at the start.",
+     "id": "audioEditor.atStart",
      "english": "Already at the start.",
      "before": "Redan vid början.",
      "after": "Redan i början.",
@@ -750,6 +841,7 @@
     },
     {
      "key": "Asks after each audiobook import whether to transcribe it. Off, audiobooks are transcribed only with Transcribe Audio.",
+     "id": "transcription.offerHint",
      "english": "Asks after each audiobook import whether to transcribe it. Off, audiobooks are transcribed only with Transcribe Audio.",
      "before": "Frågar efter varje ljudboksimport om den ska transkriberas. Om den är av transkriberas ljudböcker bara med Transkribera ljud.",
      "after": "Frågar efter varje import av en ljudbok om den ska transkriberas. När det här är avstängt transkriberas ljudböcker bara med Transkribera ljud.",
@@ -757,6 +849,7 @@
     },
     {
      "key": "Checking the feed won't bring it back.",
+     "id": "feed.deleteItemMessage.checking",
      "english": "Checking the feed won't bring it back.",
      "before": "Att kontrollera flödet igen tar inte tillbaka det.",
      "after": "Det går inte att få tillbaka genom att kontrollera flödet igen.",
@@ -764,6 +857,7 @@
     },
     {
      "key": "Checks every subscribed feed and says what came",
+     "id": "feedSettings.refreshAllNowHint",
      "english": "Checks every subscribed feed and says what came",
      "before": "Kontrollerar alla flöden du prenumererar på och säger vad som kom in.",
      "after": "Kontrollerar alla flöden du prenumererar på och berättar vad som är nytt.",
@@ -771,6 +865,7 @@
     },
     {
      "key": "Choose an OPML file of subscriptions, as another feed reader exports them.",
+     "id": "feed.importPanelMessage",
      "english": "Choose an OPML file of subscriptions, as another feed reader exports them.",
      "before": "Välj en OPML-fil med prenumerationer, som en annan flödesläsare exporterar dem.",
      "after": "Välj en OPML-fil med prenumerationer, till exempel en som en annan flödesläsare har exporterat.",
@@ -778,6 +873,7 @@
     },
     {
      "key": "Closing ends the recording. %@ saves it as an audiobook, %@ deletes it, and %@ keeps recording.",
+     "id": "recording.closeWhileRecordingExplanation",
      "english": "Closing ends the recording. %1$@ saves it as an audiobook, %2$@ deletes it, and %3$@ keeps recording.",
      "before": "Stängning avslutar inspelningen. %1$@ sparar den som en ljudbok, %2$@ raderar den och %3$@ fortsätter spela in.",
      "after": "Om du stänger fönstret avslutas inspelningen. %1$@ sparar den som en ljudbok, %2$@ raderar den och %3$@ fortsätter spela in.",
@@ -785,6 +881,7 @@
     },
     {
      "key": "Converting audio: %@ of “%@”",
+     "id": "oggConversionProgress.message",
      "english": "Converting audio: %1$@ of “%2$@”",
      "before": "Konverterar ljud: %1$@ av ”%2$@”",
      "after": "Konverterar ljud: %1$@ i ”%2$@”",
@@ -792,6 +889,7 @@
     },
     {
      "key": "Duplicate Book Found",
+     "id": "importDecision.duplicateTitle",
      "english": "Duplicate Book Found",
      "before": "Dubblettbok hittades",
      "after": "Dubblett hittades",
@@ -799,6 +897,7 @@
     },
     {
      "key": "Edits one track at a time, listed by chapter name.",
+     "id": "audioEditor.chooseTrackExplanation",
      "english": "Edits one track at a time, listed by chapter name.",
      "before": "Redigerar ett spår i taget, listade efter kapitelnamn.",
      "after": "Redigerar ett spår i taget; spåren listas efter kapitelnamn.",
@@ -806,6 +905,7 @@
     },
     {
      "key": "Every article listed, downloads by hand",
+     "id": "feed.itemPolicyTitle.byHandArticle",
      "english": "Every article listed, downloads by hand",
      "before": "Alla artiklar listade, hämtning för hand",
      "after": "Alla artiklar listade, manuell hämtning",
@@ -813,6 +913,7 @@
     },
     {
      "key": "Every episode listed, downloads by hand",
+     "id": "feed.itemPolicyTitle.byHandEpisode",
      "english": "Every episode listed, downloads by hand",
      "before": "Alla avsnitt listade, hämtning för hand",
      "after": "Alla avsnitt listade, manuell hämtning",
@@ -820,6 +921,7 @@
     },
     {
      "key": "Every item listed, downloads by hand",
+     "id": "feed.itemPolicyTitle.byHandItem",
      "english": "Every item listed, downloads by hand",
      "before": "Alla objekt listade, hämtning för hand",
      "after": "Alla objekt listade, manuell hämtning",
@@ -827,6 +929,7 @@
     },
     {
      "key": "Experimental. These rules correct words the recognizer writes differently from books read aloud. Check the changes before you apply them; Undo Cleanup puts the transcript back.",
+     "id": "transcriptCleanup.experimentalLine",
      "english": "Experimental. These rules correct words the recognizer writes differently from books read aloud. Check the changes before you apply them; Undo Cleanup puts the transcript back.",
      "before": "Experimentell. Reglerna rättar ord som igenkänningen skriver annorlunda än i upplästa böcker. Kontrollera ändringarna innan du tillämpar dem. Ångra uppstädning lägger tillbaka transkriptionen.",
      "after": "Experimentell. Reglerna rättar ord som igenkänningen skriver annorlunda än i upplästa böcker. Kontrollera ändringarna innan du tillämpar dem; Ångra uppstädning återställer transkriptionen.",
@@ -834,6 +937,7 @@
     },
     {
      "key": "Getting ready to record",
+     "id": "audioEditor.punchInStartingStatus",
      "english": "Getting ready to record",
      "before": "Gör sig redo att spela in",
      "after": "Förbereder inspelning",
@@ -841,6 +945,7 @@
     },
     {
      "key": "Imports a folder holding a DAISY book or audio tracks as one book.",
+     "id": "addToLibrary.summary.importFolder",
      "english": "Imports a folder holding a DAISY book or audio tracks as one book.",
      "before": "Importerar en mapp som innehåller en DAISY-bok eller ljudspår som en bok.",
      "after": "Importerar en mapp med en DAISY-bok eller ljudspår som en enda bok.",
@@ -848,6 +953,7 @@
     },
     {
      "key": "Inserts a silence of a length you type at the cursor.",
+     "id": "audioEditor.explanation.editorInsertSilence",
      "english": "Inserts a silence of a length you type at the cursor.",
      "before": "Infogar en tystnad av en längd som du skriver vid markören.",
      "after": "Infogar vid markören en tystnad med den längd du skriver.",
@@ -855,6 +961,7 @@
     },
     {
      "key": "It deletes %@: it goes to the Trash, where you can recover it until the Trash is emptied.",
+     "id": "feed.deletesSentence.goes",
      "english": "It deletes %@: it goes to the Trash, where you can recover it until the Trash is emptied.",
      "before": "Det raderar %@: det flyttas till papperskorgen, där du kan återställa det tills papperskorgen töms.",
      "after": "Det raderar %@, som flyttas till papperskorgen och kan återställas tills papperskorgen töms.",
@@ -862,6 +969,7 @@
     },
     {
      "key": "It deletes %@: it is deleted permanently and cannot be recovered.",
+     "id": "feed.deletesSentence.deletedPermanentlyRecovered",
      "english": "It deletes %@: it is deleted permanently and cannot be recovered.",
      "before": "Det raderar %@: det raderas permanent och kan inte återställas.",
      "after": "Det raderar %@ permanent, och det går inte att återställa.",
@@ -869,6 +977,7 @@
     },
     {
      "key": "It deletes %@: it stays in the TextMouth library folder.",
+     "id": "feed.deletesSentence.stays",
      "english": "It deletes %@: it stays in the TextMouth library folder.",
      "before": "Det raderar %@: det finns kvar i biblioteksmappen för TextMouth.",
      "after": "Det raderar %@, som finns kvar i biblioteksmappen för TextMouth.",
@@ -876,6 +985,7 @@
     },
     {
      "key": "It lists no audio track with a start that TextMouth can read.",
+     "id": "cueSheet.noTracks",
      "english": "It lists no audio track with a start that TextMouth can read.",
      "before": "Den listar inget ljudspår med en start som TextMouth kan läsa.",
      "after": "Den listar inget ljudspår med en starttid som TextMouth kan läsa.",
@@ -883,6 +993,7 @@
     },
     {
      "key": "Its file is now “%@”, since TextMouth can't write its old format.",
+     "id": "audioEditor.saved.format",
      "english": "Its file is now “%@”, since TextMouth can't write its old format.",
      "before": "Dess fil heter nu ”%@”, eftersom TextMouth inte kan skriva dess gamla format.",
      "after": "Filen heter nu ”%@”, eftersom TextMouth inte kan skriva det gamla formatet.",
@@ -890,6 +1001,7 @@
     },
     {
      "key": "Kept",
+     "id": "audioEditor.originalStatus.kept",
      "english": "Kept",
      "before": "Behållet",
      "after": "Behålls",
@@ -897,6 +1009,7 @@
     },
     {
      "key": "Leaves the audiobook untranscribed; Transcribe Audio does it later.",
+     "id": "transcription.offerNotNowHint",
      "english": "Leaves the audiobook untranscribed; Transcribe Audio does it later.",
      "before": "Lämnar ljudboken utan transkription. Transkribera ljud gör det senare.",
      "after": "Lämnar ljudboken utan transkription; Transkribera ljud kan göra det senare.",
@@ -904,6 +1017,7 @@
     },
     {
      "key": "Makes these corrections. The transcript from before is kept, so Undo Cleanup can put it back.",
+     "id": "transcriptCleanup.applyHint",
      "english": "Makes these corrections. The transcript from before is kept, so Undo Cleanup can put it back.",
      "before": "Gör de här rättelserna. Transkriptionen från före sparas, så Ångra uppstädning kan lägga tillbaka den.",
      "after": "Gör de här rättelserna. Den tidigare transkriptionen sparas, så Ångra uppstädning kan återställa den.",
@@ -911,6 +1025,7 @@
     },
     {
      "key": "No feed was subscribed to.",
+     "id": "opmlImportSummary.sentence.feed",
      "english": "No feed was subscribed to.",
      "before": "Inget flöde prenumererades på.",
      "after": "Ingen ny prenumeration lades till.",
@@ -918,6 +1033,7 @@
     },
     {
      "key": "No sound from %@. Check that the microphone is on and not muted.",
+     "id": "recording.noSound",
      "english": "No sound from %@. Check that the microphone is on and not muted.",
      "before": "Inget ljud från %@. Kontrollera att mikrofonen är på och inte avstängd.",
      "after": "Inget ljud från %@. Kontrollera att mikrofonen är påslagen och att ljudet inte är avstängt.",
@@ -925,6 +1041,7 @@
     },
     {
      "key": "Not in the book's audio yet. Discard undoes them; next time you edit this book, Redo brings them back until you make another edit.",
+     "id": "audioEditor.closeExplanation",
      "english": "Not in the book's audio yet. Discard undoes them; next time you edit this book, Redo brings them back until you make another edit.",
      "before": "Finns inte i bokens ljud än. Kassera ångrar dem. Nästa gång du redigerar den här boken tar Gör om tillbaka dem tills du gör en ny redigering.",
      "after": "Finns inte i bokens ljud än. Kassera ångrar dem; nästa gång du redigerar den här boken kan Gör om återställa dem tills du gör en ny redigering.",
@@ -932,6 +1049,7 @@
     },
     {
      "key": "Opens its book in your library",
+     "id": "feed.itemRowHint.library",
      "english": "Opens its book in your library",
      "before": "Öppnar dess bok i ditt bibliotek.",
      "after": "Öppnar boken i ditt bibliotek.",
@@ -939,6 +1057,7 @@
     },
     {
      "key": "Opens your copy of the rules, transcript-cleanup.json, in your text editor, made from TextMouth's own rules the first time. Changes apply when you return to TextMouth.",
+     "id": "transcriptCleanup.editRulesHint",
      "english": "Opens your copy of the rules, transcript-cleanup.json, in your text editor, made from TextMouth's own rules the first time. Changes apply when you return to TextMouth.",
      "before": "Öppnar din kopia av reglerna, transcript-cleanup.json, i din textredigerare. Den görs första gången av TextMouths egna regler. Ändringar börjar gälla när du återvänder till TextMouth.",
      "after": "Öppnar din kopia av reglerna, transcript-cleanup.json, i din textredigerare. Första gången skapas den utifrån de inbyggda reglerna i TextMouth. Ändringar börjar gälla när du återvänder till TextMouth.",
@@ -946,6 +1065,7 @@
     },
     {
      "key": "Post a notification for each feed with new episodes",
+     "id": "feedSettings.notifications",
      "english": "Post a notification for each feed with new episodes",
      "before": "Skicka en avisering för varje flöde med nya avsnitt",
      "after": "Skicka en notis för varje flöde med nya avsnitt",
@@ -953,6 +1073,7 @@
     },
     {
      "key": "Puts back TextMouth's premade presets, removing the ones you added.",
+     "id": "audioFilterPresets.resetAllHint",
      "english": "Puts back TextMouth's premade presets, removing the ones you added.",
      "before": "Lägger tillbaka TextMouths färdiga förinställningar och tar bort de du har lagt till.",
      "after": "Återställer de färdiga förinställningarna i TextMouth och tar bort dem som du har lagt till.",
@@ -960,6 +1081,7 @@
     },
     {
      "key": "Puts back the transcript as it was before the last cleanup.",
+     "id": "transcriptCleanup.undoHint",
      "english": "Puts back the transcript as it was before the last cleanup.",
      "before": "Lägger tillbaka transkriptionen som den var före den senaste uppstädningen.",
      "after": "Återställer transkriptionen som den var före den senaste uppstädningen.",
@@ -967,6 +1089,7 @@
     },
     {
      "key": "Putting back the transcript from before…",
+     "id": "transcriptCleanup.undoingLine",
      "english": "Putting back the transcript from before…",
      "before": "Lägger tillbaka den tidigare transkriptionen…",
      "after": "Återställer den tidigare transkriptionen…",
@@ -974,6 +1097,7 @@
     },
     {
      "key": "Records over the selection, or at the cursor, after a beep. Again, or Stop, ends it.",
+     "id": "audioEditor.explanation.editorPunchIn",
      "english": "Records over the selection, or at the cursor, after a beep. Again, or Stop, ends it.",
      "before": "Spelar in över markeringen eller vid markören, efter ett pip. Igen, eller Stoppa, avslutar inspelningen.",
      "after": "Spelar in över markeringen eller vid markören, efter ett pip. Samma kommando igen, eller Stoppa, avslutar inspelningen.",
@@ -981,6 +1105,7 @@
     },
     {
      "key": "Refresh feeds every",
+     "id": "feedThreshold.refreshInterval.every",
      "english": "Refresh feeds every",
      "before": "Uppdatera flöden var",
      "after": "Uppdateringsintervall",
@@ -988,6 +1113,7 @@
     },
     {
      "key": "Remove Rumble",
+     "id": "premadeFilterPreset.title.removeRumble",
      "english": "Remove Rumble",
      "before": "Ta bort dån",
      "after": "Ta bort muller",
@@ -995,6 +1121,7 @@
     },
     {
      "key": "Reverted to the original audio. Redo brings back the %lld edits.",
+     "id": "audioEditor.reverted.original",
      "english": {
       "one": "Reverted to the original audio. Redo brings back the %lld edit.",
       "other": "Reverted to the original audio. Redo brings back the %lld edits."
@@ -1011,6 +1138,7 @@
     },
     {
      "key": "Save your subscriptions as an OPML file, which other feed readers import.",
+     "id": "feed.exportPanelMessage",
      "english": "Save your subscriptions as an OPML file, which other feed readers import.",
      "before": "Spara dina prenumerationer som en OPML-fil, som andra flödesläsare importerar.",
      "after": "Spara dina prenumerationer som en OPML-fil, som andra flödesläsare kan importera.",
@@ -1018,6 +1146,7 @@
     },
     {
      "key": "Selected the %@ before chapter 1.",
+     "id": "audioEditor.selectedBeforeFirstChapter",
      "english": "Selected the %@ before chapter 1.",
      "before": "Markerade de %@ före kapitel 1.",
      "after": "Markerade ljudet före kapitel 1, %@.",
@@ -1025,6 +1154,7 @@
     },
     {
      "key": "Set Chapter Marker",
+     "id": "audioEdit.actionName.setChapter",
      "english": "Set Chapter Marker",
      "before": "Ange kapitelmärke",
      "after": "Sätt kapitelmärke",
@@ -1032,6 +1162,7 @@
     },
     {
      "key": "Sets a chapter marker at the cursor, with a title you type.",
+     "id": "audioEditor.explanation.editorInsertChapter",
      "english": "Sets a chapter marker at the cursor, with a title you type.",
      "before": "Anger ett kapitelmärke vid markören, med en titel som du skriver.",
      "after": "Sätter ett kapitelmärke vid markören, med en titel som du skriver.",
@@ -1039,6 +1170,7 @@
     },
     {
      "key": "TextMouth couldn't save the library before deleting the feed “%@”, so nothing was deleted.",
+     "id": "feed.deleteFeedRefused.indexNotWritten",
      "english": "TextMouth couldn't save the library before deleting the feed “%@”, so nothing was deleted.",
      "before": "TextMouth kunde inte spara biblioteket innan flödet ”%@” raderades, så ingenting raderades.",
      "after": "TextMouth kunde inte spara biblioteket innan flödet ”%@” skulle raderas, så ingenting raderades.",
@@ -1046,6 +1178,7 @@
     },
     {
      "key": "TextMouth is quitting and the book's audio doesn't hold these edits yet. Discard undoes them; next time you edit this book, Redo brings them back until you make another edit. Cancel keeps TextMouth open.",
+     "id": "audioEditor.quitExplanation",
      "english": "TextMouth is quitting and the book's audio doesn't hold these edits yet. Discard undoes them; next time you edit this book, Redo brings them back until you make another edit. Cancel keeps TextMouth open.",
      "before": "TextMouth avslutas och bokens ljud innehåller inte de här redigeringarna än. Kassera ångrar dem. Nästa gång du redigerar den här boken tar Gör om tillbaka dem tills du gör en ny redigering. Avbryt håller TextMouth öppet.",
      "after": "TextMouth avslutas och bokens ljud innehåller inte de här redigeringarna än. Kassera ångrar dem; nästa gång du redigerar den här boken kan Gör om återställa dem tills du gör en ny redigering. Avbryt håller TextMouth öppet.",
@@ -1053,6 +1186,7 @@
     },
     {
      "key": "TextMouth is still carrying out your last answer. Wait until it finishes.",
+     "id": "duplicateCopy.answerUnderWay",
      "english": "TextMouth is still carrying out your last answer. Wait until it finishes.",
      "before": "TextMouth utför fortfarande ditt senaste svar. Vänta tills det är klart.",
      "after": "TextMouth arbetar fortfarande med ditt senaste svar. Vänta tills det är klart.",
@@ -1060,6 +1194,7 @@
     },
     {
      "key": "TextMouth isn't allowed to post notifications. Turn them on in System Settings, Notifications, TextMouth.",
+     "id": "feed.notificationsRefused",
      "english": "TextMouth isn't allowed to post notifications. Turn them on in System Settings, Notifications, TextMouth.",
      "before": "TextMouth får inte skicka aviseringar. Slå på dem i Systeminställningar, Aviseringar, TextMouth.",
      "after": "TextMouth får inte skicka notiser. Slå på dem i Systeminställningar, Notiser, TextMouth.",
@@ -1067,6 +1202,7 @@
     },
     {
      "key": "TextMouth's converter could not make itself safe before reading “%@”, so it did not read the file.",
+     "id": "ffmpegImport.notConfined",
      "english": "TextMouth's converter could not make itself safe before reading “%@”, so it did not read the file.",
      "before": "Konverteraren i TextMouth kunde inte göra sig säker innan den läste ”%@”, så den läste inte filen.",
      "after": "Konverteraren i TextMouth kunde inte isolera sig innan den läste ”%@”, så den läste inte filen.",
@@ -1074,6 +1210,7 @@
     },
     {
      "key": "TextMouth's converter stopped before the end of “%@”, so it could not be imported.",
+     "id": "ffmpegImport.endedEarly",
      "english": "TextMouth's converter stopped before the end of “%@”, so it could not be imported.",
      "before": "Konverteraren i TextMouth stoppade före slutet av ”%@”, så den kunde inte importeras.",
      "after": "Konverteraren i TextMouth avslutades före slutet av ”%@”, så filen kunde inte importeras.",
@@ -1081,6 +1218,7 @@
     },
     {
      "key": "TextMouth's converter stopped unexpectedly while reading “%@”. The file may be damaged.",
+     "id": "ffmpegImport.crashed",
      "english": "TextMouth's converter stopped unexpectedly while reading “%@”. The file may be damaged.",
      "before": "Konverteraren i TextMouth stoppade oväntat under läsningen av ”%@”. Filen kan vara skadad.",
      "after": "Konverteraren i TextMouth avslutades oväntat under läsningen av ”%@”. Filen kan vara skadad.",
@@ -1088,6 +1226,7 @@
     },
     {
      "key": "The %lld markers are deleted, and Redo doesn't bring them back.",
+     "id": "audioEditor.revertExplanation.markers",
      "english": {
       "one": "The marker is deleted, and Redo doesn't bring it back.",
       "other": "The %lld markers are deleted, and Redo doesn't bring them back."
@@ -1104,6 +1243,7 @@
     },
     {
      "key": "The audiobook's audio, your place, and your bookmarks stay as they are.",
+     "id": "transcription.whatStays",
      "english": "The audiobook's audio, your place, and your bookmarks stay as they are.",
      "before": "Ljudbokens ljud, din position och dina bokmärken förblir som de är.",
      "after": "Ljudbokens ljud, din läsposition och dina bokmärken förblir som de är.",
@@ -1111,6 +1251,7 @@
     },
     {
      "key": "The book's text has changes TextMouth couldn't copy, so it leaves the text as it is.",
+     "id": "transcriptTextError.textNotKept",
      "english": "The book's text has changes TextMouth couldn't copy, so it leaves the text as it is.",
      "before": "Bokens text har ändringar som TextMouth inte kunde kopiera, så den lämnar texten som den är.",
      "after": "Bokens text har ändringar som TextMouth inte kunde kopiera, så texten lämnas som den är.",
@@ -1118,6 +1259,7 @@
     },
     {
      "key": "The book's text is only in iCloud, so TextMouth leaves it. Download the book, then try again.",
+     "id": "transcription.textInCloud",
      "english": "The book's text is only in iCloud, so TextMouth leaves it. Download the book, then try again.",
      "before": "Bokens text finns bara i iCloud, så TextMouth lämnar den. Hämta boken och försök sedan igen.",
      "after": "Bokens text finns bara i iCloud, så TextMouth låter den vara. Hämta boken och försök sedan igen.",
@@ -1125,6 +1267,7 @@
     },
     {
      "key": "The cue sheet “%@” names none of the audio beside it, so its headings were not used.",
+     "id": "cueSheet.sheetUnused.names",
      "english": "The cue sheet “%@” names none of the audio beside it, so its headings were not used.",
      "before": "CUE-filen ”%@” anger inget av ljudet bredvid den, så dess rubriker användes inte.",
      "after": "CUE-filen ”%@” anger ingen av ljudfilerna bredvid den, så dess rubriker användes inte.",
@@ -1132,6 +1275,7 @@
     },
     {
      "key": "The feed “%@” stays with it.",
+     "id": "feed.deleteFeedRefused.filesStayed.stays",
      "english": "The feed “%@” stays with it.",
      "before": "Flödet ”%@” finns kvar med det.",
      "after": "Flödet ”%@” finns också kvar.",
@@ -1139,6 +1283,7 @@
     },
     {
      "key": "The feed “%@” stays with them.",
+     "id": "feed.deleteFeedRefused.filesStayed.them",
      "english": "The feed “%@” stays with them.",
      "before": "Flödet ”%@” finns kvar med dem.",
      "after": "Flödet ”%@” finns också kvar.",
@@ -1146,6 +1291,7 @@
     },
     {
      "key": "The library folder the recording is saved in.",
+     "id": "recording.folderHint",
      "english": "The library folder the recording is saved in.",
      "before": "Bibliotekets mapp som inspelningen sparas i.",
      "after": "Biblioteksmappen som inspelningen sparas i.",
@@ -1153,6 +1299,7 @@
     },
     {
      "key": "The transcript is only in iCloud, so TextMouth leaves it. Download the book, then try again.",
+     "id": "transcription.transcriptInCloud",
      "english": "The transcript is only in iCloud, so TextMouth leaves it. Download the book, then try again.",
      "before": "Transkriptionen finns bara i iCloud, så TextMouth lämnar den. Hämta boken och försök sedan igen.",
      "after": "Transkriptionen finns bara i iCloud, så TextMouth låter den vara. Hämta boken och försök sedan igen.",
@@ -1160,6 +1307,7 @@
     },
     {
      "key": "There is not enough free disk space to convert %@: it needs %@ free.",
+     "id": "failure.notEnoughSpace",
      "english": "There is not enough free disk space to convert %1$@: it needs %2$@ free.",
      "before": "Det finns inte tillräckligt med ledigt diskutrymme för att konvertera %1$@: det behöver %2$@ ledigt.",
      "after": "Det finns inte tillräckligt med ledigt diskutrymme för att konvertera %1$@: det behövs %2$@ ledigt.",
@@ -1167,6 +1315,7 @@
     },
     {
      "key": "Time to transcribe: %@.",
+     "id": "transcription.estimateLine.transcribe",
      "english": "Time to transcribe: %@.",
      "before": "Tid att transkribera: %@.",
      "after": "Tid för transkribering: %@.",
@@ -1174,6 +1323,7 @@
     },
     {
      "key": "Time to transcribe: not known yet.",
+     "id": "transcription.estimateLine.known",
      "english": "Time to transcribe: not known yet.",
      "before": "Tid att transkribera: inte känd än.",
      "after": "Tid för transkribering: inte känd än.",
@@ -1181,6 +1331,7 @@
     },
     {
      "key": "Undo Cleanup puts back the transcript from before.",
+     "id": "transcriptCleanup.alreadyCleanedUp.before",
      "english": "Undo Cleanup puts back the transcript from before.",
      "before": "Ångra uppstädning lägger tillbaka transkriptionen från före.",
      "after": "Ångra uppstädning återställer den tidigare transkriptionen.",
@@ -1188,6 +1339,7 @@
     },
     {
      "key": "Undo or redo back to the audio as last saved.",
+     "id": "audioEditError.originalNeeded.saved",
      "english": "Undo or redo back to the audio as last saved.",
      "before": "Ångra eller gör om tillbaka till ljudet som det senast sparades.",
      "after": "Ångra eller gör om tills ljudet är som när det senast sparades.",
@@ -1195,6 +1347,7 @@
     },
     {
      "key": "Undoes every edit, back to the original; Redo brings them back.",
+     "id": "audioEditor.explanation.editorRevert",
      "english": "Undoes every edit, back to the original; Redo brings them back.",
      "before": "Ångrar varje redigering, tillbaka till originalet. Gör om tar tillbaka dem.",
      "after": "Ångrar varje redigering, tillbaka till originalet; Gör om återställer dem.",
@@ -1202,6 +1355,7 @@
     },
     {
      "key": "Unsubscribed from %@: TextMouth no longer checks it for new articles%@.",
+     "id": "feed.unsubscribed.articles",
      "english": "Unsubscribed from %1$@: TextMouth no longer checks it for new articles%2$@.",
      "before": "Prenumerationen på %1$@ är avslutad: TextMouth kontrollerar den inte längre efter nya artiklar%2$@.",
      "after": "Prenumerationen på %1$@ är avslutad: TextMouth kontrollerar inte längre flödet efter nya artiklar%2$@.",
@@ -1209,6 +1363,7 @@
     },
     {
      "key": "Unsubscribed from %@: TextMouth no longer checks it for new episodes%@.",
+     "id": "feed.unsubscribed.episodes",
      "english": "Unsubscribed from %1$@: TextMouth no longer checks it for new episodes%2$@.",
      "before": "Prenumerationen på %1$@ är avslutad: TextMouth kontrollerar den inte längre efter nya avsnitt%2$@.",
      "after": "Prenumerationen på %1$@ är avslutad: TextMouth kontrollerar inte längre flödet efter nya avsnitt%2$@.",
@@ -1216,6 +1371,7 @@
     },
     {
      "key": "Unsubscribed from %@: TextMouth no longer checks it for new items%@.",
+     "id": "feed.unsubscribed.items",
      "english": "Unsubscribed from %1$@: TextMouth no longer checks it for new items%2$@.",
      "before": "Prenumerationen på %1$@ är avslutad: TextMouth kontrollerar den inte längre efter nya objekt%2$@.",
      "after": "Prenumerationen på %1$@ är avslutad: TextMouth kontrollerar inte längre flödet efter nya objekt%2$@.",
@@ -1223,6 +1379,7 @@
     },
     {
      "key": "VoiceOver speaks the level while recording. Over speakers, its speech can be recorded.",
+     "id": "recording.announceLevelHint",
      "english": "VoiceOver speaks the level while recording. Over speakers, its speech can be recorded.",
      "before": "VoiceOver läser upp nivån under inspelning. Över högtalare kan dess tal spelas in.",
      "after": "VoiceOver läser upp nivån under inspelning. Om du använder högtalare kan talet spelas in.",
@@ -1230,6 +1387,7 @@
     },
     {
      "key": "converting its DAISY audio",
+     "id": "importStep.phrase.convertingAudio",
      "english": "converting its DAISY audio",
      "before": "konverterar dess DAISY-ljud",
      "after": "konverterar DAISY-ljudet",
@@ -1237,6 +1395,7 @@
     },
     {
      "key": "converting its audio",
+     "id": "importStep.phrase.convertingImportedAudio",
      "english": "converting its audio",
      "before": "konverterar dess ljud",
      "after": "konverterar ljudet",
@@ -1244,6 +1403,7 @@
     },
     {
      "key": "creating its package",
+     "id": "importStep.phrase.preparingPackage",
      "english": "creating its package",
      "before": "skapar dess paket",
      "after": "skapar paketet",
@@ -1251,6 +1411,7 @@
     },
     {
      "key": "deleting its download",
+     "id": "feedBookUse.deletingItsDownload",
      "english": "deleting its download",
      "before": "att radera dess nedladdning",
      "after": "att radera nedladdningen",
@@ -1258,6 +1419,7 @@
     },
     {
      "key": "is being transcribed, and %@ now would lose the transcript",
+     "id": "feedBookUse.clause.transcribing",
      "english": "is being transcribed, and %@ now would lose the transcript",
      "before": "transkriberas, och %@ nu skulle förlora transkriptionen",
      "after": "transkriberas, och %@ nu skulle göra att transkriptionen går förlorad",
@@ -1265,6 +1427,7 @@
     },
     {
      "key": "reading its audio",
+     "id": "importStep.phrase.readingAudio",
      "english": "reading its audio",
      "before": "läser dess ljud",
      "after": "läser ljudet",
@@ -1272,6 +1435,7 @@
     },
     {
      "key": "reading its manifest",
+     "id": "importStep.phrase.readingManifest",
      "english": "reading its manifest",
      "before": "läser dess manifest",
      "after": "läser manifestet",
@@ -1279,6 +1443,7 @@
     },
     {
      "key": "reading its text",
+     "id": "importStep.phrase.readingText",
      "english": "reading its text",
      "before": "läser dess text",
      "after": "läser texten",
@@ -1286,6 +1451,7 @@
     },
     {
      "key": "saving its bookInfo.json file",
+     "id": "importStep.phrase.savingRecord",
      "english": "saving its bookInfo.json file",
      "before": "sparar dess bookInfo.json-fil",
      "after": "sparar filen bookInfo.json",
@@ -1304,6 +1470,7 @@
    "fixes": [
     {
      "key": "%@ adds one at the current position.",
+     "id": "bookmarkPanelView.emptyListHelp.onePosition",
      "english": "%@ adds one at the current position.",
      "before": "%@ lägger till ett vid den aktuella positionen.",
      "after": "”%@” lägger till ett vid den aktuella positionen.",
@@ -1311,6 +1478,7 @@
     },
     {
      "key": "%@ does the same for every such chapter of this export, without asking again.",
+     "id": "bookExportDeepChapter.message.without",
      "english": "%@ does the same for every such chapter of this export, without asking again.",
      "before": "Med %@ görs detsamma för varje sådant kapitel i den här exporten, utan att fråga igen.",
      "after": "Med ”%@” görs detsamma för varje sådant kapitel i den här exporten, utan att fråga igen.",
@@ -1318,6 +1486,7 @@
     },
     {
      "key": "%@ has its default, %@",
+     "id": "shortcutsSettings.defaultsHeldElsewhere",
      "english": "%1$@ has its default, %2$@",
      "before": "%@ har sin standardgenväg, %@",
      "after": "”%@” har standardgenvägen, %@",
@@ -1325,6 +1494,7 @@
     },
     {
      "key": "%@ in",
+     "id": "phoneReader.timeIntoRecording",
      "english": "%@ in",
      "before": "%@ in",
      "after": "%@ in i inspelningen",
@@ -1332,6 +1502,7 @@
     },
     {
      "key": "%@ now waits before %@, in case it is pressed twice.",
+     "id": "shortcutsSettings.nowWaits",
      "english": "%1$@ now waits before %2$@, in case it is pressed twice.",
      "before": "%@ väntar nu innan %@ utförs, ifall den trycks två gånger.",
      "after": "%@ väntar nu innan ”%@” utförs, ifall tangenten trycks två gånger.",
@@ -1339,6 +1510,7 @@
     },
     {
      "key": "%@ reset to default: %@",
+     "id": "shortcutsSettings.resetAnnouncement",
      "english": "%1$@ reset to default: %2$@",
      "before": "%@ återställd till standard: %@",
      "after": "”%@” återställd till standard: %@",
@@ -1346,6 +1518,7 @@
     },
     {
      "key": "%@ stops the whole export. Files already written stay.",
+     "id": "bookExportDeepChapter.message.already",
      "english": "%@ stops the whole export. Files already written stay.",
      "before": "Med %@ stoppas hela exporten. Redan skrivna filer finns kvar.",
      "after": "Med ”%@” stoppas hela exporten. Redan skrivna filer finns kvar.",
@@ -1353,6 +1526,7 @@
     },
     {
      "key": "%@ tries again, %@ quits without saving, %@ keeps TextMouth open.",
+     "id": "unsavedChangesPrompt.choices",
      "english": "%1$@ tries again, %2$@ quits without saving, %3$@ keeps TextMouth open.",
      "before": "%@ försöker igen, %@ avslutar utan att spara, %@ låter TextMouth vara öppet.",
      "after": "”%@” försöker igen, ”%@” avslutar utan att spara, ”%@” låter TextMouth vara öppet.",
@@ -1360,6 +1534,7 @@
     },
     {
      "key": "%@ uses it in the menus",
+     "id": "shortcutRefusal.reason.systemCommand",
      "english": "%@ uses it in the menus",
      "before": "%@ använder den i menyerna",
      "after": "”%@” använder den genvägen i menyerna",
@@ -1367,6 +1542,7 @@
     },
     {
      "key": "%@ was not added back: no copy of the text its package held could be kept first, so TextMouth left the text as it was.",
+     "id": "bookTextEdit.addBackNoCopyKept",
      "english": "%@ was not added back: no copy of the text its package held could be kept first, so TextMouth left the text as it was.",
      "before": "%@ lades inte tillbaka: ingen kopia av texten som dess paket innehöll kunde sparas först, så TextMouth lämnade texten som den var.",
      "after": "%@ lades inte till i biblioteket igen: ingen kopia av texten som dess paket innehöll kunde sparas först, så TextMouth lämnade texten som den var.",
@@ -1374,6 +1550,7 @@
     },
     {
      "key": "%@ works in %@.",
+     "id": "shortcutsSettings.scopeChanged",
      "english": "%1$@ works in %2$@.",
      "before": "%@ fungerar i %@.",
      "after": "”%@” fungerar i %@.",
@@ -1381,6 +1558,7 @@
     },
     {
      "key": "%@ writes that chapter as plain paragraphs of its lines, with its quote and list marks kept as characters, and exports everything else as usual.",
+     "id": "bookExportDeepChapter.message.paragraphs",
      "english": "%@ writes that chapter as plain paragraphs of its lines, with its quote and list marks kept as characters, and exports everything else as usual.",
      "before": "Med %@ skrivs det kapitlet som vanliga stycken av sina rader, med citat- och listtecknen kvar som tecken, och allt annat exporteras som vanligt.",
      "after": "Med ”%@” skrivs det kapitlet som vanliga stycken av sina rader, med citat- och listtecknen kvar som tecken, och allt annat exporteras som vanligt.",
@@ -1388,6 +1566,7 @@
     },
     {
      "key": "%@ writes the text as plain paragraphs of its lines, with its quote and list marks kept as characters, and exports everything else as usual.",
+     "id": "bookExportDeepChapter.message.text",
      "english": "%@ writes the text as plain paragraphs of its lines, with its quote and list marks kept as characters, and exports everything else as usual.",
      "before": "Med %@ skrivs texten som vanliga stycken av sina rader, med citat- och listtecknen kvar som tecken, och allt annat exporteras som vanligt.",
      "after": "Med ”%@” skrivs texten som vanliga stycken av sina rader, med citat- och listtecknen kvar som tecken, och allt annat exporteras som vanligt.",
@@ -1395,6 +1574,7 @@
     },
     {
      "key": "%@, %@ quality",
+     "id": "common.valueValueQuality",
      "english": "%1$@, %2$@ quality",
      "before": "%@, %@ kvalitet",
      "after": "%@, kvalitet %@",
@@ -1402,6 +1582,7 @@
     },
     {
      "key": "%@: off while Never collapse is checked",
+     "id": "repeatedSymbolStyle.sayCount.collapse",
      "english": "%@: off while Never collapse is checked",
      "before": "%@: av så länge Komprimera aldrig är markerat",
      "after": "%@: av så länge ”Komprimera aldrig” är markerat",
@@ -1409,6 +1590,7 @@
     },
     {
      "key": "Add it on your Mac, then send the book here.",
+     "id": "phoneImport.refusalNextStep",
      "english": "Add it on your Mac, then send the book here.",
      "before": "Lägg till den på din Mac och skicka sedan boken hit.",
      "after": "Lägg till filen på din Mac och skicka sedan boken hit.",
@@ -1416,6 +1598,7 @@
     },
     {
      "key": "Adds an Export button to each reader's toolbar. File, Export works either way.",
+     "id": "bookExport.settingHint",
      "english": "Adds an Export button to each reader's toolbar. File, Export works either way.",
      "before": "Lägger till en Exportera-knapp i varje läsares verktygsfält. Arkiv, Exportera fungerar i båda fallen.",
      "after": "Lägger till en Exportera-knapp i varje läsares verktygsfält. ”Arkiv” > ”Exportera” fungerar i båda fallen.",
@@ -1423,6 +1606,7 @@
     },
     {
      "key": "Adds the page, such as Page 12 of 300, to Where Am I?'s summaries, for books of more than one page.",
+     "id": "readerPage.sayInWhereAmIHint",
      "english": "Adds the page, such as Page 12 of 300, to Where Am I?'s summaries, for books of more than one page.",
      "before": "Lägger till sidan, till exempel sidan 12 av 300, i sammanfattningarna från Var är jag? för böcker med mer än en sida.",
      "after": "Lägger till sidan, till exempel sidan 12 av 300, i sammanfattningarna från ”Var är jag?” för böcker med mer än en sida.",
@@ -1430,6 +1614,7 @@
     },
     {
      "key": "Adds the speed they count at, such as 2.0x for an audiobook not at 1x, or 500 words a minute for a text book, in the reader, Where Am I?, Copy Reading Position, and the Headings sheet's durations.",
+     "id": "readerTime.settingHint",
      "english": "Adds the speed they count at, such as 2.0x for an audiobook not at 1x, or 500 words a minute for a text book, in the reader, Where Am I?, Copy Reading Position, and the Headings sheet's durations.",
      "before": "Lägger till hastigheten de räknas i, till exempel 2,0x för en ljudbok som inte spelas i 1x eller 500 ord i minuten för en textbok, i läsaren, Var är jag?, Kopiera läsposition och rubrikarkets längder.",
      "after": "Lägger till hastigheten som tiderna räknas med, till exempel 2,0x för en ljudbok som inte spelas i 1x eller 500 ord i minuten för en textbok, i läsaren, ”Var är jag?”, ”Kopiera läsposition” och rubrikarkets längder.",
@@ -1437,6 +1622,7 @@
     },
     {
      "key": "Afterwards, Play tries the passage again",
+     "id": "speechRefusal.closeHint",
      "english": "Afterwards, Play tries the passage again",
      "before": "Därefter försöker Spela upp stycket igen.",
      "after": "Därefter gör ”Spela upp” ett nytt försök med stycket.",
@@ -1444,6 +1630,7 @@
     },
     {
      "key": "Audacity labels mark one audio file, and this book's audio is in %lld files.",
+     "id": "bookExport.labelsNeedOneFileReason",
      "english": {
       "one": "Audacity labels mark one audio file, and this book's audio is in %lld file.",
       "other": "Audacity labels mark one audio file, and this book's audio is in %lld files."
@@ -1460,6 +1647,7 @@
     },
     {
      "key": "Available only while this feed's articles go on to another article when one ends",
+     "id": "nextBookWindow.unavailableHint.article",
      "english": "Available only while this feed's articles go on to another article when one ends",
      "before": "Tillgänglig bara när det här flödets artiklar går vidare till en annan artikel när en tar slut.",
      "after": "Tillgänglig bara så länge det här flödets artiklar går vidare till en annan artikel när en tar slut.",
@@ -1467,6 +1655,7 @@
     },
     {
      "key": "Available only while this feed's episodes go on to another episode when one ends",
+     "id": "nextBookWindow.unavailableHint.episode",
      "english": "Available only while this feed's episodes go on to another episode when one ends",
      "before": "Tillgänglig bara när det här flödets avsnitt går vidare till ett annat avsnitt när ett tar slut.",
      "after": "Tillgänglig bara så länge det här flödets avsnitt går vidare till ett annat avsnitt när ett tar slut.",
@@ -1474,6 +1663,7 @@
     },
     {
      "key": "Available only while this feed's items go on to another item when one ends",
+     "id": "nextBookWindow.unavailableHint.item",
      "english": "Available only while this feed's items go on to another item when one ends",
      "before": "Tillgänglig bara när det här flödets objekt går vidare till ett annat objekt när ett tar slut.",
      "after": "Tillgänglig bara så länge det här flödets objekt går vidare till ett annat objekt när ett tar slut.",
@@ -1481,6 +1671,7 @@
     },
     {
      "key": "Available only while this folder's books go on to another book when one ends",
+     "id": "nextBookWindow.unavailableHint.folder",
      "english": "Available only while this folder's books go on to another book when one ends",
      "before": "Tillgänglig bara när den här mappens böcker går vidare till en annan bok när en tar slut.",
      "after": "Tillgänglig bara så länge den här mappens böcker går vidare till en annan bok när en tar slut.",
@@ -1488,6 +1679,7 @@
     },
     {
      "key": "Brings the text to the sentence being spoken.",
+     "id": "phoneReader.bookContentPlayingHint",
      "english": "Brings the text to the sentence being spoken.",
      "before": "Flyttar texten till meningen som läses upp.",
      "after": "Rullar texten till meningen som läses upp.",
@@ -1495,6 +1687,7 @@
     },
     {
      "key": "Choose Edit Text again to edit the new copy's text.",
+     "id": "bookTextEdit.stoppedBookReplaced.choose",
      "english": "Choose Edit Text again to edit the new copy's text.",
      "before": "Välj Redigera text igen för att redigera den nya kopians text.",
      "after": "Välj ”Redigera text” igen för att redigera den nya kopians text.",
@@ -1502,6 +1695,7 @@
     },
     {
      "key": "Choose Edit Text again to edit the new text.",
+     "id": "bookTextEdit.stoppedBookReadAgain.choose",
      "english": "Choose Edit Text again to edit the new text.",
      "before": "Välj Redigera text igen för att redigera den nya texten.",
      "after": "Välj ”Redigera text” igen för att redigera den nya texten.",
@@ -1509,6 +1703,7 @@
     },
     {
      "key": "Choose the folder to export to. New Folder makes one.",
+     "id": "bookExport.panelMessage",
      "english": "Choose the folder to export to. New Folder makes one.",
      "before": "Välj mappen att exportera till. Med Ny mapp skapar du en.",
      "after": "Välj mappen att exportera till. Med ”Ny mapp” skapar du en.",
@@ -1516,6 +1711,7 @@
     },
     {
      "key": "Chooses what Play and the skip buttons move by.",
+     "id": "phoneReader.navigationUnitHint",
      "english": "Chooses what Play and the skip buttons move by.",
      "before": "Väljer vad Spela upp och hoppknapparna flyttar med.",
      "after": "Väljer vad ”Spela upp” och hoppknapparna flyttar med.",
@@ -1523,6 +1719,7 @@
     },
     {
      "key": "Chooses where the next book opens: in this window or a new one. A book open in another window comes forward, and with %@ chosen, this window closes.",
+     "id": "nextBookWindow.globalHint",
      "english": "Chooses where the next book opens: in this window or a new one. A book open in another window comes forward, and with %@ chosen, this window closes.",
      "before": "Väljer var nästa bok öppnas: i det här fönstret eller i ett nytt. En bok som är öppen i ett annat fönster kommer fram, och med %@ valt stängs det här fönstret.",
      "after": "Väljer var nästa bok öppnas: i det här fönstret eller i ett nytt. En bok som är öppen i ett annat fönster kommer fram, och med ”%@” valt stängs det här fönstret.",
@@ -1530,6 +1727,7 @@
     },
     {
      "key": "Choosing makes the shortcut yours; Reset to Default restores where it works by default.",
+     "id": "shortcutsSettings.worksInHint",
      "english": "Choosing makes the shortcut yours; Reset to Default restores where it works by default.",
      "before": "Ett val gör genvägen till din egen; Återställ till standard återställer var den fungerar som standard.",
      "after": "Ett val gör genvägen till din egen; ”Återställ till standard” återställer var den fungerar som standard.",
@@ -1537,6 +1735,7 @@
     },
     {
      "key": "Download cancelled, so playback stopped.",
+     "id": "endOfBook.nextEpisodeDownloadCancelled",
      "english": "Download cancelled, so playback stopped.",
      "before": "Hämtningen avbröts, så uppspelningen stoppades.",
      "after": "Nedladdningen avbröts, så uppspelningen stoppades.",
@@ -1544,6 +1743,7 @@
     },
     {
      "key": "Each heading's title and start, as Audacity labels, for a book with one audio file.",
+     "id": "bookExport.chapterListChoiceHint.audacity",
      "english": "Each heading's title and start, as Audacity labels, for a book with one audio file.",
      "before": "Varje rubriks titel och start, som Audacity-etiketter, för en bok med en ljudfil.",
      "after": "Varje rubriks titel och starttid, som Audacity-etiketter, för en bok med en ljudfil.",
@@ -1551,6 +1751,7 @@
     },
     {
      "key": "Each heading's title and start, as a CUE sheet naming the audio as Audio exports it.",
+     "id": "bookExport.chapterListChoiceHint.exports",
      "english": "Each heading's title and start, as a CUE sheet naming the audio as Audio exports it.",
      "before": "Varje rubriks titel och start, som en CUE-fil som namnger ljudet så som Ljud exporterar det.",
      "after": "Varje rubriks titel och starttid, som en CUE-fil som namnger ljudet så som ”Ljud” exporterar det.",
@@ -1558,6 +1759,7 @@
     },
     {
      "key": "Edit Text has stopped for %@, since a new copy replaced it.",
+     "id": "bookTextEdit.stoppedBookReplaced.since",
      "english": "Edit Text has stopped for %@, since a new copy replaced it.",
      "before": "Redigera text har stoppats för %@, eftersom en ny kopia ersatte den.",
      "after": "”Redigera text” har avslutats för %@, eftersom en ny kopia ersatte den.",
@@ -1565,6 +1767,7 @@
     },
     {
      "key": "Edit Text has stopped for %@, since its file was read again.",
+     "id": "bookTextEdit.stoppedBookReadAgain.since",
      "english": "Edit Text has stopped for %@, since its file was read again.",
      "before": "Redigera text har stoppats för %@, eftersom dess fil lästes in igen.",
      "after": "”Redigera text” har avslutats för %@, eftersom dess fil lästes in igen.",
@@ -1572,6 +1775,7 @@
     },
     {
      "key": "Every chapter was read.",
+     "id": "extractionReport.message.chapter",
      "english": "Every chapter was read.",
      "before": "Alla kapitel lästes.",
      "after": "Alla kapitel lästes in.",
@@ -1579,6 +1783,7 @@
     },
     {
      "key": "Every page was read.",
+     "id": "extractionReport.message.page",
      "english": "Every page was read.",
      "before": "Alla sidor lästes.",
      "after": "Alla sidor lästes in.",
@@ -1586,6 +1791,7 @@
     },
     {
      "key": "Export Every Such Chapter as Written",
+     "id": "bookExportDeepChapter.exportAllAsWrittenTitle",
      "english": "Export Every Such Chapter as Written",
      "before": "Exportera alla sådana kapitel som skrivet",
      "after": "Exportera alla sådana kapitel som de är skrivna",
@@ -1593,6 +1799,7 @@
     },
     {
      "key": "Export as Written",
+     "id": "bookExportDeepChapter.exportAsWrittenTitle",
      "english": "Export as Written",
      "before": "Exportera som skrivet",
      "after": "Exportera som det är skrivet",
@@ -1600,6 +1807,7 @@
     },
     {
      "key": "Export can't write into TextMouth's library folder. Choose another folder.",
+     "id": "bookExport.destinationInLibrary",
      "english": "Export can't write into TextMouth's library folder. Choose another folder.",
      "before": "Export kan inte skriva i mappen där TextMouth har sitt bibliotek. Välj en annan mapp.",
      "after": "Det går inte att exportera till mappen där TextMouth har sitt bibliotek. Välj en annan mapp.",
@@ -1607,6 +1815,7 @@
     },
     {
      "key": "Export can't write into the folder where TextMouth keeps spoken chapters, which it empties. Choose another folder.",
+     "id": "speechExport.destinationInKeptChapters",
      "english": "Export can't write into the folder where TextMouth keeps spoken chapters, which it empties. Choose another folder.",
      "before": "Export kan inte skriva i mappen där TextMouth sparar upplästa kapitel, som töms. Välj en annan mapp.",
      "after": "Det går inte att exportera till mappen där TextMouth sparar upplästa kapitel, eftersom den töms. Välj en annan mapp.",
@@ -1614,6 +1823,7 @@
     },
     {
      "key": "For five seconds, the next two key presses are not shortcuts; TextMouth says whether they make a double press.",
+     "id": "shortcutsSettings.tryDoublePressHint",
      "english": "For five seconds, the next two key presses are not shortcuts; TextMouth says whether they make a double press.",
      "before": "Under fem sekunder är de nästa två tangenttrycken inte genvägar; TextMouth säger om de blir ett dubbeltryck.",
      "after": "Under fem sekunder räknas nästa två tangenttryck inte som genvägar; TextMouth säger om de blir ett dubbeltryck.",
@@ -1621,6 +1831,7 @@
     },
     {
      "key": "Go back to where you were before browsing headings or bookmarks",
+     "id": "readerView.returnHint",
      "english": "Go back to where you were before browsing headings or bookmarks",
      "before": "Går tillbaka till där du var innan du bläddrade bland rubriker eller bokmärken.",
      "after": "Går tillbaka dit du var innan du bläddrade bland rubriker eller bokmärken.",
@@ -1628,6 +1839,7 @@
     },
     {
      "key": "Goes back to where the last jump began.",
+     "id": "phoneReader.returnHint",
      "english": "Goes back to where the last jump began.",
      "before": "Går tillbaka till där det senaste hoppet började.",
      "after": "Går tillbaka dit det senaste hoppet började.",
@@ -1635,6 +1847,7 @@
     },
     {
      "key": "Goes to a page, a percent, or a time.",
+     "id": "phoneReader.goToHint",
      "english": "Goes to a page, a percent, or a time.",
      "before": "Går till en sida, en procentsats eller en tid.",
      "after": "Går till en sida, en procentsats eller en tidpunkt.",
@@ -1642,6 +1855,7 @@
     },
     {
      "key": "How fast the voice speaks in the file. It starts at the book's speed.",
+     "id": "speechExport.speedHint",
      "english": "How fast the voice speaks in the file. It starts at the book's speed.",
      "before": "Hur snabbt rösten talar i filen. Den börjar med bokens hastighet.",
      "after": "Hur snabbt rösten talar i filen. Från början gäller bokens hastighet.",
@@ -1649,6 +1863,7 @@
     },
     {
      "key": "How high the voice sounds in the file. It starts at the book's pitch.",
+     "id": "speechExport.pitchHint",
      "english": "How high the voice sounds in the file. It starts at the book's pitch.",
      "before": "Hur högt rösten låter i filen. Den börjar med bokens tonhöjd.",
      "after": "Hur ljus eller mörk rösten låter i filen. Från början gäller bokens tonhöjd.",
@@ -1656,6 +1871,7 @@
     },
     {
      "key": "Include the speed with time left and total time",
+     "id": "readerTime.settingTitle",
      "english": "Include the speed with time left and total time",
      "before": "Ta med hastigheten vid återstående tid och total tid",
      "after": "Ta med hastigheten i återstående tid och total tid",
@@ -1663,6 +1879,7 @@
     },
     {
      "key": "Keeps the list's books downloaded on this Mac; each Mac chooses for itself. Clearing it removes no download.",
+     "id": "readingList.keepBooksHint",
      "english": "Keeps the list's books downloaded on this Mac; each Mac chooses for itself. Clearing it removes no download.",
      "before": "Behåller listans böcker hämtade på den här Mac-datorn; varje Mac väljer själv. Om du avmarkerar det tas ingen nedladdning bort.",
      "after": "Behåller listans böcker hämtade på den här Mac-datorn; varje Mac väljer själv. Om du avmarkerar alternativet tas ingen nedladdning bort.",
@@ -1670,6 +1887,7 @@
     },
     {
      "key": "Keeps the order you set with Move Book Up, Move Book Down, or dragging.",
+     "id": "readingList.orderHint",
      "english": "Keeps the order you set with Move Book Up, Move Book Down, or dragging.",
      "before": "Behåller ordningen du ställt in med Flytta boken uppåt, Flytta boken nedåt eller genom att dra.",
      "after": "Behåller ordningen du ställt in med ”Flytta boken uppåt”, ”Flytta boken nedåt” eller genom att dra.",
@@ -1677,6 +1895,7 @@
     },
     {
      "key": "Kept %@ of %lld chapters until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To go on from chapter %@, export the same range at the same speed and pitch.",
+     "id": "speechExport.kept.chaptersGo",
      "english": {
       "one": "Kept %@ of %lld chapter until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To go on from chapter %@, export the same range at the same speed and pitch.",
       "other": "Kept %@ of %lld chapters until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To go on from chapter %@, export the same range at the same speed and pitch."
@@ -1693,6 +1912,7 @@
     },
     {
      "key": "Kept all %lld spoken chapters until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To make the audio file from them, export the same range at the same speed and pitch.",
+     "id": "speechExport.kept.them",
      "english": {
       "one": "Kept all %lld spoken chapter until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To make the audio file from it, export the same range at the same speed and pitch.",
       "other": "Kept all %lld spoken chapters until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To make the audio file from them, export the same range at the same speed and pitch."
@@ -1709,6 +1929,7 @@
     },
     {
      "key": "Kept the spoken chapter until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To make the audio file from it, export the same range at the same speed and pitch.",
+     "id": "speechExport.kept.chapter",
      "english": "Kept the spoken chapter until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To make the audio file from it, export the same range at the same speed and pitch.",
      "before": "Behöll det upplästa kapitlet tills TextMouth avslutas, en annan export av uppläst ljud startar eller bokens röst, text, ersättningar eller pauser ändras. Om du vill göra ljudfilen av det exporterar du samma intervall med samma hastighet och tonhöjd.",
      "after": "Det upplästa kapitlet sparas tills TextMouth avslutas, en annan export av uppläst ljud startar eller bokens röst, text, ersättningar eller pauser ändras. Om du vill göra ljudfilen av det exporterar du samma intervall med samma hastighet och tonhöjd.",
@@ -1716,6 +1937,7 @@
     },
     {
      "key": "Markup guard: the usual one, which silences only the brackets of tag-shaped text.",
+     "id": "speechRefusal.markupGuard.silences",
      "english": "Markup guard: the usual one, which silences only the brackets of tag-shaped text.",
      "before": "Märkningsskydd: det vanliga, som bara tystar parenteserna i text som ser ut som taggar.",
      "after": "Märkningsskydd: det vanliga, som bara tystar vinkelparenteserna i text som ser ut som taggar.",
@@ -1723,6 +1945,7 @@
     },
     {
      "key": "No Library window or book is open, so there is nothing to export.",
+     "id": "bookExport.noWindowOpen",
      "english": "No Library window or book is open, so there is nothing to export.",
      "before": "Inget biblioteksfönster eller ingen bok är öppen, så det finns inget att exportera.",
      "after": "Varken något biblioteksfönster eller någon bok är öppen, så det finns inget att exportera.",
@@ -1730,6 +1953,7 @@
     },
     {
      "key": "No voice is installed. Add one in System Settings, Accessibility, Spoken Content, then export again.",
+     "id": "speechExportError.noVoice",
      "english": "No voice is installed. Add one in System Settings, Accessibility, Spoken Content, then export again.",
      "before": "Ingen röst är installerad. Lägg till en i Systeminställningar, Hjälpmedel, Uppläst innehåll och exportera sedan igen.",
      "after": "Ingen röst är installerad. Lägg till en i ”Systeminställningar” > ”Hjälpmedel” > ”Uppläst innehåll” och exportera sedan igen.",
@@ -1737,6 +1961,7 @@
     },
     {
      "key": "No voices are installed. Add voices in Settings, Accessibility, Read & Speak.",
+     "id": "phoneVoice.noVoices",
      "english": "No voices are installed. Add voices in Settings, Accessibility, Read & Speak.",
      "before": "Inga röster är installerade. Lägg till röster i Inställningar, Hjälpmedel, Uppläst innehåll.",
      "after": "Inga röster är installerade. Lägg till röster i ”Inställningar” > ”Hjälpmedel” > ”Uppläst innehåll”.",
@@ -1744,6 +1969,7 @@
     },
     {
      "key": "None of the %lld chapters could be read",
+     "id": "extractionReport.summary.none",
      "english": {
       "one": "None of the %lld chapter could be read",
       "other": "None of the %lld chapters could be read"
@@ -1760,6 +1986,7 @@
     },
     {
      "key": "OCR could not run on %@ of %lld pages, so text found only in their images is missing: %@.",
+     "id": "pdfExtractionDiagnostics.problem.pages",
      "english": {
       "one": "OCR could not run on %@ of %lld page, so text found only in their images is missing: %@.",
       "other": "OCR could not run on %@ of %lld pages, so text found only in their images is missing: %@."
@@ -1776,6 +2003,7 @@
     },
     {
      "key": "Only a book that clearly shows English Braille, American Edition changes, when added. Book Information says the code was guessed and can choose another.",
+     "id": "brailleSettings.guessCaption",
      "english": "Only a book that clearly shows English Braille, American Edition changes, when added. Book Information says the code was guessed and can choose another.",
      "before": "Bara en bok som tydligt visar English Braille, American Edition ändras när den läggs till. Bokinformation säger att koden gissades och kan välja en annan.",
      "after": "Bara en bok som tydligt visar English Braille, American Edition ändras när den läggs till. I Bokinformation står det att koden gissades, och där kan du välja en annan.",
@@ -1783,6 +2011,7 @@
     },
     {
      "key": "Paste and Match Style",
+     "id": "keyBinding.localizedSystemCommand.paste",
      "english": "Paste and Match Style",
      "before": "Klistra in och anpassa stil",
      "after": "Klistra in och matcha stil",
@@ -1790,6 +2019,7 @@
     },
     {
      "key": "Plays when Where Am I finishes speaking",
+     "id": "soundEffectsSettings.eventHint.whereAmIEnd",
      "english": "Plays when Where Am I finishes speaking",
      "before": "Spelas upp när Var är jag? har läst klart.",
      "after": "Spelas upp när ”Var är jag?” har läst klart.",
@@ -1797,6 +2027,7 @@
     },
     {
      "key": "Plays when Where Am I starts speaking",
+     "id": "soundEffectsSettings.eventHint.whereAmIStart",
      "english": "Plays when Where Am I starts speaking",
      "before": "Spelas upp när Var är jag? börjar läsa upp.",
      "after": "Spelas upp när ”Var är jag?” börjar läsa upp.",
@@ -1804,6 +2035,7 @@
     },
     {
      "key": "Reading the book's headings…",
+     "id": "speechExport.readingHeadings",
      "english": "Reading the book's headings…",
      "before": "Läser bokens rubriker…",
      "after": "Läser in bokens rubriker…",
@@ -1811,6 +2043,7 @@
     },
     {
      "key": "Reset %@ to Default",
+     "id": "shortcutsSettings.resetToDefaultLabel",
      "english": "Reset %@ to Default",
      "before": "Återställ %@ till standard",
      "after": "Återställ ”%@” till standard",
@@ -1818,6 +2051,7 @@
     },
     {
      "key": "Show Export in the reader toolbar",
+     "id": "bookExport.settingTitle",
      "english": "Show Export in the reader toolbar",
      "before": "Visa Exportera i läsarens verktygsfält",
      "after": "Visa ”Exportera” i läsarens verktygsfält",
@@ -1825,6 +2059,7 @@
     },
     {
      "key": "Shows the page being read, such as Page 12 of 300, beside the percent, for books of more than one page.",
+     "id": "readerPage.showInReaderHint",
      "english": "Shows the page being read, such as Page 12 of 300, beside the percent, for books of more than one page.",
      "before": "Visar sidan som läses, till exempel sidan 12 av 300, bredvid procenttalet för böcker med mer än en sida.",
      "after": "Visar sidan som läses, till exempel sidan 12 av 300, bredvid procenttalet, för böcker med mer än en sida.",
@@ -1832,6 +2067,7 @@
     },
     {
      "key": "Switch to a Library or book window, then choose Export again.",
+     "id": "bookExport.noWindowInFront",
      "english": "Switch to a Library or book window, then choose Export again.",
      "before": "Växla till ett biblioteks- eller bokfönster och välj sedan Exportera igen.",
      "after": "Växla till ett biblioteks- eller bokfönster och välj sedan ”Exportera” igen.",
@@ -1839,6 +2075,7 @@
     },
     {
      "key": "Takes %lld to %lld minutes.",
+     "id": "sleepTimerView.customMinutesRangeHint",
      "english": "Takes %1$lld to %2$lld minutes.",
      "before": "Tar %1$lld till %2$lld minuter.",
      "after": "Tar emot %1$lld till %2$lld minuter.",
@@ -1846,6 +2083,7 @@
     },
     {
      "key": "Takes %lld to %lld minutes. Return sets the timer and plays the book.",
+     "id": "sleepTimerView.customMinutesHint",
      "english": "Takes %1$lld to %2$lld minutes. Return sets the timer and plays the book.",
      "before": "Tar %1$lld till %2$lld minuter. Retur ställer in timern och spelar upp boken.",
      "after": "Tar emot %1$lld till %2$lld minuter. Retur ställer in timern och spelar upp boken.",
@@ -1853,6 +2091,7 @@
     },
     {
      "key": "Takes each finished book off the list when its window moves on or closes. Books finished before you turn it on stay.",
+     "id": "readingList.removeFinishedHint",
      "english": "Takes each finished book off the list when its window moves on or closes. Books finished before you turn it on stay.",
      "before": "Tar bort varje avslutad bok från listan när dess fönster går vidare eller stängs. Böcker som avslutades innan du slår på det finns kvar.",
      "after": "Tar bort varje avslutad bok från listan när dess fönster går vidare eller stängs. Böcker som avslutades innan du slår på alternativet finns kvar.",
@@ -1860,6 +2099,7 @@
     },
     {
      "key": "Text not updated: %@ was removed, or its download deleted, so Edit Text has stopped for it.",
+     "id": "bookTextEdit.stoppedBookGone",
      "english": "Text not updated: %@ was removed, or its download deleted, so Edit Text has stopped for it.",
      "before": "Texten uppdaterades inte: %@ har tagits bort, eller dess nedladdning har raderats, så Redigera text har stoppats för den.",
      "after": "Texten uppdaterades inte: %@ har tagits bort, eller dess nedladdning har raderats, så ”Redigera text” har avslutats för den.",
@@ -1867,6 +2107,7 @@
     },
     {
      "key": "Text not updated: the edited transcript of %@ changes a chapter's heading, which comes from its audio. Put it back and save again; the book keeps its old text until then.",
+     "id": "bookTextEdit.refused.headingChanged",
      "english": "Text not updated: the edited transcript of %@ changes a chapter's heading, which comes from its audio. Put it back and save again; the book keeps its old text until then.",
      "before": "Texten uppdaterades inte: den redigerade transkriptionen för %@ ändrar ett kapitels rubrik, som kommer från dess ljud. Sätt tillbaka den och spara igen; boken behåller sin gamla text tills dess.",
      "after": "Texten uppdaterades inte: den redigerade transkriptionen för %@ ändrar ett kapitels rubrik, som kommer från dess ljud. Återställ den och spara igen; boken behåller sin gamla text tills dess.",
@@ -1874,6 +2115,7 @@
     },
     {
      "key": "Text not updated: the transcript of %@ changed too. The book's text is written from it again the next time the book opens.",
+     "id": "bookTextEdit.refused.transcriptChanged",
      "english": "Text not updated: the transcript of %@ changed too. The book's text is written from it again the next time the book opens.",
      "before": "Texten uppdaterades inte: transkriptionen för %@ ändrades också. Bokens text skrivs från den igen nästa gång boken öppnas.",
      "after": "Texten uppdaterades inte: transkriptionen för %@ ändrades också. Bokens text skapas på nytt från den nästa gång boken öppnas.",
@@ -1881,6 +2123,7 @@
     },
     {
      "key": "TextMouth can't safely read the file “%@” in this book, because it defines entities of its own.",
+     "id": "xmlInputGuard.firstSentence.entities",
      "english": "TextMouth can't safely read the file “%@” in this book, because it defines entities of its own.",
      "before": "TextMouth kan inte läsa filen ”%@” i den här boken på ett säkert sätt, eftersom den definierar egna entiteter.",
      "after": "TextMouth kan inte läsa filen ”%@” i den här boken på ett säkert sätt, eftersom filen definierar egna entiteter.",
@@ -1888,6 +2131,7 @@
     },
     {
      "key": "TextMouth can't safely read the file “%@” in this book, because it is written in the %@ encoding.",
+     "id": "xmlInputGuard.firstSentence.encoding",
      "english": "TextMouth can't safely read the file “%1$@” in this book, because it is written in the %2$@ encoding.",
      "before": "TextMouth kan inte läsa filen ”%@” i den här boken på ett säkert sätt, eftersom den är skriven med teckenkodningen %@.",
      "after": "TextMouth kan inte läsa filen ”%@” i den här boken på ett säkert sätt, eftersom filen är skriven med teckenkodningen %@.",
@@ -1895,6 +2139,7 @@
     },
     {
      "key": "TextMouth hasn't read the latest save yet.",
+     "id": "bookTextEdit.notReadYet",
      "english": "TextMouth hasn't read the latest save yet.",
      "before": "TextMouth har inte läst det senaste sparandet än.",
      "after": "TextMouth har inte läst in den senast sparade versionen än.",
@@ -1902,6 +2147,7 @@
     },
     {
      "key": "TextMouth hasn't read this book's headings yet. Open the book once, then export again.",
+     "id": "bookExport.noHeadingsReason",
      "english": "TextMouth hasn't read this book's headings yet. Open the book once, then export again.",
      "before": "TextMouth har inte läst bokens rubriker än. Öppna boken en gång och exportera sedan igen.",
      "after": "TextMouth har inte läst in bokens rubriker än. Öppna boken en gång och exportera sedan igen.",
@@ -1909,6 +2155,7 @@
     },
     {
      "key": "TextMouth is finishing up before it quits: %@. It quits when that is done.",
+     "id": "quitHold.message",
      "english": "TextMouth is finishing up before it quits: %@. It quits when that is done.",
      "before": "TextMouth gör sig klart innan det avslutas: %@. Det avslutas när det är klart.",
      "after": "TextMouth gör klart innan det avslutas: %@. Det avslutas när det är klart.",
@@ -1916,6 +2163,7 @@
     },
     {
      "key": "TextMouth stopped %@ because %@, and won't try again until TextMouth is closed and opened again.",
+     "id": "inProcessEngine.abandoned",
      "english": "TextMouth stopped %1$@ because %2$@, and won't try again until TextMouth is closed and opened again.",
      "before": "TextMouth stoppade %1$@ eftersom %2$@ och försöker inte igen förrän TextMouth har stängts och öppnats på nytt.",
      "after": "TextMouth stoppade %1$@ eftersom %2$@, och försöker inte igen förrän TextMouth har stängts och öppnats på nytt.",
@@ -1923,6 +2171,7 @@
     },
     {
      "key": "TextMouth stopped %@ earlier because it took too long, and won't try again until TextMouth is closed and opened again.",
+     "id": "inProcessEngine.refused",
      "english": "TextMouth stopped %@ earlier because it took too long, and won't try again until TextMouth is closed and opened again.",
      "before": "TextMouth stoppade %@ tidigare eftersom det tog för lång tid och försöker inte igen förrän TextMouth har stängts och öppnats på nytt.",
      "after": "TextMouth stoppade %@ tidigare eftersom det tog för lång tid, och försöker inte igen förrän TextMouth har stängts och öppnats på nytt.",
@@ -1930,6 +2179,7 @@
     },
     {
      "key": "The Mac's speech engine refused to speak part of “%@”, even with its brackets made silent.",
+     "id": "speechRenderFailure.refused",
      "english": "The Mac's speech engine refused to speak part of “%@”, even with its brackets made silent.",
      "before": "Mac-datorns talmotor vägrade läsa upp en del av ”%@”, även med parenteserna tystade.",
      "after": "Mac-datorns talmotor vägrade läsa upp en del av ”%@”, även med vinkelparenteserna tystade.",
@@ -1937,6 +2187,7 @@
     },
     {
      "key": "The book's audio as it was before its first edit, which TextMouth keeps while the Original audio setting does.",
+     "id": "bookExport.hint.originalAudio",
      "english": "The book's audio as it was before its first edit, which TextMouth keeps while the Original audio setting does.",
      "before": "Bokens ljud som det var före första redigeringen, vilket TextMouth behåller så länge inställningen Originalljud är på.",
      "after": "Bokens ljud som det var före första redigeringen, vilket TextMouth behåller så länge inställningen ”Originalljud” är på.",
@@ -1944,6 +2195,7 @@
     },
     {
      "key": "The book's voice can't be recorded to a file. Choose another voice with the %@ button in the reader, then export again.",
+     "id": "speechRenderFailure.unusableVoice",
      "english": "The book's voice can't be recorded to a file. Choose another voice with the %@ button in the reader, then export again.",
      "before": "Bokens röst kan inte spelas in till en fil. Välj en annan röst med knappen %@ i läsaren och exportera sedan igen.",
      "after": "Bokens röst kan inte spelas in till en fil. Välj en annan röst med knappen ”%@” i läsaren och exportera sedan igen.",
@@ -1951,6 +2203,7 @@
     },
     {
      "key": "The export was stopped before the rest.",
+     "id": "bookExport.finished.before",
      "english": "The export was stopped before the rest.",
      "before": "Exporten stoppades före resten.",
      "after": "Exporten stoppades innan resten hann exporteras.",
@@ -1958,6 +2211,7 @@
     },
     {
      "key": "The file %@ failed partway through.",
+     "id": "audioPlaybackFailure.message.failedPartway",
      "english": "The file %@ failed partway through.",
      "before": "Filen %@ misslyckades halvvägs.",
      "after": "Filen %@ slutade fungera under uppspelningen.",
@@ -1965,6 +2219,7 @@
     },
     {
      "key": "The folder holds %lld DAISY books (%@).",
+     "id": "daisyPackageError.severalPackages.folder",
      "english": {
       "one": "The folder holds %lld DAISY book (%@).",
       "other": "The folder holds %lld DAISY books (%@)."
@@ -1981,6 +2236,7 @@
     },
     {
      "key": "The other %lld chapters have no text.",
+     "id": "epubParserError.noReadableChapters.other",
      "english": {
       "one": "The other %lld chapter has no text.",
       "other": "The other %lld chapters have no text."
@@ -1997,6 +2253,7 @@
     },
     {
      "key": "The other chapter has no text.",
+     "id": "epubParserError.noReadableChapters.chapter",
      "english": "The other chapter has no text.",
      "before": "Det andra kapitlet har ingen text.",
      "after": "Det övriga kapitlet har ingen text.",
@@ -2004,6 +2261,7 @@
     },
     {
      "key": "The passage as the book has it, characters %@ to %@ of chapter %@:",
+     "id": "speechRefusal.bookPassageHeading",
      "english": "The passage as the book has it, characters %1$@ to %2$@ of chapter %3$@:",
      "before": "Stycket som boken har det, tecken %1$@ till %2$@ i kapitel %3$@:",
      "after": "Stycket så som det står i boken, tecken %1$@ till %2$@ i kapitel %3$@:",
@@ -2011,6 +2269,7 @@
     },
     {
      "key": "The speech engine refused to speak the text here, twice, so speech stopped. Play tries again from the same place.",
+     "id": "speechRefusal.summary",
      "english": "The speech engine refused to speak the text here, twice, so speech stopped. Play tries again from the same place.",
      "before": "Talmotorn vägrade läsa upp texten här, två gånger, så uppläsningen stoppades. Spela upp försöker igen från samma ställe.",
      "after": "Talmotorn vägrade läsa upp texten här, två gånger, så uppläsningen stoppades. ”Spela upp” försöker igen från samma ställe.",
@@ -2018,6 +2277,7 @@
     },
     {
      "key": "The transcript as TextMouth keeps it, in JSON, with its text as Markdown.",
+     "id": "bookExport.transcriptJSONChoiceHint",
      "english": "The transcript as TextMouth keeps it, in JSON, with its text as Markdown.",
      "before": "Transkriptionen som TextMouth behåller den, i JSON, med dess text som Markdown.",
      "after": "Transkriptionen så som TextMouth behåller den, i JSON, med dess text som Markdown.",
@@ -2025,6 +2285,7 @@
     },
     {
      "key": "The voice changed its kind of audio partway through “%@”.",
+     "id": "speechRenderFailure.formatChanged",
      "english": "The voice changed its kind of audio partway through “%@”.",
      "before": "Rösten ändrade typ av ljud halvvägs genom ”%@”.",
      "after": "Rösten ändrade typ av ljud mitt i ”%@”.",
@@ -2032,6 +2293,7 @@
     },
     {
      "key": "The voice stopped partway through “%@”, and TextMouth stopped waiting.",
+     "id": "speechRenderFailure.stalled",
      "english": "The voice stopped partway through “%@”, and TextMouth stopped waiting.",
      "before": "Rösten stannade halvvägs genom ”%@”, och TextMouth slutade vänta.",
      "after": "Rösten stannade mitt i ”%@”, och TextMouth slutade vänta.",
@@ -2039,6 +2301,7 @@
     },
     {
      "key": "This Mac's braille table “%@” changed from liblouis %@ to %@ since the book was read, so TextMouth keeps the book's text as it was.",
+     "id": "failure.changedTable.brailleLiblouisSince",
      "english": "This Mac's braille table “%1$@” changed from liblouis %2$@ to %3$@ since the book was read, so TextMouth keeps the book's text as it was.",
      "before": "Den här Mac-datorns punktskriftstabell ”%1$@” ändrades från liblouis %2$@ till %3$@ sedan boken lästes, så TextMouth behåller bokens text som den var.",
      "after": "Den här Mac-datorns punktskriftstabell ”%1$@” ändrades från liblouis %2$@ till %3$@ sedan boken lästes in, så TextMouth behåller bokens text som den var.",
@@ -2046,6 +2309,7 @@
     },
     {
      "key": "This Mac's braille table “%@” may have changed since liblouis %@ read the book, so TextMouth keeps the book's text as it was.",
+     "id": "failure.changedTable.brailleSinceLiblouis",
      "english": "This Mac's braille table “%1$@” may have changed since liblouis %2$@ read the book, so TextMouth keeps the book's text as it was.",
      "before": "Den här Mac-datorns punktskriftstabell ”%1$@” kan ha ändrats sedan liblouis %2$@ läste boken, så TextMouth behåller bokens text som den var.",
      "after": "Den här Mac-datorns punktskriftstabell ”%1$@” kan ha ändrats sedan liblouis %2$@ läste in boken, så TextMouth behåller bokens text som den var.",
@@ -2053,6 +2317,7 @@
     },
     {
      "key": "This book has %lld pages, from %@ to %@.",
+     "id": "readerPage.fieldHint.pages",
      "english": {
       "one": "This book has %lld page, from %@ to %@.",
       "other": "This book has %lld pages, from %@ to %@."
@@ -2069,6 +2334,7 @@
     },
     {
      "key": "This book's text can't be read, so it can't be spoken into an audio file.",
+     "id": "speechExport.unreadableText",
      "english": "This book's text can't be read, so it can't be spoken into an audio file.",
      "before": "Bokens text kan inte läsas, så den kan inte läsas upp till en ljudfil.",
      "after": "Bokens text kan inte läsas in, så den kan inte läsas upp till en ljudfil.",
@@ -2076,6 +2342,7 @@
     },
     {
      "key": "Time In",
+     "id": "headingDisplayMode.title.timeIntoBook",
      "english": "Time In",
      "before": "Tid in",
      "after": "Starttid",
@@ -2083,6 +2350,7 @@
     },
     {
      "key": "Timer restarted: %@.",
+     "id": "readerViewModel.restartLastSleepTimer.restarted",
      "english": "Timer restarted: %@.",
      "before": "Timern startad om: %@.",
      "after": "Timern startades om: %@.",
@@ -2090,6 +2358,7 @@
     },
     {
      "key": "Transcribe it first, with Transcribe Audio.",
+     "id": "bookTextEdit.noText.transcribe",
      "english": "Transcribe it first, with Transcribe Audio.",
      "before": "Transkribera den först med Transkribera ljud.",
      "after": "Transkribera den först med ”Transkribera ljud”.",
@@ -2097,6 +2366,7 @@
     },
     {
      "key": "Type straight quotation marks: in TextEdit, turn off Smart Quotes under Edit, Substitutions.",
+     "id": "bookManifestEdit.explanation.quotation",
      "english": "Type straight quotation marks: in TextEdit, turn off Smart Quotes under Edit, Substitutions.",
      "before": "Skriv raka citattecken: i TextEdit stänger du av Smarta citattecken under Redigera, Ersättningar.",
      "after": "Skriv raka citattecken: i TextEdit stänger du av ”Smarta citattecken” under ”Redigera” > ”Ersättningar”.",
@@ -2104,6 +2374,7 @@
     },
     {
      "key": "When on, a braille file read as contracted Unified English Braille that is clearly English Braille, American Edition is read as that instead.",
+     "id": "brailleSettings.guessHint",
      "english": "When on, a braille file read as contracted Unified English Braille that is clearly English Braille, American Edition is read as that instead.",
      "before": "När det är på läses en punktskriftsfil som lästs som kortskrift i Unified English Braille men tydligt är English Braille, American Edition som den i stället.",
      "after": "När inställningen är på läses en punktskriftsfil som tydligt är English Braille, American Edition som den koden i stället för som kortskrift i Unified English Braille.",
@@ -2111,6 +2382,7 @@
     },
     {
      "key": "Where the audio begins: the book's beginning, or a heading.",
+     "id": "speechExport.fromHint",
      "english": "Where the audio begins: the book's beginning, or a heading.",
      "before": "Där ljudet börjar: bokens början eller en rubrik.",
      "after": "Var ljudet börjar: bokens början eller en rubrik.",
@@ -2118,6 +2390,7 @@
     },
     {
      "key": "With \"%@\", Play on a finished book says it is finished; with \"%@\", Play starts it again from the beginning.",
+     "id": "endOfBook.playOnAFinishedBookCaption",
      "english": "With \"%1$@\", Play on a finished book says it is finished; with \"%2$@\", Play starts it again from the beginning.",
      "before": "Med ”%1$@” säger Spela upp på en avslutad bok att den är avslutad; med ”%2$@” startar Spela upp den igen från början.",
      "after": "Med ”%1$@” säger ”Spela upp” på en avslutad bok att den är avslutad; med ”%2$@” startar ”Spela upp” den igen från början.",
@@ -2125,6 +2398,7 @@
     },
     {
      "key": "Your library is empty. Add to Library adds a book.",
+     "id": "phoneApp.emptyLibrary",
      "english": "Your library is empty. Add to Library adds a book.",
      "before": "Ditt bibliotek är tomt. Med Lägg till i biblioteket lägger du till en bok.",
      "after": "Ditt bibliotek är tomt. Med ”Lägg till i biblioteket” lägger du till en bok.",
@@ -2132,6 +2406,7 @@
     },
     {
      "key": "it changes a chapter's heading, which comes from the audio. Put it back and save again, and the text shows.",
+     "id": "bookTextEdit.heldReason.headingChanged",
      "english": "it changes a chapter's heading, which comes from the audio. Put it back and save again, and the text shows.",
      "before": "den ändrar ett kapitels rubrik, som kommer från ljudet. Sätt tillbaka den och spara igen, så visas texten.",
      "after": "den ändrar ett kapitels rubrik, som kommer från ljudet. Återställ den och spara igen, så visas texten.",
@@ -2139,6 +2414,7 @@
     },
     {
      "key": "manifest.json has segments, which TextMouth writes only for a DAISY book it converts.",
+     "id": "bookManifestEdit.sectionsGiven.segments",
      "english": "manifest.json has segments, which TextMouth writes only for a DAISY book it converts.",
      "before": "manifest.json har segment, som TextMouth bara skriver för en DAISY-bok som den konverterar.",
      "after": "manifest.json har segment, som TextMouth bara skriver vid konvertering av en DAISY-bok.",
@@ -2146,6 +2422,7 @@
     },
     {
      "key": "text fields use it for editing",
+     "id": "shortcutRefusal.reason.editsText",
      "english": "text fields use it for editing",
      "before": "textfält använder den för redigering",
      "after": "textfält använder den tangenten för redigering",
@@ -2153,6 +2430,7 @@
     },
     {
      "key": "the braille helper failed",
+     "id": "refusal.helperFailed",
      "english": "the braille helper failed",
      "before": "punktskriftshjälpen misslyckades",
      "after": "hjälpprogrammet för punktskrift misslyckades",
@@ -2160,6 +2438,7 @@
     },
     {
      "key": "the braille helper was stopped because %@",
+     "id": "refusal.helperStopped",
      "english": "the braille helper was stopped because %@",
      "before": "punktskriftshjälpen stoppades eftersom %@",
      "after": "hjälpprogrammet för punktskrift stoppades eftersom %@",
@@ -2167,6 +2446,7 @@
     },
     {
      "key": "the file %@ failed partway through",
+     "id": "audioPlaybackFailure.problem.failedPartway",
      "english": "the file %@ failed partway through",
      "before": "filen %@ misslyckades halvvägs",
      "after": "filen %@ slutade fungera under uppspelningen",
@@ -2174,6 +2454,7 @@
     },
     {
      "key": "“%@” is a Personal Voice, which macOS can't record to a file. Choose another voice with the %@ button in the reader, then export again.",
+     "id": "speechExportError.personalVoice",
      "english": "“%1$@” is a Personal Voice, which macOS can't record to a file. Choose another voice with the %2$@ button in the reader, then export again.",
      "before": "”%1$@” är en Personlig röst, som macOS inte kan spela in till en fil. Välj en annan röst med knappen %2$@ i läsaren och exportera sedan igen.",
      "after": "”%1$@” är en Personlig röst, som macOS inte kan spela in till en fil. Välj en annan röst med knappen ”%2$@” i läsaren och exportera sedan igen.",
@@ -2191,6 +2472,7 @@
    "fixes": [
     {
      "key": "Adds an Export button to each reader's toolbar. File, Export works either way.",
+     "id": "bookExport.settingHint",
      "english": "Adds an Export button to each reader's toolbar. File, Export works either way.",
      "before": "Lägger till en Exportera-knapp i varje läsares verktygsfält. ”Arkiv” > ”Exportera” fungerar i båda fallen.",
      "after": "Lägger till en Exportera-knapp i varje läsares verktygsfält. ”Arkiv”, ”Exportera” fungerar i båda fallen.",
@@ -2198,6 +2480,7 @@
     },
     {
      "key": "No voice is installed. Add one in System Settings, Accessibility, Spoken Content, then export again.",
+     "id": "speechExportError.noVoice",
      "english": "No voice is installed. Add one in System Settings, Accessibility, Spoken Content, then export again.",
      "before": "Ingen röst är installerad. Lägg till en i ”Systeminställningar” > ”Hjälpmedel” > ”Uppläst innehåll” och exportera sedan igen.",
      "after": "Ingen röst är installerad. Lägg till en i ”Systeminställningar”, ”Hjälpmedel”, ”Uppläst innehåll”, och exportera sedan igen.",
@@ -2205,6 +2488,7 @@
     },
     {
      "key": "No voices are installed. Add voices in Settings, Accessibility, Read & Speak.",
+     "id": "phoneVoice.noVoices",
      "english": "No voices are installed. Add voices in Settings, Accessibility, Read & Speak.",
      "before": "Inga röster är installerade. Lägg till röster i ”Inställningar” > ”Hjälpmedel” > ”Uppläst innehåll”.",
      "after": "Inga röster är installerade. Lägg till röster i ”Inställningar”, ”Hjälpmedel”, ”Uppläst innehåll”.",
@@ -2212,6 +2496,7 @@
     },
     {
      "key": "To use another folder, open Settings, Storage, and choose %@ or %@.",
+     "id": "dataDirectoryUnavailable.anotherFolderPointer",
      "english": "To use another folder, open Settings, Storage, and choose %1$@ or %2$@.",
      "before": "För att använda en annan mapp, öppna ”Inställningar” > ”Lagring” och välj %1$@ eller %2$@.",
      "after": "För att använda en annan mapp, öppna ”Inställningar”, ”Lagring”, och välj %1$@ eller %2$@.",
@@ -2219,6 +2504,7 @@
     },
     {
      "key": "Type straight quotation marks: in TextEdit, turn off Smart Quotes under Edit, Substitutions.",
+     "id": "bookManifestEdit.explanation.quotation",
      "english": "Type straight quotation marks: in TextEdit, turn off Smart Quotes under Edit, Substitutions.",
      "before": "Skriv raka citattecken: i TextEdit stänger du av ”Smarta citattecken” under ”Redigera” > ”Ersättningar”.",
      "after": "Skriv raka citattecken: i TextEdit stänger du av ”Smarta citattecken” under ”Redigera”, ”Ersättningar”.",

@@ -276,7 +276,7 @@ enum LibraryCloudWording {
         // The selection has several books, so only the count kept for the list varies its noun.
         return SentenceWording.joined([
             // Translators: First sentence of why Stop Keeping on This Mac changed nothing: none of the selected books is kept by the listener's choice, and some are kept for the reading list. %1$@ is the number of books selected, already formatted; %2$lld is how many are kept for the reading list.
-            InterfaceText.line("libraryCloud.noneSelectedBooksKeptMacChoice", "None of the \(titles.count.formatted()) selected books is kept on this Mac by your choice, and \(number: keptOnlyForReadingList) is kept for the reading list."),
+            InterfaceText.line("libraryCloud.noneSelectedBooksKeptMacChoice", "None of the \(titles.count.formatted()) selected books is kept on this Mac by your choice, and \(number: keptOnlyForReadingList) are kept for the reading list."),
             howToLetGo(plural: plural),
         ])
     }

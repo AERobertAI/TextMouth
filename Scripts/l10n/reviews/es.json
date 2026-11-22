@@ -12,6 +12,7 @@
    "fixes": [
     {
      "key": "\"%@\" plays the next book in the same folder by sort order.",
+     "id": "settings.continueNextExplanation",
      "english": "\"%@\" plays the next book in the same folder by sort order.",
      "before": "«%@» reproduce el siguiente libro de la misma carpeta, en orden de clasificación.",
      "after": "“%@” reproduce el siguiente libro de la misma carpeta, en orden de clasificación.",
@@ -19,6 +20,7 @@
     },
     {
      "key": "%@ and any subfolders will be removed from the library.",
+     "id": "folderRemoval.confirmationMessage.subfolders",
      "english": "%@ and any subfolders will be removed from the library.",
      "before": "%@ y cualquier subcarpeta se quitarán de la biblioteca.",
      "after": "%@ y sus subcarpetas se quitarán de la biblioteca.",
@@ -26,6 +28,7 @@
     },
     {
      "key": "%@ holds a conflicting version of %@, saved at another time.",
+     "id": "conflictCopy.holdsConflictingVersionSavedAnother",
      "english": "%1$@ holds a conflicting version of %2$@, saved at another time.",
      "before": "%1$@ guarda una versión en conflicto de %2$@, guardada en otro momento.",
      "after": "%1$@ tiene una versión en conflicto de %2$@, guardada en otro momento.",
@@ -33,6 +36,7 @@
     },
     {
      "key": "%@ holds a conflicting version of %@, saved on %@.",
+     "id": "conflictCopy.holdsVersionOnDate",
      "english": "%1$@ holds a conflicting version of %2$@, saved on %3$@.",
      "before": "%1$@ guarda una versión en conflicto de %2$@, guardada el %3$@.",
      "after": "%1$@ tiene una versión en conflicto de %2$@, guardada el %3$@.",
@@ -40,6 +44,7 @@
     },
     {
      "key": "%@ holds a conflicting version of %@, saved on “%@” on %@.",
+     "id": "conflictCopy.holdsVersionOnNameAndDate",
      "english": "%1$@ holds a conflicting version of %2$@, saved on “%3$@” on %4$@.",
      "before": "%1$@ guarda una versión en conflicto de %2$@, guardada en «%3$@» el %4$@.",
      "after": "%1$@ tiene una versión en conflicto de %2$@, guardada en “%3$@” el %4$@.",
@@ -47,6 +52,7 @@
     },
     {
      "key": "%@ holds a conflicting version of %@, saved on “%@”.",
+     "id": "conflictCopy.holdsVersionOnName",
      "english": "%1$@ holds a conflicting version of %2$@, saved on “%3$@”.",
      "before": "%1$@ guarda una versión en conflicto de %2$@, guardada en «%3$@».",
      "after": "%1$@ tiene una versión en conflicto de %2$@, guardada en “%3$@”.",
@@ -54,6 +60,7 @@
     },
     {
      "key": "%@ set aside a conflicting copy of %@: “%@”, in %@.",
+     "id": "conflictCopy.setAsideConflicting",
      "english": "%1$@ set aside a conflicting copy of %2$@: “%3$@”, in %4$@.",
      "before": "%1$@ apartó una copia en conflicto de %2$@: «%3$@», en %4$@.",
      "after": "%1$@ apartó una copia en conflicto de %2$@: “%3$@”, en %4$@.",
@@ -61,6 +68,7 @@
     },
     {
      "key": "%@, and %lld more",
+     "id": "libraryTransition.feedItemsLeft.more",
      "english": {
       "one": "%@, and %lld more",
       "other": "%@, and %lld more"
@@ -79,6 +87,7 @@
     },
     {
      "key": "%@, any subfolders, and the %lld books inside will be removed from the library.",
+     "id": "folderRemoval.confirmationMessage.other",
      "english": {
       "one": "%@, any subfolders, and the %lld book inside will be removed from the library.",
       "other": "%@, any subfolders, and the %lld books inside will be removed from the library."
@@ -97,6 +106,7 @@
     },
     {
      "key": "%@, any subfolders, and the book inside will be removed from the library.",
+     "id": "folderRemoval.confirmationMessage.inside",
      "english": "%@, any subfolders, and the book inside will be removed from the library.",
      "before": "%@, cualquier subcarpeta y el libro que contiene se quitarán de la biblioteca.",
      "after": "%@, sus subcarpetas y el libro que contiene se quitarán de la biblioteca.",
@@ -104,6 +114,7 @@
     },
     {
      "key": "%@: Some changes are not saved, and switching libraries would lose them.",
+     "id": "libraryViewModel.message.switching",
      "english": "%@: Some changes are not saved, and switching libraries would lose them.",
      "before": "%@: Hay cambios sin guardar, y cambiar de biblioteca los perdería.",
      "after": "%@: hay cambios sin guardar, y se perderían al cambiar de biblioteca.",
@@ -111,6 +122,7 @@
     },
     {
      "key": "%lld rules (%@ enabled)",
+     "id": "substitutions.ruleCount",
      "english": {
       "one": "%lld rule (%@ enabled)",
       "other": "%lld rules (%@ enabled)"
@@ -129,6 +141,7 @@
     },
     {
      "key": "A move shifts one book at a time, and several are selected. Select one book, then try again.",
+     "id": "manualBookOrder.severalBooksToMoveAnnouncement",
      "english": "A move shifts one book at a time, and several are selected. Select one book, then try again.",
      "before": "Un movimiento desplaza un libro a la vez, y hay varios seleccionados. Selecciona un solo libro e inténtalo de nuevo.",
      "after": "Solo se puede mover un libro a la vez, y hay varios seleccionados. Selecciona uno solo e inténtalo de nuevo.",
@@ -136,6 +149,7 @@
     },
     {
      "key": "Always offers a view all the time. When Applicable offers it only while it lists something: the Reading List while it holds a book, episode, or article, and Feeds while there is a feed. Hidden leaves it out. A window keeps its view until you choose another.",
+     "id": "libraryViewsSettings.visibilityCaption",
      "english": "Always offers a view all the time. When Applicable offers it only while it lists something: the Reading List while it holds a book, episode, or article, and Feeds while there is a feed. Hidden leaves it out. A window keeps its view until you choose another.",
      "before": "Siempre ofrece una vista en todo momento. Cuando corresponda la ofrece solo mientras muestra algo: la Lista de lectura mientras contiene un libro, episodio o artículo, y Canales mientras hay un canal. Oculta la deja fuera. Una ventana conserva su vista hasta que elijas otra.",
      "after": "Con “Siempre”, la vista se ofrece en todo momento. Con “Cuando corresponda”, se ofrece solo mientras muestra algo: la Lista de lectura mientras contiene un libro, episodio o artículo, y Canales mientras hay un canal. Con “Oculta”, no se ofrece. Una ventana conserva su vista hasta que elijas otra.",
@@ -143,6 +157,7 @@
     },
     {
      "key": "Answer this one when the move ends.",
+     "id": "dataDirectoryMove.importAnswerRefusal.when",
      "english": "Answer this one when the move ends.",
      "before": "Responde esta cuando termine el traslado.",
      "after": "Responde a esta cuando termine el traslado.",
@@ -150,6 +165,7 @@
     },
     {
      "key": "Blocks the spurious play command macOS sends when Bluetooth headphones are removed.",
+     "id": "miscellaneousSettings.bluetoothExplanation",
      "english": "Blocks the spurious play command macOS sends when Bluetooth headphones are removed.",
      "before": "Bloquea la orden de reproducir falsa que macOS envía al quitarse unos audífonos Bluetooth.",
      "after": "Bloquea la falsa orden de reproducción que macOS envía al quitarse unos auriculares Bluetooth.",
@@ -157,6 +173,7 @@
     },
     {
      "key": "Case sensitive matching",
+     "id": "substitutions.caseLabel",
      "english": "Case sensitive matching",
      "before": "Coincidencia que distingue mayúsculas y minúsculas",
      "after": "Distinguir mayúsculas y minúsculas",
@@ -164,6 +181,7 @@
     },
     {
      "key": "Changes to books saved.",
+     "id": "persistenceSubsystem.retried.bookRecord",
      "english": "Changes to books saved.",
      "before": "Cambios en los libros guardados.",
      "after": "Se guardaron los cambios de los libros.",
@@ -171,6 +189,7 @@
     },
     {
      "key": "Changes to the feed “%@” could not be saved: %@",
+     "id": "subject.sentence.feedRecord",
      "english": "Changes to the feed “%1$@” could not be saved: %2$@",
      "before": "No se pudieron guardar los cambios del canal «%1$@»: %2$@",
      "after": "No se pudieron guardar los cambios del canal “%1$@”: %2$@",
@@ -178,6 +197,7 @@
     },
     {
      "key": "Changes to “%@” could not be saved: %@",
+     "id": "subject.sentence.bookRecord",
      "english": "Changes to “%1$@” could not be saved: %2$@",
      "before": "No se pudieron guardar los cambios de «%1$@»: %2$@",
      "after": "No se pudieron guardar los cambios de “%1$@”: %2$@",
@@ -185,6 +205,7 @@
     },
     {
      "key": "Choose an empty location and try again.",
+     "id": "dataDirectoryDestinationChange.emptyLocation",
      "english": "Choose an empty location and try again.",
      "before": "Elige una ubicación vacía e intenta de nuevo.",
      "after": "Elige una ubicación vacía e inténtalo de nuevo.",
@@ -192,6 +213,7 @@
     },
     {
      "key": "Choose no per-book control, one shared picker, or a menu with separate forward and backward pickers",
+     "id": "settings.navigationUnitControlsHint",
      "english": "Choose no per-book control, one shared picker, or a menu with separate forward and backward pickers",
      "before": "Elige ningún control por libro, un selector compartido o un menú con selectores separados para avanzar y retroceder",
      "after": "Elige entre no tener control por libro, un selector compartido o un menú con selectores separados para avanzar y retroceder",
@@ -199,6 +221,7 @@
     },
     {
      "key": "Comparing this library with the copy in the folder you chose, to say which is newer. This can take up to a minute; choose Stop Comparing to skip it.",
+     "id": "libraryComparison.comparingForUseSentence",
      "english": "Comparing this library with the copy in the folder you chose, to say which is newer. This can take up to a minute; choose Stop Comparing to skip it.",
      "before": "Comparando esta biblioteca con la copia de la carpeta que elegiste, para decir cuál es más reciente. Puede tardar hasta un minuto; elige Detener comparación para omitirla.",
      "after": "Comparando esta biblioteca con la copia de la carpeta que elegiste, para saber cuál es más reciente. Puede tardar hasta un minuto; elige Detener comparación para omitirla.",
@@ -206,6 +229,7 @@
     },
     {
      "key": "Connect to the internet and try again.",
+     "id": "bookCloudError.offline.internet",
      "english": "Connect to the internet and try again.",
      "before": "Conéctate a internet e intenta de nuevo.",
      "after": "Conéctate a internet e inténtalo de nuevo.",
@@ -213,6 +237,7 @@
     },
     {
      "key": "Date Added",
+     "id": "common.dateAdded",
      "english": "Date Added",
      "before": "Fecha de incorporación",
      "after": "Fecha de agregación",
@@ -220,6 +245,7 @@
     },
     {
      "key": "Download Not Removed",
+     "id": "libraryCloud.removalRefusedTitle.download",
      "english": "Download Not Removed",
      "before": "Descarga no quitada",
      "after": "No se quitó la descarga",
@@ -227,6 +253,7 @@
     },
     {
      "key": "Downloaded %@",
+     "id": "libraryCloud.downloadFinished.downloaded",
      "english": "Downloaded %@",
      "before": "Se descargó %@",
      "after": "Se descargaron %@",
@@ -234,6 +261,7 @@
     },
     {
      "key": "Downloads Not Removed",
+     "id": "libraryCloud.removalRefusedTitle.downloads",
      "english": "Downloads Not Removed",
      "before": "Descargas no quitadas",
      "after": "No se quitaron las descargas",
@@ -241,6 +269,7 @@
     },
     {
      "key": "Experimental. A sequence of media keys or AirPods controls within a short time window re-arms the last sleep timer, handy after one expires.",
+     "id": "miscellaneousSettings.restartGestureExplanation",
      "english": "Experimental. A sequence of media keys or AirPods controls within a short time window re-arms the last sleep timer, handy after one expires.",
      "before": "Experimental. Una secuencia de teclas multimedia o controles de AirPods dentro de una ventana de tiempo corta vuelve a armar el último temporizador de apagado, útil cuando uno acaba de expirar.",
      "after": "Experimental. Una secuencia de teclas multimedia o controles de AirPods dentro de una ventana de tiempo corta reactiva el último temporizador de apagado, útil cuando uno acaba de expirar.",
@@ -248,6 +277,7 @@
     },
     {
      "key": "Folder placement and manual order that were stored only in the unreadable index are lost from the library.",
+     "id": "libraryIndexRecovery.rebuild.placement",
      "english": "Folder placement and manual order that were stored only in the unreadable index are lost from the library.",
      "before": "La ubicación en carpetas y el orden manual que estaban guardados solo en el índice ilegible se pierden de la biblioteca.",
      "after": "La ubicación en carpetas y el orden manual que estaban guardados solo en el índice ilegible desaparecen de la biblioteca.",
@@ -255,6 +285,7 @@
     },
     {
      "key": "Folders is always shown: every folder and feed opens there.",
+     "id": "libraryViewsSettings.foldersVisibilityHint",
      "english": "Folders is always shown: every folder and feed opens there.",
      "before": "Carpetas siempre se muestra: todas las carpetas y los canales se abren allí.",
      "after": "La vista Carpetas siempre se muestra: todas las carpetas y los canales se abren allí.",
@@ -262,6 +293,7 @@
     },
     {
      "key": "Give a New Identity",
+     "id": "libraryFileWait.confirmTitle.identityNotKnown",
      "english": "Give a New Identity",
      "before": "Dar identidad nueva",
      "after": "Dar una identidad nueva",
@@ -269,6 +301,7 @@
     },
     {
      "key": "Go to View",
+     "id": "libraryViewPicker.goToViewMenuTitle",
      "english": "Go to View",
      "before": "Ir a vista",
      "after": "Ir a la vista",
@@ -276,6 +309,7 @@
     },
     {
      "key": "Gradually reduce volume before pausing when the sleep timer expires. 0 pauses instantly.",
+     "id": "settings.fadeOutExplanation",
      "english": "Gradually reduce volume before pausing when the sleep timer expires. 0 pauses instantly.",
      "before": "Reduce el volumen poco a poco antes de pausar cuando expira el temporizador de apagado. 0 pausa al instante.",
      "after": "Reduce el volumen poco a poco antes de pausar cuando expira el temporizador de apagado. Con 0, se pausa al instante.",
@@ -283,6 +317,7 @@
     },
     {
      "key": "How long media commands are blocked after a Bluetooth device disconnects. Raise it if playback resumes after removing headphones.",
+     "id": "miscellaneousSettings.disconnectDelayExplanation",
      "english": "How long media commands are blocked after a Bluetooth device disconnects. Raise it if playback resumes after removing headphones.",
      "before": "Cuánto tiempo se bloquean las órdenes multimedia después de que se desconecta un dispositivo Bluetooth. Auméntalo si la reproducción se reanuda al quitarte los audífonos.",
      "after": "Cuánto tiempo se bloquean las órdenes multimedia después de que se desconecta un dispositivo Bluetooth. Auméntalo si la reproducción se reanuda al quitarte los auriculares.",
@@ -290,6 +325,7 @@
     },
     {
      "key": "If the file arrives from %@ later, it names the same library.",
+     "id": "libraryFileWait.confirmation.identity.arrives",
      "english": "If the file arrives from %@ later, it names the same library.",
      "before": "Si el archivo llega más tarde desde %@, nombra la misma biblioteca.",
      "after": "Si el archivo llega más tarde desde %@, identifica la misma biblioteca.",
@@ -297,6 +333,7 @@
     },
     {
      "key": "It holds the feed “%@” with %@.",
+     "id": "conflictCopy.feedRecordHolds.named",
      "english": "It holds the feed “%1$@” with %2$@.",
      "before": "Contiene el canal «%1$@» con %2$@.",
      "after": "Contiene el canal “%1$@” con %2$@.",
@@ -304,6 +341,7 @@
     },
     {
      "key": "It holds the feed “%@” with %@; the record holds %@.",
+     "id": "conflictCopy.feedRecordHolds.namedIndexHolds",
      "english": "It holds the feed “%1$@” with %2$@; the record holds %3$@.",
      "before": "Contiene el canal «%1$@» con %2$@; el registro contiene %3$@.",
      "after": "Contiene el canal “%1$@” con %2$@; el registro contiene %3$@.",
@@ -311,6 +349,7 @@
     },
     {
      "key": "It holds the record of “%@”: %@.",
+     "id": "conflictCopy.bookRecordHolds.ofBook",
      "english": "It holds the record of “%1$@”: %2$@.",
      "before": "Contiene el registro de «%1$@»: %2$@.",
      "after": "Contiene el registro de “%1$@”: %2$@.",
@@ -318,6 +357,7 @@
     },
     {
      "key": "It holds the record of “%@”: %@; the record holds %@.",
+     "id": "conflictCopy.bookRecordHolds.ofBookIndexHolds",
      "english": "It holds the record of “%1$@”: %2$@; the record holds %3$@.",
      "before": "Contiene el registro de «%1$@»: %2$@; el registro contiene %3$@.",
      "after": "Contiene el registro de “%1$@”: %2$@; el registro contiene %3$@.",
@@ -325,6 +365,7 @@
     },
     {
      "key": "Its text could not be prepared for reading yet; TextMouth will try again later.",
+     "id": "fileImportService.buildTextCache.prepared",
      "english": "Its text could not be prepared for reading yet; TextMouth will try again later.",
      "before": "Aún no se pudo preparar su texto para la lectura; TextMouth intentará de nuevo más tarde.",
      "after": "Aún no se pudo preparar su texto para la lectura; TextMouth lo intentará de nuevo más tarde.",
@@ -332,6 +373,7 @@
     },
     {
      "key": "Make sure its folder can be written to, then try again.",
+     "id": "libraryIndexRecoveryError.couldNotPreserveFix",
      "english": "Make sure its folder can be written to, then try again.",
      "before": "Comprueba que se pueda escribir en su carpeta e intenta de nuevo.",
      "after": "Comprueba que se pueda escribir en su carpeta e inténtalo de nuevo.",
@@ -339,6 +381,7 @@
     },
     {
      "key": "Move cancelled.",
+     "id": "dataDirectoryMove.cancelled.moveStopped",
      "english": "Move cancelled.",
      "before": "Movimiento cancelado.",
      "after": "Se canceló el traslado.",
@@ -346,6 +389,7 @@
     },
     {
      "key": "Neither has newer places or books the other lacks, but they differ in other ways.",
+     "id": "libraryComparison.newerCopySentence.differ",
      "english": "Neither has newer places or books the other lacks, but they differ in other ways.",
      "before": "Ninguna tiene lugares o libros más recientes que la otra no tenga, pero difieren en otros aspectos.",
      "after": "Ninguna tiene lugares más recientes ni libros que falten en la otra, pero difieren en otros aspectos.",
@@ -353,6 +397,7 @@
     },
     {
      "key": "Not Within the Last",
+     "id": "libraryViewEditor.relationName.addedWithin.not",
      "english": "Not Within the Last",
      "before": "No dentro de los últimos",
      "after": "Fuera de los últimos",
@@ -360,6 +405,7 @@
     },
     {
      "key": "Open in Editor",
+     "id": "textInput.openInEditor",
      "english": "Open in Editor",
      "before": "Abrir en editor",
      "after": "Abrir en el editor",
@@ -367,6 +413,7 @@
     },
     {
      "key": "Original files removed.",
+     "id": "persistenceSubsystem.originalFilesRemoved",
      "english": "Original files removed.",
      "before": "Archivos originales quitados.",
      "after": "Se quitaron los archivos originales.",
@@ -374,6 +421,7 @@
     },
     {
      "key": "Position display mode",
+     "id": "bookSearch.displayModeLabel",
      "english": "Position display mode",
      "before": "Modo de mostrar la posición",
      "after": "Mostrar la posición como",
@@ -381,6 +429,7 @@
     },
     {
      "key": "Reading list: “%@” is %@ in %@ and %@ in %@.",
+     "id": "libraryComparison.readingListOptionDiffers",
      "english": "Reading list: “%1$@” is %2$@ in %3$@ and %4$@ in %5$@.",
      "before": "Lista de lectura: “%1$@” es %2$@ en %3$@ y %4$@ en %5$@.",
      "after": "Lista de lectura: “%1$@” está %2$@ en %3$@ y %4$@ en %5$@.",
@@ -388,6 +437,7 @@
     },
     {
      "key": "Searched %@ of %@…",
+     "id": "librarySearch.searched",
      "english": "Searched %1$@ of %2$@…",
      "before": "Buscados %1$@ de %2$@…",
      "after": "Buscado en %1$@ de %2$@…",
@@ -395,6 +445,7 @@
     },
     {
      "key": "Shows the books in the order you arrange",
+     "id": "libraryViewsSettings.readingListHint",
      "english": "Shows the books in the order you arrange",
      "before": "Muestra los libros en el orden que tú organizas",
      "after": "Muestra los libros en el orden que les das",
@@ -402,6 +453,7 @@
     },
     {
      "key": "Sort Ascending",
+     "id": "librarySortState.directionTitle.ascending",
      "english": "Sort Ascending",
      "before": "Ordenar ascendente",
      "after": "Ordenar de forma ascendente",
@@ -409,6 +461,7 @@
     },
     {
      "key": "Sort Descending",
+     "id": "librarySortState.directionTitle.descending",
      "english": "Sort Descending",
      "before": "Ordenar descendente",
      "after": "Ordenar de forma descendente",
@@ -416,6 +469,7 @@
     },
     {
      "key": "Stops playback resuming when headphones disconnect",
+     "id": "miscellaneousSettings.bluetoothHint",
      "english": "Stops playback resuming when headphones disconnect",
      "before": "Evita que la reproducción se reanude cuando se desconectan los audífonos",
      "after": "Evita que la reproducción se reanude cuando se desconectan los auriculares",
@@ -423,6 +477,7 @@
     },
     {
      "key": "TextMouth could not read its library index, the file that records your folders, sort settings, and the order of your books.",
+     "id": "libraryIndexRecovery.summary.settings",
      "english": "TextMouth could not read its library index, the file that records your folders, sort settings, and the order of your books.",
      "before": "TextMouth no pudo leer el índice de su biblioteca, el archivo que guarda tus carpetas, los ajustes de orden y el orden de tus libros.",
      "after": "TextMouth no pudo leer el índice de la biblioteca, el archivo que guarda tus carpetas, los ajustes de orden y el orden de tus libros.",
@@ -430,6 +485,7 @@
     },
     {
      "key": "TextMouth is also open on “%@” (active %lld minutes ago).",
+     "id": "librarySessionLease.warningMessage.minutes",
      "english": {
       "one": "TextMouth is also open on “%@” (active %lld minute ago).",
       "other": "TextMouth is also open on “%@” (active %lld minutes ago)."
@@ -448,6 +504,7 @@
     },
     {
      "key": "TextMouth is also open on “%@” (active less than a minute ago).",
+     "id": "librarySessionLease.warningMessage.minute",
      "english": "TextMouth is also open on “%@” (active less than a minute ago).",
      "before": "TextMouth también está abierto en «%@» (activo hace menos de un minuto).",
      "after": "TextMouth también está abierto en “%@” (activo hace menos de un minuto).",
@@ -455,6 +512,7 @@
     },
     {
      "key": "TextMouth needs the drive “%@” connected to open the library.",
+     "id": "storage.driveSentence",
      "english": "TextMouth needs the drive “%@” connected to open the library.",
      "before": "TextMouth necesita que la unidad «%@» esté conectada para abrir la biblioteca.",
      "after": "TextMouth necesita que la unidad “%@” esté conectada para abrir la biblioteca.",
@@ -462,6 +520,7 @@
     },
     {
      "key": "The %@ of %lld of them are kept.",
+     "id": "feedDownloadRemoval.completionMessage.them",
      "english": {
       "one": "The %@ of %lld of them are kept.",
       "other": "The %@ of %lld of them are kept."
@@ -480,6 +539,7 @@
     },
     {
      "key": "The archive “%@” inside it expands to %@, but the disk holding the TextMouth library has only %@ free, and TextMouth keeps %@ of it free.",
+     "id": "archiveBudgetError.notEnoughSpace.inside",
      "english": "The archive “%1$@” inside it expands to %2$@, but the disk holding the TextMouth library has only %3$@ free, and TextMouth keeps %4$@ of it free.",
      "before": "El archivo comprimido «%1$@» de su interior se expande a %2$@, pero el disco que contiene la biblioteca de TextMouth solo tiene %3$@ libres, y TextMouth mantiene %4$@ libres.",
      "after": "El archivo comprimido “%1$@” de su interior se expande a %2$@, pero el disco que contiene la biblioteca de TextMouth solo tiene %3$@ libres, y TextMouth mantiene %4$@ libres.",
@@ -487,6 +547,7 @@
     },
     {
      "key": "The drive “%@” isn't connected.",
+     "id": "dataDirectoryUnavailability.driveNotConnected",
      "english": "The drive “%@” isn't connected.",
      "before": "La unidad «%@» no está conectada.",
      "after": "La unidad “%@” no está conectada.",
@@ -494,6 +555,7 @@
     },
     {
      "key": "The folders %@ and %@ can't both move into %@: their names mean the same folder on this disk.",
+     "id": "folderOperationConflict.namesCollide",
      "english": "The folders %1$@ and %2$@ can't both move into %3$@: their names mean the same folder on this disk.",
      "before": "Las carpetas %1$@ y %2$@ no pueden moverse juntas a %3$@: sus nombres significan la misma carpeta en este disco.",
      "after": "Las carpetas %1$@ y %2$@ no pueden moverse juntas a %3$@: sus nombres se refieren a la misma carpeta en este disco.",
@@ -501,6 +563,7 @@
     },
     {
      "key": "The most time the whole sequence may take. Shorter windows mean fewer accidental matches but quicker presses.",
+     "id": "miscellaneousSettings.timeWindowExplanation",
      "english": "The most time the whole sequence may take. Shorter windows mean fewer accidental matches but quicker presses.",
      "before": "El tiempo máximo que puede durar toda la secuencia. Ventanas más cortas significan menos coincidencias accidentales pero pulsaciones más rápidas.",
      "after": "El tiempo máximo que puede durar toda la secuencia. Con una ventana más corta hay menos coincidencias accidentales, pero hay que pulsar más rápido.",
@@ -508,6 +571,7 @@
     },
     {
      "key": "There is no view %@. Go to View reaches %lld views.",
+     "id": "libraryViewPicker.noView",
      "english": {
       "one": "There is no view %@. Go to View reaches %lld view.",
       "other": "There is no view %@. Go to View reaches %lld views."
@@ -526,6 +590,7 @@
     },
     {
      "key": "This braille looks like English Braille, American Edition. Choose its Braille Code in Book Information.",
+     "id": "brailleCode.suggestsAmericanEdition",
      "english": "This braille looks like English Braille, American Edition. Choose its Braille Code in Book Information.",
      "before": "Este braille parece braille inglés, edición estadounidense. Elige su código braille en Información del libro.",
      "after": "Este braille parece English Braille, American Edition. Elige su código braille en Información del libro.",
@@ -533,6 +598,7 @@
     },
     {
      "key": "To let it go, take it off the reading list, or clear %@ in the Reading List's options.",
+     "id": "libraryCloud.howToLetGo.reading",
      "english": "To let it go, take it off the reading list, or clear %@ in the Reading List's options.",
      "before": "Para soltarlo, quítalo de la lista de lectura, o desactiva %@ en las opciones de la lista de lectura.",
      "after": "Para liberarlo, quítalo de la lista de lectura, o desactiva %@ en las opciones de la lista de lectura.",
@@ -540,6 +606,7 @@
     },
     {
      "key": "To let them go, take them off the reading list, or clear %@ in the Reading List's options.",
+     "id": "libraryCloud.howToLetGo.them",
      "english": "To let them go, take them off the reading list, or clear %@ in the Reading List's options.",
      "before": "Para soltarlos, quítalos de la lista de lectura, o desactiva %@ en las opciones de la lista de lectura.",
      "after": "Para liberarlos, quítalos de la lista de lectura, o desactiva %@ en las opciones de la lista de lectura.",
@@ -547,6 +614,7 @@
     },
     {
      "key": "To use another folder, open Settings, Storage, and choose %@ or %@.",
+     "id": "dataDirectoryUnavailable.anotherFolderPointer",
      "english": "To use another folder, open Settings, Storage, and choose %1$@ or %2$@.",
      "before": "Para usar otra carpeta, abre Ajustes, Almacenamiento y elige %1$@ o %2$@.",
      "after": "Para usar otra carpeta, abre Almacenamiento en Ajustes y elige %1$@ o %2$@.",
@@ -554,6 +622,7 @@
     },
     {
      "key": "Try again in a moment.",
+     "id": "common.tryAgainInAMoment",
      "english": "Try again in a moment.",
      "before": "Intenta de nuevo en un momento.",
      "after": "Inténtalo de nuevo en un momento.",
@@ -561,6 +630,7 @@
     },
     {
      "key": "Try again once that move is done.",
+     "id": "storageBusyError.movingDataDirectory.again",
      "english": "Try again once that move is done.",
      "before": "Intenta de nuevo cuando termine ese traslado.",
      "after": "Inténtalo de nuevo cuando termine ese traslado.",
@@ -568,6 +638,7 @@
     },
     {
      "key": "Try again when that finishes.",
+     "id": "storageBusyError.tryAgainWhen",
      "english": "Try again when that finishes.",
      "before": "Intenta de nuevo cuando eso termine.",
      "after": "Inténtalo de nuevo cuando eso termine.",
@@ -575,6 +646,7 @@
     },
     {
      "key": "Try again.",
+     "id": "dataDirectoryDestinationChange.redirected.again",
      "english": "Try again.",
      "before": "Intenta de nuevo.",
      "after": "Inténtalo de nuevo.",
@@ -582,6 +654,7 @@
     },
     {
      "key": "Use it after parser updates.",
+     "id": "storageSettings.redoExtractionCaption.updates",
      "english": "Use it after parser updates.",
      "before": "Úsalo después de actualizar el analizador.",
      "after": "Úsalo después de una actualización del analizador.",
@@ -589,6 +662,7 @@
     },
     {
      "key": "Word Count",
+     "id": "librarySheet.wordCountRow",
      "english": "Word Count",
      "before": "Cantidad de palabras",
      "after": "Recuento de palabras",
@@ -596,6 +670,7 @@
     },
     {
      "key": "chapter %@, saved %@, and %@",
+     "id": "conflictCopy.recordState.chapter",
      "english": "chapter %1$@, saved %2$@, and %3$@",
      "before": "capítulo %1$@, guardado %2$@, y %3$@",
      "after": "capítulo %1$@, guardado el %2$@, y %3$@",
@@ -603,6 +678,7 @@
     },
     {
      "key": "the library index, %@",
+     "id": "conflictCopy.name.libraryIndex",
      "english": "the library index, %@",
      "before": "un índice de la biblioteca, %@",
      "after": "el índice de la biblioteca, %@",
@@ -610,6 +686,7 @@
     },
     {
      "key": "“%@” could not be moved back after a failed move, so its files are at %@ instead of %@: %@",
+     "id": "subject.sentence.strandedPackage",
      "english": "“%1$@” could not be moved back after a failed move, so its files are at %2$@ instead of %3$@: %4$@",
      "before": "No se pudo devolver «%1$@» a su sitio tras un traslado fallido, así que sus archivos están en %2$@ en lugar de %3$@: %4$@",
      "after": "No se pudo devolver “%1$@” a su sitio tras un traslado fallido, así que sus archivos están en %2$@ en lugar de %3$@: %4$@",
@@ -628,6 +705,7 @@
    "fixes": [
     {
      "key": "%@ are in your library, unsubscribed. Choose %@ on a feed's row, or in its %@, to check it again.",
+     "id": "feed.importFoundUnsubscribed",
      "english": "%1$@ are in your library, unsubscribed. Choose %2$@ on a feed's row, or in its %3$@, to check it again.",
      "before": "%1$@ ya están en tu biblioteca, sin suscripción. Elige %2$@ en la fila de un canal, o en su %3$@, para volver a revisarlos.",
      "after": "%1$@ ya están en tu biblioteca, sin suscripción. Elige %2$@ en la fila de un canal, o en su %3$@, para volver a revisarlo.",
@@ -635,6 +713,7 @@
     },
     {
      "key": "%@ failed: %@",
+     "id": "importFailure.failedSentence",
      "english": "%1$@ failed: %2$@",
      "before": "Falló el paso «%1$@»: %2$@",
      "after": "Falló el paso “%1$@”: %2$@",
@@ -642,6 +721,7 @@
     },
     {
      "key": "%@ of %@ transcribed",
+     "id": "transcription.secondsLine",
      "english": "%1$@ of %2$@ transcribed",
      "before": "%1$@ de %2$@ transcritos",
      "after": "Transcrito: %1$@ de %2$@",
@@ -649,6 +729,7 @@
     },
     {
      "key": "%@ use plain http, so others can read or change what they send; TextMouth still loads it.",
+     "id": "opmlImportSummary.sentence.they",
      "english": "%@ use plain http, so others can read or change what they send; TextMouth still loads it.",
      "before": "%@ usan http simple, así que otras personas pueden leer o cambiar lo que envían; TextMouth los carga de todos modos.",
      "after": "%@ usan http sin cifrar, así que otras personas pueden leer o cambiar lo que envían; TextMouth los carga de todos modos.",
@@ -656,6 +737,7 @@
     },
     {
      "key": "%@ uses plain http, so others can read or change what it sends; TextMouth still loads it.",
+     "id": "opmlImportSummary.sentence.sends",
      "english": "%@ uses plain http, so others can read or change what it sends; TextMouth still loads it.",
      "before": "%@ usa http simple, así que otras personas pueden leer o cambiar lo que envía; TextMouth lo carga de todos modos.",
      "after": "%@ usa http sin cifrar, así que otras personas pueden leer o cambiar lo que envía; TextMouth lo carga de todos modos.",
@@ -663,6 +745,7 @@
     },
     {
      "key": "About %@ left",
+     "id": "importProgress.timeLeft.about",
      "english": "About %@ left",
      "before": "Quedan unos %@",
      "after": "Tiempo restante estimado: %@",
@@ -670,6 +753,7 @@
     },
     {
      "key": "Apply Filter lists these in this order. Each is a chain of filters in ffmpeg's syntax, such as highpass=f=80,volume=3dB. TextMouth runs its own filters, plus every ffmpeg filter when ffmpeg is installed and turned on above.",
+     "id": "audioFilterPresets.explanation",
      "english": "Apply Filter lists these in this order. Each is a chain of filters in ffmpeg's syntax, such as highpass=f=80,volume=3dB. TextMouth runs its own filters, plus every ffmpeg filter when ffmpeg is installed and turned on above.",
      "before": "Aplicar filtro muestra estos en este orden. Cada uno es una cadena de filtros con la sintaxis de ffmpeg, como highpass=f=80,volume=3dB. TextMouth ejecuta sus propios filtros, y también todos los de ffmpeg cuando ffmpeg está instalado y activado arriba.",
      "after": "Aplicar filtro los muestra en este orden. Cada uno es una cadena de filtros con la sintaxis de ffmpeg, como highpass=f=80,volume=3dB. TextMouth ejecuta sus propios filtros, y también todos los de ffmpeg cuando ffmpeg está instalado y activado arriba.",
@@ -677,6 +761,7 @@
     },
     {
      "key": "Cancelling after this book...",
+     "id": "importProgress.cancelling",
      "english": "Cancelling after this book...",
      "before": "Cancelando después de este libro...",
      "after": "Se cancelará al terminar este libro...",
@@ -684,6 +769,7 @@
     },
     {
      "key": "Choosing another folder lists the feed's episodes and articles there instead, those already downloaded too.",
+     "id": "feed.folderInfoHelp",
      "english": "Choosing another folder lists the feed's episodes and articles there instead, those already downloaded too.",
      "before": "Al elegir otra carpeta, se muestran allí los episodios y artículos del canal, también los ya descargados.",
      "after": "Al elegir otra carpeta, se muestran allí los episodios y artículos del canal, incluidos los ya descargados.",
@@ -691,6 +777,7 @@
     },
     {
      "key": "Copied %@.",
+     "id": "audioEditor.copied",
      "english": "Copied %@.",
      "before": "Se copió %@.",
      "after": "Se copió un fragmento de %@.",
@@ -698,6 +785,7 @@
     },
     {
      "key": "Cut %@.",
+     "id": "audioEditor.cut",
      "english": "Cut %@.",
      "before": "Se cortó %@.",
      "after": "Se cortó un fragmento de %@.",
@@ -705,6 +793,7 @@
     },
     {
      "key": "Export Numbers spreadsheets from Numbers as PDF files, then import those.",
+     "id": "refusedFormatAdvice.numbers",
      "english": "Export Numbers spreadsheets from Numbers as PDF files, then import those.",
      "before": "Exporta las hojas de cálculo de Numbers desde Numbers como archivos PDF y luego impórtalas.",
      "after": "Exporta las hojas de cálculo de Numbers desde Numbers como archivos PDF y luego impórtalos.",
@@ -712,6 +801,7 @@
     },
     {
      "key": "It deletes %@: it goes to the Trash, where you can recover it until the Trash is emptied.",
+     "id": "feed.deletesSentence.goes",
      "english": "It deletes %@: it goes to the Trash, where you can recover it until the Trash is emptied.",
      "before": "Elimina %@: se mueve a la Papelera, donde puedes recuperarlo hasta que la vacíes.",
      "after": "Elimina %@: se mueve a la Papelera, donde se puede recuperar hasta que la vacíes.",
@@ -719,6 +809,7 @@
     },
     {
      "key": "It deletes %@: they go to the Trash, where you can recover them until the Trash is emptied.",
+     "id": "feed.deletesSentence.them",
      "english": "It deletes %@: they go to the Trash, where you can recover them until the Trash is emptied.",
      "before": "Elimina %@: se mueven a la Papelera, donde puedes recuperarlos hasta que la vacíes.",
      "after": "Elimina %@: se mueven a la Papelera, donde se pueden recuperar hasta que la vacíes.",
@@ -726,6 +817,7 @@
     },
     {
      "key": "Its tracks run past the end of the audio it names, so it was made for another copy of that audio.",
+     "id": "cueSheet.timesPastAudio",
      "english": "Its tracks run past the end of the audio it names, so it was made for another copy of that audio.",
      "before": "Sus pistas pasan del final del audio que nombra, así que se hizo para otra copia de ese audio.",
      "after": "Sus pistas van más allá del final del audio que nombra, así que se hizo para otra copia de ese audio.",
@@ -733,6 +825,7 @@
     },
     {
      "key": "Keep for a number of days",
+     "id": "audioEditingSettings.choiceTitle.deleteAfterDays",
      "english": "Keep for a number of days",
      "before": "Conservar durante unos días",
      "after": "Conservar durante un número de días",
@@ -740,6 +833,7 @@
     },
     {
      "key": "Moved %@ to %@.",
+     "id": "audioEditor.moved",
      "english": "Moved %1$@ to %2$@.",
      "before": "Se movió %1$@ a %2$@.",
      "after": "Se movió un fragmento de %1$@ a %2$@.",
@@ -747,6 +841,7 @@
     },
     {
      "key": "Offer to transcribe after importing an audiobook",
+     "id": "transcription.offerTitle",
      "english": "Offer to transcribe after importing an audiobook",
      "before": "Ofrecer transcribir después de importar un audiolibro",
      "after": "Ofrecer la transcripción después de importar un audiolibro",
@@ -754,6 +849,7 @@
     },
     {
      "key": "Pasted %@ back where they were cut.",
+     "id": "audioEditor.pastedBack",
      "english": "Pasted %@ back where they were cut.",
      "before": "Se pegaron %@ donde se habían cortado.",
      "after": "Se pegó un fragmento de %@ donde se había cortado.",
@@ -761,6 +857,7 @@
     },
     {
      "key": "Pasted %@ over %@.",
+     "id": "audioEditor.pasted.over",
      "english": "Pasted %1$@ over %2$@.",
      "before": "Se pegaron %1$@ sobre %2$@.",
      "after": "Se pegó un fragmento de %1$@ sobre %2$@.",
@@ -768,6 +865,7 @@
     },
     {
      "key": "Pasted %@.",
+     "id": "audioEditor.pasted.alone",
      "english": "Pasted %@.",
      "before": "Se pegaron %@.",
      "after": "Se pegó un fragmento de %@.",
@@ -775,6 +873,7 @@
     },
     {
      "key": "Plain http: others can read or change what this feed sends.",
+     "id": "feed.insecureNote",
      "english": "Plain http: others can read or change what this feed sends.",
      "before": "http simple: otras personas pueden leer o cambiar lo que envía este canal.",
      "after": "http sin cifrar: otras personas pueden leer o cambiar lo que envía este canal.",
@@ -782,6 +881,7 @@
     },
     {
      "key": "Replaced %@ with %@ of new recording, which is selected.",
+     "id": "audioEditor.punchedIn",
      "english": "Replaced %1$@ with %2$@ of new recording, which is selected.",
      "before": "Se reemplazó %1$@ con %2$@ de grabación nueva, que queda seleccionada.",
      "after": "Se reemplazó un fragmento de %1$@ por %2$@ de grabación nueva, que queda seleccionada.",
@@ -789,6 +889,7 @@
     },
     {
      "key": "Reverted to the original audio. Redo brings back the %lld edits.",
+     "id": "audioEditor.reverted.original",
      "english": {
       "one": "Reverted to the original audio. Redo brings back the %lld edit.",
       "other": "Reverted to the original audio. Redo brings back the %lld edits."
@@ -807,6 +908,7 @@
     },
     {
      "key": "Selected chapter %@: %@, %@.",
+     "id": "audioEditor.selectedChapter",
      "english": "Selected chapter %1$@: %2$@, %3$@.",
      "before": "Capítulo seleccionado %1$@: %2$@, %3$@.",
      "after": "Capítulo %1$@ seleccionado: %2$@, %3$@.",
@@ -814,6 +916,7 @@
     },
     {
      "key": "Selected the %@ before chapter 1.",
+     "id": "audioEditor.selectedBeforeFirstChapter",
      "english": "Selected the %@ before chapter 1.",
      "before": "Se seleccionaron %@ antes del capítulo 1.",
      "after": "Se seleccionó el fragmento de %@ antes del capítulo 1.",
@@ -821,6 +924,7 @@
     },
     {
      "key": "Sets the transcription language. A language marked needs download downloads only from the Transcribe Audio sheet.",
+     "id": "transcription.languagePickerHint",
      "english": "Sets the transcription language. A language marked needs download downloads only from the Transcribe Audio sheet.",
      "before": "Define el idioma de la transcripción. Un idioma marcado como necesita descarga solo se descarga desde la hoja Transcribir audio.",
      "after": "Define el idioma de la transcripción. Si un idioma indica que necesita descarga, solo se descarga desde la hoja Transcribir audio.",
@@ -828,6 +932,7 @@
     },
     {
      "key": "Subscribed to %@. This feed uses plain http, so others can read or change what it sends; TextMouth still loads it.",
+     "id": "feed.insecureMessage",
      "english": "Subscribed to %@. This feed uses plain http, so others can read or change what it sends; TextMouth still loads it.",
      "before": "Te suscribiste a %@. Este canal usa http simple, así que otras personas pueden leer o cambiar lo que envía; TextMouth lo carga de todos modos.",
      "after": "Te suscribiste a %@. Este canal usa http sin cifrar, así que otras personas pueden leer o cambiar lo que envía; TextMouth lo carga de todos modos.",
@@ -835,6 +940,7 @@
     },
     {
      "key": "Subscribes to this podcast and fills the address field",
+     "id": "feed.subscribeToResultHint",
      "english": "Subscribes to this podcast and fills the address field",
      "before": "Suscribe a este podcast y completa el campo de dirección",
      "after": "Te suscribe a este podcast y completa el campo de dirección",
@@ -842,6 +948,7 @@
     },
     {
      "key": "TextMouth moved %lld new copies of duplicate books to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back.",
+     "id": "duplicateCopy.unansweredTrashed.other",
      "english": {
       "one": "TextMouth moved %lld new copy of duplicate books to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back.",
       "other": "TextMouth moved %lld new copies of duplicate books to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back."
@@ -860,6 +967,7 @@
     },
     {
      "key": "TextMouth moved the new copies of %@ to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back.",
+     "id": "duplicateCopy.unansweredTrashed.questions",
      "english": "TextMouth moved the new copies of %@ to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back.",
      "before": "TextMouth movió a la Papelera las copias nuevas de %@, porque no se respondieron las preguntas sobre si conservarlos como duplicados antes de que TextMouth se cerrara. Para recuperarlos, abre la Papelera y elige Volver a colocar.",
      "after": "TextMouth movió a la Papelera las copias nuevas de %@, porque no se respondieron las preguntas sobre si conservarlas como duplicados antes de que TextMouth se cerrara. Para recuperarlas, abre la Papelera y elige Volver a colocar.",
@@ -867,6 +975,7 @@
     },
     {
      "key": "TextMouth moved the new copy of “%@” to the Trash, because the question whether to keep it as a duplicate was never answered before TextMouth closed. To get it back, open the Trash and choose Put Back.",
+     "id": "duplicateCopy.unansweredTrashed.question",
      "english": "TextMouth moved the new copy of “%@” to the Trash, because the question whether to keep it as a duplicate was never answered before TextMouth closed. To get it back, open the Trash and choose Put Back.",
      "before": "TextMouth movió a la Papelera la copia nueva de “%@”, porque no se respondió la pregunta sobre si conservarlo como duplicado antes de que TextMouth se cerrara. Para recuperarlo, abre la Papelera y elige Volver a colocar.",
      "after": "TextMouth movió a la Papelera la copia nueva de “%@”, porque no se respondió la pregunta sobre si conservarla como duplicado antes de que TextMouth se cerrara. Para recuperarla, abre la Papelera y elige Volver a colocar.",
@@ -874,6 +983,7 @@
     },
     {
      "key": "The bookInfo.json file did not read back as it was written.",
+     "id": "fileImportError.recordNotReadBack",
      "english": "The bookInfo.json file did not read back as it was written.",
      "before": "El archivo bookInfo.json no se leyó de vuelta tal como se escribió.",
      "after": "Al volver a leer el archivo bookInfo.json, no coincidía con lo escrito.",
@@ -881,6 +991,7 @@
     },
     {
      "key": "The headings from %@ run past the end of the audio, so the tracks were imported without them.",
+     "id": "cueSheet.headingsDidNotFit",
      "english": "The headings from %@ run past the end of the audio, so the tracks were imported without them.",
      "before": "Los encabezados de %@ pasan del final del audio, así que las pistas se importaron sin ellos.",
      "after": "Los encabezados de %@ van más allá del final del audio, así que las pistas se importaron sin ellos.",
@@ -888,6 +999,7 @@
     },
     {
      "key": "The labels of the label file “%@” run past the end of its audio, so its headings were not used.",
+     "id": "cueSheet.sheetUnused.labels",
      "english": "The labels of the label file “%@” run past the end of its audio, so its headings were not used.",
      "before": "Las etiquetas del archivo de etiquetas “%@” pasan del final de su audio, así que no se usaron sus encabezados.",
      "after": "Las etiquetas del archivo de etiquetas “%@” van más allá del final de su audio, así que no se usaron sus encabezados.",
@@ -895,6 +1007,7 @@
     },
     {
      "key": "The tracks of the cue sheet “%@” run past the end of its audio, so its headings were not used.",
+     "id": "cueSheet.sheetUnused.tracks",
      "english": "The tracks of the cue sheet “%@” run past the end of its audio, so its headings were not used.",
      "before": "Las pistas del archivo CUE “%@” pasan del final de su audio, así que no se usaron sus encabezados.",
      "after": "Las pistas del archivo CUE “%@” van más allá del final de su audio, así que no se usaron sus encabezados.",
@@ -902,6 +1015,7 @@
     },
     {
      "key": "The transcript's text didn't read back as one chapter per chapter of the book.",
+     "id": "transcriptTextError.chaptersNotReadBack",
      "english": "The transcript's text didn't read back as one chapter per chapter of the book.",
      "before": "El texto de la transcripción no se leyó de vuelta como un capítulo por cada capítulo del libro.",
      "after": "Al volver a leer el texto de la transcripción, no tenía un capítulo por cada capítulo del libro.",
@@ -909,6 +1023,7 @@
     },
     {
      "key": "This Feed Uses Plain http",
+     "id": "feed.insecureTitle",
      "english": "This Feed Uses Plain http",
      "before": "Este canal usa http simple",
      "after": "Este canal usa http sin cifrar",
@@ -916,6 +1031,7 @@
     },
     {
      "key": "Trimmed to the selection: %@ kept.",
+     "id": "audioEditor.trimmed",
      "english": "Trimmed to the selection: %@ kept.",
      "before": "Se recortó a la selección: se conservan %@.",
      "after": "Se recortó a la selección: se conserva un fragmento de %@.",
@@ -923,6 +1039,7 @@
     },
     {
      "key": "What was kept for %lld removed downloads was deleted.",
+     "id": "feed.unsubscribed.what",
      "english": {
       "one": "What was kept for %lld removed download was deleted.",
       "other": "What was kept for %lld removed downloads was deleted."
@@ -941,6 +1058,7 @@
     },
     {
      "key": "You cleaned it up on %@.",
+     "id": "transcription.bookInfoLine.cleaned",
      "english": "You cleaned it up on %@.",
      "before": "Lo limpiaste el %@.",
      "after": "La limpiaste el %@.",
@@ -948,6 +1066,7 @@
     },
     {
      "key": "You edited it on %@.",
+     "id": "transcription.bookInfoLine.edited",
      "english": "You edited it on %@.",
      "before": "Lo editaste el %@.",
      "after": "La editaste el %@.",
@@ -955,6 +1074,7 @@
     },
     {
      "key": "the %@ kept for %lld removed downloads",
+     "id": "feed.keptPhrase.downloads",
      "english": {
       "one": "the %@ kept for %lld removed download",
       "other": "the %@ kept for %lld removed downloads"
@@ -973,6 +1093,7 @@
     },
     {
      "key": "today at %@",
+     "id": "feed.moment.today",
      "english": "today at %@",
      "before": "hoy a las %@",
      "after": "hoy, %@",
@@ -980,6 +1101,7 @@
     },
     {
      "key": "what was kept for %lld removed downloads",
+     "id": "feed.keptPhrase.what",
      "english": {
       "one": "what was kept for %lld removed download",
       "other": "what was kept for %lld removed downloads"
@@ -998,6 +1120,7 @@
     },
     {
      "key": "yesterday at %@",
+     "id": "feed.moment.yesterday",
      "english": "yesterday at %@",
      "before": "ayer a las %@",
      "after": "ayer, %@",
@@ -1005,6 +1128,7 @@
     },
     {
      "key": "“%@” is still working. Quit once the change is done.",
+     "id": "audioEditor.quitWhileWorking",
      "english": "“%@” is still working. Quit once the change is done.",
      "before": "“%@” sigue trabajando. Cierra TextMouth cuando termine el cambio.",
      "after": "“%@” sigue trabajando. Sal de TextMouth cuando termine el cambio.",
@@ -1023,6 +1147,7 @@
    "fixes": [
     {
      "key": "%@ needs “%@”, one of a Mac's own braille tables, which TextMouth on iPhone doesn't have.",
+     "id": "phoneImport.macBrailleTableRefusal",
      "english": "%1$@ needs “%2$@”, one of a Mac's own braille tables, which TextMouth on iPhone doesn't have.",
      "before": "%1$@ necesita «%2$@», una de las tablas de braille propias de una Mac, que TextMouth en el iPhone no tiene.",
      "after": "%1$@ necesita “%2$@”, una de las tablas de braille propias de una Mac, que TextMouth en el iPhone no tiene.",
@@ -1030,6 +1155,7 @@
     },
     {
      "key": "%@ nests too deeply",
+     "id": "bookExportDeepChapter.title",
      "english": "%@ nests too deeply",
      "before": "Anidado demasiado profundo: %@",
      "after": "Demasiados niveles anidados en %@",
@@ -1037,6 +1163,7 @@
     },
     {
      "key": "%@ not recorded for %@: %@",
+     "id": "shortcutsSettings.refused",
      "english": "%1$@ not recorded for %2$@: %3$@",
      "before": "%1$@ no se registró para %2$@: %3$@",
      "after": "%1$@ no se asignó a %2$@: %3$@",
@@ -1044,6 +1171,7 @@
     },
     {
      "key": "%@ times speed",
+     "id": "audioSpeed.spokenLabel",
      "english": "%@ times speed",
      "before": "Velocidad %@ veces",
      "after": "%@ veces la velocidad",
@@ -1051,6 +1179,7 @@
     },
     {
      "key": "%@, recorded for %@",
+     "id": "shortcutsSettings.sentences",
      "english": "%1$@, recorded for %2$@",
      "before": "%1$@, registrado para %2$@",
      "after": "%1$@, asignado a %2$@",
@@ -1058,6 +1187,7 @@
     },
     {
      "key": "%lld entries give only a phonetic spelling, so they were set aside.",
+     "id": "pronunciationLexicon.imported.phonetic",
      "english": {
       "one": "%lld entry gives only a phonetic spelling, so it was set aside.",
       "other": "%lld entries give only a phonetic spelling, so they were set aside."
@@ -1076,6 +1206,7 @@
     },
     {
      "key": "Added %lld rules from “%@”.",
+     "id": "pronunciationLexicon.imported.added",
      "english": {
       "one": "Added %lld rule from “%@”.",
       "other": "Added %lld rules from “%@”."
@@ -1094,6 +1225,7 @@
     },
     {
      "key": "Adds the lexicon's entries after your rules; entries with only a phonetic spelling are set aside",
+     "id": "pronunciationLexicon.importHint",
      "english": "Adds the lexicon's entries after your rules; entries with only a phonetic spelling are set aside",
      "before": "Agrega las entradas del léxico después de tus reglas; las entradas con solo una ortografía fonética se dejan aparte",
      "after": "Agrega las entradas del léxico después de tus reglas; las entradas con solo una notación fonética se dejan aparte",
@@ -1101,6 +1233,7 @@
     },
     {
      "key": "Also write to the library's copy of the EPUB file",
+     "id": "epubMetadataSave.writeBackToggleTitle",
      "english": "Also write to the library's copy of the EPUB file",
      "before": "Escribir también en la copia de la biblioteca del archivo EPUB",
      "after": "Escribir también en la copia del archivo EPUB de la biblioteca",
@@ -1108,6 +1241,7 @@
     },
     {
      "key": "Begin",
+     "id": "keyBinding.localizedKeyWords.begin",
      "english": "Begin",
      "before": "Principio",
      "after": "Empezar",
@@ -1115,6 +1249,7 @@
     },
     {
      "key": "Braille Ready Format: pages of braille, for braille displays and embossers.",
+     "id": "brfExportWriter.hint",
      "english": "Braille Ready Format: pages of braille, for braille displays and embossers.",
      "before": "Braille Ready Format: páginas de braille, para líneas braille y para impresoras braille.",
      "after": "Braille Ready Format: páginas de braille, para pantallas braille y para impresoras braille.",
@@ -1122,6 +1257,7 @@
     },
     {
      "key": "CR LF suits most braille displays and embossers.",
+     "id": "brailleExport.lineEndsHint",
      "english": "CR LF suits most braille displays and embossers.",
      "before": "CR LF es lo más adecuado para la mayoría de las líneas braille y de las impresoras braille.",
      "after": "CR LF es lo más adecuado para la mayoría de las pantallas braille y de las impresoras braille.",
@@ -1129,6 +1265,7 @@
     },
     {
      "key": "Chapter %@ of this book %@, which TextMouth can't export safely. Choose Edit Text, flatten the nesting, and save; then export again.",
+     "id": "bookExport.nestedTooDeeply.chapter",
      "english": "Chapter %1$@ of this book %2$@, which TextMouth can't export safely. Choose Edit Text, flatten the nesting, and save; then export again.",
      "before": "El capítulo %1$@ de este libro %2$@, y TextMouth no puede exportarlo con seguridad. Elige Editar texto, aplana el anidado y guarda; después vuelve a exportar.",
      "after": "El capítulo %1$@ de este libro %2$@, y TextMouth no puede exportarlo con seguridad. Elige Editar texto, simplifica el anidamiento y guarda; después vuelve a exportar.",
@@ -1136,6 +1273,7 @@
     },
     {
      "key": "Clear",
+     "id": "keyBinding.localizedKeyWords.clear",
      "english": "Clear",
      "before": "Limpiar",
      "after": "Borrar",
@@ -1143,6 +1281,7 @@
     },
     {
      "key": "Clear Display",
+     "id": "keyBinding.localizedKeyWords.display",
      "english": "Clear Display",
      "before": "Limpiar pantalla",
      "after": "Borrar pantalla",
@@ -1150,6 +1289,7 @@
     },
     {
      "key": "Could not save metadata to the library's copy of “%@”, because that file is missing from the library.",
+     "id": "epubMetadataSave.fileMissing.because",
      "english": "Could not save metadata to the library's copy of “%@”, because that file is missing from the library.",
      "before": "No se pudieron guardar los metadatos en la copia de la biblioteca de “%@”, porque ese archivo falta en la biblioteca.",
      "after": "No se pudieron guardar los metadatos en la copia de “%@” de la biblioteca, porque ese archivo falta en la biblioteca.",
@@ -1157,6 +1297,7 @@
     },
     {
      "key": "Could not save metadata to the library's copy of “%@”: %@",
+     "id": "epubMetadataSave.writeFailed",
      "english": "Could not save metadata to the library's copy of “%1$@”: %2$@",
      "before": "No se pudieron guardar los metadatos en la copia de la biblioteca de “%1$@”: %2$@",
      "after": "No se pudieron guardar los metadatos en la copia de “%1$@” de la biblioteca: %2$@",
@@ -1164,6 +1305,7 @@
     },
     {
      "key": "Couldn't export %@. The first was %@.",
+     "id": "bookExport.failureSentence.other",
      "english": "Couldn't export %1$@. The first was %2$@.",
      "before": "No se pudo exportar %1$@. El primero fue %2$@.",
      "after": "No se pudieron exportar %1$@. El primero fue %2$@.",
@@ -1171,6 +1313,7 @@
     },
     {
      "key": "Couldn't export %@: %@.",
+     "id": "bookExport.failureSentence.severalFiles",
      "english": "Couldn't export %1$@: %2$@.",
      "before": "No se pudo exportar %1$@: %2$@.",
      "after": "No se pudieron exportar %1$@: %2$@.",
@@ -1178,6 +1321,7 @@
     },
     {
      "key": "Delete Character",
+     "id": "keyBinding.localizedKeyWords.deleteCharacter",
      "english": "Delete Character",
      "before": "Borrar carácter",
      "after": "Suprimir carácter",
@@ -1185,6 +1329,7 @@
     },
     {
      "key": "Delete Line",
+     "id": "keyBinding.localizedKeyWords.line",
      "english": "Delete Line",
      "before": "Borrar línea",
      "after": "Suprimir línea",
@@ -1192,6 +1337,7 @@
     },
     {
      "key": "Downloading “%@”",
+     "id": "phoneImport.downloading",
      "english": "Downloading “%@”",
      "before": "Descargando «%@»",
      "after": "Descargando “%@”",
@@ -1199,6 +1345,7 @@
     },
     {
      "key": "Escape",
+     "id": "keyBinding.localizedKeyWords.escape",
      "english": "Escape",
      "before": "Escape",
      "after": "Esc",
@@ -1206,6 +1353,7 @@
     },
     {
      "key": "Every shortcut and where it works go back to the defaults. Your own keys are lost.",
+     "id": "shortcutsSettings.resetAllAlertMessage",
      "english": "Every shortcut and where it works go back to the defaults. Your own keys are lost.",
      "before": "Todos los atajos y dónde funcionan vuelven a los valores predeterminados. Se pierden tus propias teclas.",
      "after": "Todos los atajos y dónde funcionan vuelven a los valores predeterminados. Se perderán las teclas que elegiste.",
@@ -1213,6 +1361,7 @@
     },
     {
      "key": "Exported %@ to %@.",
+     "id": "bookExport.finished.exported",
      "english": "Exported %1$@ to %2$@.",
      "before": "Exportado: %1$@ a %2$@.",
      "after": "Exportado a %2$@: %1$@.",
@@ -1220,6 +1369,7 @@
     },
     {
      "key": "Exported %lld rules to “%@”.",
+     "id": "pronunciationLexicon.exported.rules",
      "english": {
       "one": "Exported %lld rule to “%@”.",
       "other": "Exported %lld rules to “%@”."
@@ -1238,6 +1388,7 @@
     },
     {
      "key": "For trying out with a braille display.",
+     "id": "phoneSettings.followInBrailleHint.display",
      "english": "For trying out with a braille display.",
      "before": "Para probar con una línea braille.",
      "after": "Para probar con una pantalla braille.",
@@ -1245,6 +1396,7 @@
     },
     {
      "key": "Go to Time…",
+     "id": "shortcutAction.title.editorGoToTime",
      "english": "Go to Time…",
      "before": "Ir al tiempo…",
      "after": "Ir al momento…",
@@ -1252,6 +1404,7 @@
     },
     {
      "key": "How the BRF writes each braille cell. Most braille displays and embossers read North American Braille ASCII; those set up for German read Eurobraille. To share with a reader elsewhere, export a PEF.",
+     "id": "brailleExport.fileCodeHint",
      "english": "How the BRF writes each braille cell. Most braille displays and embossers read North American Braille ASCII; those set up for German read Eurobraille. To share with a reader elsewhere, export a PEF.",
      "before": "Cómo escribe el BRF cada celda braille. La mayoría de las líneas braille y de las impresoras braille leen North American Braille ASCII; las configuradas para alemán leen Eurobraille. Para compartir con un lector en otro lugar, exporta un PEF.",
      "after": "Cómo escribe el BRF cada celda braille. La mayoría de las pantallas braille y de las impresoras braille leen North American Braille ASCII; las configuradas para alemán leen Eurobraille. Para compartir con un lector en otro lugar, exporta un PEF.",
@@ -1259,6 +1412,7 @@
     },
     {
      "key": "Jumped to %@ in the recording.",
+     "id": "readerTime.jumped.recording",
      "english": "Jumped to %@ in the recording.",
      "before": "Salto a %@ en la grabación.",
      "after": "Saltó a %@ en la grabación.",
@@ -1266,6 +1420,7 @@
     },
     {
      "key": "Jumped to %@ percent.",
+     "id": "readerTime.jumped",
      "english": "Jumped to %@ percent.",
      "before": "Salto al %@ por ciento.",
      "after": "Saltó al %@ por ciento.",
@@ -1273,6 +1428,7 @@
     },
     {
      "key": "Jumped to %@.",
+     "id": "readerTime.jumped.words",
      "english": "Jumped to %@.",
      "before": "Salto a %@.",
      "after": "Saltó a %@.",
@@ -1280,6 +1436,7 @@
     },
     {
      "key": "Jumped to page %@, the %@ page labelled %@.",
+     "id": "readerPage.jumped.labelled",
      "english": "Jumped to page %1$@, the %2$@ page labelled %3$@.",
      "before": "Salto a la página %1$@, la %2$@ página con la etiqueta %3$@.",
      "after": "Saltó a la página %1$@, la %2$@ página con la etiqueta %3$@.",
@@ -1287,6 +1444,7 @@
     },
     {
      "key": "Jumped to page %@.",
+     "id": "readerPage.jumped.numbered",
      "english": "Jumped to page %@.",
      "before": "Salto a la página %@.",
      "after": "Saltó a la página %@.",
@@ -1294,6 +1452,7 @@
     },
     {
      "key": "Kept all %lld spoken chapters until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To make the audio file from them, export the same range at the same speed and pitch.",
+     "id": "speechExport.kept.them",
      "english": {
       "one": "Kept all %lld spoken chapter until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To make the audio file from it, export the same range at the same speed and pitch.",
       "other": "Kept all %lld spoken chapters until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To make the audio file from them, export the same range at the same speed and pitch."
@@ -1312,6 +1471,7 @@
     },
     {
      "key": "Make Double Press",
+     "id": "shortcutsSettings.makeDoublePress",
      "english": "Make Double Press",
      "before": "Hacer pulsación doble",
      "after": "Convertir en doble pulsación",
@@ -1319,6 +1479,7 @@
     },
     {
      "key": "Make Single Press",
+     "id": "shortcutsSettings.makeSinglePress",
      "english": "Make Single Press",
      "before": "Hacer pulsación simple",
      "after": "Convertir en pulsación simple",
@@ -1326,6 +1487,7 @@
     },
     {
      "key": "Metadata saved to the library's copy of “%@”.",
+     "id": "epubMetadataSave.savedToFile",
      "english": "Metadata saved to the library's copy of “%@”.",
      "before": "Metadatos guardados en la biblioteca y en la copia de la biblioteca de “%@”.",
      "after": "Metadatos guardados en la biblioteca y en su copia de “%@”.",
@@ -1333,6 +1495,7 @@
     },
     {
      "key": "Mode Switch",
+     "id": "keyBinding.localizedKeyWords.switch",
      "english": "Mode Switch",
      "before": "Cambio de modo",
      "after": "Cambiar modo",
@@ -1340,6 +1503,7 @@
     },
     {
      "key": "No rules were added from “%@”.",
+     "id": "pronunciationLexicon.imported.noAdded",
      "english": "No rules were added from “%@”.",
      "before": "No se agregó ninguna regla de «%@».",
      "after": "No se agregó ninguna regla de “%@”.",
@@ -1347,6 +1511,7 @@
     },
     {
      "key": "No voice is installed. Add one in System Settings, Accessibility, Spoken Content, then export again.",
+     "id": "speechExportError.noVoice",
      "english": "No voice is installed. Add one in System Settings, Accessibility, Spoken Content, then export again.",
      "before": "No hay ninguna voz instalada. Agrega una en Ajustes del Sistema, Accesibilidad, Contenido hablado, y vuelve a exportar.",
      "after": "No hay ninguna voz instalada. Agrega una en Ajustes del Sistema, Accesibilidad, Contenido leído, y vuelve a exportar.",
@@ -1354,6 +1519,7 @@
     },
     {
      "key": "No voices are installed. Add voices in Settings, Accessibility, Read & Speak.",
+     "id": "phoneVoice.noVoices",
      "english": "No voices are installed. Add voices in Settings, Accessibility, Read & Speak.",
      "before": "No hay voces instaladas. Agrega voces en Ajustes, Accesibilidad, Contenido hablado.",
      "after": "No hay voces instaladas. Agrega voces en Ajustes, Accesibilidad, Lectura y voz.",
@@ -1361,6 +1527,7 @@
     },
     {
      "key": "None of the %lld chapters could be read",
+     "id": "extractionReport.summary.none",
      "english": {
       "one": "None of the %lld chapter could be read",
       "other": "None of the %lld chapters could be read"
@@ -1379,6 +1546,7 @@
     },
     {
      "key": "Paste and Match Style",
+     "id": "keyBinding.localizedSystemCommand.paste",
      "english": "Paste and Match Style",
      "before": "Pegar y adaptar estilo",
      "after": "Pegar con el mismo estilo",
@@ -1386,6 +1554,7 @@
     },
     {
      "key": "Press the new key, or Escape to cancel.",
+     "id": "shortcutsSettings.recordingHint",
      "english": "Press the new key, or Escape to cancel.",
      "before": "Pulsa la nueva tecla, o Escape para cancelar.",
      "after": "Pulsa la nueva tecla, o Esc para cancelar.",
@@ -1393,6 +1562,7 @@
     },
     {
      "key": "Save metadata to the library and to the library's copy of the EPUB file",
+     "id": "epubMetadataSave.saveButtonLabel.copy",
      "english": "Save metadata to the library and to the library's copy of the EPUB file",
      "before": "Guardar metadatos en la biblioteca y en la copia de la biblioteca del archivo EPUB",
      "after": "Guardar metadatos en la biblioteca y en su copia del archivo EPUB",
@@ -1400,6 +1570,7 @@
     },
     {
      "key": "Scroll Lock",
+     "id": "keyBinding.localizedKeyWords.scroll",
      "english": "Scroll Lock",
      "before": "Bloqueo de desplazamiento",
      "after": "Bloquear desplazamiento",
@@ -1407,6 +1578,7 @@
     },
     {
      "key": "Speech from the Mac's voices is for personal, non-commercial use, under Apple's licence.",
+     "id": "speechExport.licence",
      "english": "Speech from the Mac's voices is for personal, non-commercial use, under Apple's licence.",
      "before": "El habla de las voces de esta Mac es para uso personal y no comercial, según la licencia de Apple.",
      "after": "El audio de las voces de la Mac es para uso personal y no comercial, según la licencia de Apple.",
@@ -1414,6 +1586,7 @@
     },
     {
      "key": "TextMouth can't use the braille table chosen in Settings, “%@”, so this export starts from %@.",
+     "id": "brailleExport.startsFromDefault",
      "english": "TextMouth can't use the braille table chosen in Settings, “%1$@”, so this export starts from %2$@.",
      "before": "TextMouth no puede usar la tabla de braille elegida en Ajustes, «%1$@», así que esta exportación empieza con %2$@.",
      "after": "TextMouth no puede usar la tabla de braille elegida en Ajustes, “%1$@”, así que esta exportación empieza con %2$@.",
@@ -1421,6 +1594,7 @@
     },
     {
      "key": "TextMouth can't use this Mac's table “%@”: %@.",
+     "id": "brailleSettings.refusal.cant",
      "english": "TextMouth can't use this Mac's table “%1$@”: %2$@.",
      "before": "TextMouth no puede usar la tabla «%1$@» de esta Mac: %2$@.",
      "after": "TextMouth no puede usar la tabla “%1$@” de esta Mac: %2$@.",
@@ -1428,6 +1602,7 @@
     },
     {
      "key": "TextMouth could not check this Mac's braille table “%@”: %@. Try again.",
+     "id": "failure.uncheckedTable",
      "english": "TextMouth could not check this Mac's braille table “%1$@”: %2$@. Try again.",
      "before": "TextMouth no pudo comprobar la tabla de braille «%1$@» de esta Mac: %2$@. Inténtalo de nuevo.",
      "after": "TextMouth no pudo comprobar la tabla de braille “%1$@” de esta Mac: %2$@. Inténtalo de nuevo.",
@@ -1435,6 +1610,7 @@
     },
     {
      "key": "TextMouth could not check this Mac's table “%@”: %@. Choose it again to retry.",
+     "id": "brailleSettings.refusal.choose",
      "english": "TextMouth could not check this Mac's table “%1$@”: %2$@. Choose it again to retry.",
      "before": "TextMouth no pudo comprobar la tabla «%1$@» de esta Mac: %2$@. Elígela de nuevo para reintentar.",
      "after": "TextMouth no pudo comprobar la tabla “%1$@” de esta Mac: %2$@. Elígela de nuevo para reintentar.",
@@ -1442,6 +1618,7 @@
     },
     {
      "key": "TextMouth could not read “%@”.",
+     "id": "pronunciationLexicon.importFailure.nil",
      "english": "TextMouth could not read “%@”.",
      "before": "TextMouth no pudo leer «%@».",
      "after": "TextMouth no pudo leer “%@”.",
@@ -1449,6 +1626,7 @@
     },
     {
      "key": "TextMouth could not save “%@”.",
+     "id": "pronunciationLexicon.exportWriteFailure",
      "english": "TextMouth could not save “%@”.",
      "before": "TextMouth no pudo guardar «%@».",
      "after": "TextMouth no pudo guardar “%@”.",
@@ -1456,6 +1634,7 @@
     },
     {
      "key": "TextMouth has no braille table named “%@”.",
+     "id": "failure.unknownTable",
      "english": "TextMouth has no braille table named “%@”.",
      "before": "TextMouth no tiene ninguna tabla de braille llamada «%@».",
      "after": "TextMouth no tiene ninguna tabla de braille llamada “%@”.",
@@ -1463,6 +1642,7 @@
     },
     {
      "key": "The Mac's speech engine refused to speak part of “%@”, even with its brackets made silent.",
+     "id": "speechRenderFailure.refused",
      "english": "The Mac's speech engine refused to speak part of “%@”, even with its brackets made silent.",
      "before": "El motor de voz de la Mac se negó a leer una parte de «%@», incluso con sus corchetes en silencio.",
      "after": "El motor de voz de la Mac se negó a leer una parte de “%@”, incluso con sus corchetes en silencio.",
@@ -1470,6 +1650,7 @@
     },
     {
      "key": "The book's audio as it was before its first edit, which TextMouth keeps while the Original audio setting does.",
+     "id": "bookExport.hint.originalAudio",
      "english": "The book's audio as it was before its first edit, which TextMouth keeps while the Original audio setting does.",
      "before": "El audio del libro antes de su primera edición, que TextMouth conserva mientras lo haga el ajuste Audio original.",
      "after": "El audio del libro antes de su primera edición, que TextMouth conserva mientras el ajuste Audio original lo indique.",
@@ -1477,6 +1658,7 @@
     },
     {
      "key": "The braille table writes “%@” as an eight-dot cell, but TextMouth's BRF and PEF files are six-dot only.",
+     "id": "eightDotCell.errorDescription.brailleTable",
      "english": "The braille table writes “%@” as an eight-dot cell, but TextMouth's BRF and PEF files are six-dot only.",
      "before": "La tabla de braille escribe «%@» como una celda de ocho puntos, pero los archivos BRF y PEF de TextMouth son solo de seis puntos.",
      "after": "La tabla de braille escribe “%@” como una celda de ocho puntos, pero los archivos BRF y PEF de TextMouth son solo de seis puntos.",
@@ -1484,6 +1666,7 @@
     },
     {
      "key": "The file %@ failed partway through.",
+     "id": "audioPlaybackFailure.message.failedPartway",
      "english": "The file %@ failed partway through.",
      "before": "El archivo %@ falló a medias.",
      "after": "El archivo %@ falló a mitad de la reproducción.",
@@ -1491,6 +1674,7 @@
     },
     {
      "key": "The other %lld chapters have no text.",
+     "id": "epubParserError.noReadableChapters.other",
      "english": {
       "one": "The other %lld chapter has no text.",
       "other": "The other %lld chapters have no text."
@@ -1509,6 +1693,7 @@
     },
     {
      "key": "The text of this book %@, which TextMouth can't export safely. Choose Edit Text, flatten the nesting, and save; then export again.",
+     "id": "bookExport.nestedTooDeeply.flatten",
      "english": "The text of this book %@, which TextMouth can't export safely. Choose Edit Text, flatten the nesting, and save; then export again.",
      "before": "El texto de este libro %@, y TextMouth no puede exportarlo con seguridad. Elige Editar texto, aplana el anidado y guarda; después vuelve a exportar.",
      "after": "El texto de este libro %@, y TextMouth no puede exportarlo con seguridad. Elige Editar texto, simplifica el anidamiento y guarda; después vuelve a exportar.",
@@ -1516,6 +1701,7 @@
     },
     {
      "key": "The voice changed its kind of audio partway through “%@”.",
+     "id": "speechRenderFailure.formatChanged",
      "english": "The voice changed its kind of audio partway through “%@”.",
      "before": "La voz cambió su tipo de audio a mitad de «%@».",
      "after": "La voz cambió su tipo de audio a mitad de “%@”.",
@@ -1523,6 +1709,7 @@
     },
     {
      "key": "The voice made no sound for “%@”. Check that it speaks the book's language.",
+     "id": "speechRenderFailure.noSound",
      "english": "The voice made no sound for “%@”. Check that it speaks the book's language.",
      "before": "La voz no emitió ningún sonido para «%@». Comprueba que hable el idioma del libro.",
      "after": "La voz no emitió ningún sonido para “%@”. Comprueba que hable el idioma del libro.",
@@ -1530,6 +1717,7 @@
     },
     {
      "key": "The voice stopped partway through “%@”, and TextMouth stopped waiting.",
+     "id": "speechRenderFailure.stalled",
      "english": "The voice stopped partway through “%@”, and TextMouth stopped waiting.",
      "before": "La voz se detuvo a mitad de «%@», y TextMouth dejó de esperar.",
      "after": "La voz se detuvo a mitad de “%@”, y TextMouth dejó de esperar.",
@@ -1537,6 +1725,7 @@
     },
     {
      "key": "This Mac no longer has the chosen table, “%@”; choose another.",
+     "id": "brailleSettings.source.another",
      "english": "This Mac no longer has the chosen table, “%@”; choose another.",
      "before": "Esta Mac ya no tiene la tabla elegida, «%@»; elige otra.",
      "after": "Esta Mac ya no tiene la tabla elegida, “%@”; elige otra.",
@@ -1544,6 +1733,7 @@
     },
     {
      "key": "This Mac's braille table “%@” changed from liblouis %@ to %@ since the book was read, so TextMouth keeps the book's text as it was.",
+     "id": "failure.changedTable.brailleLiblouisSince",
      "english": "This Mac's braille table “%1$@” changed from liblouis %2$@ to %3$@ since the book was read, so TextMouth keeps the book's text as it was.",
      "before": "La tabla de braille «%1$@» de esta Mac cambió de liblouis %2$@ a %3$@ desde que se leyó el libro, así que TextMouth conserva el texto del libro tal como estaba.",
      "after": "La tabla de braille “%1$@” de esta Mac cambió de liblouis %2$@ a %3$@ desde que se leyó el libro, así que TextMouth conserva el texto del libro tal como estaba.",
@@ -1551,6 +1741,7 @@
     },
     {
      "key": "This Mac's braille table “%@” may have changed since liblouis %@ read the book, so TextMouth keeps the book's text as it was.",
+     "id": "failure.changedTable.brailleSinceLiblouis",
      "english": "This Mac's braille table “%1$@” may have changed since liblouis %2$@ read the book, so TextMouth keeps the book's text as it was.",
      "before": "La tabla de braille «%1$@» de esta Mac puede haber cambiado desde que liblouis %2$@ leyó el libro, así que TextMouth conserva el texto del libro tal como estaba.",
      "after": "La tabla de braille “%1$@” de esta Mac puede haber cambiado desde que liblouis %2$@ leyó el libro, así que TextMouth conserva el texto del libro tal como estaba.",
@@ -1558,6 +1749,7 @@
     },
     {
      "key": "Type straight quotation marks: in TextEdit, turn off Smart Quotes under Edit, Substitutions.",
+     "id": "bookManifestEdit.explanation.quotation",
      "english": "Type straight quotation marks: in TextEdit, turn off Smart Quotes under Edit, Substitutions.",
      "before": "Escribe comillas rectas: en TextEdit, desactiva Comillas inteligentes en Edición, Sustituciones.",
      "after": "Escribe comillas rectas: en TextEdit, desactiva Comillas tipográficas en Edición, Sustituciones.",
@@ -1565,6 +1757,7 @@
     },
     {
      "key": "Use the global setting (%@)",
+     "id": "common.useTheGlobalSettingValue",
      "english": "Use the global setting (%@)",
      "before": "Usar el ajuste general (%@)",
      "after": "Usar el ajuste global (%@)",
@@ -1572,6 +1765,7 @@
     },
     {
      "key": "Warning: This will rewrite the library's copy of the EPUB file and recalculate its MD5 hash.",
+     "id": "epubMetadataSave.writeBackNote.recalculate",
      "english": "Warning: This will rewrite the library's copy of the EPUB file and recalculate its MD5 hash.",
      "before": "Advertencia: esto reescribirá la copia de la biblioteca del archivo EPUB y recalculará su hash MD5.",
      "after": "Advertencia: esto reescribirá la copia del archivo EPUB de la biblioteca y recalculará su hash MD5.",
@@ -1579,6 +1773,7 @@
     },
     {
      "key": "With \"%@\", Play on a finished book says it is finished; with \"%@\", Play starts it again from the beginning.",
+     "id": "endOfBook.playOnAFinishedBookCaption",
      "english": "With \"%1$@\", Play on a finished book says it is finished; with \"%2$@\", Play starts it again from the beginning.",
      "before": "Con “%1$@”, Play en un libro terminado avisa que ya está terminado; con “%2$@”, Play lo vuelve a empezar desde el principio.",
      "after": "Con “%1$@”, Reproducir en un libro terminado avisa que ya está terminado; con “%2$@”, Reproducir lo vuelve a empezar desde el principio.",
@@ -1586,6 +1781,7 @@
     },
     {
      "key": "Writes the title, author, publisher, and date into the library's copy of this book.",
+     "id": "epubMetadataSave.writeBackToggleHint.publisher",
      "english": "Writes the title, author, publisher, and date into the library's copy of this book.",
      "before": "Escribe el título, el autor, la editorial y la fecha en la copia de la biblioteca de este libro.",
      "after": "Escribe el título, el autor, la editorial y la fecha en la copia que la biblioteca guarda de este libro.",
@@ -1593,6 +1789,7 @@
     },
     {
      "key": "Writes this and every other too-deeply nested chapter of this export as plain paragraphs of lines, without asking again.",
+     "id": "bookExportDeepChapter.exportAllAsWrittenHint",
      "english": "Writes this and every other too-deeply nested chapter of this export as plain paragraphs of lines, without asking again.",
      "before": "Escribe este y cualquier otro capítulo de esta exportación con anidado demasiado profundo como párrafos simples de líneas, sin volver a preguntar.",
      "after": "Escribe este y cualquier otro capítulo de esta exportación con un anidamiento demasiado profundo como párrafos simples de líneas, sin volver a preguntar.",
@@ -1600,6 +1797,7 @@
     },
     {
      "key": "the file %@ failed partway through",
+     "id": "audioPlaybackFailure.problem.failedPartway",
      "english": "the file %@ failed partway through",
      "before": "el archivo %@ falló a medias",
      "after": "el archivo %@ falló a mitad de la reproducción",
@@ -1607,6 +1805,7 @@
     },
     {
      "key": "“%@” couldn't be downloaded from iCloud. Check the connection, then add it again.",
+     "id": "phoneImport.downloadFailed",
      "english": "“%@” couldn't be downloaded from iCloud. Check the connection, then add it again.",
      "before": "No se pudo descargar «%@» desde iCloud. Comprueba la conexión y vuelve a agregarlo.",
      "after": "No se pudo descargar “%@” desde iCloud. Comprueba la conexión y vuelve a agregarlo.",
@@ -1614,6 +1813,7 @@
     },
     {
      "key": "“%@” is a Personal Voice, which macOS can't record to a file. Choose another voice with the %@ button in the reader, then export again.",
+     "id": "speechExportError.personalVoice",
      "english": "“%1$@” is a Personal Voice, which macOS can't record to a file. Choose another voice with the %2$@ button in the reader, then export again.",
      "before": "«%1$@» es una Voz personal, que macOS no puede grabar en un archivo. Elige otra voz con el botón %2$@ del lector y vuelve a exportar.",
      "after": "“%1$@” es una Voz personal, que macOS no puede grabar en un archivo. Elige otra voz con el botón %2$@ del lector y vuelve a exportar.",
@@ -1621,6 +1821,7 @@
     },
     {
      "key": "“%@” is an XML file, but not a pronunciation lexicon.",
+     "id": "pronunciationLexicon.importFailure.notALexicon",
      "english": "“%@” is an XML file, but not a pronunciation lexicon.",
      "before": "«%@» es un archivo XML, pero no un léxico de pronunciación.",
      "after": "“%@” es un archivo XML, pero no un léxico de pronunciación.",
@@ -1628,6 +1829,7 @@
     },
     {
      "key": "“%@” is not a complete, valid XML file.",
+     "id": "pronunciationLexicon.importFailure.notXML",
      "english": "“%@” is not a complete, valid XML file.",
      "before": "«%@» no es un archivo XML completo y válido.",
      "after": "“%@” no es un archivo XML completo y válido.",
@@ -1635,6 +1837,7 @@
     },
     {
      "key": "“%@” is too large to read.",
+     "id": "pronunciationLexicon.importFailure.tooLarge",
      "english": "“%@” is too large to read.",
      "before": "«%@» es demasiado grande para leerlo.",
      "after": "“%@” es demasiado grande para leerlo.",
@@ -1642,6 +1845,7 @@
     },
     {
      "key": "“%@” uses XML entities of its own, which TextMouth does not read.",
+     "id": "pronunciationLexicon.declaresEntities",
      "english": "“%@” uses XML entities of its own, which TextMouth does not read.",
      "before": "«%@» usa entidades XML propias, que TextMouth no lee.",
      "after": "“%@” usa entidades XML propias, que TextMouth no lee.",

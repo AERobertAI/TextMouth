@@ -12,6 +12,7 @@
    "fixes": [
     {
      "key": "%@ has %@.",
+     "id": "libraryComparison.value",
      "english": "%1$@ has %2$@.",
      "before": "%1$@-এ আছে %2$@।",
      "after": "%1$@তে আছে %2$@।",
@@ -19,6 +20,7 @@
     },
     {
      "key": "%@ has %@; %@ has %@.",
+     "id": "libraryComparison.hasPair",
      "english": "%1$@ has %2$@; %3$@ has %4$@.",
      "before": "%1$@-এ আছে %2$@; %3$@-এ আছে %4$@।",
      "after": "%1$@তে আছে %2$@; %3$@তে আছে %4$@।",
@@ -26,6 +28,7 @@
     },
     {
      "key": "%@ has no place saved.",
+     "id": "libraryComparison.sentence.positionNewer.place",
      "english": "%@ has no place saved.",
      "before": "%@-এ কোনো অবস্থান সংরক্ষিত নেই।",
      "after": "%@তে কোনো অবস্থান সংরক্ষিত নেই।",
@@ -33,6 +36,7 @@
     },
     {
      "key": "%@ has no transcript to search. Transcribe it first, with Transcribe Audio.",
+     "id": "bookSearch.noTranscript",
      "english": "%@ has no transcript to search. Transcribe it first, with Transcribe Audio.",
      "before": "%@-এ অনুসন্ধান করার মতো কোনো ট্রান্সক্রিপ্ট নেই। আগে অডিও ট্রান্সক্রাইব করুন দিয়ে এটি ট্রান্সক্রাইব করুন।",
      "after": "%@-এ অনুসন্ধান করার মতো কোনো ট্রান্সক্রিপ্ট নেই। আগে “অডিও ট্রান্সক্রাইব করুন” দিয়ে এটি ট্রান্সক্রাইব করুন।",
@@ -40,6 +44,7 @@
     },
     {
      "key": "%@ is filed %@ in %@ and %@ in %@.",
+     "id": "libraryComparison.sentence.bookFiledDifferently",
      "english": "%1$@ is filed %2$@ in %3$@ and %4$@ in %5$@.",
      "before": "%1$@ %3$@-এ %2$@ ফাইল করা আছে এবং %5$@-এ %4$@ ফাইল করা আছে।",
      "after": "%1$@ %3$@তে %2$@ রাখা আছে, আর %5$@তে %4$@।",
@@ -47,6 +52,7 @@
     },
     {
      "key": "%@, nothing matches this view now.",
+     "id": "libraryViewPicker.wentToEmptyView",
      "english": "%@, nothing matches this view now.",
      "before": "%@, এখন কিছুই মেলেনি।",
      "after": "%@, এখন এই ভিউয়ে কিছুই মেলে না।",
@@ -54,6 +60,7 @@
     },
     {
      "key": "%lld of %@, %lld percent",
+     "id": "readerCloud.progressValue.percent",
      "english": "%1$lld of %2$@, %3$lld percent",
      "before": "%2$@-এর মধ্যে %1$lld, %3$lld শতাংশ",
      "after": "%2$@ থেকে %1$lldটি, %3$lld শতাংশ",
@@ -61,6 +68,7 @@
     },
     {
      "key": "%lld of %@, %lld%%",
+     "id": "readerCloud.progressValue.count",
      "english": "%1$lld of %2$@, %3$lld%%",
      "before": "%2$@-এর মধ্যে %1$lld, %3$lld%%",
      "after": "%2$@ থেকে %1$lldটি, %3$lld%%",
@@ -68,6 +76,7 @@
     },
     {
      "key": "(skip)",
+     "id": "substitutions.skipMark",
      "english": "(skip)",
      "before": "(এড়িয়ে যান)",
      "after": "(এড়িয়ে যাওয়া)",
@@ -75,6 +84,7 @@
     },
     {
      "key": "Action: skip",
+     "id": "substitutions.skipPart",
      "english": "Action: skip",
      "before": "ক্রিয়া: এড়িয়ে যান",
      "after": "ক্রিয়া: এড়িয়ে যাওয়া",
@@ -82,6 +92,7 @@
     },
     {
      "key": "Always offers a view all the time. When Applicable offers it only while it lists something: the Reading List while it holds a book, episode, or article, and Feeds while there is a feed. Hidden leaves it out. A window keeps its view until you choose another.",
+     "id": "libraryViewsSettings.visibilityCaption",
      "english": "Always offers a view all the time. When Applicable offers it only while it lists something: the Reading List while it holds a book, episode, or article, and Feeds while there is a feed. Hidden leaves it out. A window keeps its view until you choose another.",
      "before": "সবসময় ভিউটি সবসময় দেখায়। প্রযোজ্য হলে ভিউটি শুধু তখনই দেখায় যখন এতে কিছু তালিকাভুক্ত থাকে: পড়ার তালিকায় বই, পর্ব বা নিবন্ধ থাকলে, আর ফিড ভিউয়ে একটি ফিড থাকলে। লুকানো ভিউটি বাদ দেয়। আপনি অন্য ভিউ বেছে না নেওয়া পর্যন্ত উইন্ডো তার ভিউ ধরে রাখে।",
      "after": "“সবসময়” বেছে নিলে ভিউটি সবসময় দেখানো হয়। “প্রযোজ্য হলে” বেছে নিলে ভিউটি শুধু তখনই দেখানো হয়, যখন এতে কিছু থাকে: পড়ার তালিকা, যখন তাতে কোনো বই, পর্ব বা নিবন্ধ থাকে, আর ফিড, যখন কোনো ফিড থাকে। “লুকানো” বেছে নিলে ভিউটি দেখানো হয় না। আপনি অন্য ভিউ বেছে না নেওয়া পর্যন্ত উইন্ডো তার ভিউ ধরে রাখে।",
@@ -89,6 +100,7 @@
     },
     {
      "key": "An edit of its text is kept beside the new reading, as a copy in the book's package.",
+     "id": "textEncoding.keptTextNote",
      "english": "An edit of its text is kept beside the new reading, as a copy in the book's package.",
      "before": "এর টেক্সটের সম্পাদনা নতুন পড়ার পাশে, বইয়ের প্যাকেজে একটি কপি হিসেবে রাখা হয়।",
      "after": "এর টেক্সটে করা সম্পাদনা নতুন করে পড়া টেক্সটের পাশে, বইয়ের প্যাকেজে একটি কপি হিসেবে রাখা হয়।",
@@ -96,6 +108,7 @@
     },
     {
      "key": "Automatically start playing when you navigate to a heading, bookmark, or search result.",
+     "id": "settings.autoPlayExplanation",
      "english": "Automatically start playing when you navigate to a heading, bookmark, or search result.",
      "before": "হেডিং, বুকমার্ক বা অনুসন্ধানের ফলাফলে গেলে নিজে থেকে চালানো শুরু করুন।",
      "after": "হেডিং, বুকমার্ক বা অনুসন্ধানের ফলাফলে গেলে নিজে থেকে চালানো শুরু হয়।",
@@ -103,6 +116,7 @@
     },
     {
      "key": "Book only in %@: %@.",
+     "id": "libraryComparison.sentence.bookOnlyIn",
      "english": "Book only in %1$@: %2$@.",
      "before": "বইটি শুধু %1$@-এ আছে: %2$@।",
      "after": "বইটি শুধু %1$@তে আছে: %2$@।",
@@ -110,6 +124,7 @@
     },
     {
      "key": "Bookmark %@ in %@: only in %@, %@.",
+     "id": "libraryComparison.sentence.bookmarkOnlyIn",
      "english": "Bookmark %1$@ in %2$@: only in %3$@, %4$@.",
      "before": "%2$@-এর বুকমার্ক %1$@: শুধু %3$@-এ আছে, %4$@।",
      "after": "%2$@-এর বুকমার্ক %1$@: শুধু %3$@তে আছে, %4$@।",
@@ -117,6 +132,7 @@
     },
     {
      "key": "Check the criteria above, then %@.",
+     "id": "duplicateFinder.notScannedYet",
      "english": "Check the criteria above, then %@.",
      "before": "উপরের মানদণ্ড দেখুন, তারপর %@ বেছে নিন।",
      "after": "উপরের মানদণ্ড দেখুন, তারপর “%@” বেছে নিন।",
@@ -124,6 +140,7 @@
     },
     {
      "key": "Check the text, or save the file in the editor as UTF-8 and choose %@ again.",
+     "id": "textImportPolicy.reloadMayBeMisread.choose",
      "english": "Check the text, or save the file in the editor as UTF-8 and choose %@ again.",
      "before": "টেক্সট পরীক্ষা করুন, অথবা এডিটরে ফাইলটি UTF-8 হিসেবে সংরক্ষণ করে আবার %@ বেছে নিন।",
      "after": "টেক্সট পরীক্ষা করুন, অথবা এডিটরে ফাইলটি UTF-8 হিসেবে সংরক্ষণ করে আবার “%@” বেছে নিন।",
@@ -131,6 +148,7 @@
     },
     {
      "key": "Choose %@ first.",
+     "id": "bookCloudError.stopKeepingFirst",
      "english": "Choose %@ first.",
      "before": "আগে %@ বেছে নিন।",
      "after": "আগে “%@” বেছে নিন।",
@@ -138,6 +156,7 @@
     },
     {
      "key": "Choose %@ or %@ from %@ at the top of the Library window.",
+     "id": "libraryIndexRecovery.settingsExplanation.choose",
      "english": "Choose %1$@ or %2$@ from %3$@ at the top of the Library window.",
      "before": "লাইব্রেরি উইন্ডোর উপরে %3$@ থেকে %1$@ বা %2$@ বেছে নিন।",
      "after": "লাইব্রেরি উইন্ডোর উপরে “%3$@” থেকে “%1$@” বা “%2$@” বেছে নিন।",
@@ -145,6 +164,7 @@
     },
     {
      "key": "Chooses whether The, A, and An at the start of a title count when sorting and when typing a title's first letters.",
+     "id": "leadingArticle.pickerHint",
      "english": "Chooses whether The, A, and An at the start of a title count when sorting and when typing a title's first letters.",
      "before": "বাছাই করার সময় এবং শিরোনামের প্রথম অক্ষর টাইপ করার সময় শিরোনামের শুরুর The, A ও An গণ্য হবে কি না তা ঠিক করে।",
      "after": "সাজানোর সময় এবং শিরোনামের প্রথম অক্ষর টাইপ করার সময় শিরোনামের শুরুর The, A ও An গণ্য হবে কি না তা ঠিক করে।",
@@ -152,6 +172,7 @@
     },
     {
      "key": "Conditions about books test books, episodes, and articles; conditions about feeds test feeds. A condition never hides a row it does not test.",
+     "id": "libraryViewEditor.listsCaption",
      "english": "Conditions about books test books, episodes, and articles; conditions about feeds test feeds. A condition never hides a row it does not test.",
      "before": "বই-সংক্রান্ত শর্ত বই, পর্ব ও নিবন্ধ পরীক্ষা করে; ফিড-সংক্রান্ত শর্ত ফিড পরীক্ষা করে। যে সারি কোনো শর্ত পরীক্ষা করে না, শর্ত তা কখনও লুকায় না।",
      "after": "বই-সংক্রান্ত শর্ত বই, পর্ব ও নিবন্ধ পরীক্ষা করে; ফিড-সংক্রান্ত শর্ত ফিড পরীক্ষা করে। কোনো শর্ত কখনও এমন সারি লুকায় না, যা সে পরীক্ষা করে না।",
@@ -159,6 +180,7 @@
     },
     {
      "key": "Download it first: select it in the library, then choose %@.",
+     "id": "libraryCloud.downloadFirst.select",
      "english": "Download it first: select it in the library, then choose %@.",
      "before": "আগে এটি ডাউনলোড করুন: লাইব্রেরিতে এটি নির্বাচন করে %@ বেছে নিন।",
      "after": "আগে এটি ডাউনলোড করুন: লাইব্রেরিতে এটি নির্বাচন করে “%@” বেছে নিন।",
@@ -166,6 +188,7 @@
     },
     {
      "key": "Download them first: select them in the library, then choose %@.",
+     "id": "libraryCloud.downloadFirst.them",
      "english": "Download them first: select them in the library, then choose %@.",
      "before": "আগে সেগুলো ডাউনলোড করুন: লাইব্রেরিতে সেগুলো নির্বাচন করে %@ বেছে নিন।",
      "after": "আগে সেগুলো ডাউনলোড করুন: লাইব্রেরিতে সেগুলো নির্বাচন করে “%@” বেছে নিন।",
@@ -173,6 +196,7 @@
     },
     {
      "key": "Edit Text stops for this book; choose Edit Text again to edit the new reading.",
+     "id": "textEncoding.stopsEditingNote",
      "english": "Edit Text stops for this book; choose Edit Text again to edit the new reading.",
      "before": "এই বইয়ের জন্য টেক্সট সম্পাদনা করুন বন্ধ হয়ে যায়; নতুন পড়া সম্পাদনা করতে আবার টেক্সট সম্পাদনা করুন বেছে নিন।",
      "after": "এই বইয়ের জন্য “টেক্সট সম্পাদনা করুন” বন্ধ হয়ে যায়; নতুন করে পড়া টেক্সট সম্পাদনা করতে আবার “টেক্সট সম্পাদনা করুন” বেছে নিন।",
@@ -180,6 +204,7 @@
     },
     {
      "key": "Enters edit mode, for selecting several books to move or remove.",
+     "id": "libraryList.entersEditMode",
      "english": "Enters edit mode, for selecting several books to move or remove.",
      "before": "একাধিক বই বেছে সরানো বা সরিয়ে ফেলার জন্য সম্পাদনা মোডে যায়।",
      "after": "একাধিক বই নির্বাচন করে স্থানান্তর করতে বা সরাতে সম্পাদনা মোডে যায়।",
@@ -187,6 +212,7 @@
     },
     {
      "key": "Exact file content match — the strongest indicator",
+     "id": "duplicateFilter.hint.md5Hash",
      "english": "Exact file content match — the strongest indicator",
      "before": "ফাইলের বিষয়বস্তু হুবহু মেলে — সবচেয়ে শক্তিশালী সূচক।",
      "after": "ফাইলের বিষয়বস্তু হুবহু মেলে — সবচেয়ে নির্ভরযোগ্য লক্ষণ।",
@@ -194,6 +220,7 @@
     },
     {
      "key": "Files not read",
+     "id": "libraryComparison.unreadListLabel",
      "english": "Files not read",
      "before": "যে ফাইল পড়া যায়নি",
      "after": "পড়া যায়নি এমন ফাইল",
@@ -201,6 +228,7 @@
     },
     {
      "key": "Folder “%@” in %@ is “%@” in %@.",
+     "id": "libraryComparison.sentence.folderPathDiffers",
      "english": "Folder “%1$@” in %2$@ is “%3$@” in %4$@.",
      "before": "%2$@-এ ফোল্ডার “%1$@”, আর %4$@-এ “%3$@”।",
      "after": "%2$@তে ফোল্ডার “%1$@”, আর %4$@তে “%3$@”।",
@@ -208,6 +236,7 @@
     },
     {
      "key": "Folder “%@” is only in %@.",
+     "id": "libraryComparison.sentence.folderOnlyIn",
      "english": "Folder “%1$@” is only in %2$@.",
      "before": "ফোল্ডার “%1$@” শুধু %2$@-এ আছে।",
      "after": "ফোল্ডার “%1$@” শুধু %2$@তে আছে।",
@@ -215,6 +244,7 @@
     },
     {
      "key": "Folders and the Reading List list what they always have. You can move them, and hide the Reading List.",
+     "id": "libraryViewEditor.editDisabledHint",
      "english": "Folders and the Reading List list what they always have. You can move them, and hide the Reading List.",
      "before": "ফোল্ডার ও পড়ার তালিকা সবসময় যা তালিকাভুক্ত করে তা-ই করে। এগুলো সরানো যায়, আর পড়ার তালিকা লুকানো যায়।",
      "after": "ফোল্ডার ও পড়ার তালিকা সবসময় নিজেদের যা আছে তা-ই তালিকাভুক্ত করে। এগুলো সরানো যায়, আর পড়ার তালিকা লুকানো যায়।",
@@ -222,6 +252,7 @@
     },
     {
      "key": "Folders is always shown: every folder and feed opens there.",
+     "id": "libraryViewsSettings.foldersVisibilityHint",
      "english": "Folders is always shown: every folder and feed opens there.",
      "before": "ফোল্ডার সবসময় দেখানো হয়: প্রতিটি ফোল্ডার ও ফিড সেখানেই খোলে।",
      "after": "ফোল্ডার ভিউ সবসময় দেখানো হয়: প্রতিটি ফোল্ডার ও ফিড সেখানেই খোলে।",
@@ -229,6 +260,7 @@
     },
     {
      "key": "If it is gone, choose %@.",
+     "id": "libraryFileWait.explanation.choose",
      "english": "If it is gone, choose %@.",
      "before": "এটি না থাকলে %@ বেছে নিন।",
      "after": "এটি না থাকলে “%@” বেছে নিন।",
@@ -236,6 +268,7 @@
     },
     {
      "key": "Ignored When Typing and Sorting",
+     "id": "leadingArticle.name.ignoredWhenTypingAndSorting",
      "english": "Ignored When Typing and Sorting",
      "before": "টাইপ ও বাছাইয়ের সময় উপেক্ষিত",
      "after": "টাইপ করা ও সাজানোর সময় উপেক্ষিত",
@@ -243,6 +276,7 @@
     },
     {
      "key": "In this Mac's Logs folder",
+     "id": "logsSettings.machineChoice",
      "english": "In this Mac's Logs folder",
      "before": "এই Mac-এর লগ ফোল্ডারে।",
      "after": "এই Mac-এর লগ ফোল্ডারে",
@@ -250,6 +284,7 @@
     },
     {
      "key": "It is the folder of the feed %@. Either way, the feed and its downloads stay, listed in no folder until Feed Info gives the feed another; Delete Feed… on its row deletes it.",
+     "id": "folderRemoval.ownFeedsChoiceSentences.downloads",
      "english": "It is the folder of the feed %@. Either way, the feed and its downloads stay, listed in no folder until Feed Info gives the feed another; Delete Feed… on its row deletes it.",
      "before": "এটি ফিড %@-এর ফোল্ডার। যেভাবেই হোক, ফিড ও তার ডাউনলোড থেকে যায়, আর ফিডের তথ্য অন্য একটি ফোল্ডার না দেওয়া পর্যন্ত কোনো ফোল্ডারে তালিকাভুক্ত থাকে না; এর সারিতে ফিড মুছুন… ফিডটি মুছে ফেলে।",
      "after": "এটি ফিড %@-এর ফোল্ডার। যেভাবেই হোক, ফিড ও তার ডাউনলোড থেকে যায়, আর “ফিডের তথ্য” ফিডটিকে অন্য একটি ফোল্ডার না দেওয়া পর্যন্ত কোনো ফোল্ডারে তালিকাভুক্ত থাকে না; এর সারিতে “ফিড মুছুন…” ফিডটি মুছে ফেলে।",
@@ -257,6 +292,7 @@
     },
     {
      "key": "It is the folder of the feeds %@. Either way, the feeds and their downloads stay, listed in no folder until Feed Info gives each another; Delete Feed… on a feed's row deletes it.",
+     "id": "folderRemoval.ownFeedsChoiceSentences.their",
      "english": "It is the folder of the feeds %@. Either way, the feeds and their downloads stay, listed in no folder until Feed Info gives each another; Delete Feed… on a feed's row deletes it.",
      "before": "এটি ফিড %@-এর ফোল্ডার। যেভাবেই হোক, ফিডগুলো ও সেগুলোর ডাউনলোড থেকে যায়, আর ফিডের তথ্য প্রতিটিকে অন্য একটি ফোল্ডার না দেওয়া পর্যন্ত সেগুলো কোনো ফোল্ডারে তালিকাভুক্ত থাকে না; একটি ফিডের সারিতে ফিড মুছুন… সেটি মুছে ফেলে।",
      "after": "এটি ফিড %@-এর ফোল্ডার। যেভাবেই হোক, ফিডগুলো ও সেগুলোর ডাউনলোড থেকে যায়, আর “ফিডের তথ্য” প্রতিটিকে অন্য একটি ফোল্ডার না দেওয়া পর্যন্ত সেগুলো কোনো ফোল্ডারে তালিকাভুক্ত থাকে না; একটি ফিডের সারিতে “ফিড মুছুন…” সেটি মুছে ফেলে।",
@@ -264,6 +300,7 @@
     },
     {
      "key": "Its text is replaced by the new reading.",
+     "id": "textEncoding.replacedNote",
      "english": "Its text is replaced by the new reading.",
      "before": "এর টেক্সট নতুন পড়া দিয়ে প্রতিস্থাপিত হয়।",
      "after": "এর টেক্সট নতুন করে পড়া টেক্সট দিয়ে প্রতিস্থাপিত হয়।",
@@ -271,6 +308,7 @@
     },
     {
      "key": "Left %@ where it is: episodes and articles stay in their feeds; %@ makes one a book of your library.",
+     "id": "libraryTransition.feedItemsLeft.episodes",
      "english": "Left %1$@ where it is: episodes and articles stay in their feeds; %2$@ makes one a book of your library.",
      "before": "%1$@ যেখানে আছে সেখানেই রাখা হয়েছে: পর্ব ও নিবন্ধ তাদের ফিডেই থাকে; %2$@ একটিকে আপনার লাইব্রেরির বই বানায়।",
      "after": "%1$@ যেখানে আছে সেখানেই রাখা হয়েছে: পর্ব ও নিবন্ধ নিজ নিজ ফিডেই থাকে; “%2$@” একটিকে আপনার লাইব্রেরির বই বানায়।",
@@ -278,6 +316,7 @@
     },
     {
      "key": "Left %@ where they are: episodes and articles stay in their feeds; %@ makes one a book of your library.",
+     "id": "libraryTransition.feedItemsLeft.they",
      "english": "Left %1$@ where they are: episodes and articles stay in their feeds; %2$@ makes one a book of your library.",
      "before": "%1$@ যেখানে আছে সেখানেই রাখা হয়েছে: পর্ব ও নিবন্ধ তাদের ফিডেই থাকে; %2$@ একটিকে আপনার লাইব্রেরির বই বানায়।",
      "after": "%1$@ যেখানে আছে সেখানেই রাখা হয়েছে: পর্ব ও নিবন্ধ নিজ নিজ ফিডেই থাকে; “%2$@” একটিকে আপনার লাইব্রেরির বই বানায়।",
@@ -285,6 +324,7 @@
     },
     {
      "key": "Lists %@",
+     "id": "libraryViewEditor.description.kinds",
      "english": "Lists %@",
      "before": "তালিকাভুক্ত করে %@",
      "after": "%@ তালিকাভুক্ত করে",
@@ -292,6 +332,7 @@
     },
     {
      "key": "Lists %@.",
+     "id": "libraryViewEditor.count.lists",
      "english": "Lists %@.",
      "before": "তালিকাভুক্ত করে %@।",
      "after": "%@ তালিকাভুক্ত করে।",
@@ -299,6 +340,7 @@
     },
     {
      "key": "Lists %@: %@",
+     "id": "libraryViewEditor.description.kindsAndConditions",
      "english": "Lists %1$@: %2$@",
      "before": "তালিকাভুক্ত করে %1$@: %2$@",
      "after": "%1$@ তালিকাভুক্ত করে: %2$@",
@@ -306,6 +348,7 @@
     },
     {
      "key": "Match criteria (checked filters are combined):",
+     "id": "duplicateFinder.criteriaHeading",
      "english": "Match criteria (checked filters are combined):",
      "before": "মানদণ্ড মেলান (চিহ্নিত ফিল্টারগুলো একসঙ্গে প্রয়োগ হয়):",
      "after": "মেলানোর মানদণ্ড (চিহ্নিত ফিল্টারগুলো একসঙ্গে প্রয়োগ হয়):",
@@ -313,6 +356,7 @@
     },
     {
      "key": "Media-control events that trigger the restart. The last one is consumed, not passed to playback, so it can't start audio.",
+     "id": "miscellaneousSettings.patternExplanation",
      "english": "Media-control events that trigger the restart. The last one is consumed, not passed to playback, so it can't start audio.",
      "before": "যে মিডিয়া-নিয়ন্ত্রণ ঘটনা রিস্টার্ট চালু করে। শেষটি গ্রহণ করে নেওয়া হয়, প্লেব্যাকে পাঠানো হয় না, তাই এটি অডিও চালু করতে পারে না।",
      "after": "রিস্টার্ট চালু করে এমন মিডিয়া-নিয়ন্ত্রণ ঘটনা। শেষটি গ্রহণ করে নেওয়া হয়, প্লেব্যাকে পাঠানো হয় না, তাই এটি অডিও চালু করতে পারে না।",
@@ -320,6 +364,7 @@
     },
     {
      "key": "Most rows shown",
+     "id": "libraryViewEditor.limitFieldLabel",
      "english": "Most rows shown",
      "before": "সর্বাধিক সারি দেখানো হবে",
      "after": "দেখানো সারির সর্বোচ্চ সংখ্যা",
@@ -327,6 +372,7 @@
     },
     {
      "key": "Moved to %@, %@.",
+     "id": "bookSearch.movedTo.toTimeInChapter",
      "english": "Moved to %1$@, %2$@.",
      "before": "%1$@-এ সরানো হয়েছে, %2$@।",
      "after": "%1$@-এ যাওয়া হয়েছে, %2$@।",
@@ -334,6 +380,7 @@
     },
     {
      "key": "Moved to %@.",
+     "id": "bookSearch.movedTo.toTime",
      "english": "Moved to %@.",
      "before": "%@-এ সরানো হয়েছে।",
      "after": "%@-এ যাওয়া হয়েছে।",
@@ -341,6 +388,7 @@
     },
     {
      "key": "Moved to the match, %@.",
+     "id": "librarySearch.movedToMatch.atPlace",
      "english": "Moved to the match, %@.",
      "before": "মিলে সরানো হয়েছে, %@।",
      "after": "মিলটিতে যাওয়া হয়েছে, %@।",
@@ -348,6 +396,7 @@
     },
     {
      "key": "Moved to the match.",
+     "id": "librarySearch.movedToMatch.alone",
      "english": "Moved to the match.",
      "before": "মিলে সরানো হয়েছে।",
      "after": "মিলটিতে যাওয়া হয়েছে।",
@@ -355,6 +404,7 @@
     },
     {
      "key": "Neither has newer places or books the other lacks, but they differ in other ways.",
+     "id": "libraryComparison.newerCopySentence.differ",
      "english": "Neither has newer places or books the other lacks, but they differ in other ways.",
      "before": "কোনোটিতেই অন্যটির অভাব এমন নতুন অবস্থান বা বই নেই, তবে অন্যান্য দিক থেকে তারা আলাদা।",
      "after": "কোনোটিতেই নতুন অবস্থান বা অন্যটিতে নেই এমন বই নেই, তবে অন্যান্য দিক থেকে কপি দুটি আলাদা।",
@@ -362,6 +412,7 @@
     },
     {
      "key": "None of the %@ selected books is kept on this Mac by your choice, and %lld is kept for the reading list.",
+     "id": "libraryCloud.noneSelectedBooksKeptMacChoice",
      "english": {
       "one": "None of the %@ selected books is kept on this Mac by your choice, and %lld is kept for the reading list.",
       "other": "None of the %@ selected books is kept on this Mac by your choice, and %lld are kept for the reading list."
@@ -378,6 +429,7 @@
     },
     {
      "key": "Opens a file picker to import books in any format TextMouth reads.",
+     "id": "libraryList.importBookHint",
      "english": "Opens a file picker to import books in any format TextMouth reads.",
      "before": "যেকোনো ফরম্যাটের বই আমদানি করার জন্য একটি ফাইল পিকার খোলে, যে ফরম্যাট TextMouth পড়তে পারে।",
      "after": "TextMouth পড়তে পারে এমন যেকোনো ফরম্যাটের বই আমদানি করতে একটি ফাইল পিকার খোলে।",
@@ -385,6 +437,7 @@
     },
     {
      "key": "Opens a folder chooser to pick a folder that holds a TextMouth library, which TextMouth then opens instead.",
+     "id": "storageLocation.chooserHint.instead",
      "english": "Opens a folder chooser to pick a folder that holds a TextMouth library, which TextMouth then opens instead.",
      "before": "TextMouth লাইব্রেরি আছে এমন একটি ফোল্ডার বাছাই করতে ফোল্ডার চয়নকারী খোলে, যা TextMouth তারপর এর বদলে খোলে।",
      "after": "একটি ফোল্ডার চয়নকারী খোলে, যাতে TextMouth লাইব্রেরি আছে এমন একটি ফোল্ডার বেছে নেওয়া যায়; TextMouth তারপর এর বদলে সেই লাইব্রেরিটি খোলে।",
@@ -392,6 +445,7 @@
     },
     {
      "key": "Position in %@: newer in %@, %@.",
+     "id": "libraryComparison.positionNewer.inLibrary",
      "english": "Position in %1$@: newer in %2$@, %3$@.",
      "before": "%1$@-এর অবস্থান: %2$@-এ নতুন, %3$@।",
      "after": "%1$@-এর অবস্থান: %2$@তে নতুন, %3$@।",
@@ -399,6 +453,7 @@
     },
     {
      "key": "Preparing %@ of %@…",
+     "id": "librarySearch.preparing",
      "english": "Preparing %1$@ of %2$@…",
      "before": "%2$@-এর মধ্যে %1$@ প্রস্তুত করা হচ্ছে…",
      "after": "%2$@ থেকে %1$@টি প্রস্তুত করা হচ্ছে…",
@@ -406,6 +461,7 @@
     },
     {
      "key": "Reading list: %@ is only on %@'s list, at place %@.",
+     "id": "libraryComparison.sentence.readingListBookOnlyIn",
      "english": "Reading list: %1$@ is only on %2$@'s list, at place %3$@.",
      "before": "পড়ার তালিকা: %1$@ শুধু %2$@-এর তালিকায় আছে, অবস্থান %3$@-এ।",
      "after": "পড়ার তালিকা: %1$@ শুধু %2$@র তালিকায় আছে, %3$@ নম্বর অবস্থানে।",
@@ -413,6 +469,7 @@
     },
     {
      "key": "Reading list: “%@” is %@ in %@ and %@ in %@.",
+     "id": "libraryComparison.readingListOptionDiffers",
      "english": "Reading list: “%1$@” is %2$@ in %3$@ and %4$@ in %5$@.",
      "before": "পড়ার তালিকা: “%1$@” %3$@-এ %2$@ এবং %5$@-এ %4$@।",
      "after": "পড়ার তালিকা: “%1$@” %3$@তে %2$@, আর %5$@তে %4$@।",
@@ -420,6 +477,7 @@
     },
     {
      "key": "Reset & Move",
+     "id": "storageSettings.resetAndMoveTitle",
      "english": "Reset & Move",
      "before": "রিসেট করুন ও স্থানান্তর করুন",
      "after": "রিসেট ও স্থানান্তর করুন",
@@ -427,6 +485,7 @@
     },
     {
      "key": "Retry is at the top of the Library window.",
+     "id": "persistenceBannerRow.announcement.retry",
      "english": "Retry is at the top of the Library window.",
      "before": "আবার চেষ্টা করুন লাইব্রেরি উইন্ডোর উপরে আছে।",
      "after": "“আবার চেষ্টা করুন” লাইব্রেরি উইন্ডোর উপরে আছে।",
@@ -434,6 +493,7 @@
     },
     {
      "key": "Retry removing %@",
+     "id": "persistenceSubsystem.retryLabel.removing",
      "english": "Retry removing %@",
      "before": "%@ সরানো আবার চেষ্টা করুন",
      "after": "%@ আবার সরানোর চেষ্টা করুন",
@@ -441,6 +501,7 @@
     },
     {
      "key": "Retry saving %@",
+     "id": "persistenceSubsystem.retryLabel.saving",
      "english": "Retry saving %@",
      "before": "%@ সংরক্ষণ আবার চেষ্টা করুন",
      "after": "%@ আবার সংরক্ষণের চেষ্টা করুন",
@@ -448,6 +509,7 @@
     },
     {
      "key": "Rewind on Resume",
+     "id": "settings.rewindHeader",
      "english": "Rewind on Resume",
      "before": "পুনরায় শুরুর সময় পিছিয়ে যান",
      "after": "পুনরায় শুরুর সময় পিছিয়ে যাওয়া",
@@ -455,6 +517,7 @@
     },
     {
      "key": "Rewind to",
+     "id": "settings.rewindToTitle",
      "english": "Rewind to",
      "before": "এ পর্যন্ত পিছিয়ে যান",
      "after": "কতটা পিছিয়ে যাবে",
@@ -462,6 +525,7 @@
     },
     {
      "key": "Save the file in the editor, then choose %@ again, or choose %@ to start again.",
+     "id": "textImportPolicy.reloadFailedAnnouncement.choose",
      "english": "Save the file in the editor, then choose %1$@ again, or choose %2$@ to start again.",
      "before": "এডিটরে ফাইলটি সংরক্ষণ করুন, তারপর আবার %1$@ বেছে নিন, অথবা নতুন করে শুরু করতে %2$@ বেছে নিন।",
      "after": "এডিটরে ফাইলটি সংরক্ষণ করুন, তারপর আবার “%1$@” বেছে নিন, অথবা নতুন করে শুরু করতে “%2$@” বেছে নিন।",
@@ -469,6 +533,7 @@
     },
     {
      "key": "Saves the temporary library as the new index, with the reading list and the sort settings TextMouth could read.",
+     "id": "libraryIndexRecovery.rebuild.temporary",
      "english": "Saves the temporary library as the new index, with the reading list and the sort settings TextMouth could read.",
      "before": "অস্থায়ী লাইব্রেরিকে নতুন সূচক হিসেবে সংরক্ষণ করে, সঙ্গে TextMouth-এর পড়তে পারা পড়ার তালিকা ও বাছাইয়ের সেটিংস।",
      "after": "অস্থায়ী লাইব্রেরিকে নতুন সূচক হিসেবে সংরক্ষণ করে, সঙ্গে TextMouth-এর পড়তে পারা পড়ার তালিকা ও সাজানোর সেটিংস।",
@@ -476,6 +541,7 @@
     },
     {
      "key": "Searched %@ of %@…",
+     "id": "librarySearch.searched",
      "english": "Searched %1$@ of %2$@…",
      "before": "%2$@-এর মধ্যে %1$@ অনুসন্ধান করা হয়েছে…",
      "after": "%2$@ থেকে %1$@টি অনুসন্ধান করা হয়েছে…",
@@ -483,6 +549,7 @@
     },
     {
      "key": "Some files of “%@” are only in the cloud, and replacing it now would leave them behind. Download the book, then choose %@ again.",
+     "id": "refusal.sentence.filesInCloud",
      "english": "Some files of “%1$@” are only in the cloud, and replacing it now would leave them behind. Download the book, then choose %2$@ again.",
      "before": "“%1$@”-এর কিছু ফাইল শুধু ক্লাউডে আছে, আর এখন প্রতিস্থাপন করলে সেগুলো পেছনে পড়ে থাকবে। বইটি ডাউনলোড করুন, তারপর আবার %2$@ বেছে নিন।",
      "after": "“%1$@”-এর কিছু ফাইল শুধু ক্লাউডে আছে, আর এখন প্রতিস্থাপন করলে সেগুলো বাদ পড়ে যাবে। বইটি ডাউনলোড করুন, তারপর আবার “%2$@” বেছে নিন।",
@@ -490,6 +557,7 @@
     },
     {
      "key": "Sort By",
+     "id": "libraryViewEditor.sortByLabel",
      "english": "Sort By",
      "before": "যে অনুযায়ী সাজান",
      "after": "সাজানোর ভিত্তি",
@@ -497,6 +565,7 @@
     },
     {
      "key": "Sounds",
+     "id": "settings.soundsTab",
      "english": "Sounds",
      "before": "শব্দ",
      "after": "সাউন্ড",
@@ -504,6 +573,7 @@
     },
     {
      "key": "Stopped after %@ of %@:",
+     "id": "librarySearch.stopped",
      "english": "Stopped after %1$@ of %2$@:",
      "before": "%2$@-এর মধ্যে %1$@ অনুসন্ধানের পর থামানো হয়েছে:",
      "after": "%2$@ থেকে %1$@টি অনুসন্ধানের পর থামানো হয়েছে:",
@@ -511,6 +581,7 @@
     },
     {
      "key": "Take it off the reading list, or clear %@ in the Reading List's options first.",
+     "id": "libraryCloud.letGoOfOneBookFirst",
      "english": "Take it off the reading list, or clear %@ in the Reading List's options first.",
      "before": "এটি পড়ার তালিকা থেকে সরান, অথবা আগে পড়ার তালিকার বিকল্পে %@ অচিহ্নিত করুন।",
      "after": "এটি পড়ার তালিকা থেকে সরান, অথবা আগে পড়ার তালিকার বিকল্পে “%@” অচিহ্নিত করুন।",
@@ -518,6 +589,7 @@
     },
     {
      "key": "Test this rule against the input",
+     "id": "substitutions.testButtonLabel",
      "english": "Test this rule against the input",
      "before": "ইনপুটের বিরুদ্ধে এই নিয়মটি পরীক্ষা করুন",
      "after": "ইনপুটে এই নিয়মটি পরীক্ষা করুন",
@@ -525,6 +597,7 @@
     },
     {
      "key": "TextMouth could not read its library index, the file that records your folders, sort settings, and the order of your books.",
+     "id": "libraryIndexRecovery.summary.settings",
      "english": "TextMouth could not read its library index, the file that records your folders, sort settings, and the order of your books.",
      "before": "TextMouth তার লাইব্রেরি সূচক পড়তে পারেনি, যে ফাইলে আপনার ফোল্ডার, বাছাইয়ের সেটিংস এবং বইয়ের ক্রম লেখা থাকে।",
      "after": "TextMouth তার লাইব্রেরি সূচক পড়তে পারেনি, যে ফাইলে আপনার ফোল্ডার, সাজানোর সেটিংস এবং বইয়ের ক্রম লেখা থাকে।",
@@ -532,6 +605,7 @@
     },
     {
      "key": "TextMouth could not read the reading list or the sort settings in the previous index.",
+     "id": "libraryIndexArrangement.notRead.settingsPrevious",
      "english": "TextMouth could not read the reading list or the sort settings in the previous index.",
      "before": "TextMouth আগের সূচকের পড়ার তালিকা বা বাছাইয়ের সেটিংস পড়তে পারেনি।",
      "after": "TextMouth আগের সূচকের পড়ার তালিকা বা সাজানোর সেটিংস পড়তে পারেনি।",
@@ -539,6 +613,7 @@
     },
     {
      "key": "TextMouth could not read the reading list or the sort settings in the unreadable index.",
+     "id": "libraryIndexArrangement.readingAndSortUnreadable",
      "english": "TextMouth could not read the reading list or the sort settings in the unreadable index.",
      "before": "TextMouth অপঠনযোগ্য সূচকের পড়ার তালিকা বা বাছাইয়ের সেটিংস পড়তে পারেনি।",
      "after": "TextMouth অপঠনযোগ্য সূচকের পড়ার তালিকা বা সাজানোর সেটিংস পড়তে পারেনি।",
@@ -546,6 +621,7 @@
     },
     {
      "key": "TextMouth could not read the sort settings in the previous index.",
+     "id": "libraryIndexArrangement.notRead.previous",
      "english": "TextMouth could not read the sort settings in the previous index.",
      "before": "TextMouth আগের সূচকের বাছাইয়ের সেটিংস পড়তে পারেনি।",
      "after": "TextMouth আগের সূচকের সাজানোর সেটিংস পড়তে পারেনি।",
@@ -553,6 +629,7 @@
     },
     {
      "key": "TextMouth could not read the sort settings in the unreadable index.",
+     "id": "libraryIndexArrangement.sortSettingsUnreadable",
      "english": "TextMouth could not read the sort settings in the unreadable index.",
      "before": "TextMouth অপঠনযোগ্য সূচকের বাছাইয়ের সেটিংস পড়তে পারেনি।",
      "after": "TextMouth অপঠনযোগ্য সূচকের সাজানোর সেটিংস পড়তে পারেনি।",
@@ -560,6 +637,7 @@
     },
     {
      "key": "TextMouth could not record the removal in its package, %@.",
+     "id": "libraryRemovalError.couldNotMarkPackage",
      "english": "TextMouth could not record the removal in its package, %@.",
      "before": "TextMouth প্যাকেজে অপসারণ রেকর্ড করতে পারেনি, %@।",
      "after": "TextMouth বইটির প্যাকেজ %@-এ অপসারণের কথা লিখে রাখতে পারেনি।",
@@ -567,6 +645,7 @@
     },
     {
      "key": "TextMouth couldn't keep the text you changed in “%@” beside the new reading, so it left the book as it was.",
+     "id": "textEncoding.editNotKeptRefusal",
      "english": "TextMouth couldn't keep the text you changed in “%@” beside the new reading, so it left the book as it was.",
      "before": "TextMouth “%@”-এ আপনার বদলানো টেক্সট নতুন পড়ার পাশে রাখতে পারেনি, তাই বইটি যেমন ছিল তেমনই রেখেছে।",
      "after": "TextMouth “%@”-এ আপনার বদলানো টেক্সট নতুন করে পড়া টেক্সটের পাশে রাখতে পারেনি, তাই বইটি যেমন ছিল তেমনই রেখেছে।",
@@ -574,6 +653,7 @@
     },
     {
      "key": "TextMouth is moving books between folders.",
+     "id": "storageBusyError.movingBooksBetweenFolders",
      "english": "TextMouth is moving books between folders.",
      "before": "TextMouth ফোল্ডারের মধ্যে বই সরাচ্ছে।",
      "after": "TextMouth ফোল্ডারগুলোর মধ্যে বই সরাচ্ছে।",
@@ -581,6 +661,7 @@
     },
     {
      "key": "TextMouth is moving books between folders. Wait until that finishes, then choose %@ again.",
+     "id": "refusal.sentence.storageBusy.between",
      "english": "TextMouth is moving books between folders. Wait until that finishes, then choose %@ again.",
      "before": "TextMouth ফোল্ডারগুলোর মধ্যে বই স্থানান্তর করছে। সেটি শেষ হওয়া পর্যন্ত অপেক্ষা করুন, তারপর আবার %@ বেছে নিন।",
      "after": "TextMouth ফোল্ডারগুলোর মধ্যে বই স্থানান্তর করছে। সেটি শেষ হওয়া পর্যন্ত অপেক্ষা করুন, তারপর আবার “%@” বেছে নিন।",
@@ -588,6 +669,7 @@
     },
     {
      "key": "TextMouth is rebuilding its data directory. Wait until that finishes, then choose %@ again.",
+     "id": "refusal.sentence.storageBusy.rebuilding",
      "english": "TextMouth is rebuilding its data directory. Wait until that finishes, then choose %@ again.",
      "before": "TextMouth তার ডেটা ডিরেক্টরি পুনর্নির্মাণ করছে। সেটি শেষ হওয়া পর্যন্ত অপেক্ষা করুন, তারপর আবার %@ বেছে নিন।",
      "after": "TextMouth তার ডেটা ডিরেক্টরি পুনর্নির্মাণ করছে। সেটি শেষ হওয়া পর্যন্ত অপেক্ষা করুন, তারপর আবার “%@” বেছে নিন।",
@@ -595,6 +677,7 @@
     },
     {
      "key": "TextMouth moves them back once it has finished moving books between folders.",
+     "id": "storageWorkWait.sentence.movingBetweenFolders",
      "english": "TextMouth moves them back once it has finished moving books between folders.",
      "before": "ফোল্ডারের মধ্যে বই সরানো শেষ হলে TextMouth সেগুলো আবার ফিরিয়ে আনবে।",
      "after": "ফোল্ডারগুলোর মধ্যে বই সরানো শেষ হলে TextMouth সেগুলো আবার ফিরিয়ে আনবে।",
@@ -602,6 +685,7 @@
     },
     {
      "key": "TextMouth reads its file as it reads a file you add: in the encoding the file names, or else the one TextMouth finds.",
+     "id": "textEncoding.automaticNote",
      "english": "TextMouth reads its file as it reads a file you add: in the encoding the file names, or else the one TextMouth finds.",
      "before": "TextMouth এর ফাইল সেভাবেই পড়ে, যেভাবে আপনার যোগ করা ফাইল পড়ে: ফাইলটি যে এনকোডিং বলে সেটিতে, নইলে TextMouth যেটি খুঁজে পায় সেটিতে।",
      "after": "TextMouth বইটির ফাইল সেভাবেই পড়ে, যেভাবে আপনার যোগ করা কোনো ফাইল পড়ে: ফাইলে যে এনকোডিংয়ের উল্লেখ আছে সেটিতে, নইলে TextMouth যেটি খুঁজে পায় সেটিতে।",
@@ -609,6 +693,7 @@
     },
     {
      "key": "TextMouth saves them once it has finished moving books between folders.",
+     "id": "storageWorkWait.sentence.betweenFolders",
      "english": "TextMouth saves them once it has finished moving books between folders.",
      "before": "ফোল্ডারের মধ্যে বই সরানো শেষ হলে TextMouth সেগুলো সংরক্ষণ করবে।",
      "after": "ফোল্ডারগুলোর মধ্যে বই সরানো শেষ হলে TextMouth সেগুলো সংরক্ষণ করবে।",
@@ -616,6 +701,7 @@
     },
     {
      "key": "TextMouth will stop using the library in %@ (%@) and open the library in %@ instead.",
+     "id": "storage.useSentence.using",
      "english": "TextMouth will stop using the library in %1$@ (%2$@) and open the library in %3$@ instead.",
      "before": "TextMouth %1$@ (%2$@)-এর লাইব্রেরি ব্যবহার বন্ধ করবে এবং তার বদলে %3$@-এর লাইব্রেরি খুলবে।",
      "after": "TextMouth %1$@-এর লাইব্রেরি (%2$@) ব্যবহার বন্ধ করবে এবং তার বদলে %3$@-এর লাইব্রেরি খুলবে।",
@@ -623,6 +709,7 @@
     },
     {
      "key": "The audio of “%@” is being edited. Close the audio editor or wait for it to save, then choose %@ again.",
+     "id": "refusal.sentence.audioBeingEdited",
      "english": "The audio of “%1$@” is being edited. Close the audio editor or wait for it to save, then choose %2$@ again.",
      "before": "“%1$@”-এর অডিও সম্পাদনা করা হচ্ছে। অডিও এডিটর বন্ধ করুন বা সেটি সংরক্ষণ না হওয়া পর্যন্ত অপেক্ষা করুন, তারপর আবার %2$@ বেছে নিন।",
      "after": "“%1$@”-এর অডিও সম্পাদনা করা হচ্ছে। অডিও এডিটর বন্ধ করুন বা সেটি সংরক্ষণ না হওয়া পর্যন্ত অপেক্ষা করুন, তারপর আবার “%2$@” বেছে নিন।",
@@ -630,6 +717,7 @@
     },
     {
      "key": "The braille is translated to print again with this code. Nothing checks that it is the right choice. If words read wrongly, choose another.",
+     "id": "brailleCode.translatedAgainNote",
      "english": "The braille is translated to print again with this code. Nothing checks that it is the right choice. If words read wrongly, choose another.",
      "before": "এই কোড দিয়ে ব্রেইল আবার প্রিন্টে অনুবাদ করা হয়। এটি সঠিক পছন্দ কিনা তা কিছুই যাচাই করে না। শব্দ ভুল পড়লে অন্যটি বেছে নিন।",
      "after": "এই কোড দিয়ে ব্রেইল আবার সাধারণ লেখায় অনুবাদ করা হয়। এটি সঠিক পছন্দ কিনা তা কিছুই যাচাই করে না। শব্দ ভুল পড়লে অন্যটি বেছে নিন।",
@@ -637,6 +725,7 @@
     },
     {
      "key": "The copy was already complete when Cancel was pressed, so the move went ahead.",
+     "id": "dataDirectoryMove.finishedDespiteCancelSentence",
      "english": "The copy was already complete when Cancel was pressed, so the move went ahead.",
      "before": "বাতিল চাপার সময় কপি আগেই সম্পূর্ণ হয়ে গিয়েছিল, তাই স্থানান্তর এগিয়ে গেছে।",
      "after": "“বাতিল করুন” চাপার সময় কপি আগেই সম্পূর্ণ হয়ে গিয়েছিল, তাই স্থানান্তর এগিয়ে গেছে।",
@@ -644,6 +733,7 @@
     },
     {
      "key": "The feed %@ stays, with its downloads, without a folder until Feed Info gives it another.",
+     "id": "folderRemoval.confirmationMessage.stays",
      "english": "The feed %@ stays, with its downloads, without a folder until Feed Info gives it another.",
      "before": "ফিড %@ তার ডাউনলোডসহ থাকে, ফিডের তথ্য অন্য ফোল্ডার না দেওয়া পর্যন্ত কোনো ফোল্ডার ছাড়াই।",
      "after": "ফিড %@ তার ডাউনলোডসহ থাকে, “ফিডের তথ্য” এটিকে অন্য ফোল্ডার না দেওয়া পর্যন্ত কোনো ফোল্ডার ছাড়াই।",
@@ -651,6 +741,7 @@
     },
     {
      "key": "The feeds %@ stay, with their downloads, without folders until Feed Info gives each another.",
+     "id": "folderRemoval.confirmationMessage.folders",
      "english": "The feeds %@ stay, with their downloads, without folders until Feed Info gives each another.",
      "before": "ফিডগুলো %@ তাদের ডাউনলোডসহ থাকে, ফিডের তথ্য প্রতিটিকে অন্য ফোল্ডার না দেওয়া পর্যন্ত কোনো ফোল্ডার ছাড়াই।",
      "after": "ফিড %@ নিজ নিজ ডাউনলোডসহ থাকে, “ফিডের তথ্য” প্রতিটিকে অন্য ফোল্ডার না দেওয়া পর্যন্ত কোনো ফোল্ডার ছাড়াই।",
@@ -658,6 +749,7 @@
     },
     {
      "key": "The folders %@ and %@ can't both move into %@: their names mean the same folder on this disk.",
+     "id": "folderOperationConflict.namesCollide",
      "english": "The folders %1$@ and %2$@ can't both move into %3$@: their names mean the same folder on this disk.",
      "before": "ফোল্ডার %1$@ ও %2$@ দুটিই %3$@-এ সরানো যায় না: এই ডিস্কে তাদের নাম একই ফোল্ডার বোঝায়।",
      "after": "ফোল্ডার %1$@ ও %2$@ দুটিকে একসঙ্গে %3$@-এ সরানো যায় না: এই ডিস্কে এগুলোর নাম একই ফোল্ডার বোঝায়।",
@@ -665,6 +757,7 @@
     },
     {
      "key": "The index is not changed until you choose %@ or %@, which stay available from %@ at the top of the library.",
+     "id": "libraryIndexRecovery.continueReading.available",
      "english": "The index is not changed until you choose %1$@ or %2$@, which stay available from %3$@ at the top of the library.",
      "before": "আপনি %1$@ বা %2$@ বেছে না নেওয়া পর্যন্ত সূচক বদলাবে না, যেগুলো লাইব্রেরির উপরে %3$@ থেকে পাওয়া যায়।",
      "after": "আপনি “%1$@” বা “%2$@” বেছে না নেওয়া পর্যন্ত সূচক বদলাবে না; এগুলো লাইব্রেরির উপরে “%3$@” থেকে পাওয়া যায়।",
@@ -672,6 +765,7 @@
     },
     {
      "key": "The original at %@ is a folder or link, so a copy of it cannot be checked.",
+     "id": "legacyMigrationError.originalNotAFile",
      "english": "The original at %@ is a folder or link, so a copy of it cannot be checked.",
      "before": "%@-এর মূলটি একটি ফোল্ডার বা লিঙ্ক, তাই এর কপি যাচাই করা যায় না।",
      "after": "%@-এ থাকা মূলটি একটি ফোল্ডার বা লিঙ্ক, তাই এর কপি যাচাই করা যায় না।",
@@ -679,6 +773,7 @@
     },
     {
      "key": "The original file at %@ could not be read to check a copy of it.",
+     "id": "legacyMigrationError.originalUnreadable",
      "english": "The original file at %@ could not be read to check a copy of it.",
      "before": "কপি যাচাই করতে %@-এর মূল ফাইলটি পড়া যায়নি।",
      "after": "কপি যাচাই করতে %@-এ থাকা মূল ফাইলটি পড়া যায়নি।",
@@ -686,6 +781,7 @@
     },
     {
      "key": "The reading list, the folders' sorts and listening options, and any book whose files aren't in this folder yet won't be in it.",
+     "id": "libraryFileWait.confirmation.index.listening",
      "english": "The reading list, the folders' sorts and listening options, and any book whose files aren't in this folder yet won't be in it.",
      "before": "পড়ার তালিকা, ফোল্ডারগুলোর বাছাই ও শোনার বিকল্প, এবং যেসব বইয়ের ফাইল এখনো এই ফোল্ডারে নেই, সেগুলো এতে থাকবে না।",
      "after": "পড়ার তালিকা, ফোল্ডারগুলোর সাজানোর ক্রম ও শোনার বিকল্প, এবং যেসব বইয়ের ফাইল এখনো এই ফোল্ডারে নেই, সেগুলো এতে থাকবে না।",
@@ -693,6 +789,7 @@
     },
     {
      "key": "The text changed since the search; moved to the nearest match.",
+     "id": "librarySearch.movedToMatchFoundAgain",
      "english": "The text changed since the search; moved to the nearest match.",
      "before": "অনুসন্ধানের পর টেক্সট বদলে গেছে; নিকটতম মিলে সরানো হয়েছে।",
      "after": "অনুসন্ধানের পর টেক্সট বদলে গেছে; নিকটতম মিলটিতে যাওয়া হয়েছে।",
@@ -700,6 +797,7 @@
     },
     {
      "key": "Their %@ are kept.",
+     "id": "feedDownloadRemoval.completionMessage.their",
      "english": "Their %@ are kept.",
      "before": "এদের %@ রাখা হয়।",
      "after": "এগুলোর %@ রাখা হয়।",
@@ -707,6 +805,7 @@
     },
     {
      "key": "Their places, bookmarks, and transcripts, if they have any, are kept, and they can be downloaded again.",
+     "id": "feedDownloadRemoval.keptSentence.transcripts",
      "english": "Their places, bookmarks, and transcripts, if they have any, are kept, and they can be downloaded again.",
      "before": "এদের অবস্থান, বুকমার্ক ও ট্রান্সক্রিপ্ট (থাকলে) রাখা হয়, আর এগুলো আবার ডাউনলোড করা যায়।",
      "after": "এগুলোর অবস্থান, বুকমার্ক ও ট্রান্সক্রিপ্ট (থাকলে) রাখা হয়, আর এগুলো আবার ডাউনলোড করা যায়।",
@@ -714,6 +813,7 @@
     },
     {
      "key": "Then take it off the reading list, or clear %@ in the Reading List's options.",
+     "id": "libraryCloud.thenLetGoOfOneBook",
      "english": "Then take it off the reading list, or clear %@ in the Reading List's options.",
      "before": "তারপর এটি পড়ার তালিকা থেকে সরান, অথবা পড়ার তালিকার বিকল্পে %@ অচিহ্নিত করুন।",
      "after": "তারপর এটি পড়ার তালিকা থেকে সরান, অথবা পড়ার তালিকার বিকল্পে “%@” অচিহ্নিত করুন।",
@@ -721,6 +821,7 @@
     },
     {
      "key": "There is no view %@. Go to View reaches %lld views.",
+     "id": "libraryViewPicker.noView",
      "english": {
       "one": "There is no view %@. Go to View reaches %lld view.",
       "other": "There is no view %@. Go to View reaches %lld views."
@@ -737,6 +838,7 @@
     },
     {
      "key": "These books were removed from the library, but their bookInfo.json files could not be deleted. They stay out of the library:",
+     "id": "libraryViewModel.removalRecordLeftHeading.these",
      "english": "These books were removed from the library, but their bookInfo.json files could not be deleted. They stay out of the library:",
      "before": "এই বইগুলো লাইব্রেরি থেকে সরানো হয়েছে, কিন্তু এদের bookInfo.json ফাইল মুছে ফেলা যায়নি। এগুলো লাইব্রেরির বাইরেই থাকে:",
      "after": "এই বইগুলো লাইব্রেরি থেকে সরানো হয়েছে, কিন্তু এগুলোর bookInfo.json ফাইল মুছে ফেলা যায়নি। এগুলো লাইব্রেরির বাইরেই থাকে:",
@@ -744,6 +846,7 @@
     },
     {
      "key": "To free the space anyway, choose Show in Finder, then %@.",
+     "id": "bookCloud.freeSpaceAnyway",
      "english": "To free the space anyway, choose Show in Finder, then %@.",
      "before": "তবুও জায়গা খালি করতে Finder-এ দেখান বেছে নিন, তারপর %@।",
      "after": "তবুও জায়গা খালি করতে “Finder-এ দেখান” বেছে নিন, তারপর %@।",
@@ -751,6 +854,7 @@
     },
     {
      "key": "To let it go, take it off the reading list, or clear %@ in the Reading List's options.",
+     "id": "libraryCloud.howToLetGo.reading",
      "english": "To let it go, take it off the reading list, or clear %@ in the Reading List's options.",
      "before": "এটিকে ছেড়ে দিতে পড়ার তালিকা থেকে সরান, অথবা পড়ার তালিকার বিকল্পে %@ অচিহ্নিত করুন।",
      "after": "এটিকে ছেড়ে দিতে পড়ার তালিকা থেকে সরান, অথবা পড়ার তালিকার বিকল্পে “%@” অচিহ্নিত করুন।",
@@ -758,6 +862,7 @@
     },
     {
      "key": "To let them go, take them off the reading list, or clear %@ in the Reading List's options.",
+     "id": "libraryCloud.howToLetGo.them",
      "english": "To let them go, take them off the reading list, or clear %@ in the Reading List's options.",
      "before": "সেগুলোকে ছেড়ে দিতে পড়ার তালিকা থেকে সরান, অথবা পড়ার তালিকার বিকল্পে %@ অচিহ্নিত করুন।",
      "after": "সেগুলোকে ছেড়ে দিতে পড়ার তালিকা থেকে সরান, অথবা পড়ার তালিকার বিকল্পে “%@” অচিহ্নিত করুন।",
@@ -765,6 +870,7 @@
     },
     {
      "key": "To use another folder, open Settings, Storage, and choose %@ or %@.",
+     "id": "dataDirectoryUnavailable.anotherFolderPointer",
      "english": "To use another folder, open Settings, Storage, and choose %1$@ or %2$@.",
      "before": "অন্য ফোল্ডার ব্যবহার করতে সেটিংস, স্টোরেজ খুলুন এবং %1$@ বা %2$@ বেছে নিন।",
      "after": "অন্য ফোল্ডার ব্যবহার করতে সেটিংস, স্টোরেজ খুলুন এবং “%1$@” বা “%2$@” বেছে নিন।",
@@ -772,6 +878,7 @@
     },
     {
      "key": "Use %@ and %@, or drag, to reorder. Rules apply top to bottom.",
+     "id": "substitutions.reorderInstructions",
      "english": "Use %1$@ and %2$@, or drag, to reorder. Rules apply top to bottom.",
      "before": "ক্রম বদলাতে %1$@ ও %2$@ ব্যবহার করুন, অথবা টেনে আনুন। নিয়মগুলো উপর থেকে নিচে প্রয়োগ হয়।",
      "after": "ক্রম বদলাতে “%1$@” ও “%2$@” ব্যবহার করুন, অথবা টেনে আনুন। নিয়মগুলো উপর থেকে নিচে প্রয়োগ হয়।",
@@ -779,6 +886,7 @@
     },
     {
      "key": "Where TextMouth writes its diagnostic logs. %@ keeps them with your books, so they move and sync with the library. %@ keeps them in %@, which never syncs. A change applies from the next line; existing logs stay.",
+     "id": "logsSettings.pickerHint",
      "english": "Where TextMouth writes its diagnostic logs. %1$@ keeps them with your books, so they move and sync with the library. %2$@ keeps them in %3$@, which never syncs. A change applies from the next line; existing logs stay.",
      "before": "TextMouth যেখানে ডায়াগনস্টিক লগ লেখে। %1$@ সেগুলো আপনার বইয়ের সঙ্গে রাখে, তাই লাইব্রেরির সঙ্গে সেগুলো সরে ও সিঙ্ক হয়। %2$@ সেগুলো %3$@-এ রাখে, যা কখনো সিঙ্ক হয় না। পরিবর্তন পরের লাইন থেকে প্রযোজ্য হয়; আগের লগ থেকে যায়।",
      "after": "TextMouth কোথায় ডায়াগনস্টিক লগ লিখবে, তা বেছে নেয়। “%1$@” বেছে নিলে সেগুলো আপনার বইয়ের সঙ্গে থাকে, তাই লাইব্রেরির সঙ্গে সরে ও সিঙ্ক হয়। “%2$@” বেছে নিলে সেগুলো %3$@-এ থাকে, যা কখনো সিঙ্ক হয় না। পরিবর্তন পরের লাইন থেকে প্রযোজ্য হয়; আগের লগ থেকে যায়।",
@@ -786,6 +894,7 @@
     },
     {
      "key": "Where none of their words are left, %@, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "id": "textEncoding.placesSentence.whereNoneTheirWords",
      "english": "Where none of their words are left, %@, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
      "before": "যেখানে তাদের কোনো শব্দই অবশিষ্ট থাকে না, %@, সেখানে প্রতিটি অধ্যায়ের প্রায় একই বিন্দুতে, অথবা দুটি পড়ার মধ্যে মিল থাকা নিকটতম অংশে যায়।",
      "after": "যেখানে এগুলোর কোনো শব্দই আর থাকে না, %@, সেখানে প্রতিটি তার অধ্যায়ের প্রায় একই জায়গায় যায়, অথবা আগের ও নতুন টেক্সটে মিল থাকা নিকটতম অংশে।",
@@ -793,6 +902,7 @@
     },
     {
      "key": "Where none of their words are left, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "id": "textEncoding.placesSentence.whereNoneTheir",
      "english": "Where none of their words are left, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
      "before": "যেখানে তাদের কোনো শব্দই অবশিষ্ট থাকে না, সেখানে প্রতিটি অধ্যায়ের প্রায় একই বিন্দুতে, অথবা দুটি পড়ার মধ্যে মিল থাকা নিকটতম অংশে যায়।",
      "after": "যেখানে এগুলোর কোনো শব্দই আর থাকে না, সেখানে প্রতিটি তার অধ্যায়ের প্রায় একই জায়গায় যায়, অথবা আগের ও নতুন টেক্সটে মিল থাকা নিকটতম অংশে।",
@@ -800,6 +910,7 @@
     },
     {
      "key": "With %@, %@.",
+     "id": "removalChoice.optionSentence",
      "english": "With %1$@, %2$@.",
      "before": "%1$@ দিয়ে, %2$@।",
      "after": "“%1$@” দিয়ে, %2$@।",
@@ -807,6 +918,7 @@
     },
     {
      "key": "With %@, the feed and its downloads stay, listed in no folder until Feed Info gives the feed another; Delete Feed… on its row deletes it.",
+     "id": "folderRemoval.feedsChoiceSentences.downloads",
      "english": "With %@, the feed and its downloads stay, listed in no folder until Feed Info gives the feed another; Delete Feed… on its row deletes it.",
      "before": "%@ দিয়ে ফিড ও তার ডাউনলোড থেকে যায়, ফিডের তথ্য ফিডকে অন্য একটি ফোল্ডার না দেওয়া পর্যন্ত কোনো ফোল্ডারে তালিকাভুক্ত থাকে না; এর সারিতে ফিড মুছুন… ফিডটি মুছে ফেলে।",
      "after": "“%@” দিয়ে ফিড ও তার ডাউনলোড থেকে যায়, আর “ফিডের তথ্য” ফিডটিকে অন্য একটি ফোল্ডার না দেওয়া পর্যন্ত কোনো ফোল্ডারে তালিকাভুক্ত থাকে না; এর সারিতে “ফিড মুছুন…” ফিডটি মুছে ফেলে।",
@@ -814,6 +926,7 @@
     },
     {
      "key": "With %@, the feeds and their downloads stay, listed in no folder until Feed Info gives each another; Delete Feed… on a feed's row deletes it.",
+     "id": "folderRemoval.feedsChoiceSentences.each",
      "english": "With %@, the feeds and their downloads stay, listed in no folder until Feed Info gives each another; Delete Feed… on a feed's row deletes it.",
      "before": "%@ দিয়ে ফিডগুলো ও সেগুলোর ডাউনলোড থেকে যায়, ফিডের তথ্য প্রতিটিকে অন্য একটি ফোল্ডার না দেওয়া পর্যন্ত সেগুলো কোনো ফোল্ডারে তালিকাভুক্ত থাকে না; একটি ফিডের সারিতে ফিড মুছুন… সেটি মুছে ফেলে।",
      "after": "“%@” দিয়ে ফিডগুলো ও সেগুলোর ডাউনলোড থেকে যায়, আর “ফিডের তথ্য” প্রতিটিকে অন্য একটি ফোল্ডার না দেওয়া পর্যন্ত সেগুলো কোনো ফোল্ডারে তালিকাভুক্ত থাকে না; একটি ফিডের সারিতে “ফিড মুছুন…” সেটি মুছে ফেলে।",
@@ -821,6 +934,7 @@
     },
     {
      "key": "With %@, the folder and everything in it leave the library, and %@.",
+     "id": "folderRemoval.choiceMessage.everything",
      "english": "With %1$@, the folder and everything in it leave the library, and %2$@.",
      "before": "%1$@ দিয়ে ফোল্ডার ও এর সবকিছু লাইব্রেরি ছেড়ে যায়, এবং %2$@।",
      "after": "“%1$@” দিয়ে ফোল্ডার ও এর সবকিছু লাইব্রেরি ছেড়ে যায়, এবং %2$@।",
@@ -828,6 +942,7 @@
     },
     {
      "key": "With Move Contents Out, the feed's folder moves with the rest.",
+     "id": "folderRemoval.feedsChoiceSentences.moves",
      "english": "With Move Contents Out, the feed's folder moves with the rest.",
      "before": "বিষয়বস্তু বাইরে স্থানান্তর করুন দিয়ে ফিডের ফোল্ডার বাকিদের সঙ্গে সরে যায়।",
      "after": "“বিষয়বস্তু বাইরে স্থানান্তর করুন” দিয়ে ফিডের ফোল্ডারও বাকি সবকিছুর সঙ্গে সরে যায়।",
@@ -835,6 +950,7 @@
     },
     {
      "key": "With Move Contents Out, their folders move with the rest.",
+     "id": "folderRemoval.feedsChoiceSentences.contents",
      "english": "With Move Contents Out, their folders move with the rest.",
      "before": "বিষয়বস্তু বাইরে স্থানান্তর করুন দিয়ে তাদের ফোল্ডার বাকিদের সঙ্গে সরে যায়।",
      "after": "“বিষয়বস্তু বাইরে স্থানান্তর করুন” দিয়ে ফিডগুলোর ফোল্ডারও বাকি সবকিছুর সঙ্গে সরে যায়।",
@@ -842,6 +958,7 @@
     },
     {
      "key": "With Move Contents Out, they stay in the library and only the folder is deleted.",
+     "id": "folderRemoval.choiceMessage.contents",
      "english": "With Move Contents Out, they stay in the library and only the folder is deleted.",
      "before": "বিষয়বস্তু বাইরে স্থানান্তর করুন দিয়ে এগুলো লাইব্রেরিতে থাকে আর শুধু ফোল্ডারটি মুছে যায়।",
      "after": "“বিষয়বস্তু বাইরে স্থানান্তর করুন” দিয়ে এগুলো লাইব্রেরিতে থাকে আর শুধু ফোল্ডারটি মুছে যায়।",
@@ -849,6 +966,7 @@
     },
     {
      "key": "Your place and bookmarks move with their words.",
+     "id": "textEncoding.placesSentence.bookmarks",
      "english": "Your place and bookmarks move with their words.",
      "before": "আপনার অবস্থান ও বুকমার্ক তাদের শব্দের সঙ্গে সরে যায়।",
      "after": "আপনার অবস্থান ও বুকমার্ক নিজ নিজ শব্দের সঙ্গে সরে যায়।",
@@ -856,6 +974,7 @@
     },
     {
      "key": "so nothing in %@ was compared.",
+     "id": "libraryComparison.sentence.libraryIndex.compared",
      "english": "so nothing in %@ was compared.",
      "before": "তাই %@-এ কিছুই তুলনা করা হয়নি।",
      "after": "তাই %@তে কিছুই তুলনা করা হয়নি।",
@@ -863,6 +982,7 @@
     },
     {
      "key": "the identity marker of %@",
+     "id": "libraryComparison.shortReason.identityMarker",
      "english": "the identity marker of %@",
      "before": "%@-এর পরিচয় মার্কার",
      "after": "%@র পরিচয় মার্কার",
@@ -870,6 +990,7 @@
     },
     {
      "key": "the library index of %@",
+     "id": "libraryComparison.shortReason.libraryIndex",
      "english": "the library index of %@",
      "before": "%@-এর লাইব্রেরি সূচক",
      "after": "%@র লাইব্রেরি সূচক",
@@ -877,6 +998,7 @@
     },
     {
      "key": "the record of %@ in %@",
+     "id": "libraryComparison.record",
      "english": "the record of %1$@ in %2$@",
      "before": "%2$@-এ %1$@-এর রেকর্ড",
      "after": "%2$@তে %1$@-এর রেকর্ড",
@@ -884,6 +1006,7 @@
     },
     {
      "key": "their files are deleted permanently and cannot be recovered",
+     "id": "removalMode.filesClause.permanently",
      "english": "their files are deleted permanently and cannot be recovered",
      "before": "এদের ফাইল স্থায়ীভাবে মুছে ফেলা হয় এবং পুনরুদ্ধার করা যায় না",
      "after": "এগুলোর ফাইল স্থায়ীভাবে মুছে ফেলা হয় এবং পুনরুদ্ধার করা যায় না",
@@ -891,6 +1014,7 @@
     },
     {
      "key": "their files go to the Trash, where you can recover them until the Trash is emptied",
+     "id": "removalMode.filesClause.trashRecoverEmptied",
      "english": "their files go to the Trash, where you can recover them until the Trash is emptied",
      "before": "এদের ফাইল ট্র্যাশে যায়, যেখানে ট্র্যাশ খালি করার আগ পর্যন্ত আপনি সেগুলো পুনরুদ্ধার করতে পারেন",
      "after": "এগুলোর ফাইল ট্র্যাশে যায়, যেখানে ট্র্যাশ খালি করার আগ পর্যন্ত আপনি সেগুলো পুনরুদ্ধার করতে পারেন",
@@ -898,6 +1022,7 @@
     },
     {
      "key": "their files stay in the TextMouth library folder",
+     "id": "removalMode.filesClause.theirStayLibraryFolder",
      "english": "their files stay in the TextMouth library folder",
      "before": "এদের ফাইল TextMouth লাইব্রেরি ফোল্ডারে থাকে",
      "after": "এগুলোর ফাইল TextMouth লাইব্রেরি ফোল্ডারে থাকে",
@@ -916,6 +1041,7 @@
    "fixes": [
     {
      "key": "%@ failed: %@",
+     "id": "importFailure.failedSentence",
      "english": "%1$@ failed: %2$@",
      "before": "%1$@ ব্যর্থ হয়েছে: %2$@",
      "after": "“%1$@” ধাপে ব্যর্থ হয়েছে: %2$@",
@@ -923,6 +1049,7 @@
     },
     {
      "key": "%@ for %@ now follows the global setting: %@.",
+     "id": "feed.itemPolicyApplied.follows",
      "english": "%1$@ for %2$@ now follows the global setting: %3$@.",
      "before": "%2$@-এর জন্য %1$@ এখন সাধারণ সেটিং অনুসরণ করে: %3$@।",
      "after": "%2$@-এর জন্য %1$@ এখন গ্লোবাল সেটিং অনুসরণ করে: %3$@।",
@@ -930,6 +1057,7 @@
     },
     {
      "key": "%@ is open in a reader. Close it, then choose Edit Audio again.",
+     "id": "audioEditor.readerStillOpen",
      "english": "%@ is open in a reader. Close it, then choose Edit Audio again.",
      "before": "%@ একটি রিডারে খোলা আছে। সেটি বন্ধ করুন, তারপর আবার অডিও সম্পাদনা করুন বেছে নিন।",
      "after": "%@ একটি রিডারে খোলা আছে। সেটি বন্ধ করুন, তারপর আবার “অডিও সম্পাদনা করুন” বেছে নিন।",
@@ -937,6 +1065,7 @@
     },
     {
      "key": "%@ lists %lld feeds. Each gets its own folder, named after it.",
+     "id": "feed.importLists",
      "english": {
       "one": "%@ lists %lld feed. Each gets its own folder, named after it.",
       "other": "%@ lists %lld feeds. Each gets its own folder, named after it."
@@ -953,6 +1082,7 @@
     },
     {
      "key": "%@ moves an episode or article downloaded in its feed. Select one in its feed's folder.",
+     "id": "feed.nothingToMoveToLibrary",
      "english": "%@ moves an episode or article downloaded in its feed. Select one in its feed's folder.",
      "before": "%@ একটি ফিডে ডাউনলোড করা পর্ব বা নিবন্ধ সরায়। ফিডের ফোল্ডারে একটি নির্বাচন করুন।",
      "after": "%@ দিয়ে ফিডে ডাউনলোড করা পর্ব বা নিবন্ধ স্থানান্তর করা যায়। ফিডের ফোল্ডারে একটি নির্বাচন করুন।",
@@ -960,6 +1090,7 @@
     },
     {
      "key": "%@ not recording",
+     "id": "recording.levelAnnouncement.idle",
      "english": "%@ not recording",
      "before": "%@ রেকর্ড হচ্ছে না",
      "after": "%@, রেকর্ড হচ্ছে না",
@@ -967,6 +1098,7 @@
     },
     {
      "key": "%@ stay in their feeds: %@",
+     "id": "feed.stays.inTheirFeeds",
      "english": "%1$@ stay in their feeds: %2$@",
      "before": "%1$@ তাদের ফিডেই থাকে: %2$@",
      "after": "%1$@ নিজ নিজ ফিডেই রয়ে গেছে: %2$@",
@@ -974,6 +1106,7 @@
     },
     {
      "key": "%@ stays in its feed: %@",
+     "id": "feed.stays.inItsFeed",
      "english": "%1$@ stays in its feed: %2$@",
      "before": "%1$@ তার ফিডেই থাকে: %2$@",
      "after": "%1$@ নিজের ফিডেই রয়ে গেছে: %2$@",
@@ -981,6 +1114,7 @@
     },
     {
      "key": "%@ use plain http, so others can read or change what they send; TextMouth still loads it.",
+     "id": "opmlImportSummary.sentence.they",
      "english": "%@ use plain http, so others can read or change what they send; TextMouth still loads it.",
      "before": "%@ plain http ব্যবহার করে, তাই অন্যরা তাদের পাঠানো তথ্য পড়তে বা বদলাতে পারে; TextMouth তবুও এগুলো লোড করে।",
      "after": "%@ সাধারণ http ব্যবহার করে, তাই অন্যরা সেগুলোর পাঠানো তথ্য পড়তে বা বদলাতে পারে; TextMouth তবুও সেগুলো লোড করে।",
@@ -988,6 +1122,7 @@
     },
     {
      "key": "%@ uses plain http, so others can read or change what it sends; TextMouth still loads it.",
+     "id": "opmlImportSummary.sentence.sends",
      "english": "%@ uses plain http, so others can read or change what it sends; TextMouth still loads it.",
      "before": "%@ plain http ব্যবহার করে, তাই অন্যরা এর পাঠানো তথ্য পড়তে বা বদলাতে পারে; TextMouth তবুও এটি লোড করে।",
      "after": "%@ সাধারণ http ব্যবহার করে, তাই অন্যরা এর পাঠানো তথ্য পড়তে বা বদলাতে পারে; TextMouth তবুও এটি লোড করে।",
@@ -995,6 +1130,7 @@
     },
     {
      "key": "%lld by %lld pixels",
+     "id": "pageImage.dimensions",
      "english": "%1$lld by %2$lld pixels",
      "before": "%1$lld × %2$lld পিক্সেল",
      "after": "%1$lld বাই %2$lld পিক্সেল",
@@ -1002,6 +1138,7 @@
     },
     {
      "key": "%lld edits are undone. Redo brings them back until you make another edit.",
+     "id": "audioEditor.revertExplanation.another",
      "english": {
       "one": "%lld edit is undone. Redo brings them back until you make another edit.",
       "other": "%lld edits are undone. Redo brings them back until you make another edit."
@@ -1018,6 +1155,7 @@
     },
     {
      "key": "A .%@ file is a transcript, not a book. To use it, import its audio, open the book, and choose Attach Transcript… from the Book menu.",
+     "id": "fileImportError.unsupportedFormat.transcript",
      "english": "A .%@ file is a transcript, not a book. To use it, import its audio, open the book, and choose Attach Transcript… from the Book menu.",
      "before": ".%@ ফাইল একটি ট্রান্সক্রিপ্ট, বই নয়। এটি ব্যবহার করতে এর অডিও আমদানি করুন, বইটি খুলুন, এবং বই মেনু থেকে ট্রান্সক্রিপ্ট সংযুক্ত করুন… বেছে নিন।",
      "after": ".%@ ফাইল একটি ট্রান্সক্রিপ্ট, বই নয়। এটি ব্যবহার করতে এর অডিও আমদানি করুন, বইটি খুলুন এবং বই মেনু থেকে “ট্রান্সক্রিপ্ট সংযুক্ত করুন…” বেছে নিন।",
@@ -1025,6 +1163,7 @@
     },
     {
      "key": "A feed address, such as a link ending in .rss or .xml, or a web page that names its feed.",
+     "id": "feed.addressHelp",
      "english": "A feed address, such as a link ending in .rss or .xml, or a web page that names its feed.",
      "before": "ফিডের ঠিকানা, যেমন .rss বা .xml-এ শেষ হওয়া লিঙ্ক, অথবা ফিডের নাম উল্লেখ করা ওয়েব পৃষ্ঠা।",
      "after": "ফিডের ঠিকানা, যেমন .rss বা .xml দিয়ে শেষ হওয়া লিঙ্ক, অথবা এমন ওয়েব পৃষ্ঠা যা তার ফিডের ঠিকানা জানায়।",
@@ -1032,6 +1171,7 @@
     },
     {
      "key": "A feed can have its own %@ choice and its own days before deleting played downloads, in its %@.",
+     "id": "feedSettings.perFeedNote",
      "english": "A feed can have its own %1$@ choice and its own days before deleting played downloads, in its %2$@.",
      "before": "প্রতিটি ফিডের নিজস্ব %1$@ পছন্দ এবং চালানো ডাউনলোড মোছার আগে নিজস্ব দিনের সংখ্যা থাকতে পারে, এর %2$@-এ।",
      "after": "%2$@-এ প্রতিটি ফিডের নিজস্ব %1$@ পছন্দ এবং শোনা ডাউনলোড মোছার আগের নিজস্ব দিনসংখ্যা রাখা যায়।",
@@ -1039,6 +1179,7 @@
     },
     {
      "key": "A newer TextMouth edited this audio, so this version leaves its edits alone.",
+     "id": "audioEditError.historyFromNewerVersion",
      "english": "A newer TextMouth edited this audio, so this version leaves its edits alone.",
      "before": "TextMouth-এর একটি নতুন সংস্করণ এই অডিও সম্পাদনা করেছে, তাই এই সংস্করণ এর সম্পাদনায় হাত দেয় না।",
      "after": "TextMouth-এর একটি নতুন সংস্করণ এই অডিও সম্পাদনা করেছে, তাই এই সংস্করণ সেই সম্পাদনাগুলোতে হাত দেয় না।",
@@ -1046,6 +1187,7 @@
     },
     {
      "key": "A quote isn't closed in “%@”.",
+     "id": "audioFilterChain.split",
      "english": "A quote isn't closed in “%@”.",
      "before": "“%@”-এ একটি উদ্ধৃতি বন্ধ করা হয়নি।",
      "after": "“%@”-এ একটি উদ্ধৃতিচিহ্ন বন্ধ করা হয়নি।",
@@ -1053,6 +1195,7 @@
     },
     {
      "key": "An article's details come from its feed; %@ makes it a book you can edit.",
+     "id": "feedItemBookInfo.whyReadOnly.article",
      "english": "An article's details come from its feed; %@ makes it a book you can edit.",
      "before": "নিবন্ধের বিবরণ এর ফিড থেকে আসে; %@ এটিকে সম্পাদনাযোগ্য বই বানায়।",
      "after": "নিবন্ধের বিবরণ ফিড থেকে আসে; %@ বেছে নিলে এটি সম্পাদনাযোগ্য বই হয়।",
@@ -1060,6 +1203,7 @@
     },
     {
      "key": "An episode's details come from its feed; %@ makes it a book you can edit.",
+     "id": "feedItemBookInfo.whyReadOnly.episode",
      "english": "An episode's details come from its feed; %@ makes it a book you can edit.",
      "before": "পর্বের বিবরণ এর ফিড থেকে আসে; %@ এটিকে সম্পাদনাযোগ্য বই বানায়।",
      "after": "পর্বের বিবরণ ফিড থেকে আসে; %@ বেছে নিলে এটি সম্পাদনাযোগ্য বই হয়।",
@@ -1067,6 +1211,7 @@
     },
     {
      "key": "Apply Filter",
+     "id": "common.applyFilter",
      "english": "Apply Filter",
      "before": "ফিল্টার প্রয়োগ করুন",
      "after": "ফিল্টার প্রয়োগ",
@@ -1074,6 +1219,7 @@
     },
     {
      "key": "Apply Filter lists these in this order. Each is a chain of filters in ffmpeg's syntax, such as highpass=f=80,volume=3dB. TextMouth runs its own filters, plus every ffmpeg filter when ffmpeg is installed and turned on above.",
+     "id": "audioFilterPresets.explanation",
      "english": "Apply Filter lists these in this order. Each is a chain of filters in ffmpeg's syntax, such as highpass=f=80,volume=3dB. TextMouth runs its own filters, plus every ffmpeg filter when ffmpeg is installed and turned on above.",
      "before": "ফিল্টার প্রয়োগ করুন এগুলো এই ক্রমে তালিকাভুক্ত করে। প্রতিটি ffmpeg-এর সিনট্যাক্সে ফিল্টারের একটি চেইন, যেমন highpass=f=80,volume=3dB। TextMouth নিজের ফিল্টার চালায়, এবং ffmpeg ইনস্টল করা ও উপরে চালু থাকলে ffmpeg-এর প্রতিটি ফিল্টারও চালায়।",
      "after": "“ফিল্টার প্রয়োগ” এগুলো এই ক্রমে তালিকাভুক্ত করে। প্রতিটি ffmpeg-এর সিনট্যাক্সে ফিল্টারের একটি চেইন, যেমন highpass=f=80,volume=3dB। TextMouth নিজের ফিল্টার চালায়, এবং ffmpeg ইনস্টল করা ও উপরে চালু থাকলে ffmpeg-এর প্রতিটি ফিল্টারও চালায়।",
@@ -1081,6 +1227,7 @@
     },
     {
      "key": "Apply Filter plays a preview first, and applies when you choose Apply again.",
+     "id": "audioEditingSettings.previewFiltersHint",
      "english": "Apply Filter plays a preview first, and applies when you choose Apply again.",
      "before": "ফিল্টার প্রয়োগ করুন আগে একটি প্রিভিউ চালায়, এবং আপনি আবার প্রয়োগ করুন বেছে নিলে প্রয়োগ করে।",
      "after": "“ফিল্টার প্রয়োগ” আগে একটি প্রিভিউ চালায়, এবং আপনি আবার “প্রয়োগ করুন” বেছে নিলে প্রয়োগ করে।",
@@ -1088,6 +1235,7 @@
     },
     {
      "key": "Apply to",
+     "id": "audioEditor.applyToLabel",
      "english": "Apply to",
      "before": "যাতে প্রয়োগ হবে",
      "after": "কোথায় প্রয়োগ হবে",
@@ -1095,6 +1243,7 @@
     },
     {
      "key": "Asks after each audiobook import whether to transcribe it. Off, audiobooks are transcribed only with Transcribe Audio.",
+     "id": "transcription.offerHint",
      "english": "Asks after each audiobook import whether to transcribe it. Off, audiobooks are transcribed only with Transcribe Audio.",
      "before": "প্রতিটি অডিওবুক আমদানির পর জিজ্ঞেস করে সেটি ট্রান্সক্রাইব করা হবে কি না। বন্ধ থাকলে অডিওবুক শুধু অডিও ট্রান্সক্রাইব করুন দিয়ে ট্রান্সক্রাইব হয়।",
      "after": "প্রতিটি অডিওবুক আমদানির পর জিজ্ঞেস করে সেটি ট্রান্সক্রাইব করা হবে কি না। বন্ধ থাকলে অডিওবুক শুধু “অডিও ট্রান্সক্রাইব করুন” দিয়ে ট্রান্সক্রাইব হয়।",
@@ -1102,6 +1251,7 @@
     },
     {
      "key": "Choose an OPML file of subscriptions, as another feed reader exports them.",
+     "id": "feed.importPanelMessage",
      "english": "Choose an OPML file of subscriptions, as another feed reader exports them.",
      "before": "অন্য ফিড রিডার যেভাবে রপ্তানি করে, সেভাবে সাবস্ক্রিপশনের একটি OPML ফাইল বেছে নিন।",
      "after": "অন্য কোনো ফিড রিডার থেকে রপ্তানি করা সাবস্ক্রিপশনের একটি OPML ফাইল বেছে নিন।",
@@ -1109,6 +1259,7 @@
     },
     {
      "key": "Closing ends the recording. %@ saves it as an audiobook, %@ deletes it, and %@ keeps recording.",
+     "id": "recording.closeWhileRecordingExplanation",
      "english": "Closing ends the recording. %1$@ saves it as an audiobook, %2$@ deletes it, and %3$@ keeps recording.",
      "before": "বন্ধ করলে রেকর্ডিং শেষ হয়। %1$@ এটি অডিওবুক হিসেবে সংরক্ষণ করে, %2$@ এটি মুছে ফেলে, আর %3$@ রেকর্ডিং চালিয়ে যায়।",
      "after": "বন্ধ করলে রেকর্ডিং শেষ হয়। %1$@ বেছে নিলে এটি অডিওবুক হিসেবে সংরক্ষিত হয়, %2$@ বেছে নিলে মুছে যায়, আর %3$@ বেছে নিলে রেকর্ডিং চলতে থাকে।",
@@ -1116,6 +1267,7 @@
     },
     {
      "key": "Cut %@",
+     "id": "audioEdit.actionName.cut",
      "english": "Cut %@",
      "before": "%@ কাট করুন",
      "after": "%@ কাট",
@@ -1123,6 +1275,7 @@
     },
     {
      "key": "Deleted “%@” from its feed; its book stays in your library.",
+     "id": "feed.itemDeleted.library",
      "english": "Deleted “%@” from its feed; its book stays in your library.",
      "before": "“%@” এর ফিড থেকে মোছা হয়েছে; এর বইটি আপনার লাইব্রেরিতে থেকে যায়।",
      "after": "“%@” তার ফিড থেকে মোছা হয়েছে; এর বইটি আপনার লাইব্রেরিতে থেকে যায়।",
@@ -1130,6 +1283,7 @@
     },
     {
      "key": "Edits one track at a time, listed by chapter name.",
+     "id": "audioEditor.chooseTrackExplanation",
      "english": "Edits one track at a time, listed by chapter name.",
      "before": "একবারে একটি ট্র্যাক সম্পাদনা করে, অধ্যায়ের নাম অনুযায়ী তালিকাভুক্ত।",
      "after": "একবারে একটি ট্র্যাক সম্পাদনা করে; ট্র্যাকগুলো অধ্যায়ের নাম অনুযায়ী তালিকাভুক্ত।",
@@ -1137,6 +1291,7 @@
     },
     {
      "key": "Experimental. These rules correct words the recognizer writes differently from books read aloud. Check the changes before you apply them; Undo Cleanup puts the transcript back.",
+     "id": "transcriptCleanup.experimentalLine",
      "english": "Experimental. These rules correct words the recognizer writes differently from books read aloud. Check the changes before you apply them; Undo Cleanup puts the transcript back.",
      "before": "পরীক্ষামূলক। এই নিয়মগুলো সেই শব্দ সংশোধন করে, যা শনাক্তকারী জোরে পড়া বইয়ের থেকে আলাদাভাবে লেখে। প্রয়োগ করার আগে পরিবর্তনগুলো দেখে নিন; পরিষ্কার করা পূর্বাবস্থায় ফেরান ট্রান্সক্রিপ্ট আগের অবস্থায় ফিরিয়ে দেয়।",
      "after": "পরীক্ষামূলক। এই নিয়মগুলো সেই শব্দ সংশোধন করে, যা শনাক্তকারী জোরে পড়া বইয়ের থেকে আলাদাভাবে লেখে। প্রয়োগ করার আগে পরিবর্তনগুলো দেখে নিন; “পরিষ্কার করা পূর্বাবস্থায় ফেরান” বেছে নিলে ট্রান্সক্রিপ্ট আগের অবস্থায় ফিরে যায়।",
@@ -1144,6 +1299,7 @@
     },
     {
      "key": "Import cancelled after %@.",
+     "id": "zipImportCancellation.sentence.afterBooks",
      "english": "Import cancelled after %@.",
      "before": "%@ পর আমদানি বাতিল করা হয়েছে।",
      "after": "%@-এর পর আমদানি বাতিল করা হয়েছে।",
@@ -1151,6 +1307,7 @@
     },
     {
      "key": "It belongs to its feed while it is downloaded. %@ removes its file and keeps its place and bookmarks.",
+     "id": "feedItemPackageError.staysInItsFeed",
      "english": "It belongs to its feed while it is downloaded. %@ removes its file and keeps its place and bookmarks.",
      "before": "ডাউনলোড থাকা অবস্থায় এটি এর ফিডের অংশ। %@ এর ফাইল সরায় এবং এর অবস্থান ও বুকমার্ক রেখে দেয়।",
      "after": "ডাউনলোড থাকা অবস্থায় এটি তার ফিডের অংশ। %@ বেছে নিলে এর ফাইল সরানো হয়, আর এর অবস্থান ও বুকমার্ক থেকে যায়।",
@@ -1158,6 +1315,7 @@
     },
     {
      "key": "It may be damaged, or another kind of file.",
+     "id": "failure.unreadable.damaged",
      "english": "It may be damaged, or another kind of file.",
      "before": "এটি ক্ষতিগ্রস্ত হতে পারে, বা অন্য ধরনের ফাইল।",
      "after": "এটি ক্ষতিগ্রস্ত হতে পারে, অথবা অন্য ধরনের ফাইল হতে পারে।",
@@ -1165,6 +1323,7 @@
     },
     {
      "key": "Its file is now “%@”, since TextMouth can't write its old format.",
+     "id": "audioEditor.saved.format",
      "english": "Its file is now “%@”, since TextMouth can't write its old format.",
      "before": "এর ফাইল এখন “%@”, কারণ TextMouth এর পুরোনো ফরম্যাটে লিখতে পারে না।",
      "after": "এর ফাইল এখন “%@”, কারণ TextMouth ফাইলটির পুরোনো ফরম্যাটে লিখতে পারে না।",
@@ -1172,6 +1331,7 @@
     },
     {
      "key": "Leaves the audiobook untranscribed; Transcribe Audio does it later.",
+     "id": "transcription.offerNotNowHint",
      "english": "Leaves the audiobook untranscribed; Transcribe Audio does it later.",
      "before": "অডিওবুক ট্রান্সক্রাইব না করে রেখে দেয়; অডিও ট্রান্সক্রাইব করুন পরে তা করে।",
      "after": "অডিওবুক ট্রান্সক্রাইব না করে রেখে দেয়; পরে “অডিও ট্রান্সক্রাইব করুন” দিয়ে তা করা যায়।",
@@ -1179,6 +1339,7 @@
     },
     {
      "key": "Lists every article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
+     "id": "feed.everyListedNewestDownloaded.article",
      "english": {
       "one": "Lists every article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
       "other": "Lists every article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings."
@@ -1195,6 +1356,7 @@
     },
     {
      "key": "Lists every episode and article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
+     "id": "feed.everyListedNewestDownloaded.episodeArticle",
      "english": {
       "one": "Lists every episode and article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
       "other": "Lists every episode and article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings."
@@ -1211,6 +1373,7 @@
     },
     {
      "key": "Lists every episode, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
+     "id": "feed.everyListedNewestDownloaded.episode",
      "english": {
       "one": "Lists every episode, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
       "other": "Lists every episode, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings."
@@ -1227,6 +1390,7 @@
     },
     {
      "key": "Makes these corrections. The transcript from before is kept, so Undo Cleanup can put it back.",
+     "id": "transcriptCleanup.applyHint",
      "english": "Makes these corrections. The transcript from before is kept, so Undo Cleanup can put it back.",
      "before": "এই সংশোধনগুলো করে। আগের ট্রান্সক্রিপ্ট রাখা থাকে, তাই পরিষ্কার করা পূর্বাবস্থায় ফেরান তা ফিরিয়ে আনতে পারে।",
      "after": "এই সংশোধনগুলো করে। আগের ট্রান্সক্রিপ্ট রাখা থাকে, তাই “পরিষ্কার করা পূর্বাবস্থায় ফেরান” দিয়ে তা ফিরিয়ে আনা যায়।",
@@ -1234,6 +1398,7 @@
     },
     {
      "key": "Mark All Played",
+     "id": "feed.markAllPlayedTitle.forPlayback",
      "english": "Mark All Played",
      "before": "সব শোনা হয়েছে চিহ্নিত করুন",
      "after": "সব শোনা হয়েছে হিসেবে চিহ্নিত করুন",
@@ -1241,6 +1406,7 @@
     },
     {
      "key": "Mark All Read",
+     "id": "feed.markAllPlayedTitle.read",
      "english": "Mark All Read",
      "before": "সব পড়া হয়েছে চিহ্নিত করুন",
      "after": "সব পড়া হয়েছে হিসেবে চিহ্নিত করুন",
@@ -1248,6 +1414,7 @@
     },
     {
      "key": "Mark Played",
+     "id": "feed.title.markPlayed.episode",
      "english": "Mark Played",
      "before": "শোনা হয়েছে চিহ্নিত করুন",
      "after": "শোনা হয়েছে হিসেবে চিহ্নিত করুন",
@@ -1255,6 +1422,7 @@
     },
     {
      "key": "Mark Read",
+     "id": "feed.title.markPlayed.read",
      "english": "Mark Read",
      "before": "পড়া হয়েছে চিহ্নিত করুন",
      "after": "পড়া হয়েছে হিসেবে চিহ্নিত করুন",
@@ -1262,6 +1430,7 @@
     },
     {
      "key": "Mark Unplayed",
+     "id": "feed.title.markUnplayed.episode",
      "english": "Mark Unplayed",
      "before": "শোনা হয়নি চিহ্নিত করুন",
      "after": "শোনা হয়নি হিসেবে চিহ্নিত করুন",
@@ -1269,6 +1438,7 @@
     },
     {
      "key": "Mark Unread",
+     "id": "feed.title.markUnplayed.unread",
      "english": "Mark Unread",
      "before": "পড়া হয়নি চিহ্নিত করুন",
      "after": "পড়া হয়নি হিসেবে চিহ্নিত করুন",
@@ -1276,6 +1446,7 @@
     },
     {
      "key": "Marked %lld articles of %@ read.",
+     "id": "feed.markedAll.articles",
      "english": {
       "one": "Marked %lld article of %@ read.",
       "other": "Marked %lld articles of %@ read."
@@ -1292,6 +1463,7 @@
     },
     {
      "key": "Marked %lld episodes of %@ played.",
+     "id": "feed.markedAll.episodes",
      "english": {
       "one": "Marked %lld episode of %@ played.",
       "other": "Marked %lld episodes of %@ played."
@@ -1308,6 +1480,7 @@
     },
     {
      "key": "Marked %lld items of %@ played.",
+     "id": "feed.markedAll.items",
      "english": {
       "one": "Marked %lld item of %@ played.",
       "other": "Marked %lld items of %@ played."
@@ -1324,6 +1497,7 @@
     },
     {
      "key": "Marked “%@” played.",
+     "id": "feed.marked.played",
      "english": "Marked “%@” played.",
      "before": "“%@” শোনা হয়েছে চিহ্নিত করা হয়েছে।",
      "after": "“%@” শোনা হয়েছে হিসেবে চিহ্নিত করা হয়েছে।",
@@ -1331,6 +1505,7 @@
     },
     {
      "key": "Marked “%@” read.",
+     "id": "feed.marked.read",
      "english": "Marked “%@” read.",
      "before": "“%@” পড়া হয়েছে চিহ্নিত করা হয়েছে।",
      "after": "“%@” পড়া হয়েছে হিসেবে চিহ্নিত করা হয়েছে।",
@@ -1338,6 +1513,7 @@
     },
     {
      "key": "Marked “%@” unplayed.",
+     "id": "feed.marked.unplayed",
      "english": "Marked “%@” unplayed.",
      "before": "“%@” শোনা হয়নি চিহ্নিত করা হয়েছে।",
      "after": "“%@” শোনা হয়নি হিসেবে চিহ্নিত করা হয়েছে।",
@@ -1345,6 +1521,7 @@
     },
     {
      "key": "Marked “%@” unread.",
+     "id": "feed.marked.unread",
      "english": "Marked “%@” unread.",
      "before": "“%@” পড়া হয়নি চিহ্নিত করা হয়েছে।",
      "after": "“%@” পড়া হয়নি হিসেবে চিহ্নিত করা হয়েছে।",
@@ -1352,6 +1529,7 @@
     },
     {
      "key": "Move %@",
+     "id": "audioEdit.actionName.move",
      "english": "Move %@",
      "before": "%@ সরান",
      "after": "%@ সরানো",
@@ -1359,6 +1537,7 @@
     },
     {
      "key": "Moved %lld articles into %@. They're library books now, and their feeds list them %@.",
+     "id": "feed.movedToLibrary.articles",
      "english": {
       "one": "Moved %lld article into %@. It's a library book now, and its feed lists it %@.",
       "other": "Moved %lld articles into %@. They're library books now, and their feeds list them %@."
@@ -1375,6 +1554,7 @@
     },
     {
      "key": "Moved %lld episodes into %@. They're library books now, and their feeds list them %@.",
+     "id": "feed.movedToLibrary.episodes",
      "english": {
       "one": "Moved %lld episode into %@. It's a library book now, and its feed lists it %@.",
       "other": "Moved %lld episodes into %@. They're library books now, and their feeds list them %@."
@@ -1391,6 +1571,7 @@
     },
     {
      "key": "Moved %lld items into %@. They're library books now, and their feeds list them %@.",
+     "id": "feed.movedToLibrary.items",
      "english": {
       "one": "Moved %lld item into %@. It's a library book now, and its feed lists it %@.",
       "other": "Moved %lld items into %@. They're library books now, and their feeds list them %@."
@@ -1407,6 +1588,7 @@
     },
     {
      "key": "Moves the cursor back a tenth of a second.",
+     "id": "audioEditor.explanation.editorSkipBackShort",
      "english": "Moves the cursor back a tenth of a second.",
      "before": "কার্সর এক সেকেন্ডের দশ ভাগের এক ভাগ পিছিয়ে নেয়।",
      "after": "কার্সর সেকেন্ডের এক-দশমাংশ পিছিয়ে নেয়।",
@@ -1414,6 +1596,7 @@
     },
     {
      "key": "Moves the cursor forward a tenth of a second.",
+     "id": "audioEditor.explanation.editorSkipForwardShort",
      "english": "Moves the cursor forward a tenth of a second.",
      "before": "কার্সর এক সেকেন্ডের দশ ভাগের এক ভাগ এগিয়ে নেয়।",
      "after": "কার্সর সেকেন্ডের এক-দশমাংশ এগিয়ে নেয়।",
@@ -1421,6 +1604,7 @@
     },
     {
      "key": "Moves these %lld articles into a library folder as books you can edit; they leave their feeds",
+     "id": "feed.moveToLibraryHint.articles",
      "english": {
       "one": "Moves this %lld article into a library folder as a book you can edit; it leaves the feed",
       "other": "Moves these %lld articles into a library folder as books you can edit; they leave their feeds"
@@ -1437,6 +1621,7 @@
     },
     {
      "key": "Moves these %lld episodes into a library folder as books you can edit; they leave their feeds",
+     "id": "feed.moveToLibraryHint.episodes",
      "english": {
       "one": "Moves this %lld episode into a library folder as a book you can edit; it leaves the feed",
       "other": "Moves these %lld episodes into a library folder as books you can edit; they leave their feeds"
@@ -1453,6 +1638,7 @@
     },
     {
      "key": "Moves these %lld items into a library folder as books you can edit; they leave their feeds",
+     "id": "feed.moveToLibraryHint.items",
      "english": {
       "one": "Moves this %lld item into a library folder as a book you can edit; it leaves the feed",
       "other": "Moves these %lld items into a library folder as books you can edit; they leave their feeds"
@@ -1469,6 +1655,7 @@
     },
     {
      "key": "Never delete played downloads",
+     "id": "feedThreshold.deleteAfterPlaying.played",
      "english": "Never delete played downloads",
      "before": "চালানো ডাউনলোড কখনও মুছবেন না",
      "after": "শোনা ডাউনলোড কখনও মুছবেন না",
@@ -1476,6 +1663,7 @@
     },
     {
      "key": "No markers yet. Add Marker drops one at the cursor.",
+     "id": "audioEditor.noMarkers",
      "english": "No markers yet. Add Marker drops one at the cursor.",
      "before": "এখনও কোনো মার্কার নেই। মার্কার যোগ করুন কার্সরের জায়গায় একটি রাখে।",
      "after": "এখনও কোনো মার্কার নেই। “মার্কার যোগ করুন” বেছে নিলে কার্সরের জায়গায় একটি মার্কার রাখা হয়।",
@@ -1483,6 +1671,7 @@
     },
     {
      "key": "No original is kept, so it can't be reverted. Undo takes back edits since the last save.",
+     "id": "audioEditor.revertNoOriginal",
      "english": "No original is kept, so it can't be reverted. Undo takes back edits since the last save.",
      "before": "মূল অডিও রাখা হয়নি, তাই আগের অবস্থায় ফেরা যায় না। পূর্বাবস্থায় ফেরান শেষ সংরক্ষণের পরের সম্পাদনা ফিরিয়ে নেয়।",
      "after": "মূল অডিও রাখা হয়নি, তাই আগের অবস্থায় ফেরা যায় না। “পূর্বাবস্থায় ফেরান” দিয়ে শেষ সংরক্ষণের পরের সম্পাদনাগুলো ফেরানো যায়।",
@@ -1490,6 +1679,7 @@
     },
     {
      "key": "Not in the book's audio yet. Discard undoes them; next time you edit this book, Redo brings them back until you make another edit.",
+     "id": "audioEditor.closeExplanation",
      "english": "Not in the book's audio yet. Discard undoes them; next time you edit this book, Redo brings them back until you make another edit.",
      "before": "এখনও বইয়ের অডিওতে নেই। বর্জন করুন সেগুলো পূর্বাবস্থায় ফেরায়; পরের বার এই বই সম্পাদনা করলে, আরেকটি সম্পাদনা না করা পর্যন্ত পুনরায় করুন সেগুলো ফিরিয়ে আনে।",
      "after": "এখনও বইয়ের অডিওতে নেই। “বর্জন করুন” বেছে নিলে সেগুলো পূর্বাবস্থায় ফেরে; পরের বার এই বই সম্পাদনা করলে, আরেকটি সম্পাদনা না করা পর্যন্ত “পুনরায় করুন” বেছে নিলে সেগুলো ফিরে আসে।",
@@ -1497,6 +1687,7 @@
     },
     {
      "key": "One copy is played from a recording and the other is read aloud from text, so replacing keeps only the existing copy's folder and place on the reading list, not its reading position, bookmarks and their notes, or settings.",
+     "id": "importDecision.replacingAcrossKindsSentence",
      "english": "One copy is played from a recording and the other is read aloud from text, so replacing keeps only the existing copy's folder and place on the reading list, not its reading position, bookmarks and their notes, or settings.",
      "before": "একটি কপি রেকর্ডিং থেকে চালানো হয় এবং অন্যটি টেক্সট থেকে পড়ে শোনানো হয়, তাই প্রতিস্থাপন করলে শুধু বিদ্যমান কপির ফোল্ডার ও পড়ার তালিকায় এর জায়গা থাকে, এর পড়ার অবস্থান, বুকমার্ক ও তাদের নোট, বা সেটিংস থাকে না।",
      "after": "একটি কপি রেকর্ডিং থেকে চালানো হয় এবং অন্যটি টেক্সট থেকে পড়ে শোনানো হয়, তাই প্রতিস্থাপন করলে শুধু বিদ্যমান কপির ফোল্ডার ও পড়ার তালিকায় এর জায়গা থাকে, এর পড়ার অবস্থান, বুকমার্ক ও সেগুলোর নোট, বা সেটিংস থাকে না।",
@@ -1504,6 +1695,7 @@
     },
     {
      "key": "Opens Transcribe Audio, which starts at once if the language's model is on this Mac; otherwise, download it there, then choose Transcribe.",
+     "id": "transcription.offerTranscribeHint",
      "english": "Opens Transcribe Audio, which starts at once if the language's model is on this Mac; otherwise, download it there, then choose Transcribe.",
      "before": "অডিও ট্রান্সক্রাইব করুন খোলে, যা ভাষার মডেল এই Mac-এ থাকলে সঙ্গে সঙ্গে শুরু হয়; না থাকলে সেখানে ডাউনলোড করে তারপর ট্রান্সক্রাইব করুন বেছে নিতে হয়।",
      "after": "“অডিও ট্রান্সক্রাইব করুন” খোলে, যা ভাষার মডেল এই Mac-এ থাকলে সঙ্গে সঙ্গে শুরু হয়; না থাকলে সেখানে মডেলটি ডাউনলোড করে তারপর “ট্রান্সক্রাইব করুন” বেছে নিতে হয়।",
@@ -1511,6 +1703,7 @@
     },
     {
      "key": "Opens your copy of the rules, transcript-cleanup.json, in your text editor, made from TextMouth's own rules the first time. Changes apply when you return to TextMouth.",
+     "id": "transcriptCleanup.editRulesHint",
      "english": "Opens your copy of the rules, transcript-cleanup.json, in your text editor, made from TextMouth's own rules the first time. Changes apply when you return to TextMouth.",
      "before": "নিয়মগুলোর আপনার কপি, transcript-cleanup.json, আপনার টেক্সট এডিটরে খোলে, যা প্রথমবার TextMouth-এর নিজস্ব নিয়ম থেকে তৈরি হয়। আপনি TextMouth-এ ফিরে এলে পরিবর্তনগুলো প্রয়োগ হয়।",
      "after": "আপনার নিয়মের কপি, transcript-cleanup.json, আপনার টেক্সট এডিটরে খোলে; প্রথমবার এটি TextMouth-এর নিজস্ব নিয়ম থেকে তৈরি হয়। আপনি TextMouth-এ ফিরে এলে পরিবর্তনগুলো প্রয়োগ হয়।",
@@ -1518,6 +1711,7 @@
     },
     {
      "key": "Pauses the recording; %@ continues the same recording.",
+     "id": "recording.pauseHint",
      "english": "Pauses the recording; %@ continues the same recording.",
      "before": "রেকর্ডিংয়ে বিরতি দেয়; %@ একই রেকর্ডিং চালিয়ে যায়।",
      "after": "রেকর্ডিংয়ে বিরতি দেয়; %@ বেছে নিলে একই রেকর্ডিং চলতে থাকে।",
@@ -1525,6 +1719,7 @@
     },
     {
      "key": "Plain http: others can read or change what this feed sends.",
+     "id": "feed.insecureNote",
      "english": "Plain http: others can read or change what this feed sends.",
      "before": "Plain http: অন্যরা এই ফিডের পাঠানো তথ্য পড়তে বা বদলাতে পারে।",
      "after": "সাধারণ http: অন্যরা এই ফিডের পাঠানো তথ্য পড়তে বা বদলাতে পারে।",
@@ -1532,6 +1727,7 @@
     },
     {
      "key": "Played downloads are kept until you delete them",
+     "id": "feedThreshold.deleteAfterPlaying.kept",
      "english": "Played downloads are kept until you delete them",
      "before": "চালানো ডাউনলোড আপনি না মোছা পর্যন্ত থেকে যায়।",
      "after": "শোনা ডাউনলোড আপনি না মোছা পর্যন্ত থেকে যায়।",
@@ -1539,6 +1735,7 @@
     },
     {
      "key": "Plays a preview; choose Apply again to apply.",
+     "id": "audioEditor.applyPreviewsFirstHint",
      "english": "Plays a preview; choose Apply again to apply.",
      "before": "একটি প্রিভিউ চালায়; আবার প্রয়োগ করুন বেছে নিলে প্রয়োগ হয়।",
      "after": "একটি প্রিভিউ চালায়; আবার “প্রয়োগ করুন” বেছে নিলে প্রয়োগ হয়।",
@@ -1546,6 +1743,7 @@
     },
     {
      "key": "Preview filters before applying",
+     "id": "audioEditingSettings.previewFiltersLabel",
      "english": "Preview filters before applying",
      "before": "প্রয়োগের আগে ফিল্টারের প্রিভিউ দেখুন",
      "after": "প্রয়োগের আগে ফিল্টারের প্রিভিউ শুনুন",
@@ -1553,6 +1751,7 @@
     },
     {
      "key": "Previewing %@ first. Choose Apply again to apply it.",
+     "id": "audioEditor.previewingBeforeApplying",
      "english": "Previewing %@ first. Choose Apply again to apply it.",
      "before": "আগে %@-এর প্রিভিউ চলছে। প্রয়োগ করতে আবার প্রয়োগ করুন বেছে নিন।",
      "after": "আগে %@-এর প্রিভিউ চলছে। প্রয়োগ করতে আবার “প্রয়োগ করুন” বেছে নিন।",
@@ -1560,6 +1759,7 @@
     },
     {
      "key": "Put the feed's folder in",
+     "id": "feed.folderCaption",
      "english": "Put the feed's folder in",
      "before": "ফিডের ফোল্ডার রাখুন যেখানে",
      "after": "ফিডের ফোল্ডার রাখা হবে এখানে",
@@ -1567,6 +1767,7 @@
     },
     {
      "key": "Put the feeds' folders in",
+     "id": "feed.importFolderCaption",
      "english": "Put the feeds' folders in",
      "before": "ফিডগুলোর ফোল্ডার রাখুন যেখানে",
      "after": "ফিডগুলোর ফোল্ডার রাখা হবে এখানে",
@@ -1574,6 +1775,7 @@
     },
     {
      "key": "Recording over %@ at %@, from %@, after the beep. Punch In or Stop ends it; Clear Selection discards it.",
+     "id": "audioEditor.punchInStarting.over",
      "english": "Recording over %1$@ at %2$@, from %3$@, after the beep. Punch In or Stop ends it; Clear Selection discards it.",
      "before": "বিপ শব্দের পর %3$@ থেকে, %2$@-এ, %1$@-এর ওপর রেকর্ড হচ্ছে। রেকর্ড করে বসান বা থামান এটি শেষ করে; নির্বাচন সাফ করুন এটি বর্জন করে।",
      "after": "বিপ শব্দের পর %3$@ থেকে, %2$@-এ, %1$@-এর ওপর রেকর্ড হচ্ছে। “রেকর্ড করে বসান” বা “থামান” বেছে নিলে এটি শেষ হয়; “নির্বাচন সাফ করুন” বেছে নিলে এটি বর্জন করা হয়।",
@@ -1581,6 +1783,7 @@
     },
     {
      "key": "Recording to insert at %@, from %@, after the beep. Punch In or Stop ends it; Clear Selection discards it.",
+     "id": "audioEditor.punchInStarting.insert",
      "english": "Recording to insert at %1$@, from %2$@, after the beep. Punch In or Stop ends it; Clear Selection discards it.",
      "before": "বিপ শব্দের পর %2$@ থেকে, %1$@-এ সন্নিবেশের জন্য রেকর্ড হচ্ছে। রেকর্ড করে বসান বা থামান এটি শেষ করে; নির্বাচন সাফ করুন এটি বর্জন করে।",
      "after": "বিপ শব্দের পর %2$@ থেকে, %1$@-এ সন্নিবেশের জন্য রেকর্ড হচ্ছে। “রেকর্ড করে বসান” বা “থামান” বেছে নিলে এটি শেষ হয়; “নির্বাচন সাফ করুন” বেছে নিলে এটি বর্জন করা হয়।",
@@ -1588,6 +1791,7 @@
     },
     {
      "key": "Recording. Stop or discard it with Clear Selection, then close.",
+     "id": "audioEditor.closeWhileRecording",
      "english": "Recording. Stop or discard it with Clear Selection, then close.",
      "before": "রেকর্ড হচ্ছে। এটি থামান, অথবা নির্বাচন সাফ করুন দিয়ে বর্জন করুন, তারপর বন্ধ করুন।",
      "after": "রেকর্ড হচ্ছে। এটি থামান, অথবা “নির্বাচন সাফ করুন” দিয়ে বর্জন করুন, তারপর বন্ধ করুন।",
@@ -1595,6 +1799,7 @@
     },
     {
      "key": "Records over the selection, or at the cursor, after a beep. Again, or Stop, ends it.",
+     "id": "audioEditor.explanation.editorPunchIn",
      "english": "Records over the selection, or at the cursor, after a beep. Again, or Stop, ends it.",
      "before": "বিপ শব্দের পর নির্বাচনের ওপর, বা কার্সরের জায়গায় রেকর্ড করে। আবার চাপলে, বা থামান, এটি শেষ করে।",
      "after": "বিপ শব্দের পর নির্বাচনের ওপর, বা কার্সরের জায়গায় রেকর্ড করে। আবার বেছে নিলে, বা “থামান” বেছে নিলে, রেকর্ডিং শেষ হয়।",
@@ -1602,6 +1807,7 @@
     },
     {
      "key": "Refresh feeds every",
+     "id": "feedThreshold.refreshInterval.every",
      "english": "Refresh feeds every",
      "before": "ফিড রিফ্রেশ করুন প্রতি",
      "after": "ফিড রিফ্রেশের ব্যবধান",
@@ -1609,6 +1815,7 @@
     },
     {
      "key": "Remove Chapter Marker",
+     "id": "audioEdit.actionName.removeChapter",
      "english": "Remove Chapter Marker",
      "before": "অধ্যায় মার্কার সরান",
      "after": "অধ্যায় মার্কার সরানো",
@@ -1616,6 +1823,7 @@
     },
     {
      "key": "Replace %@",
+     "id": "audioEdit.actionName.replace",
      "english": "Replace %@",
      "before": "%@ প্রতিস্থাপন করুন",
      "after": "%@ প্রতিস্থাপন",
@@ -1623,6 +1831,7 @@
     },
     {
      "key": "Reverted to the original audio. Redo brings back the %lld edits.",
+     "id": "audioEditor.reverted.original",
      "english": {
       "one": "Reverted to the original audio. Redo brings back the %lld edit.",
       "other": "Reverted to the original audio. Redo brings back the %lld edits."
@@ -1639,6 +1848,7 @@
     },
     {
      "key": "Save WordPerfect documents as Word or HTML files in a program that reads them, such as LibreOffice, then import those.",
+     "id": "refusedFormatAdvice.wordPerfect",
      "english": "Save WordPerfect documents as Word or HTML files in a program that reads them, such as LibreOffice, then import those.",
      "before": "WordPerfect নথি এমন প্রোগ্রামে Word বা HTML ফাইল হিসেবে সংরক্ষণ করুন যা সেগুলো পড়তে পারে, যেমন LibreOffice, তারপর সেগুলো আমদানি করুন।",
      "after": "WordPerfect নথি পড়তে পারে এমন কোনো প্রোগ্রামে, যেমন LibreOffice-এ, সেগুলো Word বা HTML ফাইল হিসেবে সংরক্ষণ করুন, তারপর সেগুলো আমদানি করুন।",
@@ -1646,6 +1856,7 @@
     },
     {
      "key": "Save in",
+     "id": "recording.folderLabel",
      "english": "Save in",
      "before": "যেখানে সংরক্ষণ হবে",
      "after": "কোথায় সংরক্ষণ হবে",
@@ -1653,6 +1864,7 @@
     },
     {
      "key": "Saved as",
+     "id": "audioEditor.savedAsLabel",
      "english": "Saved as",
      "before": "যে ফরম্যাটে সংরক্ষিত",
      "after": "সংরক্ষণের ফরম্যাট",
@@ -1660,6 +1872,7 @@
     },
     {
      "key": "Seconds between level announcements",
+     "id": "recording.announceIntervalLabel",
      "english": "Seconds between level announcements",
      "before": "লেভেল ঘোষণার মধ্যে সেকেন্ড",
      "after": "লেভেল ঘোষণার ব্যবধান (সেকেন্ড)",
@@ -1667,6 +1880,7 @@
     },
     {
      "key": "Select one audiobook, then choose Transcribe Audio again.",
+     "id": "transcription.oneBookAtATime.transcribe",
      "english": "Select one audiobook, then choose Transcribe Audio again.",
      "before": "একটি অডিওবুক নির্বাচন করুন, তারপর আবার অডিও ট্রান্সক্রাইব করুন বেছে নিন।",
      "after": "একটি অডিওবুক নির্বাচন করুন, তারপর আবার “অডিও ট্রান্সক্রাইব করুন” বেছে নিন।",
@@ -1674,6 +1888,7 @@
     },
     {
      "key": "Set Chapter Marker",
+     "id": "audioEdit.actionName.setChapter",
      "english": "Set Chapter Marker",
      "before": "অধ্যায় মার্কার রাখুন",
      "after": "অধ্যায় মার্কার রাখা",
@@ -1681,6 +1896,7 @@
     },
     {
      "key": "Sets the transcription language. A language marked needs download downloads only from the Transcribe Audio sheet.",
+     "id": "transcription.languagePickerHint",
      "english": "Sets the transcription language. A language marked needs download downloads only from the Transcribe Audio sheet.",
      "before": "ট্রান্সক্রিপশনের ভাষা ঠিক করে। “ডাউনলোড দরকার” চিহ্নিত ভাষা শুধু অডিও ট্রান্সক্রাইব করুন শিট থেকে ডাউনলোড হয়।",
      "after": "ট্রান্সক্রিপশনের ভাষা ঠিক করে। “ডাউনলোড দরকার” চিহ্নিত ভাষা শুধু “অডিও ট্রান্সক্রাইব করুন” শিট থেকে ডাউনলোড হয়।",
@@ -1688,6 +1904,7 @@
     },
     {
      "key": "Subscribed to %@. This feed uses plain http, so others can read or change what it sends; TextMouth still loads it.",
+     "id": "feed.insecureMessage",
      "english": "Subscribed to %@. This feed uses plain http, so others can read or change what it sends; TextMouth still loads it.",
      "before": "%@-এ সাবস্ক্রাইব করা হয়েছে। এই ফিড plain http ব্যবহার করে, তাই অন্যরা এর পাঠানো তথ্য পড়তে বা বদলাতে পারে; TextMouth তবুও এটি লোড করে।",
      "after": "%@-এ সাবস্ক্রাইব করা হয়েছে। এই ফিড সাধারণ http ব্যবহার করে, তাই অন্যরা এর পাঠানো তথ্য পড়তে বা বদলাতে পারে; TextMouth তবুও এটি লোড করে।",
@@ -1695,6 +1912,7 @@
     },
     {
      "key": "TextMouth can't convert the sound of “%@”: it is in a kind of audio it does not read.",
+     "id": "ffmpegImport.soundNotDecoded",
      "english": "TextMouth can't convert the sound of “%@”: it is in a kind of audio it does not read.",
      "before": "TextMouth “%@”-এর সাউন্ড রূপান্তর করতে পারে না: এটি এমন অডিও ধরনের যা সে পড়ে না।",
      "after": "TextMouth “%@”-এর সাউন্ড রূপান্তর করতে পারে না: এটি এমন ধরনের অডিও, যা TextMouth পড়ে না।",
@@ -1702,6 +1920,7 @@
     },
     {
      "key": "TextMouth can't convert “%@”: its sound changes rate or channels partway through, by more than it can follow.",
+     "id": "ffmpegImport.formChanged",
      "english": "TextMouth can't convert “%@”: its sound changes rate or channels partway through, by more than it can follow.",
      "before": "TextMouth “%@” রূপান্তর করতে পারে না: এর সাউন্ডের রেট বা চ্যানেল মাঝপথে এমন বদলায় যা সে অনুসরণ করতে পারে না।",
      "after": "TextMouth “%@” রূপান্তর করতে পারে না: এর সাউন্ডের রেট বা চ্যানেল মাঝপথে এতটা বদলায় যে TextMouth তা অনুসরণ করতে পারে না।",
@@ -1709,6 +1928,7 @@
     },
     {
      "key": "TextMouth can't read “%@” as %@. It may be damaged, or named for another format.",
+     "id": "ffmpegImport.notRecognized",
      "english": "TextMouth can't read “%1$@” as %2$@. It may be damaged, or named for another format.",
      "before": "TextMouth “%1$@”-কে %2$@ হিসেবে পড়তে পারে না। এটি ক্ষতিগ্রস্ত হতে পারে, বা অন্য ফরম্যাটের নামে নাম দেওয়া।",
      "after": "TextMouth “%1$@”-কে %2$@ হিসেবে পড়তে পারে না। এটি ক্ষতিগ্রস্ত হতে পারে, অথবা এর নাম অন্য ফরম্যাটের হতে পারে।",
@@ -1716,6 +1936,7 @@
     },
     {
      "key": "TextMouth could not keep the new copy of “%@”. Choose Cancel to discard the copy, then import the file again.",
+     "id": "duplicateCopy.markerStays",
      "english": "TextMouth could not keep the new copy of “%@”. Choose Cancel to discard the copy, then import the file again.",
      "before": "TextMouth “%@”-এর নতুন কপি রাখতে পারেনি। কপিটি বাতিল করতে বাতিল করুন বেছে নিন, তারপর ফাইলটি আবার আমদানি করুন।",
      "after": "TextMouth “%@”-এর নতুন কপি রাখতে পারেনি। কপিটি বাদ দিতে “বাতিল করুন” বেছে নিন, তারপর ফাইলটি আবার আমদানি করুন।",
@@ -1723,6 +1944,7 @@
     },
     {
      "key": "TextMouth downloads %lld of them again at their feeds' next checks, or the next time it opens.",
+     "id": "feedDownloadProgress.comingBack.checks",
      "english": {
       "one": "TextMouth downloads %lld of them again at their feeds' next checks, or the next time it opens.",
       "other": "TextMouth downloads %lld of them again at their feeds' next checks, or the next time it opens."
@@ -1739,6 +1961,7 @@
     },
     {
      "key": "TextMouth downloads 1 of them again at its feed's next check, or the next time it opens.",
+     "id": "feedDownloadProgress.comingBack.check",
      "english": "TextMouth downloads 1 of them again at its feed's next check, or the next time it opens.",
      "before": "TextMouth তাদের মধ্যে 1 টি ফিডের পরের চেকে, বা পরের বার খোলার সময়, আবার ডাউনলোড করে।",
      "after": "TextMouth সেগুলোর মধ্যে 1টি আবার ডাউনলোড করে, সেটির ফিডের পরের চেকে বা পরের বার খোলার সময়।",
@@ -1746,6 +1969,7 @@
     },
     {
      "key": "TextMouth has no rules of its own: none was right in every book tested. Edit Rules… opens your copy, where you can add rules, such as a name the recognizer always spells another way.",
+     "id": "transcriptCleanup.noRules.builtIn",
      "english": "TextMouth has no rules of its own: none was right in every book tested. Edit Rules… opens your copy, where you can add rules, such as a name the recognizer always spells another way.",
      "before": "TextMouth-এর নিজস্ব কোনো নিয়ম নেই: পরীক্ষা করা প্রতিটি বইয়ে কোনোটিই ঠিক ছিল না। নিয়ম সম্পাদনা করুন… আপনার কপি খোলে, যেখানে আপনি নিয়ম যোগ করতে পারেন, যেমন এমন নাম যা শনাক্তকারী সবসময় অন্যভাবে বানান করে।",
      "after": "TextMouth-এর নিজস্ব কোনো নিয়ম নেই: কোনো নিয়মই পরীক্ষা করা সব বইয়ে ঠিক ছিল না। “নিয়ম সম্পাদনা করুন…” বেছে নিলে আপনার কপি খোলে, যেখানে আপনি নিয়ম যোগ করতে পারেন, যেমন এমন নাম যা শনাক্তকারী সবসময় অন্যভাবে বানান করে।",
@@ -1753,6 +1977,7 @@
     },
     {
      "key": "TextMouth is quitting and the book's audio doesn't hold these edits yet. Discard undoes them; next time you edit this book, Redo brings them back until you make another edit. Cancel keeps TextMouth open.",
+     "id": "audioEditor.quitExplanation",
      "english": "TextMouth is quitting and the book's audio doesn't hold these edits yet. Discard undoes them; next time you edit this book, Redo brings them back until you make another edit. Cancel keeps TextMouth open.",
      "before": "TextMouth বন্ধ হচ্ছে এবং বইয়ের অডিওতে এই সম্পাদনাগুলো এখনও নেই। বর্জন করুন সেগুলো পূর্বাবস্থায় ফেরায়; পরের বার এই বই সম্পাদনা করলে, আরেকটি সম্পাদনা না করা পর্যন্ত পুনরায় করুন সেগুলো ফিরিয়ে আনে। বাতিল করুন TextMouth খোলা রাখে।",
      "after": "TextMouth বন্ধ হচ্ছে এবং বইয়ের অডিওতে এই সম্পাদনাগুলো এখনও নেই। “বর্জন করুন” বেছে নিলে সেগুলো পূর্বাবস্থায় ফেরে; পরের বার এই বই সম্পাদনা করলে, আরেকটি সম্পাদনা না করা পর্যন্ত “পুনরায় করুন” বেছে নিলে সেগুলো ফিরে আসে। “বাতিল করুন” বেছে নিলে TextMouth খোলা থাকে।",
@@ -1760,6 +1985,7 @@
     },
     {
      "key": "TextMouth moved %lld new copies of duplicate books to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back.",
+     "id": "duplicateCopy.unansweredTrashed.other",
      "english": {
       "one": "TextMouth moved %lld new copy of duplicate books to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back.",
       "other": "TextMouth moved %lld new copies of duplicate books to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back."
@@ -1776,6 +2002,7 @@
     },
     {
      "key": "TextMouth moved the new copies of %@ to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back.",
+     "id": "duplicateCopy.unansweredTrashed.questions",
      "english": "TextMouth moved the new copies of %@ to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back.",
      "before": "TextMouth %@-এর নতুন কপি ট্র্যাশে সরিয়েছে, কারণ TextMouth বন্ধ হওয়ার আগে সেগুলো ডুপ্লিকেট হিসেবে রাখা হবে কি না সেই প্রশ্নের উত্তর দেওয়া হয়নি। সেগুলো ফিরে পেতে ট্র্যাশ খুলে আগের জায়গায় রাখুন বেছে নিন।",
      "after": "TextMouth %@-এর নতুন কপি ট্র্যাশে সরিয়েছে, কারণ TextMouth বন্ধ হওয়ার আগে সেগুলো ডুপ্লিকেট হিসেবে রাখা হবে কি না সেই প্রশ্নের উত্তর দেওয়া হয়নি। সেগুলো ফিরে পেতে ট্র্যাশ খুলে “আগের জায়গায় রাখুন” বেছে নিন।",
@@ -1783,6 +2010,7 @@
     },
     {
      "key": "TextMouth moved the new copy of “%@” to the Trash, because the question whether to keep it as a duplicate was never answered before TextMouth closed. To get it back, open the Trash and choose Put Back.",
+     "id": "duplicateCopy.unansweredTrashed.question",
      "english": "TextMouth moved the new copy of “%@” to the Trash, because the question whether to keep it as a duplicate was never answered before TextMouth closed. To get it back, open the Trash and choose Put Back.",
      "before": "TextMouth “%@”-এর নতুন কপি ট্র্যাশে সরিয়েছে, কারণ TextMouth বন্ধ হওয়ার আগে সেটি ডুপ্লিকেট হিসেবে রাখা হবে কি না সেই প্রশ্নের উত্তর দেওয়া হয়নি। সেটি ফিরে পেতে ট্র্যাশ খুলে আগের জায়গায় রাখুন বেছে নিন।",
      "after": "TextMouth “%@”-এর নতুন কপি ট্র্যাশে সরিয়েছে, কারণ TextMouth বন্ধ হওয়ার আগে সেটি ডুপ্লিকেট হিসেবে রাখা হবে কি না সেই প্রশ্নের উত্তর দেওয়া হয়নি। সেটি ফিরে পেতে ট্র্যাশ খুলে “আগের জায়গায় রাখুন” বেছে নিন।",
@@ -1790,6 +2018,7 @@
     },
     {
      "key": "TextMouth's own rules are newer, version %@. To use them, delete your copy or copy their rules into it.",
+     "id": "transcriptCleanup.newerBuiltInRules",
      "english": "TextMouth's own rules are newer, version %@. To use them, delete your copy or copy their rules into it.",
      "before": "TextMouth-এর নিজস্ব নিয়ম নতুন, সংস্করণ %@। সেগুলো ব্যবহার করতে আপনার কপি মুছে ফেলুন অথবা তাদের নিয়ম এতে কপি করুন।",
      "after": "TextMouth-এর নিজস্ব নিয়ম নতুন, সংস্করণ %@। সেগুলো ব্যবহার করতে আপনার কপি মুছে ফেলুন, অথবা সেই নিয়মগুলো আপনার কপিতে কপি করুন।",
@@ -1797,6 +2026,7 @@
     },
     {
      "key": "That OPML file is damaged at line %@: %@.",
+     "id": "opmlReadError.message.damaged",
      "english": "That OPML file is damaged at line %1$@: %2$@.",
      "before": "সেই OPML ফাইল %1$@ লাইনে ক্ষতিগ্রস্ত: %2$@।",
      "after": "সেই OPML ফাইল %1$@ নম্বর লাইনে ক্ষতিগ্রস্ত: %2$@।",
@@ -1804,6 +2034,7 @@
     },
     {
      "key": "That isn't a web address. Enter a feed's address, or the address of a page that names one.",
+     "id": "feedSubscribeError.message.invalidAddress",
      "english": "That isn't a web address. Enter a feed's address, or the address of a page that names one.",
      "before": "সেটি ওয়েব ঠিকানা নয়। একটি ফিডের ঠিকানা, বা ফিডের নাম উল্লেখ করা পৃষ্ঠার ঠিকানা লিখুন।",
      "after": "সেটি ওয়েব ঠিকানা নয়। একটি ফিডের ঠিকানা, অথবা কোনো ফিডের ঠিকানা জানায় এমন পৃষ্ঠার ঠিকানা লিখুন।",
@@ -1811,6 +2042,7 @@
     },
     {
      "key": "That page doesn't name a feed.",
+     "id": "feedSubscribeError.message.pageNamesNoFeed",
      "english": "That page doesn't name a feed.",
      "before": "সেই পৃষ্ঠা কোনো ফিডের নাম উল্লেখ করেনি।",
      "after": "সেই পৃষ্ঠা কোনো ফিডের ঠিকানা জানায় না।",
@@ -1818,6 +2050,7 @@
     },
     {
      "key": "The %lld markers are deleted, and Redo doesn't bring them back.",
+     "id": "audioEditor.revertExplanation.markers",
      "english": {
       "one": "The marker is deleted, and Redo doesn't bring it back.",
       "other": "The %lld markers are deleted, and Redo doesn't bring them back."
@@ -1834,6 +2067,7 @@
     },
     {
      "key": "The article leaves the list for good, and its download, if any, is deleted.",
+     "id": "feed.deleteItemMessage.articleDownload",
      "english": "The article leaves the list for good, and its download, if any, is deleted.",
      "before": "নিবন্ধটি চিরতরে তালিকা থেকে চলে যায়, এবং এর ডাউনলোড, থাকলে, মুছে ফেলা হয়।",
      "after": "নিবন্ধটি চিরতরে তালিকা থেকে চলে যায়, এবং এর কোনো ডাউনলোড থাকলে তা মুছে ফেলা হয়।",
@@ -1841,6 +2075,7 @@
     },
     {
      "key": "The book's audio holds edits its history lost, so they stay, to save or undo next time you edit this book.",
+     "id": "audioEditor.discardKept",
      "english": "The book's audio holds edits its history lost, so they stay, to save or undo next time you edit this book.",
      "before": "বইয়ের অডিওতে এমন সম্পাদনা আছে যা এর ইতিহাস হারিয়ে ফেলেছে, তাই সেগুলো থাকে, পরের বার এই বই সম্পাদনা করলে সংরক্ষণ বা পূর্বাবস্থায় ফেরানোর জন্য।",
      "after": "বইয়ের অডিওতে এমন সম্পাদনা আছে, যা সম্পাদনার ইতিহাসে আর নেই; তাই সেগুলো থেকে যায়, পরের বার এই বই সম্পাদনা করলে সংরক্ষণ বা পূর্বাবস্থায় ফেরানোর জন্য।",
@@ -1848,6 +2083,7 @@
     },
     {
      "key": "The book's text is only in iCloud, so TextMouth leaves it. Download the book, then try again.",
+     "id": "transcription.textInCloud",
      "english": "The book's text is only in iCloud, so TextMouth leaves it. Download the book, then try again.",
      "before": "বইয়ের টেক্সট শুধু iCloud-এ আছে, তাই TextMouth সেটি ছেড়ে দেয়। বইটি ডাউনলোড করুন, তারপর আবার চেষ্টা করুন।",
      "after": "বইয়ের টেক্সট শুধু iCloud-এ আছে, তাই TextMouth সেটিতে হাত দেয় না। বইটি ডাউনলোড করুন, তারপর আবার চেষ্টা করুন।",
@@ -1855,6 +2091,7 @@
     },
     {
      "key": "The episode leaves the list for good, and its download, if any, is deleted.",
+     "id": "feed.deleteItemMessage.episodeDownload",
      "english": "The episode leaves the list for good, and its download, if any, is deleted.",
      "before": "পর্বটি চিরতরে তালিকা থেকে চলে যায়, এবং এর ডাউনলোড, থাকলে, মুছে ফেলা হয়।",
      "after": "পর্বটি চিরতরে তালিকা থেকে চলে যায়, এবং এর কোনো ডাউনলোড থাকলে তা মুছে ফেলা হয়।",
@@ -1862,6 +2099,7 @@
     },
     {
      "key": "The feed is damaged at line %@: %@.",
+     "id": "feedRefreshError.message.parse.damaged",
      "english": "The feed is damaged at line %1$@: %2$@.",
      "before": "ফিডটি %1$@ লাইনে ক্ষতিগ্রস্ত: %2$@।",
      "after": "ফিডটি %1$@ নম্বর লাইনে ক্ষতিগ্রস্ত: %2$@।",
@@ -1869,6 +2107,7 @@
     },
     {
      "key": "The feed stays in your library with its settings and %@, and %@ checks it again.",
+     "id": "feed.unsubscribeMessage.staysLibrarySettings",
      "english": "The feed stays in your library with its settings and %1$@, and %2$@ checks it again.",
      "before": "ফিডটি তার সেটিংস ও %1$@সহ আপনার লাইব্রেরিতে থাকে, এবং %2$@ আবার এটি চেক করে।",
      "after": "ফিডটি তার সেটিংস ও %1$@সহ আপনার লাইব্রেরিতে থাকে, এবং %2$@ বেছে নিলে এটি আবার চেক করা হয়।",
@@ -1876,6 +2115,7 @@
     },
     {
      "key": "The feed stays in your library with its settings, and %@ checks it again.",
+     "id": "feed.unsubscribeMessage.staysLibrary",
      "english": "The feed stays in your library with its settings, and %@ checks it again.",
      "before": "ফিডটি তার সেটিংসসহ আপনার লাইব্রেরিতে থাকে, এবং %@ আবার এটি চেক করে।",
      "after": "ফিডটি তার সেটিংসসহ আপনার লাইব্রেরিতে থাকে, এবং %@ বেছে নিলে এটি আবার চেক করা হয়।",
@@ -1883,6 +2123,7 @@
     },
     {
      "key": "The files of the new copy of “%@” are no longer in the library, so it can't be kept. Choose Cancel, then import the file again.",
+     "id": "duplicateCopy.copyGone",
      "english": "The files of the new copy of “%@” are no longer in the library, so it can't be kept. Choose Cancel, then import the file again.",
      "before": "“%@”-এর নতুন কপির ফাইল আর লাইব্রেরিতে নেই, তাই এটি রাখা যাবে না। বাতিল করুন বেছে নিন, তারপর ফাইলটি আবার আমদানি করুন।",
      "after": "“%@”-এর নতুন কপির ফাইল আর লাইব্রেরিতে নেই, তাই এটি রাখা যাবে না। “বাতিল করুন” বেছে নিন, তারপর ফাইলটি আবার আমদানি করুন।",
@@ -1890,6 +2131,7 @@
     },
     {
      "key": "The label file “%@” matches no audio file beside it by name, so its headings were not used.",
+     "id": "cueSheet.sheetUnused.matches",
      "english": "The label file “%@” matches no audio file beside it by name, so its headings were not used.",
      "before": "লেবেল ফাইল “%@” নামে পাশের কোনো অডিও ফাইলের সঙ্গে মেলে না, তাই এর হেডিং ব্যবহার করা হয়নি।",
      "after": "লেবেল ফাইল “%@”-এর নাম পাশের কোনো অডিও ফাইলের নামের সঙ্গে মেলে না, তাই এর হেডিং ব্যবহার করা হয়নি।",
@@ -1897,6 +2139,7 @@
     },
     {
      "key": "The library folder the recording is saved in.",
+     "id": "recording.folderHint",
      "english": "The library folder the recording is saved in.",
      "before": "যে লাইব্রেরি ফোল্ডারে রেকর্ডিং সংরক্ষিত হয়।",
      "after": "রেকর্ডিং সংরক্ষণের লাইব্রেরি ফোল্ডার।",
@@ -1904,6 +2147,7 @@
     },
     {
      "key": "The list follows a change of %@ at once; what downloads or goes waits until the change has stayed for ten seconds, and VoiceOver announces it then.",
+     "id": "feed.itemPolicyQuietNote",
      "english": "The list follows a change of %@ at once; what downloads or goes waits until the change has stayed for ten seconds, and VoiceOver announces it then.",
      "before": "%@ বদলালে তালিকা তখনই তা অনুসরণ করে; কী ডাউনলোড হবে বা যাবে তা বদল দশ সেকেন্ড টিকে থাকা পর্যন্ত অপেক্ষা করে, আর তখন VoiceOver তা জানায়।",
      "after": "%@ বদলালে তালিকা তখনই তা অনুসরণ করে; কী ডাউনলোড হবে বা সরানো হবে, তা বদলটি দশ সেকেন্ড টিকে থাকা পর্যন্ত অপেক্ষা করে, আর তখন VoiceOver তা জানায়।",
@@ -1911,6 +2155,7 @@
     },
     {
      "key": "The microphone Punch In records from. TextMouth remembers it, apart from macOS's input.",
+     "id": "audioEditor.microphoneHint",
      "english": "The microphone Punch In records from. TextMouth remembers it, apart from macOS's input.",
      "before": "রেকর্ড করে বসান যে মাইক্রোফোন থেকে শব্দ নেয়। macOS-এর ইনপুট থেকে আলাদাভাবে TextMouth এটি মনে রাখে।",
      "after": "রেকর্ড করে বসানোর মাইক্রোফোন। macOS-এর ইনপুট থেকে আলাদাভাবে TextMouth এটি মনে রাখে।",
@@ -1918,6 +2163,7 @@
     },
     {
      "key": "The microphone to record from. TextMouth remembers it; the input macOS uses elsewhere is unchanged.",
+     "id": "recording.microphoneHint",
      "english": "The microphone to record from. TextMouth remembers it; the input macOS uses elsewhere is unchanged.",
      "before": "যে মাইক্রোফোন থেকে রেকর্ড হবে। TextMouth এটি মনে রাখে; macOS অন্যত্র যে ইনপুট ব্যবহার করে তা বদলায় না।",
      "after": "রেকর্ড করার মাইক্রোফোন। TextMouth এটি মনে রাখে; macOS অন্যত্র যে ইনপুট ব্যবহার করে তা বদলায় না।",
@@ -1925,6 +2171,7 @@
     },
     {
      "key": "The transcript changed since this was shown. Reopen Clean Up Transcript to see the changes.",
+     "id": "transcriptCleanupError.transcriptChanged",
      "english": "The transcript changed since this was shown. Reopen Clean Up Transcript to see the changes.",
      "before": "এটি দেখানোর পর ট্রান্সক্রিপ্ট বদলেছে। পরিবর্তনগুলো দেখতে ট্রান্সক্রিপ্ট পরিষ্কার করুন আবার খুলুন।",
      "after": "এটি দেখানোর পর ট্রান্সক্রিপ্ট বদলেছে। পরিবর্তনগুলো দেখতে “ট্রান্সক্রিপ্ট পরিষ্কার করুন” আবার খুলুন।",
@@ -1932,6 +2179,7 @@
     },
     {
      "key": "The transcript is only in iCloud, so TextMouth leaves it. Download the book, then try again.",
+     "id": "transcription.transcriptInCloud",
      "english": "The transcript is only in iCloud, so TextMouth leaves it. Download the book, then try again.",
      "before": "ট্রান্সক্রিপ্ট শুধু iCloud-এ আছে, তাই TextMouth সেটি ছেড়ে দেয়। বইটি ডাউনলোড করুন, তারপর আবার চেষ্টা করুন।",
      "after": "ট্রান্সক্রিপ্ট শুধু iCloud-এ আছে, তাই TextMouth সেটিতে হাত দেয় না। বইটি ডাউনলোড করুন, তারপর আবার চেষ্টা করুন।",
@@ -1939,6 +2187,7 @@
     },
     {
      "key": "The transcript, with your changes, stays with the episode in its feed, even after its download is deleted. Deleting the episode or feed deletes it; Move to Library keeps it as a book.",
+     "id": "transcription.feedEpisodeTranscriptNote",
      "english": "The transcript, with your changes, stays with the episode in its feed, even after its download is deleted. Deleting the episode or feed deletes it; Move to Library keeps it as a book.",
      "before": "আপনার পরিবর্তনসহ ট্রান্সক্রিপ্ট ফিডে পর্বের সঙ্গেই থাকে, ডাউনলোড মুছে ফেললেও। পর্ব বা ফিড মুছলে এটিও মুছে যায়; লাইব্রেরিতে স্থানান্তর করুন এটি বই হিসেবে রেখে দেয়।",
      "after": "আপনার পরিবর্তনসহ ট্রান্সক্রিপ্ট ফিডে পর্বের সঙ্গেই থাকে, ডাউনলোড মুছে ফেললেও। পর্ব বা ফিড মুছলে এটিও মুছে যায়; “লাইব্রেরিতে স্থানান্তর করুন” বেছে নিলে এটি বই হিসেবে থেকে যায়।",
@@ -1946,6 +2195,7 @@
     },
     {
      "key": "This Feed Uses Plain http",
+     "id": "feed.insecureTitle",
      "english": "This Feed Uses Plain http",
      "before": "এই ফিড plain http ব্যবহার করে",
      "after": "এই ফিড সাধারণ http ব্যবহার করে",
@@ -1953,6 +2203,7 @@
     },
     {
      "key": "This XML file is not a DTBook book, a Word 2003 XML document, or a PEF braille file, the only XML TextMouth reads.",
+     "id": "fileImportError.unsupportedXML",
      "english": "This XML file is not a DTBook book, a Word 2003 XML document, or a PEF braille file, the only XML TextMouth reads.",
      "before": "এই XML ফাইলটি DTBook বই, Word 2003 XML নথি বা PEF ব্রেইল ফাইল নয়, যেগুলোই TextMouth-এর পড়া একমাত্র XML।",
      "after": "এই XML ফাইলটি DTBook বই, Word 2003 XML নথি বা PEF ব্রেইল ফাইল নয়; TextMouth শুধু এই ধরনের XML পড়ে।",
@@ -1960,6 +2211,7 @@
     },
     {
      "key": "This file could not be read as a comic book archive. It may be damaged, or another kind of file.",
+     "id": "pageImage.notAnArchive",
      "english": "This file could not be read as a comic book archive. It may be damaged, or another kind of file.",
      "before": "এই ফাইলটি কমিক বইয়ের আর্কাইভ হিসেবে পড়া যায়নি। এটি ক্ষতিগ্রস্ত হতে পারে, বা অন্য ধরনের ফাইল।",
      "after": "এই ফাইলটি কমিক বইয়ের আর্কাইভ হিসেবে পড়া যায়নি। এটি ক্ষতিগ্রস্ত হতে পারে, অথবা অন্য ধরনের ফাইল হতে পারে।",
@@ -1967,6 +2219,7 @@
     },
     {
      "key": "This file could not be read as a picture. It may be damaged, or another kind of file.",
+     "id": "pageImage.notAPicture",
      "english": "This file could not be read as a picture. It may be damaged, or another kind of file.",
      "before": "এই ফাইলটি ছবি হিসেবে পড়া যায়নি। এটি ক্ষতিগ্রস্ত হতে পারে, বা অন্য ধরনের ফাইল।",
      "after": "এই ফাইলটি ছবি হিসেবে পড়া যায়নি। এটি ক্ষতিগ্রস্ত হতে পারে, অথবা অন্য ধরনের ফাইল হতে পারে।",
@@ -1974,6 +2227,7 @@
     },
     {
      "key": "This recording isn't saved. %@ tries again, %@ deletes it, and %@ keeps the window open.",
+     "id": "recording.closeWithUnsavedExplanation",
      "english": "This recording isn't saved. %1$@ tries again, %2$@ deletes it, and %3$@ keeps the window open.",
      "before": "এই রেকর্ডিং সংরক্ষিত হয়নি। %1$@ আবার চেষ্টা করে, %2$@ এটি মুছে ফেলে, আর %3$@ উইন্ডো খোলা রাখে।",
      "after": "এই রেকর্ডিং সংরক্ষিত হয়নি। %1$@ বেছে নিলে আবার চেষ্টা করা হয়, %2$@ বেছে নিলে এটি মুছে যায়, আর %3$@ বেছে নিলে উইন্ডো খোলা থাকে।",
@@ -1981,6 +2235,7 @@
     },
     {
      "key": "To download the other %lld again, choose %@ on their rows.",
+     "id": "feedDownloadProgress.comingBack.other",
      "english": {
       "one": "To download the other %lld again, choose %@ on its row.",
       "other": "To download the other %lld again, choose %@ on their rows."
@@ -1997,6 +2252,7 @@
     },
     {
      "key": "To download them again, choose %@ on their rows.",
+     "id": "feedDownloadProgress.comingBack.rows",
      "english": "To download them again, choose %@ on their rows.",
      "before": "সেগুলো আবার ডাউনলোড করতে তাদের সারিতে %@ বেছে নিন।",
      "after": "সেগুলো আবার ডাউনলোড করতে প্রতিটির সারিতে %@ বেছে নিন।",
@@ -2004,6 +2260,7 @@
     },
     {
      "key": "Trim End",
+     "id": "audioEdit.actionName.trimEnd",
      "english": "Trim End",
      "before": "শেষ ছাঁটুন",
      "after": "শেষ ছাঁটা",
@@ -2011,6 +2268,7 @@
     },
     {
      "key": "Trim Start",
+     "id": "audioEdit.actionName.trimStart",
      "english": "Trim Start",
      "before": "শুরু ছাঁটুন",
      "after": "শুরু ছাঁটা",
@@ -2018,6 +2276,7 @@
     },
     {
      "key": "Trim to Selection",
+     "id": "common.trimToSelection",
      "english": "Trim to Selection",
      "before": "নির্বাচিত অংশে ছাঁটুন",
      "after": "নির্বাচিত অংশে ছাঁটা",
@@ -2025,6 +2284,7 @@
     },
     {
      "key": "Undo Cleanup puts back the transcript from before.",
+     "id": "transcriptCleanup.alreadyCleanedUp.before",
      "english": "Undo Cleanup puts back the transcript from before.",
      "before": "পরিষ্কার করা পূর্বাবস্থায় ফেরান আগের ট্রান্সক্রিপ্ট ফিরিয়ে আনে।",
      "after": "“পরিষ্কার করা পূর্বাবস্থায় ফেরান” বেছে নিলে আগের ট্রান্সক্রিপ্ট ফিরে আসে।",
@@ -2032,6 +2292,7 @@
     },
     {
      "key": "Undoes every edit, back to the original; Redo brings them back.",
+     "id": "audioEditor.explanation.editorRevert",
      "english": "Undoes every edit, back to the original; Redo brings them back.",
      "before": "মূল অডিওতে ফিরে প্রতিটি সম্পাদনা পূর্বাবস্থায় ফেরায়; পুনরায় করুন সেগুলো ফিরিয়ে আনে।",
      "after": "মূল অডিওতে ফিরে প্রতিটি সম্পাদনা পূর্বাবস্থায় ফেরায়; “পুনরায় করুন” বেছে নিলে সেগুলো ফিরে আসে।",
@@ -2039,6 +2300,7 @@
     },
     {
      "key": "You edited the transcript on %@, after the cleanup. Undo Cleanup undoes those edits too.",
+     "id": "transcriptCleanup.editedSinceCleanup",
      "english": "You edited the transcript on %@, after the cleanup. Undo Cleanup undoes those edits too.",
      "before": "পরিষ্কার করার পর আপনি ট্রান্সক্রিপ্ট %@ তারিখে সম্পাদনা করেছেন। পরিষ্কার করা পূর্বাবস্থায় ফেরান সেই সম্পাদনাগুলোও পূর্বাবস্থায় ফেরায়।",
      "after": "পরিষ্কার করার পর আপনি ট্রান্সক্রিপ্ট %@ তারিখে সম্পাদনা করেছেন। “পরিষ্কার করা পূর্বাবস্থায় ফেরান” বেছে নিলে সেই সম্পাদনাগুলোও পূর্বাবস্থায় ফেরে।",
@@ -2046,6 +2308,7 @@
     },
     {
      "key": "Your copy of the rules is empty. Edit Rules… opens it to add some.",
+     "id": "transcriptCleanup.noRules.user",
      "english": "Your copy of the rules is empty. Edit Rules… opens it to add some.",
      "before": "নিয়মগুলোর আপনার কপি খালি। নিয়ম সম্পাদনা করুন… এটি খোলে, যাতে কিছু যোগ করতে পারেন।",
      "after": "আপনার নিয়মের কপি খালি। “নিয়ম সম্পাদনা করুন…” বেছে নিলে এটি খোলে, যাতে আপনি কিছু নিয়ম যোগ করতে পারেন।",
@@ -2053,6 +2316,7 @@
     },
     {
      "key": "Your copy of the rules is only in the cloud, so TextMouth asked for it and uses its own meanwhile.",
+     "id": "transcriptCleanup.userCopyInCloud",
      "english": "Your copy of the rules is only in the cloud, so TextMouth asked for it and uses its own meanwhile.",
      "before": "নিয়মগুলোর আপনার কপি শুধু ক্লাউডে আছে, তাই TextMouth সেটি চেয়েছে এবং ততক্ষণ নিজের নিয়ম ব্যবহার করছে।",
      "after": "আপনার নিয়মের কপি শুধু ক্লাউডে আছে, তাই TextMouth সেটি চেয়েছে এবং ততক্ষণ নিজের নিয়ম ব্যবহার করছে।",
@@ -2060,6 +2324,7 @@
     },
     {
      "key": "a kind the system does not name",
+     "id": "pageImage.unnamedKind",
      "english": "a kind the system does not name",
      "before": "সিস্টেম যে ধরনের নাম দেয় না",
      "after": "এমন ধরন, যার নাম সিস্টেম দেয় না",
@@ -2067,6 +2332,7 @@
     },
     {
      "key": "ffmpeg couldn't be started. Check it is installed, or turn off Use ffmpeg in Storage settings.",
+     "id": "audioFilterError.ffmpegMissing",
      "english": "ffmpeg couldn't be started. Check it is installed, or turn off Use ffmpeg in Storage settings.",
      "before": "ffmpeg চালু করা যায়নি। এটি ইনস্টল করা আছে কি না দেখুন, অথবা স্টোরেজ সেটিংসে ফিল্টারের জন্য ffmpeg ব্যবহার করুন বন্ধ করুন।",
      "after": "ffmpeg চালু করা যায়নি। এটি ইনস্টল করা আছে কি না দেখুন, অথবা স্টোরেজ সেটিংসে “ফিল্টারের জন্য ffmpeg ব্যবহার করুন” বন্ধ করুন।",
@@ -2074,6 +2340,7 @@
     },
     {
      "key": "returning it to the library",
+     "id": "importStep.phrase.reinstating",
      "english": "returning it to the library",
      "before": "এটি লাইব্রেরিতে ফেরত দেওয়া হচ্ছে",
      "after": "এটি লাইব্রেরিতে ফিরিয়ে আনা হচ্ছে",
@@ -2081,6 +2348,7 @@
     },
     {
      "key": "the top of your library",
+     "id": "feed.movedToLibrary.topLibrary",
      "english": "the top of your library",
      "before": "আপনার লাইব্রেরির একদম উপরে",
      "after": "আপনার লাইব্রেরির একদম উপরের স্তর",
@@ -2088,6 +2356,7 @@
     },
     {
      "key": "“%@” changed while it was being replaced, so TextMouth left both copies as they are. Choose Replace Existing again.",
+     "id": "duplicateCopy.changedWhileReplacing",
      "english": "“%@” changed while it was being replaced, so TextMouth left both copies as they are. Choose Replace Existing again.",
      "before": "“%@” প্রতিস্থাপনের সময় বদলে গেছে, তাই TextMouth উভয় কপি যেমন ছিল তেমনই রেখেছে। আবার বিদ্যমানটি প্রতিস্থাপন করুন বেছে নিন।",
      "after": "“%@” প্রতিস্থাপনের সময় বদলে গেছে, তাই TextMouth উভয় কপি যেমন ছিল তেমনই রেখেছে। আবার “বিদ্যমানটি প্রতিস্থাপন করুন” বেছে নিন।",
@@ -2095,6 +2364,7 @@
     },
     {
      "key": "“%@” is recording. Stop or discard it with Clear Selection, then quit.",
+     "id": "audioEditor.quitWhileRecording",
      "english": "“%@” is recording. Stop or discard it with Clear Selection, then quit.",
      "before": "“%@” রেকর্ড করছে। এটি থামান, অথবা নির্বাচন সাফ করুন দিয়ে বর্জন করুন, তারপর প্রস্থান করুন।",
      "after": "“%@” রেকর্ড করছে। এটি থামান, অথবা “নির্বাচন সাফ করুন” দিয়ে বর্জন করুন, তারপর প্রস্থান করুন।",
@@ -2113,6 +2383,7 @@
    "fixes": [
     {
      "key": "%@ has its default, %@",
+     "id": "shortcutsSettings.defaultsHeldElsewhere",
      "english": "%1$@ has its default, %2$@",
      "before": "%1$@ তার ডিফল্ট কী %2$@ ব্যবহার করছে",
      "after": "এটির ডিফল্ট, %2$@, এখন “%1$@”-এর",
@@ -2120,6 +2391,7 @@
     },
     {
      "key": "%@ in",
+     "id": "phoneReader.timeIntoRecording",
      "english": "%@ in",
      "before": "%@ ভেতরে",
      "after": "শুরু থেকে %@",
@@ -2127,6 +2399,7 @@
     },
     {
      "key": "%@ is in %@, which TextMouth on iPhone can't play yet.",
+     "id": "phoneImport.convertedAudioRefusal",
      "english": "%1$@ is in %2$@, which TextMouth on iPhone can't play yet.",
      "before": "%1$@ হলো %2$@ ফরম্যাটে, যা iPhone-এ TextMouth এখনও চালাতে পারে না।",
      "after": "%1$@ %2$@ ফরম্যাটে আছে, যা iPhone-এ TextMouth এখনও চালাতে পারে না।",
@@ -2134,6 +2407,7 @@
     },
     {
      "key": "%@ sound",
+     "id": "soundEffectsSettings.soundLabel",
      "english": "%@ sound",
      "before": "%@ শব্দ",
      "after": "%@ সাউন্ড",
@@ -2141,6 +2415,7 @@
     },
     {
      "key": "%@ works in %@.",
+     "id": "shortcutsSettings.scopeChanged",
      "english": "%1$@ works in %2$@.",
      "before": "%1$@ কাজ করে এখানে: %2$@।",
      "after": "%1$@ যেখানে কাজ করে: %2$@।",
@@ -2148,6 +2423,7 @@
     },
     {
      "key": "%lld audiobooks",
+     "id": "finishedBookCounts.audiobooksPhrase",
      "english": {
       "one": "%lld audiobook",
       "other": "%lld audiobooks"
@@ -2164,6 +2440,7 @@
     },
     {
      "key": "%lld books finished all time",
+     "id": "readingStatsTile.wording.booksFinishedAllTime",
      "english": {
       "one": "%lld book finished all time",
       "other": "%lld books finished all time"
@@ -2180,6 +2457,7 @@
     },
     {
      "key": "%lld books finished this year",
+     "id": "readingStatsTile.wording.booksFinishedThisYear",
      "english": {
       "one": "%lld book finished this year",
       "other": "%lld books finished this year"
@@ -2196,6 +2474,7 @@
     },
     {
      "key": "%lld books were already in it.",
+     "id": "readingList.addedAnnouncement.already",
      "english": {
       "one": "%lld book was already in it.",
       "other": "%lld books were already in it."
@@ -2212,6 +2491,7 @@
     },
     {
      "key": "%lld books were not in it.",
+     "id": "readingList.removedAnnouncement.were",
      "english": {
       "one": "%lld book was not in it.",
       "other": "%lld books were not in it."
@@ -2228,6 +2508,7 @@
     },
     {
      "key": "%lld entries give only a phonetic spelling, so they were set aside.",
+     "id": "pronunciationLexicon.imported.phonetic",
      "english": {
       "one": "%lld entry gives only a phonetic spelling, so it was set aside.",
       "other": "%lld entries give only a phonetic spelling, so they were set aside."
@@ -2244,6 +2525,7 @@
     },
     {
      "key": "%lld entries were not read, because a lexicon adds at most %@ rules at a time.",
+     "id": "pronunciationLexicon.imported.because",
      "english": {
       "one": "%lld entry was not read, because a lexicon adds at most %@ rules at a time.",
       "other": "%lld entries were not read, because a lexicon adds at most %@ rules at a time."
@@ -2260,6 +2542,7 @@
     },
     {
      "key": "%lld files",
+     "id": "common.countFiles",
      "english": {
       "one": "%lld file",
       "other": "%lld files"
@@ -2276,6 +2559,7 @@
     },
     {
      "key": "%lld items",
+     "id": "common.countItems",
      "english": {
       "one": "%lld item",
       "other": "%lld items"
@@ -2292,6 +2576,7 @@
     },
     {
      "key": "%lld other books",
+     "id": "finishedBookCounts.otherBooksPhrase",
      "english": {
       "one": "%lld other book",
       "other": "%lld other books"
@@ -2308,6 +2593,7 @@
     },
     {
      "key": "%lld podcast episodes",
+     "id": "finishedBookCounts.podcastEpisodesPhrase",
      "english": {
       "one": "%lld podcast episode",
       "other": "%lld podcast episodes"
@@ -2324,6 +2610,7 @@
     },
     {
      "key": "%lld rules were already in your rules.",
+     "id": "pronunciationLexicon.imported.already",
      "english": {
       "one": "%lld rule was already in your rules.",
       "other": "%lld rules were already in your rules."
@@ -2340,6 +2627,7 @@
     },
     {
      "key": "%lld rules were left out: regular expressions and rules that are off cannot be written in a lexicon.",
+     "id": "pronunciationLexicon.exported.expressions",
      "english": {
       "one": "%lld rule was left out: regular expressions and rules that are off cannot be written in a lexicon.",
       "other": "%lld rules were left out: regular expressions and rules that are off cannot be written in a lexicon."
@@ -2356,6 +2644,7 @@
     },
     {
      "key": "%lld text books",
+     "id": "finishedBookCounts.textBooksPhrase",
      "english": {
       "one": "%lld text book",
       "other": "%lld text books"
@@ -2372,6 +2661,7 @@
     },
     {
      "key": "Add %lld Books to Reading List",
+     "id": "readingList.addTitle",
      "english": {
       "one": "Add %lld Book to Reading List",
       "other": "Add %lld Books to Reading List"
@@ -2388,6 +2678,7 @@
     },
     {
      "key": "Add %lld books to the reading list",
+     "id": "readingList.editBarLabel.add",
      "english": {
       "one": "Add %lld book to the reading list",
       "other": "Add %lld books to the reading list"
@@ -2404,6 +2695,7 @@
     },
     {
      "key": "Added %lld books to the reading list.",
+     "id": "readingList.addedAnnouncement.books",
      "english": "Added %lld books to the reading list.",
      "before": "পড়ার তালিকায় %lld বই যোগ করা হয়েছে।",
      "after": "পড়ার তালিকায় %lldটি বই যোগ করা হয়েছে।",
@@ -2411,6 +2703,7 @@
     },
     {
      "key": "Added %lld rules from “%@”.",
+     "id": "pronunciationLexicon.imported.added",
      "english": {
       "one": "Added %lld rule from “%@”.",
       "other": "Added %lld rules from “%@”."
@@ -2427,6 +2720,7 @@
     },
     {
      "key": "Adds an Export button to each reader's toolbar. File, Export works either way.",
+     "id": "bookExport.settingHint",
      "english": "Adds an Export button to each reader's toolbar. File, Export works either way.",
      "before": "প্রতিটি রিডারের টুলবারে একটি রপ্তানি বোতাম যোগ করে। ফাইল, রপ্তানি করুন দুভাবেই কাজ করে।",
      "after": "প্রতিটি রিডারের টুলবারে একটি রপ্তানি বোতাম যোগ করে। ফাইল মেনুর “রপ্তানি করুন…” যেকোনো ক্ষেত্রেই কাজ করে।",
@@ -2434,6 +2728,7 @@
     },
     {
      "key": "Adds the speed they count at, such as 2.0x for an audiobook not at 1x, or 500 words a minute for a text book, in the reader, Where Am I?, Copy Reading Position, and the Headings sheet's durations.",
+     "id": "readerTime.settingHint",
      "english": "Adds the speed they count at, such as 2.0x for an audiobook not at 1x, or 500 words a minute for a text book, in the reader, Where Am I?, Copy Reading Position, and the Headings sheet's durations.",
      "before": "যে গতিতে সময় গোনা হয় তা সময়ের পাশে যোগ করে, যেমন 1x-এ না থাকা অডিওবুকের জন্য 2.0x বা টেক্সট বইয়ের জন্য মিনিটে 500 শব্দ, রিডার, “আমি কোথায়?”, পড়ার অবস্থান কপি করুন এবং হেডিং শিটের সময়কালে।",
      "after": "রিডারে, “আমি কোথায়?”-এ, “পড়ার অবস্থান কপি করুন”-এ এবং হেডিং শিটের সময়কালে সময় যে গতিতে গোনা হয় তা যোগ করে, যেমন 1x-এ না থাকা অডিওবুকের জন্য 2.0x, বা টেক্সট বইয়ের জন্য মিনিটে 500 শব্দ।",
@@ -2441,6 +2736,7 @@
     },
     {
      "key": "Afterwards, Play tries the passage again",
+     "id": "speechRefusal.closeHint",
      "english": "Afterwards, Play tries the passage again",
      "before": "এরপর চালান বোতাম আবার অংশটি চেষ্টা করে।",
      "after": "এরপর “চালান” অংশটি আবার পড়ার চেষ্টা করে।",
@@ -2448,6 +2744,7 @@
     },
     {
      "key": "All Time",
+     "id": "readingStatsTile.title.allTime",
      "english": "All Time",
      "before": "সর্বকাল",
      "after": "সর্বমোট",
@@ -2455,6 +2752,7 @@
     },
     {
      "key": "An audio section refers to a missing file or an invalid time range.",
+     "id": "audioParseError.invalidSegment",
      "english": "An audio section refers to a missing file or an invalid time range.",
      "before": "একটি অডিও বিভাগ এমন ফাইলের কথা বলছে যা নেই, অথবা সময়ের সীমা অবৈধ।",
      "after": "একটি অডিও বিভাগে এমন ফাইলের উল্লেখ আছে যা নেই, অথবা এর সময়সীমা অবৈধ।",
@@ -2462,6 +2760,7 @@
     },
     {
      "key": "Audacity labels mark one audio file, and this book's audio is in %lld files.",
+     "id": "bookExport.labelsNeedOneFileReason",
      "english": {
       "one": "Audacity labels mark one audio file, and this book's audio is in %lld file.",
       "other": "Audacity labels mark one audio file, and this book's audio is in %lld files."
@@ -2478,6 +2777,7 @@
     },
     {
      "key": "Begin",
+     "id": "keyBinding.localizedKeyWords.begin",
      "english": "Begin",
      "before": "বেগিন",
      "after": "বিগিন",
@@ -2485,6 +2785,7 @@
     },
     {
      "key": "Books Finished All Time",
+     "id": "readingStatsTile.title.booksFinishedAllTime",
      "english": "Books Finished All Time",
      "before": "সর্বকালে শেষ করা বই",
      "after": "সর্বমোট শেষ করা বই",
@@ -2492,6 +2793,7 @@
     },
     {
      "key": "Chapter %@ of this book %@, which TextMouth can't export safely. Choose Edit Text, flatten the nesting, and save; then export again.",
+     "id": "bookExport.nestedTooDeeply.chapter",
      "english": "Chapter %1$@ of this book %2$@, which TextMouth can't export safely. Choose Edit Text, flatten the nesting, and save; then export again.",
      "before": "এই বইয়ের অধ্যায় %1$@ %2$@, যা TextMouth নিরাপদে রপ্তানি করতে পারে না। টেক্সট সম্পাদনা করুন বেছে নিন, নেস্টিং সমতল করুন এবং সংরক্ষণ করুন; তারপর আবার রপ্তানি করুন।",
      "after": "এই বইয়ের অধ্যায় %1$@ %2$@, যা TextMouth নিরাপদে রপ্তানি করতে পারে না। “টেক্সট সম্পাদনা করুন” বেছে নিন, নেস্টিং সমতল করুন এবং সংরক্ষণ করুন; তারপর আবার রপ্তানি করুন।",
@@ -2499,6 +2801,7 @@
     },
     {
      "key": "Choose the folder to export to. New Folder makes one.",
+     "id": "bookExport.panelMessage",
      "english": "Choose the folder to export to. New Folder makes one.",
      "before": "রপ্তানির ফোল্ডারটি বেছে নিন। নতুন ফোল্ডার একটি তৈরি করে।",
      "after": "রপ্তানির ফোল্ডারটি বেছে নিন। “নতুন ফোল্ডার” একটি তৈরি করে।",
@@ -2506,6 +2809,7 @@
     },
     {
      "key": "Chooses what Play and the skip buttons move by.",
+     "id": "phoneReader.navigationUnitHint",
      "english": "Chooses what Play and the skip buttons move by.",
      "before": "চালান ও এগিয়ে-পিছিয়ে যাওয়ার বোতামগুলো কিসের ভিত্তিতে এগোয় তা বেছে নেয়।",
      "after": "“চালান” ও এগিয়ে-পিছিয়ে যাওয়ার বোতামগুলো কিসের ভিত্তিতে এগোয় তা বেছে নেয়।",
@@ -2513,6 +2817,7 @@
     },
     {
      "key": "Cut",
+     "id": "common.cut",
      "english": "Cut",
      "before": "কাটুন",
      "after": "কাট করুন",
@@ -2520,6 +2825,7 @@
     },
     {
      "key": "Each character listed can form a run. Spaces are ignored, and letters and digits never form runs.",
+     "id": "repeatedSymbolsSettingsView.symbolsHint",
      "english": "Each character listed can form a run. Spaces are ignored, and letters and digits never form runs.",
      "before": "তালিকাভুক্ত প্রতিটি অক্ষর একটি ধারা গড়তে পারে। ফাঁক উপেক্ষা করা হয়, আর অক্ষর ও অঙ্ক কখনও ধারা গড়ে না।",
      "after": "তালিকাভুক্ত প্রতিটি চিহ্ন একটি ধারা গড়তে পারে। ফাঁক উপেক্ষা করা হয়, আর বর্ণ ও অঙ্ক কখনও ধারা গড়ে না।",
@@ -2527,6 +2833,7 @@
     },
     {
      "key": "Each heading's title and start, as a CUE sheet naming the audio as Audio exports it.",
+     "id": "bookExport.chapterListChoiceHint.exports",
      "english": "Each heading's title and start, as a CUE sheet naming the audio as Audio exports it.",
      "before": "প্রতিটি হেডিংয়ের শিরোনাম ও শুরু, একটি CUE শিট হিসেবে, যা অডিওকে সেই নামেই উল্লেখ করে যে নামে অডিও রপ্তানি করে।",
      "after": "প্রতিটি হেডিংয়ের শিরোনাম ও শুরু, একটি CUE শিট হিসেবে, যা অডিওকে সেই নামেই উল্লেখ করে যে নামে “অডিও” এটি রপ্তানি করে।",
@@ -2534,6 +2841,7 @@
     },
     {
      "key": "Every book above it in the reading list is finished",
+     "id": "readingListReader.endNote.above",
      "english": "Every book above it in the reading list is finished",
      "before": "এর উপরের সব বই শেষ হয়েছে",
      "after": "পড়ার তালিকায় এর উপরের সব বই শেষ হয়েছে",
@@ -2541,6 +2849,7 @@
     },
     {
      "key": "Every shortcut and where it works go back to the defaults. Your own keys are lost.",
+     "id": "shortcutsSettings.resetAllAlertMessage",
      "english": "Every shortcut and where it works go back to the defaults. Your own keys are lost.",
      "before": "সব শর্টকাট এবং সেগুলো যেখানে কাজ করে তা ডিফল্টে ফিরে যাবে। আপনার নিজের কী হারিয়ে যাবে।",
      "after": "সব শর্টকাট এবং সেগুলো যেখানে কাজ করে তা ডিফল্টে ফিরে যাবে। আপনার নিজের দেওয়া কীগুলো হারিয়ে যাবে।",
@@ -2548,6 +2857,7 @@
     },
     {
      "key": "Export %lld Books",
+     "id": "bookExport.title.books",
      "english": {
       "one": "Export %lld Book",
       "other": "Export %lld Books"
@@ -2564,6 +2874,7 @@
     },
     {
      "key": "Export %lld Books…",
+     "id": "bookExport.commandTitle",
      "english": {
       "one": "Export %lld Book…",
       "other": "Export %lld Books…"
@@ -2580,6 +2891,7 @@
     },
     {
      "key": "Export can't write into the folder where TextMouth keeps spoken chapters, which it empties. Choose another folder.",
+     "id": "speechExport.destinationInKeptChapters",
      "english": "Export can't write into the folder where TextMouth keeps spoken chapters, which it empties. Choose another folder.",
      "before": "রপ্তানি সেই ফোল্ডারে লিখতে পারে না, যেখানে TextMouth পড়ে শোনানো অধ্যায়গুলো রাখে এবং যেটি সে খালি করে দেয়। অন্য একটি ফোল্ডার বেছে নিন।",
      "after": "রপ্তানি সেই ফোল্ডারে লিখতে পারে না, যেখানে TextMouth পড়ে শোনানো অধ্যায়গুলো রাখে এবং যা এটি খালি করে দেয়। অন্য একটি ফোল্ডার বেছে নিন।",
@@ -2587,6 +2899,7 @@
     },
     {
      "key": "Exported %lld rules to “%@”.",
+     "id": "pronunciationLexicon.exported.rules",
      "english": {
       "one": "Exported %lld rule to “%@”.",
       "other": "Exported %lld rules to “%@”."
@@ -2603,6 +2916,7 @@
     },
     {
      "key": "Exporting %lld of %@…",
+     "id": "bookExport.progress.exportingCount",
      "english": "Exporting %1$lld of %2$@…",
      "before": "%2$@-এর মধ্যে %1$lld রপ্তানি হচ্ছে…",
      "after": "%2$@-এর মধ্যে %1$lldটি রপ্তানি হচ্ছে…",
@@ -2610,6 +2924,7 @@
     },
     {
      "key": "Goes back to where the last jump began.",
+     "id": "phoneReader.returnHint",
      "english": "Goes back to where the last jump began.",
      "before": "শেষ লাফ যেখান থেকে শুরু হয়েছিল সেখানে ফিরে যায়।",
      "after": "শেষবার যেখান থেকে সরে গিয়েছিলেন, সেখানে ফিরে যায়।",
@@ -2617,6 +2932,7 @@
     },
     {
      "key": "How soon a second press must follow the first. A key with different single and double press actions waits this long before its single press acts.",
+     "id": "shortcutsSettings.doublePressTimeHint",
      "english": "How soon a second press must follow the first. A key with different single and double press actions waits this long before its single press acts.",
      "before": "দ্বিতীয় চাপ প্রথমটির কত তাড়াতাড়ি আসতে হবে। যে কী-এর একবার চাপা ও দুইবার চাপার কাজ আলাদা, তার একবার চাপার কাজ এত সময় অপেক্ষা করে।",
      "after": "প্রথম চাপের পর দ্বিতীয় চাপ কত তাড়াতাড়ি আসতে হবে। যে কী-এর একবার চাপা ও দুইবার চাপার কাজ আলাদা, তার একবার চাপার কাজ এতক্ষণ অপেক্ষা করে।",
@@ -2624,6 +2940,7 @@
     },
     {
      "key": "How the BRF writes each braille cell. Most braille displays and embossers read North American Braille ASCII; those set up for German read Eurobraille. To share with a reader elsewhere, export a PEF.",
+     "id": "brailleExport.fileCodeHint",
      "english": "How the BRF writes each braille cell. Most braille displays and embossers read North American Braille ASCII; those set up for German read Eurobraille. To share with a reader elsewhere, export a PEF.",
      "before": "BRF প্রতিটি ব্রেইল সেল কীভাবে লেখে। বেশিরভাগ ব্রেইল ডিসপ্লে ও এমবসার North American Braille ASCII পড়ে; জার্মানের জন্য সাজানোগুলো Eurobraille পড়ে। অন্য কোথাও পাঠকের সঙ্গে ভাগ করতে একটি PEF রপ্তানি করা যায়।",
      "after": "BRF প্রতিটি ব্রেইল সেল কীভাবে লেখে। বেশিরভাগ ব্রেইল ডিসপ্লে ও এমবসার North American Braille ASCII পড়ে; জার্মান ভাষার জন্য সেট করাগুলো Eurobraille পড়ে। অন্য কোথাও পাঠকের সঙ্গে ভাগ করতে একটি PEF রপ্তানি করা যায়।",
@@ -2631,6 +2948,7 @@
     },
     {
      "key": "Importing %lld books",
+     "id": "phoneImport.importing.other",
      "english": {
       "one": "Importing %lld book",
       "other": "Importing %lld books"
@@ -2647,6 +2965,7 @@
     },
     {
      "key": "Importing %lld books was stopped when TextMouth closed.",
+     "id": "phoneImport.stoppedWhenClosed.books",
      "english": {
       "one": "Importing %lld book was stopped when TextMouth closed.",
       "other": "Importing %lld books was stopped when TextMouth closed."
@@ -2663,6 +2982,7 @@
     },
     {
      "key": "Include the speed with time left and total time",
+     "id": "readerTime.settingTitle",
      "english": "Include the speed with time left and total time",
      "before": "সময় বাকি ও মোট সময়ের সঙ্গে গতি যোগ করুন",
      "after": "বাকি সময় ও মোট সময়ের সঙ্গে গতি যোগ করুন",
@@ -2670,6 +2990,7 @@
     },
     {
      "key": "It has no headings, so the contents list has %lld entries for its chapters and the places it marks.",
+     "id": "epubPackageBuilder.accessibilitySummary.chapters",
      "english": {
       "one": "It has no headings, so the contents list has %lld entry for its chapters and the places it marks.",
       "other": "It has no headings, so the contents list has %lld entries for its chapters and the places it marks."
@@ -2686,6 +3007,7 @@
     },
     {
      "key": "It has no pictures, sound, or video, and the text of a picture's description is kept as text.",
+     "id": "epubPackageBuilder.accessibilitySummary.noMedia",
      "english": "It has no pictures, sound, or video, and the text of a picture's description is kept as text.",
      "before": "এতে কোনো ছবি, শব্দ বা ভিডিও নেই, এবং ছবির বর্ণনার টেক্সট টেক্সট হিসেবেই রাখা হয়।",
      "after": "এতে কোনো ছবি, অডিও বা ভিডিও নেই, এবং ছবির বর্ণনার টেক্সট টেক্সট হিসেবেই রাখা হয়।",
@@ -2693,6 +3015,7 @@
     },
     {
      "key": "Keeps the order you set with Move Book Up, Move Book Down, or dragging.",
+     "id": "readingList.orderHint",
      "english": "Keeps the order you set with Move Book Up, Move Book Down, or dragging.",
      "before": "বইটি উপরে নিন, বইটি নিচে নিন বা টেনে এনে আপনার ঠিক করা ক্রম রাখে।",
      "after": "“বইটি উপরে নিন”, “বইটি নিচে নিন” বা টেনে এনে আপনার ঠিক করা ক্রম রাখে।",
@@ -2700,6 +3023,7 @@
     },
     {
      "key": "Kept %@ of %lld chapters until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To go on from chapter %@, export the same range at the same speed and pitch.",
+     "id": "speechExport.kept.chaptersGo",
      "english": {
       "one": "Kept %@ of %lld chapter until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To go on from chapter %@, export the same range at the same speed and pitch.",
       "other": "Kept %@ of %lld chapters until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To go on from chapter %@, export the same range at the same speed and pitch."
@@ -2716,6 +3040,7 @@
     },
     {
      "key": "Kept all %lld spoken chapters until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To make the audio file from them, export the same range at the same speed and pitch.",
+     "id": "speechExport.kept.them",
      "english": {
       "one": "Kept all %lld spoken chapter until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To make the audio file from it, export the same range at the same speed and pitch.",
       "other": "Kept all %lld spoken chapters until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To make the audio file from them, export the same range at the same speed and pitch."
@@ -2732,6 +3057,7 @@
     },
     {
      "key": "Make Double Press",
+     "id": "shortcutsSettings.makeDoublePress",
      "english": "Make Double Press",
      "before": "দুইবার চাপা করুন",
      "after": "দুইবার চাপায় বদলান",
@@ -2739,6 +3065,7 @@
     },
     {
      "key": "Make Single Press",
+     "id": "shortcutsSettings.makeSinglePress",
      "english": "Make Single Press",
      "before": "একবার চাপা করুন",
      "after": "একবার চাপায় বদলান",
@@ -2746,6 +3073,7 @@
     },
     {
      "key": "Media controls not released: this book does not hold them.",
+     "id": "mediaControls.notHeld",
      "english": "Media controls not released: this book does not hold them.",
      "before": "মিডিয়া কন্ট্রোল ছাড়া হয়নি: এই বই সেগুলো ধরে রাখেনি।",
      "after": "মিডিয়া নিয়ন্ত্রণ ছেড়ে দেওয়া হয়নি: এই বই সেগুলো ধরে রাখেনি।",
@@ -2753,6 +3081,7 @@
     },
     {
      "key": "Media controls released",
+     "id": "mediaControls.released",
      "english": "Media controls released",
      "before": "মিডিয়া কন্ট্রোল ছাড়া হয়েছে",
      "after": "মিডিয়া নিয়ন্ত্রণ ছেড়ে দেওয়া হয়েছে",
@@ -2760,6 +3089,7 @@
     },
     {
      "key": "Minimize",
+     "id": "keyBinding.localizedSystemCommand.minimize",
      "english": "Minimize",
      "before": "মিনিমাইজ",
      "after": "মিনিমাইজ করুন",
@@ -2767,6 +3097,7 @@
     },
     {
      "key": "Navigate",
+     "id": "menu.navigate",
      "english": "Navigate",
      "before": "নেভিগেট",
      "after": "নেভিগেশন",
@@ -2774,6 +3105,7 @@
     },
     {
      "key": "None of the %lld selected books is in the reading list.",
+     "id": "readingList.removeRefusal.selected",
      "english": "None of the %lld selected books is in the reading list.",
      "before": "নির্বাচিত %lld বইয়ের কোনোটিই পড়ার তালিকায় নেই।",
      "after": "নির্বাচিত %lldটি বইয়ের কোনোটিই পড়ার তালিকায় নেই।",
@@ -2781,6 +3113,7 @@
     },
     {
      "key": "OCR could not run on all %lld pages, so text found only in their images is missing: %@.",
+     "id": "pdfExtractionDiagnostics.problem.allPages",
      "english": {
       "one": "OCR could not run on all %lld page, so text found only in its images is missing: %@.",
       "other": "OCR could not run on all %lld pages, so text found only in their images is missing: %@."
@@ -2797,6 +3130,7 @@
     },
     {
      "key": "Open the next article in",
+     "id": "nextBookWindow.label.article",
      "english": "Open the next article in",
      "before": "পরের নিবন্ধ খুলুন যেখানে",
      "after": "পরের নিবন্ধ যেখানে খুলবে",
@@ -2804,6 +3138,7 @@
     },
     {
      "key": "Open the next book in",
+     "id": "nextBookWindow.globalLabel",
      "english": "Open the next book in",
      "before": "পরের বই খুলুন যেখানে",
      "after": "পরের বই যেখানে খুলবে",
@@ -2811,6 +3146,7 @@
     },
     {
      "key": "Open the next episode in",
+     "id": "nextBookWindow.label.episode",
      "english": "Open the next episode in",
      "before": "পরের পর্ব খুলুন যেখানে",
      "after": "পরের পর্ব যেখানে খুলবে",
@@ -2818,6 +3154,7 @@
     },
     {
      "key": "Open the next item in",
+     "id": "nextBookWindow.label.item",
      "english": "Open the next item in",
      "before": "পরের আইটেম খুলুন যেখানে",
      "after": "পরের আইটেম যেখানে খুলবে",
@@ -2825,6 +3162,7 @@
     },
     {
      "key": "Pause playback after:",
+     "id": "sleepTimerView.newTimerNote.playback",
      "english": "Pause playback after:",
      "before": "এর পরে প্লেব্যাক বিরতি দিন:",
      "after": "কত সময় পরে প্লেব্যাকে বিরতি দেওয়া হবে:",
@@ -2832,6 +3170,7 @@
     },
     {
      "key": "Playback stopped: the audio stopped responding. Press Play to try again; if it stops again, quit and reopen TextMouth.",
+     "id": "readerViewModel.audioStoppedRespondingMessage",
      "english": "Playback stopped: the audio stopped responding. Press Play to try again; if it stops again, quit and reopen TextMouth.",
      "before": "প্লেব্যাক বন্ধ হয়েছে: অডিও সাড়া দেওয়া বন্ধ করেছে। আবার চেষ্টা করতে “চালান” চাপুন; আবার বন্ধ হলে TextMouth প্রস্থান করে আবার খুলুন।",
      "after": "প্লেব্যাক বন্ধ হয়েছে: অডিও সাড়া দেওয়া বন্ধ করেছে। আবার চেষ্টা করতে “চালান” চাপুন; আবার বন্ধ হলে TextMouth থেকে প্রস্থান করে সেটি আবার খুলুন।",
@@ -2839,6 +3178,7 @@
     },
     {
      "key": "Plays when you pause reading",
+     "id": "soundEffectsSettings.eventHint.pause",
      "english": "Plays when you pause reading",
      "before": "আপনি পড়া বিরতি দিলে বাজে।",
      "after": "আপনি পড়ায় বিরতি দিলে বাজে।",
@@ -2846,6 +3186,7 @@
     },
     {
      "key": "Preview %@ sound",
+     "id": "soundEffectsSettings.previewLabel",
      "english": "Preview %@ sound",
      "before": "%@ শব্দের প্রিভিউ",
      "after": "%@ সাউন্ডের প্রিভিউ",
@@ -2853,6 +3194,7 @@
     },
     {
      "key": "Remove %lld Books from Reading List",
+     "id": "readingList.removeTitle",
      "english": {
       "one": "Remove %lld Book from Reading List",
       "other": "Remove %lld Books from Reading List"
@@ -2869,6 +3211,7 @@
     },
     {
      "key": "Remove %lld books from the reading list",
+     "id": "readingList.editBarLabel.remove",
      "english": {
       "one": "Remove %lld book from the reading list",
       "other": "Remove %lld books from the reading list"
@@ -2885,6 +3228,7 @@
     },
     {
      "key": "Removed %lld books from the reading list.",
+     "id": "readingList.removedAnnouncement.books",
      "english": "Removed %lld books from the reading list.",
      "before": "পড়ার তালিকা থেকে %lld বই সরানো হয়েছে।",
      "after": "পড়ার তালিকা থেকে %lldটি বই সরানো হয়েছে।",
@@ -2892,6 +3236,7 @@
     },
     {
      "key": "Reset to global end-of-book setting",
+     "id": "readerView.useGlobalDefaultLabel",
      "english": "Reset to global end-of-book setting",
      "before": "গ্লোবাল বইয়ের শেষের সেটিংয়ে রিসেট করুন",
      "after": "বইয়ের শেষের গ্লোবাল সেটিংয়ে রিসেট করুন",
@@ -2899,6 +3244,7 @@
     },
     {
      "key": "Shows the page being read, such as Page 12 of 300, beside the percent, for books of more than one page.",
+     "id": "readerPage.showInReaderHint",
      "english": "Shows the page being read, such as Page 12 of 300, beside the percent, for books of more than one page.",
      "before": "একাধিক পৃষ্ঠার বইয়ের জন্য শতাংশের পাশে পড়া পৃষ্ঠা দেখায়, যেমন 300 পৃষ্ঠার মধ্যে পৃষ্ঠা 12।",
      "after": "একাধিক পৃষ্ঠার বইয়ের জন্য শতাংশের পাশে যে পৃষ্ঠা পড়া হচ্ছে তা দেখায়, যেমন 300 পৃষ্ঠার মধ্যে পৃষ্ঠা 12।",
@@ -2906,6 +3252,7 @@
     },
     {
      "key": "Speech log, its last %lld lines, offsets and lengths only:",
+     "id": "speechRefusal.logLines.offsets",
      "english": {
       "one": "Speech log, its last %lld line, offsets and lengths only:",
       "other": "Speech log, its last %lld lines, offsets and lengths only:"
@@ -2922,6 +3269,7 @@
     },
     {
      "key": "Speech paused: the voice did not start. Press Play to try again.",
+     "id": "speechService.voiceDidNotStartAnnouncement",
      "english": "Speech paused: the voice did not start. Press Play to try again.",
      "before": "স্পিচ বিরতিতে: ভয়েস শুরু হয়নি। আবার চেষ্টা করতে চালান চাপুন।",
      "after": "স্পিচ বিরতিতে: ভয়েস শুরু হয়নি। আবার চেষ্টা করতে “চালান” চাপুন।",
@@ -2929,6 +3277,7 @@
     },
     {
      "key": "Stop at the end of the book",
+     "id": "sleepTimerView.endOfBookLabel",
      "english": "Stop at the end of the book",
      "before": "বইয়ের শেষে থামুন",
      "after": "বইয়ের শেষে থামান",
@@ -2936,6 +3285,7 @@
     },
     {
      "key": "Stop at the end of this heading",
+     "id": "sleepTimerView.endOfHeadingLabel",
      "english": "Stop at the end of this heading",
      "before": "এই হেডিংয়ের শেষে থামুন",
      "after": "এই হেডিংয়ের শেষে থামান",
@@ -2943,6 +3293,7 @@
     },
     {
      "key": "Switch to a Library or book window, then choose Export again.",
+     "id": "bookExport.noWindowInFront",
      "english": "Switch to a Library or book window, then choose Export again.",
      "before": "একটি লাইব্রেরি বা বইয়ের উইন্ডোতে যান, তারপর আবার রপ্তানি করুন বেছে নিন।",
      "after": "একটি লাইব্রেরি বা বইয়ের উইন্ডোতে যান, তারপর আবার “রপ্তানি করুন” বেছে নিন।",
@@ -2950,6 +3301,7 @@
     },
     {
      "key": "Takes %lld to %lld minutes.",
+     "id": "sleepTimerView.customMinutesRangeHint",
      "english": "Takes %1$lld to %2$lld minutes.",
      "before": "%1$lld থেকে %2$lld মিনিট নেয়।",
      "after": "%1$lld থেকে %2$lld মিনিট দেওয়া যায়।",
@@ -2957,6 +3309,7 @@
     },
     {
      "key": "Takes %lld to %lld minutes. Return sets the timer and plays the book.",
+     "id": "sleepTimerView.customMinutesHint",
      "english": "Takes %1$lld to %2$lld minutes. Return sets the timer and plays the book.",
      "before": "%1$lld থেকে %2$lld মিনিট নেয়। রিটার্ন টাইমার সেট করে এবং বইটি চালায়।",
      "after": "%1$lld থেকে %2$lld মিনিট দেওয়া যায়। রিটার্ন চাপলে টাইমার সেট হয় এবং বইটি চলে।",
@@ -2964,6 +3317,7 @@
     },
     {
      "key": "Text as spoken audio",
+     "id": "bookExport.name.spokenAudio",
      "english": "Text as spoken audio",
      "before": "টেক্সট স্পোকেন অডিও হিসেবে",
      "after": "টেক্সট পড়ে শোনানো অডিও হিসেবে",
@@ -2971,6 +3325,7 @@
     },
     {
      "key": "TextMouth exports one spoken audio file at a time. Export this once the current one has finished.",
+     "id": "speechExportError.busy",
      "english": "TextMouth exports one spoken audio file at a time. Export this once the current one has finished.",
      "before": "TextMouth একবারে একটি স্পোকেন অডিও ফাইল রপ্তানি করে। বর্তমানটি শেষ হলে এটি রপ্তানি করুন।",
      "after": "TextMouth একবারে একটি পড়ে শোনানো অডিও ফাইল রপ্তানি করে। বর্তমানটি শেষ হলে এটি রপ্তানি করুন।",
@@ -2978,6 +3333,7 @@
     },
     {
      "key": "The %lld selected books are already in the reading list.",
+     "id": "readingList.addRefusal.selected",
      "english": "The %lld selected books are already in the reading list.",
      "before": "নির্বাচিত %lld বই ইতিমধ্যেই পড়ার তালিকায় আছে।",
      "after": "নির্বাচিত %lldটি বই ইতিমধ্যেই পড়ার তালিকায় আছে।",
@@ -2985,6 +3341,7 @@
     },
     {
      "key": "The MP3 has chapters for the first %@ of its %lld headings; export as M4B for a chapter for each.",
+     "id": "speechExport.mp3ChaptersKept",
      "english": {
       "one": "The MP3 has chapters for the first %@ of its %lld heading; export as M4B for a chapter for each.",
       "other": "The MP3 has chapters for the first %@ of its %lld headings; export as M4B for a chapter for each."
@@ -3001,6 +3358,7 @@
     },
     {
      "key": "The recording as it was made, before any edits.",
+     "id": "bookExport.hint.originalRecording",
      "english": "The recording as it was made, before any edits.",
      "before": "বানানো অবস্থায় রেকর্ডিং, কোনো সম্পাদনার আগে।",
      "after": "রেকর্ডিংটি যেভাবে করা হয়েছিল সেভাবেই, কোনো সম্পাদনার আগে।",
@@ -3008,6 +3366,7 @@
     },
     {
      "key": "The speech engine refused to speak the text here, twice, so speech stopped. Play tries again from the same place.",
+     "id": "speechRefusal.summary",
      "english": "The speech engine refused to speak the text here, twice, so speech stopped. Play tries again from the same place.",
      "before": "স্পিচ ইঞ্জিন এখানকার টেক্সট দুবার পড়তে অস্বীকার করেছে, তাই স্পিচ থেমে গেছে। চালান একই জায়গা থেকে আবার চেষ্টা করে।",
      "after": "স্পিচ ইঞ্জিন এখানকার টেক্সট দুবার পড়তে অস্বীকার করেছে, তাই স্পিচ থেমে গেছে। “চালান” একই জায়গা থেকে আবার চেষ্টা করে।",
@@ -3015,6 +3374,7 @@
     },
     {
      "key": "The text of this book %@, which TextMouth can't export safely. Choose Edit Text, flatten the nesting, and save; then export again.",
+     "id": "bookExport.nestedTooDeeply.flatten",
      "english": "The text of this book %@, which TextMouth can't export safely. Choose Edit Text, flatten the nesting, and save; then export again.",
      "before": "এই বইয়ের টেক্সট %@, যা TextMouth নিরাপদে রপ্তানি করতে পারে না। টেক্সট সম্পাদনা করুন বেছে নিন, নেস্টিং সমতল করুন এবং সংরক্ষণ করুন; তারপর আবার রপ্তানি করুন।",
      "after": "এই বইয়ের টেক্সট %@, যা TextMouth নিরাপদে রপ্তানি করতে পারে না। “টেক্সট সম্পাদনা করুন” বেছে নিন, নেস্টিং সমতল করুন এবং সংরক্ষণ করুন; তারপর আবার রপ্তানি করুন।",
@@ -3022,6 +3382,7 @@
     },
     {
      "key": "This range has %lld headings, but an MP3 has chapters for the first %@ only. Choose M4B for a chapter for each.",
+     "id": "speechExport.mp3ChapterLimit",
      "english": {
       "one": "This range has %lld heading, but an MP3 has chapters for the first %@ only. Choose M4B for a chapter for each.",
       "other": "This range has %lld headings, but an MP3 has chapters for the first %@ only. Choose M4B for a chapter for each."
@@ -3038,6 +3399,7 @@
     },
     {
      "key": "Two presses, %@ apart. Set the time above %@ to count them as one.",
+     "id": "shortcutsSettings.trialResult.tooFarApart.above",
      "english": "Two presses, %1$@ apart. Set the time above %2$@ to count them as one.",
      "before": "দুটি চাপ, %1$@ ব্যবধানে। এগুলোকে একটি গণ্য করতে সময় %2$@-এর বেশি করুন।",
      "after": "দুটি চাপ, %1$@ ব্যবধানে। এগুলোকে একটি হিসেবে গণ্য করতে সময় %2$@-এর বেশি করুন।",
@@ -3045,6 +3407,7 @@
     },
     {
      "key": "Type a page as the book numbers it, such as 12 or xii.",
+     "id": "readerPage.typingHint",
      "english": "Type a page as the book numbers it, such as 12 or xii.",
      "before": "বইয়ের নম্বর অনুযায়ী একটি পৃষ্ঠা লিখুন, যেমন 12 বা xii।",
      "after": "বইয়ে যেভাবে নম্বর দেওয়া আছে সেভাবে একটি পৃষ্ঠা লিখুন, যেমন 12 বা xii।",
@@ -3052,6 +3415,7 @@
     },
     {
      "key": "Type straight quotation marks: in TextEdit, turn off Smart Quotes under Edit, Substitutions.",
+     "id": "bookManifestEdit.explanation.quotation",
      "english": "Type straight quotation marks: in TextEdit, turn off Smart Quotes under Edit, Substitutions.",
      "before": "সোজা উদ্ধৃতি চিহ্ন লিখুন: TextEdit-এ Edit > Substitutions-এর অধীনে Smart Quotes বন্ধ করুন।",
      "after": "সোজা উদ্ধৃতি চিহ্ন লিখুন: TextEdit-এ Edit, Substitutions-এর অধীনে Smart Quotes বন্ধ করুন।",
@@ -3059,6 +3423,7 @@
     },
     {
      "key": "When on, a braille file read as contracted Unified English Braille that is clearly English Braille, American Edition is read as that instead.",
+     "id": "brailleSettings.guessHint",
      "english": "When on, a braille file read as contracted Unified English Braille that is clearly English Braille, American Edition is read as that instead.",
      "before": "চালু থাকলে, যে ব্রেইল ফাইল সংক্ষিপ্ত Unified English Braille হিসেবে পড়া হয় অথচ স্পষ্টভাবে English Braille, American Edition, সেটি তার পরিবর্তে সেভাবেই পড়া হয়।",
      "after": "চালু থাকলে, যে ব্রেইল ফাইল সংক্ষিপ্ত Unified English Braille হিসেবে পড়া হয় অথচ স্পষ্টভাবে English Braille, American Edition, সেটি বরং সেই কোডে পড়া হয়।",
@@ -3066,6 +3431,7 @@
     },
     {
      "key": "With \"%@\", Play on a finished book says it is finished; with \"%@\", Play starts it again from the beginning.",
+     "id": "endOfBook.playOnAFinishedBookCaption",
      "english": "With \"%1$@\", Play on a finished book says it is finished; with \"%2$@\", Play starts it again from the beginning.",
      "before": "“%1$@” থাকলে, শেষ হওয়া বইয়ে চালান বললে এটি শেষ হয়েছে বলে জানায়; “%2$@” থাকলে, চালান এটি শুরু থেকে আবার চালু করে।",
      "after": "“%1$@” বেছে নেওয়া থাকলে, শেষ হওয়া বইয়ে “চালান” জানায় যে বইটি শেষ হয়েছে; “%2$@” বেছে নেওয়া থাকলে, “চালান” বইটি শুরু থেকে আবার চালায়।",
@@ -3073,6 +3439,7 @@
     },
     {
      "key": "Works in %@",
+     "id": "shortcutsSettings.worksInSentence",
      "english": "Works in %@",
      "before": "কাজ করে এখানে: %@",
      "after": "যেখানে কাজ করে: %@",
@@ -3080,6 +3447,7 @@
     },
     {
      "key": "stopping %lld speech exports with the chapters they finished kept",
+     "id": "speechExportsUnderWay.quitWork.they",
      "english": {
       "one": "stopping %lld speech export with the chapters it finished kept",
       "other": "stopping %lld speech exports with the chapters they finished kept"
@@ -3096,6 +3464,7 @@
     },
     {
      "key": "“%@” uses XML entities of its own, which TextMouth does not read.",
+     "id": "pronunciationLexicon.declaresEntities",
      "english": "“%@” uses XML entities of its own, which TextMouth does not read.",
      "before": "“%@” নিজস্ব XML এন্টিটি ব্যবহার করে, যা TextMouth পড়ে না।",
      "after": "“%@” নিজস্ব XML এনটিটি ব্যবহার করে, যা TextMouth পড়ে না।",

@@ -12,6 +12,7 @@
    "fixes": [
     {
      "key": "%@ hadn't arrived from the cloud after %lld seconds",
+     "id": "libraryComparison.shortReason.notArrived",
      "english": {
       "one": "%@ hadn't arrived from the cloud after %lld second",
       "other": "%@ hadn't arrived from the cloud after %lld seconds"
@@ -26,6 +27,7 @@
     },
     {
      "key": "%@ has no place saved.",
+     "id": "libraryComparison.sentence.positionNewer.place",
      "english": "%@ has no place saved.",
      "before": "%@ 沒有儲存的位置。",
      "after": "%@ 沒有已儲存的閱讀位置。",
@@ -33,6 +35,7 @@
     },
     {
      "key": "%@ hasn't arrived on this Mac yet. %@ may still be syncing it.",
+     "id": "readerCloud.waitingForSync",
      "english": "%1$@ hasn't arrived on this Mac yet. %2$@ may still be syncing it.",
      "before": "%1$@ 尚未抵達這部 Mac。%2$@ 可能仍在同步。",
      "after": "%1$@ 尚未下載到這部 Mac 上。%2$@ 可能仍在同步。",
@@ -40,6 +43,7 @@
     },
     {
      "key": "%@ is filed %@ in %@ and %@ in %@.",
+     "id": "libraryComparison.sentence.bookFiledDifferently",
      "english": "%1$@ is filed %2$@ in %3$@ and %4$@ in %5$@.",
      "before": "%1$@ 在 %3$@ 中歸檔於 %2$@，在 %5$@ 中則歸檔於 %4$@。",
      "after": "%1$@：%3$@ 將它存放%2$@，%5$@ 則存放%4$@。",
@@ -47,6 +51,7 @@
     },
     {
      "key": "%lld episodes",
+     "id": "count.episodes",
      "english": {
       "one": "%lld episode",
       "other": "%lld episodes"
@@ -61,6 +66,7 @@
     },
     {
      "key": "%lld of %@, %lld percent",
+     "id": "readerCloud.progressValue.percent",
      "english": "%1$lld of %2$@, %3$lld percent",
      "before": "已完成 %1$lld，共 %2$@，百分之 %3$lld",
      "after": "已完成 %1$lld 個，共 %2$@，百分之 %3$lld",
@@ -68,6 +74,7 @@
     },
     {
      "key": "%lld of %@, %lld%%",
+     "id": "readerCloud.progressValue.count",
      "english": "%1$lld of %2$@, %3$lld%%",
      "before": "已完成 %1$lld，共 %2$@，%3$lld%%",
      "after": "已完成 %1$lld 個，共 %2$@，%3$lld%%",
@@ -75,6 +82,7 @@
     },
     {
      "key": "%lld/%lld",
+     "id": "storageSettings.extractionProgress",
      "english": "%1$lld/%2$lld",
      "before": "%1$lld／%2$lld",
      "after": "%1$lld/%2$lld",
@@ -82,6 +90,7 @@
     },
     {
      "key": "Added %@, %lld of %lld.",
+     "id": "libraryViewEditor.added",
      "english": "Added %1$@, %2$lld of %3$lld.",
      "before": "加入日期 %1$@，第 %2$lld 個，共 %3$lld 個。",
      "after": "已加入 %1$@，第 %2$lld 個，共 %3$lld 個。",
@@ -89,6 +98,7 @@
     },
     {
      "key": "An edit of its text is kept beside the new reading, as a copy in the book's package.",
+     "id": "textEncoding.keptTextNote",
      "english": "An edit of its text is kept beside the new reading, as a copy in the book's package.",
      "before": "對其文字所做的編輯，會以副本形式保留在書籍的套件中，與新的閱讀結果並存。",
      "after": "對其文字所做的編輯，會以副本形式保留在書籍的套件中，與新的讀取結果並存。",
@@ -96,6 +106,7 @@
     },
     {
      "key": "Asks first, then gives the library a new identity and opens it.",
+     "id": "libraryFileWait.openHint.identityNotKnown",
      "english": "Asks first, then gives the library a new identity and opens it.",
      "before": "先詢問，然後為書庫給予新身分並打開書庫。",
      "after": "先詢問，然後給予書庫新身分並打開書庫。",
@@ -103,6 +114,7 @@
     },
     {
      "key": "Chapter %@ isn't on this Mac.",
+     "id": "readerCloud.downloadStarted.chapter",
      "english": "Chapter %@ isn't on this Mac.",
      "before": "章節 %@ 不在這部 Mac 上。",
      "after": "第 %@ 章不在這部 Mac 上。",
@@ -110,6 +122,7 @@
     },
     {
      "key": "Chapter %@ of %@ isn't downloaded.",
+     "id": "readerCloud.chapterNotDownloaded",
      "english": "Chapter %1$@ of %2$@ isn't downloaded.",
      "before": "「%2$@」的章節 %1$@ 未下載。",
      "after": "「%2$@」的第 %1$@ 章未下載。",
@@ -117,6 +130,7 @@
     },
     {
      "key": "Chapter %@, from %@",
+     "id": "readerCloud.source.chapter",
      "english": "Chapter %1$@, from %2$@",
      "before": "章節 %1$@，來自 %2$@",
      "after": "第 %1$@ 章，來自 %2$@",
@@ -124,6 +138,7 @@
     },
     {
      "key": "Choose at least one kind of item for the view to list.",
+     "id": "libraryViewEditor.nothingListed",
      "english": "Choose at least one kind of item for the view to list.",
      "before": "請至少選擇一種項目，讓顯示方式列出。",
      "after": "請至少選擇一種讓顯示方式列出的項目類型。",
@@ -131,6 +146,7 @@
     },
     {
      "key": "Conditions about books test books, episodes, and articles; conditions about feeds test feeds. A condition never hides a row it does not test.",
+     "id": "libraryViewEditor.listsCaption",
      "english": "Conditions about books test books, episodes, and articles; conditions about feeds test feeds. A condition never hides a row it does not test.",
      "before": "有關書籍的條件會測試書籍、單集和文章；有關訂閱源的條件會測試訂閱源。條件不會隱藏它沒有測試的列。",
      "after": "有關書籍的條件會檢查書籍、單集和文章；有關訂閱源的條件會檢查訂閱源。條件不會隱藏它未檢查的列。",
@@ -138,6 +154,7 @@
     },
     {
      "key": "Edit Text stops for this book; choose Edit Text again to edit the new reading.",
+     "id": "textEncoding.stopsEditingNote",
      "english": "Edit Text stops for this book; choose Edit Text again to edit the new reading.",
      "before": "此書的「編輯文字」會停止；請再次選擇「編輯文字」來編輯新的閱讀結果。",
      "after": "此書的「編輯文字」會停止；請再次選擇「編輯文字」來編輯新的讀取結果。",
@@ -145,6 +162,7 @@
     },
     {
      "key": "Failed to rebuild to default",
+     "id": "libraryViewModel.resetFailureContext",
      "english": "Failed to rebuild to default",
      "before": "無法重建為預設值",
      "after": "無法重置為預設位置",
@@ -152,6 +170,7 @@
     },
     {
      "key": "Give the library a new identity?",
+     "id": "libraryFileWait.identityNotKnown",
      "english": "Give the library a new identity?",
      "before": "要為書庫給予新身分嗎？",
      "after": "要給予書庫新身分嗎？",
@@ -159,6 +178,7 @@
     },
     {
      "key": "Go up one folder level",
+     "id": "libraryList.goUpOneFolderLevel",
      "english": "Go up one folder level",
      "before": "上移一層檔案夾",
      "after": "前往上層檔案夾",
@@ -166,6 +186,7 @@
     },
     {
      "key": "If %@ arrives from %@ later, %@ may keep two copies of it.",
+     "id": "libraryFileWait.confirmation.index.arrives",
      "english": "If %1$@ arrives from %2$@ later, %3$@ may keep two copies of it.",
      "before": "如果之後 %1$@ 從 %2$@ 抵達，%3$@ 可能會保留它的兩個副本。",
      "after": "如果之後 %1$@ 從 %2$@ 同步過來，%3$@ 可能會保留它的兩個副本。",
@@ -173,6 +194,7 @@
     },
     {
      "key": "If the file arrives from %@ later, it names the same library.",
+     "id": "libraryFileWait.confirmation.identity.arrives",
      "english": "If the file arrives from %@ later, it names the same library.",
      "before": "如果之後該檔案從 %@ 抵達，它會指向同一個書庫。",
      "after": "如果之後該檔案從 %@ 同步過來，它會指向同一個書庫。",
@@ -180,6 +202,7 @@
     },
     {
      "key": "If the library's own %@ arrives from %@ later, %@ may keep two copies of it, and this Mac and the other would disagree about which library this is.",
+     "id": "libraryFileWait.identityNotKnown.disagree",
      "english": "If the library's own %1$@ arrives from %2$@ later, %3$@ may keep two copies of it, and this Mac and the other would disagree about which library this is.",
      "before": "如果書庫本身的 %1$@ 之後從 %2$@ 抵達，%3$@ 可能會保留它的兩個副本，而這部 Mac 與另一部對於這是哪個書庫會有不同看法。",
      "after": "如果書庫本身的 %1$@ 之後從 %2$@ 同步過來，%3$@ 可能會保留它的兩個副本，而這部 Mac 與另一部 Mac 對於這是哪個書庫會有不同看法。",
@@ -187,6 +210,7 @@
     },
     {
      "key": "Its text is replaced by the new reading.",
+     "id": "textEncoding.replacedNote",
      "english": "Its text is replaced by the new reading.",
      "before": "其文字會被新的閱讀結果取代。",
      "after": "其文字會被新的讀取結果取代。",
@@ -194,6 +218,7 @@
     },
     {
      "key": "Media-control events that trigger the restart. The last one is consumed, not passed to playback, so it can't start audio.",
+     "id": "miscellaneousSettings.patternExplanation",
      "english": "Media-control events that trigger the restart. The last one is consumed, not passed to playback, so it can't start audio.",
      "before": "觸發重新啟動的媒體控制事件。最後一個事件會被消耗，不會傳給播放，因此無法啟動音訊。",
      "after": "觸發重新啟動的媒體控制事件。最後一個事件會被攔截，不會傳給播放功能，因此無法啟動音訊。",
@@ -201,6 +226,7 @@
     },
     {
      "key": "Nothing is copied, and nothing is created in %@.",
+     "id": "storage.useSentence.created",
      "english": "Nothing is copied, and nothing is created in %@.",
      "before": "不會複製任何內容，也不會在 %@ 中建立任何內容。",
      "after": "不會拷貝任何內容，也不會在 %@ 中建立任何內容。",
@@ -208,6 +234,7 @@
     },
     {
      "key": "Nothing is copied, and the library in %@ stays as it is.",
+     "id": "storage.useSentence.stays",
      "english": "Nothing is copied, and the library in %@ stays as it is.",
      "before": "不會複製任何內容，位於 %@ 的書庫會維持原樣。",
      "after": "不會拷貝任何內容，位於 %@ 的書庫會維持原樣。",
@@ -215,6 +242,7 @@
     },
     {
      "key": "Only the Latest from Each Feed",
+     "id": "libraryViewEditor.onePerFeedTitle",
      "english": "Only the Latest from Each Feed",
      "before": "只列出每個訂閱源的最新項目",
      "after": "每個訂閱源只列出最近打開的項目",
@@ -222,6 +250,7 @@
     },
     {
      "key": "Open the library without its index?",
+     "id": "libraryFileWait.confirmationTitle.index",
      "english": "Open the library without its index?",
      "before": "要不使用索引打開書庫嗎？",
      "after": "要在不使用索引的情況下打開書庫嗎？",
@@ -229,6 +258,7 @@
     },
     {
      "key": "Preparing %@ of %@…",
+     "id": "librarySearch.preparing",
      "english": "Preparing %1$@ of %2$@…",
      "before": "正在準備 %1$@ 本，共 %2$@…",
      "after": "正在準備：已完成 %1$@ 本，共 %2$@…",
@@ -236,6 +266,7 @@
     },
     {
      "key": "Read “%@” again as %@?",
+     "id": "textEncoding.confirmTitle",
      "english": "Read “%1$@” again as %2$@?",
      "before": "要將「%1$@」重新讀取為 %2$@ 嗎？",
      "after": "要以 %2$@ 重新讀取「%1$@」嗎？",
@@ -243,6 +274,7 @@
     },
     {
      "key": "Still comparing: %lld seconds so far. Press Escape to stop.",
+     "id": "libraryComparison.progressSentence",
      "english": {
       "one": "Still comparing: %lld second so far. Press Escape to stop.",
       "other": "Still comparing: %lld seconds so far. Press Escape to stop."
@@ -257,6 +289,7 @@
     },
     {
      "key": "Stops moving the library. The library stays where it is, and nothing is changed.",
+     "id": "dataDirectoryMove.cancelHint",
      "english": "Stops moving the library. The library stays where it is, and nothing is changed.",
      "before": "停止移動書庫。書庫會維持原處，不會有任何更改。",
      "after": "停止移動書庫。書庫會留在原處，不會有任何更改。",
@@ -264,6 +297,7 @@
     },
     {
      "key": "Take it off the reading list, or clear %@ in the Reading List's options first.",
+     "id": "libraryCloud.letGoOfOneBookFirst",
      "english": "Take it off the reading list, or clear %@ in the Reading List's options first.",
      "before": "請先將它從閱讀列表中移除，或清除閱讀列表選項中的 %@。",
      "after": "請先將它從閱讀列表中移除，或在閱讀列表的選項中取消勾選 %@。",
@@ -271,6 +305,7 @@
     },
     {
      "key": "Text extraction progress: %lld of %lld",
+     "id": "storageSettings.extractionProgressLabel",
      "english": "Text extraction progress: %1$lld of %2$lld",
      "before": "文字擷取進度：已完成 %1$lld，共 %2$lld",
      "after": "文字擷取進度：已完成 %1$lld 本，共 %2$lld 本",
@@ -278,6 +313,7 @@
     },
     {
      "key": "TextMouth could not move %@ to the current library format.",
+     "id": "legacyMigrationReport.userSummary.move",
      "english": "TextMouth could not move %@ to the current library format.",
      "before": "TextMouth 無法將 %@ 移到目前的書庫格式。",
      "after": "TextMouth 無法將 %@ 移轉到目前的書庫格式。",
@@ -285,6 +321,7 @@
     },
     {
      "key": "TextMouth could not record the removal in its package, %@.",
+     "id": "libraryRemovalError.couldNotMarkPackage",
      "english": "TextMouth could not record the removal in its package, %@.",
      "before": "TextMouth 無法在其套件中記錄這次移除，%@。",
      "after": "TextMouth 無法在書籍的套件 %@ 中記錄這次移除。",
@@ -292,6 +329,7 @@
     },
     {
      "key": "TextMouth couldn't keep the text you changed in “%@” beside the new reading, so it left the book as it was.",
+     "id": "textEncoding.editNotKeptRefusal",
      "english": "TextMouth couldn't keep the text you changed in “%@” beside the new reading, so it left the book as it was.",
      "before": "TextMouth 無法將你在「%@」中更改的文字與新的閱讀結果一併保留，因此書籍維持原樣。",
      "after": "TextMouth 無法將你在「%@」中更改的文字與新的讀取結果一併保留，因此書籍維持原樣。",
@@ -299,6 +337,7 @@
     },
     {
      "key": "TextMouth is getting them now, and the library opens when they arrive.",
+     "id": "dataDirectoryUnavailability.gettingFromCloud",
      "english": "TextMouth is getting them now, and the library opens when they arrive.",
      "before": "TextMouth 現在正在取得這些檔案，檔案抵達後會打開書庫。",
      "after": "TextMouth 正在取得這些檔案，取得後就會打開書庫。",
@@ -306,6 +345,7 @@
     },
     {
      "key": "TextMouth is opening again on another library, so they stay unsaved in this one.",
+     "id": "storageWorkWait.sentence.unsaved",
      "english": "TextMouth is opening again on another library, so they stay unsaved in this one.",
      "before": "TextMouth 正在另一個書庫上重新打開，因此它們在這個書庫中保持未儲存。",
      "after": "TextMouth 正在重新打開並改用另一個書庫，因此這些更改在這個書庫中仍未儲存。",
@@ -313,6 +353,7 @@
     },
     {
      "key": "TextMouth is opening again on another library, so they stay where they are in this one.",
+     "id": "storageWorkWait.sentence.where",
      "english": "TextMouth is opening again on another library, so they stay where they are in this one.",
      "before": "TextMouth 正在另一個書庫上重新打開，因此它們在這個書庫中維持原處。",
      "after": "TextMouth 正在重新打開並改用另一個書庫，因此它們會留在這個書庫中的原處。",
@@ -320,6 +361,7 @@
     },
     {
      "key": "TextMouth is switching to another library and opening again on it.",
+     "id": "storageBusyError.switchingLibraries",
      "english": "TextMouth is switching to another library and opening again on it.",
      "before": "TextMouth 正在切換到另一個書庫，並在其上重新打開。",
      "after": "TextMouth 正在切換到另一個書庫，並以該書庫重新打開。",
@@ -327,6 +369,7 @@
     },
     {
      "key": "TextMouth isn't allowed to make changes in %@.",
+     "id": "storage.isntAllowedMake",
      "english": "TextMouth isn't allowed to make changes in %@.",
      "before": "TextMouth 不被允許在 %@ 中做更改。",
      "after": "TextMouth 沒有權限在 %@ 中進行更改。",
@@ -334,6 +377,7 @@
     },
     {
      "key": "TextMouth moved %@ to the current library format, but with a problem:",
+     "id": "legacyMigrationReport.userSummary.problem",
      "english": "TextMouth moved %@ to the current library format, but with a problem:",
      "before": "TextMouth 已將 %@ 移到目前的書庫格式，但有一個問題：",
      "after": "TextMouth 已將 %@ 移轉到目前的書庫格式，但有一個問題：",
@@ -341,6 +385,7 @@
     },
     {
      "key": "TextMouth moved %@ to the current library format, but with problems:",
+     "id": "legacyMigrationReport.userSummary.problems",
      "english": "TextMouth moved %@ to the current library format, but with problems:",
      "before": "TextMouth 已將 %@ 移到目前的書庫格式，但有一些問題：",
      "after": "TextMouth 已將 %@ 移轉到目前的書庫格式，但有一些問題：",
@@ -348,6 +393,7 @@
     },
     {
      "key": "TextMouth will quit and open again to start it.",
+     "id": "storage.startNewLibrarySentence.again",
      "english": "TextMouth will quit and open again to start it.",
      "before": "TextMouth 會結束並重新打開以開始它。",
      "after": "TextMouth 會結束並重新打開，以開始新書庫。",
@@ -355,6 +401,7 @@
     },
     {
      "key": "That would put %@ %lld levels deep, but folders nest at most %lld levels.",
+     "id": "folderOperationConflict.tooDeep",
      "english": {
       "one": "That would put %@ %lld level deep, but folders nest at most %lld levels.",
       "other": "That would put %@ %lld levels deep, but folders nest at most %lld levels."
@@ -369,6 +416,7 @@
     },
     {
      "key": "The View pop-up of a Library window offers these views in this order. A new window opens at the first one offered.",
+     "id": "libraryViewsSettings.orderCaption",
      "english": "The View pop-up of a Library window offers these views in this order. A new window opens at the first one offered.",
      "before": "書庫視窗的「顯示方式」彈出式選單會依此順序提供這些顯示方式。新視窗會打開在提供的第一個。",
      "after": "書庫視窗的「顯示方式」彈出式選單會依此順序提供這些顯示方式。新視窗會以第一個提供的顯示方式打開。",
@@ -376,6 +424,7 @@
     },
     {
      "key": "The book is kept on this Mac, and is on the reading list, which this Mac keeps downloaded, so its download can't be removed.",
+     "id": "bookCloudError.keptOnThisMacAndForReadingList",
      "english": "The book is kept on this Mac, and is on the reading list, which this Mac keeps downloaded, so its download can't be removed.",
      "before": "這本書已保留在這部 Mac 上，也在閱讀列表上，而這部 Mac 會保持閱讀列表的下載，因此無法移除它的下載項目。",
      "after": "這本書已保留在這部 Mac 上，也在閱讀列表上，而這部 Mac 會讓閱讀列表中的書籍保持下載，因此無法移除它的下載項目。",
@@ -383,6 +432,7 @@
     },
     {
      "key": "The book is on the reading list, which this Mac keeps downloaded, so its download can't be removed.",
+     "id": "bookCloudError.keptForReadingList",
      "english": "The book is on the reading list, which this Mac keeps downloaded, so its download can't be removed.",
      "before": "這本書在閱讀列表上，而這部 Mac 會保持閱讀列表的下載，因此無法移除其下載項目。",
      "after": "這本書在閱讀列表上，而這部 Mac 會讓閱讀列表中的書籍保持下載，因此無法移除其下載項目。",
@@ -390,6 +440,7 @@
     },
     {
      "key": "The library already had different content under its package name, %@, so it was stored in a new package, %@, and its original file was kept at %@.",
+     "id": "fileImportService.libraryAlreadyHad",
      "english": "The library already had different content under its package name, %1$@, so it was stored in a new package, %2$@, and its original file was kept at %3$@.",
      "before": "書庫的封裝名稱 %1$@ 下已有不同內容，因此它存放在新的封裝 %2$@ 中，原始檔案保留在 %3$@。",
      "after": "書庫中已有其他內容使用它的套件名稱 %1$@，因此它存放在新的套件 %2$@ 中，原始檔案保留在 %3$@。",
@@ -397,6 +448,7 @@
     },
     {
      "key": "The library index was read successfully. Your library has %@, and changes are being saved again.",
+     "id": "libraryIndexRecoveryOutcome.restored",
      "english": "The library index was read successfully. Your library has %@, and changes are being saved again.",
      "before": "已成功讀取書庫索引。你的書庫有 %@，且更改已再次儲存。",
      "after": "已成功讀取書庫索引。你的書庫有 %@，且已恢復儲存更改。",
@@ -404,6 +456,7 @@
     },
     {
      "key": "The library's identity file is on this Mac, but its index, %@, hasn't arrived from %@.",
+     "id": "libraryFileWait.explanation.index",
      "english": "The library's identity file is on this Mac, but its index, %1$@, hasn't arrived from %2$@.",
      "before": "書庫的身分檔案在這部 Mac 上，但它的索引 %1$@ 尚未從 %2$@ 抵達。",
      "after": "書庫的身分檔案在這部 Mac 上，但它的索引 %1$@ 尚未從 %2$@ 同步過來。",
@@ -411,6 +464,7 @@
     },
     {
      "key": "The library's index is on this Mac, but its identity file, %@, hasn't arrived from %@.",
+     "id": "libraryFileWait.explanation.identity",
      "english": "The library's index is on this Mac, but its identity file, %1$@, hasn't arrived from %2$@.",
      "before": "書庫的索引在這部 Mac 上，但它的身分檔案 %1$@ 尚未從 %2$@ 抵達。",
      "after": "書庫的索引在這部 Mac 上，但它的身分檔案 %1$@ 尚未從 %2$@ 同步過來。",
@@ -418,6 +472,7 @@
     },
     {
      "key": "The view is first in the list.",
+     "id": "libraryViewsSettings.firstInListHint",
      "english": "The view is first in the list.",
      "before": "此顯示方式位於列表的第一個。",
      "after": "此顯示方式已是列表中的第一個。",
@@ -425,6 +480,7 @@
     },
     {
      "key": "The view is last in the list.",
+     "id": "libraryViewsSettings.lastInListHint",
      "english": "The view is last in the list.",
      "before": "此顯示方式位於列表的最後一個。",
      "after": "此顯示方式已是列表中的最後一個。",
@@ -432,6 +488,7 @@
     },
     {
      "key": "Then take it off the reading list, or clear %@ in the Reading List's options.",
+     "id": "libraryCloud.thenLetGoOfOneBook",
      "english": "Then take it off the reading list, or clear %@ in the Reading List's options.",
      "before": "然後請將它從閱讀列表中移除，或清除閱讀列表選項中的 %@。",
      "after": "然後請將它從閱讀列表中移除，或在閱讀列表的選項中取消勾選 %@。",
@@ -439,6 +496,7 @@
     },
     {
      "key": "This braille looks like English Braille, American Edition. Choose its Braille Code in Book Information.",
+     "id": "brailleCode.suggestsAmericanEdition",
      "english": "This braille looks like English Braille, American Edition. Choose its Braille Code in Book Information.",
      "before": "此點字看起來像英文點字的美國版。請在「書籍資訊」中選擇其點字碼。",
      "after": "此點字看起來像 English Braille, American Edition。請在「書籍資訊」中選擇其點字碼。",
@@ -446,6 +504,7 @@
     },
     {
      "key": "This view is as TextMouth made it.",
+     "id": "libraryViewsSettings.restoreUnchangedHint",
      "english": "This view is as TextMouth made it.",
      "before": "此顯示方式是 TextMouth 原本製作的樣子。",
      "after": "此顯示方式仍維持 TextMouth 的原始設定。",
@@ -453,6 +512,7 @@
     },
     {
      "key": "Titles sort, and are found by typing, as they are written: The Hobbit is among the T's.",
+     "id": "leadingArticle.description.partOfTitle",
      "english": "Titles sort, and are found by typing, as they are written: The Hobbit is among the T's.",
      "before": "書名會照原樣排序，也照原樣輸入尋找：The Hobbit 在 T 之中。",
      "after": "書名會依原樣排序，輸入字母尋找時也是如此：The Hobbit 在 T 之中。",
@@ -460,6 +520,7 @@
     },
     {
      "key": "To let it go, take it off the reading list, or clear %@ in the Reading List's options.",
+     "id": "libraryCloud.howToLetGo.reading",
      "english": "To let it go, take it off the reading list, or clear %@ in the Reading List's options.",
      "before": "若要讓它釋出，請將它從閱讀列表中移除，或清除閱讀列表選項中的 %@。",
      "after": "若要讓它釋出，請將它從閱讀列表中移除，或在閱讀列表的選項中取消勾選 %@。",
@@ -467,6 +528,7 @@
     },
     {
      "key": "To let them go, take them off the reading list, or clear %@ in the Reading List's options.",
+     "id": "libraryCloud.howToLetGo.them",
      "english": "To let them go, take them off the reading list, or clear %@ in the Reading List's options.",
      "before": "若要讓它們釋出，請將它們從閱讀列表中移除，或清除閱讀列表選項中的 %@。",
      "after": "若要讓它們釋出，請將它們從閱讀列表中移除，或在閱讀列表的選項中取消勾選 %@。",
@@ -474,6 +536,7 @@
     },
     {
      "key": "Unread: %@ hasn't arrived from the cloud after %lld seconds, %@",
+     "id": "libraryComparison.sentence.notArrived",
      "english": {
       "one": "Unread: %@ hasn't arrived from the cloud after %lld second, %@",
       "other": "Unread: %@ hasn't arrived from the cloud after %lld seconds, %@"
@@ -488,6 +551,7 @@
     },
     {
      "key": "Unread: %@ wasn't read, because TextMouth stopped waiting after %lld seconds in all, %@",
+     "id": "libraryComparison.sentence.timeRanOut",
      "english": {
       "one": "Unread: %@ wasn't read, because TextMouth stopped waiting after %lld second in all, %@",
       "other": "Unread: %@ wasn't read, because TextMouth stopped waiting after %lld seconds in all, %@"
@@ -502,6 +566,7 @@
     },
     {
      "key": "Where none of their words are left, %@, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "id": "textEncoding.placesSentence.whereNoneTheirWords",
      "english": "Where none of their words are left, %@, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
      "before": "當它們的字詞都不剩時，%@，各自會移到章節中大約相同的位置，或兩種閱讀結果共有的最近段落。",
      "after": "當它們的字詞都不剩時，%@，各自會移到章節中大約相同的位置，或兩種讀取結果共有的最近段落。",
@@ -509,6 +574,7 @@
     },
     {
      "key": "Where none of their words are left, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "id": "textEncoding.placesSentence.whereNoneTheir",
      "english": "Where none of their words are left, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
      "before": "當它們的字詞都不剩時，各自會移到章節中大約相同的位置，或兩種閱讀結果共有的最近段落。",
      "after": "當它們的字詞都不剩時，各自會移到章節中大約相同的位置，或兩種讀取結果共有的最近段落。",
@@ -516,6 +582,7 @@
     },
     {
      "key": "chapter %@, saved %@, and %@",
+     "id": "conflictCopy.recordState.chapter",
      "english": "chapter %1$@, saved %2$@, and %3$@",
      "before": "第 %1$@ 章，%2$@ 儲存，以及 %3$@",
      "after": "第 %1$@ 章，儲存於 %2$@，以及 %3$@",
@@ -523,6 +590,7 @@
     },
     {
      "key": "no place saved, and %@",
+     "id": "conflictCopy.recordState.place",
      "english": "no place saved, and %@",
      "before": "沒有儲存的位置，以及 %@",
      "after": "沒有已儲存的閱讀位置，以及 %@",
@@ -530,6 +598,7 @@
     },
     {
      "key": "only the latest from each feed",
+     "id": "libraryViewEditor.description.latest",
      "english": "only the latest from each feed",
      "before": "只列出每個訂閱源的最新項目",
      "after": "每個訂閱源只列出最近打開的項目",
@@ -537,6 +606,7 @@
     },
     {
      "key": "regex",
+     "id": "substitutions.regexTag",
      "english": "regex",
      "before": "正則",
      "after": "正規表示式",
@@ -544,6 +614,7 @@
     },
     {
      "key": "use the drive's own command to keep the book only online",
+     "id": "bookCloud.onlineOnlyCommand.other",
      "english": "use the drive's own command to keep the book only online",
      "before": "使用該磁碟機本身的指令，讓書籍僅保留在線上",
      "after": "使用該雲端硬碟本身的指令，讓這本書只保留在雲端",
@@ -551,6 +622,7 @@
     },
     {
      "key": "“%@” can't be read as %@: %@ Nothing was changed.",
+     "id": "brailleFileCode.notReadableRefusal",
      "english": "“%1$@” can't be read as %2$@: %3$@ Nothing was changed.",
      "before": "無法將「%1$@」讀取為 %2$@：%3$@沒有任何項目被更改。",
      "after": "無法以 %2$@ 讀取「%1$@」：%3$@沒有任何項目被更改。",
@@ -558,6 +630,7 @@
     },
     {
      "key": "“%@” could not be moved back after a failed move, so its files are at %@ instead of %@: %@",
+     "id": "subject.sentence.strandedPackage",
      "english": "“%1$@” could not be moved back after a failed move, so its files are at %2$@ instead of %3$@: %4$@",
      "before": "在失敗的移動之後，無法將「%1$@」移回，因此它的檔案在 %2$@，而不是 %3$@：%4$@",
      "after": "移動失敗後，無法將「%1$@」移回，因此它的檔案在 %2$@，而不是 %3$@：%4$@",
@@ -576,6 +649,7 @@
    "fixes": [
     {
      "key": "%@ for %@ now follows the global setting: %@.",
+     "id": "feed.itemPolicyApplied.follows",
      "english": "%1$@ for %2$@ now follows the global setting: %3$@.",
      "before": "%2$@ 的「%1$@」現在依循整體設定：%3$@。",
      "after": "%2$@ 的「%1$@」現在依循全域設定：%3$@。",
@@ -583,6 +657,7 @@
     },
     {
      "key": "%@ in %@.",
+     "id": "transcriptCleanup.summary.value",
      "english": "%1$@ in %2$@.",
      "before": "%1$@，位於 %2$@。",
      "after": "%1$@，涉及 %2$@。",
@@ -590,6 +665,7 @@
     },
     {
      "key": "%@ stay in their feeds: %@",
+     "id": "feed.stays.inTheirFeeds",
      "english": "%1$@ stay in their feeds: %2$@",
      "before": "%1$@ 仍留在其訂閱源中：%2$@",
      "after": "%1$@仍留在其訂閱源中：%2$@",
@@ -597,6 +673,7 @@
     },
     {
      "key": "%@ stays in its feed: %@",
+     "id": "feed.stays.inItsFeed",
      "english": "%1$@ stays in its feed: %2$@",
      "before": "%1$@ 仍留在其訂閱源中：%2$@",
      "after": "%1$@仍留在其訂閱源中：%2$@",
@@ -604,6 +681,7 @@
     },
     {
      "key": "%lld edits are undone. Redo brings them back until you make another edit.",
+     "id": "audioEditor.revertExplanation.another",
      "english": {
       "one": "%lld edit is undone. Redo brings them back until you make another edit.",
       "other": "%lld edits are undone. Redo brings them back until you make another edit."
@@ -618,6 +696,7 @@
     },
     {
      "key": "%lld waiting for room on this Mac",
+     "id": "feedDownloadProgress.waits.room",
      "english": {
       "one": "%lld waiting for room on this Mac",
       "other": "%lld waiting for room on this Mac"
@@ -632,6 +711,7 @@
     },
     {
      "key": "; %@ stay",
+     "id": "feed.unsubscribed.stay",
      "english": "; %@ stay",
      "before": "；%@ 仍保留",
      "after": "；%@仍保留",
@@ -639,6 +719,7 @@
     },
     {
      "key": "; %@ stays",
+     "id": "feed.unsubscribed.stays",
      "english": "; %@ stays",
      "before": "；%@ 仍保留",
      "after": "；%@仍保留",
@@ -646,6 +727,7 @@
     },
     {
      "key": "A copy was kept in the book's package. Start over with no edits, or cancel.",
+     "id": "audioEditor.historyUnusableExplanation",
      "english": "A copy was kept in the book's package. Start over with no edits, or cancel.",
      "before": "已在書籍套件中保留一份副本。你可以重新開始而不帶任何編輯，或取消。",
      "after": "已在書籍套件中保留一份副本。你可以從頭開始（不含任何編輯），或取消。",
@@ -653,6 +735,7 @@
     },
     {
      "key": "A quote isn't closed in “%@”.",
+     "id": "audioFilterChain.split",
      "english": "A quote isn't closed in “%@”.",
      "before": "「%@」中有引號沒有結束。",
      "after": "「%@」中有引號未閉合。",
@@ -660,6 +743,7 @@
     },
     {
      "key": "After a pause of %@, at %@.",
+     "id": "audioEditor.afterPause",
      "english": "After a pause of %1$@, at %2$@.",
      "before": "停頓 %1$@ 之後，位於 %2$@。",
      "after": "停頓 %1$@之後，位於 %2$@。",
@@ -667,6 +751,7 @@
     },
     {
      "key": "Before: %@ After: %@",
+     "id": "transcriptCleanup.exampleLine",
      "english": "Before: %1$@ After: %2$@",
      "before": "之前：%1$@ 之後：%2$@",
      "after": "修正前：%1$@ 修正後：%2$@",
@@ -674,6 +759,7 @@
     },
     {
      "key": "Cancel Feed Downloads",
+     "id": "feedDownloadProgress.cancelButtonLabel",
      "english": "Cancel Feed Downloads",
      "before": "取消訂閱源下載",
      "after": "取消下載訂閱源內容",
@@ -681,6 +767,7 @@
     },
     {
      "key": "Chapter %@",
+     "id": "audioEditor.chapterSubject",
      "english": "Chapter %@",
      "before": "章節 %@",
      "after": "第 %@ 章",
@@ -688,6 +775,7 @@
     },
     {
      "key": "Chapter %@: %@, at %@",
+     "id": "audioEditor.chapterRow",
      "english": "Chapter %1$@: %2$@, at %3$@",
      "before": "章節 %1$@：%2$@，位於 %3$@",
      "after": "第 %1$@ 章：%2$@，位於 %3$@",
@@ -695,6 +783,7 @@
     },
     {
      "key": "Chapter %@: %@, at %@.",
+     "id": "audioEditor.chapter",
      "english": "Chapter %1$@: %2$@, at %3$@.",
      "before": "章節 %1$@：%2$@，位於 %3$@。",
      "after": "第 %1$@ 章：%2$@，位於 %3$@。",
@@ -702,6 +791,7 @@
     },
     {
      "key": "Checks this feed again from now on, and at once",
+     "id": "feed.resubscribeHint",
      "english": "Checks this feed again from now on, and at once",
      "before": "從現在起，並立即再次檢查此訂閱源。",
      "after": "從現在起再次檢查此訂閱源，並立即檢查一次。",
@@ -709,6 +799,7 @@
     },
     {
      "key": "Days after an episode finishes before its download is deleted, from 0 (at once) to 365; one open in a reader waits until it closes",
+     "id": "feedThreshold.deleteAfterPlaying.finishes",
      "english": "Days after an episode finishes before its download is deleted, from 0 (at once) to 365; one open in a reader waits until it closes",
      "before": "已播放單集完成後，刪除其下載項目前等待的天數，從 0（立即）到 365；在閱讀器中打開的會等到關閉後。",
      "after": "單集播放完畢後，刪除其下載項目前等待的天數，從 0（立即）到 365；在閱讀器中打開的單集會等到關閉後才刪除。",
@@ -716,6 +807,7 @@
     },
     {
      "key": "Download the %@ model, %@",
+     "id": "transcription.downloadTitle",
      "english": "Download the %1$@ model, %2$@",
      "before": "下載 %1$@ 模型，%2$@",
      "after": "下載%1$@模型，%2$@",
@@ -723,6 +815,7 @@
     },
     {
      "key": "Downloading the %@ model: %lld percent.",
+     "id": "transcription.downloading.percent",
      "english": {
       "one": "Downloading the %@ model: %lld percent.",
       "other": "Downloading the %@ model: %lld percent."
@@ -737,6 +830,7 @@
     },
     {
      "key": "Downloading the %@ model…",
+     "id": "transcription.downloading.model",
      "english": "Downloading the %@ model…",
      "before": "正在下載 %@ 模型…",
      "after": "正在下載%@模型…",
@@ -744,6 +838,7 @@
     },
     {
      "key": "Edits of its audio or of its manifest are not kept.",
+     "id": "importDecision.audioEditsNotKept",
      "english": "Edits of its audio or of its manifest are not kept.",
      "before": "其音訊或資訊清單的編輯不會保留。",
      "after": "對其音訊或資訊清單所做的編輯不會保留。",
@@ -751,6 +846,7 @@
     },
     {
      "key": "Even Out the Level",
+     "id": "premadeFilterPreset.title.evenOutTheLevel",
      "english": "Even Out the Level",
      "before": "平均音量",
      "after": "平衡音量",
@@ -758,6 +854,7 @@
     },
     {
      "key": "Export Keynote presentations from Keynote as PDF files, then import those.",
+     "id": "refusedFormatAdvice.keynote",
      "english": "Export Keynote presentations from Keynote as PDF files, then import those.",
      "before": "請從 Keynote 將 Keynote 簡報輸出為 PDF 檔案，然後輸入這些檔案。",
      "after": "請在 Keynote 中將簡報輸出為 PDF 檔案，然後輸入這些檔案。",
@@ -765,6 +862,7 @@
     },
     {
      "key": "Export Numbers spreadsheets from Numbers as PDF files, then import those.",
+     "id": "refusedFormatAdvice.numbers",
      "english": "Export Numbers spreadsheets from Numbers as PDF files, then import those.",
      "before": "請從 Numbers 將 Numbers 試算表輸出為 PDF 檔案，然後輸入這些檔案。",
      "after": "請在 Numbers 中將試算表輸出為 PDF 檔案，然後輸入這些檔案。",
@@ -772,6 +870,7 @@
     },
     {
      "key": "Export Pages documents from Pages as Word documents or EPUB books, then import those.",
+     "id": "refusedFormatAdvice.pages",
      "english": "Export Pages documents from Pages as Word documents or EPUB books, then import those.",
      "before": "請從 Pages 將 Pages 文件輸出為 Word 文件或 EPUB 書籍，然後輸入這些檔案。",
      "after": "請在 Pages 中將文件輸出為 Word 文件或 EPUB 書籍，然後輸入這些檔案。",
@@ -779,6 +878,7 @@
     },
     {
      "key": "Exporting %@ of audio as %@ to “%@”.",
+     "id": "audioEditor.exportingDetail",
      "english": "Exporting %1$@ of audio as %2$@ to “%3$@”.",
      "before": "正在將 %1$@ 的音訊以 %2$@ 格式輸出到「%3$@」。",
      "after": "正在將 %1$@的音訊以 %2$@ 格式輸出到「%3$@」。",
@@ -786,6 +886,7 @@
     },
     {
      "key": "How many of the newest",
+     "id": "feed.newestCountLabel",
      "english": "How many of the newest",
      "before": "最新幾個",
      "after": "最新項目數量",
@@ -793,6 +894,7 @@
     },
     {
      "key": "Import cancelled after %@.",
+     "id": "zipImportCancellation.sentence.afterBooks",
      "english": "Import cancelled after %@.",
      "before": "已在 %@ 之後取消輸入。",
      "after": "輸入已取消，已完成 %@。",
@@ -800,6 +902,7 @@
     },
     {
      "key": "Insert %@ of Audio",
+     "id": "audioEdit.actionName.insert",
      "english": "Insert %@ of Audio",
      "before": "插入 %@ 的音訊",
      "after": "插入 %@的音訊",
@@ -807,6 +910,7 @@
     },
     {
      "key": "Insert %@ of Silence",
+     "id": "audioEdit.actionName.insertSilence",
      "english": "Insert %@ of Silence",
      "before": "插入 %@ 的靜音",
      "after": "插入 %@的靜音",
@@ -814,6 +918,7 @@
     },
     {
      "key": "Inserted %@ of new recording, which is selected.",
+     "id": "audioEditor.recordingInserted",
      "english": "Inserted %@ of new recording, which is selected.",
      "before": "已插入 %@ 的新錄音，並已選取。",
      "after": "已插入 %@的新錄音，並已選取。",
@@ -821,6 +926,7 @@
     },
     {
      "key": "Inserted %@ of silence.",
+     "id": "audioEditor.insertedSilence",
      "english": "Inserted %@ of silence.",
      "before": "已插入 %@ 的靜音。",
      "after": "已插入 %@的靜音。",
@@ -828,6 +934,7 @@
     },
     {
      "key": "It also deletes %@.",
+     "id": "feed.unsubscribeMessage.deletes",
      "english": "It also deletes %@.",
      "before": "同時也會刪除 %@。",
      "after": "同時也會刪除%@。",
@@ -835,6 +942,7 @@
     },
     {
      "key": "It belongs to its feed while it is downloaded. %@ removes its file and keeps its place and bookmarks.",
+     "id": "feedItemPackageError.staysInItsFeed",
      "english": "It belongs to its feed while it is downloaded. %@ removes its file and keeps its place and bookmarks.",
      "before": "下載期間，它屬於其訂閱源。「%@」會移除其檔案，並保留其位置與書籤。",
      "after": "它作為下載項目，屬於其訂閱源。「%@」會移除其檔案，並保留其位置與書籤。",
@@ -842,6 +950,7 @@
     },
     {
      "key": "It deletes %@: it goes to the Trash, where you can recover it until the Trash is emptied.",
+     "id": "feed.deletesSentence.goes",
      "english": "It deletes %@: it goes to the Trash, where you can recover it until the Trash is emptied.",
      "before": "刪除%@：它會移到垃圾桶，在清倒垃圾桶前你都可以復原。",
      "after": "這會刪除%@：該項目會移到垃圾桶，在清空垃圾桶前你都可以復原。",
@@ -849,6 +958,7 @@
     },
     {
      "key": "It deletes %@: it is deleted permanently and cannot be recovered.",
+     "id": "feed.deletesSentence.deletedPermanentlyRecovered",
      "english": "It deletes %@: it is deleted permanently and cannot be recovered.",
      "before": "它會刪除 %@：會永久刪除，無法復原。",
      "after": "這會刪除%@：該項目會永久刪除，無法復原。",
@@ -856,6 +966,7 @@
     },
     {
      "key": "It deletes %@: it stays in the TextMouth library folder.",
+     "id": "feed.deletesSentence.stays",
      "english": "It deletes %@: it stays in the TextMouth library folder.",
      "before": "它會刪除 %@：該項目會保留在 TextMouth 書庫檔案夾中。",
      "after": "這會刪除%@：該項目會保留在 TextMouth 書庫檔案夾中。",
@@ -863,6 +974,7 @@
     },
     {
      "key": "It deletes %@: they are deleted permanently and cannot be recovered.",
+     "id": "feed.deletesSentence.permanentlyRecovered",
      "english": "It deletes %@: they are deleted permanently and cannot be recovered.",
      "before": "它會刪除 %@：會永久刪除，無法復原。",
      "after": "這會刪除%@：這些項目會永久刪除，無法復原。",
@@ -870,6 +982,7 @@
     },
     {
      "key": "It deletes %@: they go to the Trash, where you can recover them until the Trash is emptied.",
+     "id": "feed.deletesSentence.them",
      "english": "It deletes %@: they go to the Trash, where you can recover them until the Trash is emptied.",
      "before": "它會刪除 %@：它們會移到垃圾桶，在清倒垃圾桶前你都可以復原。",
      "after": "這會刪除%@：這些項目會移到垃圾桶，在清空垃圾桶前你都可以復原。",
@@ -877,6 +990,7 @@
     },
     {
      "key": "It deletes %@: they stay in the TextMouth library folder.",
+     "id": "feed.deletesSentence.stay",
      "english": "It deletes %@: they stay in the TextMouth library folder.",
      "before": "它會刪除 %@：這些項目會保留在 TextMouth 書庫檔案夾中。",
      "after": "這會刪除%@：這些項目會保留在 TextMouth 書庫檔案夾中。",
@@ -884,6 +998,7 @@
     },
     {
      "key": "It names no audio file in its own folder that TextMouth can import.",
+     "id": "playlistImport.refusal",
      "english": "It names no audio file in its own folder that TextMouth can import.",
      "before": "其中沒有指向 TextMouth 能輸入、位於其自身檔案夾內的音訊檔案。",
      "after": "其中沒有列出同一檔案夾內任何 TextMouth 能輸入的音訊檔案。",
@@ -891,6 +1006,7 @@
     },
     {
      "key": "Keep for a number of days",
+     "id": "audioEditingSettings.choiceTitle.deleteAfterDays",
      "english": "Keep for a number of days",
      "before": "保留數天",
      "after": "保留指定天數",
@@ -898,6 +1014,7 @@
     },
     {
      "key": "Lists every article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
+     "id": "feed.everyListedNewestDownloaded.article",
      "english": {
       "one": "Lists every article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
       "other": "Lists every article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings."
@@ -912,6 +1029,7 @@
     },
     {
      "key": "Lists every episode and article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
+     "id": "feed.everyListedNewestDownloaded.episodeArticle",
      "english": {
       "one": "Lists every episode and article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
       "other": "Lists every episode and article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings."
@@ -926,6 +1044,7 @@
     },
     {
      "key": "Lists every episode, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
+     "id": "feed.everyListedNewestDownloaded.episode",
      "english": {
       "one": "Lists every episode, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
       "other": "Lists every episode, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings."
@@ -940,6 +1059,7 @@
     },
     {
      "key": "Lists the newest %lld you haven't played, and every download. Downloads only what you ask for; the others keep their records and return when you list more.",
+     "id": "feed.itemPolicyHint.onlyNewestListed.played",
      "english": {
       "one": "Lists the newest %lld you haven't played, and every download. Downloads only what you ask for; the others keep their records and return when you list more.",
       "other": "Lists the newest %lld you haven't played, and every download. Downloads only what you ask for; the others keep their records and return when you list more."
@@ -954,6 +1074,7 @@
     },
     {
      "key": "Lists the newest %lld you haven't read, and every download. Downloads only what you ask for; the others keep their records and return when you list more.",
+     "id": "feed.itemPolicyHint.onlyNewestListed.read",
      "english": {
       "one": "Lists the newest %lld you haven't read, and every download. Downloads only what you ask for; the others keep their records and return when you list more.",
       "other": "Lists the newest %lld you haven't read, and every download. Downloads only what you ask for; the others keep their records and return when you list more."
@@ -968,6 +1089,7 @@
     },
     {
      "key": "Moved %@ to %@.",
+     "id": "audioEditor.moved",
      "english": "Moved %1$@ to %2$@.",
      "before": "已將 %1$@ 移到 %2$@。",
      "after": "已將 %1$@移到 %2$@。",
@@ -975,6 +1097,7 @@
     },
     {
      "key": "Not in the book's audio yet. Discard undoes them; next time you edit this book, Redo brings them back until you make another edit.",
+     "id": "audioEditor.closeExplanation",
      "english": "Not in the book's audio yet. Discard undoes them; next time you edit this book, Redo brings them back until you make another edit.",
      "before": "尚未寫入書籍的音訊。「捨棄」會還原這些編輯；下次編輯這本書時，可用「重做」將它們帶回，直到你進行另一項編輯為止。",
      "after": "尚未寫入書籍的音訊。「捨棄」會還原這些編輯；下次編輯這本書時，在你進行其他編輯之前，可用「重做」恢復它們。",
@@ -982,6 +1105,7 @@
     },
     {
      "key": "Part of %@ could not be decoded and is kept as silence.",
+     "id": "ffmpegImport.partlyDecodedNotice.silence",
      "english": "Part of %@ could not be decoded and is kept as silence.",
      "before": "「%@」有一部分無法解碼，已保留為靜音。",
      "after": "%@有一部分無法解碼，已以靜音代替。",
@@ -989,6 +1113,7 @@
     },
     {
      "key": "Part of %lld files, %@, could not be decoded and is kept as silence.",
+     "id": "ffmpegImport.partlyDecodedNotice.files",
      "english": {
       "one": "Part of %lld file, %@, could not be decoded and is kept as silence.",
       "other": "Part of %lld files, %@, could not be decoded and is kept as silence."
@@ -1003,6 +1128,7 @@
     },
     {
      "key": "Pasted %@ back where they were cut.",
+     "id": "audioEditor.pastedBack",
      "english": "Pasted %@ back where they were cut.",
      "before": "已將 %@ 貼回剪下的位置。",
      "after": "已將 %@貼回剪下的位置。",
@@ -1010,6 +1136,7 @@
     },
     {
      "key": "Pasted %@ over %@.",
+     "id": "audioEditor.pasted.over",
      "english": "Pasted %1$@ over %2$@.",
      "before": "已將 %1$@ 貼上，取代 %2$@。",
      "after": "已貼上 %1$@，取代 %2$@。",
@@ -1017,6 +1144,7 @@
     },
     {
      "key": "Paused at %@.",
+     "id": "audioEditor.paused",
      "english": "Paused at %@.",
      "before": "已在 %@ 暫停。",
      "after": "已暫停於 %@。",
@@ -1024,6 +1152,7 @@
     },
     {
      "key": "Recording over %@ at %@, from %@, after the beep. Punch In or Stop ends it; Clear Selection discards it.",
+     "id": "audioEditor.punchInStarting.over",
      "english": "Recording over %1$@ at %2$@, from %3$@, after the beep. Punch In or Stop ends it; Clear Selection discards it.",
      "before": "嗶聲之後，將用 %3$@ 覆蓋錄製 %2$@ 處的 %1$@。「覆蓋錄音」或「停止」可結束錄音；「取消選取」會捨棄錄音。",
      "after": "嗶聲之後，將用 %3$@ 覆蓋錄製 %2$@處的 %1$@。「覆蓋錄音」或「停止」可結束錄音；「取消選取」會捨棄錄音。",
@@ -1031,6 +1160,7 @@
     },
     {
      "key": "Recording to insert at %@, from %@, after the beep. Punch In or Stop ends it; Clear Selection discards it.",
+     "id": "audioEditor.punchInStarting.insert",
      "english": "Recording to insert at %1$@, from %2$@, after the beep. Punch In or Stop ends it; Clear Selection discards it.",
      "before": "嗶聲之後，將用 %2$@ 錄音並插入到 %1$@ 處。「覆蓋錄音」或「停止」可結束錄音；「取消選取」會捨棄錄音。",
      "after": "嗶聲之後，將用 %2$@ 錄音並插入到 %1$@處。「覆蓋錄音」或「停止」可結束錄音；「取消選取」會捨棄錄音。",
@@ -1038,6 +1168,7 @@
     },
     {
      "key": "Records over the selection, or at the cursor, after a beep. Again, or Stop, ends it.",
+     "id": "audioEditor.explanation.editorPunchIn",
      "english": "Records over the selection, or at the cursor, after a beep. Again, or Stop, ends it.",
      "before": "嗶聲之後，覆蓋錄製選取範圍或游標處。再次選擇或選擇「停止」即可結束。",
      "after": "嗶聲之後，覆蓋錄製選取範圍，或在游標處錄音。再次選擇或選擇「停止」即可結束。",
@@ -1045,6 +1176,7 @@
     },
     {
      "key": "Replaced %@ with %@ of new recording, which is selected.",
+     "id": "audioEditor.punchedIn",
      "english": "Replaced %1$@ with %2$@ of new recording, which is selected.",
      "before": "已用 %2$@ 的新錄音取代 %1$@，並已選取新錄音。",
      "after": "已用 %2$@的新錄音取代 %1$@，並已選取新錄音。",
@@ -1052,6 +1184,7 @@
     },
     {
      "key": "Resubscribed to %@. Checking it now…",
+     "id": "feed.resubscribed",
      "english": "Resubscribed to %@. Checking it now…",
      "before": "已重新訂閱 %@。正在立即檢查…",
      "after": "已重新訂閱 %@。正在檢查…",
@@ -1059,6 +1192,7 @@
     },
     {
      "key": "Reverted to the original audio. Redo brings back the %lld edits.",
+     "id": "audioEditor.reverted.original",
      "english": {
       "one": "Reverted to the original audio. Redo brings back the %lld edit.",
       "other": "Reverted to the original audio. Redo brings back the %lld edits."
@@ -1073,6 +1207,7 @@
     },
     {
      "key": "Saving %@ of audio as %@, the format this book keeps.",
+     "id": "audioEditor.savingDetail.format",
      "english": "Saving %1$@ of audio as %2$@, the format this book keeps.",
      "before": "正在將 %1$@ 的音訊儲存為 %2$@，也就是這本書原有的格式。",
      "after": "正在將 %1$@的音訊儲存為 %2$@，也就是這本書原有的格式。",
@@ -1080,6 +1215,7 @@
     },
     {
      "key": "Saving %@ of audio into the book.",
+     "id": "audioEditor.savingDetail.book",
      "english": "Saving %@ of audio into the book.",
      "before": "正在將 %@ 的音訊儲存到書籍中。",
      "after": "正在將 %@的音訊儲存到書籍中。",
@@ -1087,6 +1223,7 @@
     },
     {
      "key": "Selected chapter %@: %@, %@.",
+     "id": "audioEditor.selectedChapter",
      "english": "Selected chapter %1$@: %2$@, %3$@.",
      "before": "已選取章節 %1$@：%2$@，%3$@。",
      "after": "已選取第 %1$@ 章：%2$@，%3$@。",
@@ -1094,6 +1231,7 @@
     },
     {
      "key": "Selection from %@ to %@; %@ long.",
+     "id": "audioEditor.selectionSentence",
      "english": "Selection from %1$@ to %2$@; %3$@ long.",
      "before": "選取範圍從 %1$@ 到 %2$@，長度 %3$@。",
      "after": "選取範圍從 %1$@到 %2$@，長度 %3$@。",
@@ -1101,6 +1239,7 @@
     },
     {
      "key": "TextMouth can't convert the sound of “%@”: it is in a kind of audio it does not read.",
+     "id": "ffmpegImport.soundNotDecoded",
      "english": "TextMouth can't convert the sound of “%@”: it is in a kind of audio it does not read.",
      "before": "TextMouth 無法轉換「%@」的聲音：它屬於 TextMouth 不讀取的音訊種類。",
      "after": "TextMouth 無法轉換「%@」的聲音：它屬於 TextMouth 無法讀取的音訊類型。",
@@ -1108,6 +1247,7 @@
     },
     {
      "key": "TextMouth has no rules of its own: none was right in every book tested. Edit Rules… opens your copy, where you can add rules, such as a name the recognizer always spells another way.",
+     "id": "transcriptCleanup.noRules.builtIn",
      "english": "TextMouth has no rules of its own: none was right in every book tested. Edit Rules… opens your copy, where you can add rules, such as a name the recognizer always spells another way.",
      "before": "TextMouth 沒有自己的規則：測試過的每本書中，沒有任何規則都適用。「編輯規則…」會打開你的副本，你可以在其中加入規則，例如辨識器總是寫成另一種寫法的名稱。",
      "after": "TextMouth 沒有自己的規則：沒有任何一條規則在所有測試過的書中都正確。「編輯規則…」會打開你的副本，你可以在其中加入規則，例如辨識器總是寫成另一種寫法的名稱。",
@@ -1115,6 +1255,7 @@
     },
     {
      "key": "TextMouth is quitting and the book's audio doesn't hold these edits yet. Discard undoes them; next time you edit this book, Redo brings them back until you make another edit. Cancel keeps TextMouth open.",
+     "id": "audioEditor.quitExplanation",
      "english": "TextMouth is quitting and the book's audio doesn't hold these edits yet. Discard undoes them; next time you edit this book, Redo brings them back until you make another edit. Cancel keeps TextMouth open.",
      "before": "TextMouth 即將結束，而書籍的音訊尚未包含這些編輯。「捨棄」會還原這些編輯；下次編輯這本書時，可用「重做」將它們帶回，直到你進行另一項編輯為止。「取消」會讓 TextMouth 保持打開。",
      "after": "TextMouth 即將結束，而書籍的音訊尚未包含這些編輯。「捨棄」會還原這些編輯；下次編輯這本書時，在你進行其他編輯之前，可用「重做」恢復它們。「取消」會讓 TextMouth 保持打開。",
@@ -1122,6 +1263,7 @@
     },
     {
      "key": "TextMouth isn't allowed to post notifications. Turn them on in System Settings, Notifications, TextMouth.",
+     "id": "feed.notificationsRefused",
      "english": "TextMouth isn't allowed to post notifications. Turn them on in System Settings, Notifications, TextMouth.",
      "before": "TextMouth 不允許發送通知。請在「系統設定」>「通知」>「TextMouth」中，開啟 TextMouth 的通知。",
      "after": "TextMouth 未獲允許發送通知。請在「系統設定」>「通知」>「TextMouth」中開啟。",
@@ -1129,6 +1271,7 @@
     },
     {
      "key": "TextMouth moved %lld new copies of duplicate books to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back.",
+     "id": "duplicateCopy.unansweredTrashed.other",
      "english": {
       "one": "TextMouth moved %lld new copy of duplicate books to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back.",
       "other": "TextMouth moved %lld new copies of duplicate books to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back."
@@ -1143,6 +1286,7 @@
     },
     {
      "key": "TextMouth's own rules are newer, version %@. To use them, delete your copy or copy their rules into it.",
+     "id": "transcriptCleanup.newerBuiltInRules",
      "english": "TextMouth's own rules are newer, version %@. To use them, delete your copy or copy their rules into it.",
      "before": "TextMouth 本身的規則較新，版本為 %@。若要使用，請刪除你的副本，或將它們的規則複製到你的副本中。",
      "after": "TextMouth 本身的規則較新，版本為 %@。若要使用，請刪除你的副本，或將它們的規則拷貝到你的副本中。",
@@ -1150,6 +1294,7 @@
     },
     {
      "key": "That isn't a web address. Enter a feed's address, or the address of a page that names one.",
+     "id": "feedSubscribeError.message.invalidAddress",
      "english": "That isn't a web address. Enter a feed's address, or the address of a page that names one.",
      "before": "這不是網址。請輸入訂閱源網址，或指名訂閱源的頁面網址。",
      "after": "這不是網址。請輸入訂閱源網址，或列出訂閱源的網頁網址。",
@@ -1157,6 +1302,7 @@
     },
     {
      "key": "That page doesn't name a feed.",
+     "id": "feedSubscribeError.message.pageNamesNoFeed",
      "english": "That page doesn't name a feed.",
      "before": "該頁面沒有指名任何訂閱源。",
      "after": "該頁面沒有列出任何訂閱源。",
@@ -1164,6 +1310,7 @@
     },
     {
      "key": "That page names %lld feeds. Choose one, then Subscribe.",
+     "id": "feed.choosePrompt",
      "english": {
       "one": "That page names %lld feed. Choose one, then Subscribe.",
       "other": "That page names %lld feeds. Choose one, then Subscribe."
@@ -1178,6 +1325,7 @@
     },
     {
      "key": "The %@ model couldn't be downloaded: %@",
+     "id": "transcription.downloadFailed",
      "english": "The %1$@ model couldn't be downloaded: %2$@",
      "before": "無法下載 %1$@ 模型：%2$@",
      "after": "無法下載%1$@模型：%2$@",
@@ -1185,6 +1333,7 @@
     },
     {
      "key": "The %@ model is downloaded. The book can be transcribed now.",
+     "id": "transcription.downloaded",
      "english": "The %@ model is downloaded. The book can be transcribed now.",
      "before": "%@ 模型已下載。現在可以轉錄這本書了。",
      "after": "%@模型已下載。現在可以轉錄這本書了。",
@@ -1192,6 +1341,7 @@
     },
     {
      "key": "The %@ model's download was cancelled.",
+     "id": "transcription.downloadCancelled",
      "english": "The %@ model's download was cancelled.",
      "before": "%@ 模型的下載已取消。",
      "after": "%@模型的下載已取消。",
@@ -1199,6 +1349,7 @@
     },
     {
      "key": "The %lld markers are deleted, and Redo doesn't bring them back.",
+     "id": "audioEditor.revertExplanation.markers",
      "english": {
       "one": "The marker is deleted, and Redo doesn't bring it back.",
       "other": "The %lld markers are deleted, and Redo doesn't bring them back."
@@ -1213,6 +1364,7 @@
     },
     {
      "key": "The article leaves the list for good, and its download, if any, is deleted.",
+     "id": "feed.deleteItemMessage.articleDownload",
      "english": "The article leaves the list for good, and its download, if any, is deleted.",
      "before": "此文章會永久離開列表，其下載項目（若有）也會刪除。",
      "after": "此文章會從列表中永久移除，其下載項目（若有）也會刪除。",
@@ -1220,6 +1372,7 @@
     },
     {
      "key": "The article leaves the list for good; the book it became in your library stays.",
+     "id": "feed.deleteItemMessage.article",
      "english": "The article leaves the list for good; the book it became in your library stays.",
      "before": "此文章會永久離開列表；它在你書庫中變成的書籍會保留。",
      "after": "此文章會從列表中永久移除；它在你書庫中轉成的書籍會保留。",
@@ -1227,6 +1380,7 @@
     },
     {
      "key": "The book left the library during transcription, so its transcript wasn't saved.",
+     "id": "transcriptionError.bookRemoved",
      "english": "The book left the library during transcription, so its transcript wasn't saved.",
      "before": "轉錄期間這本書已離開書庫，因此其逐字稿未儲存。",
      "after": "轉錄期間這本書已從書庫中移除，因此其逐字稿未儲存。",
@@ -1234,6 +1388,7 @@
     },
     {
      "key": "The cue sheet “%@” names none of the audio beside it, so its headings were not used.",
+     "id": "cueSheet.sheetUnused.names",
      "english": "The cue sheet “%@” names none of the audio beside it, so its headings were not used.",
      "before": "CUE 表單「%@」沒有指名其旁的任何音訊，因此未使用其標題。",
      "after": "CUE 表單「%@」沒有指向旁邊的任何音訊，因此未使用其標題。",
@@ -1241,6 +1396,7 @@
     },
     {
      "key": "The episode leaves the list for good, and its download, if any, is deleted.",
+     "id": "feed.deleteItemMessage.episodeDownload",
      "english": "The episode leaves the list for good, and its download, if any, is deleted.",
      "before": "此單集會永久離開列表，其下載項目（若有）也會刪除。",
      "after": "此單集會從列表中永久移除，其下載項目（若有）也會刪除。",
@@ -1248,6 +1404,7 @@
     },
     {
      "key": "The episode leaves the list for good; the book it became in your library stays.",
+     "id": "feed.deleteItemMessage.episode",
      "english": "The episode leaves the list for good; the book it became in your library stays.",
      "before": "此單集會永久離開列表；它在你書庫中變成的書籍會保留。",
      "after": "此單集會從列表中永久移除；它在你書庫中轉成的書籍會保留。",
@@ -1255,6 +1412,7 @@
     },
     {
      "key": "The feed leaves your library, with its list of articles and its settings.",
+     "id": "feed.sentences.articles",
      "english": "The feed leaves your library, with its list of articles and its settings.",
      "before": "此訂閱源會連同其文章列表與設定一起離開你的書庫。",
      "after": "此訂閱源會連同其文章列表與設定，從你的書庫中移除。",
@@ -1262,6 +1420,7 @@
     },
     {
      "key": "The feed leaves your library, with its list of episodes and its settings.",
+     "id": "feed.sentences.episodes",
      "english": "The feed leaves your library, with its list of episodes and its settings.",
      "before": "此訂閱源會連同其單集列表與設定一起離開你的書庫。",
      "after": "此訂閱源會連同其單集列表與設定，從你的書庫中移除。",
@@ -1269,6 +1428,7 @@
     },
     {
      "key": "The feed leaves your library, with its list of items and its settings.",
+     "id": "feed.sentences.items",
      "english": "The feed leaves your library, with its list of items and its settings.",
      "before": "此訂閱源會連同其項目列表與設定一起離開你的書庫。",
      "after": "此訂閱源會連同其項目列表與設定，從你的書庫中移除。",
@@ -1276,6 +1436,7 @@
     },
     {
      "key": "The file is a %@ transcript of version %@, which TextMouth doesn't read.",
+     "id": "timedTextError.unsupportedVersion",
      "english": "The file is a %1$@ transcript of version %2$@, which TextMouth doesn't read.",
      "before": "這個檔案是版本 %2$@ 的 %1$@ 逐字稿，TextMouth 不會讀取。",
      "after": "這個檔案是版本 %2$@ 的 %1$@ 逐字稿，TextMouth 不支援這個版本。",
@@ -1283,6 +1444,7 @@
     },
     {
      "key": "The playlist “%@” uses XML entities of its own, which TextMouth does not read.",
+     "id": "playlistImport.declaresEntities",
      "english": "The playlist “%@” uses XML entities of its own, which TextMouth does not read.",
      "before": "播放列表「%@」使用了它自己的 XML 實體，TextMouth 不讀取。",
      "after": "播放列表「%@」使用了自訂的 XML 實體，TextMouth 不支援。",
@@ -1290,6 +1452,7 @@
     },
     {
      "key": "The recording couldn't be saved: %@ It is kept; choose %@ or %@.",
+     "id": "recording.saveFailed",
      "english": "The recording couldn't be saved: %1$@ It is kept; choose %2$@ or %3$@.",
      "before": "無法儲存錄音：%1$@ 錄音已保留；請選擇「%2$@」或「%3$@」。",
      "after": "無法儲存錄音：%1$@錄音已保留；請選擇「%2$@」或「%3$@」。",
@@ -1297,6 +1460,7 @@
     },
     {
      "key": "The speech model for %@ isn't on this Mac yet. Download it first.",
+     "id": "transcriptionError.modelNotInstalled",
      "english": "The speech model for %@ isn't on this Mac yet. Download it first.",
      "before": "這部 Mac 上還沒有 %@ 的語音模型。請先下載。",
      "after": "這部 Mac 上還沒有%@的語音模型。請先下載。",
@@ -1304,6 +1468,7 @@
     },
     {
      "key": "This XML file is not a DTBook book, a Word 2003 XML document, or a PEF braille file, the only XML TextMouth reads.",
+     "id": "fileImportError.unsupportedXML",
      "english": "This XML file is not a DTBook book, a Word 2003 XML document, or a PEF braille file, the only XML TextMouth reads.",
      "before": "此 XML 檔案不是 DTBook 書籍、Word 2003 XML 文件或 PEF 點字檔案，而這是 TextMouth 唯一讀取的 XML。",
      "after": "此 XML 檔案不是 DTBook 書籍、Word 2003 XML 文件或 PEF 點字檔案；TextMouth 只讀取這幾種 XML。",
@@ -1311,6 +1476,7 @@
     },
     {
      "key": "Transcribed on %@, in %@.",
+     "id": "transcription.transcribedOn",
      "english": "Transcribed on %1$@, in %2$@.",
      "before": "於 %1$@ 轉錄，語言為 %2$@。",
      "after": "於 %1$@ 轉錄，語言為%2$@。",
@@ -1318,6 +1484,7 @@
     },
     {
      "key": "Transcription doesn't support %@.",
+     "id": "transcriptionError.unsupportedLanguage",
      "english": "Transcription doesn't support %@.",
      "before": "語音轉文字不支援 %@。",
      "after": "語音轉文字不支援%@。",
@@ -1325,6 +1492,7 @@
     },
     {
      "key": "Type a podcast's title or publisher, then press Return to search Apple's directory",
+     "id": "feed.searchHint",
      "english": "Type a podcast's title or publisher, then press Return to search Apple's directory",
      "before": "輸入 Podcast 的標題或發布者，然後按下 Return 以搜尋 Apple 的目錄。",
      "after": "輸入 Podcast 的名稱或發布者，然後按下 Return 以搜尋 Apple 的目錄。",
@@ -1332,6 +1500,7 @@
     },
     {
      "key": "Undoes every edit, back to the original; Redo brings them back.",
+     "id": "audioEditor.explanation.editorRevert",
      "english": "Undoes every edit, back to the original; Redo brings them back.",
      "before": "還原所有編輯，回到原始音訊；「重做」可將它們帶回。",
      "after": "還原所有編輯，回到原始音訊；「重做」可恢復它們。",
@@ -1339,6 +1508,7 @@
     },
     {
      "key": "You can recover it from the Trash until the Trash is emptied.",
+     "id": "originalFileDeletion.consequence.recover",
      "english": "You can recover it from the Trash until the Trash is emptied.",
      "before": "在清倒垃圾桶前，你都可以從垃圾桶復原它。",
      "after": "在清空垃圾桶前，你都可以從垃圾桶復原它。",
@@ -1346,6 +1516,7 @@
     },
     {
      "key": "in chapter %@: %@",
+     "id": "audioEditor.inChapter",
      "english": "in chapter %1$@: %2$@",
      "before": "在章節 %1$@：%2$@",
      "after": "在第 %1$@ 章：%2$@",
@@ -1353,6 +1524,7 @@
     },
     {
      "key": "its row names no package the library manages",
+     "id": "feedItemMoveError.packageNotManaged",
      "english": "its row names no package the library manages",
      "before": "其列沒有指名書庫所管理的套件",
      "after": "其列沒有指向書庫所管理的任何套件",
@@ -1360,6 +1532,7 @@
     },
     {
      "key": "keeping the place of your feed downloads for next time",
+     "id": "feedQuitHold.work",
      "english": "keeping the place of your feed downloads for next time",
      "before": "保留你的訂閱源下載位置供下次使用",
      "after": "保留訂閱源下載的進度，供下次繼續",
@@ -1367,6 +1540,7 @@
     },
     {
      "key": "none downloaded",
+     "id": "feedDownloadProgress.finished.downloaded",
      "english": "none downloaded",
      "before": "沒有任何已下載",
      "after": "沒有下載任何項目",
@@ -1374,6 +1548,7 @@
     },
     {
      "key": "saving the changes to your feed subscriptions",
+     "id": "feedRecordQuit.finishing",
      "english": "saving the changes to your feed subscriptions",
      "before": "儲存對你的訂閱源訂閱項目所做的更改",
      "after": "儲存你對訂閱項目所做的更改",
@@ -1392,6 +1567,7 @@
    "fixes": [
     {
      "key": "%@ %@, which TextMouth can't export with its structure.",
+     "id": "bookExportDeepChapter.message.structure",
      "english": "%1$@ %2$@, which TextMouth can't export with its structure.",
      "before": "%1$@ %2$@，TextMouth 無法連同其結構一起輸出。",
      "after": "%1$@中，%2$@，TextMouth 無法連同其結構一起輸出。",
@@ -1399,6 +1575,7 @@
     },
     {
      "key": "%@ adds one at the current position.",
+     "id": "bookmarkPanelView.emptyListHelp.onePosition",
      "english": "%@ adds one at the current position.",
      "before": "%@ 會在目前位置加入一個。",
      "after": "「%@」會在目前位置加入書籤。",
@@ -1406,6 +1583,7 @@
     },
     {
      "key": "%@ has no words, so the cursor is %@.",
+     "id": "readerPage.hasNoWords",
      "english": "%1$@ has no words, so the cursor is %2$@.",
      "before": "%1$@ 沒有文字，所以游標在 %2$@。",
      "after": "%1$@沒有文字，所以游標在%2$@。",
@@ -1413,6 +1591,7 @@
     },
     {
      "key": "%@ in the cloud",
+     "id": "bookExport.booksInTheCloud",
      "english": "%@ in the cloud",
      "before": "%@ 僅在雲端",
      "after": "%@僅在雲端",
@@ -1420,6 +1599,7 @@
     },
     {
      "key": "%@ is a Word 6 or Word 95 document, which TextMouth on iPhone can't read yet.",
+     "id": "phoneImport.wordSixOrNinetyFiveRefusal",
      "english": "%@ is a Word 6 or Word 95 document, which TextMouth on iPhone can't read yet.",
      "before": "%@ 是 Word 6 或 Word 95 文件，iPhone 版 TextMouth 目前還無法讀取。",
      "after": "%@是 Word 6 或 Word 95 文件，iPhone 版 TextMouth 目前還無法讀取。",
@@ -1427,6 +1607,7 @@
     },
     {
      "key": "%@ is in %@, which TextMouth on iPhone can't play yet.",
+     "id": "phoneImport.convertedAudioRefusal",
      "english": "%1$@ is in %2$@, which TextMouth on iPhone can't play yet.",
      "before": "%1$@ 是 %2$@ 格式，iPhone 版 TextMouth 目前還無法播放。",
      "after": "%1$@是 %2$@ 格式，iPhone 版 TextMouth 目前還無法播放。",
@@ -1434,6 +1615,7 @@
     },
     {
      "key": "%@ is in a skipped section, so the cursor is %@.",
+     "id": "readerPage.isInSkippedSection",
      "english": "%1$@ is in a skipped section, so the cursor is %2$@.",
      "before": "%1$@ 位於已略過的區段中，所以游標在 %2$@。",
      "after": "%1$@位於已略過的區段中，所以游標在%2$@。",
@@ -1441,6 +1623,7 @@
     },
     {
      "key": "%@ needs “%@”, one of a Mac's own braille tables, which TextMouth on iPhone doesn't have.",
+     "id": "phoneImport.macBrailleTableRefusal",
      "english": "%1$@ needs “%2$@”, one of a Mac's own braille tables, which TextMouth on iPhone doesn't have.",
      "before": "%1$@ 需要「%2$@」，這是 Mac 內建的點字表之一，iPhone 版 TextMouth 沒有這個點字表。",
      "after": "%1$@需要「%2$@」，這是 Mac 內建的點字表之一，iPhone 版 TextMouth 沒有這個點字表。",
@@ -1448,6 +1631,7 @@
     },
     {
      "key": "%@ nests too deeply",
+     "id": "bookExportDeepChapter.title",
      "english": "%@ nests too deeply",
      "before": "%@ 的巢狀層次太深",
      "after": "%@的巢狀層次太深",
@@ -1455,6 +1639,7 @@
     },
     {
      "key": "%@ sound",
+     "id": "soundEffectsSettings.soundLabel",
      "english": "%@ sound",
      "before": "%@ 音效",
      "after": "%@ 的音效",
@@ -1462,6 +1647,7 @@
     },
     {
      "key": "%@ tries again, %@ quits without saving, %@ keeps TextMouth open.",
+     "id": "unsavedChangesPrompt.choices",
      "english": "%1$@ tries again, %2$@ quits without saving, %3$@ keeps TextMouth open.",
      "before": "%1$@ 會重試儲存，%2$@ 會結束且不儲存，%3$@ 會讓 TextMouth 保持打開。",
      "after": "「%1$@」會重試儲存，「%2$@」會結束且不儲存，「%3$@」會讓 TextMouth 保持打開。",
@@ -1469,6 +1655,7 @@
     },
     {
      "key": "%@ works in %@.",
+     "id": "shortcutsSettings.scopeChanged",
      "english": "%1$@ works in %2$@.",
      "before": "%1$@ 在 %2$@ 中有效。",
      "after": "%1$@ 在%2$@中有效。",
@@ -1476,6 +1663,7 @@
     },
     {
      "key": "%@, %@ quality",
+     "id": "common.valueValueQuality",
      "english": "%1$@, %2$@ quality",
      "before": "%1$@，%2$@ 品質",
      "after": "%1$@，%2$@",
@@ -1483,6 +1671,7 @@
     },
     {
      "key": "%lld entries give only a phonetic spelling, so they were set aside.",
+     "id": "pronunciationLexicon.imported.phonetic",
      "english": {
       "one": "%lld entry gives only a phonetic spelling, so it was set aside.",
       "other": "%lld entries give only a phonetic spelling, so they were set aside."
@@ -1497,6 +1686,7 @@
     },
     {
      "key": "Added %lld rules from “%@”.",
+     "id": "pronunciationLexicon.imported.added",
      "english": {
       "one": "Added %lld rule from “%@”.",
       "other": "Added %lld rules from “%@”."
@@ -1511,6 +1701,7 @@
     },
     {
      "key": "Adds an Export button to each reader's toolbar. File, Export works either way.",
+     "id": "bookExport.settingHint",
      "english": "Adds an Export button to each reader's toolbar. File, Export works either way.",
      "before": "在每個閱讀器的工具列加入「輸出」按鈕。「檔案」>「輸出」同樣可用。",
      "after": "在每個閱讀器的工具列加入「輸出」按鈕。無論是否加入，「檔案」選單中的「輸出」都可以使用。",
@@ -1518,6 +1709,7 @@
     },
     {
      "key": "Adds the lexicon's entries after your rules; entries with only a phonetic spelling are set aside",
+     "id": "pronunciationLexicon.importHint",
      "english": "Adds the lexicon's entries after your rules; entries with only a phonetic spelling are set aside",
      "before": "在你的規則之後加入詞典的詞條；只有拼音的詞條會被略過。",
      "after": "在你的規則之後加入詞典的詞條；只有音標的詞條會被略過。",
@@ -1525,6 +1717,7 @@
     },
     {
      "key": "Apostrophe",
+     "id": "keyBinding.localizedKeyWords.apostrophe",
      "english": "Apostrophe",
      "before": "單引號",
      "after": "撇號",
@@ -1532,6 +1725,7 @@
     },
     {
      "key": "Asks for an optional note, then marks the reading position.",
+     "id": "bookmarkPanelView.addBookmarkHint",
      "english": "Asks for an optional note, then marks the reading position.",
      "before": "詢問選用的備註，然後標記閱讀位置。",
      "after": "先讓你輸入選填的備註，再標記閱讀位置。",
@@ -1539,6 +1733,7 @@
     },
     {
      "key": "Chapter %@ of this book %@, which TextMouth can't export safely. Choose Edit Text, flatten the nesting, and save; then export again.",
+     "id": "bookExport.nestedTooDeeply.chapter",
      "english": "Chapter %1$@ of this book %2$@, which TextMouth can't export safely. Choose Edit Text, flatten the nesting, and save; then export again.",
      "before": "此書的第 %1$@ 章 %2$@，TextMouth 無法安全輸出。請選擇「編輯文字」，將巢狀結構攤平並儲存，然後再次輸出。",
      "after": "此書的第 %1$@ 章中，%2$@，TextMouth 無法安全輸出。請選擇「編輯文字」，減少巢狀層級並儲存，然後再次輸出。",
@@ -1546,6 +1741,7 @@
     },
     {
      "key": "Close All",
+     "id": "keyBinding.localizedSystemCommand.close",
      "english": "Close All",
      "before": "全部關閉",
      "after": "關閉全部",
@@ -1553,6 +1749,7 @@
     },
     {
      "key": "Down Arrow",
+     "id": "keyBinding.localizedKeyWords.down",
      "english": "Down Arrow",
      "before": "下箭頭",
      "after": "向下箭頭",
@@ -1560,6 +1757,7 @@
     },
     {
      "key": "End of book behavior for this book",
+     "id": "readerView.endOfBookLabel",
      "english": "End of book behavior for this book",
      "before": "此書的結尾行為",
      "after": "此書結束時的行為",
@@ -1567,6 +1765,7 @@
     },
     {
      "key": "Enhanced",
+     "id": "avSpeechSynthesisVoice.qualityLabel.enhanced",
      "english": "Enhanced",
      "before": "加強",
      "after": "增強音質",
@@ -1574,6 +1773,7 @@
     },
     {
      "key": "Exported %@ to %@.",
+     "id": "bookExport.finished.exported",
      "english": "Exported %1$@ to %2$@.",
      "before": "已將 %1$@ 輸出至 %2$@。",
      "after": "已將 %1$@輸出至 %2$@。",
@@ -1581,6 +1781,7 @@
     },
     {
      "key": "From",
+     "id": "speechExport.fromLabel",
      "english": "From",
      "before": "從",
      "after": "起點",
@@ -1588,6 +1789,7 @@
     },
     {
      "key": "How soon a second press must follow the first. A key with different single and double press actions waits this long before its single press acts.",
+     "id": "shortcutsSettings.doublePressTimeHint",
      "english": "How soon a second press must follow the first. A key with different single and double press actions waits this long before its single press acts.",
      "before": "第二次按鍵必須在多快內跟上第一次。單按與連按兩次動作不同的按鍵，會先等候這段時間才執行單按動作。",
      "after": "第二次按鍵必須在第一次之後多久內按下。單按與連按兩次動作不同的按鍵，會先等候這段時間才執行單按動作。",
@@ -1595,6 +1797,7 @@
     },
     {
      "key": "Importing %@ was stopped when TextMouth closed.",
+     "id": "phoneImport.stoppedWhenClosed.importing",
      "english": "Importing %@ was stopped when TextMouth closed.",
      "before": "輸入 %@ 的操作在 TextMouth 關閉時已停止。",
      "after": "輸入%@的操作在 TextMouth 關閉時已停止。",
@@ -1602,6 +1805,7 @@
     },
     {
      "key": "It has no headings, so the contents list has %lld entries for its chapters and the places it marks.",
+     "id": "epubPackageBuilder.accessibilitySummary.chapters",
      "english": {
       "one": "It has no headings, so the contents list has %lld entry for its chapters and the places it marks.",
       "other": "It has no headings, so the contents list has %lld entries for its chapters and the places it marks."
@@ -1616,6 +1820,7 @@
     },
     {
      "key": "It has no headings, so the contents list has one entry for the whole book.",
+     "id": "epubPackageBuilder.accessibilitySummary.entry",
      "english": "It has no headings, so the contents list has one entry for the whole book.",
      "before": "它沒有標題，因此目錄列只有一個項目，對應整本書。",
      "after": "它沒有標題，因此目錄中只有一個項目，對應整本書。",
@@ -1623,6 +1828,7 @@
     },
     {
      "key": "Its headings are real headings, and the contents list links them.",
+     "id": "epubPackageBuilder.accessibilitySummary.links",
      "english": "Its headings are real headings, and the contents list links them.",
      "before": "它的標題是真正的標題，目錄列有連結指向它們。",
      "after": "它的標題是真正的標題，目錄會連結到這些標題。",
@@ -1630,6 +1836,7 @@
     },
     {
      "key": "Jumped to page %@, the %@ page labelled %@.",
+     "id": "readerPage.jumped.labelled",
      "english": "Jumped to page %1$@, the %2$@ page labelled %3$@.",
      "before": "已跳至頁面 %1$@：標示為 %3$@ 的頁面中的 %2$@。",
      "after": "已跳至第 %1$@ 頁，即標示為 %3$@ 的頁面中的%2$@。",
@@ -1637,6 +1844,7 @@
     },
     {
      "key": "Jumped to page %@.",
+     "id": "readerPage.jumped.numbered",
      "english": "Jumped to page %@.",
      "before": "已跳至頁面 %@。",
      "after": "已跳至第 %@ 頁。",
@@ -1644,6 +1852,7 @@
     },
     {
      "key": "Left Arrow",
+     "id": "keyBinding.localizedKeyWords.arrow",
      "english": "Left Arrow",
      "before": "左箭頭",
      "after": "向左箭頭",
@@ -1651,6 +1860,7 @@
     },
     {
      "key": "Minimize",
+     "id": "keyBinding.localizedSystemCommand.minimize",
      "english": "Minimize",
      "before": "縮至最小",
      "after": "縮到最小",
@@ -1658,6 +1868,7 @@
     },
     {
      "key": "Minimize All",
+     "id": "keyBinding.localizedSystemCommand.minimizeAll",
      "english": "Minimize All",
      "before": "全部縮至最小",
      "after": "將全部縮到最小",
@@ -1665,6 +1876,7 @@
     },
     {
      "key": "No voice is installed. Add one in System Settings, Accessibility, Spoken Content, then export again.",
+     "id": "speechExportError.noVoice",
      "english": "No voice is installed. Add one in System Settings, Accessibility, Spoken Content, then export again.",
      "before": "尚未安裝語音。請在「系統設定」>「輔助使用」>「語音內容」中加入語音，然後再次輸出。",
      "after": "尚未安裝語音。請在「系統設定」的「輔助使用」中，於「語音內容」加入語音，然後再次輸出。",
@@ -1672,6 +1884,7 @@
     },
     {
      "key": "No voices are installed. Add voices in Settings, Accessibility, Read & Speak.",
+     "id": "phoneVoice.noVoices",
      "english": "No voices are installed. Add voices in Settings, Accessibility, Read & Speak.",
      "before": "尚未安裝語音。請在「設定」>「輔助使用」>「閱讀與朗讀」中加入語音。",
      "after": "尚未安裝語音。請在「設定」的「輔助使用」中，於「閱讀與朗讀」加入語音。",
@@ -1679,6 +1892,7 @@
     },
     {
      "key": "Passes over finished books when a book from the list ends.",
+     "id": "readingList.skipFinishedHint",
      "english": "Passes over finished books when a book from the list ends.",
      "before": "從列表中的書結束時，略過已完成的書。",
      "after": "列表中的書結束時，略過已完成的書。",
@@ -1686,6 +1900,7 @@
     },
     {
      "key": "Plays when you skip backward",
+     "id": "soundEffectsSettings.eventHint.skipBackward",
      "english": "Plays when you skip backward",
      "before": "在你倒轉時播放。",
      "after": "在你向後跳轉時播放。",
@@ -1693,6 +1908,7 @@
     },
     {
      "key": "Plays when you skip forward",
+     "id": "soundEffectsSettings.eventHint.skipForward",
      "english": "Plays when you skip forward",
      "before": "在你快轉時播放。",
      "after": "在你向前跳轉時播放。",
@@ -1700,6 +1916,7 @@
     },
     {
      "key": "Premium",
+     "id": "avSpeechSynthesisVoice.qualityLabel.premium",
      "english": "Premium",
      "before": "優質",
      "after": "高音質",
@@ -1707,6 +1924,7 @@
     },
     {
      "key": "Preview %@ sound",
+     "id": "soundEffectsSettings.previewLabel",
      "english": "Preview %@ sound",
      "before": "預聽 %@ 音效",
      "after": "預聽 %@ 的音效",
@@ -1714,6 +1932,7 @@
     },
     {
      "key": "Quitting now leaves these changes unsaved:",
+     "id": "unsavedChangesPrompt.quittingLeavesUnsaved",
      "english": "Quitting now leaves these changes unsaved:",
      "before": "現在結束會使這些更改未儲存：",
      "after": "現在結束的話，以下更改將不會儲存：",
@@ -1721,6 +1940,7 @@
     },
     {
      "key": "Restores the standard list: the ASCII symbols, bullets, dashes, the ellipsis, and box-drawing lines",
+     "id": "repeatedSymbolsSettingsView.resetHint",
      "english": "Restores the standard list: the ASCII symbols, bullets, dashes, the ellipsis, and box-drawing lines",
      "before": "還原標準列表：ASCII 符號、項目符號、破折號、省略號和製表線。",
      "after": "還原標準列表：ASCII 符號、項目符號、破折號、刪節號和製表線。",
@@ -1728,6 +1948,7 @@
     },
     {
      "key": "Restores this action's default shortcuts, which follow later releases' changes",
+     "id": "shortcutsSettings.resetToDefaultHint",
      "english": "Restores this action's default shortcuts, which follow later releases' changes",
      "before": "還原此動作的預設快速鍵，日後版本可能會更改這些預設值。",
      "after": "還原此動作的預設快速鍵；預設快速鍵會隨日後版本的更改而更新。",
@@ -1735,6 +1956,7 @@
     },
     {
      "key": "Rich text, with each heading at its outline level, for Word, Pages, and TextEdit.",
+     "id": "rtfExportWriter.hint",
      "english": "Rich text, with each heading at its outline level, for Word, Pages, and TextEdit.",
      "before": "多重格式文字，每個標題依其大綱層級呈現，適用於 Word、Pages 和 TextEdit。",
      "after": "多重格式文字，每個標題依其大綱層級呈現，適用於 Word、Pages 和「文字編輯」。",
@@ -1742,6 +1964,7 @@
     },
     {
      "key": "Right Arrow",
+     "id": "keyBinding.localizedKeyWords.right",
      "english": "Right Arrow",
      "before": "右箭頭",
      "after": "向右箭頭",
@@ -1749,6 +1972,7 @@
     },
     {
      "key": "Select Chapter",
+     "id": "shortcutAction.title.editorSelectChapter",
      "english": "Select Chapter",
      "before": "選擇章節",
      "after": "選取章節",
@@ -1756,6 +1980,7 @@
     },
     {
      "key": "Skip backward",
+     "id": "eventType.displayName.skipBackward",
      "english": "Skip backward",
      "before": "倒轉",
      "after": "向後跳轉",
@@ -1763,6 +1988,7 @@
     },
     {
      "key": "Skip backward: %@",
+     "id": "playbackControls.skipBackward",
      "english": "Skip backward: %@",
      "before": "倒轉：%@",
      "after": "向後跳轉：%@",
@@ -1770,6 +1996,7 @@
     },
     {
      "key": "Skip forward",
+     "id": "eventType.displayName.skipForward",
      "english": "Skip forward",
      "before": "快轉",
      "after": "向前跳轉",
@@ -1777,6 +2004,7 @@
     },
     {
      "key": "Skip forward: %@",
+     "id": "playbackControls.skipForward",
      "english": "Skip forward: %@",
      "before": "快轉：%@",
      "after": "向前跳轉：%@",
@@ -1784,6 +2012,7 @@
     },
     {
      "key": "Sort books by %@",
+     "id": "common.sortBooksByValue",
      "english": "Sort books by %@",
      "before": "依 %@ 排序書籍",
      "after": "依%@排序書籍",
@@ -1791,6 +2020,7 @@
     },
     {
      "key": "Sorted by %@",
+     "id": "common.sortedByValue",
      "english": "Sorted by %@",
      "before": "已依 %@ 排序",
      "after": "已依%@排序",
@@ -1798,6 +2028,7 @@
     },
     {
      "key": "Standard",
+     "id": "avSpeechSynthesisVoice.qualityLabel.default",
      "english": "Standard",
      "before": "標準",
      "after": "標準音質",
@@ -1805,6 +2036,7 @@
     },
     {
      "key": "Text not updated: %@ was removed, or its download deleted, so Edit Text has stopped for it.",
+     "id": "bookTextEdit.stoppedBookGone",
      "english": "Text not updated: %@ was removed, or its download deleted, so Edit Text has stopped for it.",
      "before": "文字未更新：%@ 已被移除，或其下載項目已刪除，因此「編輯文字」已為它停止。",
      "after": "文字未更新：%@ 已被移除，或其下載項目已刪除，因此其「編輯文字」已停止。",
@@ -1812,6 +2044,7 @@
     },
     {
      "key": "Text not updated: chapter %@ of the edited text of %@ %@, which TextMouth can't read safely. Flatten it and save again, or undo the change; the book keeps its old text until then.",
+     "id": "bookTextEdit.refused.nestedTooDeeply.chapter",
      "english": "Text not updated: chapter %1$@ of the edited text of %2$@ %3$@, which TextMouth can't read safely. Flatten it and save again, or undo the change; the book keeps its old text until then.",
      "before": "文字未更新：%2$@ 編輯後文字的第 %1$@ 章 %3$@，TextMouth 無法安全讀取。請將它攤平後再儲存，或還原更改；在此之前，書籍會保留舊的文字。",
      "after": "文字未更新：%2$@ 編輯後文字的第 %1$@ 章中，%3$@，TextMouth 無法安全讀取。請減少巢狀層級後再次儲存，或還原更改；在此之前，書籍會保留舊的文字。",
@@ -1819,6 +2052,7 @@
     },
     {
      "key": "Text not updated: the edited text of %@ %@, which TextMouth can't read safely. Flatten it and save again, or undo the change; the book keeps its old text until then.",
+     "id": "bookTextEdit.refused.nestedTooDeeply.updated",
      "english": "Text not updated: the edited text of %1$@ %2$@, which TextMouth can't read safely. Flatten it and save again, or undo the change; the book keeps its old text until then.",
      "before": "文字未更新：%1$@ 編輯後的文字 %2$@，TextMouth 無法安全讀取。請將它攤平後再儲存，或還原更改；在此之前，書籍會保留舊的文字。",
      "after": "文字未更新：%1$@ 編輯後的文字中，%2$@，TextMouth 無法安全讀取。請減少巢狀層級後再次儲存，或還原更改；在此之前，書籍會保留舊的文字。",
@@ -1826,6 +2060,7 @@
     },
     {
      "key": "TextMouth is finishing up before it quits: %@. It quits when that is done.",
+     "id": "quitHold.message",
      "english": "TextMouth is finishing up before it quits: %@. It quits when that is done.",
      "before": "TextMouth 正在完成收尾工作後才會結束：%@。完成後便會結束。",
      "after": "TextMouth 結束前正在完成收尾工作：%@。完成後便會結束。",
@@ -1833,6 +2068,7 @@
     },
     {
      "key": "TextMouth reads BRF and BRL files you add from now on with these characters, and recognizes Unicode braille patterns by itself. The Export dialog starts a BRF with them. A book keeps its import characters, which Book Information can change.",
+     "id": "brailleSettings.fileCodeCaption",
      "english": "TextMouth reads BRF and BRL files you add from now on with these characters, and recognizes Unicode braille patterns by itself. The Export dialog starts a BRF with them. A book keeps its import characters, which Book Information can change.",
      "before": "TextMouth 之後加入的 BRF 和 BRL 檔案會以這些字元讀取，並自動辨識 Unicode 點字圖樣。輸出對話框會以這些字元開始 BRF。每本書都保留其輸入時的字元，可在「書籍資訊」中更改。",
      "after": "你之後加入的 BRF 和 BRL 檔案，TextMouth 會以這些字元讀取，並自動辨識 Unicode 點字圖樣。輸出對話框中的 BRF 一開始也會使用這些字元。每本書都保留其輸入時的字元，可在「書籍資訊」中更改。",
@@ -1840,6 +2076,7 @@
     },
     {
      "key": "The %@ ends %@ into “%@”, which is only %@ long.",
+     "id": "audioParseError.sectionEndsPastEnd",
      "english": "The %1$@ ends %2$@ into “%3$@”, which is only %4$@ long.",
      "before": "%1$@ 在「%3$@」的 %2$@ 處結束，但該檔案只有 %4$@ 長。",
      "after": "%1$@ 在「%3$@」的 %2$@處結束，但該檔案只有 %4$@長。",
@@ -1847,6 +2084,7 @@
     },
     {
      "key": "The %@ page labelled %@",
+     "id": "readerPage.namedAtStart",
      "english": "The %1$@ page labelled %2$@",
      "before": "標示為 %2$@ 的頁面中的 %1$@",
      "after": "標示為 %2$@ 的頁面中的%1$@",
@@ -1854,6 +2092,7 @@
     },
     {
      "key": "The %@ starts %@ into “%@”, before the earlier %@, which starts %@ in.",
+     "id": "audioParseError.startsBeforeEarlierSection",
      "english": "The %1$@ starts %2$@ into “%3$@”, before the earlier %4$@, which starts %5$@ in.",
      "before": "%1$@ 在「%3$@」的 %2$@ 處開始，早於較前面的 %4$@，後者在 %5$@ 處開始。",
      "after": "%1$@ 在「%3$@」的 %2$@處開始，早於較前面的%4$@，後者在 %5$@處開始。",
@@ -1861,6 +2100,7 @@
     },
     {
      "key": "The %@ starts %@ into “%@”, which is only %@ long.",
+     "id": "audioParseError.sectionStartsPastEnd",
      "english": "The %1$@ starts %2$@ into “%3$@”, which is only %4$@ long.",
      "before": "%1$@ 在「%3$@」的 %2$@ 處開始，但該檔案只有 %4$@ 長。",
      "after": "%1$@ 在「%3$@」的 %2$@處開始，但該檔案只有 %4$@長。",
@@ -1868,6 +2108,7 @@
     },
     {
      "key": "The braille table writes an eight-dot cell, %@, but TextMouth's BRF and PEF files are six-dot only.",
+     "id": "eightDotCell.errorDescription.brailleTableWrites",
      "english": "The braille table writes an eight-dot cell, %@, but TextMouth's BRF and PEF files are six-dot only.",
      "before": "此點字表寫出八點點字格 %@，但 TextMouth 的 BRF 和 PEF 檔案只支援六點。",
      "after": "此點字表寫出八點點字格（%@），但 TextMouth 的 BRF 和 PEF 檔案只支援六點。",
@@ -1875,6 +2116,7 @@
     },
     {
      "key": "The cursor is %@.",
+     "id": "readerPage.cursorIs",
      "english": "The cursor is %@.",
      "before": "游標在 %@。",
      "after": "游標在%@。",
@@ -1882,6 +2124,7 @@
     },
     {
      "key": "The file %@ could not be read quickly enough.",
+     "id": "audioPlaybackFailure.message.stalled",
      "english": "The file %@ could not be read quickly enough.",
      "before": "無法足夠快地讀取檔案 %@。",
      "after": "讀取檔案 %@ 的速度不夠快。",
@@ -1889,6 +2132,7 @@
     },
     {
      "key": "The heading whose section ends the audio, with its subheadings, or the end of the book.",
+     "id": "speechExport.throughHint",
      "english": "The heading whose section ends the audio, with its subheadings, or the end of the book.",
      "before": "其區段結束音訊的標題（連同其子標題），或書籍結尾。",
      "after": "音訊結束的位置：某個標題的區段結尾（連同其子標題），或書籍結尾。",
@@ -1896,6 +2140,7 @@
     },
     {
      "key": "The reading list is empty. To add a book, choose Add to Reading List from its context menu, its VoiceOver actions, or the Library menu.",
+     "id": "readingList.emptyList",
      "english": "The reading list is empty. To add a book, choose Add to Reading List from its context menu, its VoiceOver actions, or the Library menu.",
      "before": "閱讀列表是空的。若要加入書籍，請從其內容選單、VoiceOver 動作或「書庫」選單中選擇「加入閱讀列表」。",
      "after": "閱讀列表是空的。若要加入書籍，請從其快速選單、VoiceOver 動作或「書庫」選單中選擇「加入閱讀列表」。",
@@ -1903,6 +2148,7 @@
     },
     {
      "key": "The text of this book %@, which TextMouth can't export safely. Choose Edit Text, flatten the nesting, and save; then export again.",
+     "id": "bookExport.nestedTooDeeply.flatten",
      "english": "The text of this book %@, which TextMouth can't export safely. Choose Edit Text, flatten the nesting, and save; then export again.",
      "before": "此書的文字 %@，TextMouth 無法安全輸出。請選擇「編輯文字」，將巢狀結構攤平並儲存，然後再次輸出。",
      "after": "此書的文字中，%@，TextMouth 無法安全輸出。請選擇「編輯文字」，減少巢狀層級並儲存，然後再次輸出。",
@@ -1910,6 +2156,7 @@
     },
     {
      "key": "Time at %@",
+     "id": "readerTime.timeFieldLabel.words",
      "english": "Time at %@",
      "before": "時間，以 %@ 計",
      "after": "時間，以%@計",
@@ -1917,6 +2164,7 @@
     },
     {
      "key": "To",
+     "id": "speechExport.throughLabel",
      "english": "To",
      "before": "至",
      "after": "終點",
@@ -1924,6 +2172,7 @@
     },
     {
      "key": "Two presses, %@ apart. Set the time above %@ to count them as one.",
+     "id": "shortcutsSettings.trialResult.tooFarApart.above",
      "english": "Two presses, %1$@ apart. Set the time above %2$@ to count them as one.",
      "before": "按了兩次，相隔 %1$@。請將時間設定為高於 %2$@，才會算作一次。",
      "after": "按了兩次，相隔 %1$@。請將時間設定為高於 %2$@，才會算作連按兩次。",
@@ -1931,6 +2180,7 @@
     },
     {
      "key": "Type straight quotation marks: in TextEdit, turn off Smart Quotes under Edit, Substitutions.",
+     "id": "bookManifestEdit.explanation.quotation",
      "english": "Type straight quotation marks: in TextEdit, turn off Smart Quotes under Edit, Substitutions.",
      "before": "請輸入直引號：在「文字編輯」中，於「編輯」>「替換」下關閉「智慧型引號」。",
      "after": "請輸入直引號：在「文字編輯」的「編輯」選單中，於「替代」下關閉「智慧型引號」。",
@@ -1938,6 +2188,7 @@
     },
     {
      "key": "Up Arrow",
+     "id": "keyBinding.localizedKeyWords.upArrow",
      "english": "Up Arrow",
      "before": "上箭頭",
      "after": "向上箭頭",
@@ -1945,6 +2196,7 @@
     },
     {
      "key": "Voice: %@ (%@), %@, %@ quality",
+     "id": "speechRefusal.voice.quality",
      "english": "Voice: %1$@ (%2$@), %3$@, %4$@ quality",
      "before": "語音：%1$@（%2$@），%3$@，%4$@ 品質",
      "after": "語音：%1$@（%2$@），%3$@，%4$@",
@@ -1952,6 +2204,7 @@
     },
     {
      "key": "Where Am I? Announces current position in the book",
+     "id": "readerWhereAmIToolbarButton.spokenLabel",
      "english": "Where Am I? Announces current position in the book",
      "before": "我在哪裡？宣告書籍中的目前位置",
      "after": "我在哪裡？播報書籍中的目前位置",
@@ -1959,6 +2212,7 @@
     },
     {
      "key": "Works in %@",
+     "id": "shortcutsSettings.worksInSentence",
      "english": "Works in %@",
      "before": "在 %@ 中有效",
      "after": "在%@中有效",
@@ -1966,6 +2220,7 @@
     },
     {
      "key": "at %@ of %@ at %@",
+     "id": "readerTime.copiedPlace.words",
      "english": "at %1$@ of %2$@ at %3$@",
      "before": "位於 %1$@，全長 %2$@，速度 %3$@",
      "after": "位於 %1$@，全長 %2$@，速度%3$@",
@@ -1973,6 +2228,7 @@
     },
     {
      "key": "dot %@",
+     "id": "brailleCells.dotsInWords.oneDot",
      "english": "dot %@",
      "before": "%@ 點",
      "after": "點 %@",
@@ -1980,6 +2236,7 @@
     },
     {
      "key": "dots %@",
+     "id": "brailleCells.dotsInWords.other",
      "english": "dots %@",
      "before": "%@ 點",
      "after": "點 %@",
@@ -1987,6 +2244,7 @@
     },
     {
      "key": "it %@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the book opens.",
+     "id": "bookTextEdit.heldReason.nestedTooDeeply.opens",
      "english": "it %@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the book opens.",
      "before": "它 %@，TextMouth 無法安全讀取。請將它攤平後再儲存，或還原更改，書籍便會打開。",
      "after": "其中%@，TextMouth 無法安全讀取。請減少巢狀層級後再次儲存，或還原更改，書籍便會打開。",
@@ -1994,6 +2252,7 @@
     },
     {
      "key": "it %@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the text shows.",
+     "id": "bookTextEdit.heldReason.nestedTooDeeply.shows",
      "english": "it %@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the text shows.",
      "before": "它 %@，TextMouth 無法安全讀取。請將它攤平後再儲存，或還原更改，文字便會顯示。",
      "after": "其中%@，TextMouth 無法安全讀取。請減少巢狀層級後再次儲存，或還原更改，文字便會顯示。",
@@ -2001,6 +2260,7 @@
     },
     {
      "key": "its chapter %@ %@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the book opens.",
+     "id": "bookTextEdit.heldReason.nestedTooDeeply.chapter",
      "english": "its chapter %1$@ %2$@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the book opens.",
      "before": "它的第 %1$@ 章 %2$@，TextMouth 無法安全讀取。請將它攤平後再儲存，或還原更改，書籍便會打開。",
      "after": "它的第 %1$@ 章中，%2$@，TextMouth 無法安全讀取。請減少巢狀層級後再次儲存，或還原更改，書籍便會打開。",
@@ -2008,6 +2268,7 @@
     },
     {
      "key": "its chapter %@ %@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the text shows.",
+     "id": "bookTextEdit.nestedTooDeeply.chapterShows",
      "english": "its chapter %1$@ %2$@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the text shows.",
      "before": "它的第 %1$@ 章 %2$@，TextMouth 無法安全讀取。請將它攤平後再儲存，或還原更改，文字便會顯示。",
      "after": "它的第 %1$@ 章中，%2$@，TextMouth 無法安全讀取。請減少巢狀層級後再次儲存，或還原更改，文字便會顯示。",
@@ -2015,6 +2276,7 @@
     },
     {
      "key": "on the %@ page labelled %@",
+     "id": "readerPage.cursorPlace.labelled",
      "english": "on the %1$@ page labelled %2$@",
      "before": "標示為 %2$@ 的頁面中的 %1$@",
      "after": "標示為 %2$@ 的頁面中的%1$@",
@@ -2022,6 +2284,7 @@
     },
     {
      "key": "the file %@ could not be read quickly enough",
+     "id": "audioPlaybackFailure.problem.stalled",
      "english": "the file %@ could not be read quickly enough",
      "before": "無法足夠快地讀取檔案 %@",
      "after": "讀取檔案 %@ 的速度不夠快",
@@ -2029,6 +2292,7 @@
     },
     {
      "key": "“%@” uses XML entities of its own, which TextMouth does not read.",
+     "id": "pronunciationLexicon.declaresEntities",
      "english": "“%@” uses XML entities of its own, which TextMouth does not read.",
      "before": "「%@」使用它自己的 XML 實體，TextMouth 不會讀取。",
      "after": "「%@」使用自行定義的 XML 實體，TextMouth 無法讀取。",
@@ -2046,6 +2310,7 @@
    "fixes": [
     {
      "key": "Choose the language in Settings, Playback, Transcription.",
+     "id": "transcription.languageHint",
      "english": "Choose the language in Settings, Playback, Transcription.",
      "before": "請在「設定」>「播放控制」>「語音轉文字」中選擇語言。",
      "after": "請在「設定」的「播放控制」中，於「語音轉文字」選擇語言。",
@@ -2053,6 +2318,7 @@
     },
     {
      "key": "TextMouth isn't allowed to post notifications. Turn them on in System Settings, Notifications, TextMouth.",
+     "id": "feed.notificationsRefused",
      "english": "TextMouth isn't allowed to post notifications. Turn them on in System Settings, Notifications, TextMouth.",
      "before": "TextMouth 未獲允許發送通知。請在「系統設定」>「通知」>「TextMouth」中開啟。",
      "after": "TextMouth 未獲允許發送通知。請在「系統設定」的「通知」中，於「TextMouth」開啟。",
@@ -2060,6 +2326,7 @@
     },
     {
      "key": "TextMouth isn't allowed to use the microphone. Turn it on in System Settings, Privacy & Security, Microphone.",
+     "id": "audioInputPermissionError.denied",
      "english": "TextMouth isn't allowed to use the microphone. Turn it on in System Settings, Privacy & Security, Microphone.",
      "before": "TextMouth 未獲允許使用麥克風。請在「系統設定」>「隱私權與安全性」>「麥克風」中開啟。",
      "after": "TextMouth 未獲允許使用麥克風。請在「系統設定」的「隱私權與安全性」中，於「麥克風」開啟。",
@@ -2067,6 +2334,7 @@
     },
     {
      "key": "When on, a deleted book's files go to the Trash, where you can recover them until the Trash is emptied.",
+     "id": "removalPreferences.trashPreference.recover",
      "english": "When on, a deleted book's files go to the Trash, where you can recover them until the Trash is emptied.",
      "before": "開啟時，已刪除書籍的檔案會移到垃圾桶，在清倒垃圾桶之前都可以復原。",
      "after": "開啟時，已刪除書籍的檔案會移到垃圾桶，在清空垃圾桶之前都可以復原。",
@@ -2074,6 +2342,7 @@
     },
     {
      "key": "its files go to the Trash, where you can recover them until the Trash is emptied",
+     "id": "removalMode.filesClause.trashWhereRecoverEmptied",
      "english": "its files go to the Trash, where you can recover them until the Trash is emptied",
      "before": "其檔案會移到垃圾桶，在清倒垃圾桶之前都可以復原",
      "after": "其檔案會移到垃圾桶，在清空垃圾桶之前都可以復原",
@@ -2081,6 +2350,7 @@
     },
     {
      "key": "their files go to the Trash, where you can recover them until the Trash is emptied",
+     "id": "removalMode.filesClause.trashRecoverEmptied",
      "english": "their files go to the Trash, where you can recover them until the Trash is emptied",
      "before": "它們的檔案會移到垃圾桶，在清倒垃圾桶之前都可以復原",
      "after": "它們的檔案會移到垃圾桶，在清空垃圾桶之前都可以復原",
