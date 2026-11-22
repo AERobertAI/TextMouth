@@ -145,7 +145,7 @@ enum InterfaceLanguage {
     /// from an explicit list because the bundle keeps its answer from launch. English when none matches: English leads the
     /// list when the bundle's languages are not given, so it is what no match falls back to.
     static func systemLanguage(preferredLanguages: [String], localizations: [String]? = nil) -> String {
-        let bundled = (localizations ?? Bundle.main.localizations).filter { $0 != "Base" }
+        let bundled = (localizations ?? Bundle.main.localizations).filter { $0 != "Base" } // l10n: no (the bundle's name for its language-neutral resources)
         let carried = bundled.isEmpty ? ["en"] + PluralRules.categories.keys.filter { $0 != "en" }.sorted() : bundled
         return resolve(Bundle.preferredLocalizations(from: carried, forPreferences: preferredLanguages).first)
     }
