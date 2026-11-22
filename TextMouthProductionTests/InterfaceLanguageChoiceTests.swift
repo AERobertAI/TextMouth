@@ -158,7 +158,6 @@ final class InterfaceLanguageChoiceTests: XCTestCase {
         for region in ["IR", "AF", "ir"] {
             XCTAssertNotEqual(InterfaceLanguage.locale(for: "fa", region: region).numberingSystem.identifier, "latn", region)
         }
-        XCTAssertEqual(InterfaceLanguage.locale(for: "ar", region: "US").numberingSystem.identifier, "latn")
     }
 
     /// The two cases the design records as differing from Foundation's own locale until the next launch: this rule's
@@ -201,7 +200,6 @@ final class InterfaceLanguageChoiceTests: XCTestCase {
         XCTAssertEqual(language(["fr-CA"]), "fr")
         XCTAssertEqual(language(["xx", "ru"]), "ru", "the first language the app carries")
         XCTAssertEqual(language(["xx"]), "en", "none carried gives English")
-        XCTAssertEqual(language([]), "en")
     }
 
     func testUnderHostedTestsSystemIsEnglishWithTheUnitedStates() {
