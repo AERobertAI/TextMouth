@@ -47,9 +47,11 @@ final class LanguagePickerUITests: TextMouthUITestCase {
         // the whole app, whose swipe can drag the sheet itself, and stops if the sheet is gone.
         for _ in 0..<15 where !(choice.exists && choice.isHittable) {
             guard app.navigationBars[Self.row].exists, let list = app.collectionViews.allElementsBoundByIndex.last else { break }
-            list.swipeUp()
+            // Slowly, so the list's momentum does not carry a row past the screen between two looks.
+            list.swipeUp(velocity: .slow)
         }
-        XCTAssertTrue(choice.exists && choice.isHittable, "No such choice \(predicate):\n\(app.debugDescription)")
+        let seen = app.buttons.allElementsBoundByIndex.map(\.label).joined(separator: " | ")
+        XCTAssertTrue(choice.exists && choice.isHittable, "No such choice \(predicate). The buttons now made: \(seen)")
         choice.tap()
         XCTAssertTrue(app.navigationBars[Self.row].waitForNonExistence(timeout: Self.patience), "The choices stayed open")
     }
