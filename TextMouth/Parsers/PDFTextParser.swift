@@ -25,19 +25,19 @@ enum PDFParserError: LocalizedError, LogDescribing {
         switch self {
         case .fileNotFound(let path):
             // Translators: Why a PDF could not be imported: there is no file at its path. %@ is the path.
-            return String(localized: "PDF file not found at: \(path)")
+            return InterfaceText.line("pdfParserError.fileNotFound", "PDF file not found at: \(path)")
         case .cannotOpenPDF:
             // Translators: Why a PDF could not be imported: PDFKit could not open it.
-            return String(localized: "The PDF file could not be opened.")
+            return InterfaceText.line("pdfParserError.cannotOpenPDF", "The PDF file could not be opened.")
         case .passwordProtected:
             // Translators: Why a PDF could not be imported: it is locked with a password TextMouth does not have.
-            return String(localized: "This PDF needs a password to open.")
+            return InterfaceText.line("pdfParserError.passwordProtected", "This PDF needs a password to open.")
         case .noTextContent:
             // Translators: Why a PDF could not be imported: none of its pages holds text.
-            return String(localized: "No text content could be extracted from the PDF.")
+            return InterfaceText.line("pdfParserError.noTextContent", "No text content could be extracted from the PDF.")
         case .ocrFailed(let reason):
             // Translators: Why a PDF could not be imported: its pages are pictures, and text recognition (OCR) could not run. %@ is the reason, a phrase in English with no full stop.
-            return String(localized: "No text could be read from the PDF: it has no embedded text, and OCR could not run (\(reason)).")
+            return InterfaceText.line("pdfParserError.ocrFailed", "No text could be read from the PDF: it has no embedded text, and OCR could not run (\(reason)).")
         }
     }
 

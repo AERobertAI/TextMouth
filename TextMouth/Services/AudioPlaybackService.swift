@@ -449,7 +449,7 @@ enum AudioSpeed {
     static func spokenLabel(for speed: Double) -> String {
         let number = formattedNumber(normalized(speed))
         // Translators: What VoiceOver and braille say for the playback speed of an audiobook, such as "1.25 times speed". %@ is the speed's number, such as 1.25.
-        return String(localized: "\(number) times speed")
+        return InterfaceText.line("audioSpeed.spokenLabel", "\(number) times speed")
     }
 
     /// Accessibility label for a button that moves the speed by `step`,
@@ -458,10 +458,10 @@ enum AudioSpeed {
         let number = formattedNumber(step)
         if increasing {
             // Translators: Accessibility label of the button that raises the audio speed. %@ is the size of one step, such as 0.1.
-            return String(localized: "Increase audio speed by \(number) times")
+            return InterfaceText.line("audioSpeed.stepButtonLabel.increase", "Increase audio speed by \(number) times")
         }
         // Translators: Accessibility label of the button that lowers the audio speed. %@ is the size of one step, such as 0.1.
-        return String(localized: "Decrease audio speed by \(number) times")
+        return InterfaceText.line("audioSpeed.stepButtonLabel.decrease", "Decrease audio speed by \(number) times")
     }
 
     /// Accessibility hint for an adjustable control that moves in steps of
@@ -469,7 +469,7 @@ enum AudioSpeed {
     static func stepHint(_ step: Double) -> String {
         let number = formattedNumber(step)
         // Translators: Accessibility hint of the audio speed control that adjusts in steps. %@ is the size of one step, such as 0.05.
-        return String(localized: "Changes the speed in steps of \(number) times")
+        return InterfaceText.line("audioSpeed.stepHint", "Changes the speed in steps of \(number) times")
     }
 }
 
@@ -527,22 +527,22 @@ struct AudioPlaybackFailure: Error, Equatable, Sendable {
         switch reason {
         case .fileMissing:
             // Translators: A clause that ends a longer sentence about an audio file that cannot play: the file is not there. %@ is the file's name, such as 03.mp3.
-            return String(localized: "the file \(name) is missing")
+            return InterfaceText.line("audioPlaybackFailure.problem.fileMissing", "the file \(name) is missing")
         case .fileUnreadable:
             // Translators: A clause that ends a longer sentence about an audio file that cannot play: it cannot be read as audio. %@ is the file's name, such as 03.mp3.
-            return String(localized: "the file \(name) is damaged, unreadable, or not an audio file")
+            return InterfaceText.line("audioPlaybackFailure.problem.fileUnreadable", "the file \(name) is damaged, unreadable, or not an audio file")
         case .failedDuringPlayback:
             // Translators: A clause that ends a longer sentence about an audio file that cannot play: it failed while playing. %@ is the file's name, such as 03.mp3.
-            return String(localized: "the file \(name) failed partway through")
+            return InterfaceText.line("audioPlaybackFailure.problem.failedPartway", "the file \(name) failed partway through")
         case .stalled:
             // Translators: A clause that ends a longer sentence about an audio file that cannot play: the disk was too slow. %@ is the file's name, such as 03.mp3.
-            return String(localized: "the file \(name) could not be read quickly enough")
+            return InterfaceText.line("audioPlaybackFailure.problem.stalled", "the file \(name) could not be read quickly enough")
         case .stoppedResponding:
             // Translators: A clause that ends a longer sentence about an audio file that cannot play: playback stopped responding. %@ is the file's name, such as 03.mp3.
-            return String(localized: "the file \(name) stopped responding")
+            return InterfaceText.line("audioPlaybackFailure.problem.stoppedResponding", "the file \(name) stopped responding")
         case .memoryRunaway:
             // Translators: A clause that ends a longer sentence about an audio file that cannot play: TextMouth stopped it to protect the Mac. %@ is the file's name, such as 03.mp3.
-            return String(localized: "the file \(name) was stopped because TextMouth's memory grew too large")
+            return InterfaceText.line("audioPlaybackFailure.problem.memoryRunaway", "the file \(name) was stopped because TextMouth's memory grew too large")
         }
     }
 
@@ -568,22 +568,22 @@ struct AudioPlaybackFailure: Error, Equatable, Sendable {
         switch reason {
         case .fileMissing:
             // Translators: A sentence telling an audio file is not there. %@ is the file's name, such as 03.mp3.
-            return String(localized: "The file \(name) is missing.")
+            return InterfaceText.line("audioPlaybackFailure.message.fileMissing", "The file \(name) is missing.")
         case .fileUnreadable:
             // Translators: A sentence telling an audio file cannot be read as audio. %@ is the file's name, such as 03.mp3.
-            return String(localized: "The file \(name) is damaged, unreadable, or not an audio file.")
+            return InterfaceText.line("audioPlaybackFailure.message.fileUnreadable", "The file \(name) is damaged, unreadable, or not an audio file.")
         case .failedDuringPlayback:
             // Translators: A sentence telling an audio file failed while playing. %@ is the file's name, such as 03.mp3.
-            return String(localized: "The file \(name) failed partway through.")
+            return InterfaceText.line("audioPlaybackFailure.message.failedPartway", "The file \(name) failed partway through.")
         case .stalled:
             // Translators: A sentence telling an audio file could not be read fast enough to play. %@ is the file's name, such as 03.mp3.
-            return String(localized: "The file \(name) could not be read quickly enough.")
+            return InterfaceText.line("audioPlaybackFailure.message.stalled", "The file \(name) could not be read quickly enough.")
         case .stoppedResponding:
             // Translators: A sentence telling playback of an audio file stopped responding. %@ is the file's name, such as 03.mp3.
-            return String(localized: "The file \(name) stopped responding.")
+            return InterfaceText.line("audioPlaybackFailure.message.stoppedResponding", "The file \(name) stopped responding.")
         case .memoryRunaway:
             // Translators: A sentence telling TextMouth stopped an audio file to protect the Mac. %@ is the file's name, such as 03.mp3.
-            return String(localized: "The file \(name) was stopped because TextMouth's memory grew too large.")
+            return InterfaceText.line("audioPlaybackFailure.message.memoryRunaway", "The file \(name) was stopped because TextMouth's memory grew too large.")
         }
     }
 

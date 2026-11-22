@@ -256,9 +256,9 @@ struct PasswordProtectedDocument: LocalizedError, LogDescribing, Equatable {
     var errorDescription: String? {
         SentenceWording.joined([
             // Translators: First sentence of why a document could not be imported: it is locked with a password TextMouth does not have.
-            String(localized: "This document is protected by a password."),
+            InterfaceText.line("passwordProtectedDocument.error.locked", "This document is protected by a password."),
             // Translators: Last sentence of why a password-protected document could not be imported: what to do.
-            String(localized: "Save a copy without the password, then import that copy."),
+            InterfaceText.line("passwordProtectedDocument.error.without", "Save a copy without the password, then import that copy."),
         ])
     }
 

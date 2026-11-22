@@ -24,13 +24,13 @@ enum KFXError: LocalizedError, LogDescribing, Equatable {
         switch self {
         case .kindleCreatePackage:
             // Translators: Why a file could not be imported: it is a package that Kindle Create writes for an author, which TextMouth does not read yet. Kindle Create is a program's name.
-            return String(localized: "This file is a Kindle Create package, which TextMouth can't read yet.")
+            return InterfaceText.line("kfxError.kindleCreatePackage", "This file is a Kindle Create package, which TextMouth can't read yet.")
         case .noFlowingText:
             // Translators: Why a Kindle (KFX) book could not be imported: its pages are fixed layouts or pictures, as in a comic or a print replica, with no text that flows.
-            return String(localized: "This Kindle book has no flowing text, as in a comic or print replica, so TextMouth can't read it.")
+            return InterfaceText.line("kfxError.noFlowingText", "This Kindle book has no flowing text, as in a comic or print replica, so TextMouth can't read it.")
         case .partOfABook:
             // Translators: Why a Kindle (KFX) file could not be imported: it is a part of a book, such as the metadata file beside the main file, and what to do. .kfx is a file extension and stays as it is.
-            return String(localized: "This file holds only part of a Kindle book. Open the book's main .kfx file.")
+            return InterfaceText.line("kfxError.partOfABook", "This file holds only part of a Kindle book. Open the book's main .kfx file.")
         }
     }
 

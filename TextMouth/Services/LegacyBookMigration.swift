@@ -119,37 +119,37 @@ enum LegacyMigrationError: LocalizedError, LogDescribing, Equatable {
         switch self {
         case .originalMissing(let path):
             // Translators: Why a book could not move into the current library format. %@ is the path where the original file should be.
-            return String(localized: "The original file is missing from \(path).")
+            return InterfaceText.line("legacyMigrationError.originalMissing", "The original file is missing from \(path).")
         case .originalNotAFile(let path):
             // Translators: Why a book could not move into the current library format. %@ is the path of the original.
-            return String(localized: "The original at \(path) is a folder or link, so a copy of it cannot be checked.")
+            return InterfaceText.line("legacyMigrationError.originalNotAFile", "The original at \(path) is a folder or link, so a copy of it cannot be checked.")
         case .originalUnreadable(let path, let reason):
             return SentenceWording.joined([
                 // Translators: First sentence of why a book could not move into the current library format. %@ is the path of the original.
-                String(localized: "The original file at \(path) could not be read to check a copy of it."),
+                InterfaceText.line("legacyMigrationError.originalUnreadable", "The original file at \(path) could not be read to check a copy of it."),
                 reason,
             ])
         case .copyFailed(let reason):
             return SentenceWording.joined([
                 // Translators: First sentence of why a book could not move into the current library format. "It" is the book's original file.
-                String(localized: "It could not be copied into the library."),
+                InterfaceText.line("legacyMigrationError.copyFailed", "It could not be copied into the library."),
                 reason,
             ])
         case .copyDiffers:
             // Translators: Why a book could not move into the current library format: the copy differed from the original.
-            return String(localized: "The copy made in the library did not match the original, so the copy was discarded.")
+            return InterfaceText.line("legacyMigrationError.copyDiffers", "The copy made in the library did not match the original, so the copy was discarded.")
         case .noUnusedPackageName:
             // Translators: Why a book could not move into the current library format. "Its" is the book's.
-            return String(localized: "Its package name was taken by other content, and no unused name could be found.")
+            return InterfaceText.line("legacyMigrationError.noUnusedPackageName", "Its package name was taken by other content, and no unused name could be found.")
         case .metadataNotSaved(let reason):
             return SentenceWording.joined([
                 // Translators: First sentence of why a book could not move into the current library format. bookInfo.json is a file name and stays as written.
-                String(localized: "Its book information file, bookInfo.json, could not be saved."),
+                InterfaceText.line("legacyMigrationError.metadataNotSaved", "Its book information file, bookInfo.json, could not be saved."),
                 reason,
             ])
         case .trashPreferenceUnavailable:
             // Translators: Why a book's original was kept: TextMouth could not read the choice about the Trash. "It" is the original file.
-            return String(localized: "TextMouth could not check whether to move it to the Trash.")
+            return InterfaceText.line("legacyMigrationError.trashPreferenceUnavailable", "TextMouth could not check whether to move it to the Trash.")
         }
     }
 
@@ -239,20 +239,20 @@ struct LegacyMigrationReport: Equatable {
         var sections: [String] = []
         if !failures.isEmpty {
             // Translators: First sentence of the alert about books that could not move into the current library format. %@ is a count of books, such as "3 books".
-            let intro = String(localized: "TextMouth could not move \(CountWording.books(failures.count)) to the current library format.")
+            let intro = InterfaceText.line("legacyMigrationReport.userSummary.move", "TextMouth could not move \(CountWording.books(failures.count)) to the current library format.")
             let unchanged = failures.count == 1
                 // Translators: Second sentence of the alert about one book that could not move into the current library format.
-                ? String(localized: "Its original file was not changed.")
+                ? InterfaceText.line("legacyMigrationReport.userSummary.file", "Its original file was not changed.")
                 // Translators: Second sentence of the alert about several books that could not move into the current library format.
-                : String(localized: "Their original files were not changed.")
+                : InterfaceText.line("legacyMigrationReport.userSummary.their", "Their original files were not changed.")
             sections.append(SentenceWording.joined([intro, unchanged]) + "\n" + Self.lines(failures))
         }
         if !warnings.isEmpty {
             let intro = warnings.count == 1
                 // Translators: Lead-in of the alert about one book that moved into the current library format with a problem. %@ is a count of books, such as "1 book". The book's line follows.
-                ? String(localized: "TextMouth moved \(CountWording.books(warnings.count)) to the current library format, but with a problem:")
+                ? InterfaceText.line("legacyMigrationReport.userSummary.problem", "TextMouth moved \(CountWording.books(warnings.count)) to the current library format, but with a problem:")
                 // Translators: Lead-in of the alert about several books that moved into the current library format with problems. %@ is a count of books, such as "3 books". The books' lines follow.
-                : String(localized: "TextMouth moved \(CountWording.books(warnings.count)) to the current library format, but with problems:")
+                : InterfaceText.line("legacyMigrationReport.userSummary.problems", "TextMouth moved \(CountWording.books(warnings.count)) to the current library format, but with problems:")
             sections.append(intro + "\n" + Self.lines(warnings))
         }
         return sections.isEmpty ? nil : sections.joined(separator: "\n\n")
@@ -289,7 +289,7 @@ struct LegacyMigrationReport: Equatable {
         let unnamed = issues.count - booksNamedInAlert
         if unnamed > 0 {
             // Translators: Last line of the alert about books that could not move into the current library format: how many more books there are than the alert names, and where the log names them. %1$lld is how many more; %2$@ is the path of the debug log file.
-            lines.append(String(localized: "Plus \(unnamed) more books, all named in the debug log at \(TextMouthPaths.debugLogFile.path)."))
+            lines.append(InterfaceText.line("legacyMigrationReport.lines", "Plus \(number: unnamed) more books, all named in the debug log at \(TextMouthPaths.debugLogFile.path)."))
         }
         return lines.joined(separator: "\n")
     }
@@ -444,7 +444,7 @@ extension FileImportService {
             // no separate original: removing it would remove the only copy.
         } else if let occupiedPackage = copy.occupiedPackage {
             // Translators: Warning about a book that moved into the current library format. %1$@ is the name of the package that already held other content; %2$@ is the name of the new package; %3$@ is the path where the original file was kept.
-            warnings.append(String(localized: "The library already had different content under its package name, \(occupiedPackage.lastPathComponent), so it was stored in a new package, \(copy.packageName), and its original file was kept at \(original.path)."))
+            warnings.append(InterfaceText.line("fileImportService.libraryAlreadyHad", "The library already had different content under its package name, \(occupiedPackage.lastPathComponent), so it was stored in a new package, \(copy.packageName), and its original file was kept at \(original.path)."))
             logWarnings.append("the package name \(occupiedPackage.lastPathComponent) was taken; stored in \(copy.packageName)") // l10n: no (debug log text)
         } else if let removeOriginal {
             do {
@@ -453,7 +453,7 @@ extension FileImportService {
             } catch {
                 warnings.append(SentenceWording.joined([
                     // Translators: First sentence of a warning about a book that moved into the current library format. %@ is the path of the original file.
-                    String(localized: "Its original file could not be removed, so it was kept at \(original.path)."),
+                    InterfaceText.line("fileImportService.originalNotRemoved", "Its original file could not be removed, so it was kept at \(original.path)."),
                     error.localizedDescription,
                 ]))
                 logWarnings.append("the original could not be removed: \(error.localizedDescription)") // l10n: no (debug log text)
@@ -747,7 +747,7 @@ extension FileImportService {
         }
         guard let generated else {
             // Translators: Warning about a book that moved into the current library format: its text will be prepared later.
-            return (String(localized: "Its text could not be prepared for reading yet; TextMouth will try again later."),
+            return (InterfaceText.line("fileImportService.buildTextCache.prepared", "Its text could not be prepared for reading yet; TextMouth will try again later."),
                     "the text could not be prepared yet") // l10n: no (debug log text)
         }
         if let movedPlaces = generated.movedPlaces {
@@ -758,7 +758,7 @@ extension FileImportService {
         } catch {
             return (SentenceWording.joined([
                         // Translators: First sentence of a warning about a book that moved into the current library format: its reading index will be built again later.
-                        String(localized: "Its reading index could not be saved, so TextMouth will build it again later."),
+                        InterfaceText.line("fileImportService.buildTextCache.index", "Its reading index could not be saved, so TextMouth will build it again later."),
                         error.localizedDescription,
                     ]),
                     "the reading index could not be saved: \(error.localizedDescription)") // l10n: no (debug log text)

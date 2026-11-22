@@ -39,10 +39,10 @@ enum WebArchiveReader {
             switch self {
             case .notAWebArchive:
                 // Translators: Why a file could not be imported as a web archive (.webarchive, which Safari saves): it does not hold a main page.
-                return String(localized: "This file is not a web archive TextMouth can read. It may be damaged, or another kind of file.")
+                return InterfaceText.line("failure.notAWebArchive", "This file is not a web archive TextMouth can read. It may be damaged, or another kind of file.")
             case .notAPage(let mimeType):
                 // Translators: Why a web archive (.webarchive, which Safari saves) could not be imported: its main file is not a page or text, but a picture or a PDF. %@ is the file's media type, such as image/png, which stays as it is.
-                return String(localized: "This web archive holds a file of the type “\(mimeType)”, not a web page or text, so it has nothing to read.")
+                return InterfaceText.line("failure.notAPage", "This web archive holds a file of the type “\(mimeType)”, not a web page or text, so it has nothing to read.")
             }
         }
 

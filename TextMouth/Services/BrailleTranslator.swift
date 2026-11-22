@@ -93,22 +93,22 @@ enum BrailleTranslator {
             // version is a version identifier: neither is translated.
             case let .unknownTable(name):
                 // Translators: Why a braille translation was refused: no braille table has this name. %@ is the table's name as liblouis or macOS gives it.
-                return String(localized: "TextMouth has no braille table named \u{201C}\(name)\u{201D}.")
+                return InterfaceText.line("failure.unknownTable", "TextMouth has no braille table named \u{201C}\(name)\u{201D}.")
             case let .stopped(reason):
                 // Translators: Why a braille translation ended. %@ is the reason, a clause such as "an earlier call was abandoned", which stays English until the engine's sentences convert.
-                return String(localized: "TextMouth stopped the braille translation because \(reason).")
+                return InterfaceText.line("failure.stopped.translation", "TextMouth stopped the braille translation because \(reason).")
             case .failed:
                 // Translators: Why a braille translation failed, when no more is known.
-                return String(localized: "TextMouth could not translate this braille.")
+                return InterfaceText.line("failure.failed", "TextMouth could not translate this braille.")
             case let .uncheckedTable(name, why):
                 // Translators: Why a braille translation was refused: one of this Mac's braille tables could not be checked. %1$@ is the table's name as macOS gives it and %2$@ the reason, which stays English.
-                return String(localized: "TextMouth could not check this Mac's braille table \u{201C}\(name)\u{201D}: \(why). Try again.")
+                return InterfaceText.line("failure.uncheckedTable", "TextMouth could not check this Mac's braille table \u{201C}\(name)\u{201D}: \(why). Try again.")
             case let .changedTable(name, then, now?):
                 // Translators: Why a book is not read with its braille table again: the table changed. %1$@ is the table's name as macOS gives it, %2$@ the liblouis version the book was read with, and %3$@ the version now.
-                return String(localized: "This Mac's braille table \u{201C}\(name)\u{201D} changed from liblouis \(then) to \(now) since the book was read, so TextMouth keeps the book's text as it was.")
+                return InterfaceText.line("failure.changedTable.brailleLiblouisSince", "This Mac's braille table \u{201C}\(name)\u{201D} changed from liblouis \(then) to \(now) since the book was read, so TextMouth keeps the book's text as it was.")
             case let .changedTable(name, then, nil):
                 // Translators: Why a book is not read with its braille table again: the table may have changed. %1$@ is the table's name as macOS gives it and %2$@ the liblouis version the book was read with.
-                return String(localized: "This Mac's braille table \u{201C}\(name)\u{201D} may have changed since liblouis \(then) read the book, so TextMouth keeps the book's text as it was.")
+                return InterfaceText.line("failure.changedTable.brailleSinceLiblouis", "This Mac's braille table \u{201C}\(name)\u{201D} may have changed since liblouis \(then) read the book, so TextMouth keeps the book's text as it was.")
             }
         }
     }

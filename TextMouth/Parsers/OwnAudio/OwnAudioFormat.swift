@@ -17,11 +17,11 @@ enum OwnAudioFormat: String, CaseIterable, Equatable, Sendable {
         switch self {
         case .trueAudio:
             // Translators: The name of an audio format, in a failure to read a file and in Book Information: True Audio, in .tta files. A format's own name, usually kept as it is.
-            return String(localized: "True Audio")
+            return InterfaceText.line("ownAudioFormat.displayName.trueAudio", "True Audio")
         case .wavPack: return "WavPack" // l10n: no (a format's own name)
         case .monkeysAudio:
             // Translators: The name of an audio format, in a failure to read a file and in Book Information: Monkey's Audio, in .ape files. A format's own name, usually kept as it is.
-            return String(localized: "Monkey's Audio")
+            return InterfaceText.line("ownAudioFormat.displayName.monkeysAudio", "Monkey's Audio")
         }
     }
 

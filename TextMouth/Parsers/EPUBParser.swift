@@ -30,25 +30,25 @@ enum EPUBParserError: LocalizedError, LogDescribing {
         switch self {
         case .invalidArchive:
             // Translators: Why an EPUB book could not be imported: it could not be opened as a ZIP archive.
-            return String(localized: "The EPUB file could not be opened as a ZIP archive.")
+            return InterfaceText.line("epubParserError.invalidArchive", "The EPUB file could not be opened as a ZIP archive.")
         case .fileNotFound(let path):
             // Translators: Why an EPUB book could not be imported: there is no file at its path. %@ is the path.
-            return String(localized: "The EPUB file was not found at: \(path)")
+            return InterfaceText.line("epubParserError.fileNotFound", "The EPUB file was not found at: \(path)")
         case .missingContainer:
             // Translators: Why an EPUB book could not be imported: it lacks the file that names its package document. META-INF/container.xml is a file's path and stays as it is.
-            return String(localized: "The EPUB is missing META-INF/container.xml.")
+            return InterfaceText.line("epubParserError.missingContainer", "The EPUB is missing META-INF/container.xml.")
         case .missingOPF:
             // Translators: Why an EPUB book could not be imported: the package document (an OPF file) that its container names is not in it.
-            return String(localized: "The EPUB is missing its package document (OPF file).")
+            return InterfaceText.line("epubParserError.missingOPF", "The EPUB is missing its package document (OPF file).")
         case .invalidOPF:
             // Translators: Why an EPUB book could not be imported: its package document (an OPF file) could not be read.
-            return String(localized: "The EPUB package document could not be parsed.")
+            return InterfaceText.line("epubParserError.invalidOPF", "The EPUB package document could not be parsed.")
         case .missingSpine:
             // Translators: Why an EPUB book could not be imported: its package document lists no reading order, which EPUB calls the spine.
-            return String(localized: "The EPUB has no reading order (spine).")
+            return InterfaceText.line("epubParserError.missingSpine", "The EPUB has no reading order (spine).")
         case .writeFailed(let msg):
             // Translators: Why a book's details could not be saved into its EPUB file. %@ is the reason, a phrase in English.
-            return String(localized: "Failed to write EPUB metadata: \(msg)")
+            return InterfaceText.line("epubParserError.writeFailed", "Failed to write EPUB metadata: \(msg)")
         case .unsafeFile(let file, let problem):
             return XMLInputGuard.refusalSentence(for: problem, file: file, in: .epubBook)
         case .damagedFile(let file, let reason):
@@ -57,19 +57,19 @@ enum EPUBParserError: LocalizedError, LogDescribing {
             // Blank pages alone are not damage, so there is nothing to replace.
             guard !report.isComplete else {
                 // Translators: Why an EPUB book could not be imported: every chapter in it is blank.
-                return String(localized: "This EPUB book has no text to read.")
+                return InterfaceText.line("epubParserError.noReadableChapters.read", "This EPUB book has no text to read.")
             }
             var sentences = [report.message]
             let blank = report.blankChapterCount
             if blank == 1 {
                 // Translators: Sentence in the warning after an EPUB book was imported with chapters left out: exactly one other chapter is blank.
-                sentences.append(String(localized: "The other chapter has no text."))
+                sentences.append(InterfaceText.line("epubParserError.noReadableChapters.chapter", "The other chapter has no text."))
             } else if blank > 1 {
                 // Translators: Sentence in the warning after an EPUB book was imported with chapters left out: several other chapters are blank. %lld is how many, two or more.
-                sentences.append(String(localized: "The other \(blank) chapters have no text."))
+                sentences.append(InterfaceText.line("epubParserError.noReadableChapters.other", "The other \(number: blank) chapters have no text."))
             }
             // Translators: Last sentence of why an EPUB book could not be imported because of damage: what to do.
-            sentences.append(String(localized: "Get a fresh copy of the book, then import it again."))
+            sentences.append(InterfaceText.line("epubParserError.noReadableChapters.import", "Get a fresh copy of the book, then import it again."))
             return SentenceWording.joined(sentences)
         }
     }

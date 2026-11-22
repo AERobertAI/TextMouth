@@ -10,16 +10,16 @@ extension AVSpeechSynthesisVoice {
         switch quality {
         case .default:
             // Translators: A voice's quality tier, the plainest, shown beside its name in the voice pickers and spoken by VoiceOver, such as "Samantha, Standard quality".
-            return String(localized: "Standard")
+            return InterfaceText.line("avSpeechSynthesisVoice.qualityLabel.default", "Standard")
         case .enhanced:
             // Translators: A voice's quality tier, better than Standard, shown beside its name in the voice pickers and spoken by VoiceOver, such as "Samantha, Enhanced quality".
-            return String(localized: "Enhanced")
+            return InterfaceText.line("avSpeechSynthesisVoice.qualityLabel.enhanced", "Enhanced")
         case .premium:
             // Translators: A voice's quality tier, the best, shown beside its name in the voice pickers and spoken by VoiceOver, such as "Samantha, Premium quality".
-            return String(localized: "Premium")
+            return InterfaceText.line("avSpeechSynthesisVoice.qualityLabel.premium", "Premium")
         @unknown default:
             // Translators: A voice's quality tier when the system reports one TextMouth does not know, shown beside its name in the voice pickers.
-            return String(localized: "Unknown")
+            return InterfaceText.line("avSpeechSynthesisVoice.unknownQuality", "Unknown")
         }
     }
 }

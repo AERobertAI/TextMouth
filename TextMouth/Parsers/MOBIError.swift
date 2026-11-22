@@ -27,22 +27,22 @@ enum MOBIError: LocalizedError, LogDescribing, Equatable {
         switch self {
         case .notAKindleBook:
             // Translators: Why a file could not be imported as a Kindle (MOBI) book: it is not a Kindle book of a kind TextMouth reads.
-            return String(localized: "This file is not a Kindle book that TextMouth can read.")
+            return InterfaceText.line("mobiError.notAKindleBook", "This file is not a Kindle book that TextMouth can read.")
         case .damaged(let detail):
             // A fault only a programmer can name (a table's place, a count)
             // is left out of what a listener hears: the sentence says what to do.
             guard !detail.isEmpty else {
                 // Translators: Why a Kindle (MOBI) book could not be imported: it is damaged, and what to do.
-                return String(localized: "This Kindle book is damaged or incomplete. Get a fresh copy, then import it again.")
+                return InterfaceText.line("mobiError.damaged.kindleBookIncompleteGet", "This Kindle book is damaged or incomplete. Get a fresh copy, then import it again.")
             }
             // Translators: Why a Kindle (MOBI) book could not be imported: it is damaged, and what to do. %@ is the reason, a phrase in English that begins with a lowercase letter and has no full stop.
-            return String(localized: "This Kindle book is damaged or incomplete: \(detail). Get a fresh copy, then import it again.")
+            return InterfaceText.line("mobiError.damaged.kindleBookIncompleteReason", "This Kindle book is damaged or incomplete: \(detail). Get a fresh copy, then import it again.")
         case .copyProtected:
             // Translators: Why a Kindle (MOBI) book could not be imported: it is encrypted or carries copy protection (DRM), which TextMouth never removes.
-            return String(localized: "This Kindle book is copy-protected, and TextMouth can't read copy-protected books.")
+            return InterfaceText.line("mobiError.copyProtected", "This Kindle book is copy-protected, and TextMouth can't read copy-protected books.")
         case .unsupportedCompression:
             // Translators: Why a Kindle (MOBI) book could not be imported: its text is compressed in a way TextMouth does not read.
-            return String(localized: "This Kindle book is compressed in a way TextMouth can't read yet.")
+            return InterfaceText.line("mobiError.unsupportedCompression", "This Kindle book is compressed in a way TextMouth can't read yet.")
         }
     }
 

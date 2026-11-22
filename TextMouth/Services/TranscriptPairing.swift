@@ -366,7 +366,7 @@ extension TranscriptionWording {
     /// transcript TextMouth can read."
     static func transcriptNotAttached(fileName: String, reason: String) -> String {
         // Translators: Notice after an import: a transcript file found beside the audio was not attached. %1$@ is the file's name; %2$@ is the reason, a sentence.
-        String(localized: "“\(fileName)” beside the audio wasn't attached: \(reason)")
+        InterfaceText.line("transcription.transcriptNotAttached", "“\(fileName)” beside the audio wasn't attached: \(reason)")
     }
 
     /// What the listener is told when several transcript files found beside
@@ -379,10 +379,10 @@ extension TranscriptionWording {
         let named = fileNames.prefix(transcriptFilesNamedAtMost).map { "“\($0)”" }
         let rest = fileNames.count - named.count
         // Translators: The last item of a list of file names, standing for the files not named. %lld is how many more files there are.
-        let more = String(localized: "\(rest) more")
+        let more = InterfaceText.line("common.countMore", "\(number: rest) more")
         let list = CountWording.list(rest > 0 ? named + [more] : named)
         // Translators: Notice after an import: several transcript files found beside the audio were not attached. %@ is their names as a list, such as "“03.vtt”, “07.vtt”, and “09.srt”".
-        return String(localized: "These transcript files beside the audio weren't attached: \(list). The debug log says why.")
+        return InterfaceText.line("transcription.transcriptsNotAttached", "These transcript files beside the audio weren't attached: \(list). The debug log says why.")
     }
 
     /// The most transcript files `transcriptsNotAttached(fileNames:)` names
@@ -400,15 +400,15 @@ extension TranscriptionWording {
     /// one file for the book, cannot attach again.
     static func broughtTranscriptNotUsed(fileName: String?) -> String {
         // Translators: The reason, in a notice after an import, that a transcript file beside the audio was not attached: Replace Existing kept the existing copy's own transcript.
-        let reason = String(localized: "Replacing kept the existing copy's transcript.")
+        let reason = InterfaceText.line("transcription.broughtTranscriptNotUsed.replacing", "Replacing kept the existing copy's transcript.")
         guard let fileName else {
             // Translators: Notice after an import: the transcript files beside each track's audio were not attached. %@ is the reason, a sentence.
-            return String(localized: "The transcript files beside the audio weren't attached: \(reason)")
+            return InterfaceText.line("transcription.broughtTranscriptNotUsed.attached", "The transcript files beside the audio weren't attached: \(reason)")
         }
         return SentenceWording.joined([
             transcriptNotAttached(fileName: fileName, reason: reason),
             // Translators: Last sentence of a notice after an import, saying how to attach the transcript file by hand. %@ is the name of the Attach Transcript command in the Book menu.
-            String(localized: "To use it, open the book and choose \(attachCommandTitle) from the Book menu.")
+            InterfaceText.line("transcription.broughtTranscriptNotUsed.choose", "To use it, open the book and choose \(attachCommandTitle) from the Book menu.")
         ])
     }
 }

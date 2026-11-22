@@ -199,7 +199,7 @@ struct BRFExportWriter: TextExportWriter {
     /// may write a BRF in Eurobraille or in Unicode braille patterns.
     var hint: String {
         // Translators: The hint of the Convert to picker in the Export dialog while BRF is chosen. Braille Ready Format is the name of the file format.
-        String(localized: "Braille Ready Format: pages of braille, for braille displays and embossers.")
+        InterfaceText.line("brfExportWriter.hint", "Braille Ready Format: pages of braille, for braille displays and embossers.")
     }
     let fileExtension = "brf"
 
@@ -236,7 +236,7 @@ struct PEFExportWriter: TextExportWriter {
     let name = "PEF"
     var hint: String {
         // Translators: The hint of the Convert to picker in the Export dialog while PEF is chosen. Portable Embosser Format is the name of the file format.
-        String(localized: "Portable Embosser Format: pages of Unicode braille in XML, for embossers.")
+        InterfaceText.line("pefExportWriter.hint", "Portable Embosser Format: pages of Unicode braille in XML, for embossers.")
     }
     let fileExtension = "pef"
 

@@ -85,103 +85,103 @@ enum TextEncodingCatalog {
             switch self {
             case .windows1252:
                 // Translators: The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.
-                return String(localized: "Windows-1252 (Western European)")
+                return InterfaceText.line("label.name.windows1252", "Windows-1252 (Western European)")
             case .macRoman:
                 // Translators: The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.
-                return String(localized: "Mac Roman (Western European)")
+                return InterfaceText.line("label.name.macRoman", "Mac Roman (Western European)")
             case .iso885915:
                 // Translators: The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.
-                return String(localized: "ISO 8859-15 (Western European)")
+                return InterfaceText.line("label.name.iso885915", "ISO 8859-15 (Western European)")
             case .cp437:
                 // Translators: The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.
-                return String(localized: "CP437 (US DOS)")
+                return InterfaceText.line("label.name.cp437", "CP437 (US DOS)")
             case .cp850:
                 // Translators: The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.
-                return String(localized: "CP850 (Western European DOS)")
+                return InterfaceText.line("label.name.cp850", "CP850 (Western European DOS)")
             case .windows1250:
                 // Translators: The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.
-                return String(localized: "Windows-1250 (Central European)")
+                return InterfaceText.line("label.name.windows1250", "Windows-1250 (Central European)")
             case .iso88592:
                 // Translators: The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.
-                return String(localized: "ISO 8859-2 (Central European)")
+                return InterfaceText.line("label.name.iso88592", "ISO 8859-2 (Central European)")
             case .macCentralEuropean:
                 // Translators: The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: an encoding of the classic Mac OS, named by its script. The word Mac stays as it is.
-                return String(localized: "Mac Central European")
+                return InterfaceText.line("label.name.macCentralEuropean", "Mac Central European")
             case .windows1251:
                 // Translators: The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.
-                return String(localized: "Windows-1251 (Cyrillic)")
+                return InterfaceText.line("label.name.windows1251", "Windows-1251 (Cyrillic)")
             case .koi8R:
                 // Translators: The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.
-                return String(localized: "KOI8-R (Russian)")
+                return InterfaceText.line("label.name.koi8R", "KOI8-R (Russian)")
             case .koi8U:
                 // Translators: The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.
-                return String(localized: "KOI8-U (Ukrainian)")
+                return InterfaceText.line("label.name.koi8U", "KOI8-U (Ukrainian)")
             case .cp866:
                 // Translators: The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.
-                return String(localized: "CP866 (Russian DOS)")
+                return InterfaceText.line("label.name.cp866", "CP866 (Russian DOS)")
             case .iso88595:
                 // Translators: The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.
-                return String(localized: "ISO 8859-5 (Cyrillic)")
+                return InterfaceText.line("label.name.iso88595", "ISO 8859-5 (Cyrillic)")
             case .macCyrillic:
                 // Translators: The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: an encoding of the classic Mac OS, named by its script. The word Mac stays as it is.
-                return String(localized: "Mac Cyrillic")
+                return InterfaceText.line("label.name.macCyrillic", "Mac Cyrillic")
             case .windows1253:
                 // Translators: The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.
-                return String(localized: "Windows-1253 (Greek)")
+                return InterfaceText.line("label.name.windows1253", "Windows-1253 (Greek)")
             case .iso88597:
                 // Translators: The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.
-                return String(localized: "ISO 8859-7 (Greek)")
+                return InterfaceText.line("label.name.iso88597", "ISO 8859-7 (Greek)")
             case .windows1254:
                 // Translators: The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.
-                return String(localized: "Windows-1254 (Turkish)")
+                return InterfaceText.line("label.name.windows1254", "Windows-1254 (Turkish)")
             case .iso88599:
                 // Translators: The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.
-                return String(localized: "ISO 8859-9 (Turkish)")
+                return InterfaceText.line("label.name.iso88599", "ISO 8859-9 (Turkish)")
             case .windows1255:
                 // Translators: The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.
-                return String(localized: "Windows-1255 (Hebrew)")
+                return InterfaceText.line("label.name.windows1255", "Windows-1255 (Hebrew)")
             case .iso88598:
                 // Translators: The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.
-                return String(localized: "ISO 8859-8 (Hebrew)")
+                return InterfaceText.line("label.name.iso88598", "ISO 8859-8 (Hebrew)")
             case .windows1256:
                 // Translators: The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.
-                return String(localized: "Windows-1256 (Arabic)")
+                return InterfaceText.line("label.name.windows1256", "Windows-1256 (Arabic)")
             case .iso88596:
                 // Translators: The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.
-                return String(localized: "ISO 8859-6 (Arabic)")
+                return InterfaceText.line("label.name.iso88596", "ISO 8859-6 (Arabic)")
             case .windows1257:
                 // Translators: The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.
-                return String(localized: "Windows-1257 (Baltic)")
+                return InterfaceText.line("label.name.windows1257", "Windows-1257 (Baltic)")
             case .iso885913:
                 // Translators: The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.
-                return String(localized: "ISO 8859-13 (Baltic)")
+                return InterfaceText.line("label.name.iso885913", "ISO 8859-13 (Baltic)")
             case .windows874:
                 // Translators: The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.
-                return String(localized: "Windows-874 (Thai)")
+                return InterfaceText.line("label.name.windows874", "Windows-874 (Thai)")
             case .shiftJIS:
                 // Translators: The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.
-                return String(localized: "Shift JIS (Japanese)")
+                return InterfaceText.line("label.name.shiftJIS", "Shift JIS (Japanese)")
             case .eucJP:
                 // Translators: The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.
-                return String(localized: "EUC-JP (Japanese)")
+                return InterfaceText.line("label.name.eucJP", "EUC-JP (Japanese)")
             case .iso2022JP:
                 // Translators: The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.
-                return String(localized: "ISO 2022-JP (Japanese)")
+                return InterfaceText.line("label.name.iso2022JP", "ISO 2022-JP (Japanese)")
             case .gb18030:
                 // Translators: The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.
-                return String(localized: "GB 18030 (Simplified Chinese)")
+                return InterfaceText.line("label.name.gb18030", "GB 18030 (Simplified Chinese)")
             case .gbk:
                 // Translators: The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.
-                return String(localized: "GBK (Simplified Chinese)")
+                return InterfaceText.line("label.name.gbk", "GBK (Simplified Chinese)")
             case .gb2312:
                 // Translators: The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.
-                return String(localized: "GB 2312 (Simplified Chinese)")
+                return InterfaceText.line("label.name.gb2312", "GB 2312 (Simplified Chinese)")
             case .big5:
                 // Translators: The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.
-                return String(localized: "Big5 (Traditional Chinese)")
+                return InterfaceText.line("label.name.big5", "Big5 (Traditional Chinese)")
             case .eucKR:
                 // Translators: The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.
-                return String(localized: "EUC-KR (Korean)")
+                return InterfaceText.line("label.name.eucKR", "EUC-KR (Korean)")
             }
         }
     }

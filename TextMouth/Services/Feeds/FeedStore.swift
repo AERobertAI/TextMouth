@@ -666,7 +666,7 @@ enum FeedRecordQuitWording {
     /// it quits:" (`QuitHoldWording`).
     static var finishing: String {
         // Translators: What the app is finishing before it quits, after "TextMouth is finishing up before it quits:". Lower case, without a full stop.
-        String(localized: "saving the changes to your feed subscriptions")
+        InterfaceText.line("feedRecordQuit.finishing", "saving the changes to your feed subscriptions")
     }
 
     /// Why a feed's change is still unsaved when the quit stopped waiting:
@@ -674,6 +674,6 @@ enum FeedRecordQuitWording {
     /// saved:" in the quit's prompt and the banner.
     static var stillSaving: String {
         // Translators: The reason that ends "Changes to the feed “Planet Money” could not be saved:" in the quit prompt and banner. Them are the feed's changes.
-        String(localized: "TextMouth is still saving them.")
+        InterfaceText.line("feedRecordQuit.stillSaving", "TextMouth is still saving them.")
     }
 }

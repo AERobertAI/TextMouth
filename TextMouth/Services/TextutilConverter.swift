@@ -42,19 +42,19 @@ enum TextutilInputFormat: String, CaseIterable, Sendable {
         switch self {
         case .rtf:
             // Translators: Why a file was refused at import: it could not be read as a rich text (RTF) document. A sentence saying it may be damaged follows.
-            return String(localized: "This file could not be read as a rich text document.")
+            return InterfaceText.line("textutilInputFormat.unreadableSentence.rtf", "This file could not be read as a rich text document.")
         case .rtfd:
             // Translators: Why a file was refused at import: it could not be read as a rich text (RTFD) document with attachments. A sentence saying it may be damaged follows.
-            return String(localized: "This file could not be read as a rich text document with attachments.")
+            return InterfaceText.line("textutilInputFormat.unreadableSentence.rtfd", "This file could not be read as a rich text document with attachments.")
         case .doc:
             // Translators: Why a file was refused at import: it could not be read as a Word 97-2003 (.doc) document. A sentence saying it may be damaged follows.
-            return String(localized: "This file could not be read as a Word 97-2003 document.")
+            return InterfaceText.line("textutilInputFormat.unreadableSentence.doc", "This file could not be read as a Word 97-2003 document.")
         case .odt:
             // Translators: Why a file was refused at import: it could not be read as an OpenDocument text (.odt) document. A sentence saying it may be damaged follows.
-            return String(localized: "This file could not be read as an OpenDocument text document.")
+            return InterfaceText.line("textutilInputFormat.unreadableSentence.odt", "This file could not be read as an OpenDocument text document.")
         case .wordml:
             // Translators: Why a file was refused at import: it could not be read as a Word 2003 XML document. A sentence saying it may be damaged follows.
-            return String(localized: "This file could not be read as a Word 2003 XML document.")
+            return InterfaceText.line("textutilInputFormat.unreadableSentence.wordml", "This file could not be read as a Word 2003 XML document.")
         }
     }
 }
@@ -92,12 +92,12 @@ enum TextutilConverter {
             switch self {
             case let .unreadable(format):
                 // Translators: Second sentence of the refusal of a document that could not be read: the file may be damaged or of another kind.
-                let damaged = String(localized: "It may be damaged, or another kind of file.")
+                let damaged = InterfaceText.line("failure.unreadable.damaged", "It may be damaged, or another kind of file.")
                 return SentenceWording.joined([format.unreadableSentence, damaged])
             case let .stopped(reason):
                 // The reason is a clause in English (`KillReason.words`), which the debug log writes too.
                 // Translators: Why a document was refused at import: the program that reads it ran too long or used too much memory and was stopped. %@ is the reason, a clause in English that follows "because".
-                return String(localized: "TextMouth stopped reading this document because \(reason).")
+                return InterfaceText.line("failure.stopped.document", "TextMouth stopped reading this document because \(reason).")
             }
         }
 

@@ -718,23 +718,23 @@ enum AudioParseError: LocalizedError, Equatable {
     /// the sentence that ends every such message.
     static var mismatchAdvice: String {
         // Translators: Last sentence of an import failure: a section of a segmented audiobook does not fit the audio file it names, so the book's navigation (its manifest or headings) does not match its audio.
-        String(localized: "The book's navigation does not match its audio; get a fresh copy and import it again.")
+        InterfaceText.line("audioParseError.mismatchAdvice", "The book's navigation does not match its audio; get a fresh copy and import it again.")
     }
 
     var errorDescription: String? {
         switch self {
         case .invalidDuration:
             // Translators: Why an audio book could not be imported: the length of its audio could not be measured.
-            return String(localized: "Could not determine audio duration.")
+            return InterfaceText.line("audioParseError.invalidDuration", "Could not determine audio duration.")
         case .noAudioFiles:
             // Translators: Why an audio book could not be imported: none of the files in it is an audio file TextMouth reads.
-            return String(localized: "No supported audio files found.")
+            return InterfaceText.line("audioParseError.noAudioFiles", "No supported audio files found.")
         case .unsupportedFormat:
             // Translators: Why an audio file could not be imported: TextMouth does not read its audio format.
-            return String(localized: "Unsupported audio format.")
+            return InterfaceText.line("audioParseError.unsupportedFormat", "Unsupported audio format.")
         case .invalidSegment:
             // Translators: Why an audio book could not be imported: one of its sections names a file that is not there, or a start and end time that do not make a range.
-            return String(localized: "An audio section refers to a missing file or an invalid time range.")
+            return InterfaceText.line("audioParseError.invalidSegment", "An audio section refers to a missing file or an invalid time range.")
         case .unplayableFile(let file, let problem):
             // Damage is described as it is for every other kind of book; a valid file whose samples
             // cannot be decoded is told its form instead (B15).
@@ -745,19 +745,19 @@ enum AudioParseError: LocalizedError, Equatable {
         case .sectionStartsPastEnd(let section, let file, let start, let fileDuration):
             return SentenceWording.joined([
                 // Translators: First sentence of why an audiobook could not be imported: a section starts after the end of its audio file. %1$@ is the section, such as "heading “Tide Tables”" or "untitled heading 3" (a masculine noun phrase in English, without its article); %2$@ is how far into the file it starts and %4$@ how long the file is, both spoken times; %3$@ is the file's name.
-                String(localized: "The \(section.phrase) starts \(TimeFormatting.spoken(start)) into “\(file)”, which is only \(TimeFormatting.spoken(fileDuration)) long."),
+                InterfaceText.line("audioParseError.sectionStartsPastEnd", "The \(section.phrase) starts \(TimeFormatting.spoken(start)) into “\(file)”, which is only \(TimeFormatting.spoken(fileDuration)) long."),
                 Self.mismatchAdvice,
             ])
         case .sectionEndsPastEnd(let section, let file, let end, let fileDuration):
             return SentenceWording.joined([
                 // Translators: First sentence of why an audiobook could not be imported: a section ends after the end of its audio file. %1$@ is the section, such as "heading “Tide Tables”" or "untitled heading 3" (a masculine noun phrase in English, without its article); %2$@ is how far into the file it ends and %4$@ how long the file is, both spoken times; %3$@ is the file's name.
-                String(localized: "The \(section.phrase) ends \(TimeFormatting.spoken(end)) into “\(file)”, which is only \(TimeFormatting.spoken(fileDuration)) long."),
+                InterfaceText.line("audioParseError.sectionEndsPastEnd", "The \(section.phrase) ends \(TimeFormatting.spoken(end)) into “\(file)”, which is only \(TimeFormatting.spoken(fileDuration)) long."),
                 Self.mismatchAdvice,
             ])
         case .sectionStartsBeforeEarlierSection(let section, let file, let start, let earlierSection, let earlierStart):
             return SentenceWording.joined([
                 // Translators: First sentence of why an audiobook could not be imported: a section starts before another section that comes earlier in the book and is in the same audio file. %1$@ and %4$@ are sections, such as "heading “Tide Tables”" or "untitled heading 3" (masculine noun phrases in English, without their article); %2$@ and %5$@ are how far into the file each starts, spoken times; %3$@ is the file's name.
-                String(localized: "The \(section.phrase) starts \(TimeFormatting.spoken(start)) into “\(file)”, before the earlier \(earlierSection.phrase), which starts \(TimeFormatting.spoken(earlierStart)) in."),
+                InterfaceText.line("audioParseError.startsBeforeEarlierSection", "The \(section.phrase) starts \(TimeFormatting.spoken(start)) into “\(file)”, before the earlier \(earlierSection.phrase), which starts \(TimeFormatting.spoken(earlierStart)) in."),
                 Self.mismatchAdvice,
             ])
         }
@@ -821,10 +821,10 @@ struct AudioSectionName: Equatable, Sendable {
     var phrase: String {
         guard !oneLineTitle.isEmpty else {
             // Translators: How an error names a section of an audiobook whose heading has no title, in a sentence such as "The untitled heading 3 starts …". %@ is the heading's place among the book's headings, from 1, an identifier written without digit grouping. A masculine noun phrase in English, without its article, starting with a lowercase letter.
-            return String(localized: "untitled heading \(String(number))")
+            return InterfaceText.line("audioSectionName.phrase.untitled", "untitled heading \(String(number))")
         }
         // Translators: How an error names a section of an audiobook by its heading's title, in a sentence such as "The heading “Tide Tables” starts …". %@ is the title. A masculine noun phrase in English, without its article, starting with a lowercase letter.
-        return String(localized: "heading “\(oneLineTitle)”")
+        return InterfaceText.line("audioSectionName.phrase.heading", "heading “\(oneLineTitle)”")
     }
 
     /// `phrase` in English for the debug log (FR34).

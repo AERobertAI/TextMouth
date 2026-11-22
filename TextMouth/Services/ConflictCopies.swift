@@ -356,28 +356,28 @@ enum ConflictCopyWording {
     /// The alert's title.
     static var alertTitle: String {
         // Translators: Title of the alert that reports conflicting copies of the library's files, set aside by a sync service.
-        String(localized: "Conflicting Copies Found")
+        InterfaceText.line("conflictCopy.alertTitle", "Conflicting Copies Found")
     }
     /// The alert's button that closes it, the default.
     static var okTitle: String {
         // Translators: Button that closes an alert and changes nothing.
-        String(localized: "OK")
+        InterfaceText.line("common.ok", "OK")
     }
     /// The alert's button that shows the first copy's folder in Finder.
     static var showTitle: String {
         // Translators: Button that shows a file or folder in the Finder.
-        String(localized: "Show in Finder")
+        InterfaceText.line("common.showInFinder", "Show in Finder")
     }
     /// What a copy not yet on this Mac holds, which TextMouth does not
     /// download to find out.
     static var notOnThisMac: String {
         // Translators: Part of the report of a conflicting copy: the copy's file is only in the cloud, so TextMouth did not download it to look inside. "It" is the copy.
-        String(localized: "Its contents aren't on this Mac yet, so TextMouth hasn't looked inside it.")
+        InterfaceText.line("conflictCopy.notOnThisMac", "Its contents aren't on this Mac yet, so TextMouth hasn't looked inside it.")
     }
     /// What is said last of every report: nothing was done.
     static var untouched: String {
         // Translators: Last sentence of the report of a conflicting copy: nothing was done with it. "It" is the copy.
-        String(localized: "TextMouth hasn't merged it or removed it.")
+        InterfaceText.line("conflictCopy.untouched", "TextMouth hasn't merged it or removed it.")
     }
 
     /// What the file called `file` is, in a sentence.
@@ -385,16 +385,16 @@ enum ConflictCopyWording {
         switch subject {
         case .libraryIndex:
             // Translators: A phrase naming the library index file inside a sentence about a conflicting copy. %@ is the file's name, which stays as written.
-            return String(localized: "the library index, \(file)")
+            return InterfaceText.line("conflictCopy.name.libraryIndex", "the library index, \(file)")
         case .feedRecord:
             // Translators: A phrase naming a feed's record file inside a sentence about a conflicting copy. %@ is the file's name, which stays as written.
-            return String(localized: "a feed's record, \(file)")
+            return InterfaceText.line("conflictCopy.name.feedRecord", "a feed's record, \(file)")
         case .feedIndex:
             // Translators: A phrase naming a feed's index file inside a sentence about a conflicting copy. %@ is the file's name, which stays as written.
-            return String(localized: "a feed's index of its episodes, \(file)")
+            return InterfaceText.line("conflictCopy.name.feedIndex", "a feed's index of its episodes, \(file)")
         case .bookRecord:
             // Translators: A phrase naming a book's record file inside a sentence about a conflicting copy. %@ is the file's name, which stays as written.
-            return String(localized: "a book's record, \(file)")
+            return InterfaceText.line("conflictCopy.name.bookRecord", "a book's record, \(file)")
         }
     }
 
@@ -409,7 +409,7 @@ enum ConflictCopyWording {
     ) -> String {
         SentenceWording.joined([
             // Translators: First sentence of the report of a conflicting copy. %1$@ is the sync service's name; %2$@ is a phrase naming the original file; %3$@ is the copy's name; %4$@ is the folder's path.
-            String(localized: "\(service) set aside a conflicting copy of \(name(of: subject, file: original)): “\(copyName)”, in \(folder)."),
+            InterfaceText.line("conflictCopy.setAsideConflicting", "\(service) set aside a conflicting copy of \(name(of: subject, file: original)): “\(copyName)”, in \(folder)."),
             holds,
             untouched,
         ])
@@ -429,16 +429,16 @@ enum ConflictCopyWording {
         switch (version.computerName, modified) {
         case let (computer?, modified?):
             // Translators: First sentence of the report of an unresolved version of a file. %1$@ is the sync service's name; %2$@ is a phrase naming the file; %3$@ is the name of the computer that saved it; %4$@ is the date and time it was saved.
-            held = String(localized: "\(service) holds a conflicting version of \(what), saved on “\(computer)” on \(modified).")
+            held = InterfaceText.line("conflictCopy.holdsVersionOnNameAndDate", "\(service) holds a conflicting version of \(what), saved on “\(computer)” on \(modified).")
         case let (computer?, nil):
             // Translators: First sentence of the report of an unresolved version of a file. %1$@ is the sync service's name; %2$@ is a phrase naming the file; %3$@ is the name of the computer that saved it.
-            held = String(localized: "\(service) holds a conflicting version of \(what), saved on “\(computer)”.")
+            held = InterfaceText.line("conflictCopy.holdsVersionOnName", "\(service) holds a conflicting version of \(what), saved on “\(computer)”.")
         case let (nil, modified?):
             // Translators: First sentence of the report of an unresolved version of a file. %1$@ is the sync service's name; %2$@ is a phrase naming the file; %3$@ is the date and time it was saved.
-            held = String(localized: "\(service) holds a conflicting version of \(what), saved on \(modified).")
+            held = InterfaceText.line("conflictCopy.holdsVersionOnDate", "\(service) holds a conflicting version of \(what), saved on \(modified).")
         case (nil, nil):
             // Translators: First sentence of the report of an unresolved version of a file whose computer and time of saving are not known. %1$@ is the sync service's name; %2$@ is a phrase naming the file.
-            held = String(localized: "\(service) holds a conflicting version of \(what), saved at another time.")
+            held = InterfaceText.line("conflictCopy.holdsConflictingVersionSavedAnother", "\(service) holds a conflicting version of \(what), saved at another time.")
         }
         return SentenceWording.joined([held, untouched])
     }
@@ -448,24 +448,24 @@ enum ConflictCopyWording {
         guard let copy else { return couldNotBeRead }
         guard let original else {
             // Translators: What a conflicting copy of the library index holds. %@ is its counts as a list, such as "3 books, 1 folder, and 2 books on the reading list".
-            return String(localized: "It holds \(libraryCounts(copy)).")
+            return InterfaceText.line("common.itHoldsValue", "It holds \(libraryCounts(copy)).")
         }
         // Translators: What a conflicting copy of the library index holds, set against the index itself. %1$@ and %2$@ are counts as a list, such as "3 books, 1 folder, and 2 books on the reading list". library.json is a file name and stays as written.
-        return String(localized: "It holds \(libraryCounts(copy)); library.json holds \(libraryCounts(original)).")
+        return InterfaceText.line("conflictCopy.libraryHolds", "It holds \(libraryCounts(copy)); library.json holds \(libraryCounts(original)).")
     }
 
     /// Said of a copy that could not be read.
     private static var couldNotBeRead: String {
         // Translators: Part of the report of a conflicting copy: the copy's file could not be read. "It" is the copy.
-        String(localized: "It couldn't be read.")
+        InterfaceText.line("conflictCopy.couldNotBeRead", "It couldn't be read.")
     }
 
     /// A library's counts in words: its books, folders, and the books on its reading list.
     private static func libraryCounts(_ library: Library) -> String {
         // Translators: A count of folders in a list of counts about a conflicting copy of the library. %lld is the number of folders.
-        let folders = String(localized: "\(library.folders.count) folders")
+        let folders = InterfaceText.line("conflictCopy.libraryCounts.folders", "\(number: library.folders.count) folders")
         // Translators: A count of the books on the reading list in a list of counts about a conflicting copy of the library. %lld is the number of books.
-        let list = String(localized: "\(library.readingList.bookIDs.count) books on the reading list")
+        let list = InterfaceText.line("conflictCopy.libraryCounts.reading", "\(number: library.readingList.bookIDs.count) books on the reading list")
         return CountWording.list([CountWording.books(library.libraryBookCount), folders, list])
     }
 
@@ -474,10 +474,10 @@ enum ConflictCopyWording {
         guard let copy else { return couldNotBeRead }
         guard let original else {
             // Translators: What a conflicting copy of a book's record holds. %1$@ is the book's title; %2$@ is the record's place and bookmarks, such as "chapter 3, saved Nov 18, 2026, and 2 bookmarks".
-            return String(localized: "It holds the record of “\(copy.metadata.title)”: \(recordState(copy)).")
+            return InterfaceText.line("conflictCopy.bookRecordHolds.ofBook", "It holds the record of “\(copy.metadata.title)”: \(recordState(copy)).")
         }
         // Translators: What a conflicting copy of a book's record holds, set against the record itself. %1$@ is the book's title; %2$@ and %3$@ are a record's place and bookmarks, such as "chapter 3, saved Nov 18, 2026, and 2 bookmarks".
-        return String(localized: "It holds the record of “\(copy.metadata.title)”: \(recordState(copy)); the record holds \(recordState(original)).")
+        return InterfaceText.line("conflictCopy.bookRecordHolds.ofBookIndexHolds", "It holds the record of “\(copy.metadata.title)”: \(recordState(copy)); the record holds \(recordState(original)).")
     }
 
     /// A record's place and bookmarks in words.
@@ -485,12 +485,12 @@ enum ConflictCopyWording {
         let bookmarks = CountWording.bookmarks(info.bookmarks.count)
         guard let place = info.state.readingPosition else {
             // Translators: A record's place and bookmarks inside a sentence about a conflicting copy of a book's record: no reading place was saved. %@ is a count of bookmarks, such as "2 bookmarks".
-            return String(localized: "no place saved, and \(bookmarks)")
+            return InterfaceText.line("conflictCopy.recordState.place", "no place saved, and \(bookmarks)")
         }
         let saved = place.lastUpdated.formatted(date: .abbreviated, time: .shortened)
         // The chapter's number names the chapter, so it is written without digit grouping.
         // Translators: A record's place and bookmarks inside a sentence about a conflicting copy of a book's record. %1$@ is the chapter's number, an identifier written without digit grouping; %2$@ is the date and time the place was saved; %3$@ is a count of bookmarks, such as "2 bookmarks".
-        return String(localized: "chapter \(String(place.chapterIndex + 1)), saved \(saved), and \(bookmarks)")
+        return InterfaceText.line("conflictCopy.recordState.chapter", "chapter \(String(place.chapterIndex + 1)), saved \(saved), and \(bookmarks)")
     }
 
     /// What a copy of a feed's own index holds, set against the index itself.
@@ -498,16 +498,16 @@ enum ConflictCopyWording {
         guard let copy else { return couldNotBeRead }
         guard let original else {
             // Translators: What a conflicting copy of a feed's index holds. %@ is a count of episodes, such as "12 episodes".
-            return String(localized: "It holds \(CountWording.episodes(copy.books.count)).")
+            return InterfaceText.line("common.itHoldsValue", "It holds \(CountWording.episodes(copy.books.count)).")
         }
         // Translators: What a conflicting copy of a feed's index holds, set against the index itself. %1$@ and %2$@ are counts of episodes, such as "12 episodes".
-        return String(localized: "It holds \(CountWording.episodes(copy.books.count)); the index holds \(CountWording.episodes(original.books.count)).")
+        return InterfaceText.line("conflictCopy.feedIndexHolds", "It holds \(CountWording.episodes(copy.books.count)); the index holds \(CountWording.episodes(original.books.count)).")
     }
 
     /// `count` items of a feed: "1 item", "2 items".
     private static func items(_ count: Int) -> String {
         // Translators: A count of a feed's items inside a sentence about a conflicting copy of the feed's record. %lld is the number of items.
-        String(localized: "\(count) items")
+        InterfaceText.line("common.countItems", "\(number: count) items")
     }
 
     /// What a copy of a feed's record holds, set against the record itself.
@@ -515,10 +515,10 @@ enum ConflictCopyWording {
         guard let copy else { return couldNotBeRead }
         guard let original else {
             // Translators: What a conflicting copy of a feed's record holds. %1$@ is the feed's title; %2$@ is a count of items, such as "12 items".
-            return String(localized: "It holds the feed “\(copy.feed.title)” with \(items(copy.items.count)).")
+            return InterfaceText.line("conflictCopy.feedRecordHolds.named", "It holds the feed “\(copy.feed.title)” with \(items(copy.items.count)).")
         }
         // Translators: What a conflicting copy of a feed's record holds, set against the record itself. %1$@ is the feed's title; %2$@ and %3$@ are counts of items, such as "12 items".
-        return String(localized: "It holds the feed “\(copy.feed.title)” with \(items(copy.items.count)); the record holds \(items(original.items.count)).")
+        return InterfaceText.line("conflictCopy.feedRecordHolds.namedIndexHolds", "It holds the feed “\(copy.feed.title)” with \(items(copy.items.count)); the record holds \(items(original.items.count)).")
     }
 
     /// The alert's message for `findings`: each one's sentence, a few at most
@@ -527,7 +527,7 @@ enum ConflictCopyWording {
         var parts = findings.prefix(limit).map(\.sentence)
         if findings.count > limit {
             // Translators: Last paragraph of the report of conflicting copies: how many more copies there are than the report names. %lld is the number of copies.
-            parts.append(String(localized: "And \(findings.count - limit) more copies, which the log lists."))
+            parts.append(InterfaceText.line("conflictCopy.message", "And \(number: findings.count - limit) more copies, which the log lists."))
         }
         return parts.joined(separator: "\n\n")
     }

@@ -104,9 +104,9 @@ enum SavedFile {
         var errorDescription: String? {
             SentenceWording.joined([
                 // Translators: First sentence of why a file was not saved: it is only in the cloud. %@ is the file's name, which stays as written.
-                String(localized: "\(fileName) is only in the cloud and isn't on this Mac yet, so nothing was written over it."),
+                InterfaceText.line("inCloudError.errorDescription", "\(fileName) is only in the cloud and isn't on this Mac yet, so nothing was written over it."),
                 // Translators: Last sentence of why a cloud operation was refused for now: wait and try again.
-                String(localized: "Try again in a moment."),
+                InterfaceText.line("common.tryAgainInAMoment", "Try again in a moment."),
             ])
         }
     }

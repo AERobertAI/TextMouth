@@ -13,10 +13,10 @@ enum RecordingEncodingError: LocalizedError, Equatable, Sendable {
         switch self {
         case .unreadableTake:
             // Translators: Error in the Record window when saving: the recorded take holds no audio that can be read.
-            return String(localized: "The recording's audio couldn't be read.")
+            return InterfaceText.line("recordingEncodingError.unreadableTake", "The recording's audio couldn't be read.")
         case .encodingFailed:
             // Translators: Error in the Record window when saving: the recording could not be encoded as an audiobook file.
-            return String(localized: "The recording couldn't be converted to an audiobook file.")
+            return InterfaceText.line("recordingEncodingError.encodingFailed", "The recording couldn't be converted to an audiobook file.")
         }
     }
 }

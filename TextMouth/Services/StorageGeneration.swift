@@ -79,25 +79,25 @@ enum StorageWork: Sendable, CaseIterable {
         switch self {
         case .importing:
             // Translators: Progress text while a move of the library waits for an import to finish first.
-            return String(localized: "Waiting for the current import to finish...")
+            return InterfaceText.line("storageWork.waitingMessage.importing", "Waiting for the current import to finish...")
         case .audioEditing:
             // Translators: Progress text while a move of the library waits for audio editing to finish first.
-            return String(localized: "Waiting for audio editing to finish...")
+            return InterfaceText.line("storageWork.waitingMessage.audioEditing", "Waiting for audio editing to finish...")
         case .textExtraction:
             // Translators: Progress text while a move of the library waits for text extraction to finish first.
-            return String(localized: "Waiting for text extraction to finish...")
+            return InterfaceText.line("storageWork.waitingMessage.textExtraction", "Waiting for text extraction to finish...")
         case .contentAnalysis:
             // Translators: Progress text while a move of the library waits for the analysis of books to finish first.
-            return String(localized: "Waiting for book analysis to finish...")
+            return InterfaceText.line("storageWork.waitingMessage.contentAnalysis", "Waiting for book analysis to finish...")
         case .metadataRefresh:
             // Translators: Progress text while a move of the library waits for the reading of books' metadata to finish first.
-            return String(localized: "Waiting for book metadata to be read...")
+            return InterfaceText.line("storageWork.waitingMessage.metadataRefresh", "Waiting for book metadata to be read...")
         case .savingFeeds:
             // Translators: Progress text while a move of the library waits for the feeds' records to be saved first.
-            return String(localized: "Waiting for feed records to be saved...")
+            return InterfaceText.line("storageWork.waitingMessage.savingFeeds", "Waiting for feed records to be saved...")
         case .removingFeedDownloads:
             // Translators: Progress text while a move of the library waits for the deletion of feed downloads to finish first.
-            return String(localized: "Waiting for feed downloads to be deleted...")
+            return InterfaceText.line("storageWork.waitingMessage.removingFeedDownloads", "Waiting for feed downloads to be deleted...")
         }
     }
 }
@@ -138,27 +138,27 @@ struct StorageBusyError: LocalizedError, Equatable {
         case .movingDataDirectory:
             return SentenceWording.joined([
                 // Translators: First sentence of why an operation was refused: the library is already being moved.
-                String(localized: "TextMouth is already moving its data directory."),
+                InterfaceText.line("storageBusyError.movingDataDirectory.already", "TextMouth is already moving its data directory."),
                 // Translators: Last sentence of why an operation was refused while the library is being moved.
-                String(localized: "Try again once that move is done."),
+                InterfaceText.line("storageBusyError.movingDataDirectory.again", "Try again once that move is done."),
             ])
         case .rebuildingDirectory:
             return SentenceWording.joined([
                 // Translators: First sentence of why an operation was refused: the library is being rebuilt.
-                String(localized: "TextMouth is rebuilding its data directory."),
+                InterfaceText.line("storageBusyError.rebuildingDirectory", "TextMouth is rebuilding its data directory."),
                 // Translators: Last sentence of why an operation was refused while something else finishes.
-                String(localized: "Try again when that finishes."),
+                InterfaceText.line("storageBusyError.tryAgainWhen", "Try again when that finishes."),
             ])
         case .movingBooksBetweenFolders:
             return SentenceWording.joined([
                 // Translators: First sentence of why an operation was refused: books are being moved between folders.
-                String(localized: "TextMouth is moving books between folders."),
+                InterfaceText.line("storageBusyError.movingBooksBetweenFolders", "TextMouth is moving books between folders."),
                 // Translators: Last sentence of why an operation was refused while something else finishes.
-                String(localized: "Try again when that finishes."),
+                InterfaceText.line("storageBusyError.tryAgainWhen", "Try again when that finishes."),
             ])
         case .switchingLibraries:
             // Translators: Why an operation was refused: TextMouth is switching to another library.
-            return String(localized: "TextMouth is switching to another library and opening again on it.")
+            return InterfaceText.line("storageBusyError.switchingLibraries", "TextMouth is switching to another library and opening again on it.")
         }
     }
 }

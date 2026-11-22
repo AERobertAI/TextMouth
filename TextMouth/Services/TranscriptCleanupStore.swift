@@ -31,31 +31,31 @@ enum TranscriptCleanupError: LocalizedError, Equatable {
         switch self {
         case .transcriptUnavailable:
             // Translators: Error shown when Clean Up Transcript cannot read the transcript.
-            return String(localized: "The transcript can't be read. If the book is only in the cloud, download it and try again.")
+            return InterfaceText.line("transcriptCleanupError.transcriptUnavailable", "The transcript can't be read. If the book is only in the cloud, download it and try again.")
         case .transcriptChanged:
             // Translators: Error shown when the transcript changed after the Clean Up Transcript sheet showed its changes. Clean Up Transcript is the command's name.
-            return String(localized: "The transcript changed since this was shown. Reopen Clean Up Transcript to see the changes.")
+            return InterfaceText.line("transcriptCleanupError.transcriptChanged", "The transcript changed since this was shown. Reopen Clean Up Transcript to see the changes.")
         case .nothingToChange:
             // Translators: Error shown when Apply is pressed in the Clean Up Transcript sheet but no rule changes the transcript.
-            return String(localized: "No rule changes this transcript.")
+            return InterfaceText.line("common.noRuleChangesThisTranscript", "No rule changes this transcript.")
         case .nothingToUndo:
             // Translators: Error shown when Undo Cleanup is pressed but the transcript from before the cleanup is gone.
-            return String(localized: "No cleanup to undo: the earlier transcript is gone.")
+            return InterfaceText.line("transcriptCleanupError.nothingToUndo", "No cleanup to undo: the earlier transcript is gone.")
         case .previousInCloud:
             // Translators: Error shown when Undo Cleanup is pressed and the transcript from before the cleanup has not been downloaded from the cloud drive.
-            return String(localized: "The pre-cleanup transcript is only in the cloud. Download the book and try again.")
+            return InterfaceText.line("transcriptCleanupError.previousInCloud", "The pre-cleanup transcript is only in the cloud. Download the book and try again.")
         case .previousUnusable(let reason):
             // Translators: Error shown when Undo Cleanup is pressed and the transcript from before the cleanup is damaged. %@ is the reason, a technical phrase in English.
-            return String(localized: "The transcript from before the cleanup can't be used: \(reason).")
+            return InterfaceText.line("transcriptCleanupError.previousUnusable", "The transcript from before the cleanup can't be used: \(reason).")
         case .audioChanged(let reason):
             // Translators: Error shown when the book's audio files changed since the transcription. %@ is the reason, a short phrase in English.
-            return String(localized: "The book's audio changed since it was transcribed (\(reason)), so the transcript no longer fits. Transcribe again.")
+            return InterfaceText.line("transcriptCleanupError.audioChanged", "The book's audio changed since it was transcribed (\(reason)), so the transcript no longer fits. Transcribe again.")
         case .busyTranscribing:
             // Translators: Error shown when a cleanup is tried while the book is being transcribed.
-            return String(localized: "The book is being transcribed again. Clean up its transcript once that finishes.")
+            return InterfaceText.line("transcriptCleanupError.busyTranscribing", "The book is being transcribed again. Clean up its transcript once that finishes.")
         case .libraryUnavailable:
             // Translators: Error shown when Edit Rules is pressed while the library's data folder cannot be used.
-            return String(localized: "The library isn't available, so the rules can't be opened now.")
+            return InterfaceText.line("transcriptCleanupError.libraryUnavailable", "The library isn't available, so the rules can't be opened now.")
         }
     }
 }

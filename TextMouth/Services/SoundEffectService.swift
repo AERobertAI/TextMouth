@@ -24,22 +24,22 @@ enum SoundEvent: String, CaseIterable, Codable, Identifiable {
         switch self {
         case .play:
             // Translators: Name of the playback event whose sound is chosen in Settings, Sound Effects: playing starts.
-            return String(localized: "Play")
+            return InterfaceText.line("common.play", "Play")
         case .pause:
             // Translators: Name of the playback event whose sound is chosen in Settings, Sound Effects: playing pauses.
-            return String(localized: "Pause")
+            return InterfaceText.line("common.pauseEvent", "Pause")
         case .skipForward:
             // Translators: Name of the playback event whose sound is chosen in Settings, Sound Effects: skipping forward.
-            return String(localized: "Skip Forward")
+            return InterfaceText.line("common.skipForward", "Skip Forward")
         case .skipBackward:
             // Translators: Name of the playback event whose sound is chosen in Settings, Sound Effects: skipping backward.
-            return String(localized: "Skip Backward")
+            return InterfaceText.line("common.skipBackward", "Skip Backward")
         case .whereAmIStart:
             // Translators: Name of the event whose sound is chosen in Settings, Sound Effects: the Where Am I announcement starts. Where Am I is the name of a command.
-            return String(localized: "Where Am I (Start)")
+            return InterfaceText.line("soundEvent.title.whereAmIStart", "Where Am I (Start)")
         case .whereAmIEnd:
             // Translators: Name of the event whose sound is chosen in Settings, Sound Effects: the Where Am I announcement ends. Where Am I is the name of a command.
-            return String(localized: "Where Am I (End)")
+            return InterfaceText.line("soundEvent.title.whereAmIEnd", "Where Am I (End)")
         }
     }
 }
@@ -282,7 +282,7 @@ class SoundEffectService: ObservableObject {
     static func title(ofSound name: String) -> String {
         guard name == noSound else { return name }
         // Translators: Choice in a Sound Effects pop-up button of Settings: no sound plays for the event.
-        return String(localized: "None")
+        return InterfaceText.line("common.none", "None")
     }
 
     static var defaultAssignments: [SoundEvent: String] {

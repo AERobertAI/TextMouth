@@ -551,26 +551,26 @@ enum MarkupRefusal: LocalizedError, LogDescribing, Equatable {
         case let .nestedTooDeeply(limit):
             return SentenceWording.joined([
                 // Translators: First sentence of why a file was refused: its markup has elements inside elements more levels deep than TextMouth reads. %@ is the most levels, a number.
-                String(localized: "This file's markup nests more than \(limit.formatted()) levels deep, which TextMouth can't read safely."),
+                InterfaceText.line("markupRefusal.nestedTooDeeply", "This file's markup nests more than \(limit.formatted()) levels deep, which TextMouth can't read safely."),
                 Self.getAnotherCopyAdvice,
             ])
         case .tooMuchMarkup:
             return SentenceWording.joined([
                 // Translators: First sentence of why a file was refused: one of its documents has so much markup that reading it would take too much memory.
-                String(localized: "One document in this file has too much markup for TextMouth to read in memory."),
+                InterfaceText.line("markupRefusal.tooMuchMarkup.memory", "One document in this file has too much markup for TextMouth to read in memory."),
                 // Translators: Last sentence of why a file with too much markup was refused: what to do.
-                String(localized: "Divide the document into smaller files, then import them."),
+                InterfaceText.line("markupRefusal.tooMuchMarkup.smaller", "Divide the document into smaller files, then import them."),
             ])
         case let .tooManyAttributes(limit):
             return SentenceWording.joined([
                 // Translators: First sentence of why a file was refused: one of its markup tags has more attributes than TextMouth reads. %@ is the most attributes, a number.
-                String(localized: "One tag in this file has more than \(limit.formatted()) attributes, which TextMouth can't read safely."),
+                InterfaceText.line("markupRefusal.tooManyAttributes", "One tag in this file has more than \(limit.formatted()) attributes, which TextMouth can't read safely."),
                 Self.getAnotherCopyAdvice,
             ])
         case .tooMuchWork:
             return SentenceWording.joined([
                 // Translators: First sentence of why a file was refused: its markup is built so that reading it would take far too long.
-                String(localized: "This file's markup would take TextMouth far too long to read."),
+                InterfaceText.line("markupRefusal.tooMuchWork", "This file's markup would take TextMouth far too long to read."),
                 Self.getAnotherCopyAdvice,
             ])
         }
@@ -580,7 +580,7 @@ enum MarkupRefusal: LocalizedError, LogDescribing, Equatable {
     /// its sentences.
     private static var getAnotherCopyAdvice: String {
         // Translators: Last sentence of why a file was refused for its markup: what to do.
-        String(localized: "Get another copy of the file, or save it in another format, then import it again.")
+        InterfaceText.line("markupRefusal.getAnotherCopyAdvice", "Get another copy of the file, or save it in another format, then import it again.")
     }
 
     /// The refusal in English for the debug log, which stays English

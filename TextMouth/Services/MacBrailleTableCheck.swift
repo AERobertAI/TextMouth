@@ -67,19 +67,19 @@ enum MacBrailleTableCheck {
             switch self {
             case .gone:
                 // Translators: Why a braille table of this Mac was refused, ending a sentence such as "TextMouth can't use this Mac's table X: this Mac no longer has it.".
-                return String(localized: "this Mac no longer has it")
+                return InterfaceText.line("refusal.reason.gone", "this Mac no longer has it")
             case .doesNotLoad:
                 // Translators: Why a braille table of this Mac was refused, ending a sentence. %@ is the version of liblouis, the braille library, written as a version number.
-                return String(localized: "it does not load in TextMouth's liblouis \(BrailleTableCatalog.bundledLiblouisVersion)")
+                return InterfaceText.line("refusal.reason.doesNotLoad", "it does not load in TextMouth's liblouis \(BrailleTableCatalog.bundledLiblouisVersion)")
             case .writesEightDots:
                 // Translators: Why a braille table of this Mac was refused, ending a sentence.
-                return String(localized: "it writes eight-dot braille, and TextMouth uses six-dot braille only")
+                return InterfaceText.line("refusal.reason.writesEightDots", "it writes eight-dot braille, and TextMouth uses six-dot braille only")
             case .needsTooMuchMemory:
                 // Translators: Why a braille table of this Mac was refused, ending a sentence. %lld is the most memory a table may need, in megabytes.
-                return String(localized: "it needs more than \(Int(memoryCeilingBytes / 1_048_576)) MB of memory")
+                return InterfaceText.line("refusal.reason.needsTooMuchMemory", "it needs more than \(number: Int(memoryCeilingBytes / 1_048_576)) MB of memory")
             case .tooSlow:
                 // Translators: Why a braille table of this Mac was refused, ending a sentence. %lld is the least speed a table may have, in kilobytes of text a second.
-                return String(localized: "it translates too slowly, under \(Int(1_000 / secondsPerMBCeiling)) KB a second")
+                return InterfaceText.line("refusal.reason.tooSlow", "it translates too slowly, under \(number: Int(1_000 / secondsPerMBCeiling)) KB a second")
             case let .couldNotCheck(why):
                 return why
             }
@@ -108,12 +108,12 @@ enum MacBrailleTableCheck {
         /// Why a check could not be made when the helper failed.
         static var helperFailed: Refusal {
             // Translators: Why the check of a braille table of this Mac could not be made, ending a sentence. The braille helper is a program TextMouth runs.
-            couldNotCheck(why: String(localized: "the braille helper failed"))
+            couldNotCheck(why: InterfaceText.line("refusal.helperFailed", "the braille helper failed"))
         }
         /// Why a check could not be made when no working folder could be made.
         static var noWorkingFolder: Refusal {
             // Translators: Why the check of a braille table of this Mac could not be made, ending a sentence.
-            couldNotCheck(why: String(localized: "TextMouth could not make a folder to check it in"))
+            couldNotCheck(why: InterfaceText.line("refusal.noWorkingFolder", "TextMouth could not make a folder to check it in"))
         }
 
         /// Why a check could not be made when the watchdog stopped the
@@ -122,7 +122,7 @@ enum MacBrailleTableCheck {
         static func helperStopped(because reason: String) -> Refusal {
             // `reason` is `WatchedProcess.KillReason`'s English clause until that area converts.
             // Translators: Why the check of a braille table of this Mac could not be made, ending a sentence. %@ is a clause saying why the program was stopped, such as "it ran longer than 10 seconds". The braille helper is a program TextMouth runs.
-            couldNotCheck(why: String(localized: "the braille helper was stopped because \(reason)"))
+            couldNotCheck(why: InterfaceText.line("refusal.helperStopped", "the braille helper was stopped because \(reason)"))
         }
 
         /// Whether the check itself could not be made.
