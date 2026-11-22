@@ -18,8 +18,9 @@ import os
 ///    `String(format:locale:arguments:)`.
 ///
 /// The decoded entries of each language asked for are kept, so a second lookup of a line decodes nothing. The pack is
-/// opened and the ID list decoded at the first lookup, a language at its first need, English only for a call with a
-/// number (the only lines a plural entry can serve), and the notes never.
+/// opened and the ID list decoded at the first lookup, a language at its first need, and the notes never. English is
+/// decoded only for a call with a number (the only lines a plural entry can serve), at the first lookup in an English
+/// session, and in another language only when a line falls back to English.
 ///
 /// This is the core of the system: Foundation and `os` only, no type of the app. A problem reaches the app's debug log
 /// through `report`, which the app sets; the engine never imports the logger. A problem is reported once, however
@@ -136,7 +137,8 @@ final class InterfaceTextEngine: Sendable {
     /// Safe from any thread; never traps.
     func text(id: StaticString, english: InterfaceText.Format, language: String, locale: Locale) -> String {
         let count = english.firstNumber
-        let snapshot = locked { $0.snapshot(language: language, needsEnglish: count != nil, open: open) }
+        // English is decoded up front only for an English session; another language takes it when a line falls back.
+        let snapshot = locked { $0.snapshot(language: language, needsEnglish: language == "en" && count != nil, open: open) }
         let index = snapshot.ids?.index(of: id)
         if index == nil, let ids = snapshot.ids, !ids.isEmpty {
             noteProblem("the pack has no line \(id)")  // l10n: no (English text for the debug log, never shown)
@@ -156,7 +158,11 @@ final class InterfaceTextEngine: Sendable {
                                                   table: snapshot.table, english: english, language: language) {
             return render(chosen, english: english, locale: locale)
         }
-        return render(englishPattern(index: index, table: snapshot.englishTable, english: english), english: english, locale: locale)
+        // The fallback: English, whose plural forms come from the pack's English table, decoded now if it is needed and
+        // not yet had (a call with a number, a line the pack knows).
+        var englishTable = snapshot.englishTable
+        if englishTable == nil, count != nil, index != nil { englishTable = locked { $0.englishTable() } }
+        return render(englishPattern(index: index, table: englishTable, english: english), english: english, locale: locale)
     }
 
     /// The person's own entry for `id` in `language`, if the person has one.
@@ -268,6 +274,12 @@ private extension InterfaceTextEngine.Storage {
         if language != "en" { snapshot.table = table(language, tables: tables, ids: ids) }
         if needsEnglish { snapshot.englishTable = table("en", tables: tables, ids: ids) }
         return snapshot
+    }
+
+    /// The English table, decoded the first time it is asked for; nil when the pack is not open or the table is unusable.
+    mutating func englishTable() -> InterfaceTextEngine.LanguageTable? {
+        guard case .open(let tables, let ids) = source else { return nil }
+        return table("en", tables: tables, ids: ids)
     }
 
     /// Opens the pack at the first lookup: the tables and the decoded ID list.

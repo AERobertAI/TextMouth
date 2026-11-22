@@ -130,7 +130,7 @@ struct InterfaceTextPackBytes {
         InterfaceTextPackBytes(idCount: 3, blobs: [
             blob("ids", entries: ["greeting.hello", "library.books", "library.title"]),
             blob("en", entries: ["", pluralEntry("%lld book", "%lld books"), ""]),
-            blob("es", entries: ["Hola", pluralEntry("%lld libro", "%lld libros"), "Biblioteca"]),
+            blob("es", entries: ["Hola", pluralEntry("%lld libro", "%lld libros", "%lld libros"), "Biblioteca"]),
         ])
     }
 }
@@ -519,7 +519,7 @@ extension InterfaceTextTests {
     func testAPluralFormMayLeaveOutItsNumber() {
         let log = InterfaceTextReportLog()
         let engine = makeInterfaceTextEngine([
-            "common.books": ["es": pluralEntry("Un libro", "%lld libros", "%lld libros")],
+            "common.books": ["es": pluralEntry("Un libro", "%lld libros", "%lld libros"), "en": pluralEntry("%lld book", "%lld books")],
             "common.by": ["es": pluralEntry("Uno de %2$@", "%1$lld de %2$@", "%1$lld de %2$@")],
             "common.bad": ["es": pluralEntry("Uno de %@", "%lld de %@", "%lld de %@")],
         ], log: log)
@@ -607,11 +607,41 @@ extension InterfaceTextTests {
         XCTAssertEqual(engine.idCount, 1)
     }
 
+    /// English is decoded in an English session for a call with a number, and in another language only when a line
+    /// falls back to it: a Spanish line with its own entry never decodes English.
+    func testEnglishIsDecodedOnlyWhenItIsNeeded() {
+        let asked = OSAllocatedUnfairLock<[String]>(initialState: [])
+        let tables = InterfaceTextMemoryTables(lines: [
+            "common.books": ["en": pluralEntry("%lld book", "%lld books"), "es": pluralEntry("%lld libro", "%lld libros", "%lld libros")],
+            "common.shelves": ["en": pluralEntry("%lld shelf", "%lld shelves")],
+        ])
+        let engine = InterfaceTextEngine(open: {
+            struct Counting: InterfaceTextTables {
+                let inner: InterfaceTextMemoryTables
+                let asked: OSAllocatedUnfairLock<[String]>
+                func idList() throws -> InterfaceTextIDList { try inner.idList() }
+                func entries(language: String) throws -> [InterfaceTextEntry] {
+                    asked.withLock { $0.append(language) }
+                    return try inner.entries(language: language)
+                }
+            }
+            return Counting(inner: tables, asked: asked)
+        }, report: { _ in })
+        let count = 2
+        XCTAssertEqual(interfaceLine(engine, "common.books", "\(number: count) books", language: "es"), "2 libros")
+        XCTAssertEqual(asked.withLock { $0 }, ["es"], "a line with its own entry needs no English")
+        XCTAssertEqual(interfaceLine(engine, "common.shelves", "\(number: count) shelves", language: "es"), "2 shelves")
+        XCTAssertEqual(asked.withLock { $0 }, ["es", "en"], "a fallback with a number reads English")
+        XCTAssertEqual(interfaceLine(engine, "common.shelves", "\(number: count) shelves", language: "es"), "2 shelves")
+        XCTAssertEqual(asked.withLock { $0 }, ["es", "en"], "and once")
+    }
+
     /// Many threads at once, under a time limit.
     func testConcurrentLookups() {
         let log = InterfaceTextReportLog()
         let engine = makeInterfaceTextEngine([
-            "common.books": ["es": pluralEntry("%lld libro", "%lld libros", "%lld libros"), "ru": pluralEntry("%lld книга", "%lld книги", "%lld книг", "%lld книги")],
+            "common.books": ["es": pluralEntry("%lld libro", "%lld libros", "%lld libros"), "ru": pluralEntry("%lld книга", "%lld книги", "%lld книг", "%lld книги"),
+                          "en": pluralEntry("%lld book", "%lld books")],
             "greeting.hello": ["es": "Hola", "ru": "Привет"],
             "bad.line": ["es": "%s"],
         ], log: log)
@@ -759,7 +789,7 @@ final class InterfaceTextPackTests: XCTestCase {
         XCTAssertEqual(pack.idCount, 3)
         let ids = try pack.idList()
         XCTAssertEqual(ids.index(of: "library.books"), 1)
-        XCTAssertEqual(try pack.entries(language: "es"), [.plain("Hola"), .plural(["%lld libro", "%lld libros"]), .plain("Biblioteca")])
+        XCTAssertEqual(try pack.entries(language: "es"), [.plain("Hola"), .plural(["%lld libro", "%lld libros", "%lld libros"]), .plain("Biblioteca")])
         XCTAssertEqual(try pack.entries(language: "en"), [.absent, .plural(["%lld book", "%lld books"]), .absent])
         XCTAssertTrue(pack.hasLanguage("es"))
         XCTAssertFalse(pack.hasLanguage("ids"))
@@ -844,7 +874,7 @@ final class InterfaceTextPackTests: XCTestCase {
     /// A blob cut short, a raw size too large or too small, a wrong entry count, bad UTF-8, a missing terminator: each
     /// fails the blob and the lookup shows English, with one report.
     func testDamagedLanguageBlobsGiveEnglish() throws {
-        let spanish = ["Hola", pluralEntry("%lld libro", "%lld libros"), "Biblioteca"]
+        let spanish = ["Hola", pluralEntry("%lld libro", "%lld libros", "%lld libros"), "Biblioteca"]
         var cases: [(String, InterfaceTextPackBytes.Blob)] = []
         let good = InterfaceTextPackBytes.blob("es", entries: spanish)
         var cut = good; cut.compressed = Array(good.compressed.prefix(good.compressed.count / 2)); cases.append(("cut", cut))
@@ -859,7 +889,7 @@ final class InterfaceTextPackTests: XCTestCase {
         cases.append(("bad UTF-8", InterfaceTextPackBytes.blob("es", raw: [0x48, 0xFF, 0, 0x78, 0, 0x79, 0], count: 3)))
         cases.append(("overlong UTF-8", InterfaceTextPackBytes.blob("es", raw: [0xC0, 0xAF, 0, 0x78, 0, 0x79, 0], count: 3)))
         cases.append(("surrogate", InterfaceTextPackBytes.blob("es", raw: [0xED, 0xA0, 0x80, 0, 0x78, 0, 0x79, 0], count: 3)))
-        cases.append(("a plural of the wrong size", InterfaceTextPackBytes.blob("es", entries: ["Hola", pluralEntry("a", "b", "c"), "x"])))
+        cases.append(("a plural of the wrong size", InterfaceTextPackBytes.blob("es", entries: ["Hola", pluralEntry("a", "b"), "x"])))
         for (name, blob) in cases {
             var bytes = InterfaceTextPackBytes.sample()
             bytes.blobs[2] = blob

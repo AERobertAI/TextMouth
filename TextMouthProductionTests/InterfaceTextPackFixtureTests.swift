@@ -73,7 +73,7 @@ final class InterfaceTextPackFixtureTests: XCTestCase {
         let lines = InterfaceTextEngine(tables: try pack("lines.pack"), report: log.sink)
         let name = "Ana", pages = 3
         XCTAssertEqual(interfaceLine(lines, "fixture.number", "Page \(number: pages)", language: "es"), "Página 3")
-        XCTAssertEqual(interfaceLine(lines, "fixture.reorder", "\(name) read \(number: pages) pages", language: "ar"), "قرأ Ana 3 صفحة")
+        XCTAssertEqual(interfaceLine(lines, "fixture.reorder", "\(name) read \(number: pages) pages", language: "ar"), "قرأ \u{2068}Ana\u{2069} 3 صفحة", "Foundation isolates the right-to-left format's argument, as String(localized:) does")
         XCTAssertEqual(interfaceLine(lines, "fixture.englishOnly", "Only English", language: "ja"), "Only English")
         let plurals = InterfaceTextEngine(tables: try pack("plurals.pack"), report: log.sink)
         let one = 1, five = 5
