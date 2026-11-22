@@ -23,7 +23,7 @@ The format, version 1 (little-endian). research/STRINGS-SYSTEM-DESIGN-2026-11-21
   order; every other blob holds one entry for each ID, in that order. `notes` holds each ID's translators' note ("" for
   none). A language entry is "" (no translation: the reader uses English), the text, or U+0001 followed by the plural
   forms in the language's category order (`catalog.PLURAL_CATEGORIES`), joined by U+0001. A plural whose forms are all
-  one text is written as that text, by the rule `compact_packs.py` already applies to the compiled tables.
+  one text is written as that text.
 
 What goes in is exactly what Xcode compiles today: every localization state except `new`.
 
@@ -53,7 +53,6 @@ sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import catalog  # noqa: E402  (imported by path, after sys.path is set)
-import compact_packs  # noqa: E402
 import translate  # noqa: E402
 
 # ---------------------------------------------------------------------------------------------------------------
@@ -122,16 +121,13 @@ def decode_entry(text):
 
 
 def squeeze_forms(categories, forms):
-    """The entry for plural `forms` (a tuple in the order of `categories`): the one text when all forms are the same,
-    else the tuple. The rule is `compact_packs.plain_text_of_plural`'s, asked of a stringsdict entry made from the forms
-    (a plain entry would read the same text for every count, so nothing a person hears changes)."""
-    stringsdict_entry = {
-        compact_packs.FORMAT_KEY: "%#@value@",
-        "value": {compact_packs.SPEC_TYPE_KEY: compact_packs.PLURAL_RULE, compact_packs.VALUE_TYPE_KEY: "lld",
-                  **dict(zip(categories, forms))},
-    }
-    one_text = compact_packs.plain_text_of_plural(stringsdict_entry)
-    return forms if one_text is None else one_text
+    """The entry for plural `forms` (a tuple in the order of `categories`): the one text when every form is the same
+    text, else the tuple. `other` is always among the categories (the catalog's check refuses a plural without it), so
+    no count can reach a category without a form, and a plain entry reads the same text for every count: nothing a
+    person hears changes. (The rule is the one the retired compact language files applied to Apple's tables.)"""
+    if "other" in categories and len(set(forms)) == 1:
+        return forms[0]
+    return forms
 
 
 def describe_entry(entry):
