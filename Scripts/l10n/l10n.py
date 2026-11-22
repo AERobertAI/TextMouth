@@ -629,9 +629,9 @@ def cmd_reach(args):
 
 
 def cmd_plural(args):
-    """`plural KEY --lang L --one TEXT --other TEXT ...`: writes the plural forms of one string in one language. Refuses
-    (exit status 1, nothing written) a form the language does not use, a missing form, an empty form, or a form whose
-    placeholders differ from the key's."""
+    """`plural ID --lang L --one TEXT --other TEXT ...`: writes the plural forms of one string (by its ID) in one language.
+    Refuses (exit status 1, nothing written) a form the language does not use, a missing form, an empty form, or a form whose
+    placeholders differ from the English's."""
     cat = load_catalog(args)
     forms = {category: getattr(args, category) for category in PLURAL_OPTIONS if getattr(args, category) is not None}
     try:
@@ -900,7 +900,7 @@ def build_parser():
     reach_command.add_argument("--base", default="main", help="the branch to compare with (default main)")
     reach_command.add_argument("--explain", action="store_true", help="a line for each class and the reason it is reached")
     plural = add("plural", "write a string's plural forms in one language, English included", cmd_plural)
-    plural.add_argument("key", help="the string's key, such as '%%lld books'")
+    plural.add_argument("key", help="the string's ID, such as common.countMinutes")
     plural.add_argument("--lang", required=True, help="the language, such as en or es")
     for category in PLURAL_OPTIONS:
         plural.add_argument(f"--{category}", help=f"the text of the {category} form (give exactly the forms the language uses)")

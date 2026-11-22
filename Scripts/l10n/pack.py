@@ -724,7 +724,8 @@ def parser():
 
     def inputs(command):
         command.add_argument("--catalog", required=True, help="the String Catalog")
-        command.add_argument("--ids", help="the ID table; without it every catalog key must already be an ID")
+        command.add_argument("--ids", help="the ID table of a catalog still keyed by English (only rekey.py's proof needs one); without "
+                                           "it every catalog key must be an ID with an `en` text, as the repository's catalog is since phase 7")
         command.add_argument("--max-id-length", type=int, default=MAX_ID_LENGTH,
                              help="the longest ID allowed (default %(default)s; a measurement may raise it)")
 
