@@ -5,7 +5,6 @@ user's library."""
 
 from __future__ import annotations
 
-import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -20,10 +19,9 @@ import ids  # noqa: E402
 MODELS = "TextMouth/Models"
 
 
-def make_tree(root: Path, sources: Dict[str, str], keys: List[str], table: Optional[dict] = None,
-              retired: Optional[List[str]] = None) -> None:
-    """Writes a catalog with `keys`, the Swift `sources` ({path under TextMouth/Models: text}), and optionally ids.json
-    and retired-ids.txt, under `root`."""
+def make_tree(root: Path, sources: Dict[str, str], keys: List[str], retired: Optional[List[str]] = None) -> None:
+    """Writes a catalog with `keys`, the Swift `sources` ({path under TextMouth/Models: text}), and optionally
+    retired-ids.txt, under `root`."""
     cat = catalog.Catalog.empty()
     for key in keys:
         cat.strings[key] = {}
@@ -34,10 +32,6 @@ def make_tree(root: Path, sources: Dict[str, str], keys: List[str], table: Optio
         path = root / MODELS / name
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(text, encoding="utf-8")
-    if table is not None:
-        path = root / ids.IDS_PATH
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(ids.dump_table(table), encoding="utf-8")
     if retired is not None:
         path = root / ids.RETIRED_PATH
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -78,7 +72,8 @@ class WordTests(unittest.TestCase):
         self.assertEqual(ids.slug("3 books", 3), "n3Books")
 
     def test_the_rarest_words_tell_keys_apart(self) -> None:
-        frequency = ids.word_frequency(["Download the book", "Download the feed", "Download the index"])
+        # How many English texts hold each word: "download" is in all three, so the rarer "feed" tells this text apart.
+        frequency = {"download": 3, "the": 3, "book": 1, "feed": 1, "index": 1}
         self.assertEqual(ids.slug("Download the feed", 1, frequency=frequency), "feed")
 
     def test_a_slug_never_repeats_a_word_the_id_already_holds(self) -> None:

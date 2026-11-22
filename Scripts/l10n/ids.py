@@ -2,29 +2,22 @@
 """The permanent short ID of every interface string (FR39, phase 3).
 
 An ID is `owner.member[.case]` in lower camel case, taken once from the Swift declaration that holds the string and
-then frozen as the call's literal and the catalog's key (`Scripts/l10n/ids.json`, which mapped English keys to IDs while the
-catalog was keyed by English, is no longer read: the catalog is keyed by ID since FR39 phase 7); a key that several types use
-is `common.*`. The design is `research/STRINGS-SYSTEM-DESIGN-2026-11-21.md`, section "IDs".
+then frozen as the call's literal and the catalog's key; a key that several types use is `common.*`. The design is `research/STRINGS-SYSTEM-DESIGN-2026-11-21.md`, section "IDs".
 
     ids.py suggest FILE:LINE [--root DIR]    propose an ID for the call on that line, clear of every ID in the catalog, in
                                              the code's calls, and retired
 
-The tool reads the sources with `swiftscan`'s lexer; it uses the standard library only and runs under Python 3.9. (`propose`
-and `check`, which made and checked ids.json, left in phase 7; the helpers that form an ID stay, `suggest` and the retired
-`convert_calls.py` use them.)
+The tool reads the sources with `swiftscan`'s lexer; it uses the standard library only and runs under Python 3.9.
 """
 
 from __future__ import annotations
 
 import argparse
-import json
 import re
-import subprocess
 import sys
-from collections import Counter, defaultdict
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Sequence, Set, Tuple
+from typing import Dict, List, Optional, Sequence, Set, Tuple
 
 HERE = Path(__file__).resolve().parent
 if str(HERE) not in sys.path:
@@ -32,19 +25,14 @@ if str(HERE) not in sys.path:
 
 import catalog  # noqa: E402
 from swiftscan import scanner  # noqa: E402
-from swiftscan.lexer import Literal  # noqa: E402
 
 # Where the files live, relative to the repository root.
 CATALOG_PATH = "TextMouth/Localization/Localizable.xcstrings"
-IDS_PATH = "Scripts/l10n/ids.json"
 RETIRED_PATH = "Scripts/l10n/retired-ids.txt"
 
 # The form of an ID (two to four lower camel case segments) and its length limit.
 ID_PATTERN = re.compile(r"[a-z][A-Za-z0-9]*(\.[a-z][A-Za-z0-9]*){1,3}")
 MAX_ID_LENGTH = 48
-# The version of ids.json's shape.
-TABLE_VERSION = 1
-
 # Words a type's name may end with that the owner leaves out (`SleepTimerWording` is `sleepTimer`).
 OWNER_SUFFIXES = ("Wording", "Vocabulary", "Words", "Text")
 # An error's text members (and an initializer): with a switch case present, the case alone names the string.
@@ -140,102 +128,6 @@ def declarations_at(lines: Sequence[str], line: int) -> Tuple[List[str], Optiona
 
 
 # ---------------------------------------------------------------------------------------------- finding the keys
-
-
-def normalize_key(key: str) -> str:
-    """The key as the lexer writes a literal: every interpolation `%@`, a percent sign a single `%`."""
-    return key.replace("%%", "%").replace("%lld", "%@")
-
-
-def note_references(note: str) -> Dict[int, str]:
-    """The types a translator's note names, as {1-based position: "int64" or "object"}: `%lld`, `%@`, `%1$@`, `%2$lld`.
-    A bare specifier takes the next position."""
-    found: Dict[int, str] = {}
-    next_position = 1
-    for placeholder in catalog.placeholders(note):
-        if placeholder.type not in ("int64", "object"):
-            continue
-        position = placeholder.position or next_position
-        found[position] = placeholder.type
-        next_position = position + 1
-    return found
-
-
-def key_types(key: str) -> Dict[int, str]:
-    """The type of each placeholder of a catalog key, by 1-based position."""
-    return {i + 1: p.type for i, p in enumerate(catalog.placeholders(key))}
-
-
-def pick_by_note(candidates: Set[str], note: str) -> Optional[str]:
-    """Among the keys a literal could be (`%@ seconds` and `%lld seconds` read alike), the one whose placeholder types the
-    note names; None when the note settles nothing or settles two."""
-    named = note_references(note)
-    if not named:
-        return None
-    agreeing = [key for key in sorted(candidates)
-                if all(key_types(key).get(position) == kind for position, kind in named.items())]
-    return agreeing[0] if len(agreeing) == 1 else None
-
-
-def load_locations(path: Optional[Path]) -> Dict[str, List[dict]]:
-    """build/l10n/locations.json (written by `l10n.py sync`): {key: [{file, line}]}, empty when there is no file."""
-    if path is None or not path.is_file():
-        return {}
-    return json.loads(path.read_text(encoding="utf-8")).get("Localizable", {})
-
-
-def literal_sites(root: Path, strings: Iterable[str], locations: Optional[Dict[str, List[dict]]] = None,
-                  only_files: Optional[Set[str]] = None) -> Iterable[Tuple[Literal, Site]]:
-    """Every `String(localized:)`-style call of `root`'s sources as (its literal, its site): the literal's place and text,
-    and the key and declaration it belongs to.
-
-    A literal's key is the one key of that text among `strings`; where `%@` and `%lld` keys read alike, the translator's
-    note decides, then `locations` (when given); a literal still undecided is left without a key. With `only_files`
-    (paths relative to `root`), only the calls of those files are given, though every file is scanned (the scan needs the
-    whole tree to know which functions take a localized resource)."""
-    strings = set(strings)
-    by_text: Dict[str, Set[str]] = defaultdict(set)
-    for key in strings:
-        by_text[normalize_key(key)].add(key)
-    by_spot = {(spot["file"], spot["line"]): key for key, spots in (locations or {}).items() for spot in spots}
-    source: Dict[str, List[str]] = {}
-    for lit in scanner.scan_tree(root).literals:
-        if lit.rule != "localized-key" or (only_files is not None and lit.file not in only_files):
-            continue
-        if lit.file not in source:
-            source[lit.file] = (root / lit.file).read_text(encoding="utf-8", errors="replace").split("\n")
-        lines = source[lit.file]
-        candidates = by_text.get(lit.text, set())
-        if len(candidates) == 1:
-            key: Optional[str] = next(iter(candidates))
-        else:
-            note = lines[lit.line - 2] if lit.line >= 2 else ""
-            key = pick_by_note(candidates, note) if candidates else None
-            if key is None:
-                key = by_spot.get((lit.file, lit.line))
-        yield lit, site_at(lines, lit.file, lit.line, key)
-
-
-def site_at(lines: Sequence[str], file: str, line: int, key: Optional[str]) -> Site:
-    """The site of the call on the 1-based `line` of a file's `lines`: the declaration around it, and the `key` it holds."""
-    types, member, case = declarations_at(lines, line)
-    return Site(file, line, key, owner_type(types, file), member or "init", case)
-
-
-def collect_sites(root: Path, strings: Iterable[str], locations: Optional[Dict[str, List[dict]]] = None) -> List[Site]:
-    """Every localized call of `root`'s sources, tied to its catalog key and its declaration (see `literal_sites`)."""
-    return [site for _lit, site in literal_sites(root, strings, locations)]
-
-
-def id_for_site(table: dict, key: str, site: Site) -> Optional[str]:
-    """The ID that a call at `site` holding `key` must carry: the key's own ID, or, for a key that is split, the ID of the
-    one use that names the site (see `Site.selectors`). None when the key has no ID, or when no use or several name
-    the site."""
-    uses = table.get("splits", {}).get(key)
-    if not uses:
-        return table.get("ids", {}).get(key)
-    covering = [use["id"] for use in uses if set(use["sites"]) & set(site.selectors())]
-    return covering[0] if len(covering) == 1 else None
 
 
 def owner_type(types: Sequence[str], file: str) -> str:
@@ -445,137 +337,7 @@ def make_id(parts: Sequence[str], english: Optional[str], words: int, common: bo
     return ".".join(segments)
 
 
-def word_frequency(keys: Iterable[str]) -> Dict[str, int]:
-    """{word: the number of the keys' English texts that hold it}, for choosing the words that tell keys apart."""
-    count: Counter = Counter()
-    for key in keys:
-        count.update({w.lower() for w in english_words(key)})
-    return dict(count)
-
-
-def acceptable(ident: str) -> bool:
-    """Whether an ID is in the pattern and within the length limit."""
-    return len(ident) <= MAX_ID_LENGTH and bool(ID_PATTERN.fullmatch(ident))
-
-
-# How many of the English's first words a `common` ID starts from (`common.sleepTimer`, `common.saveItAsUtf8ThenImport`).
-COMMON_WORDS = 6
-
-
-def fit_group(keys: List[str], parts: List[str], common: bool, taken: Dict[str, str], start: int = 1) -> Dict[str, str]:
-    """IDs for keys that share `parts`, each key's English words added until its ID is its own: one word of the group's
-    rarest (a type's own strings start from `start` of the first words, and a `common` ID from six of them with the
-    small words kept, so that it reads as the English), and more words for
-    each key whose ID another key, or an ID already taken, shares. Keys whose words are all the same then name their
-    placeholders (`articlesCount`). A key whose ID is too long then tries the member without its filler words and fewer
-    words. Where nothing fits, the key keeps its longest unique form for the review."""
-    frequency = None if (common or start > 1) else word_frequency(keys)
-    marked: Set[str] = set(keys) if common else set()
-    count = {key: (COMMON_WORDS if common else start) for key in keys}
-
-    def words_of(key: str) -> int:
-        """How many words the key's English has in its current form."""
-        return len(english_words(key, common, key in marked))
-
-    def ident(key: str, use: List[str], words: int) -> str:
-        """The key's ID with `words` words after `use`."""
-        return make_id(use, key, words, common, frequency, key in marked)
-
-    for round_number in range(2):
-        for _ in range(max((words_of(k) for k in keys), default=1) + 1):
-            ids = {key: ident(key, parts, count[key]) for key in keys}
-            tally = Counter(ids.values())
-            clash = [k for k, i in ids.items() if tally[i] > 1 or taken.get(i, k) != k
-                     or len(i.rsplit(".", 1)[-1]) <= 3]  # a slug of one or two letters says nothing
-            grown = [k for k in clash if count[k] < words_of(k)]
-            for key in grown:
-                count[key] += 1
-            if not grown:
-                break
-        if round_number == 0 and clash:
-            # Words alone cannot tell these apart: name the placeholders and start again from the first words.
-            for key in clash:
-                marked.add(key)
-                count[key] = COMMON_WORDS if common else 1
-    ids = {key: ident(key, parts, count[key]) for key in keys}
-    for key in keys:
-        if acceptable(ids[key]):
-            continue
-        others = {i for k, i in ids.items() if k != key}
-        for use in shorter_forms(parts):
-            # From the most words that fit down to one: the parts alone would name only one of the strings.
-            tries = [ident(key, use, n) for n in range(count[key], 0, -1)]
-            fitted = next((t for t in tries if acceptable(t) and t not in others and taken.get(t, key) == key), None)
-            if fitted:
-                ids[key] = fitted
-                break
-    return ids
-
-
-def resolve(forms: Dict[str, Tuple[List[str], str]], taken: Optional[Dict[str, str]] = None) -> Dict[str, str]:
-    """{key: ID} for every key in `forms`.
-
-    A key that is alone with its declaration's ID takes it (the member's name only, no English). Keys that share one
-    take English words to tell them apart; a key of "members" takes its type's name and its words; a "common" key takes
-    `common` and its first words."""
-    taken = dict(taken or {})
-    result: Dict[str, str] = {}
-    groups: Dict[Tuple[str, str], List[str]] = defaultdict(list)
-    for key in sorted(forms):
-        parts, how = forms[key]
-        groups[(how, ".".join(parts))].append(key)
-    # Keys alone with a usable declaration ID take it first, so that no slug takes it from them.
-    crowded: List[Tuple[str, str]] = []
-    for (how, first), keys in sorted(groups.items()):
-        # A key alone with its declaration takes the declaration's name, shortened when it is too long.
-        bare = next((".".join(use) for use in shorter_forms(forms[keys[0]][0])
-                     if acceptable(".".join(use)) and ".".join(use) not in taken), None) \
-            if how == "declaration" and len(keys) == 1 else None
-        if bare:
-            result[keys[0]] = bare
-            taken[bare] = keys[0]
-        else:
-            crowded.append((how, first))
-    for how, first in crowded:
-        keys = groups[(how, first)]
-        # A type's strings have no member to carry their meaning, so they start from three words, as the design says.
-        ids = fit_group(keys, forms[keys[0]][0], how == "common", taken, 3 if how == "members" else 1)
-        for key, ident in ids.items():
-            taken[ident] = key
-            result[key] = ident
-    return result
-
-
 # ---------------------------------------------------------------------------------------------- the table
-
-
-def table_path(root: Path) -> Path:
-    """ids.json under `root`."""
-    return root / IDS_PATH
-
-
-def load_table(path: Path) -> dict:
-    """The table at `path`, or an empty one."""
-    if path.is_file():
-        return json.loads(path.read_text(encoding="utf-8"))
-    return {"version": TABLE_VERSION, "ids": {}, "splits": {}}
-
-
-def dump_table(table: dict) -> str:
-    """The table as text: one key to a line so that a diff reads, keys in sorted order, UTF-8 as written."""
-    out = ['{', f'"version": {table["version"]},', '"ids": {']
-    ids = sorted(table["ids"].items())
-    out += [f'{json.dumps(k, ensure_ascii=False)}: {json.dumps(v)}' + ("," if i < len(ids) - 1 else "")
-            for i, (k, v) in enumerate(ids)]
-    out += ['},', '"splits": {']
-    splits = sorted(table["splits"].items())
-    for i, (key, uses) in enumerate(splits):
-        out.append(f'{json.dumps(key, ensure_ascii=False)}: [')
-        for j, use in enumerate(uses):
-            out.append("  " + json.dumps(use, ensure_ascii=False) + ("," if j < len(uses) - 1 else ""))
-        out.append("]" + ("," if i < len(splits) - 1 else ""))
-    out += ['}', '}']
-    return "\n".join(out) + "\n"
 
 
 def retired_ids(root: Path) -> Set[str]:
@@ -587,23 +349,7 @@ def retired_ids(root: Path) -> Set[str]:
     return {line for line in lines if line and not line.startswith("#")}
 
 
-def main_checkout() -> Optional[Path]:
-    """The main checkout's folder, found through git (a worktree shares its repository), or None."""
-    try:
-        common = subprocess.run(["git", "rev-parse", "--path-format=absolute", "--git-common-dir"], capture_output=True,
-                                text=True, check=True, timeout=20).stdout.strip()
-    except (OSError, subprocess.SubprocessError):
-        return None
-    return Path(common).parent if common else None
-
-
 # ---------------------------------------------------------------------------------------------- check
-
-
-def main_locations(root: Path) -> Optional[Path]:
-    """The main checkout's build/l10n/locations.json, which ties the few ambiguous sites to their keys."""
-    base = main_checkout()
-    return (base / "build" / "l10n" / "locations.json") if base else None
 
 
 # ---------------------------------------------------------------------------------------------- suggest
