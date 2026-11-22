@@ -8255,6 +8255,7 @@
 				FF0E856FCEDDA3C191BC39A0 /* CopyFiles */,
 				BAC07B34CF68D2587F4A0963 /* Frameworks */,
 				F4C002DE3DE0291522FC0C06 /* Compact language files */,
+				C7D51574CF818E9E0B89197A /* Pack interface text */,
 			);
 			buildRules = (
 			);
@@ -8495,6 +8496,7 @@
 				5B26D5AA6DDCEFAEAEB67A60 /* Frameworks */,
 				C0C794FB23B67989FD99D8E3 /* Embed Dependencies */,
 				89748C857B721999D73DFDFB /* Compact language files */,
+				59ED10AD1BDD8592D9AE5A35 /* Pack interface text */,
 			);
 			buildRules = (
 			);
@@ -8682,6 +8684,25 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		59ED10AD1BDD8592D9AE5A35 /* Pack interface text */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Pack interface text";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "/usr/bin/python3 -I -B \"$SRCROOT/Scripts/l10n/pack.py\" build --catalog \"$SRCROOT/TextMouth/Localization/Localizable.xcstrings\" --ids \"$SRCROOT/Scripts/l10n/ids.json\" --out \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Strings.pack\" --stamp \"$DERIVED_FILE_DIR/Strings.pack.stamp\"";
+		};
 		89748C857B721999D73DFDFB /* Compact language files */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
@@ -8742,6 +8763,25 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "/usr/bin/python3 -I -B \"$SRCROOT/Scripts/vendor/ffmpeg/build.py\" --xcode";
+		};
+		C7D51574CF818E9E0B89197A /* Pack interface text */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Pack interface text";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "/usr/bin/python3 -I -B \"$SRCROOT/Scripts/l10n/pack.py\" build --catalog \"$SRCROOT/TextMouth/Localization/Localizable.xcstrings\" --ids \"$SRCROOT/Scripts/l10n/ids.json\" --out \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Strings.pack\" --stamp \"$DERIVED_FILE_DIR/Strings.pack.stamp\"";
 		};
 		D4006D4DC2CA1958609F2B67 /* Copy Swift Objective-C Interface Header */ = {
 			isa = PBXShellScriptBuildPhase;

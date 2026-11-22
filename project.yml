@@ -246,6 +246,31 @@ targetTemplates:
       base:
         ENABLE_USER_SCRIPT_SANDBOXING: NO
 
+  # The interface-text pack (FR39), for both apps: Scripts/l10n/pack.py builds Strings.pack, the
+  # IDs, the English, the translators' notes, and every language in one file, from the String
+  # Catalog and the ID table (Scripts/l10n/ids.json, while the catalog is still keyed by English),
+  # into the folder that holds the app's resources. A postBuildScript, after the Resources phase and
+  # before Xcode signs the product, as "Compact language files" is. Apple's own language files stay
+  # beside it until the switch (each app grows by about 1.3 MB until then).
+  #
+  # pack.py writes the file by replacing it (never in place), because the engine memory-maps the
+  # pack and a file rewritten under a running process can end it with SIGBUS. Its stamp, which lets a
+  # build with nothing changed skip the work, lives in DERIVED_FILE_DIR, outside the app. A catalog
+  # key with no ID, or any text the pack refuses, fails the build and leaves the earlier file as it
+  # was. `make check` fails a pack over 1.5 MB or an app that holds other than one Strings.pack, and
+  # InterfaceTextShippedPackTests compares the pack each test host ships with Apple's tables.
+  #
+  # Script sandboxing is off, as for the compact phase: the script reads the repository and writes
+  # into the product.
+  PackInterfaceText:
+    postBuildScripts:
+      - name: Pack interface text
+        script: /usr/bin/python3 -I -B "$SRCROOT/Scripts/l10n/pack.py" build --catalog "$SRCROOT/TextMouth/Localization/Localizable.xcstrings" --ids "$SRCROOT/Scripts/l10n/ids.json" --out "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Strings.pack" --stamp "$DERIVED_FILE_DIR/Strings.pack.stamp"
+        basedOnDependencyAnalysis: false
+    settings:
+      base:
+        ENABLE_USER_SCRIPT_SANDBOXING: NO
+
   # SwiftSoup 2.13.9, the HTML and XML parser, vendored in Vendor/SwiftSoup
   # (see its README.md): the release's own source with attributes changed
   # and nothing else, written by Scripts/vendor/swiftsoup/make_vendor.py. A
@@ -277,6 +302,7 @@ targets:
     type: application
     templates:
       - CompactLanguageFiles
+      - PackInterfaceText
     platform: macOS
     sources:
       # Every source file, less the iOS app's own folder: a new file is
@@ -573,6 +599,7 @@ targets:
     type: application
     templates:
       - CompactLanguageFiles
+      - PackInterfaceText
     platform: iOS
     deploymentTarget: "26.0"
     sources:

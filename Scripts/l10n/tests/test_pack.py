@@ -436,6 +436,18 @@ class BuildTests(PackCase):
         _, said, _ = self.run_main("build", "--catalog", catalog_path, "--out", out, "--no-stamp")
         self.assertIn("wrote", said)
 
+    def test_a_stamp_may_live_elsewhere(self):
+        # The app's build keeps the stamp out of the app: it skips on it all the same.
+        catalog_path = self.write_catalog({"a.one": line("One", es="Uno")})
+        out = self.folder / "Strings.pack"
+        stamp = self.folder / "elsewhere.stamp"
+        _, said, _ = self.run_main("build", "--catalog", catalog_path, "--out", out, "--stamp", stamp)
+        self.assertIn("wrote", said)
+        self.assertTrue(stamp.is_file())
+        self.assertFalse(Path(str(out) + ".stamp").exists())
+        _, said, _ = self.run_main("build", "--catalog", catalog_path, "--out", out, "--stamp", stamp)
+        self.assertIn("up to date", said)
+
     def test_a_rebuild_replaces_the_file_and_leaves_the_old_one_whole_for_whoever_has_it(self):
         # The engine maps the pack; a file rewritten in place under a running process can end it with SIGBUS.
         # A replaced file is a new file: whoever has the old one open or mapped still reads every byte of it. An open
