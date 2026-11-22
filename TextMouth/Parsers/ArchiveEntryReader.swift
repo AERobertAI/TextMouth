@@ -106,7 +106,7 @@ enum ArchiveFigures {
 
     /// `value` as a count, such as "12,345".
     static func count(_ value: Int) -> String {
-        value.formatted()
+        value.interfaceFormatted()
     }
 }
 

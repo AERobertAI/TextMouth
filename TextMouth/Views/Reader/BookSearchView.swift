@@ -232,7 +232,7 @@ enum BookSearchWording {
     /// A row's label when the match is placed by its position in the book as
     /// a percentage: "<context>, at 50.0 percent of book".
     static func percentLabel(_ context: String, percent: Double) -> String {
-        let number = percent.formatted(.number.precision(.fractionLength(1)))
+        let number = percent.formatted(.number.precision(.fractionLength(1)).locale(InterfaceLanguage.current.locale))
         // Translators: VoiceOver label of a search result placed by percentage. %1$@ is the match with its context and place, and %2$@ is the percentage through the book with one decimal digit, such as 12.5.
         return InterfaceText.line("bookSearch.percentLabel", "\(context), at \(number) percent of book")
     }
@@ -799,7 +799,7 @@ struct SearchResultRow: View {
         switch displayMode {
         case .percentage:
             // The region's percent format, with one decimal digit: "50.0%".
-            return (percentage / 100).formatted(.percent.precision(.fractionLength(1)))
+            return (percentage / 100).formatted(.percent.precision(.fractionLength(1)).locale(InterfaceLanguage.current.locale))
         case .time:
             return TimeFormatting.format(timeInSeconds)
         }

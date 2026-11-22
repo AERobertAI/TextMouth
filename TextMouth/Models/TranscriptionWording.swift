@@ -149,7 +149,7 @@ enum TranscriptionWording {
     /// its region, as one model serves every region ("English").
     static func modelLanguageName(of identifier: String) -> String {
         let code = Locale(identifier: identifier).language.languageCode?.identifier ?? identifier
-        return Locale.current.localizedString(forLanguageCode: code) ?? identifier
+        return InterfaceLanguage.current.locale.localizedString(forLanguageCode: code) ?? identifier
     }
 
     /// The approximate size of one language's speech model: the system's
@@ -888,7 +888,7 @@ enum TranscriptionWording {
 
     /// `date` as a day in the user's own words: "October 4, 2026".
     static func day(_ date: Date) -> String {
-        date.formatted(date: .long, time: .omitted)
+        date.interfaceFormatted(date: .long, time: .omitted)
     }
 
     /// `count` words, the count written with the user's grouping: "1 word",

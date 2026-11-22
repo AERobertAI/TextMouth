@@ -318,4 +318,30 @@ final class InterfaceLanguageChoiceTests: XCTestCase {
         InterfaceLanguage.choose(.language("it"), store: store)
         XCTAssertEqual(published.withLock { $0 }, 1)
     }
+
+    // MARK: - Formatters
+
+    /// A figure is written with the interface language's grouping, not the system's region's.
+    func testFiguresFollowTheInterfaceLanguage() {
+        XCTAssertEqual(1_234_567.interfaceFormatted(), "1,234,567")
+        InterfaceLanguage.$scopedLanguage.withValue("de") {
+            XCTAssertEqual(1_234_567.interfaceFormatted(), "1.234.567")
+            XCTAssertEqual(Int64(12_345).interfaceFormatted(), "12.345")
+            XCTAssertEqual(ArchiveFigures.count(12_345), "12.345")
+        }
+    }
+
+    /// A date and a list are written in the interface language: its month names and its "and".
+    func testDatesAndListsFollowTheInterfaceLanguage() {
+        // Noon UTC in mid-June: the same month and year in every time zone.
+        let date = Date(timeIntervalSince1970: 1_781_524_800)
+        let english = date.interfaceFormatted(date: .long, time: .omitted)
+        XCTAssertTrue(english.contains("June"), english)
+        InterfaceLanguage.$scopedLanguage.withValue("es") {
+            let spanish = date.interfaceFormatted(date: .long, time: .omitted)
+            XCTAssertTrue(spanish.contains("junio"), spanish)
+            XCTAssertEqual(CountWording.list(["a", "b", "c"]), "a, b y c")
+        }
+        XCTAssertEqual(CountWording.list(["a", "b", "c"]), "a, b, and c")
+    }
 }

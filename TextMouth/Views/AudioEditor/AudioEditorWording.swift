@@ -161,9 +161,9 @@ enum AudioEditorWording {
         // the language's own digits; the tenth follows the region's decimal
         // separator.
         let pattern: Duration.TimeFormatStyle.Pattern = whole >= 3_600 ? .hourMinuteSecond : .minuteSecond
-        var text = Duration.seconds(whole).formatted(.time(pattern: pattern))
+        var text = Duration.seconds(whole).formatted(.time(pattern: pattern).locale(InterfaceLanguage.current.locale))
         if tenths != 0 {
-            text += (Locale.current.decimalSeparator ?? ".") + tenths.formatted(.number.grouping(.never)) // l10n: no (a separator fallback)
+            text += (InterfaceLanguage.current.locale.decimalSeparator ?? ".") + tenths.formatted(.number.grouping(.never).locale(InterfaceLanguage.current.locale)) // l10n: no (a separator fallback)
         }
         return text
     }
@@ -1366,7 +1366,7 @@ enum AudioEditorWording {
         }
         if let deletedAt {
             // Translators: The original audio's state in the audio editor's Audio Info sheet. %@ is the date it was deleted, in long form.
-            return InterfaceText.line("audioEditor.originalStatus.deleted", "Deleted on \(deletedAt.formatted(date: .long, time: .omitted))")
+            return InterfaceText.line("audioEditor.originalStatus.deleted", "Deleted on \(deletedAt.interfaceFormatted(date: .long, time: .omitted))")
         }
         // Translators: The original audio's state in the audio editor's Audio Info sheet: it is not kept.
         return InterfaceText.line("audioEditor.originalStatus.notKept", "Not kept")
@@ -1632,7 +1632,7 @@ enum AudioEditorWording {
         }
         // The keys are named in the region's own list style: "J or Comma",
         // and "J, Comma, or Period" in English.
-        let names = bindings.map(\.accessibleDisplayString).formatted(.list(type: .or, width: .standard))
+        let names = bindings.map(\.accessibleDisplayString).formatted(.list(type: .or, width: .standard).locale(InterfaceLanguage.current.locale))
         return bindings.count == 1
             // Translators: Ends a button's hint in the audio editor: the command's one keyboard shortcut. %@ is the key's name such as "Shift + J".
             ? InterfaceText.line("common.shortcutValue", "Shortcut: \(names).")

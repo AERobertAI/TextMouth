@@ -111,7 +111,7 @@ enum ReaderTimeWording {
     /// percent."
     static func jumped(toPercent percent: Double) -> String {
         // One decimal place, written as the region writes numbers.
-        let shown = percent.formatted(.number.precision(.fractionLength(1)))
+        let shown = percent.formatted(.number.precision(.fractionLength(1)).locale(InterfaceLanguage.current.locale))
         // Translators: Announcement after Go to Percent jumped. %@ is the percent reached with one decimal place, such as 47.5.
         return InterfaceText.line("readerTime.jumped", "Jumped to \(shown) percent.")
     }

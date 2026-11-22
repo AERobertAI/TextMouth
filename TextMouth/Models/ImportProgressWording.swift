@@ -292,7 +292,7 @@ enum ImportProgressWording {
             counts.append(InterfaceText.line("common.countFailed", "\(number: failed) failed"))
         }
         // Translators: VoiceOver announcement as a ZIP batch that ran long ends. %1$@ is the archive's name and %2$@ the counts, such as "97 books imported, 2 skipped as duplicates, 1 failed".
-        return InterfaceText.line("importProgress.finished.zipBatch", "Finished importing “\(subject)”: \(counts.formatted(.list(type: .and, width: .narrow))).")
+        return InterfaceText.line("importProgress.finished.zipBatch", "Finished importing “\(subject)”: \(counts.formatted(.list(type: .and, width: .narrow).locale(InterfaceLanguage.current.locale))).")
     }
 
     /// What a ZIP batch that brought no new book into the library, and in

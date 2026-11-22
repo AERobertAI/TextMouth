@@ -900,7 +900,7 @@ struct BookVoicePickerView: View {
                         Picker(ReaderViewWording.languageTitle, selection: $selectedLanguage) {
                             Text(ReaderViewWording.allLanguages).tag("")
                             ForEach(availableLanguages, id: \.self) { lang in
-                                Text(Locale.current.localizedString(forLanguageCode: lang) ?? lang)
+                                Text(InterfaceLanguage.current.locale.localizedString(forLanguageCode: lang) ?? lang)
                                     .tag(lang)
                             }
                         }

@@ -818,7 +818,7 @@ enum SubstitutionsWording {
     /// enabled)".
     static func ruleCount(rules: Int, enabled: Int) -> String {
         // Translators: The footer of the Substitutions settings: how many rules the list holds and how many of them are turned on. %1$lld is the number of rules, which the noun agrees with, and %2$@ is the number enabled.
-        InterfaceText.line("substitutions.ruleCount", "\(number: rules) rules (\(enabled.formatted()) enabled)")
+        InterfaceText.line("substitutions.ruleCount", "\(number: rules) rules (\(enabled.interfaceFormatted()) enabled)")
     }
     /// The footer's help on reordering, naming both ways to do it and the
     /// Move commands exactly as their buttons and VoiceOver actions do.
@@ -829,7 +829,7 @@ enum SubstitutionsWording {
     /// What VoiceOver says after a rule moves, counting positions from one.
     static func moved(ruleName: String, position: Int, count: Int) -> String {
         // Translators: Announcement after a substitution rule moves in the list. %1$@ is the rule's name, %2$@ is its new place counting from one, and %3$@ is how many rules the list holds.
-        InterfaceText.line("substitutions.moved", "\(ruleName) moved to position \(position.formatted()) of \(count.formatted())")
+        InterfaceText.line("substitutions.moved", "\(ruleName) moved to position \(position.interfaceFormatted()) of \(count.interfaceFormatted())")
     }
     /// What VoiceOver says after a delete.
     static func deleted(ruleName: String) -> String {

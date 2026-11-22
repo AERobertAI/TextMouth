@@ -2797,7 +2797,7 @@ struct Bookmark: Identifiable, Codable, Hashable, KeepsUnknownKeys {
     /// The day the bookmark was added, as its row shows it and its label
     /// speaks it: the long date of the user's locale, "October 9, 2026".
     var dateText: String {
-        dateCreated.formatted(date: .long, time: .omitted)
+        dateCreated.interfaceFormatted(date: .long, time: .omitted)
     }
 }
 

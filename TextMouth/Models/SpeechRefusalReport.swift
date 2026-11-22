@@ -555,7 +555,7 @@ enum SpeechRefusalWording {
 
     /// `value` with two decimals in the interface language: "0.43".
     private static func twoDecimals(_ value: some BinaryFloatingPoint) -> String {
-        Double(value).formatted(.number.precision(.fractionLength(2)))
+        Double(value).formatted(.number.precision(.fractionLength(2)).locale(InterfaceLanguage.current.locale))
     }
 
     /// TextMouth's build, with the details the app's Info.plist holds:

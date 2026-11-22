@@ -2147,6 +2147,7 @@
 		B1E6FAE3C8C93366261E2A45 /* TimeEntryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DCBE07F2FFC6117A37D7900 /* TimeEntryTests.swift */; };
 		B24320F94E0D1DA308918EF9 /* Elements.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7192BC87326E6D7AB2DAB2F8 /* Elements.swift */; };
 		B24490E19231E7EDAB744F53 /* EPUBMetadata.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9636427F4E0150CE95CDF620 /* EPUBMetadata.swift */; };
+		B246920DBD9CC292EF7DECBC /* InterfaceFormatting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28F768F9FB4EF5C8C95CE834 /* InterfaceFormatting.swift */; };
 		B24D8CC0D70EE99510D00370 /* BookmarkPlacementTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAEFCB2FC7BA468AAAE64C6F /* BookmarkPlacementTests.swift */; };
 		B24FA3BE31015C7F964F70F1 /* TranscriptionEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 624989C7A338DDBC458ABF6A /* TranscriptionEngine.swift */; };
 		B257D6E25F0DAA8F62BB20CF /* QueryParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCCD067DF488C01AF4145D5B /* QueryParser.swift */; };
@@ -2412,6 +2413,7 @@
 		C85E72CEFAD12FD6B2B54BC6 /* WordDocumentFonts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D3B72EFF434283A072D4082 /* WordDocumentFonts.swift */; };
 		C864A2CE4408AE5E41A6F9B9 /* PhoneBackgroundHold.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A2B7CA705FD7500A19BE9A /* PhoneBackgroundHold.swift */; };
 		C867F957FF27DF7249033849 /* KFXParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3ED46E52C47549688E1514BC /* KFXParser.swift */; };
+		C86C14ADDD6F6FDDA05204CF /* InterfaceFormatting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28F768F9FB4EF5C8C95CE834 /* InterfaceFormatting.swift */; };
 		C873C0093EF5954C3F019D7D /* OpenBookRegistryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E16A5273B0A64829DE20DEFE /* OpenBookRegistryTests.swift */; };
 		C8A514FF2D5203BD4DEC9C17 /* AudioEditorFileSheets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B92300A4E8ADD6D54B898ED /* AudioEditorFileSheets.swift */; };
 		C8B14F55FA173CE43CE97D05 /* CorpusReport.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB3D0BFFCE34541F3886654E /* CorpusReport.swift */; };
@@ -3828,6 +3830,7 @@
 		28AFC3B3F51ED0B400EA98D2 /* BrailleSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrailleSettingsView.swift; sourceTree = "<group>"; };
 		28D3594AE5B5CA713E9BCEBD /* RecordingPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingPreferences.swift; sourceTree = "<group>"; };
 		28DD51FA8DC94329723F1037 /* FolderOperationConflict.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FolderOperationConflict.swift; sourceTree = "<group>"; };
+		28F768F9FB4EF5C8C95CE834 /* InterfaceFormatting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InterfaceFormatting.swift; sourceTree = "<group>"; };
 		28FA6E3720AB22992E2546F1 /* LICENSE */ = {isa = PBXFileReference; path = LICENSE; sourceTree = "<group>"; };
 		2936FCA54D12A98DB30F07F2 /* Element.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Element.swift; sourceTree = "<group>"; };
 		294FE48D6A5767A537A8B23B /* UnsavedChangesTerminationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnsavedChangesTerminationTests.swift; sourceTree = "<group>"; };
@@ -5577,6 +5580,7 @@
 		143865DDBB505CB01D60426C /* Localization */ = {
 			isa = PBXGroup;
 			children = (
+				28F768F9FB4EF5C8C95CE834 /* InterfaceFormatting.swift */,
 				B3C9C4CEE9850C04A88C055F /* Localizable.xcstrings */,
 				A412D645D3CE1DC2AD20CAE8 /* InterfaceText */,
 			);
@@ -10414,6 +10418,7 @@
 				36720894DD018D0D577A7CF9 /* ImportStaging.swift in Sources */,
 				6EADFBAF9E0A2F3F6CA2C98B /* InProcessEngine.swift in Sources */,
 				0BA104B519A1105C7BE6BA81 /* InProcessEngineWording.swift in Sources */,
+				C86C14ADDD6F6FDDA05204CF /* InterfaceFormatting.swift in Sources */,
 				2562D26819C608117467114C /* InterfaceLanguage.swift in Sources */,
 				F872415B2CEB321CA2664002 /* InterfaceLanguageChoice.swift in Sources */,
 				AEEAFB74596250A91CB2ECF0 /* InterfaceLanguageEnvironment.swift in Sources */,
@@ -11404,6 +11409,7 @@
 				CBDB1D9816F67FF53B61157E /* ImportStaging.swift in Sources */,
 				F6CF4B2C9AF6458713BD8BD8 /* InProcessEngine.swift in Sources */,
 				9FAF70206E7D6C0F691FA400 /* InProcessEngineWording.swift in Sources */,
+				B246920DBD9CC292EF7DECBC /* InterfaceFormatting.swift in Sources */,
 				2AD55EEB78FBC8B15B91179C /* InterfaceLanguage.swift in Sources */,
 				EFFBE0E8F69EF4117E0599BC /* InterfaceLanguageChoice.swift in Sources */,
 				FF34D03F228015EE01A43AA7 /* InterfaceLanguageEnvironment.swift in Sources */,

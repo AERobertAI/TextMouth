@@ -365,13 +365,13 @@ enum PhoneSettingsModel {
     /// A language's name, as the Language row and its choices say it: "All"
     /// for the empty code, otherwise the name in `locale`, or the code itself
     /// when the system has no name for it.
-    static func languageName(_ code: String, locale: Locale = .current) -> String {
+    static func languageName(_ code: String, locale: Locale = InterfaceLanguage.current.locale) -> String {
         code.isEmpty ? Words.allLanguages.title : locale.localizedString(forLanguageCode: code) ?? code
     }
 
     /// The Language row's choices: "All", whose code is empty, then the
     /// languages offered, in the Mac's order.
-    static func languageChoices(_ languages: [String], locale: Locale = .current) -> [PhoneChoice<String>] {
+    static func languageChoices(_ languages: [String], locale: Locale = InterfaceLanguage.current.locale) -> [PhoneChoice<String>] {
         ([""] + languages).map { PhoneChoice(id: $0, label: languageName($0, locale: locale)) }
     }
 

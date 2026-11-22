@@ -333,7 +333,7 @@ enum RecordingWording {
     /// sign: "−12".
     private static func decibels(_ level: Float) -> String {
         let whole = Int(level.rounded())
-        return whole < 0 ? "\u{2212}\(whole.magnitude.formatted())" : whole.formatted()
+        return whole < 0 ? "\u{2212}\(whole.magnitude.interfaceFormatted())" : whole.interfaceFormatted()
     }
 
     /// A level in whole decibels in words: "minus 12 decibels".
@@ -518,7 +518,7 @@ enum RecordingWording {
     /// it was recorded and how long it lasts, as "Recording of October 4,
     /// 2026 at 6:30 AM, 1 minute, 4 seconds", or that it holds no sound.
     static func recoveredTake(startedAt: Date, duration: TimeInterval?) -> String {
-        let when = startedAt.formatted(date: .long, time: .shortened)
+        let when = startedAt.interfaceFormatted(date: .long, time: .shortened)
         guard let duration, duration > 0 else {
             // Translators: Describes a recording left behind that holds no sound. %@ is when it was recorded, a date and time.
             return InterfaceText.line("recording.recoveredTake.which", "Recording of \(when), which holds no sound")
@@ -561,7 +561,7 @@ enum RecordingWording {
     /// behind was discarded: "Discarded the recording of October 4, 2026 at
     /// 6:30 AM, 1 minute, 4 seconds."
     static func recoveredDiscarded(startedAt: Date, duration: TimeInterval?) -> String {
-        let when = startedAt.formatted(date: .long, time: .shortened)
+        let when = startedAt.interfaceFormatted(date: .long, time: .shortened)
         guard let duration, duration > 0 else {
             // Translators: Said by the Record window after a recording left behind that held no sound was discarded. %@ is when it was recorded, a date and time.
             return InterfaceText.line("recording.recoveredDiscarded.which", "Discarded the recording of \(when), which holds no sound.")

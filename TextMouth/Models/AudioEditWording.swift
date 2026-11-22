@@ -35,7 +35,7 @@ enum AudioEditWording {
         }
         // The parts are one spoken list without "and": "1 minute, 4.2
         // seconds", in each language's own list punctuation.
-        let phrase = parts.formatted(.list(type: .and, width: .narrow))
+        let phrase = parts.formatted(.list(type: .and, width: .narrow).locale(InterfaceLanguage.current.locale))
         return titleCase && capitalizesTitles ? phrase.capitalized(with: .current) : phrase
     }
 
@@ -61,7 +61,7 @@ enum AudioEditWording {
     /// `value` with at most two decimal places and no trailing zeros, in the
     /// region's number format: "4.2", "4", "0.04".
     private static func number(_ value: Double) -> String {
-        value.formatted(.number.precision(.fractionLength(0...2)))
+        value.formatted(.number.precision(.fractionLength(0...2)).locale(InterfaceLanguage.current.locale))
     }
 
     /// The edit's name as the Edit menu gives it after "Undo" or "Redo", and
@@ -124,7 +124,7 @@ enum AudioEditWording {
             return InterfaceText.line("audioEdit.undoLimit.nothingToUndo", "There's nothing to undo.")
         case .originalDeleted(let date):
             // Translators: Said when Undo can't reach edits already saved, and the hint of a dimmed Undo in the audio editor: the book's original audio was deleted. %@ is the date it was deleted, in long form.
-            return InterfaceText.line("audioEdit.undoLimit.originalDeleted", "The original audio was deleted on \(date.formatted(date: .long, time: .omitted)), so edits saved before then can't be undone.")
+            return InterfaceText.line("audioEdit.undoLimit.originalDeleted", "The original audio was deleted on \(date.interfaceFormatted(date: .long, time: .omitted)), so edits saved before then can't be undone.")
         case .editedInPlace:
             // Translators: Said when Undo can't reach edits already saved, and the hint of a dimmed Undo in the audio editor: the book keeps no original audio.
             return InterfaceText.line("audioEdit.undoLimit.editedInPlace", "No original audio is kept for this book, so saved edits can't be undone.")

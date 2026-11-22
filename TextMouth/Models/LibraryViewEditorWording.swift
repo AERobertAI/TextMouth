@@ -586,7 +586,7 @@ enum LibraryViewEditorWording {
 
     /// `items` joined as `CountWording.list` joins them, with "or" where it
     /// says "and": "A", "A or B", "A, B, or C", in the region's list style.
-    static func listWithOr(_ items: [String], locale: Locale = .current) -> String {
+    static func listWithOr(_ items: [String], locale: Locale = InterfaceLanguage.current.locale) -> String {
         items.formatted(.list(type: .or).locale(locale))
     }
 }

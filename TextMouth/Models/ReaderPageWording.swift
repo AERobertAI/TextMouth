@@ -214,6 +214,7 @@ enum ReaderPageWording {
             // Past the tenth, the region's own ordinal figures ("11th",
             // "21st", "112th" in English), as the number formatter writes them.
             let formatter = NumberFormatter()
+            formatter.locale = InterfaceLanguage.current.locale
             formatter.numberStyle = .ordinal
             return formatter.string(from: NSNumber(value: number)) ?? String(number)
         }

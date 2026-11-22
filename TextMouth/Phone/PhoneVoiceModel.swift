@@ -150,7 +150,7 @@ struct PhoneVoiceModel {
     /// The Mac's name for the language `code`: the current locale's, else
     /// the code itself.
     nonisolated static func languageName(_ code: String) -> String {
-        Locale.current.localizedString(forLanguageCode: code) ?? code
+        InterfaceLanguage.current.locale.localizedString(forLanguageCode: code) ?? code
     }
 
     /// The voices of the language chosen, every voice when it's "All".
