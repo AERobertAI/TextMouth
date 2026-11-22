@@ -175,6 +175,8 @@ extension FocusedValues {
 /// its action works (FR12's branch E): New from Text… in Library windows,
 /// so a reader's Shift-Command-T is Show Sleep Timer's.
 struct FileCommands: Commands {
+    /// The interface language, observed so the menu bar's titles are read again after a switch (FR39).
+    @ObservedObject private var language = InterfaceLanguage.observer
     /// The shortcuts, observed so each item's key equivalent follows a
     /// change at once.
     @ObservedObject var shortcuts: KeyboardShortcutManager
@@ -223,6 +225,8 @@ struct FileCommands: Commands {
 /// The submenu follows the Edit menu's own items (`.textEditing`), so
 /// VoiceOver reads Search Library… where it reads the other ways of finding.
 struct EditCommands: Commands {
+    /// The interface language, observed so the menu bar's titles are read again after a switch (FR39).
+    @ObservedObject private var language = InterfaceLanguage.observer
     /// The shortcuts, observed so the item's key equivalent follows a change
     /// at once.
     @ObservedObject var shortcuts: KeyboardShortcutManager
@@ -250,6 +254,8 @@ struct EditCommands: Commands {
 }
 
 struct PlaybackCommands: Commands {
+    /// The interface language, observed so the menu bar's titles are read again after a switch (FR39).
+    @ObservedObject private var language = InterfaceLanguage.observer
     @FocusedValue(\.canReleaseMediaControls) var canReleaseMediaControls
     /// The shortcuts, observed so Copy Reading Position's and Search in
     /// Book's key equivalents follow a change at once (FR12's branch D).
@@ -338,6 +344,8 @@ struct PlaybackCommands: Commands {
 }
 
 struct NavigationCommands: Commands {
+    /// The interface language, observed so the menu bar's titles are read again after a switch (FR39).
+    @ObservedObject private var language = InterfaceLanguage.observer
     /// Whether the key reader reads its book from the reading list (FR09).
     @FocusedValue(\.readsFromReadingList) var readsFromReadingList
     /// Whether the key reader's book has pages (PG02), which Go to Page…
@@ -432,6 +440,8 @@ struct NavigationCommands: Commands {
 }
 
 struct LibraryCommands: Commands {
+    /// The interface language, observed so the menu bar's titles are read again after a switch (FR39).
+    @ObservedObject private var language = InterfaceLanguage.observer
     /// The removal preferences, observed so the Remove command's title
     /// always says what choosing it will do (TODO A08).
     @ObservedObject private var removal = RemovalPreferencesModel.shared
@@ -659,6 +669,8 @@ struct LibraryCommands: Commands {
 /// the Shortcuts tab, config.json, and every message use, so the menu and
 /// the Shortcuts tab cannot drift apart again (#1937).
 struct BookmarkCommands: Commands {
+    /// The interface language, observed so the menu bar's titles are read again after a switch (FR39).
+    @ObservedObject private var language = InterfaceLanguage.observer
     var body: some Commands {
         CommandMenu(MenuWording.bookmarks) {
             Button(ShortcutAction.addBookmark.title) {
@@ -774,6 +786,8 @@ extension FocusedValues {
 /// folder of the library (FR11, branch D), and is unavailable for any other
 /// book.
 struct BookCommands: Commands {
+    /// The interface language, observed so the menu bar's titles are read again after a switch (FR39).
+    @ObservedObject private var language = InterfaceLanguage.observer
     @FocusedValue(\.canEditBookText) var canEditBookText
     @FocusedValue(\.canEditBookManifest) var canEditBookManifest
     @FocusedValue(\.canTranscribeBookAudio) var canTranscribeBookAudio

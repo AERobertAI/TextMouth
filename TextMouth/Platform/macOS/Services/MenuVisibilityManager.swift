@@ -219,10 +219,34 @@ final class MenuVisibilityManager {
         }
         observers.append(explicitRefresh)
 
+        // A switch of the interface language gives every menu a new title, which the visibility rules compare against
+        // (`titles(for:)` reads each in the language in use). Once SwiftUI has rebuilt the menu bar's items, the bar's
+        // layout direction follows the language and the rules apply again, so every context menu is found by its new
+        // title and none is left showing in a window that should hide it (FR39).
+        let languageChanged = NotificationCenter.default.addObserver(
+            forName: InterfaceLanguage.didChange,
+            object: nil,
+            queue: .main
+        ) { _ in
+            DispatchQueue.main.async {
+                MainActor.assumeIsolated {
+                    Self.applyLayoutDirection(of: NSApp.mainMenu, for: InterfaceLanguage.current)
+                    refresh()
+                }
+            }
+        }
+        observers.append(languageChanged)
+
         // Initial update after SwiftUI has built the menu bar
         DispatchQueue.main.async { [weak self] in
             self?.updateMenuVisibility()
         }
+    }
+
+    /// Sets `menu`'s layout direction to the language's: right to left for Arabic, Hebrew, Persian, and Urdu. The menu
+    /// items macOS supplies itself change their words and their side only from the next launch (FR39).
+    static func applyLayoutDirection(of menu: NSMenu?, for state: InterfaceLanguage.State) {
+        menu?.userInterfaceLayoutDirection = state.isRightToLeft ? .rightToLeft : .leftToRight
     }
 
     /// Removes all notification observers.

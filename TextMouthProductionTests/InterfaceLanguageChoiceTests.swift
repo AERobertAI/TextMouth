@@ -1,11 +1,22 @@
+import Combine
+import Observation
 import XCTest
+import os
 @testable import TextMouth
+
+extension InterfaceLanguageStore {
+    /// A store over a sandboxed preferences store of a test.
+    init(_ sandbox: SandboxedPreferences) {
+        self.init(defaults: sandbox.defaults, domain: sandbox.file.deletingPathExtension().path)
+    }
+}
 
 /// Tests of the person's choice of interface language (FR39, the picker's phase): the store in `AppleLanguages`, the
 /// locale a live switch builds, the state at launch, and the switch itself.
 ///
 /// Every test that switches puts System back when it ends, so no later test runs in another language, and every store
 /// is a sandboxed one: no test writes the real app domain, whose `AppleLanguages` the installed app reads.
+@MainActor
 final class InterfaceLanguageChoiceTests: XCTestCase {
     // MARK: - Support
 
@@ -13,12 +24,18 @@ final class InterfaceLanguageChoiceTests: XCTestCase {
     private func makeStore() -> InterfaceLanguageStore {
         let preferences = SandboxedPreferences("languageChoice")
         addTeardownBlock { preferences.discard() }
-        return InterfaceLanguageStore(defaults: preferences.defaults, domain: preferences.file.deletingPathExtension().path)
+        return InterfaceLanguageStore(preferences)
     }
 
-    /// Switches the process back to System when the test ends, whatever it switched to.
-    private func restoreSystemWhenDone(store: InterfaceLanguageStore) {
-        addTeardownBlock { InterfaceLanguage.choose(.system, store: store) }
+    /// A new, empty sandboxed store for a test that switches the language, which puts System back when the test ends,
+    /// whatever it switched to, before the store is discarded.
+    private func makeStoreRestoringSystem() -> InterfaceLanguageStore {
+        let preferences = SandboxedPreferences("languageChoice")
+        addTeardownBlock {
+            InterfaceLanguage.choose(.system, store: InterfaceLanguageStore(preferences))
+            preferences.discard()
+        }
+        return InterfaceLanguageStore(preferences)
     }
 
     // MARK: - The store
@@ -98,7 +115,7 @@ final class InterfaceLanguageChoiceTests: XCTestCase {
         XCTAssertTrue(processStore.domain.contains(TextMouthRuntime.sandboxNamePrefix), "it is in the sandbox: \(processStore.domain)")
         XCTAssertFalse(processStore.defaults === UserDefaults.standard)
 
-        restoreSystemWhenDone(store: processStore)
+        addTeardownBlock { InterfaceLanguage.choose(.system) }
         InterfaceLanguage.choose(.language("es"))
         XCTAssertEqual(processStore.storedLanguages(), ["es"], "the sandbox took the write")
         InterfaceLanguage.choose(.language("ar"))
@@ -226,8 +243,7 @@ final class InterfaceLanguageChoiceTests: XCTestCase {
 
     /// A switch swaps one whole state: language and locale together, and lookups follow at once; back to System, English.
     func testASwitchSwapsOneWholeState() {
-        let store = makeStore()
-        restoreSystemWhenDone(store: store)
+        let store = makeStoreRestoringSystem()
         XCTAssertEqual(InterfaceLanguage.current.language, "en")
         XCTAssertEqual(MenuWording.bookmarks, "Bookmarks")
 
@@ -248,5 +264,58 @@ final class InterfaceLanguageChoiceTests: XCTestCase {
     func testNobodyWhoNeverOpensThePickerSeesAChange() {
         XCTAssertEqual(InterfaceLanguage.current, InterfaceLanguage.systemState())
         XCTAssertEqual(InterfaceLanguageStore().choice(), .system, "the hosted process's store holds no choice")
+    }
+
+    // MARK: - What a switch tells
+
+    /// A body that looked up a line depends on the language: a switch runs its observer, once.
+    func testASwitchRunsTheObserversOfALookup() {
+        let store = makeStoreRestoringSystem()
+        let runs = OSAllocatedUnfairLock(initialState: 0)
+        withObservationTracking {
+            _ = MenuWording.bookmarks
+        } onChange: {
+            runs.withLock { $0 += 1 }
+        }
+        XCTAssertEqual(runs.withLock { $0 }, 0, "nothing changed yet")
+        InterfaceLanguage.choose(.language("es"), store: store)
+        XCTAssertEqual(runs.withLock { $0 }, 1)
+    }
+
+    /// What reads another language for its own scope depends on nothing: a switch runs no observer of it.
+    func testAScopedLookupIsNotObserved() {
+        let store = makeStoreRestoringSystem()
+        let runs = OSAllocatedUnfairLock(initialState: 0)
+        InterfaceLanguage.$scopedLanguage.withValue("es") {
+            withObservationTracking {
+                _ = MenuWording.bookmarks
+            } onChange: {
+                runs.withLock { $0 += 1 }
+            }
+        }
+        InterfaceLanguage.choose(.language("de"), store: store)
+        XCTAssertEqual(runs.withLock { $0 }, 0)
+    }
+
+    /// The notification AppKit code listens to is posted on the main thread, after the state is swapped.
+    func testASwitchPostsTheNotificationAfterTheSwap() {
+        let store = makeStoreRestoringSystem()
+        let seen = OSAllocatedUnfairLock<[String]>(initialState: [])
+        let token = NotificationCenter.default.addObserver(forName: InterfaceLanguage.didChange, object: nil, queue: nil) { _ in
+            seen.withLock { $0.append(InterfaceLanguage.current.language) }
+        }
+        defer { NotificationCenter.default.removeObserver(token) }
+        InterfaceLanguage.choose(.language("fr"), store: store)
+        XCTAssertEqual(seen.withLock { $0 }, ["fr"], "one notification, and the state it announces is already in use")
+    }
+
+    /// The `Commands` structs observe an `ObservableObject`: it publishes on a switch.
+    func testASwitchPublishesToTheCommandsObserver() {
+        let store = makeStoreRestoringSystem()
+        let published = OSAllocatedUnfairLock(initialState: 0)
+        let subscription = InterfaceLanguage.observer.objectWillChange.sink { published.withLock { $0 += 1 } }
+        defer { subscription.cancel() }
+        InterfaceLanguage.choose(.language("it"), store: store)
+        XCTAssertEqual(published.withLock { $0 }, 1)
     }
 }

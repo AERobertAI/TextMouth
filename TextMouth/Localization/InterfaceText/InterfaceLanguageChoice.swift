@@ -5,7 +5,7 @@ import Foundation
 /// The choice lives in the app domain's own `AppleLanguages`, the key the system's per-app language setting writes
 /// (System Settings on the Mac, Settings on the iPhone), so the two always agree: a language writes `[code]`, and System
 /// removes the key. A value the app does not carry reads as System.
-enum InterfaceLanguageChoice: Equatable, Sendable {
+enum InterfaceLanguageChoice: Hashable, Sendable {
     /// Follow the system: the language Foundation picks from the person's languages among the ones the app carries.
     case system
     /// One of the languages the app carries (`PluralRules.categories`' keys), by its code.
