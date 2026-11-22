@@ -147,19 +147,23 @@ struct InterfaceTextIDList: Sendable {
 
     /// The position of `id` among the IDs, or nil when it is not one: a binary search that compares the bytes in place.
     func index(of id: StaticString) -> Int? {
-        id.withUTF8Buffer { target in
-            var low = 0
-            var high = count - 1
-            while low <= high {
-                let middle = low + (high - low) / 2
-                switch compare(middle, with: target) {
-                case .orderedSame: return middle
-                case .orderedAscending: low = middle + 1
-                case .orderedDescending: high = middle - 1
-                }
+        id.withUTF8Buffer { index(ofUTF8: $0) }
+    }
+
+    /// The position of the ID whose UTF-8 bytes are `target`, or nil: the search `index(of:)` makes, for a caller that
+    /// holds the bytes already (a runtime ID: `InterfaceTextEngine.text(runtimeID:...)`).
+    func index(ofUTF8 target: UnsafeBufferPointer<UInt8>) -> Int? {
+        var low = 0
+        var high = count - 1
+        while low <= high {
+            let middle = low + (high - low) / 2
+            switch compare(middle, with: target) {
+            case .orderedSame: return middle
+            case .orderedAscending: low = middle + 1
+            case .orderedDescending: high = middle - 1
             }
-            return nil
         }
+        return nil
     }
 
     /// How the ID at `position` orders against `target`, byte by byte.

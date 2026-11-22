@@ -375,7 +375,8 @@ final class LanguagePackTests: XCTestCase {
     /// The counts the plural probe asks Apple about: every count from 0 to 10,000, then each power of ten from 10^4
     /// to 10^15 with the counts on either side, then the counts just below 2^53, the largest whole number a `Double`
     /// holds exactly (Foundation rounds the count through a `Double`, so above it the category is no longer the
-    /// language's rule; no count in the app comes near).
+    /// language's rule; no count in the app comes near), and the 13 counts the pack proof asks every line
+    /// (`InterfaceTextProof.counts`), so that the rule it relies on is Apple's at each of them.
     static let pluralProbeCounts: [Int] = {
         var counts = Array(0...10_000)
         var power = 10_000
@@ -385,6 +386,7 @@ final class LanguagePackTests: XCTestCase {
         }
         let limit = 1 << 53
         counts.append(contentsOf: (limit - 3)...limit)
+        counts.append(contentsOf: InterfaceTextProof.counts.map { Int($0) })
         return Array(Set(counts)).sorted()
     }()
 

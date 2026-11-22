@@ -17,12 +17,14 @@ import hashlib
 import io
 import json
 import lzma
+import os
 import struct
 import subprocess
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 HERE = Path(__file__).resolve().parent
 L10N = HERE.parent
@@ -433,6 +435,60 @@ class BuildTests(PackCase):
         self.assertFalse(Path(str(out) + ".stamp").exists())
         _, said, _ = self.run_main("build", "--catalog", catalog_path, "--out", out, "--no-stamp")
         self.assertIn("wrote", said)
+
+    def test_a_stamp_may_live_elsewhere(self):
+        # The app's build keeps the stamp out of the app: it skips on it all the same.
+        catalog_path = self.write_catalog({"a.one": line("One", es="Uno")})
+        out = self.folder / "Strings.pack"
+        stamp = self.folder / "elsewhere.stamp"
+        _, said, _ = self.run_main("build", "--catalog", catalog_path, "--out", out, "--stamp", stamp)
+        self.assertIn("wrote", said)
+        self.assertTrue(stamp.is_file())
+        self.assertFalse(Path(str(out) + ".stamp").exists())
+        _, said, _ = self.run_main("build", "--catalog", catalog_path, "--out", out, "--stamp", stamp)
+        self.assertIn("up to date", said)
+
+    def test_a_rebuild_replaces_the_file_and_leaves_the_old_one_whole_for_whoever_has_it(self):
+        # The engine maps the pack; a file rewritten in place under a running process can end it with SIGBUS.
+        # A replaced file is a new file: whoever has the old one open or mapped still reads every byte of it. An open
+        # handle stands in for the mapping here, because a mapping read after an in-place rewrite would crash the test
+        # runner itself.
+        out = self.folder / "Strings.pack"
+        first = self.write_catalog({"a.one": line("One", es="Uno")})
+        self.run_main("build", "--catalog", first, "--out", out)
+        before = out.read_bytes()
+        inode = out.stat().st_ino
+        with open(out, "rb") as handle:
+            self.write_catalog({"a.one": line("One", es="Uno"), "a.two": line("Two", es="Dos")})
+            self.run_main("build", "--catalog", first, "--out", out)
+            self.assertNotEqual(before, out.read_bytes())
+            self.assertNotEqual(inode, out.stat().st_ino)
+            self.assertEqual(before, handle.read())
+        # Nothing but the pack and its stamp is left beside it.
+        self.assertEqual(["Strings.pack", "Strings.pack.stamp", "catalog.xcstrings"], sorted(entry.name for entry in self.folder.iterdir()))
+
+    def test_a_failed_write_leaves_the_old_pack_and_stamp_and_no_temporary_file(self):
+        out = self.folder / "Strings.pack"
+        catalog_path = self.write_catalog({"a.one": line("One", es="Uno")})
+        self.run_main("build", "--catalog", catalog_path, "--out", out)
+        pack_before, stamp_before = out.read_bytes(), Path(str(out) + ".stamp").read_bytes()
+        self.write_catalog({"a.one": line("One", es="Uno"), "a.two": line("Two")})
+        # The write stops at the moment of replacing, as a full disk or a signal would stop it.
+        with mock.patch.object(pack.os, "replace", side_effect=OSError("simulated")):
+            with self.assertRaises(OSError):
+                self.run_main("build", "--catalog", catalog_path, "--out", out)
+        self.assertEqual(pack_before, out.read_bytes())
+        self.assertEqual(stamp_before, Path(str(out) + ".stamp").read_bytes())
+        self.assertEqual(["Strings.pack", "Strings.pack.stamp", "catalog.xcstrings"], sorted(entry.name for entry in self.folder.iterdir()))
+
+    def test_the_stamp_is_written_only_after_the_pack(self):
+        # A write that fails on the pack never reaches the stamp, so a stamp never vouches for a pack that is not there.
+        out = self.folder / "Strings.pack"
+        catalog_path = self.write_catalog({"a.one": line("One")})
+        with mock.patch.object(pack.os, "replace", side_effect=OSError("simulated")):
+            with self.assertRaises(OSError):
+                self.run_main("build", "--catalog", catalog_path, "--out", out)
+        self.assertEqual(["catalog.xcstrings"], sorted(entry.name for entry in self.folder.iterdir()))
 
     def test_python_3_9_builds_the_same_entries(self):
         # Xcode's build phase runs /usr/bin/python3; the entries must match whatever Python made the committed pack.

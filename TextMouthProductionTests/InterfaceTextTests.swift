@@ -434,15 +434,45 @@ extension InterfaceTextTests {
         }
     }
 
-    /// A plural line of English reads the pack's English forms when their `other` is the call's format; else the call's
-    /// format serves every count.
-    func testEnglishPluralFormsComeFromThePackWhenTheyMatch() {
+    /// A plural line of English reads the pack's English forms, whichever form the code's literal is; a line the pack
+    /// has no plural English entry for shows the call's format at every count.
+    func testEnglishPluralFormsComeFromThePack() {
         let log = InterfaceTextReportLog()
         let engine = makeInterfaceTextEngine(["common.books": ["en": pluralEntry("%lld book", "%lld books")]], log: log)
         XCTAssertEqual(interfaceLine(engine, "common.books", "\(number: 1) books", language: "en"), "1 book")
         XCTAssertEqual(interfaceLine(engine, "common.books", "\(number: 2) books", language: "en"), "2 books")
-        XCTAssertEqual(interfaceLine(engine, "common.books", "\(number: 1) volumes", language: "en"), "1 volumes", "the code was reworded")
+        // The literal's own wording does not matter: the entry is the English (the build packs the catalog every time).
+        XCTAssertEqual(interfaceLine(engine, "common.books", "\(number: 1) volumes", language: "en"), "1 book")
+        // An ID with no plural English entry shows the call's format at every count.
+        XCTAssertEqual(interfaceLine(engine, "common.nothing", "\(number: 2) volumes", language: "en"), "2 volumes")
+        XCTAssertEqual(log.messages.count, 1, "only the unknown ID is reported: \(log.messages)")
+    }
+
+    /// The code's literal may be the `one` form ("...is kept..."): the other counts still read the `other` form (Apple's
+    /// English table picks the form, so "are kept" at every count but one). A finding of the pack test on the real pack.
+    func testAnEnglishLiteralThatIsTheOneFormStillGetsEveryForm() {
+        let log = InterfaceTextReportLog()
+        let engine = makeInterfaceTextEngine(["kept.count": ["en": pluralEntry("%lld is kept", "%lld are kept")]], log: log)
+        XCTAssertEqual(interfaceLine(engine, "kept.count", "\(number: 1) is kept", language: "en"), "1 is kept")
+        XCTAssertEqual(interfaceLine(engine, "kept.count", "\(number: 0) is kept", language: "en"), "0 are kept")
+        XCTAssertEqual(interfaceLine(engine, "kept.count", "\(number: 12345) is kept", language: "en"), "12,345 are kept")
         XCTAssertEqual(log.messages, [])
+    }
+
+    /// English plural forms that number their specifiers (`%1$@ ... %2$lld`) are served as well.
+    func testEnglishPluralFormsWithPositionsAreServed() {
+        let log = InterfaceTextReportLog()
+        let engine = makeInterfaceTextEngine(["pages.held": ["en": pluralEntry("%1$@ holds %2$lld page", "%1$@ holds %2$lld pages")]], log: log)
+        let name = "Atlas"
+        XCTAssertEqual(interfaceLine(engine, "pages.held", "\(name) holds \(number: 1) pages", language: "en"), "Atlas holds 1 page")
+        XCTAssertEqual(interfaceLine(engine, "pages.held", "\(name) holds \(number: 3) pages", language: "en"), "Atlas holds 3 pages")
+        XCTAssertEqual(log.messages, [])
+    }
+
+    /// An English plural entry that does not fit the call's arguments is not used: the call's own format shows.
+    func testAnEnglishPluralEntryThatDoesNotFitTheCallIsNotUsed() {
+        let engine = makeInterfaceTextEngine(["books.bad": ["en": pluralEntry("%@ book", "%@ books")]], log: InterfaceTextReportLog())
+        XCTAssertEqual(interfaceLine(engine, "books.bad", "\(number: 2) books", language: "en"), "2 books")
     }
 
     /// A line with no entry in the language shows English, including its plural.
@@ -457,6 +487,25 @@ extension InterfaceTextTests {
         let log = InterfaceTextReportLog()
         let engine = makeInterfaceTextEngine(["greeting.hello": ["es": "Hola"]], log: log)
         for _ in 0..<3 { XCTAssertEqual(interfaceLine(engine, "nobody.knows", "Never seen"), "Never seen") }
+        XCTAssertEqual(log.messages.count, 1)
+        XCTAssertTrue(log.messages[0].contains("nobody.knows"), log.messages[0])
+    }
+
+    /// The entry point for an ID that is not a literal (tools and tests) answers as the `StaticString` one does: the
+    /// pack's text, an argument formatted, the person's own line, and an unknown ID shown in English and reported once.
+    func testARuntimeIDAnswersAsALiteralDoes() {
+        let log = InterfaceTextReportLog()
+        let engine = makeInterfaceTextEngine(["book.by": ["es": "%2$@ de %1$@"], "greeting.hello": ["es": "Hola"]], log: log)
+        let title = "Quijote", author = "Cervantes"
+        let english: InterfaceText.Format = "\(title) by \(author)"
+        let locale = InterfaceLanguage.locale(forTesting: "es")
+        let runtimeID = ["book", "by"].joined(separator: ".")
+        XCTAssertEqual(engine.text(runtimeID: runtimeID, english: english, language: "es", locale: locale), "Cervantes de Quijote")
+        XCTAssertEqual(engine.text(runtimeID: runtimeID, english: english, language: "es", locale: locale),
+                       interfaceLine(engine, "book.by", english))
+        engine.setOverrides(["es": ["greeting.hello": .plain("Buenas")]])
+        XCTAssertEqual(engine.text(runtimeID: "greeting.hello", english: "Hello", language: "es", locale: locale), "Buenas")
+        for _ in 0..<2 { XCTAssertEqual(engine.text(runtimeID: "nobody.knows", english: "Never seen", language: "es", locale: locale), "Never seen") }
         XCTAssertEqual(log.messages.count, 1)
         XCTAssertTrue(log.messages[0].contains("nobody.knows"), log.messages[0])
     }
@@ -723,8 +772,9 @@ extension InterfaceTextTests {
         XCTAssertEqual(InterfaceLanguage.locale(forTesting: "fa").numberingSystem.identifier, "latn")
     }
 
-    /// The call a view makes: no pack ships yet, so every line shows the call's English in every language.
-    func testTheCallShowsEnglishWhileNoPackShips() {
+    /// The call a view makes, for an ID the shipped pack does not hold (a made-up one): every language shows the call's
+    /// English, whether the host ships a pack (it does since the "Pack interface text" phase) or not.
+    func testTheCallShowsEnglishForAnIDThePackLacks() {
         let count = 3
         XCTAssertEqual(InterfaceText.line("interfaceTextTests.sample", "Count: \(number: count), 100%"), "Count: 3, 100%")
         XCTAssertEqual(InterfaceText.line("interfaceTextTests.sample", "Count: \(number: count), 100%", language: "es"), "Count: 3, 100%")

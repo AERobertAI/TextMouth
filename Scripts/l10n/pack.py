@@ -5,7 +5,7 @@ The String Catalog (TextMouth/Localization/Localizable.xcstrings) stays the tran
 into the one file the apps read: the IDs, the English, the translators' notes, and one LZMA blob for each language.
 Standard library only, and it runs under Xcode's /usr/bin/python3 (3.9): nothing here needs a later Python.
 
-    pack.py build   --catalog PATH --out PATH [--ids PATH] [--max-id-length N] [--force] [--no-stamp]
+    pack.py build   --catalog PATH --out PATH [--ids PATH] [--max-id-length N] [--stamp PATH] [--force] [--no-stamp]
     pack.py verify  PACK --catalog PATH [--ids PATH] [--max-id-length N]
     pack.py compare A B
     pack.py size    PACK [--compare-window]
@@ -42,6 +42,7 @@ import argparse
 import hashlib
 import json
 import lzma
+import os
 import re
 import struct
 import sys
@@ -538,10 +539,12 @@ def stamp_path(out):
     return Path(str(out) + ".stamp")
 
 
-def is_up_to_date(out, stamp):
-    """Whether `out` exists and its stamp equals `stamp` and names the output's own hash (so a changed output rebuilds)."""
+def is_up_to_date(out, stamp, stamp_file=None):
+    """Whether `out` exists and its stamp equals `stamp` and names the output's own hash (so a changed output rebuilds).
+
+    The stamp is read from `stamp_file`, or from beside `out` when none is given."""
     try:
-        written = json.loads(stamp_path(out).read_text(encoding="utf-8"))
+        written = json.loads((Path(stamp_file) if stamp_file else stamp_path(out)).read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return False
     return written == {**stamp, "pack": file_hash(out)} and file_hash(out) is not None
@@ -653,18 +656,45 @@ def refuse(error):
     return 1
 
 
+def write_atomically(path, data):
+    """Writes `data` to `path` so that nobody ever sees, or holds a mapping of, a half-written file.
+
+    The bytes go to a temporary file beside `path` and `os.replace` puts it in place in one step. The engine
+    memory-maps the pack, and a file rewritten in place under a running process can end that process with SIGBUS;
+    a replaced file leaves the old one whole for whoever has it mapped. The temporary file is removed on any failure
+    (and only then: on success it is `path`).
+    """
+    path = Path(path)
+    # A build's derived-files folder may not exist yet on a first build.
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    try:
+        temporary.write_bytes(data if isinstance(data, bytes) else data.encode("utf-8"))
+        os.replace(temporary, path)
+    except BaseException:
+        # Whatever stopped the write (a full disk, a signal), leave nothing behind and let the failure through.
+        try:
+            temporary.unlink()
+        except OSError:
+            pass
+        raise
+
+
 def command_build(args):
     """`build`: refuses or writes the pack and its stamp, or skips when the stamp says nothing changed."""
     stamp = stamp_of(args.catalog, args.ids, args.max_id_length)
-    if not args.force and not args.no_stamp and is_up_to_date(args.out, stamp):
+    # The stamp lives beside the pack unless --stamp says elsewhere (the app's build keeps it out of the app).
+    stamp_file = Path(args.stamp) if args.stamp else stamp_path(args.out)
+    if not args.force and not args.no_stamp and is_up_to_date(args.out, stamp, stamp_file):
         print(f"{args.out} is up to date (the catalog, the ID table, and the builder are unchanged)")
         return 0
     plan = build_plan(args.catalog, args.ids, args.max_id_length)
     data = build_bytes(plan)
-    Path(args.out).write_bytes(data)
+    write_atomically(args.out, data)
+    # The stamp comes only after the pack is in place, so a stamp never vouches for a pack that is not there.
     if not args.no_stamp:
-        stamp_path(args.out).write_text(json.dumps({**stamp, "pack": hashlib.sha256(data).hexdigest()}, sort_keys=True) + "\n",
-                                        encoding="utf-8")
+        write_atomically(stamp_file,
+                         json.dumps({**stamp, "pack": hashlib.sha256(data).hexdigest()}, sort_keys=True) + "\n")
     print(f"wrote {args.out}: {len(data):,} bytes, {len(plan.ids):,} IDs, {len(plan.blobs) - 2} languages")
     return 0
 
@@ -672,7 +702,7 @@ def command_build(args):
 def command_corrupt_fixture(args):
     """`corrupt-fixture`: writes the test-only pack whose English blob is not UTF-8."""
     plan = build_plan(args.catalog, args.ids, args.max_id_length)
-    Path(args.out).write_bytes(build_corrupt_utf8_pack_for_tests(plan))
+    write_atomically(args.out, build_corrupt_utf8_pack_for_tests(plan))
     print(f"wrote {args.out}: A CORRUPT PACK, for tests only")
     return 0
 
@@ -703,6 +733,7 @@ def parser():
     build.add_argument("--out", required=True)
     build.add_argument("--force", action="store_true", help="rebuild even when the stamp says nothing changed")
     build.add_argument("--no-stamp", action="store_true", help="write no stamp and never skip")
+    build.add_argument("--stamp", help="where the stamp lives (default: beside the pack, as PACK.stamp)")
     check = commands.add_parser("verify", help="decode a pack and compare every entry with the catalog")
     check.add_argument("pack")
     inputs(check)

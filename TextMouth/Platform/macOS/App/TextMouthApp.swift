@@ -14,6 +14,8 @@ struct TextMouthApp: App {
     /// library model above before `applicationWillFinishLaunching`, and the
     /// library's launch checks use the services.
     init() {
+        // The interface-text engine's problems (a missing or damaged pack, an unknown ID) go to the debug log.
+        InterfaceText.reportProblemsToDiagnosticLog()
         CloudServices.installSystemServices()
     }
 

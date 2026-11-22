@@ -34,6 +34,8 @@ final class TextMouthAppDelegate: UIResponder, UIApplicationDelegate {
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
+        // The interface-text engine's problems (a missing or damaged pack, an unknown ID) go to the debug log.
+        InterfaceText.reportProblemsToDiagnosticLog()
         let model = Self.model
         model.lifeCycle.beginHold = { name in
             Self.beginBackgroundTask(named: name)
