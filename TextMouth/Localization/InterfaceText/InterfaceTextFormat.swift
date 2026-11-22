@@ -81,22 +81,34 @@ enum InterfaceText {
             /// The arguments so far.
             fileprivate(set) var arguments: [Argument] = []
 
+            // Not inlined, like the three methods below: the app has about 4,590 call sites, and an inlined copy of
+            // these builders (string growth, array allocation and append) cost 130 to 160 bytes in each one. Measured in a
+            // probe of 1,600 sites compiled with -Osize: a line with `\(text)` fell from 224 to 96 bytes, with
+            // `\(number:)` from 200 to 92, and with two numbers from 260 to 104. This one alone is worth only 4 bytes.
+            @inline(never)
             init(literalCapacity: Int, interpolationCount: Int) {
                 format.reserveCapacity(literalCapacity + 4 * interpolationCount)
             }
 
             /// A literal segment: its text with each `%` doubled.
+            // Not inlined (see `init(literalCapacity:interpolationCount:)`): this one is worth 36 to 44 bytes a site.
+            @inline(never)
             mutating func appendLiteral(_ literal: String) {
                 format += Format.escaped(literal)
             }
 
             /// `\(text)`: a string, as `%@`.
+            // Not inlined (see `init(literalCapacity:interpolationCount:)`): the array append and its growth path
+            // would otherwise be copied into every `\(text)` site.
+            @inline(never)
             mutating func appendInterpolation(_ text: some StringProtocol) {
                 format += "%@"
                 arguments.append(.text(String(text)))
             }
 
             /// `\(number: n)`: an integer, as `%lld`. One too large for 64 bits is held at the largest, never trapped on.
+            // Not inlined (see `init(literalCapacity:interpolationCount:)`), for the same reason, in every `\(number:)` site.
+            @inline(never)
             mutating func appendInterpolation(number: some BinaryInteger) {
                 format += "%lld"
                 arguments.append(.number(Int64(clamping: number)))
