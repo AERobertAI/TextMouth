@@ -37,9 +37,21 @@ def plural(**forms):
     return {"variations": {"plural": forms}}
 
 
+def with_english(strings):
+    """`strings` (key to entry) with an `en` unit added to each entry that has none, holding its key's text. A catalog keyed
+    by ID holds its English in `en` (the tools never read it from a key), so a fixture that writes its English as its key,
+    for brevity, is given the `en` the re-key would give it. An entry that has `en` is left as it is."""
+    found = {}
+    for key, value in strings.items():
+        if isinstance(value, dict) and isinstance(value.get("localizations", {}), dict) and "en" not in value.get("localizations", {}):
+            value = {**value, "localizations": {**value.get("localizations", {}), "en": unit(key)}}
+        found[key] = value
+    return found
+
+
 def make_catalog(strings):
-    """A Catalog holding `strings` (key to entry), in English."""
-    return catalog.Catalog({"sourceLanguage": "en", "version": "1.0", "strings": strings})
+    """A Catalog holding `strings` (key to entry, see with_english), in English."""
+    return catalog.Catalog({"sourceLanguage": "en", "version": "1.0", "strings": with_english(strings)})
 
 
 def entry(comment="Context", **localizations):

@@ -432,27 +432,36 @@ class EnglishTextTests(unittest.TestCase):
         """A catalog holding `strings`."""
         return catalog.Catalog({"sourceLanguage": "en", "strings": strings, "version": "1.0"})
 
-    def test_a_string_with_no_english_localization_counts_as_its_key(self):
-        cat = self.make({"Play": {}, "Café": {}})
+    def test_the_english_is_the_en_text(self):
+        cat = self.make({"player.play": {"localizations": {"en": string_unit("Play")}},
+                         "player.cafe": {"localizations": {"en": string_unit("Café")}}})
         self.assertEqual(cat.english_texts(), {"Play", "Café"})
         self.assertEqual(cat.english_bytes(), len("Play") + len("Café".encode("utf-8")))
+
+    def test_a_string_with_no_english_localization_has_no_english_not_its_key(self):
+        cat = self.make({"player.play": {}})
+        self.assertEqual(cat.english_forms("player.play"), [])
+        self.assertEqual(cat.english_bytes(), 0)
 
     def test_plural_and_device_forms_count_instead_of_the_key(self):
         cat = catalog.Catalog.load(FIXTURES / "plural-and-device-by-xcstringstool.xcstrings")
         self.assertEqual(cat.english_texts(), {"%lld book", "%lld books", "Tap to play", "Click to play"})
 
     def test_a_text_two_strings_share_counts_once(self):
-        cat = self.make({"Done": {}, "Done again": {"localizations": {"en": string_unit("Done")}}})
+        cat = self.make({"a.done": {"localizations": {"en": string_unit("Done")}},
+                         "a.doneAgain": {"localizations": {"en": string_unit("Done")}}})
         self.assertEqual(cat.english_texts(), {"Done"})
         self.assertEqual(cat.english_bytes(), 4)
 
     def test_stale_strings_and_strings_that_opt_out_do_not_count(self):
-        cat = self.make({"Live": {}, "Old": {"extractionState": "stale"}, "Never": {"shouldTranslate": False}})
+        cat = self.make({"a.live": {"localizations": {"en": string_unit("Live")}},
+                         "a.old": {"extractionState": "stale", "localizations": {"en": string_unit("Old")}},
+                         "a.never": {"shouldTranslate": False, "localizations": {"en": string_unit("Never")}}})
         self.assertEqual(cat.english_texts(), {"Live"})
-        self.assertEqual(cat.translatable(), ["Live"])
+        self.assertEqual(cat.translatable(), ["a.live"])
 
     def test_the_translations_do_not_count(self):
-        cat = self.make({"Play": {"localizations": {"es": string_unit("Reproducir")}}})
+        cat = self.make({"player.play": {"localizations": {"en": string_unit("Play"), "es": string_unit("Reproducir")}}})
         self.assertEqual(cat.english_bytes(), 4)
 
     def test_substitution_forms_are_walked_with_their_paths(self):

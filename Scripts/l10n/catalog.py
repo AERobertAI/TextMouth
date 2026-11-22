@@ -532,12 +532,6 @@ class Unit:
             other.path, other.category, other.state, other.value)
 
 
-# Until the catalog is keyed by ID (FR39 phase 7's re-key), a string with no English of its own has its key for English.
-# The re-key's output turns this off: from then on every entry holds its English in `en`, and an entry without one is a
-# problem, never the key.
-KEY_IS_ENGLISH_FALLBACK = True
-
-
 def counts_as_text(state):
     """Whether a unit in `state` is text the apps ship: every state but `new`, which Xcode (and the pack) leave out."""
     return state != "new"
@@ -731,10 +725,9 @@ class Catalog:
 
     def english_forms(self, key):
         """The English values of string `key`, one for each plural, device, or substitution form its source-language
-        localization holds (see english_units), or, while KEY_IS_ENGLISH_FALLBACK stands, the key itself when it holds
-        none (the catalog is keyed by its English until the re-key)."""
-        values = [unit.value for unit in self.english_units(key)]
-        return values or ([key] if KEY_IS_ENGLISH_FALLBACK else [])
+        localization holds (see english_units); none for an
+        entry with no English, which `check` reports (the key is an ID, never the English)."""
+        return [unit.value for unit in self.english_units(key)]
 
     def english_texts(self):
         """The English text of the catalog: the set of `english_forms` of every string that is to be translated and is

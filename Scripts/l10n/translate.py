@@ -72,12 +72,9 @@ def check_state(state):
 # ---------------------------------------------------------------------------------------------------------------
 
 def english_values(cat, key):
-    """{unit path: value} of string `key`'s English: its `en` units that count as text (Catalog.english_units), or, while
-    the catalog is keyed by its English (Catalog.KEY_IS_ENGLISH_FALLBACK), the key as the one plain text of an entry with none."""
-    values = {unit.path: unit.value for unit in cat.english_units(key)}
-    if not values and catalog.KEY_IS_ENGLISH_FALLBACK:
-        values[""] = key
-    return values
+    """{unit path: value} of string `key`'s English: its `en` units that count as text (Catalog.english_units); empty for an
+    entry with no English."""
+    return {unit.path: unit.value for unit in cat.english_units(key)}
 
 
 def reference_of(english):
@@ -131,8 +128,6 @@ def english_shape(cat, key):
     not write (device variations, substitutions), or ("other", reason) for a string with no English at all."""
     units = cat.english_units(key)
     if not units:
-        if catalog.KEY_IS_ENGLISH_FALLBACK:
-            return "plain", key
         return "other", "the string has no English text (`en`); run sync after the code has it"
     if len(units) == 1 and units[0].path == "":
         return "plain", units[0].value
@@ -507,10 +502,6 @@ def build_batch(cat, language, glossary, locations, root, keys=None, limit=DEFAU
         if limit and len(items) >= limit:
             remaining = len(pending) - index
             break
-        if not reference_of(english_values(cat, key)).strip():
-            # An empty English is a literal the compiler found (an empty label, say): there is no text to translate.
-            skipped.append({"key": key, "reason": "the text is empty"})
-            continue
         item, reason = batch_item(cat, key, language, glossary, locations.get(key, []), root, cache, earlier, trusted)
         if item:
             items.append(item)

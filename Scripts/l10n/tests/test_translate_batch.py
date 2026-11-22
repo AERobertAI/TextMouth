@@ -130,7 +130,7 @@ class TodoTests(BatchCase):
 
     def test_a_term_is_found_in_any_case_and_as_a_plural_and_carries_its_note_and_check(self):
         cat = self.load()
-        cat.strings["Your bookmarks"] = base.entry("A heading")
+        cat.strings["Your bookmarks"] = base.entry("A heading", en=base.unit("Your bookmarks"))
         cat.save()
         self.assertEqual(self.items()["Your bookmarks"]["glossary"],
                          [{"term": "Bookmark", "translation": "Marcador", "note": "A saved place in a book", "check": True}])
@@ -157,13 +157,15 @@ class TodoTests(BatchCase):
         self.assertEqual([entry["key"] for entry in batch["skipped"]], ["Tap"])
         self.assertIn("device variations", batch["skipped"][0]["reason"])
 
-    def test_an_empty_key_is_skipped(self):
+    def test_an_entry_with_no_english_text_is_skipped_and_says_why(self):
+        # An empty English is no English: the pack refuses it too (a line must say something).
         cat = self.load()
-        cat.strings[""] = base.entry("An empty label")
+        cat.strings["empty.label"] = base.entry("An empty label", en=base.unit(""))
         cat.save()
         _, batch, _ = self.todo()
-        self.assertNotIn("", [item["key"] for item in batch["items"]])
-        self.assertIn({"key": "", "reason": "the text is empty"}, batch["skipped"])
+        self.assertNotIn("empty.label", [item["key"] for item in batch["items"]])
+        self.assertEqual([entry["key"] for entry in batch["skipped"] if entry["key"] == "empty.label"], ["empty.label"])
+        self.assertIn("no English", [entry["reason"] for entry in batch["skipped"] if entry["key"] == "empty.label"][0])
 
     def test_the_limit_cuts_the_batch_and_counts_the_rest(self):
         _, batch, _ = self.todo("--limit", "2")
@@ -279,7 +281,7 @@ class TodoContextTests(BatchCase):
 
     def test_a_key_with_no_text_of_its_own_has_code_only_when_the_locations_are_trusted(self):
         cat = self.load()
-        cat.strings["%lld"] = base.entry("A bare number")
+        cat.strings["%lld"] = base.entry("A bare number", en=base.unit("%lld"))
         cat.save()
         self.write_locations({"commit": "aaa111", "treeId": "t"}, **{"%lld": [{"file": PLAY_VIEW, "line": 5}]})
         _, batch, _ = self.todo_at(("aaa111", "t"))
@@ -304,19 +306,19 @@ class TodoContextTests(BatchCase):
     def test_a_previous_translation_with_other_placeholders_is_not_offered(self):
         """A stale "Delete %@" is no help to "Delete %lld books" (the review's case: a ratio of 0.62)."""
         cat = self.load()
-        cat.strings["Delete %@"] = {"comment": "c", "extractionState": "stale", "localizations": {"es": base.unit("Eliminar %@")}}
-        cat.strings["Delete %lld books"] = base.entry("A confirmation")
+        cat.strings["Delete %@"] = {"comment": "c", "extractionState": "stale", "localizations": {"en": base.unit("Delete %@"), "es": base.unit("Eliminar %@")}}
+        cat.strings["Delete %lld books"] = base.entry("A confirmation", en=base.unit("Delete %lld books"))
         cat.save()
         self.assertNotIn("previous", self.items()["Delete %lld books"])
         cat = self.load()
-        cat.strings["Delete %@ now"] = base.entry("A confirmation")
+        cat.strings["Delete %@ now"] = base.entry("A confirmation", en=base.unit("Delete %@ now"))
         cat.save()
         self.assertEqual(self.items()["Delete %@ now"]["previous"]["key"], "Delete %@", "the same placeholders are offered")
 
     def test_a_very_short_text_finds_a_very_short_earlier_one(self):
         cat = self.load()
-        cat.strings["OK"] = {"comment": "c", "extractionState": "stale", "localizations": {"es": base.unit("Aceptar")}}
-        cat.strings["OKs"] = base.entry("A button")
+        cat.strings["OK"] = {"comment": "c", "extractionState": "stale", "localizations": {"en": base.unit("OK"), "es": base.unit("Aceptar")}}
+        cat.strings["OKs"] = base.entry("A button", en=base.unit("OKs"))
         cat.save()
         self.assertEqual(self.items()["OKs"]["previous"]["key"], "OK")
 
@@ -335,8 +337,8 @@ class TodoContextTests(BatchCase):
 
         pending = sorted({phrase() for _ in range(5000)})
         stale = sorted({phrase() for _ in range(900)} - set(pending))[:600]
-        strings = {text: {"comment": "c"} for text in pending}
-        strings.update({text: {"comment": "c", "extractionState": "stale", "localizations": {"es": base.unit("T " + text)}}
+        strings = {text: {"comment": "c", "localizations": {"en": base.unit(text)}} for text in pending}
+        strings.update({text: {"comment": "c", "extractionState": "stale", "localizations": {"en": base.unit(text), "es": base.unit("T " + text)}}
                         for text in stale})
         cat = catalog.Catalog({"sourceLanguage": "en", "version": "1.0", "strings": strings})
         # This process's CPU time, not the clock's: the clock also counts the time other work on a busy Mac holds the
@@ -431,7 +433,7 @@ class ApplyTests(ApplyCase):
         """Adds strings (key to a comment) to the catalog, to be translated by the next batch."""
         cat = self.load()
         for key, comment in strings.items():
-            cat.strings[key] = base.entry(comment)
+            cat.strings[key] = base.entry(comment, en=base.unit(key))
         cat.save()
 
     def test_a_percent_sign_after_a_space_is_plain_text(self):
@@ -495,8 +497,8 @@ class ApplyTests(ApplyCase):
 
     def test_a_text_with_nothing_to_translate_may_stay(self):
         cat = self.load()
-        cat.strings["TextMouth"] = base.entry("The name")
-        cat.strings["%lld"] = base.entry("A bare number")
+        cat.strings["TextMouth"] = base.entry("The name", en=base.unit("TextMouth"))
+        cat.strings["%lld"] = base.entry("A bare number", en=base.unit("%lld"))
         cat.save()
         path = self.folder / "names.json"
         self.write_batch(path, {"language": "es", "items": [{"key": "TextMouth", "translation": "TextMouth"},
@@ -650,7 +652,7 @@ class ApplyTextChecksTests(ApplyCase):
     def add(self, **strings):
         """Adds strings (key to entry) to the fixtures' catalog."""
         cat = self.load()
-        cat.strings.update(strings)
+        cat.strings.update(base.with_english(strings))
         cat.save()
 
     def try_item(self, key, translation, language="es", state=None, **extra):

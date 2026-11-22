@@ -132,7 +132,7 @@ class PluralTests(CatalogCase):
 
     def test_a_float_placeholder_is_a_number_to_vary_on(self):
         cat = self.load()
-        cat.strings["%.1f hours"] = base.entry("A length of time")
+        cat.strings["%.1f hours"] = base.entry("A length of time", en=base.unit("%.1f hours"))
         cat.save()
         status, _, err = run("plural", "%.1f hours", "--lang", "en", "--one", "%.1f hour", "--other", "%.1f hours", "--catalog", str(self.path))
         self.assertEqual(status, 0, err)
@@ -157,7 +157,7 @@ class PluralTests(CatalogCase):
         self.assertRefused("%lld books", "--lang", "es", "--one", "Un libro", "--many", "de libros", "--other", "%lld libros",
                            reason="the many form: missing placeholder number 1")
         cat = self.load()
-        cat.strings["%lld books in %@"] = base.entry("A count and a shelf")
+        cat.strings["%lld books in %@"] = base.entry("A count and a shelf", en=base.unit("%lld books in %@"))
         cat.save()
         self.assertRefused("%lld books in %@", "--lang", "es", "--one", "Un libro", "--many", "%lld de libros en %@",
                            "--other", "%lld libros en %@", reason="the one form: missing placeholder number 2 (object)")

@@ -53,9 +53,10 @@ class EnglishUnitsTests(unittest.TestCase):
         self.assertIsNone(pack.compile_localization(cat.strings[TIMES]["localizations"]["en"], "en", "x", problems))
         self.assertEqual(problems, [])
 
-    def test_the_key_stands_in_only_while_the_fallback_stands(self):
+    def test_the_key_is_never_the_english(self):
         cat = fixture()
-        self.assertEqual(cat.english_forms(TIMES), [TIMES] if catalog.KEY_IS_ENGLISH_FALLBACK else [])
+        self.assertEqual(cat.english_forms(TIMES), [])
+        self.assertEqual(translate.english_shape(cat, TIMES)[0], "other")
 
     def test_english_bytes_count_en_texts(self):
         cat = base.make_catalog({TITLE: entry(en=unit("Library"))})
