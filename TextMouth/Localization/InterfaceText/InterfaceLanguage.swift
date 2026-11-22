@@ -16,12 +16,13 @@ enum InterfaceLanguage {
         let locale: Locale
     }
 
-    /// The language a test uses in place of the system's: bound for one test's scope, as
-    /// `BraillePreferences.tableForImports` is (`InterfaceLanguage.$testLanguage.withValue("es") { ... }`), so
-    /// concurrent tests never see each other's language and nothing global changes.
-    @TaskLocal static var testLanguage: String? = nil
+    /// The language one task's scope reads in, in place of the app's: bound by tests and by title sets that must read a
+    /// text in another language, as `BraillePreferences.tableForImports` is
+    /// (`InterfaceLanguage.$scopedLanguage.withValue("es") { ... }`), so concurrent scopes never see each other's
+    /// language and nothing global changes.
+    @TaskLocal static var scopedLanguage: String? = nil
 
-    /// The state every lookup reads: the test's language when one is bound, else the app's. Swapped whole by `select`.
+    /// The state every lookup reads: the scope's language when one is bound, else the app's. Swapped whole by `select`.
     private static let shared = OSAllocatedUnfairLock<State?>(initialState: nil)
 
     /// The language and locale in use now.
@@ -29,7 +30,7 @@ enum InterfaceLanguage {
     /// Live switching (a later phase) adds its observation here: a read through an `ObservationRegistrar` access, so a
     /// SwiftUI body that looked up a line runs again when the language changes.
     static var current: State {
-        if let language = testLanguage { return state(forTesting: language) }
+        if let language = scopedLanguage { return state(forScope: language) }
         return shared.withLock { state in
             if let known = state { return known }
             let made = systemState()
@@ -38,24 +39,25 @@ enum InterfaceLanguage {
         }
     }
 
-    /// Switches the language in use to `state` in one swap. The picker calls it; tests that bind `testLanguage` do not.
+    /// Switches the language in use to `state` in one swap. The picker calls it; scopes that bind `scopedLanguage` do not.
     static func select(_ state: State) {
         shared.withLock { $0 = state }
     }
 
     // MARK: - System
 
-    /// The state under System. In a process that hosts tests it is English formatted with `en_US`, so the suite's
-    /// interface text does not follow the language of the Mac it runs on; otherwise it is the first language of
+    /// The state under System. In a process where XCTest runs a test bundle it is English formatted with `en_US`, so the
+    /// suite's interface text does not follow the language of the Mac it runs on. The iPhone app a UI test launched is
+    /// sandboxed but not such a process: it follows its launch language as the app does. Otherwise it is the first language of
     /// `Bundle.main.preferredLocalizations` that the app carries, formatted with `Locale.autoupdatingCurrent`: it follows
     /// a change of region while the app runs, as Apple's `String(localized:)` does by reading `Locale.current` at every
     /// call, so a number is written the same way by both.
     static func systemState(
-        isHostedTest: Bool = TextMouthRuntime.current.isHostedTest,
+        hostsTestBundle: Bool = TextMouthRuntime.current.hostsTestBundle,
         preferredLocalizations: [String] = Bundle.main.preferredLocalizations,
         currentLocale: Locale = .autoupdatingCurrent
     ) -> State {
-        if isHostedTest { return State(language: "en", locale: Locale(identifier: "en_US")) }
+        if hostsTestBundle { return State(language: "en", locale: Locale(identifier: "en_US")) }
         return State(language: resolve(preferredLocalizations.first), locale: currentLocale)
     }
 
@@ -80,19 +82,19 @@ enum InterfaceLanguage {
         return carried.first { $0.lowercased() == base } ?? "en"
     }
 
-    // MARK: - Tests
+    // MARK: - Scopes
 
-    /// The state a test's language gives: that language, formatted in the language with the United States as its
+    /// The state a scope's language gives: that language, formatted in the language with the United States as its
     /// region, as the hosted tests' own comparisons do (`Locale(identifier: "es_US")`). Under the language the system
     /// already speaks, the same.
-    static func state(forTesting language: String) -> State {
-        State(language: language, locale: locale(forTesting: language))
+    static func state(forScope language: String) -> State {
+        State(language: language, locale: locale(forScope: language))
     }
 
-    /// The locale a test formats `language` with: the language without its region (`pt-BR` is `pt`; a script such as
+    /// The locale a scope formats `language` with: the language without its region (`pt-BR` is `pt`; a script such as
     /// `zh-Hans` stays) and the United States as the region; Persian with Latin digits, as the system gives it
     /// outside Iran.
-    static func locale(forTesting language: String) -> Locale {
+    static func locale(forScope language: String) -> Locale {
         let base = language == "pt-BR" ? "pt" : language
         return Locale(identifier: base + "_US" + (language == "fa" ? "@numbers=latn" : ""))
     }

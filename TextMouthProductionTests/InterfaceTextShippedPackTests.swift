@@ -157,7 +157,7 @@ enum InterfaceTextProof {
 ///   as the key itself, the squeeze `compact_packs.py` makes in the tables).
 /// - **Every lookup** through the engine equals `String(format:locale:arguments:)` of the table's form, which
 ///   `PluralRules` picks, at the 13 counts of `InterfaceTextProof`, with the locale a test gives that language
-///   (`InterfaceLanguage.locale(forTesting:)`: the language with the United States as its region, as `es_US`).
+///   (`InterfaceLanguage.locale(forScope:)`: the language with the United States as its region, as `es_US`).
 ///
 /// **The plural trap.** In a process whose locale is English, Foundation may choose a stringsdict's plural form by the
 /// locale's rules rather than the table's language, so a Russian table read through `String(localized:)` or
@@ -318,7 +318,7 @@ final class InterfaceTextShippedPackTests: XCTestCase {
         var compared = 0
         var wrong: [String] = []
         for language in host.languages {
-            let locale = InterfaceLanguage.locale(forTesting: language)
+            let locale = InterfaceLanguage.locale(forScope: language)
             let tables = try Tables(language: language, in: resources)
             // English is the tables' fallback for a key a language lacks, as it is the app's (Bundle's own choice).
             let english = language == "en" ? nil : try Tables(language: "en", in: resources)

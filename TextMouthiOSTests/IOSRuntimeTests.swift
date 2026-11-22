@@ -18,6 +18,7 @@ final class IOSRuntimeTests: XCTestCase {
     func testThisHostingProcessRunsInASandbox() {
         let current = TextMouthRuntime.current
         XCTAssertTrue(current.isHostedTest)
+        XCTAssertTrue(current.hostsTestBundle)
         XCTAssertTrue(
             current.homeDirectory.standardizedFileURL.path.hasPrefix(temporary.standardizedFileURL.path),
             "\(current.homeDirectory.path) is outside \(temporary.path)"
@@ -38,6 +39,7 @@ final class IOSRuntimeTests: XCTestCase {
             temporaryDirectory: temporary
         )
         XCTAssertTrue(runtime.isHostedTest)
+        XCTAssertFalse(runtime.hostsTestBundle, "The launched app is not a process XCTest runs a bundle in: it keeps its launch language")
         XCTAssertEqual(runtime.homeDirectory.deletingLastPathComponent().standardizedFileURL, temporary.standardizedFileURL)
         XCTAssertTrue(runtime.homeDirectory.lastPathComponent.hasSuffix("777"), runtime.homeDirectory.lastPathComponent)
         XCTAssertNotNil(runtime.preferencesFile)

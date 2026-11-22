@@ -54,6 +54,7 @@ final class HostedTestIsolationTests: XCTestCase {
         )
 
         XCTAssertTrue(runtime.isHostedTest)
+        XCTAssertTrue(runtime.hostsTestBundle, "XCTest's own variable means a test bundle runs in this process")
         XCTAssertEqual(runtime.homeDirectory, temporary.appendingPathComponent("TextMouthTests-4242", isDirectory: true))
         XCTAssertFalse(runtime.preferences === UserDefaults.standard)
         XCTAssertEqual(
@@ -72,6 +73,7 @@ final class HostedTestIsolationTests: XCTestCase {
         )
 
         XCTAssertFalse(runtime.isHostedTest)
+        XCTAssertFalse(runtime.hostsTestBundle)
         XCTAssertEqual(runtime.homeDirectory.standardizedFileURL.path, RealUserAccount.homeDirectory.standardizedFileURL.path)
         XCTAssertTrue(runtime.preferences === UserDefaults.standard)
         XCTAssertNil(runtime.preferencesFile)

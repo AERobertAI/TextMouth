@@ -34,6 +34,7 @@ final class PhoneLaunchRequestTests: XCTestCase {
             temporaryDirectory: FileManager.default.temporaryDirectory
         )
         XCTAssertFalse(runtime.isHostedTest, "Only the iPhone app's debug build reads the request")
+        XCTAssertFalse(runtime.hostsTestBundle)
     }
     #endif
 

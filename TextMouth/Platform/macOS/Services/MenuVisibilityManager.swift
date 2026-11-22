@@ -136,7 +136,7 @@ final class MenuVisibilityManager {
             // The member read under each language in turn: a test's task-local
             // language makes the engine answer in it, with nothing global changed.
             let others = (["en"] + languages).map { language in
-                InterfaceLanguage.$testLanguage.withValue(language) { title() }
+                InterfaceLanguage.$scopedLanguage.withValue(language) { title() }
             }
             return [title()] + others
         })

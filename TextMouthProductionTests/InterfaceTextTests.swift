@@ -64,7 +64,7 @@ func makeInterfaceTextEngine(_ lines: [String: [String: String]], log: Interface
 
 /// The text of a call in `language`, formatted with the locale the tests use for that language.
 func interfaceLine(_ engine: InterfaceTextEngine, _ id: StaticString, _ english: InterfaceText.Format, language: String = "es") -> String {
-    engine.text(id: id, english: english, language: language, locale: InterfaceLanguage.locale(forTesting: language))
+    engine.text(id: id, english: english, language: language, locale: InterfaceLanguage.locale(forScope: language))
 }
 
 /// A pack made in memory, byte for byte as `InterfaceTextPack` reads it, with each field open to damage.
@@ -498,7 +498,7 @@ extension InterfaceTextTests {
         let engine = makeInterfaceTextEngine(["book.by": ["es": "%2$@ de %1$@"], "greeting.hello": ["es": "Hola"]], log: log)
         let title = "Quijote", author = "Cervantes"
         let english: InterfaceText.Format = "\(title) by \(author)"
-        let locale = InterfaceLanguage.locale(forTesting: "es")
+        let locale = InterfaceLanguage.locale(forScope: "es")
         let runtimeID = ["book", "by"].joined(separator: ".")
         XCTAssertEqual(engine.text(runtimeID: runtimeID, english: english, language: "es", locale: locale), "Cervantes de Quijote")
         XCTAssertEqual(engine.text(runtimeID: runtimeID, english: english, language: "es", locale: locale),
@@ -741,24 +741,32 @@ extension InterfaceTextTests {
     }
 
     func testSystemInAHostedTestIsEnglishWithTheUnitedStates() {
-        let state = InterfaceLanguage.systemState(isHostedTest: true, preferredLocalizations: ["es"], currentLocale: Locale(identifier: "es_ES"))
+        let state = InterfaceLanguage.systemState(hostsTestBundle: true, preferredLocalizations: ["es"], currentLocale: Locale(identifier: "es_ES"))
         XCTAssertEqual(state.language, "en")
         XCTAssertEqual(state.locale.identifier, "en_US")
         // And this process, which hosts the tests, uses it.
-        XCTAssertTrue(TextMouthRuntime.current.isHostedTest)
+        XCTAssertTrue(TextMouthRuntime.current.hostsTestBundle)
         XCTAssertEqual(InterfaceLanguage.current.language, "en")
+    }
+
+    /// The iPhone app a UI test launched is sandboxed but hosts no bundle: it follows its launch language
+    /// (`-AppleLanguages (es) -AppleLocale es_ES`) with the current locale, as the app does.
+    func testSystemInAUITestsLaunchFollowsItsLaunchLanguage() {
+        let locale = Locale(identifier: "es_ES")
+        let state = InterfaceLanguage.systemState(hostsTestBundle: false, preferredLocalizations: ["es"], currentLocale: locale)
+        XCTAssertEqual(state, InterfaceLanguage.State(language: "es", locale: locale))
     }
 
     func testSystemInTheAppFollowsThePreferredLocalization() {
         let locale = Locale(identifier: "es_US")
-        let state = InterfaceLanguage.systemState(isHostedTest: false, preferredLocalizations: ["es", "en"], currentLocale: locale)
+        let state = InterfaceLanguage.systemState(hostsTestBundle: false, preferredLocalizations: ["es", "en"], currentLocale: locale)
         XCTAssertEqual(state, InterfaceLanguage.State(language: "es", locale: locale))
-        XCTAssertEqual(InterfaceLanguage.systemState(isHostedTest: false, preferredLocalizations: [], currentLocale: locale).language, "en")
+        XCTAssertEqual(InterfaceLanguage.systemState(hostsTestBundle: false, preferredLocalizations: [], currentLocale: locale).language, "en")
     }
 
     func testATestLanguageIsBoundForOneScopeOnly() {
         XCTAssertEqual(InterfaceLanguage.current.language, "en")
-        InterfaceLanguage.$testLanguage.withValue("ru") {
+        InterfaceLanguage.$scopedLanguage.withValue("ru") {
             XCTAssertEqual(InterfaceLanguage.current.language, "ru")
             XCTAssertEqual(InterfaceLanguage.current.locale.identifier, "ru_US")
         }
@@ -766,10 +774,10 @@ extension InterfaceTextTests {
     }
 
     func testTheLocaleOfATestLanguage() {
-        XCTAssertEqual(InterfaceLanguage.locale(forTesting: "es").identifier, "es_US")
-        XCTAssertEqual(InterfaceLanguage.locale(forTesting: "pt-BR").identifier, "pt_US")
-        XCTAssertEqual(InterfaceLanguage.locale(forTesting: "zh-Hans").language.languageCode?.identifier, "zh")
-        XCTAssertEqual(InterfaceLanguage.locale(forTesting: "fa").numberingSystem.identifier, "latn")
+        XCTAssertEqual(InterfaceLanguage.locale(forScope: "es").identifier, "es_US")
+        XCTAssertEqual(InterfaceLanguage.locale(forScope: "pt-BR").identifier, "pt_US")
+        XCTAssertEqual(InterfaceLanguage.locale(forScope: "zh-Hans").language.languageCode?.identifier, "zh")
+        XCTAssertEqual(InterfaceLanguage.locale(forScope: "fa").numberingSystem.identifier, "latn")
     }
 
     /// The call a view makes, for an ID the shipped pack does not hold (a made-up one): every language shows the call's
@@ -778,7 +786,7 @@ extension InterfaceTextTests {
         let count = 3
         XCTAssertEqual(InterfaceText.line("interfaceTextTests.sample", "Count: \(number: count), 100%"), "Count: 3, 100%")
         XCTAssertEqual(InterfaceText.line("interfaceTextTests.sample", "Count: \(number: count), 100%", language: "es"), "Count: 3, 100%")
-        InterfaceLanguage.$testLanguage.withValue("ru") {
+        InterfaceLanguage.$scopedLanguage.withValue("ru") {
             XCTAssertEqual(InterfaceText.line("interfaceTextTests.plain", "Plain"), "Plain")
         }
     }
