@@ -8,7 +8,9 @@
 #   2. resolves Swift packages exactly as the committed Package.resolved pins
 #      them (make resolve-packages) and verifies that every pin's package,
 #      version, revision, and URL still matches the committed file;
-#   3. builds the Release app from scratch (make build) and requires that
+#   3. builds the Release app from scratch (make build SIGN_APP=:, so the app
+#      keeps Xcode's ad hoc signature and the gate never asks for the keychain)
+#      and requires that
 #      the build reports no Swift warning, and that the app it packages,
 #      build/TextMouth.app, which `make install` copies, is no larger than
 #      APP_SIZE_LIMIT_MB megabytes, a limit this script sets once. It warns,
@@ -787,7 +789,11 @@ main() {
 
   begin_step 3 "build the Release app"
   remove_earlier_builds
-  run_step build yes make build || step_failed build $?
+  # SIGN_APP=: keeps the ad hoc signature Xcode gives the app. The gate's app is
+  # never installed (make install builds and signs its own), and an unattended
+  # gate must never ask for the keychain: it once kept a password dialog on the
+  # user's screen for hours, and then failed.
+  run_step build yes make build SIGN_APP=: || step_failed build $?
   require_no_swift_warnings "$RELEASE_BUILD_LOG"
   require_app_within_size_limit
   require_app_free_of_mac_paths
