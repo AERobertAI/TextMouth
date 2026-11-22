@@ -439,15 +439,16 @@ def choose_tests(merged):
     keeps a list of its own (`dropped`), so its agent is told. Local and remote
     trains choose alike."""
     known_areas, known_classes = known_names(WORKTREE)
-    interface = set(ios_ui_tests.all_classes(WORKTREE))
     areas, classes = [], []
     for request in merged:
         request["dropped"] = unknown_names(request, known_areas, known_classes)
         areas += [a for a in request["areas"] if a in known_areas and a not in areas]
-        # An interface test class is run by GitHub's iPhone job, so it is not one of the Mac classes returned here;
-        # the request keeps its own, in "ios_ui_classes", for choose_interface_tests.
-        request["ios_ui_classes"] = [c for c in request["classes"] if c in interface]
-        classes += [c for c in request["classes"] if c in known_classes and c not in interface and c not in classes]
+        # The iPhone's classes go to GitHub's iPhone job by the one rule `ios_ui_tests.split_classes` keeps: an
+        # iPhone-only class leaves the Mac's classes, and a class the two bundles share stays in them, since the Mac
+        # runs it too. The request keeps its iPhone classes, in "ios_ui_classes", for choose_interface_tests.
+        split = ios_ui_tests.split_classes({"classes": list(request["classes"])}, WORKTREE)
+        request["ios_ui_classes"] = split.get("ios_ui_classes", [])
+        classes += [c for c in split["classes"] if c in known_classes and c not in classes]
     return areas, classes
 
 
