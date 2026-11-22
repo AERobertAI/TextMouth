@@ -13,6 +13,7 @@ awkward cases of the squeeze (an entry equal to its key, a plural string whose f
 """
 import json
 import plistlib
+import re
 import shutil
 import subprocess
 import sys
@@ -236,10 +237,27 @@ class EngineReadingTests(VerifyPacksCase):
 
     catalog = SQUEEZE_CATALOG
 
+    def unnumbered_english(self, catalog):
+        """A copy of `catalog` whose English plural forms are written as the key is (`%@ ... %lld`, not `%1$@ ... %2$lld`).
+
+        The engine takes the pack's English forms when their `other` equals the call's format, which is the key, so a
+        catalog that numbers the English forms is not served from the pack (a finding of this phase, posted to the
+        engine's owner). The real catalog's English forms are unnumbered. Apple reads the same words either way, so
+        the files Xcode compiled from the original stay the comparison.
+        """
+        strings = json.loads(Path(catalog).read_text(encoding="utf-8"))
+        for entry in strings["strings"].values():
+            plural = entry.get("localizations", {}).get("en", {}).get("variations", {}).get("plural", {})
+            for form in plural.values():
+                form["stringUnit"]["value"] = re.sub(r"%\d+\$", "%", form["stringUnit"]["value"])
+        copy = self.root / f"unnumbered-{Path(catalog).name}"
+        copy.write_text(json.dumps(strings), encoding="utf-8")
+        return copy
+
     def engine_arguments(self, catalog=None):
         """Builds the interface-text pack of `catalog` (the case's own by default), giving each key an ID, and returns the
         probe's arguments that name the pack and the table."""
-        catalog = catalog or self.catalog
+        catalog = self.unnumbered_english(catalog or self.catalog)
         keys = json.loads(Path(catalog).read_text(encoding="utf-8"))["strings"]
         table = self.root / "ids.json"
         ids = {key: f"probe.key{number}" for number, key in enumerate(sorted(keys))}
@@ -263,12 +281,13 @@ class EngineReadingTests(VerifyPacksCase):
         self.assertEqual(status, 0, output)
         self.assertRegex(output, r"probe: engine compared [1-9][0-9]* lookups in %d languages" % len(self.languages))
         self.assertIn(": 0 different, 0 keys the lookups cannot feed, 0 problems reported", output)
+        self.assertRegex(output, r"probe: engine timing \(-O\): ID list decode [0-9.]+ ms .* median lookup [0-9.]+ us")
 
     def test_each_language_reports_its_lookups_and_locale(self):
         """One line a language: its lookups, its time, and the locale both sides wrote with."""
         _, output = self.run_engine_probe()
         for language in self.languages:
-            self.assertRegex(output, r"probe: engine %s: [1-9][0-9]* lookups in [0-9.]+ s with [A-Za-z_@=-]+: 0 different" % language)
+            self.assertRegex(output, r"probe: engine %s: [1-9][0-9]* lookups in [0-9.]+ s with [A-Za-z_@=-]+: 0 different; decode of the ID list [0-9.]+ ms, of this language [0-9.]+ ms, median lookup [0-9.]+ us" % language)
 
     def test_a_pack_that_says_something_else_is_reported(self):
         """The engine reading is not vacuous: a pack built from a catalog with one Russian text changed differs from

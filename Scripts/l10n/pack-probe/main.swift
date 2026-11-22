@@ -157,12 +157,18 @@ struct EngineSummary {
     /// The seconds the language's lookups took, both sides included, and the locale they were written with.
     var seconds = 0.0
     var locale = ""
+    /// What the engine's own work costs (the probe is compiled -O): milliseconds to decode the ID list and this
+    /// language's entries, each on its own, and the median microseconds of one engine lookup (Apple's side excluded).
+    var idListMilliseconds = 0.0
+    var languageMilliseconds = 0.0
+    var medianLookupMicroseconds = 0.0
 
     /// The line the child prints: a JSON object under "engine".
     var line: String {
         let value: [String: Any] = [
             "compared": compared, "different": different, "differences": differences, "unfed": unfed,
-            "problems": problems, "seconds": seconds, "locale": locale,
+            "problems": problems, "seconds": seconds, "locale": locale, "idListMilliseconds": idListMilliseconds,
+            "languageMilliseconds": languageMilliseconds, "medianLookupMicroseconds": medianLookupMicroseconds,
         ]
         let data = (try? JSONSerialization.data(withJSONObject: ["engine": value], options: [.withoutEscapingSlashes])) ?? Data()
         return String(decoding: data, as: UTF8.self)
@@ -180,6 +186,9 @@ struct EngineSummary {
         problems = value["problems"] as? [String] ?? []
         seconds = value["seconds"] as? Double ?? 0
         locale = value["locale"] as? String ?? ""
+        idListMilliseconds = value["idListMilliseconds"] as? Double ?? 0
+        languageMilliseconds = value["languageMilliseconds"] as? Double ?? 0
+        medianLookupMicroseconds = value["medianLookupMicroseconds"] as? Double ?? 0
     }
 
     init() {}
@@ -235,6 +244,14 @@ func compareEngine(catalog: ProbeCatalog, language: String, options: EngineOptio
     let locale = Locale.current
     var summary = EngineSummary()
     summary.locale = locale.identifier
+    // The engine's decoding on its own, timed apart from the lookups: the ID list, then this language's entries.
+    let idsStarted = DispatchTime.now().uptimeNanoseconds
+    guard (try? pack.idList()) != nil else { fail("the ID list cannot be decoded") }
+    summary.idListMilliseconds = Double(DispatchTime.now().uptimeNanoseconds - idsStarted) / 1e6
+    let languageStarted = DispatchTime.now().uptimeNanoseconds
+    guard (try? pack.entries(language: language)) != nil else { fail("the \(language) entries cannot be decoded") }
+    summary.languageMilliseconds = Double(DispatchTime.now().uptimeNanoseconds - languageStarted) / 1e6
+    var lookupNanoseconds: [UInt64] = []
     let started = Date()
     for key in catalog.keys {
         guard let ids = table.idsByKey[key] else {
@@ -248,7 +265,9 @@ func compareEngine(catalog: ProbeCatalog, language: String, options: EngineOptio
                 break
             }
             for id in ids {
+                let began = DispatchTime.now().uptimeNanoseconds
                 let got = engine.text(runtimeID: id, english: call, language: language, locale: locale)
+                lookupNanoseconds.append(DispatchTime.now().uptimeNanoseconds - began)
                 summary.compared += 1
                 guard got != want else { continue }
                 summary.different += 1
@@ -259,6 +278,7 @@ func compareEngine(catalog: ProbeCatalog, language: String, options: EngineOptio
         }
     }
     summary.seconds = Date().timeIntervalSince(started)
+    summary.medianLookupMicroseconds = Double(lookupNanoseconds.sorted()[lookupNanoseconds.count / 2]) / 1e3
     summary.problems = reported.withLock { $0 }
     return summary
 }
@@ -322,6 +342,9 @@ func compare(xcodeFolder: URL, compactFolder: URL, catalogURL: URL, requested: [
     var differences: [String] = []
     var engineTotal = EngineSummary()
     var engineFound = 0
+    var idListTimes: [Double] = []
+    var languageTimes: [Double] = []
+    var lookupMedians: [Double] = []
     for language in languages {
         // The engine's reading rides in the Xcode folder's process: the folder is that language's main bundle there.
         let (one, summary) = runDump(copy: xcodeCopy, catalogURL: catalogURL, language: language, engine: engine)
@@ -332,9 +355,12 @@ func compare(xcodeFolder: URL, compactFolder: URL, catalogURL: URL, requested: [
             engineTotal.different += summary.different
             engineTotal.unfed += summary.unfed
             engineTotal.seconds += summary.seconds
+            idListTimes.append(summary.idListMilliseconds)
+            languageTimes.append(summary.languageMilliseconds)
+            lookupMedians.append(summary.medianLookupMicroseconds)
             engineTotal.problems += summary.problems.map { "\(language): \($0)" }
             engineTotal.differences += summary.differences
-            print("probe: engine \(language): \(summary.compared) lookups in \(String(format: "%.2f", summary.seconds)) s with \(summary.locale): \(summary.different) different")
+            print("probe: engine \(language): \(summary.compared) lookups in \(String(format: "%.2f", summary.seconds)) s with \(summary.locale): \(summary.different) different; decode of the ID list \(String(format: "%.2f", summary.idListMilliseconds)) ms, of this language \(String(format: "%.2f", summary.languageMilliseconds)) ms, median lookup \(String(format: "%.2f", summary.medianLookupMicroseconds)) us")
         }
         guard one.count == two.count else { fail("the two dumps of \(language) hold \(one.count) and \(two.count) lookups") }
         for (first, second) in zip(one, two) {
@@ -354,6 +380,11 @@ func compare(xcodeFolder: URL, compactFolder: URL, catalogURL: URL, requested: [
         for line in engineTotal.differences.prefix(20) { print("ENGINE DIFFERENT: \(line)") }
         for line in engineTotal.problems.prefix(20) { print("ENGINE PROBLEM: \(line)") }
         print("probe: engine compared \(engineTotal.compared) lookups in \(engineFound) languages (\(String(format: "%.2f", engineTotal.seconds)) s): \(engineTotal.different) different, \(engineTotal.unfed) keys the lookups cannot feed, \(engineTotal.problems.count) problems reported")
+        if !languageTimes.isEmpty {
+            // The medians of the per-language figures, so one slow language does not stand for all.
+            func median(_ values: [Double]) -> Double { values.sorted()[values.count / 2] }
+            print("probe: engine timing (-O): ID list decode \(String(format: "%.2f", median(idListTimes))) ms (median of \(idListTimes.count) processes), a language's decode \(String(format: "%.2f", median(languageTimes))) ms (largest \(String(format: "%.2f", languageTimes.max() ?? 0)) ms), median lookup \(String(format: "%.2f", median(lookupMedians))) us")
+        }
         engineOK = engineFound == languages.count && engineTotal.compared > 0 && engineTotal.different == 0
             && engineTotal.unfed == 0 && engineTotal.problems.isEmpty
     }
