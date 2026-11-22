@@ -4,7 +4,7 @@ import Foundation
 ///
 /// The interface-text lookup (`InterfaceTextEngine`) uses it to pick the form of a plural line, and the pack stores a
 /// plural entry's forms in each language's category order from `categories`, so the reader needs no category names.
-/// `LanguagePackTests` checks Apple's own rule against this table at every count from 0 to 10,000 and at the large
+/// `InterfaceTextTests.testApplesPluralRuleAgreesWithTheTableForEveryLanguage` checks Apple's own rule against this table at every count from 0 to 10,000 and at the large
 /// counts, so an operating system that changes a rule shows, and `Scripts/l10n/tests/test_plural_rules_swift.py` checks
 /// the table against the catalog tool's `PLURAL_CATEGORIES`.
 ///
