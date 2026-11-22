@@ -112,12 +112,6 @@ class PackCase(unittest.TestCase):
         catalog.Catalog({"sourceLanguage": "en", "strings": strings, "version": "1.0"}).save(path)
         return path
 
-    def write_ids(self, table, name="ids.json"):
-        """Writes `table` as a JSON file and returns its path."""
-        path = self.folder / name
-        path.write_text(json.dumps(table), encoding="utf-8")
-        return path
-
     def refusals(self, strings, **options):
         """The problems build_plan refuses a catalog of `strings` with (the test fails if it does not refuse)."""
         with self.assertRaises(pack.PackError) as caught:
@@ -249,10 +243,9 @@ class FixtureTests(PackCase):
 class FormatTests(PackCase):
     """The header, the directory, the blobs, and the entries, exactly as the design gives them."""
 
-    def build(self, strings, table=None):
-        """The pack bytes for `strings` (keyed by IDs, or by English text when `table` maps them to IDs)."""
-        ids_path = self.write_ids(table) if table else None
-        return pack.build_bytes(pack.build_plan(self.write_catalog(strings), ids_path))
+    def build(self, strings):
+        """The pack bytes for `strings` (keyed by IDs)."""
+        return pack.build_bytes(pack.build_plan(self.write_catalog(strings)))
 
     def test_the_header_and_directory_are_laid_out_as_designed(self):
         path = FIXTURES / "lines.xcstrings"
@@ -338,29 +331,6 @@ class FormatTests(PackCase):
         decoded = pack.read_pack(self.build(strings))
         self.assertEqual(["A note\nwith two lines", ""], decoded.blobs["notes"].entries)
 
-    def test_a_catalog_keyed_by_english_takes_its_ids_from_the_table(self):
-        strings = {"Open %@": line("Open %@", es="Abrir %@"), "Close": {"localizations": {"es": plain("Cerrar")}}}
-        decoded = pack.read_pack(self.build(strings, {"Open %@": "menu.open", "Close": "menu.close"}))
-        self.assertEqual(["menu.close", "menu.open"], decoded.ids)
-        # The key is the English where no en localization holds it.
-        self.assertEqual(["Close", "Open %@"], decoded.blobs["en"].entries)
-        self.assertEqual(["Cerrar", "Abrir %@"], decoded.blobs["es"].entries)
-
-    def test_a_split_key_gives_each_of_its_ids_the_same_entries(self):
-        strings = {"Book": {"comment": "A noun", "localizations": {"es": plain("Libro")}}}
-        table = {"version": 1, "ids": {}, "splits": {"Book": [{"id": "book.noun", "sites": ["A.swift:A.b"]},
-                                                                {"id": "book.verb", "sites": ["B.swift:B.c"]}]}}
-        decoded = pack.read_pack(self.build(strings, table))
-        self.assertEqual(["book.noun", "book.verb"], decoded.ids)
-        for name in ("en", "es", "notes"):
-            self.assertEqual(decoded.blobs[name].entries[0], decoded.blobs[name].entries[1])
-        self.assertEqual(["Book", "Book"], decoded.blobs["en"].entries)
-
-    def test_the_idtables_two_shapes_read_the_same_way(self):
-        strings = {"Hi": line("Hi")}
-        flat = self.build(strings, {"Hi": "greeting.hi"})
-        shaped = self.build(strings, {"version": 1, "ids": {"Hi": "greeting.hi"}, "splits": {}})
-        self.assertEqual(pack.read_pack(flat).ids, pack.read_pack(shaped).ids)
 
 
 # ---------------------------------------------------------------------------------------------------------------
@@ -417,16 +387,6 @@ class BuildTests(PackCase):
         _, said, _ = self.run_main("build", "--catalog", catalog_path, "--out", out)
         self.assertIn("wrote", said)
         self.assertEqual(2, len(pack.read_pack(out.read_bytes()).ids))
-
-    def test_a_changed_id_table_rebuilds(self):
-        catalog_path = self.write_catalog({"Hi": line("Hi")})
-        out = self.folder / "Strings.pack"
-        ids = self.write_ids({"Hi": "greeting.hi"})
-        self.run_main("build", "--catalog", catalog_path, "--ids", ids, "--out", out)
-        self.write_ids({"Hi": "greeting.hello"})
-        _, said, _ = self.run_main("build", "--catalog", catalog_path, "--ids", ids, "--out", out)
-        self.assertIn("wrote", said)
-        self.assertEqual(["greeting.hello"], pack.read_pack(out.read_bytes()).ids)
 
     def test_no_stamp_writes_none_and_never_skips(self):
         catalog_path = self.write_catalog({"a.one": line("One")})
@@ -592,19 +552,7 @@ class RefusalTests(PackCase):
         forty_nine = "a." + "b" * 47
         self.assertEqual([forty_nine], pack.build_plan(self.write_catalog({forty_nine: line("Hi")}), max_id_length=60).ids)
 
-    def test_a_key_with_no_id_in_the_table(self):
-        path = self.write_catalog({"Hi": line("Hi"), "Bye": line("Bye")})
-        with self.assertRaises(pack.PackError) as caught:
-            pack.build_plan(path, self.write_ids({"Hi": "greeting.hi"}))
-        self.assertEqual(["Bye: the ID table has no ID for this key"], caught.exception.problems)
-
-    def test_an_id_given_to_two_keys(self):
-        path = self.write_catalog({"Hi": line("Hi"), "Hello": line("Hello")})
-        with self.assertRaises(pack.PackError) as caught:
-            pack.build_plan(path, self.write_ids({"Hi": "greeting.hi", "Hello": "greeting.hi"}))
-        self.assertTrue(any("belongs to two keys" in p for p in caught.exception.problems), caught.exception.problems)
-
-    def test_an_id_with_no_english_when_there_is_no_table(self):
+    def test_an_id_with_no_english_text(self):
         strings = {"a.b": {"localizations": {"es": plain("Hola")}}}
         self.assert_refused(strings, "a.b", "en", "no English text")
 
@@ -746,15 +694,14 @@ class CheckTests(PackCase):
 # ---------------------------------------------------------------------------------------------------------------
 
 class RealCatalogTests(PackCase):
-    """The real catalog builds, verifies, and rebuilds to the same bytes, under synthetic IDs (`key.n0001`)."""
+    """The real catalog (keyed by ID) builds, verifies, and rebuilds to the same bytes."""
 
     def test_the_whole_catalog_builds_verifies_and_rebuilds_identically(self):
         if not REAL_CATALOG.exists():
             self.skipTest("the catalog is not in this tree")
         keys = sorted(catalog.Catalog.load(REAL_CATALOG).strings)
-        ids = self.write_ids({key: f"key.n{number:04d}" for number, key in enumerate(keys)})
         out = self.folder / "Strings.pack"
-        code, _, err = self.run_main("build", "--catalog", REAL_CATALOG, "--ids", ids, "--out", out, "--no-stamp")
+        code, _, err = self.run_main("build", "--catalog", REAL_CATALOG, "--out", out, "--no-stamp")
         self.assertEqual(0, code, err)
         data = out.read_bytes()
         decoded = pack.read_pack(data)
@@ -763,9 +710,9 @@ class RealCatalogTests(PackCase):
         self.assertEqual(["ids", "notes", "en"], list(decoded.blobs)[:3])
         self.assertGreater(len(decoded.blobs), 20, "the catalog's languages")
         self.assertLess(len(data), 1_500_000, "the budget `make check` will hold the pack to")
-        self.assertEqual([], pack.verify(out, REAL_CATALOG, ids))
+        self.assertEqual([], pack.verify(out, REAL_CATALOG))
         # The same bytes twice, from a second plan.
-        self.assertEqual(data, pack.build_bytes(pack.build_plan(REAL_CATALOG, ids)))
+        self.assertEqual(data, pack.build_bytes(pack.build_plan(REAL_CATALOG)))
 
 
 if __name__ == "__main__":

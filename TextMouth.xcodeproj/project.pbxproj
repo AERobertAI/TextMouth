@@ -8705,7 +8705,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "/usr/bin/python3 -I -B \"$SRCROOT/Scripts/l10n/pack.py\" build --catalog \"$SRCROOT/TextMouth/Localization/Localizable.xcstrings\" --ids \"$SRCROOT/Scripts/l10n/ids.json\" --out \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Strings.pack\" --stamp \"$DERIVED_FILE_DIR/Strings.pack.stamp\"";
+			shellScript = "/usr/bin/python3 -I -B \"$SRCROOT/Scripts/l10n/pack.py\" build --catalog \"$SRCROOT/TextMouth/Localization/Localizable.xcstrings\" --out \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Strings.pack\" --stamp \"$DERIVED_FILE_DIR/Strings.pack.stamp\"";
 		};
 		89748C857B721999D73DFDFB /* Compact language files */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -8785,7 +8785,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "/usr/bin/python3 -I -B \"$SRCROOT/Scripts/l10n/pack.py\" build --catalog \"$SRCROOT/TextMouth/Localization/Localizable.xcstrings\" --ids \"$SRCROOT/Scripts/l10n/ids.json\" --out \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Strings.pack\" --stamp \"$DERIVED_FILE_DIR/Strings.pack.stamp\"";
+			shellScript = "/usr/bin/python3 -I -B \"$SRCROOT/Scripts/l10n/pack.py\" build --catalog \"$SRCROOT/TextMouth/Localization/Localizable.xcstrings\" --out \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Strings.pack\" --stamp \"$DERIVED_FILE_DIR/Strings.pack.stamp\"";
 		};
 		D4006D4DC2CA1958609F2B67 /* Copy Swift Objective-C Interface Header */ = {
 			isa = PBXShellScriptBuildPhase;

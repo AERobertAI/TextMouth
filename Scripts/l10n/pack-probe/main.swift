@@ -3,8 +3,8 @@ import os
 
 // The probe of `Scripts/l10n/verify_packs.py` (TL16, TL18, FR39): reads two folders of language files the way the app
 // does, and reports every lookup that differs between them. The first folder holds the files as Xcode compiled them,
-// the second the same files after `compact_packs.py`. With `--pack` and `--ids` it also reads the interface-text pack
-// (`pack.py`'s output) through the engine, and reports every lookup whose text differs from Xcode's `String(localized:)`.
+// the second the same files after `compact_packs.py`. With `--pack` it also reads the interface-text pack
+// (`pack.py`'s output) through the engine, and reports every lookup whose text differs from Xcode's table for the same ID.
 //
 // "The way the app does" means through `Bundle.main` with the person's languages set to one language, and with every
 // language of the folder in the one bundle. A lookup that a language's table lacks then falls back to English's table
@@ -13,22 +13,24 @@ import os
 // folder, which makes the folder `Bundle.main`, and runs that copy with `-AppleLanguages (language)` in the dump
 // mode below; the parent then compares the two dumps line by line.
 //
-// The third reading (FR39) is the engine's. In the Xcode folder's process of each language the probe asks the engine
-// (`InterfaceTextEngine`, over the pack) for every ID of every key at every asking of `InterfaceTextProof` (the 13
-// counts, a key's second number three places on), and `String(localized:)` for the same call, built at run time from
-// the key (a `String.LocalizationValue` with its literal segments and interpolations), in the same process, with the
-// same `Locale.current`. Any difference, and any problem the engine reports, fails.
+// The third reading (FR39) is the engine's. The catalog is keyed by ID, and each ID's English (its `en` text, or a
+// plural's `other` form: the code's English) is the call's format. In the Xcode folder's process of each language the probe
+// asks the engine (`InterfaceTextEngine`, over the pack) for every ID at every asking of `InterfaceTextProof` (the 13
+// counts, a second number three places on), and Apple's tables for the same ID (`Bundle.main`'s text, written by
+// `String(format:locale:arguments:)` with the same arguments), in the same process, with the same `Locale.current`. Any
+// difference, and any problem the engine reports, fails. A catalog with no `en` for an entry (the squeeze fixtures of the
+// tool tests, whose keys are English) takes its key for the English.
 //
 // Compiled together with TextMouthProductionTests/LanguagePackTests.swift and InterfaceTextShippedPackTests.swift as
 // `-D PACK_PROBE`, which leaves those files' tests out and keeps their lookups, so the probe and the hosted tests read
 // a bundle in one way, and with the engine's core files (`TextMouth/Localization/InterfaceText/`, less the files that
 // read the app's state), so the engine under test is the app's own code.
 //
-// Usage:   probe XCODE_FOLDER COMPACT_FOLDER CATALOG.xcstrings [--pack STRINGS.pack --ids IDS.json] [LANGUAGE...]
+// Usage:   probe XCODE_FOLDER COMPACT_FOLDER CATALOG.xcstrings [--pack STRINGS.pack] [LANGUAGE...]
 // Prints one line per differing lookup (at most 20), then a summary; the exit status is 1 on any difference or
 // when nothing was compared, and 2 for a usage error or a language the folder lacks.
 // Dump mode (run by the parent, in the folder's copy):
-//   probe --dump CATALOG.xcstrings LANGUAGE [--pack STRINGS.pack --ids IDS.json] -AppleLanguages (LANGUAGE)
+//   probe --dump CATALOG.xcstrings LANGUAGE [--pack STRINGS.pack] -AppleLanguages (LANGUAGE)
 
 /// Reports a usage error and stops.
 func fail(_ message: String) -> Never {
@@ -36,11 +38,13 @@ func fail(_ message: String) -> Never {
     exit(2)
 }
 
-/// The catalog's keys, and for each the languages in which it is a plural string.
+/// The catalog's keys (IDs), and for each its English and the languages in which it is a plural string.
 struct ProbeCatalog {
     let keys: [String]
     /// The keys that are a plural string in at least one language: each is asked for at every count.
     let pluralKeys: [String]
+    /// Each key's English, the format its lookups are fed from: its `en` text, or a plural's `other` form, else the key.
+    let english: [String: String]
 
     /// Reads the catalog at `url`, or stops with a usage error.
     init(url: URL) {
@@ -53,6 +57,12 @@ struct ProbeCatalog {
             let localizations = strings[key]?["localizations"] as? [String: [String: Any]] ?? [:]
             return localizations.values.contains { ($0["variations"] as? [String: Any])?["plural"] != nil }
         }
+        english = Dictionary(uniqueKeysWithValues: keys.map { key -> (String, String) in
+            let en = (strings[key]?["localizations"] as? [String: [String: Any]])?["en"]
+            let plain = (en?["stringUnit"] as? [String: Any])?["value"] as? String
+            let other = ((((en?["variations"] as? [String: Any])?["plural"] as? [String: Any])?["other"] as? [String: Any])?["stringUnit"] as? [String: Any])?["value"] as? String
+            return (key, plain ?? other ?? key)
+        })
     }
 }
 
@@ -102,14 +112,14 @@ func dumpLookups(catalog: ProbeCatalog, language: String) -> [DumpedLookup] {
         // A plural string's table text is a placeholder for the plural rules, or the plain text that replaced
         // them, so what is compared is the text at each count, below. A plural key whose specifiers the lookups
         // cannot feed has nothing to format, so its table text is compared after all.
-        if plural.contains(key), LanguagePackLookups.arguments(forKey: key, count: 0) != nil { continue }
+        if plural.contains(key), LanguagePackLookups.arguments(forKey: catalog.english[key] ?? key, count: 0) != nil { continue }
         lookups.append(DumpedLookup(key: key, count: nil, text: LanguagePackLookups.effectiveText(Bundle.main, key: key)))
     }
     for key in catalog.pluralKeys {
         for count in LanguagePackLookups.counts {
             lookups.append(DumpedLookup(
                 key: key, count: count,
-                text: LanguagePackLookups.pluralText(Bundle.main, key: key, language: language, count: count)))
+                text: LanguagePackLookups.pluralText(Bundle.main, key: key, english: catalog.english[key] ?? key, language: language, count: count)))
         }
     }
     return lookups
@@ -117,40 +127,34 @@ func dumpLookups(catalog: ProbeCatalog, language: String) -> [DumpedLookup] {
 
 // MARK: - The engine's reading
 
-/// The pack and the ID table the engine reading needs: both named on the command line, or neither.
+/// The pack the engine reading needs, named on the command line or not at all.
 struct EngineOptions {
     let packURL: URL
-    let idsURL: URL
 
-    /// The options in `arguments` (`--pack PATH --ids PATH`, in any place), and the arguments without them; nil
-    /// options when neither is given, a usage error when only one is.
+    /// The options in `arguments` (`--pack PATH`, in any place), and the arguments without them; nil options when it is
+    /// not given.
     static func extract(from arguments: [String]) -> (options: EngineOptions?, rest: [String]) {
         var pack: String?
-        var ids: String?
         var rest: [String] = []
         var index = 0
         while index < arguments.count {
             if arguments[index] == "--pack", index + 1 < arguments.count { pack = arguments[index + 1]; index += 2; continue }
-            if arguments[index] == "--ids", index + 1 < arguments.count { ids = arguments[index + 1]; index += 2; continue }
             rest.append(arguments[index])
             index += 1
         }
-        guard let pack, let ids else {
-            if pack != nil || ids != nil { fail("--pack and --ids go together") }
-            return (nil, rest)
-        }
-        return (EngineOptions(packURL: URL(fileURLWithPath: pack), idsURL: URL(fileURLWithPath: ids)), rest)
+        guard let pack else { return (nil, rest) }
+        return (EngineOptions(packURL: URL(fileURLWithPath: pack)), rest)
     }
 }
 
 /// What the engine reading of one language found.
 struct EngineSummary {
-    /// Lookups compared: each ID of each key at each asking.
+    /// Lookups compared: each ID at each asking.
     var compared = 0
-    /// Lookups whose text differs from `String(localized:)`'s, and the first 20 described.
+    /// Lookups whose text differs from Apple's table's, and the first 20 described.
     var different = 0
     var differences: [String] = []
-    /// Keys the lookups could not feed (a specifier other than `%@` and `%lld`): none expected.
+    /// IDs the lookups could not feed (a specifier other than `%@` and `%lld`): none expected.
     var unfed = 0
     /// What the engine reported as a problem (once each): none expected.
     var problems: [String] = []
@@ -194,49 +198,26 @@ struct EngineSummary {
     init() {}
 }
 
-/// What `String(localized:)` returns for `call`, whose format is `key`: the call built at run time as a
-/// `String.LocalizationValue` (a literal segment for the key's text, `%%` as a percent sign, `%@` as a string, `%lld` as
-/// an integer) and looked up in `Bundle.main` with `Locale.current`, as a call site `String(localized: "…\(name)…")`
-/// is. A key with no argument is a literal. Nil when the key holds a specifier the proof cannot feed.
-func appleText(key: String, call: InterfaceText.Format) -> String? {
-    if call.arguments.isEmpty { return String(localized: String.LocalizationValue(stringLiteral: key)) }
-    var interpolation = String.LocalizationValue.StringInterpolation(literalCapacity: key.utf8.count, interpolationCount: call.arguments.count)
-    var literal = ""
-    var arguments = call.arguments.makeIterator()
-    let characters = Array(key)
-    var index = 0
-    /// Hands the literal segment so far to the interpolation.
-    func flush() {
-        if !literal.isEmpty { interpolation.appendLiteral(literal); literal = "" }
-    }
-    while index < characters.count {
-        guard characters[index] == "%", index + 1 < characters.count else { literal.append(characters[index]); index += 1; continue }
-        if characters[index + 1] == "%" { literal.append("%"); index += 2; continue }
-        flush()
-        if characters[index + 1] == "@", case .text(let text)? = arguments.next() {
-            interpolation.appendInterpolation(text)
-            index += 2
-        } else if characters[(index + 1)...].starts(with: "lld"), case .number(let number)? = arguments.next() {
-            interpolation.appendInterpolation(Int(number))
-            index += 4
-        } else {
-            return nil
-        }
-    }
-    flush()
-    return String(localized: String.LocalizationValue(stringInterpolation: interpolation))
+/// What Apple's tables say for the ID `id` written with `call`'s arguments: the bundle's text for the ID (`Bundle.main`,
+/// every language in it, so a language that lacks the ID falls back to English's table as the app does), formatted by
+/// `String(format:locale:arguments:)` in `Locale.current`, as `String(localized:)` formats a table's text; the text as it
+/// is when the call has no arguments (Apple's lookup of a literal returns the table's text unprocessed). An ID that no
+/// table holds (a language with no translation, and English's table silent too) comes back as the ID itself, which is no
+/// text: the line then shows the call's English, as the app does when it has no entry, so that is what is formatted.
+func appleText(id: String, call: InterfaceText.Format) -> String {
+    let found = LanguagePackLookups.effectiveText(Bundle.main, key: id)
+    let pattern = found == id ? call.format : found
+    return call.arguments.isEmpty ? pattern : String(format: pattern, locale: Locale.current, arguments: call.formatterArguments)
 }
 
-/// Compares the engine with `String(localized:)` for every key of `catalog` in this process's language: the child's
-/// part of the engine reading. Both sides are asked in the same process, in `Locale.current`.
+/// Compares the engine with Apple's tables for every ID of `catalog` in this process's language: the child's part of
+/// the engine reading. Both sides are asked in the same process, in `Locale.current`.
 func compareEngine(catalog: ProbeCatalog, language: String, options: EngineOptions) -> EngineSummary {
-    let table: InterfaceTextProof.IDTable
     let pack: InterfaceTextPack
     do {
-        table = try InterfaceTextProof.IDTable(contentsOf: options.idsURL)
         pack = try InterfaceTextPack(contentsOf: options.packURL)
     } catch {
-        fail("cannot open the pack or the ID table: \(error)")
+        fail("cannot open the pack: \(error)")
     }
     // The engine reports a problem once each; the log is Sendable, as the engine's report closure must be.
     let reported = OSAllocatedUnfairLock<[String]>(initialState: [])
@@ -253,27 +234,22 @@ func compareEngine(catalog: ProbeCatalog, language: String, options: EngineOptio
     summary.languageMilliseconds = Double(DispatchTime.now().uptimeNanoseconds - languageStarted) / 1e6
     var lookupNanoseconds: [UInt64] = []
     let started = Date()
-    for key in catalog.keys {
-        guard let ids = table.idsByKey[key] else {
-            summary.different += 1
-            if summary.differences.count < 20 { summary.differences.append("\(language) \(key.debugDescription): no ID in the table") }
-            continue
-        }
-        for asking in 0..<InterfaceTextProof.askings(ofKey: key) {
-            guard let call = InterfaceTextProof.call(forKey: key, asking: asking), let want = appleText(key: key, call: call) else {
+    for id in catalog.keys {
+        let english = catalog.english[id] ?? id
+        for asking in 0..<InterfaceTextProof.askings(ofEnglish: english) {
+            guard let call = InterfaceTextProof.call(forEnglish: english, asking: asking) else {
                 summary.unfed += 1
                 break
             }
-            for id in ids {
-                let began = DispatchTime.now().uptimeNanoseconds
-                let got = engine.text(runtimeID: id, english: call, language: language, locale: locale)
-                lookupNanoseconds.append(DispatchTime.now().uptimeNanoseconds - began)
-                summary.compared += 1
-                guard got != want else { continue }
-                summary.different += 1
-                if summary.differences.count < 20 {
-                    summary.differences.append("\(language) \(id) (\(key.debugDescription)) asking \(asking): engine \(got.debugDescription), String(localized:) \(want.debugDescription)")
-                }
+            let want = appleText(id: id, call: call)
+            let began = DispatchTime.now().uptimeNanoseconds
+            let got = engine.text(runtimeID: id, english: call, language: language, locale: locale)
+            lookupNanoseconds.append(DispatchTime.now().uptimeNanoseconds - began)
+            summary.compared += 1
+            guard got != want else { continue }
+            summary.different += 1
+            if summary.differences.count < 20 {
+                summary.differences.append("\(language) \(id) (\(english.debugDescription)) asking \(asking): engine \(got.debugDescription), Apple's table \(want.debugDescription)")
             }
         }
     }
@@ -310,7 +286,7 @@ func runDump(copy: URL, catalogURL: URL, language: String, engine: EngineOptions
     let process = Process()
     process.executableURL = copy
     // `-AppleLanguages` is read by Foundation's argument domain, so the bundle chooses this one language.
-    let engineArguments = engine.map { ["--pack", $0.packURL.path, "--ids", $0.idsURL.path] } ?? []
+    let engineArguments = engine.map { ["--pack", $0.packURL.path] } ?? []
     process.arguments = ["--dump", catalogURL.path, language] + engineArguments + ["-AppleLanguages", "(\(language))"]
     let output = Pipe()
     process.standardOutput = output
@@ -379,7 +355,7 @@ func compare(xcodeFolder: URL, compactFolder: URL, catalogURL: URL, requested: [
     if engine != nil {
         for line in engineTotal.differences.prefix(20) { print("ENGINE DIFFERENT: \(line)") }
         for line in engineTotal.problems.prefix(20) { print("ENGINE PROBLEM: \(line)") }
-        print("probe: engine compared \(engineTotal.compared) lookups in \(engineFound) languages (\(String(format: "%.2f", engineTotal.seconds)) s): \(engineTotal.different) different, \(engineTotal.unfed) keys the lookups cannot feed, \(engineTotal.problems.count) problems reported")
+        print("probe: engine compared \(engineTotal.compared) lookups in \(engineFound) languages (\(String(format: "%.2f", engineTotal.seconds)) s): \(engineTotal.different) different, \(engineTotal.unfed) IDs the lookups cannot feed, \(engineTotal.problems.count) problems reported")
         if !languageTimes.isEmpty {
             // The medians of the per-language figures, so one slow language does not stand for all.
             func median(_ values: [Double]) -> Double { values.sorted()[values.count / 2] }
@@ -403,7 +379,7 @@ if arguments.count >= 4, arguments[1] == "--dump" {
     exit(0)
 }
 guard arguments.count >= 4 else {
-    fail("usage: probe XCODE_FOLDER COMPACT_FOLDER CATALOG.xcstrings [--pack STRINGS.pack --ids IDS.json] [LANGUAGE...]")
+    fail("usage: probe XCODE_FOLDER COMPACT_FOLDER CATALOG.xcstrings [--pack STRINGS.pack] [LANGUAGE...]")
 }
 exit(compare(
     xcodeFolder: URL(fileURLWithPath: arguments[1]),

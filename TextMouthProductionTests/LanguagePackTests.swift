@@ -78,8 +78,9 @@ enum LanguagePackLookups {
         return found
     }
 
-    /// The arguments a key's format takes, in argument order, with `count` for every count: a text is "text".
-    /// Nil when `specifiers(in:)` cannot read the key.
+    /// The arguments a format takes, in argument order, with `count` for every count: a text is "text". The format is the
+    /// string's English (the catalog is keyed by ID, so the key says nothing of its specifiers). Nil when
+    /// `specifiers(in:)` cannot read it.
     static func arguments(forKey key: String, count: Int) -> [CVarArg]? {
         guard let specifiers = specifiers(in: key) else { return nil }
         // Place each specifier at its argument number (the next one when it has none), then fill any gap.
@@ -133,11 +134,11 @@ enum LanguagePackLookups {
         bundle.localizedString(forKey: key, value: nil, table: nil)
     }
 
-    /// The text of the plural string `key` for `count` in `language`, as the bundle's plural rules pick it (or, in a
-    /// language whose forms are all one text, the plain entry that holds it); nil when the key has a specifier the
-    /// lookups cannot feed.
-    static func pluralText(_ bundle: Bundle, key: String, language: String, count: Int) -> String? {
-        guard let arguments = arguments(forKey: key, count: count) else { return nil }
+    /// The text of the plural string `key` (an ID) for `count` in `language`, as the bundle's plural rules pick it (or, in a
+    /// language whose forms are all one text, the plain entry that holds it); nil when its `english` (the format whose
+    /// specifiers feed the arguments) has one the lookups cannot feed.
+    static func pluralText(_ bundle: Bundle, key: String, english: String, language: String, count: Int) -> String? {
+        guard let arguments = arguments(forKey: english, count: count) else { return nil }
         return String(format: effectiveText(bundle, key: key), locale: Locale(identifier: language), arguments: arguments)
     }
 }
@@ -186,6 +187,16 @@ struct LanguagePackCatalog {
     /// The keys that have a text in `language`, sorted: every key, simple and plural alike.
     func keys(in language: String) -> [String] {
         texts.filter { $0.value[language] != nil }.map(\.key).sorted()
+    }
+
+    /// The English of the string `key` (an ID) as the code writes it: its English text, or a plural's `other` form; nil
+    /// when the catalog holds no English for it.
+    func english(of key: String) -> String? {
+        switch texts[key]?["en"] {
+        case .simple(let text)?: return text
+        case .plural(let forms)?: return forms["other"]
+        case nil: return nil
+        }
     }
 }
 
@@ -293,13 +304,14 @@ final class LanguagePackTests: XCTestCase {
                 for count in LanguagePackLookups.counts {
                     guard let category = PluralRules.category(of: count, language: language),
                           let form = forms[category] ?? forms["other"],
-                          let arguments = LanguagePackLookups.arguments(forKey: key, count: count)
+                          let english = catalog.english(of: key),
+                          let arguments = LanguagePackLookups.arguments(forKey: english, count: count)
                     else {
                         wrong.append("\(language) \(key.debugDescription) at \(count): no rule, form, or arguments")
                         continue
                     }
                     let want = String(format: form, locale: Locale(identifier: language), arguments: arguments)
-                    let got = LanguagePackLookups.pluralText(bundle, key: key, language: language, count: count)
+                    let got = LanguagePackLookups.pluralText(bundle, key: key, english: english, language: language, count: count)
                     verified += 1
                     if got != want { wrong.append("\(language) \(key.debugDescription) at \(count): \(String(describing: got)), not \(want.debugDescription)") }
                 }

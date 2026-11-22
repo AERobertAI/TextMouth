@@ -12,6 +12,7 @@
    "fixes": [
     {
      "key": "%@ also holds %lld books a newer TextMouth added, which are kept.",
+     "id": "folderRemoval.keptBooksChoiceSentences",
      "english": {
       "one": "%@ also holds %lld book a newer TextMouth added, which is kept.",
       "other": "%@ also holds %lld books a newer TextMouth added, which are kept."
@@ -26,6 +27,7 @@
     },
     {
      "key": "%@ can't be made, because the folder that would hold it, %@, can't be found.",
+     "id": "storage.cantMadeBecause",
      "english": "%1$@ can't be made, because the folder that would hold it, %2$@, can't be found.",
      "before": "%2$@が見つからないため、%1$@を作成できません。",
      "after": "親フォルダ%2$@が見つからないため、%1$@を作成できません。",
@@ -33,6 +35,7 @@
     },
     {
      "key": "%lld of %@, %lld percent",
+     "id": "readerCloud.progressValue.percent",
      "english": "%1$lld of %2$@, %3$lld percent",
      "before": "%2$@中%1$lld完了、%3$lldパーセント",
      "after": "%2$@中%1$lld個完了、%3$lldパーセント",
@@ -40,6 +43,7 @@
     },
     {
      "key": "%lld of %@, %lld%%",
+     "id": "readerCloud.progressValue.count",
      "english": "%1$lld of %2$@, %3$lld%%",
      "before": "%2$@中%1$lld完了、%3$lld%%",
      "after": "%2$@中%1$lld個完了、%3$lld%%",
@@ -47,6 +51,7 @@
     },
     {
      "key": "%lld views need a newer TextMouth. They are kept as they are, and not offered.",
+     "id": "libraryViewsSettings.unreadableCaption",
      "english": {
       "one": "%lld view needs a newer TextMouth. It is kept as it is, and not offered.",
       "other": "%lld views need a newer TextMouth. They are kept as they are, and not offered."
@@ -61,6 +66,7 @@
     },
     {
      "key": "Adds or removes a bookmark at the current position",
+     "id": "settings.showBookmarkHint",
      "english": "Adds or removes a bookmark at the current position",
      "before": "現在の位置にブックマークを追加または取り除きします。",
      "after": "現在の位置にブックマークを追加するか、取り除きます。",
@@ -68,6 +74,7 @@
     },
     {
      "key": "An edit of its text is kept beside the new reading, as a copy in the book's package.",
+     "id": "textEncoding.keptTextNote",
      "english": "An edit of its text is kept beside the new reading, as a copy in the book's package.",
      "before": "テキストの編集内容は、ブックのパッケージ内に、新しい読み込み結果の隣のコピーとして残されます。",
      "after": "テキストの編集内容は、新しい読み込み結果とは別に、ブックのパッケージ内にコピーとして残されます。",
@@ -75,6 +82,7 @@
     },
     {
      "key": "Another view is already named %@. Choose another name.",
+     "id": "libraryViewEditor.nameTaken",
      "english": "Another view is already named %@. Choose another name.",
      "before": "すでに%@という名前の別のビューがあります。別の名前を選択してください。",
      "after": "すでに「%@」という名前の別のビューがあります。別の名前を選択してください。",
@@ -82,6 +90,7 @@
     },
     {
      "key": "Another view is named %@. Rename it first, then restore this view.",
+     "id": "libraryViewsSettings.restoreNameTaken",
      "english": "Another view is named %@. Rename it first, then restore this view.",
      "before": "%@という名前の別のビューがあります。先にそのビューの名前を変更してから、このビューを復元してください。",
      "after": "「%@」という名前の別のビューがあります。先にそのビューの名前を変更してから、このビューを復元してください。",
@@ -89,6 +98,7 @@
     },
     {
      "key": "But %@ also holds %lld books a newer TextMouth added: they are kept where they are, and so is every folder that holds one.",
+     "id": "folderRemoval.keptBooksConfirmationSentences",
      "english": {
       "one": "But %@ also holds %lld book a newer TextMouth added: it is kept where it is, and so is every folder that holds it.",
       "other": "But %@ also holds %lld books a newer TextMouth added: they are kept where they are, and so is every folder that holds one."
@@ -103,6 +113,7 @@
     },
     {
      "key": "Choose %@ in the Sort menu, then try again.",
+     "id": "manualBookOrder.noArrangedOrder.choose",
      "english": "Choose %@ in the Sort menu, then try again.",
      "before": "「並べ替え」メニューで%@を選択してから、もう一度お試しください。",
      "after": "「並べ替え」メニューで「%@」を選択してから、もう一度お試しください。",
@@ -110,6 +121,7 @@
     },
     {
      "key": "Choose %@ or %@ from %@ at the top of the Library window.",
+     "id": "libraryIndexRecovery.settingsExplanation.choose",
      "english": "Choose %1$@ or %2$@ from %3$@ at the top of the Library window.",
      "before": "ライブラリウインドウ上部の%3$@から、%1$@または%2$@を選択してください。",
      "after": "ライブラリウインドウ上部の「%3$@」から、「%1$@」または「%2$@」を選択してください。",
@@ -117,6 +129,7 @@
     },
     {
      "key": "Choose an empty folder to move the library into, or a folder that holds a TextMouth library to use it.",
+     "id": "storageLocation.panelMessage.empty",
      "english": "Choose an empty folder to move the library into, or a folder that holds a TextMouth library to use it.",
      "before": "ライブラリの移動先として空のフォルダを選択するか、TextMouth ライブラリを含むフォルダを選択してそれを使用します。",
      "after": "ライブラリの移動先となる空のフォルダか、使用する TextMouth ライブラリを含むフォルダを選択してください。",
@@ -124,6 +137,7 @@
     },
     {
      "key": "Close sleep timer sheet after setting a timer",
+     "id": "settings.autoCloseLabel",
      "english": "Close sleep timer sheet after setting a timer",
      "before": "スリープタイマーの設定後にスリープタイマーのシートを閉じる",
      "after": "スリープタイマーの設定後にシートを閉じる",
@@ -131,6 +145,7 @@
     },
     {
      "key": "Enter a search term above.",
+     "id": "bookSearch.statusIdle",
      "english": "Enter a search term above.",
      "before": "上に検索語を入力してください。",
      "after": "上の検索フィールドに検索語を入力してください。",
@@ -138,6 +153,7 @@
     },
     {
      "key": "Enters edit mode, for selecting several books to move or remove.",
+     "id": "libraryList.entersEditMode",
      "english": "Enters edit mode, for selecting several books to move or remove.",
      "before": "編集モードを開始します。複数のブックを選択して、移動または取り除くことができます。",
      "after": "編集モードを開始します。複数のブックを選択して、移動したり取り除いたりできます。",
@@ -145,6 +161,7 @@
     },
     {
      "key": "Folders and the Reading List list what they always have. You can move them, and hide the Reading List.",
+     "id": "libraryViewEditor.editDisabledHint",
      "english": "Folders and the Reading List list what they always have. You can move them, and hide the Reading List.",
      "before": "「フォルダ」とリーディングリストは、常に決まった内容を表示します。移動はできます。リーディングリストは非表示にできます。",
      "after": "「フォルダ」とリーディングリストは、常に決まった内容を表示します。どちらも移動でき、リーディングリストは非表示にすることもできます。",
@@ -152,6 +169,7 @@
     },
     {
      "key": "Hold Shift while skipping to use a secondary skip amount.",
+     "id": "settings.shiftSkipExplanation",
      "english": "Hold Shift while skipping to use a secondary skip amount.",
      "before": "スキップ中にシフトキーを押したままにすると、もう1つのスキップ量を使います。",
      "after": "スキップするときにシフトキーを押したままにすると、もう1つのスキップ量を使います。",
@@ -159,6 +177,7 @@
     },
     {
      "key": "It can be read again now. Choose Try Again to use it.",
+     "id": "libraryIndexRecoveryError.indexReadableAgain",
      "english": "It can be read again now. Choose Try Again to use it.",
      "before": "もう一度読み取れるようになりました。「再試行」を選択して使用します。",
      "after": "もう一度読み取れるようになりました。使用するには「再試行」を選択してください。",
@@ -166,6 +185,7 @@
     },
     {
      "key": "Its place, bookmarks, and transcript, if it has any, are kept, and it can be downloaded again.",
+     "id": "feedDownloadRemoval.keptSentence.transcript",
      "english": "Its place, bookmarks, and transcript, if it has any, are kept, and it can be downloaded again.",
      "before": "場所、ブックマーク、文字起こしがある場合はそれらも残り、もう一度ダウンロードできます。",
      "after": "場所、ブックマーク、文字起こし（ある場合）は残り、もう一度ダウンロードできます。",
@@ -173,6 +193,7 @@
     },
     {
      "key": "Left %@ where it is: episodes and articles stay in their feeds; %@ makes one a book of your library.",
+     "id": "libraryTransition.feedItemsLeft.episodes",
      "english": "Left %1$@ where it is: episodes and articles stay in their feeds; %2$@ makes one a book of your library.",
      "before": "%1$@をそのままにしました。エピソードと記事はフィードに残ります。%2$@を実行すると、ライブラリのブックにできます。",
      "after": "%1$@をそのままにしました。エピソードと記事はフィードに残ります。「%2$@」を実行すると、ライブラリのブックにできます。",
@@ -180,6 +201,7 @@
     },
     {
      "key": "Left %@ where they are: episodes and articles stay in their feeds; %@ makes one a book of your library.",
+     "id": "libraryTransition.feedItemsLeft.they",
      "english": "Left %1$@ where they are: episodes and articles stay in their feeds; %2$@ makes one a book of your library.",
      "before": "%1$@をそのままにしました。エピソードと記事はフィードに残ります。%2$@を実行すると、ライブラリのブックにできます。",
      "after": "%1$@をそのままにしました。エピソードと記事はフィードに残ります。「%2$@」を実行すると、ライブラリのブックにできます。",
@@ -187,6 +209,7 @@
     },
     {
      "key": "Listening",
+     "id": "folderSettings.listeningHeading",
      "english": "Listening",
      "before": "リスニング",
      "after": "再生",
@@ -194,6 +217,7 @@
     },
     {
      "key": "Loop to Start",
+     "id": "endOfBookBehavior.title.loop",
      "english": "Loop to Start",
      "before": "最初にループ",
      "after": "最初から繰り返す",
@@ -201,6 +225,7 @@
     },
     {
      "key": "Neither is newer: each has changes the other lacks.",
+     "id": "libraryComparison.newerCopySentence.changes",
      "english": "Neither is newer: each has changes the other lacks.",
      "before": "どちらも新しくはありません。それぞれに、もう一方にない変更があります。",
      "after": "どちらが新しいとも言えません。それぞれに、もう一方にない変更があります。",
@@ -208,6 +233,7 @@
     },
     {
      "key": "None of the %@ selected books is kept on this Mac by your choice, and %lld is kept for the reading list.",
+     "id": "libraryCloud.noneSelectedBooksKeptMacChoice",
      "english": {
       "one": "None of the %@ selected books is kept on this Mac by your choice, and %lld is kept for the reading list.",
       "other": "None of the %@ selected books is kept on this Mac by your choice, and %lld are kept for the reading list."
@@ -222,6 +248,7 @@
     },
     {
      "key": "Opens a file picker to import books in any format TextMouth reads.",
+     "id": "libraryList.importBookHint",
      "english": "Opens a file picker to import books in any format TextMouth reads.",
      "before": "ファイルピッカーを開き、TextMouth が読み込めるあらゆる形式のブックを読み込みます。",
      "after": "ファイルピッカーを開き、TextMouth が対応するあらゆる形式のブックを読み込みます。",
@@ -229,6 +256,7 @@
     },
     {
      "key": "Position in %@: differs, and both were saved at the same time.",
+     "id": "libraryComparison.sentence.positionDiffersAtOnce",
      "english": "Position in %@: differs, and both were saved at the same time.",
      "before": "%@の位置：異なり、どちらも同時に保存されました。",
      "after": "%@の位置：異なりますが、どちらも同時に保存されました。",
@@ -236,6 +264,7 @@
     },
     {
      "key": "Position in %@: newer in %@, %@.",
+     "id": "libraryComparison.positionNewer.inLibrary",
      "english": "Position in %1$@: newer in %2$@, %3$@.",
      "before": "%1$@の位置：%2$@のほうが新しく、%3$@。",
      "after": "%1$@の位置：%2$@のほうが新しく、%3$@です。",
@@ -243,6 +272,7 @@
     },
     {
      "key": "Sets when the View pop-up offers this view",
+     "id": "libraryViewsSettings.visibilityHint",
      "english": "Sets when the View pop-up offers this view",
      "before": "ビューのポップアップメニューにこのビューを表示するタイミングを設定します。",
      "after": "「ビュー」ポップアップメニューにこのビューを表示するタイミングを設定します。",
@@ -250,6 +280,7 @@
     },
     {
      "key": "Start New Library",
+     "id": "storageChoice.startNewLibrary.button",
      "english": "Start New Library",
      "before": "新しいライブラリを開始",
      "after": "新しいライブラリを作成",
@@ -257,6 +288,7 @@
     },
     {
      "key": "Start a New Library?",
+     "id": "storageChoice.startNewLibrary.question",
      "english": "Start a New Library?",
      "before": "新しいライブラリを開始しますか？",
      "after": "新しいライブラリを作成しますか？",
@@ -264,6 +296,7 @@
     },
     {
      "key": "Still comparing: %lld seconds so far. Press Escape to stop.",
+     "id": "libraryComparison.progressSentence",
      "english": {
       "one": "Still comparing: %lld second so far. Press Escape to stop.",
       "other": "Still comparing: %lld seconds so far. Press Escape to stop."
@@ -278,6 +311,7 @@
     },
     {
      "key": "Stop, and Play Starts Over",
+     "id": "endOfBookBehavior.title.stopAndPlayStartsOver",
      "english": "Stop, and Play Starts Over",
      "before": "停止して、再生で最初から",
      "after": "停止し、次の再生は最初から",
@@ -285,6 +319,7 @@
     },
     {
      "key": "TextMouth couldn't keep the edited text of the copy in your library beside the new copy's text, so it left both copies as they are.",
+     "id": "textNotKept.errorDescription",
      "english": "TextMouth couldn't keep the edited text of the copy in your library beside the new copy's text, so it left both copies as they are.",
      "before": "TextMouth は、ライブラリ内のコピーの編集済みテキストを新しいコピーのテキストの隣に残せなかったため、どちらのコピーもそのままにしました。",
      "after": "TextMouth は、ライブラリ内のコピーの編集済みテキストを新しいコピーのテキストとは別に残せなかったため、どちらのコピーもそのままにしました。",
@@ -292,6 +327,7 @@
     },
     {
      "key": "TextMouth couldn't keep the text you changed in “%@” beside the new reading, so it left the book as it was.",
+     "id": "textEncoding.editNotKeptRefusal",
      "english": "TextMouth couldn't keep the text you changed in “%@” beside the new reading, so it left the book as it was.",
      "before": "TextMouth は、「%@」で変更したテキストを新しい読み込み結果の隣に残せなかったため、ブックをそのままにしました。",
      "after": "TextMouth は、「%@」で変更したテキストを新しい読み込み結果とは別に残せなかったため、ブックをそのままにしました。",
@@ -299,6 +335,7 @@
     },
     {
      "key": "TextMouth couldn't save the library's index, so it left both copies as they are.",
+     "id": "indexNotSaved.errorDescription",
      "english": "TextMouth couldn't save the library's index, so it left both copies as they are.",
      "before": "TextMouth はライブラリの索引を保存できなかったため、どちらのコピーもそのままにしました。",
      "after": "TextMouth はライブラリインデックスを保存できなかったため、どちらのコピーもそのままにしました。",
@@ -306,6 +343,7 @@
     },
     {
      "key": "TextMouth is rebuilding its data directory. Wait until that finishes, then choose %@ again.",
+     "id": "refusal.sentence.storageBusy.rebuilding",
      "english": "TextMouth is rebuilding its data directory. Wait until that finishes, then choose %@ again.",
      "before": "TextMouth はデータフォルダを再構築しています。完了するまで待ってから、もう一度「%@」を選択してください。",
      "after": "TextMouth はデータディレクトリを再構築しています。完了するまで待ってから、もう一度「%@」を選択してください。",
@@ -313,6 +351,7 @@
     },
     {
      "key": "TextMouth is switching to another library and opening again on it.",
+     "id": "storageBusyError.switchingLibraries",
      "english": "TextMouth is switching to another library and opening again on it.",
      "before": "TextMouth は別のライブラリに切り替えて、それで開き直しています。",
      "after": "TextMouth は別のライブラリに切り替えて開き直しています。",
@@ -320,6 +359,7 @@
     },
     {
      "key": "TextMouth needs the drive “%@” connected to open the library.",
+     "id": "storage.driveSentence",
      "english": "TextMouth needs the drive “%@” connected to open the library.",
      "before": "ライブラリを開くには、TextMouth にドライブ「%@」を接続する必要があります。",
      "after": "TextMouth がライブラリを開くには、ドライブ「%@」を接続する必要があります。",
@@ -327,6 +367,7 @@
     },
     {
      "key": "TextMouth will quit and open again to start it.",
+     "id": "storage.startNewLibrarySentence.again",
      "english": "TextMouth will quit and open again to start it.",
      "before": "TextMouth は終了して開き直し、それを開始します。",
      "after": "TextMouth は終了して開き直し、新しいライブラリを使い始めます。",
@@ -334,6 +375,7 @@
     },
     {
      "key": "TextMouth will start a new, empty library in the default location, %@, instead of the library in %@, which isn't available.",
+     "id": "storage.startNewLibrarySentence.available",
      "english": "TextMouth will start a new, empty library in the default location, %1$@, instead of the library in %2$@, which isn't available.",
      "before": "TextMouth は、利用できない%2$@のライブラリの代わりに、デフォルトの場所%1$@に新しい空のライブラリを開始します。",
      "after": "TextMouth は、利用できない%2$@のライブラリの代わりに、デフォルトの場所%1$@に新しい空のライブラリを作成します。",
@@ -341,6 +383,7 @@
     },
     {
      "key": "The braille is translated to print again with this code. Nothing checks that it is the right choice. If words read wrongly, choose another.",
+     "id": "brailleCode.translatedAgainNote",
      "english": "The braille is translated to print again with this code. Nothing checks that it is the right choice. If words read wrongly, choose another.",
      "before": "点字はこのコードで印刷文字に翻訳し直されます。これが正しい選択かどうかは確認されません。単語の読みが正しくない場合は、別のものを選択してください。",
      "after": "点字は、このコードで墨字に翻訳し直されます。これが正しい選択かどうかは確認されません。単語の読みが正しくない場合は、別のものを選択してください。",
@@ -348,6 +391,7 @@
     },
     {
      "key": "The index is not changed until you choose %@ or %@, which stay available from %@ at the top of the library.",
+     "id": "libraryIndexRecovery.continueReading.available",
      "english": "The index is not changed until you choose %1$@ or %2$@, which stay available from %3$@ at the top of the library.",
      "before": "「%1$@」または「%2$@」を選択するまで、インデックスは変更されません。どちらもライブラリ上部の%3$@から使えます。",
      "after": "「%1$@」または「%2$@」を選択するまで、インデックスは変更されません。どちらもライブラリ上部の「%3$@」から使えます。",
@@ -355,6 +399,7 @@
     },
     {
      "key": "The reading list, the folders' sorts and listening options, and any book whose files aren't in this folder yet won't be in it.",
+     "id": "libraryFileWait.confirmation.index.listening",
      "english": "The reading list, the folders' sorts and listening options, and any book whose files aren't in this folder yet won't be in it.",
      "before": "リーディングリスト、フォルダの並べ替えと聴取オプション、ファイルがまだこのフォルダにないブックは、含まれません。",
      "after": "リーディングリスト、フォルダの並べ替えと再生オプション、ファイルがまだこのフォルダにないブックは、含まれません。",
@@ -362,6 +407,7 @@
     },
     {
      "key": "Their places, bookmarks, and transcripts, if they have any, are kept, and they can be downloaded again.",
+     "id": "feedDownloadRemoval.keptSentence.transcripts",
      "english": "Their places, bookmarks, and transcripts, if they have any, are kept, and they can be downloaded again.",
      "before": "場所、ブックマーク、文字起こしがある場合はそれらも残り、もう一度ダウンロードできます。",
      "after": "場所、ブックマーク、文字起こし（ある場合）は残り、もう一度ダウンロードできます。",
@@ -369,6 +415,7 @@
     },
     {
      "key": "chapter %@",
+     "id": "libraryComparison.placePhrase.byNumber",
      "english": "chapter %@",
      "before": "章%@",
      "after": "チャプタ%@",
@@ -376,6 +423,7 @@
     },
     {
      "key": "chapter %@, %lld%%",
+     "id": "libraryComparison.placePhrase.byNumberAndPercent",
      "english": "chapter %1$@, %2$lld%%",
      "before": "章%1$@、%2$lld%%",
      "after": "チャプタ%1$@、%2$lld%%",
@@ -383,6 +431,7 @@
     },
     {
      "key": "chapter %@, with no note",
+     "id": "libraryComparison.bookmarkPhrase.chapterNo",
      "english": "chapter %@, with no note",
      "before": "章%@、メモなし",
      "after": "チャプタ%@、メモなし",
@@ -390,6 +439,7 @@
     },
     {
      "key": "chapter %@, with the note “%@”",
+     "id": "libraryComparison.bookmarkPhrase.chapter",
      "english": "chapter %1$@, with the note “%2$@”",
      "before": "章%1$@、メモ「%2$@」付き",
      "after": "チャプタ%1$@、メモ「%2$@」付き",
@@ -397,6 +447,7 @@
     },
     {
      "key": "choose Remove Download",
+     "id": "bookCloud.onlineOnlyCommand.iCloudDrive",
      "english": "choose Remove Download",
      "before": "「ダウンロードを取り除く」を選択します",
      "after": "「ダウンロードしたものを削除」を選択します",
@@ -404,6 +455,7 @@
     },
     {
      "key": "so its place and bookmarks there were taken from the library index alone.",
+     "id": "libraryComparison.sentence.record",
      "english": "so its place and bookmarks there were taken from the library index alone.",
      "before": "そのため、そこでの位置とブックマークはライブラリ索引のみから取得しました。",
      "after": "そのため、そこでの位置とブックマークはライブラリインデックスのみから取得しました。",
@@ -411,6 +463,7 @@
     },
     {
      "key": "the library index in %@",
+     "id": "libraryComparison.sentence.libraryIndex.inCopy",
      "english": "the library index in %@",
      "before": "%@内のライブラリ索引",
      "after": "%@内のライブラリインデックス",
@@ -418,6 +471,7 @@
     },
     {
      "key": "the library index of %@",
+     "id": "libraryComparison.shortReason.libraryIndex",
      "english": "the library index of %@",
      "before": "%@のライブラリ索引",
      "after": "%@のライブラリインデックス",
@@ -425,6 +479,7 @@
     },
     {
      "key": "“%@” is being exported. %@, then %@.",
+     "id": "textEncoding.exportingRefusal",
      "english": "“%1$@” is being exported. %2$@, then %3$@.",
      "before": "「%1$@」を書き出し中です。%2$@、そのあと%3$@。",
      "after": "「%1$@」を書き出し中です。%2$@。そのあと、%3$@。",
@@ -443,6 +498,7 @@
    "fixes": [
     {
      "key": "%@ for %@ now follows the global setting: %@.",
+     "id": "feed.itemPolicyApplied.follows",
      "english": "%1$@ for %2$@ now follows the global setting: %3$@.",
      "before": "「%2$@」の%1$@は全体の設定に従います：%3$@。",
      "after": "「%2$@」の%1$@は全体の設定に従うようになりました：%3$@。",
@@ -450,6 +506,7 @@
     },
     {
      "key": "%@ moves an episode or article downloaded in its feed. Select one in its feed's folder.",
+     "id": "feed.nothingToMoveToLibrary",
      "english": "%@ moves an episode or article downloaded in its feed. Select one in its feed's folder.",
      "before": "%@は、フィードでダウンロードしたエピソードまたは記事を移動します。そのフィードのフォルダ内で1つ選択してください。",
      "after": "「%@」は、フィードでダウンロードしたエピソードまたは記事を移動します。そのフィードのフォルダ内で1つ選択してください。",
@@ -457,6 +514,7 @@
     },
     {
      "key": "%@ on this book",
+     "id": "importProgress.timeOnBook",
      "english": "%@ on this book",
      "before": "このブックに%@",
      "after": "このブックの経過時間：%@",
@@ -464,6 +522,7 @@
     },
     {
      "key": "%@ so far",
+     "id": "feedDownloadProgress.transfer.value",
      "english": "%@ so far",
      "before": "ここまで%@",
      "after": "%@ダウンロード済み",
@@ -471,6 +530,7 @@
     },
     {
      "key": "%@ waits for a network without data limits to refresh by itself.",
+     "id": "feedFetchError.message.constrainedNetwork",
      "english": "%@ waits for a network without data limits to refresh by itself.",
      "before": "%@は、データ量の制限がないネットワークになると自動的に更新されます。",
      "after": "%@は、データ量の制限がないネットワークに接続されると自動的に更新されます。",
@@ -478,6 +538,7 @@
     },
     {
      "key": "%@, by %@",
+     "id": "common.valueCommaByValue",
      "english": "%1$@, by %2$@",
      "before": "%1$@、%2$@による",
      "after": "%1$@、%2$@",
@@ -485,6 +546,7 @@
     },
     {
      "key": "%lld books processed",
+     "id": "importProgress.count",
      "english": {
       "one": "%lld book processed",
       "other": "%lld books processed"
@@ -499,6 +561,7 @@
     },
     {
      "key": "%lld files failed:",
+     "id": "zipImportResult.failureSummary.failed",
      "english": {
       "one": "%lld file failed:",
       "other": "%lld files failed:"
@@ -513,6 +576,7 @@
     },
     {
      "key": "; %@ stay",
+     "id": "feed.unsubscribed.stay",
      "english": "; %@ stay",
      "before": "；%@は残ります",
      "after": "。%@は残ります",
@@ -520,6 +584,7 @@
     },
     {
      "key": "; %@ stays",
+     "id": "feed.unsubscribed.stays",
      "english": "; %@ stays",
      "before": "；%@は残ります",
      "after": "。%@は残ります",
@@ -527,6 +592,7 @@
     },
     {
      "key": "After an automatic refresh, an alert names the feeds with new episodes and articles",
+     "id": "feedSettings.refreshAlertHint",
      "english": "After an automatic refresh, an alert names the feeds with new episodes and articles",
      "before": "自動更新のあと、新しいエピソードや記事があるフィードを警告でお知らせします。",
      "after": "自動更新のあと、新しいエピソードや記事があるフィードをアラートでお知らせします。",
@@ -534,6 +600,7 @@
     },
     {
      "key": "An article's details come from its feed; %@ makes it a book you can edit.",
+     "id": "feedItemBookInfo.whyReadOnly.article",
      "english": "An article's details come from its feed; %@ makes it a book you can edit.",
      "before": "記事の詳細はフィードから取得されます。%@を選択すると、編集できるブックになります。",
      "after": "記事の詳細はフィードから取得されます。「%@」を選択すると、編集できるブックになります。",
@@ -541,6 +608,7 @@
     },
     {
      "key": "An episode's details come from its feed; %@ makes it a book you can edit.",
+     "id": "feedItemBookInfo.whyReadOnly.episode",
      "english": "An episode's details come from its feed; %@ makes it a book you can edit.",
      "before": "エピソードの詳細はフィードから取得されます。%@を選択すると、編集できるブックになります。",
      "after": "エピソードの詳細はフィードから取得されます。「%@」を選択すると、編集できるブックになります。",
@@ -548,6 +616,7 @@
     },
     {
      "key": "Asks first, then stops checking; the feed and its downloads stay",
+     "id": "feed.unsubscribeHint.first",
      "english": "Asks first, then stops checking; the feed and its downloads stay",
      "before": "確認してから、チェックを停止します。フィードとそのダウンロードは残ります。",
      "after": "先に尋ねてから、このフィードの確認を停止します。フィードとそのダウンロードは残ります。",
@@ -555,6 +624,7 @@
     },
     {
      "key": "Checks this feed again from now on, and at once",
+     "id": "feed.resubscribeHint",
      "english": "Checks this feed again from now on, and at once",
      "before": "今後このフィードを確認し、すぐに確認も行います。",
      "after": "このフィードの確認を再開し、すぐに確認します。",
@@ -562,6 +632,7 @@
     },
     {
      "key": "Choose a WebVTT (.vtt) or SubRip (.srt) transcript of %@, timed from the start of its audio.",
+     "id": "transcription.attachPanelMessage",
      "english": "Choose a WebVTT (.vtt) or SubRip (.srt) transcript of %@, timed from the start of its audio.",
      "before": "%@の WebVTT（.vtt）または SubRip（.srt）形式の文字起こしを選んでください。時刻はオーディオの先頭からのものにします。",
      "after": "%@の、オーディオの先頭からの時刻が付いた WebVTT（.vtt）または SubRip（.srt）形式の文字起こしを選んでください。",
@@ -569,6 +640,7 @@
     },
     {
      "key": "Feeds refresh only at launch, if that is on, and when you choose %@ or %@",
+     "id": "feedThreshold.refreshInterval.choose",
      "english": "Feeds refresh only at launch, if that is on, and when you choose %1$@ or %2$@",
      "before": "フィードは、起動時（オンの場合）と、%1$@または%2$@を選択したときにだけ更新されます。",
      "after": "フィードは、起動時（オンの場合）と、「%1$@」または「%2$@」を選択したときにだけ更新されます。",
@@ -576,6 +648,7 @@
     },
     {
      "key": "File %lld of %lld",
+     "id": "transcription.fileLine.numberOfTotal",
      "english": "File %1$lld of %2$lld",
      "before": "%2$lld個のうち%1$lld番目のファイル",
      "after": "ファイル%1$lld/%2$lld",
@@ -583,6 +656,7 @@
     },
     {
      "key": "Found %lld recordings from before TextMouth last quit, under %@. Save or discard each.",
+     "id": "recording.recoveredAnnouncement.recordings",
      "english": {
       "one": "Found %lld recordings from before TextMouth last quit, under %@. Save or discard each.",
       "other": "Found %lld recordings from before TextMouth last quit, under %@. Save or discard each."
@@ -597,6 +671,7 @@
     },
     {
      "key": "Found a recording from before TextMouth last quit, under %@. Save or discard it.",
+     "id": "recording.recoveredAnnouncement.discard",
      "english": "Found a recording from before TextMouth last quit, under %@. Save or discard it.",
      "before": "TextMouth を最後に終了する前の録音が見つかりました（%@の下）。保存または破棄してください。",
      "after": "TextMouth を最後に終了する前の録音が見つかりました（「%@」の下）。保存または破棄してください。",
@@ -604,6 +679,7 @@
     },
     {
      "key": "Inner Cover",
+     "id": "pageImage.coverTitle.inner",
      "english": "Inner Cover",
      "before": "内表紙",
      "after": "中表紙",
@@ -611,6 +687,7 @@
     },
     {
      "key": "Inserted %@ of new recording, which is selected.",
+     "id": "audioEditor.recordingInserted",
      "english": "Inserted %@ of new recording, which is selected.",
      "before": "新しい録音%@を挿入しました。選択された状態です。",
      "after": "%@の新しい録音を挿入し、選択しました。",
@@ -618,6 +695,7 @@
     },
     {
      "key": "It belongs to its feed while it is downloaded. %@ removes its file and keeps its place and bookmarks.",
+     "id": "feedItemPackageError.staysInItsFeed",
      "english": "It belongs to its feed while it is downloaded. %@ removes its file and keeps its place and bookmarks.",
      "before": "ダウンロードされている間は、フィードに属します。%@を選択すると、ファイルは取り除かれ、位置とブックマークは保持されます。",
      "after": "ダウンロードされている間は、フィードに属します。「%@」を選択すると、ファイルは取り除かれ、位置とブックマークは保持されます。",
@@ -625,6 +703,7 @@
     },
     {
      "key": "It lists no audio track with a start that TextMouth can read.",
+     "id": "cueSheet.noTracks",
      "english": "It lists no audio track with a start that TextMouth can read.",
      "before": "TextMouth が読み取れる開始位置のオーディオトラックが記載されていません。",
      "after": "TextMouth が開始位置を読み取れるオーディオトラックが記載されていません。",
@@ -632,6 +711,7 @@
     },
     {
      "key": "Its tracks run past the end of the audio it names, so it was made for another copy of that audio.",
+     "id": "cueSheet.timesPastAudio",
      "english": "Its tracks run past the end of the audio it names, so it was made for another copy of that audio.",
      "before": "トラックが、指定されたオーディオの終わりを超えています。別のコピーのオーディオ用に作られたものです。",
      "after": "トラックが、指定されたオーディオの終わりを超えています。そのオーディオの別のコピー用に作られたものです。",
@@ -639,6 +719,7 @@
     },
     {
      "key": "No Thanks",
+     "id": "importDecisionChoice.declineFolder.thanks",
      "english": "No Thanks",
      "before": "しない",
      "after": "作成しない",
@@ -646,6 +727,7 @@
     },
     {
      "key": "No new books in “%@”: its one book was already in your library.",
+     "id": "importProgress.noNewBooks.book",
      "english": "No new books in “%@”: its one book was already in your library.",
      "before": "「%@」に新しいブックはありません。1冊だけで、すでにライブラリにあります。",
      "after": "「%@」に新しいブックはありません。含まれていた1冊は、すでにライブラリにあります。",
@@ -653,6 +735,7 @@
     },
     {
      "key": "No podcasts were found for “%@”. Try other words, or type the feed's address.",
+     "id": "feed.noPodcastsFound",
      "english": "No podcasts were found for “%@”. Try other words, or type the feed's address.",
      "before": "「%@」の Podcast は見つかりませんでした。別の言葉をお試しいただくか、フィードのアドレスを入力してください。",
      "after": "「%@」の Podcast は見つかりませんでした。別の言葉で検索するか、フィードのアドレスを入力してください。",
@@ -660,6 +743,7 @@
     },
     {
      "key": "Puts back TextMouth's premade presets, removing the ones you added.",
+     "id": "audioFilterPresets.resetAllHint",
      "english": "Puts back TextMouth's premade presets, removing the ones you added.",
      "before": "TextMouth のプリセットを元に戻し、追加したものを取り除きます。",
      "after": "TextMouth 標準のプリセットに戻し、追加したものを取り除きます。",
@@ -667,6 +751,7 @@
     },
     {
      "key": "Recording. Stop or discard it with Clear Selection, then close.",
+     "id": "audioEditor.closeWhileRecording",
      "english": "Recording. Stop or discard it with Clear Selection, then close.",
      "before": "録音中です。「選択解除」で停止または破棄してから、閉じてください。",
      "after": "録音中です。停止するか、「選択解除」で破棄してから、閉じてください。",
@@ -674,6 +759,7 @@
     },
     {
      "key": "Replaced %@ with %@ of new recording, which is selected.",
+     "id": "audioEditor.punchedIn",
      "english": "Replaced %1$@ with %2$@ of new recording, which is selected.",
      "before": "%1$@を、新しい録音%2$@で置き換えました。選択された状態です。",
      "after": "%1$@を%2$@の新しい録音で置き換え、選択しました。",
@@ -681,6 +767,7 @@
     },
     {
      "key": "Runs a filter preset over the selection or the whole file.",
+     "id": "audioEditor.explanation.editorApplyFilter",
      "english": "Runs a filter preset over the selection or the whole file.",
      "before": "フィルタプリセットを、選択範囲またはファイル全体に実行します。",
      "after": "選択範囲またはファイル全体に、フィルタプリセットを適用します。",
@@ -688,6 +775,7 @@
     },
     {
      "key": "Show an alert when a refresh brings new episodes",
+     "id": "feedSettings.refreshAlert",
      "english": "Show an alert when a refresh brings new episodes",
      "before": "更新で新しいエピソードがあったときに警告を表示",
      "after": "更新で新しいエピソードがあったときにアラートを表示",
@@ -695,6 +783,7 @@
     },
     {
      "key": "Stops checking; the feed and its downloads stay",
+     "id": "feed.unsubscribeHint.downloads",
      "english": "Stops checking; the feed and its downloads stay",
      "before": "チェックを停止します。フィードとそのダウンロードは残ります。",
      "after": "このフィードの確認を停止します。フィードとそのダウンロードは残ります。",
@@ -702,6 +791,10 @@
     },
     {
      "key": "Subscribed",
+     "ids": [
+      "libraryViewEditor.relationName.subscribed",
+      "feed.subscribedLabel"
+     ],
      "english": "Subscribed",
      "before": "購読日",
      "after": "購読済み",
@@ -709,6 +802,7 @@
     },
     {
      "key": "Text recognition could not read %@: %@.",
+     "id": "pageImage.pagesNotRead.recognition",
      "english": "Text recognition could not read %1$@: %2$@.",
      "before": "テキスト認識で読み取れませんでした（%1$@）：%2$@。",
      "after": "テキスト認識で%1$@を読み取れませんでした：%2$@。",
@@ -716,6 +810,7 @@
     },
     {
      "key": "TextMouth moved %lld new copies of duplicate books to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back.",
+     "id": "duplicateCopy.unansweredTrashed.other",
      "english": {
       "one": "TextMouth moved %lld new copy of duplicate books to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back.",
       "other": "TextMouth moved %lld new copies of duplicate books to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back."
@@ -730,6 +825,7 @@
     },
     {
      "key": "TextMouth moved the new copies of %@ to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back.",
+     "id": "duplicateCopy.unansweredTrashed.questions",
      "english": "TextMouth moved the new copies of %@ to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back.",
      "before": "TextMouth を終了するまでに、重複するブックとして保持するかどうかの質問に回答がなかったため、TextMouth は%@の新しいコピーをゴミ箱に移動しました。元に戻すには、ゴミ箱を開いて「元に戻す」を選択してください。",
      "after": "TextMouth を終了するまでに、重複するブックとして保持するかどうかの質問に回答がなかったため、TextMouth は%@の新しいコピーをゴミ箱に移動しました。元に戻すには、ゴミ箱を開いて「戻す」を選択してください。",
@@ -737,6 +833,7 @@
     },
     {
      "key": "TextMouth moved the new copy of “%@” to the Trash, because the question whether to keep it as a duplicate was never answered before TextMouth closed. To get it back, open the Trash and choose Put Back.",
+     "id": "duplicateCopy.unansweredTrashed.question",
      "english": "TextMouth moved the new copy of “%@” to the Trash, because the question whether to keep it as a duplicate was never answered before TextMouth closed. To get it back, open the Trash and choose Put Back.",
      "before": "TextMouth を終了するまでに、重複するブックとして保持するかどうかの質問に回答がなかったため、TextMouth は「%@」の新しいコピーをゴミ箱に移動しました。元に戻すには、ゴミ箱を開いて「元に戻す」を選択してください。",
      "after": "TextMouth を終了するまでに、重複するブックとして保持するかどうかの質問に回答がなかったため、TextMouth は「%@」の新しいコピーをゴミ箱に移動しました。元に戻すには、ゴミ箱を開いて「戻す」を選択してください。",
@@ -744,6 +841,7 @@
     },
     {
      "key": "The library can't be reached, so TextMouth can't keep the new copy of “%@”. Answer again once it is back.",
+     "id": "duplicateCopy.libraryUnreachable",
      "english": "The library can't be reached, so TextMouth can't keep the new copy of “%@”. Answer again once it is back.",
      "before": "ライブラリにアクセスできないため、TextMouth は「%@」の新しいコピーを保持できません。ライブラリに戻ってから、もう一度回答してください。",
      "after": "ライブラリにアクセスできないため、TextMouth は「%@」の新しいコピーを保持できません。ライブラリにアクセスできるようになってから、もう一度回答してください。",
@@ -751,6 +849,7 @@
     },
     {
      "key": "The list follows a change of %@ at once; what downloads or goes waits until the change has stayed for ten seconds, and VoiceOver announces it then.",
+     "id": "feed.itemPolicyQuietNote",
      "english": "The list follows a change of %@ at once; what downloads or goes waits until the change has stayed for ten seconds, and VoiceOver announces it then.",
      "before": "一覧は%@の変更にすぐ従います。ダウンロードされるものや削除されるものは、変更から10秒間そのままになるまで待ち、そのときに VoiceOver が読み上げます。",
      "after": "「%@」を変更すると、一覧にはすぐに反映されます。ダウンロードされるものや削除されるものは、変更から10秒間そのままになるまで待ち、そのときに VoiceOver が読み上げます。",
@@ -758,6 +857,7 @@
     },
     {
      "key": "The original is the lossless take a recording is saved from, or a copy of an audiobook's file from before its first edit. Keeping it lets every edit be undone without loss; a recording's costs about 345 MB an hour. A change also applies to originals already kept, and in a cloud library an original syncs with its book.",
+     "id": "audioEditingSettings.policyHint",
      "english": "The original is the lossless take a recording is saved from, or a copy of an audiobook's file from before its first edit. Keeping it lets every edit be undone without loss; a recording's costs about 345 MB an hour. A change also applies to originals already kept, and in a cloud library an original syncs with its book.",
      "before": "元のオーディオとは、録音の保存元になる可逆圧縮のテイク、またはオーディオブックのファイルの最初の編集前のコピーです。保持しておくと、すべての編集を劣化なしで取り消せます。録音の場合は1時間あたり約345 MBです。変更はすでに保持されている元のオーディオにも適用され、クラウドライブラリでは元のオーディオがブックと同期されます。",
      "after": "元のオーディオとは、録音の保存元になる劣化のないテイク、またはオーディオブックのファイルの最初の編集前のコピーです。保持しておくと、すべての編集を劣化なしで取り消せます。録音の場合は1時間あたり約345 MBです。変更はすでに保持されている元のオーディオにも適用され、クラウドライブラリでは元のオーディオがブックと同期されます。",
@@ -765,6 +865,7 @@
     },
     {
      "key": "The podcast's own transcript, downloaded with the episode on %@.",
+     "id": "transcription.cameFrom.podcast",
      "english": "The podcast's own transcript, downloaded with the episode on %@.",
      "before": "ポッドキャスト自身の文字起こしで、%@にエピソードとともにダウンロードされました。",
      "after": "Podcast 自身の文字起こしで、%@にエピソードとともにダウンロードされました。",
@@ -772,6 +873,7 @@
     },
     {
      "key": "The recording couldn't be saved: %@ It is kept; choose %@ or %@.",
+     "id": "recording.saveFailed",
      "english": "The recording couldn't be saved: %1$@ It is kept; choose %2$@ or %3$@.",
      "before": "録音を保存できませんでした：%1$@ 録音は保持されています。「%2$@」または「%3$@」を選んでください。",
      "after": "録音を保存できませんでした：%1$@録音は保持されています。「%2$@」または「%3$@」を選んでください。",
@@ -779,6 +881,7 @@
     },
     {
      "key": "This XML file is not a DTBook book, a Word 2003 XML document, or a PEF braille file, the only XML TextMouth reads.",
+     "id": "fileImportError.unsupportedXML",
      "english": "This XML file is not a DTBook book, a Word 2003 XML document, or a PEF braille file, the only XML TextMouth reads.",
      "before": "この XML ファイルは、TextMouth が読み取れる唯一の XML である DTBook ブック、Word 2003 XML 書類、PEF 点字ファイルのいずれでもありません。",
      "after": "この XML ファイルは、TextMouth が読み取れる XML（DTBook ブック、Word 2003 XML 書類、PEF 点字ファイル）のいずれでもありません。",
@@ -786,6 +889,7 @@
     },
     {
      "key": "To keep an article, choose %@ on its row first.",
+     "id": "feed.keepArticleChoose",
      "english": "To keep an article, choose %@ on its row first.",
      "before": "記事を残すには、先にその行で%@を選択してください。",
      "after": "記事を残すには、先にその行で「%@」を選択してください。",
@@ -793,6 +897,7 @@
     },
     {
      "key": "To keep an episode, choose %@ on its row first.",
+     "id": "feed.keepEpisodeChoose",
      "english": "To keep an episode, choose %@ on its row first.",
      "before": "エピソードを残すには、先にその行で%@を選択してください。",
      "after": "エピソードを残すには、先にその行で「%@」を選択してください。",
@@ -800,6 +905,7 @@
     },
     {
      "key": "To keep an item, choose %@ on its row first.",
+     "id": "feed.keepItemChoose",
      "english": "To keep an item, choose %@ on its row first.",
      "before": "項目を残すには、先にその行で%@を選択してください。",
      "after": "項目を残すには、先にその行で「%@」を選択してください。",
@@ -807,6 +913,7 @@
     },
     {
      "key": "To use it, choose %@ on the Text tab in Settings.",
+     "id": "playlistImport.pronunciationLexicon.settings",
      "english": "To use it, choose %@ on the Text tab in Settings.",
      "before": "使用するには、設定の「テキスト」タブで%@を選択してください。",
      "after": "使用するには、設定の「テキスト」タブで「%@」を選択してください。",
@@ -814,6 +921,7 @@
     },
     {
      "key": "When checked, this feed follows the setting in Settings, %@; uncheck it to give the feed its own",
+     "id": "feed.useGlobalHint",
      "english": "When checked, this feed follows the setting in Settings, %@; uncheck it to give the feed its own",
      "before": "オンにすると、このフィードは設定の%@の設定に従います。オフにすると、このフィード独自の設定になります。",
      "after": "オンにすると、このフィードは設定の「%@」タブの設定に従います。オフにすると、このフィード独自の設定になります。",
@@ -821,6 +929,7 @@
     },
     {
      "key": "choose %@ again",
+     "id": "feed.deleteFeedRefused.downloadInUse",
      "english": "choose %@ again",
      "before": "%@をもう一度選択してください",
      "after": "「%@」をもう一度選択してください",
@@ -828,6 +937,7 @@
     },
     {
      "key": "file %lld of %lld",
+     "id": "transcription.fileLineAfterComma.numberOfTotal",
      "english": "file %1$lld of %2$lld",
      "before": "%2$lld個中%1$lld番目のファイル",
      "after": "ファイル%1$lld/%2$lld",
@@ -835,6 +945,7 @@
     },
     {
      "key": "keeping the place of your feed downloads for next time",
+     "id": "feedQuitHold.work",
      "english": "keeping the place of your feed downloads for next time",
      "before": "次回のためのフィードのダウンロードの位置の保持",
      "after": "フィードのダウンロードの位置を次回のために保存",
@@ -842,6 +953,7 @@
     },
     {
      "key": "more than %@",
+     "id": "feed.entriesPhrase",
      "english": "more than %@",
      "before": "%@を超える",
      "after": "%@超",
@@ -849,6 +961,7 @@
     },
     {
      "key": "returning it to the library",
+     "id": "importStep.phrase.reinstating",
      "english": "returning it to the library",
      "before": "ライブラリへの戻し",
      "after": "ライブラリに戻す処理",
@@ -856,6 +969,7 @@
     },
     {
      "key": "saving the changes to your feed subscriptions",
+     "id": "feedRecordQuit.finishing",
      "english": "saving the changes to your feed subscriptions",
      "before": "フィードの購読の変更の保存",
      "after": "フィードの購読の変更を保存",
@@ -863,6 +977,7 @@
     },
     {
      "key": "“%@” is already being added to the library.",
+     "id": "feed.alreadyBeingAdded",
      "english": "“%@” is already being added to the library.",
      "before": "「%@」はすでにライブラリに追加されています。",
      "after": "「%@」はすでにライブラリへの追加中です。",
@@ -870,6 +985,7 @@
     },
     {
      "key": "“%@” is recording. Stop or discard it with Clear Selection, then quit.",
+     "id": "audioEditor.quitWhileRecording",
      "english": "“%@” is recording. Stop or discard it with Clear Selection, then quit.",
      "before": "「%@」は録音中です。「選択解除」で停止または破棄してから、終了してください。",
      "after": "「%@」は録音中です。停止するか、「選択解除」で破棄してから、終了してください。",
@@ -888,6 +1004,7 @@
    "fixes": [
     {
      "key": "%@ has its default, %@",
+     "id": "shortcutsSettings.defaultsHeldElsewhere",
      "english": "%1$@ has its default, %2$@",
      "before": "%1$@のデフォルトは%2$@です",
      "after": "デフォルトの%2$@は「%1$@」に割り当てられています",
@@ -895,6 +1012,7 @@
     },
     {
      "key": "%@ needs “%@”, one of a Mac's own braille tables, which TextMouth on iPhone doesn't have.",
+     "id": "phoneImport.macBrailleTableRefusal",
      "english": "%1$@ needs “%2$@”, one of a Mac's own braille tables, which TextMouth on iPhone doesn't have.",
      "before": "%1$@には、Mac 専用の点字テーブル「%2$@」が必要ですが、iPhone 版の TextMouth にはありません。",
      "after": "%1$@には、Mac 専用の点字表「%2$@」が必要ですが、iPhone 版の TextMouth にはありません。",
@@ -902,6 +1020,7 @@
     },
     {
      "key": "%@ not recorded for %@: %@",
+     "id": "shortcutsSettings.refused",
      "english": "%1$@ not recorded for %2$@: %3$@",
      "before": "%1$@を%2$@に記録できませんでした：%3$@",
      "after": "%1$@を「%2$@」に記録できませんでした：%3$@",
@@ -909,6 +1028,7 @@
     },
     {
      "key": "%@ now waits before %@, in case it is pressed twice.",
+     "id": "shortcutsSettings.nowWaits",
      "english": "%1$@ now waits before %2$@, in case it is pressed twice.",
      "before": "%1$@を1回押すと、続けて押される場合に備えて、%2$@の前に少し待ちます。",
      "after": "%1$@を1回押すと、続けて押される場合に備えて、「%2$@」の前に少し待ちます。",
@@ -916,6 +1036,7 @@
     },
     {
      "key": "%@ of %lld chapters could not be read",
+     "id": "extractionReport.summary.value",
      "english": {
       "one": "%@ of %lld chapter could not be read",
       "other": "%@ of %lld chapters could not be read"
@@ -930,6 +1051,7 @@
     },
     {
      "key": "%@ reset to default: %@",
+     "id": "shortcutsSettings.resetAnnouncement",
      "english": "%1$@ reset to default: %2$@",
      "before": "%1$@をデフォルトに戻しました：%2$@",
      "after": "「%1$@」をデフォルトに戻しました：%2$@",
@@ -937,6 +1059,7 @@
     },
     {
      "key": "%@ tries again, %@ quits without saving, %@ keeps TextMouth open.",
+     "id": "unsavedChangesPrompt.choices",
      "english": "%1$@ tries again, %2$@ quits without saving, %3$@ keeps TextMouth open.",
      "before": "%1$@で再試行、%2$@で保存せずに終了、%3$@で TextMouth を開いたままにします。",
      "after": "「%1$@」で再試行、「%2$@」で保存せずに終了、「%3$@」で TextMouth を開いたままにします。",
@@ -944,6 +1067,7 @@
     },
     {
      "key": "%@ uses it in the menus",
+     "id": "shortcutRefusal.reason.systemCommand",
      "english": "%@ uses it in the menus",
      "before": "メニューの%@で使われています",
      "after": "メニューの「%@」で使われています",
@@ -951,6 +1075,7 @@
     },
     {
      "key": "%@ works in %@.",
+     "id": "shortcutsSettings.scopeChanged",
      "english": "%1$@ works in %2$@.",
      "before": "%1$@は%2$@で使えます。",
      "after": "「%1$@」は%2$@で使えます。",
@@ -958,6 +1083,7 @@
     },
     {
      "key": "%@, recorded for %@",
+     "id": "shortcutsSettings.sentences",
      "english": "%1$@, recorded for %2$@",
      "before": "%1$@を%2$@に記録しました",
      "after": "%1$@を「%2$@」に記録しました",
@@ -965,6 +1091,7 @@
     },
     {
      "key": "A new timer replaces the one running.",
+     "id": "sleepTimerView.newTimerNote.replaces",
      "english": "A new timer replaces the one running.",
      "before": "新しいタイマーは、実行中のタイマーに置き換わります。",
      "after": "実行中のタイマーは、新しいタイマーに置き換わります。",
@@ -972,6 +1099,7 @@
     },
     {
      "key": "Adds the lexicon's entries after your rules; entries with only a phonetic spelling are set aside",
+     "id": "pronunciationLexicon.importHint",
      "english": "Adds the lexicon's entries after your rules; entries with only a phonetic spelling are set aside",
      "before": "あなたのルールの後に辞書のエントリを追加します。発音の表記だけのエントリは除外されます。",
      "after": "既存のルールの後に辞書のエントリを追加します。発音の表記だけのエントリは除外されます。",
@@ -979,6 +1107,7 @@
     },
     {
      "key": "Adds the speed they count at, such as 2.0x for an audiobook not at 1x, or 500 words a minute for a text book, in the reader, Where Am I?, Copy Reading Position, and the Headings sheet's durations.",
+     "id": "readerTime.settingHint",
      "english": "Adds the speed they count at, such as 2.0x for an audiobook not at 1x, or 500 words a minute for a text book, in the reader, Where Am I?, Copy Reading Position, and the Headings sheet's durations.",
      "before": "リーダ、「ここはどこ？」、読書位置のコピー、見出しシートの長さに、時間と一緒に数える速度（1倍速でないオーディオブックの2.0x、テキストブックの毎分500語など）を追加します。",
      "after": "リーダ、「ここはどこ？」、「読書位置をコピー」、見出しシートの長さに、時間の計算に使う速度（1倍速以外のオーディオブックなら2.0x、テキストブックなら毎分500語など）を追加します。",
@@ -986,6 +1115,7 @@
     },
     {
      "key": "Adjust minutes",
+     "id": "sleepTimerView.adjustMinutesLabel",
      "english": "Adjust minutes",
      "before": "分数を調整",
      "after": "分を調整",
@@ -993,6 +1123,7 @@
     },
     {
      "key": "As the table defines",
+     "id": "brailleTable.contractionLabel.defines",
      "english": "As the table defines",
      "before": "テーブルの定義どおり",
      "after": "点字表の定義どおり",
@@ -1000,6 +1131,7 @@
     },
     {
      "key": "Brings the text to the sentence being spoken.",
+     "id": "phoneReader.bookContentPlayingHint",
      "english": "Brings the text to the sentence being spoken.",
      "before": "テキストを、読み上げ中の文に移します。",
      "after": "読み上げ中の文に移動します。",
@@ -1007,6 +1139,7 @@
     },
     {
      "key": "Chapter %@ could not be played: %@ from the book's package.",
+     "id": "readerViewModel.chapterNotPlayed",
      "english": "Chapter %1$@ could not be played: %2$@ from the book's package.",
      "before": "チャプタ%1$@を再生できませんでした。ブックのパッケージ内：%2$@。",
      "after": "チャプタ%1$@を再生できませんでした：ブックのパッケージ内の%2$@。",
@@ -1014,6 +1147,7 @@
     },
     {
      "key": "Choosing makes the shortcut yours; Reset to Default restores where it works by default.",
+     "id": "shortcutsSettings.worksInHint",
      "english": "Choosing makes the shortcut yours; Reset to Default restores where it works by default.",
      "before": "選択するとショートカットが自分用に変わります。「デフォルトに戻す」で、デフォルトの動作場所に戻ります。",
      "after": "選択すると、このショートカットはカスタム設定になります。「デフォルトに戻す」で、デフォルトの動作場所に戻ります。",
@@ -1021,6 +1155,7 @@
     },
     {
      "key": "Custom minutes",
+     "id": "sleepTimerView.customMinutesLabel",
      "english": "Custom minutes",
      "before": "カスタムの分数",
      "after": "カスタム時間（分）",
@@ -1028,6 +1163,7 @@
     },
     {
      "key": "Edit Manifest With…",
+     "id": "bookManifestEdit.editWithTitle",
      "english": "Edit Manifest With…",
      "before": "マニフェストを編集するアプリ…",
      "after": "アプリを指定してマニフェストを編集…",
@@ -1035,6 +1171,7 @@
     },
     {
      "key": "Edit Text With…",
+     "id": "bookTextEdit.editWithTitle",
      "english": "Edit Text With…",
      "before": "テキストを編集するアプリ…",
      "after": "アプリを指定してテキストを編集…",
@@ -1042,6 +1179,7 @@
     },
     {
      "key": "Exports the checked items once the braille table just chosen is checked.",
+     "id": "bookExport.exportWaitsHint",
      "english": "Exports the checked items once the braille table just chosen is checked.",
      "before": "選択したばかりの点字テーブルの確認が済んだら、チェックした項目を書き出します。",
      "after": "選択したばかりの点字表の確認が済んだら、チェックした項目を書き出します。",
@@ -1049,6 +1187,7 @@
     },
     {
      "key": "Its headings are real headings, and the contents list links them.",
+     "id": "epubPackageBuilder.accessibilitySummary.links",
      "english": "Its headings are real headings, and the contents list links them.",
      "before": "見出しは本物の見出しで、目次からリンクされています。",
      "after": "見出しは構造化された見出しで、目次からリンクされています。",
@@ -1056,6 +1195,7 @@
     },
     {
      "key": "Its only page is %@.",
+     "id": "readerPage.noSuchPage.only",
      "english": "Its only page is %@.",
      "before": "唯一のページは%@です。",
      "after": "ページは%@のみです。",
@@ -1063,6 +1203,7 @@
     },
     {
      "key": "Keep these books on this Mac",
+     "id": "readingList.keepBooksLabel",
      "english": "Keep these books on this Mac",
      "before": "このブックをこの Mac に保持",
      "after": "リストのブックをこの Mac に保持",
@@ -1070,6 +1211,7 @@
     },
     {
      "key": "Kept %@ of %lld chapters until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To go on from chapter %@, export the same range at the same speed and pitch.",
+     "id": "speechExport.kept.chaptersGo",
      "english": {
       "one": "Kept %@ of %lld chapter until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To go on from chapter %@, export the same range at the same speed and pitch.",
       "other": "Kept %@ of %lld chapters until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To go on from chapter %@, export the same range at the same speed and pitch."
@@ -1084,6 +1226,7 @@
     },
     {
      "key": "Media controls not released: this book does not hold them.",
+     "id": "mediaControls.notHeld",
      "english": "Media controls not released: this book does not hold them.",
      "before": "解放なし：このブックはメディアコントロールを保持していません。",
      "after": "メディアコントロールを解放しませんでした：このブックは保持していません。",
@@ -1091,6 +1234,7 @@
     },
     {
      "key": "Moves to the next heading, keeping the navigation unit.",
+     "id": "phoneReader.nextHeadingHint",
      "english": "Moves to the next heading, keeping the navigation unit.",
      "before": "ナビゲーション単位を保ったまま、次の見出しに移動します。",
      "after": "移動単位を保ったまま、次の見出しに移動します。",
@@ -1098,6 +1242,7 @@
     },
     {
      "key": "Moves to the previous heading, keeping the navigation unit.",
+     "id": "phoneReader.previousHeadingHint",
      "english": "Moves to the previous heading, keeping the navigation unit.",
      "before": "ナビゲーション単位を保ったまま、前の見出しに移動します。",
      "after": "移動単位を保ったまま、前の見出しに移動します。",
@@ -1105,6 +1250,7 @@
     },
     {
      "key": "Navigation unit for audiobooks",
+     "id": "phoneSettings.audioNavigationUnit",
      "english": "Navigation unit for audiobooks",
      "before": "オーディオブックのナビゲーション単位",
      "after": "オーディオブックの移動単位",
@@ -1112,6 +1258,7 @@
     },
     {
      "key": "Navigation unit for text books",
+     "id": "phoneSettings.textNavigationUnit",
      "english": "Navigation unit for text books",
      "before": "テキストのブックのナビゲーション単位",
      "after": "テキストのブックの移動単位",
@@ -1119,6 +1266,7 @@
     },
     {
      "key": "No previous sleep timer to restart.",
+     "id": "readerViewModel.restartLastSleepTimer.none",
      "english": "No previous sleep timer to restart.",
      "before": "再開できる前回のスリープタイマーはありません。",
      "after": "前回のスリープタイマーがないため、再開始できません。",
@@ -1126,6 +1274,7 @@
     },
     {
      "key": "Not restarted because of the sleep timer",
+     "id": "endOfBook.notRestartedNote",
      "english": "Not restarted because of the sleep timer",
      "before": "スリープタイマーのため、再開しませんでした",
      "after": "スリープタイマーのため、もう一度再生しませんでした",
@@ -1133,6 +1282,7 @@
     },
     {
      "key": "Number Sign",
+     "id": "keyBinding.localizedKeyWords.number",
      "english": "Number Sign",
      "before": "ナンバー記号",
      "after": "シャープ",
@@ -1140,6 +1290,7 @@
     },
     {
      "key": "OCR could not run on %@ of %lld pages, so text found only in their images is missing: %@.",
+     "id": "pdfExtractionDiagnostics.problem.pages",
      "english": {
       "one": "OCR could not run on %@ of %lld page, so text found only in their images is missing: %@.",
       "other": "OCR could not run on %@ of %lld pages, so text found only in their images is missing: %@."
@@ -1154,6 +1305,7 @@
     },
     {
      "key": "OCR could not run on the PDF's only page, so text found only in its images is missing: %@.",
+     "id": "pdfExtractionDiagnostics.problem.page",
      "english": "OCR could not run on the PDF's only page, so text found only in its images is missing: %@.",
      "before": "PDF の唯一のページで OCR を実行できなかったため、画像にしかないテキストが欠けています：%@。",
      "after": "1ページのみの PDF で OCR を実行できなかったため、画像にしかないテキストが欠けています：%@。",
@@ -1161,6 +1313,7 @@
     },
     {
      "key": "Press the new key, or Escape to cancel.",
+     "id": "shortcutsSettings.recordingHint",
      "english": "Press the new key, or Escape to cancel.",
      "before": "新しいキーを押してください。キャンセルするにはエスケープを押します。",
      "after": "新しいキーを押すか、キャンセルする場合はエスケープキーを押してください。",
@@ -1168,6 +1321,7 @@
     },
     {
      "key": "Remove shortcut %@ from %@",
+     "id": "shortcutsSettings.removeShortcutLabel",
      "english": "Remove shortcut %1$@ from %2$@",
      "before": "%2$@のショートカット%1$@を取り除く",
      "after": "「%2$@」のショートカット%1$@を取り除く",
@@ -1175,6 +1329,7 @@
     },
     {
      "key": "Reset %@ to Default",
+     "id": "shortcutsSettings.resetToDefaultLabel",
      "english": "Reset %@ to Default",
      "before": "%@をデフォルトに戻す",
      "after": "「%@」をデフォルトに戻す",
@@ -1182,6 +1337,7 @@
     },
     {
      "key": "Settings applied as global defaults",
+     "id": "voiceAndSpeed.appliedAsGlobalDefaults",
      "english": "Settings applied as global defaults",
      "before": "設定をグローバルなデフォルトとして適用しました",
      "after": "設定を全体のデフォルトとして適用しました",
@@ -1189,6 +1345,7 @@
     },
     {
      "key": "Taken from %@",
+     "id": "shortcutsSettings.takenFromSentence",
      "english": "Taken from %@",
      "before": "%@から取得",
      "after": "%@から割り当てを移しました",
@@ -1196,6 +1353,7 @@
     },
     {
      "key": "Text not updated: chapter %@ of the edited text of %@ %@, which TextMouth can't read safely. Flatten it and save again, or undo the change; the book keeps its old text until then.",
+     "id": "bookTextEdit.refused.nestedTooDeeply.chapter",
      "english": "Text not updated: chapter %1$@ of the edited text of %2$@ %3$@, which TextMouth can't read safely. Flatten it and save again, or undo the change; the book keeps its old text until then.",
      "before": "テキストは更新されませんでした：%2$@の編集済みテキストのチャプタ%1$@について、%3$@。TextMouth は安全に読み取れません。平らにしてもう一度保存するか、変更を取り消してください。それまで、ブックは以前のテキストのままです。",
      "after": "テキストは更新されませんでした：%2$@の編集済みテキストのチャプタ%1$@について、%3$@。TextMouth は安全に読み取れません。入れ子を浅くしてもう一度保存するか、変更を取り消してください。それまで、ブックは以前のテキストのままです。",
@@ -1203,6 +1361,7 @@
     },
     {
      "key": "Text not updated: the edited text of %@ %@, which TextMouth can't read safely. Flatten it and save again, or undo the change; the book keeps its old text until then.",
+     "id": "bookTextEdit.refused.nestedTooDeeply.updated",
      "english": "Text not updated: the edited text of %1$@ %2$@, which TextMouth can't read safely. Flatten it and save again, or undo the change; the book keeps its old text until then.",
      "before": "テキストは更新されませんでした：%1$@の編集済みテキストについて、%2$@。TextMouth は安全に読み取れません。平らにしてもう一度保存するか、変更を取り消してください。それまで、ブックは以前のテキストのままです。",
      "after": "テキストは更新されませんでした：%1$@の編集済みテキストについて、%2$@。TextMouth は安全に読み取れません。入れ子を浅くしてもう一度保存するか、変更を取り消してください。それまで、ブックは以前のテキストのままです。",
@@ -1210,6 +1369,7 @@
     },
     {
      "key": "Text not updated: the edited transcript of %@ has %@, but the audiobook has %@. Keep every line beginning with <!-- chapter: and save again; the book keeps its old text until then.",
+     "id": "bookTextEdit.refused.chaptersChanged",
      "english": "Text not updated: the edited transcript of %1$@ has %2$@, but the audiobook has %3$@. Keep every line beginning with <!-- chapter: and save again; the book keeps its old text until then.",
      "before": "テキストは更新されませんでした：%1$@の編集済み文字起こしには%2$@がありますが、オーディオブックには%3$@があります。 <!-- chapter: で始まる行をすべて残して、もう一度保存してください。それまで、ブックは以前のテキストのままです。",
      "after": "テキストは更新されませんでした：%1$@の編集済み文字起こしには%2$@がありますが、オーディオブックには%3$@があります。<!-- chapter: で始まる行をすべて残して、もう一度保存してください。それまで、ブックは以前のテキストのままです。",
@@ -1217,6 +1377,7 @@
     },
     {
      "key": "TextMouth can't use the braille table chosen in Settings, “%@”, so this export starts from %@.",
+     "id": "brailleExport.startsFromDefault",
      "english": "TextMouth can't use the braille table chosen in Settings, “%1$@”, so this export starts from %2$@.",
      "before": "設定で選択された点字テーブル「%1$@」を TextMouth は使用できないため、この書き出しは%2$@から始まります。",
      "after": "設定で選択された点字表「%1$@」を TextMouth は使用できないため、この書き出しは%2$@から始まります。",
@@ -1224,6 +1385,7 @@
     },
     {
      "key": "TextMouth can't use this Mac's table “%@”: %@.",
+     "id": "brailleSettings.refusal.cant",
      "english": "TextMouth can't use this Mac's table “%1$@”: %2$@.",
      "before": "TextMouth はこの Mac のテーブル「%1$@」を使用できません：%2$@。",
      "after": "TextMouth はこの Mac の点字表「%1$@」を使用できません：%2$@。",
@@ -1231,6 +1393,7 @@
     },
     {
      "key": "TextMouth could not check this Mac's braille table “%@”: %@. Try again.",
+     "id": "failure.uncheckedTable",
      "english": "TextMouth could not check this Mac's braille table “%1$@”: %2$@. Try again.",
      "before": "TextMouth はこの Mac の点字テーブル「%1$@」を確認できませんでした：%2$@。もう一度お試しください。",
      "after": "TextMouth はこの Mac の点字表「%1$@」を確認できませんでした：%2$@。もう一度お試しください。",
@@ -1238,6 +1401,7 @@
     },
     {
      "key": "TextMouth could not check this Mac's table “%@”: %@. Choose it again to retry.",
+     "id": "brailleSettings.refusal.choose",
      "english": "TextMouth could not check this Mac's table “%1$@”: %2$@. Choose it again to retry.",
      "before": "TextMouth はこの Mac のテーブル「%1$@」を確認できませんでした：%2$@。もう一度選ぶと再試行します。",
      "after": "TextMouth はこの Mac の点字表「%1$@」を確認できませんでした：%2$@。もう一度選ぶと再試行します。",
@@ -1245,6 +1409,7 @@
     },
     {
      "key": "TextMouth could not translate this braille.",
+     "id": "failure.failed",
      "english": "TextMouth could not translate this braille.",
      "before": "TextMouth はこの点字を翻訳できませんでした。",
      "after": "TextMouth はこの点字を変換できませんでした。",
@@ -1252,6 +1417,7 @@
     },
     {
      "key": "TextMouth found no braille tables in its bundle.",
+     "id": "brailleSettings.noTables",
      "english": "TextMouth found no braille tables in its bundle.",
      "before": "TextMouth のバンドルに点字テーブルが見つかりませんでした。",
      "after": "TextMouth のバンドルに点字表が見つかりませんでした。",
@@ -1259,6 +1425,7 @@
     },
     {
      "key": "TextMouth has no braille table named “%@”.",
+     "id": "failure.unknownTable",
      "english": "TextMouth has no braille table named “%@”.",
      "before": "TextMouth に「%@」という名前の点字テーブルはありません。",
      "after": "TextMouth に「%@」という名前の点字表はありません。",
@@ -1266,6 +1433,7 @@
     },
     {
      "key": "TextMouth stopped the braille translation because %@.",
+     "id": "failure.stopped.translation",
      "english": "TextMouth stopped the braille translation because %@.",
      "before": "TextMouth は点字の翻訳を中止しました。理由：%@。",
      "after": "TextMouth は点字の変換を中止しました。理由：%@。",
@@ -1273,6 +1441,7 @@
     },
     {
      "key": "The %@ starts %@ into “%@”, before the earlier %@, which starts %@ in.",
+     "id": "audioParseError.startsBeforeEarlierSection",
      "english": "The %1$@ starts %2$@ into “%3$@”, before the earlier %4$@, which starts %5$@ in.",
      "before": "%1$@は「%3$@」の%2$@の位置から始まっていますが、それより前にある%4$@（%5$@の位置から始まる）より前になっています。",
      "after": "%1$@は「%3$@」の%2$@の位置から始まっていますが、これはその前の%4$@の開始位置（%5$@）より前です。",
@@ -1280,6 +1449,7 @@
     },
     {
      "key": "The audio file %@ ends before its audio does, so it could not be converted.",
+     "id": "ownAudio.sentence.truncated",
      "english": "The audio file %@ ends before its audio does, so it could not be converted.",
      "before": "オーディオファイル%@は、本来のオーディオより前で終わっているため、変換できませんでした。",
      "after": "オーディオファイル%@は途中で切れているため、変換できませんでした。",
@@ -1287,6 +1457,7 @@
     },
     {
      "key": "The braille table writes an eight-dot cell, %@, but TextMouth's BRF and PEF files are six-dot only.",
+     "id": "eightDotCell.errorDescription.brailleTableWrites",
      "english": "The braille table writes an eight-dot cell, %@, but TextMouth's BRF and PEF files are six-dot only.",
      "before": "この点字テーブルは8点のセル（%@）を書きますが、TextMouth の BRF と PEF ファイルは6点のみです。",
      "after": "この点字表は8点のセル（%@）を出力しますが、TextMouth の BRF と PEF ファイルは6点のみです。",
@@ -1294,6 +1465,7 @@
     },
     {
      "key": "The braille table writes “%@” as an eight-dot cell, but TextMouth's BRF and PEF files are six-dot only.",
+     "id": "eightDotCell.errorDescription.brailleTable",
      "english": "The braille table writes “%@” as an eight-dot cell, but TextMouth's BRF and PEF files are six-dot only.",
      "before": "この点字テーブルは「%@」を8点のセルで書きますが、TextMouth の BRF と PEF ファイルは6点のみです。",
      "after": "この点字表は「%@」を8点のセルで出力しますが、TextMouth の BRF と PEF ファイルは6点のみです。",
@@ -1301,6 +1473,7 @@
     },
     {
      "key": "The chosen table is built into TextMouth (liblouis %@).",
+     "id": "brailleSettings.source.built",
      "english": "The chosen table is built into TextMouth (liblouis %@).",
      "before": "選択したテーブルは TextMouth に組み込まれています（liblouis %@）。",
      "after": "選択した点字表は TextMouth に組み込まれています（liblouis %@）。",
@@ -1308,6 +1481,7 @@
     },
     {
      "key": "The chosen table is one of this Mac's VoiceOver braille tables (liblouis %@).",
+     "id": "brailleSettings.source.voiceoverLiblouis",
      "english": "The chosen table is one of this Mac's VoiceOver braille tables (liblouis %@).",
      "before": "選択したテーブルは、この Mac の VoiceOver の点字テーブルの1つです（liblouis %@）。",
      "after": "選択した点字表は、この Mac の VoiceOver の点字表の1つです（liblouis %@）。",
@@ -1315,6 +1489,7 @@
     },
     {
      "key": "The chosen table is one of this Mac's VoiceOver braille tables.",
+     "id": "brailleSettings.source.voiceoverTables",
      "english": "The chosen table is one of this Mac's VoiceOver braille tables.",
      "before": "選択したテーブルは、この Mac の VoiceOver の点字テーブルの1つです。",
      "after": "選択した点字表は、この Mac の VoiceOver の点字表の1つです。",
@@ -1322,6 +1497,7 @@
     },
     {
      "key": "The file %@ failed partway through.",
+     "id": "audioPlaybackFailure.message.failedPartway",
      "english": "The file %@ failed partway through.",
      "before": "ファイル%@が途中で失敗しました。",
      "after": "ファイル%@の再生が途中で失敗しました。",
@@ -1329,6 +1505,7 @@
     },
     {
      "key": "The only chapter could not be read",
+     "id": "extractionReport.summary.chapter",
      "english": "The only chapter could not be read",
      "before": "唯一のチャプタを読み込めませんでした",
      "after": "1つしかないチャプタを読み込めませんでした",
@@ -1336,6 +1513,7 @@
     },
     {
      "key": "The original file you imported is not touched.",
+     "id": "epubMetadataSave.writeBackToggleHint.original",
      "english": "The original file you imported is not touched.",
      "before": "読み込んだ元のファイルには触れません。",
      "after": "読み込んだ元のファイルには手を加えません。",
@@ -1343,6 +1521,7 @@
     },
     {
      "key": "The voice changed its kind of audio partway through “%@”.",
+     "id": "speechRenderFailure.formatChanged",
      "english": "The voice changed its kind of audio partway through “%@”.",
      "before": "「%@」の途中で、声がオーディオの種類を変えました。",
      "after": "「%@」の途中で、声のオーディオ形式が変わりました。",
@@ -1350,6 +1529,7 @@
     },
     {
      "key": "This Mac no longer has the chosen table, “%@”; choose another.",
+     "id": "brailleSettings.source.another",
      "english": "This Mac no longer has the chosen table, “%@”; choose another.",
      "before": "この Mac には、選択したテーブル「%@」がなくなりました。別のテーブルを選んでください。",
      "after": "この Mac には、選択した点字表「%@」がなくなりました。別の点字表を選んでください。",
@@ -1357,6 +1537,7 @@
     },
     {
      "key": "This Mac's braille table “%@” changed from liblouis %@ to %@ since the book was read, so TextMouth keeps the book's text as it was.",
+     "id": "failure.changedTable.brailleLiblouisSince",
      "english": "This Mac's braille table “%1$@” changed from liblouis %2$@ to %3$@ since the book was read, so TextMouth keeps the book's text as it was.",
      "before": "ブックを読み込んでから、この Mac の点字テーブル「%1$@」が liblouis %2$@ から %3$@ に変わったため、TextMouth はブックのテキストをそのまま保持します。",
      "after": "ブックを読み込んでから、この Mac の点字表「%1$@」が liblouis %2$@ から %3$@ に変わったため、TextMouth はブックのテキストをそのまま保持します。",
@@ -1364,6 +1545,7 @@
     },
     {
      "key": "This Mac's braille table “%@” may have changed since liblouis %@ read the book, so TextMouth keeps the book's text as it was.",
+     "id": "failure.changedTable.brailleSinceLiblouis",
      "english": "This Mac's braille table “%1$@” may have changed since liblouis %2$@ read the book, so TextMouth keeps the book's text as it was.",
      "before": "liblouis %2$@ でブックを読み込んでから、この Mac の点字テーブル「%1$@」が変わった可能性があるため、TextMouth はブックのテキストをそのまま保持します。",
      "after": "liblouis %2$@ でブックを読み込んでから、この Mac の点字表「%1$@」が変わった可能性があるため、TextMouth はブックのテキストをそのまま保持します。",
@@ -1371,6 +1553,7 @@
     },
     {
      "key": "This book's only page is %@.",
+     "id": "readerPage.fieldHint.only",
      "english": "This book's only page is %@.",
      "before": "このブックの唯一のページは%@です。",
      "after": "このブックのページは%@のみです。",
@@ -1378,6 +1561,7 @@
     },
     {
      "key": "Timer restarted: %@.",
+     "id": "readerViewModel.restartLastSleepTimer.restarted",
      "english": "Timer restarted: %@.",
      "before": "タイマーを再開しました：%@。",
      "after": "タイマーを再開始しました：%@。",
@@ -1385,6 +1569,7 @@
     },
     {
      "key": "Two presses, %@ apart. Set the time above %@ to count them as one.",
+     "id": "shortcutsSettings.trialResult.tooFarApart.above",
      "english": "Two presses, %1$@ apart. Set the time above %2$@ to count them as one.",
      "before": "2回の押下の間隔は%1$@でした。2回を1回と数えるには、時間を%2$@より長くしてください。",
      "after": "2回の押下の間隔は%1$@でした。ダブルプレスとして数えるには、時間を%2$@より長くしてください。",
@@ -1392,6 +1577,7 @@
     },
     {
      "key": "Type straight quotation marks: in TextEdit, turn off Smart Quotes under Edit, Substitutions.",
+     "id": "bookManifestEdit.explanation.quotation",
      "english": "Type straight quotation marks: in TextEdit, turn off Smart Quotes under Edit, Substitutions.",
      "before": "まっすぐな引用符を入力してください。TextEdit では、「編集」>「置換」で「スマート引用符」をオフにします。",
      "after": "まっすぐな引用符を入力してください。テキストエディットでは、「編集」>「自動置換」で「スマート引用符」をオフにします。",
@@ -1399,6 +1585,7 @@
     },
     {
      "key": "Use the global setting (%@)",
+     "id": "common.useTheGlobalSettingValue",
      "english": "Use the global setting (%@)",
      "before": "グローバル設定を使用（%@）",
      "after": "全体の設定を使用（%@）",
@@ -1406,6 +1593,7 @@
     },
     {
      "key": "Word 97-2003 document. Its headings are plain text, so Word's navigation pane omits them.",
+     "id": "wordDocExportWriter.hint",
      "english": "Word 97-2003 document. Its headings are plain text, so Word's navigation pane omits them.",
      "before": "Word 97-2003 ドキュメントです。見出しはプレーンテキストなので、Word のナビゲーションパネルには表示されません。",
      "after": "Word 97-2003 ドキュメントです。見出しはプレーンテキストなので、Word のナビゲーションウィンドウには表示されません。",
@@ -1413,6 +1601,7 @@
     },
     {
      "key": "it %@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the book opens.",
+     "id": "bookTextEdit.heldReason.nestedTooDeeply.opens",
      "english": "it %@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the book opens.",
      "before": "編集済みテキストについて、%@。TextMouth は安全に読み取れません。平らにしてもう一度保存するか、変更を取り消すと、ブックが開きます。",
      "after": "編集済みテキストについて、%@。TextMouth は安全に読み取れません。入れ子を浅くしてもう一度保存するか、変更を取り消すと、ブックが開きます。",
@@ -1420,6 +1609,7 @@
     },
     {
      "key": "it %@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the text shows.",
+     "id": "bookTextEdit.heldReason.nestedTooDeeply.shows",
      "english": "it %@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the text shows.",
      "before": "編集済みテキストについて、%@。TextMouth は安全に読み取れません。平らにしてもう一度保存するか、変更を取り消すと、テキストが表示されます。",
      "after": "編集済みテキストについて、%@。TextMouth は安全に読み取れません。入れ子を浅くしてもう一度保存するか、変更を取り消すと、テキストが表示されます。",
@@ -1427,6 +1617,7 @@
     },
     {
      "key": "it has %@, where the audiobook has %@. Keep every line beginning with <!-- chapter: and save again, and the text shows.",
+     "id": "bookTextEdit.heldReason.chaptersChanged",
      "english": "it has %1$@, where the audiobook has %2$@. Keep every line beginning with <!-- chapter: and save again, and the text shows.",
      "before": "文字起こしは%1$@ですが、オーディオブックは%2$@です。 <!-- chapter: で始まる行をすべて残してもう一度保存すると、テキストが表示されます。",
      "after": "文字起こしは%1$@ですが、オーディオブックは%2$@です。<!-- chapter: で始まる行をすべて残してもう一度保存すると、テキストが表示されます。",
@@ -1434,6 +1625,7 @@
     },
     {
      "key": "it writes eight-dot braille, and TextMouth uses six-dot braille only",
+     "id": "refusal.reason.writesEightDots",
      "english": "it writes eight-dot braille, and TextMouth uses six-dot braille only",
      "before": "8点点字で書かれていますが、TextMouth が使うのは6点点字のみです",
      "after": "8点点字を出力しますが、TextMouth が使うのは6点点字のみです",
@@ -1441,6 +1633,7 @@
     },
     {
      "key": "its chapter %@ %@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the book opens.",
+     "id": "bookTextEdit.heldReason.nestedTooDeeply.chapter",
      "english": "its chapter %1$@ %2$@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the book opens.",
      "before": "チャプタ%1$@について、%2$@。TextMouth は安全に読み取れません。平らにしてもう一度保存するか、変更を取り消すと、ブックが開きます。",
      "after": "チャプタ%1$@について、%2$@。TextMouth は安全に読み取れません。入れ子を浅くしてもう一度保存するか、変更を取り消すと、ブックが開きます。",
@@ -1448,6 +1641,7 @@
     },
     {
      "key": "its chapter %@ %@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the text shows.",
+     "id": "bookTextEdit.nestedTooDeeply.chapterShows",
      "english": "its chapter %1$@ %2$@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the text shows.",
      "before": "チャプタ%1$@について、%2$@。TextMouth は安全に読み取れません。平らにしてもう一度保存するか、変更を取り消すと、テキストが表示されます。",
      "after": "チャプタ%1$@について、%2$@。TextMouth は安全に読み取れません。入れ子を浅くしてもう一度保存するか、変更を取り消すと、テキストが表示されます。",
@@ -1455,6 +1649,7 @@
     },
     {
      "key": "the file %@ failed partway through",
+     "id": "audioPlaybackFailure.problem.failedPartway",
      "english": "the file %@ failed partway through",
      "before": "ファイル%@が途中で失敗しました",
      "after": "ファイル%@の再生が途中で失敗しました",
@@ -1472,6 +1667,7 @@
    "fixes": [
     {
      "key": "No voice is installed. Add one in System Settings, Accessibility, Spoken Content, then export again.",
+     "id": "speechExportError.noVoice",
      "english": "No voice is installed. Add one in System Settings, Accessibility, Spoken Content, then export again.",
      "before": "インストールされている声がありません。「システム設定」の「アクセシビリティ」>「読み上げコンテンツ」で追加してから、もう一度書き出してください。",
      "after": "インストールされている声がありません。「システム設定」の「アクセシビリティ」の「読み上げコンテンツ」で追加してから、もう一度書き出してください。",
@@ -1479,6 +1675,7 @@
     },
     {
      "key": "No voices are installed. Add voices in Settings, Accessibility, Read & Speak.",
+     "id": "phoneVoice.noVoices",
      "english": "No voices are installed. Add voices in Settings, Accessibility, Read & Speak.",
      "before": "インストールされている声がありません。「設定」の「アクセシビリティ」>「読み上げコンテンツ」で声を追加してください。",
      "after": "インストールされている声がありません。「設定」の「アクセシビリティ」の「読み上げコンテンツ」で声を追加してください。",
@@ -1486,6 +1683,7 @@
     },
     {
      "key": "Type straight quotation marks: in TextEdit, turn off Smart Quotes under Edit, Substitutions.",
+     "id": "bookManifestEdit.explanation.quotation",
      "english": "Type straight quotation marks: in TextEdit, turn off Smart Quotes under Edit, Substitutions.",
      "before": "まっすぐな引用符を入力してください。テキストエディットでは、「編集」>「自動置換」で「スマート引用符」をオフにします。",
      "after": "まっすぐな引用符を入力してください。テキストエディットでは、「編集」の「自動置換」で「スマート引用符」をオフにします。",

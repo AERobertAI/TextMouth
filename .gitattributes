@@ -10,7 +10,3 @@
 # l10n-merge-driver` defines once in the repository's config). Where it is not defined, git merges them
 # as text, and two branches that add neighbouring strings conflict.
 *.xcstrings merge=xcstrings
-
-# The converted files' globs, one per line (`Scripts/l10n/sync-paths.txt`), merge by union: two branches that each add
-# lines keep both sides' lines, with no conflict and no `git config` (git's built-in driver).
-/Scripts/l10n/sync-paths.txt merge=union

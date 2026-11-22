@@ -67,8 +67,6 @@ fastlane/test_output
 # The documentation's pages (README.md and ARCHITECTURE.md index them)
 !docs/**/*.md
 !docs/getting-started.txt
-# The localization tools' list of converted files (Scripts/l10n/sync-paths.txt)
-!/Scripts/l10n/sync-paths.txt
 # The interface-string IDs that may never be given again (FR39)
 !/Scripts/l10n/retired-ids.txt
 # The issue files (Issues/README.md says what they hold)

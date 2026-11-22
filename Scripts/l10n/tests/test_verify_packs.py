@@ -6,10 +6,11 @@ The catalogs are compiled by Apple's `xcstringstool` and read by the Swift probe
 tests run on a Mac with Xcode only (a few seconds each). They show that the proof is not
 vacuous: a table changed after compacting is reported, and one left alone passes.
 
-Two catalogs are used: the repository's own, and a small synthetic one
-(fixtures/squeeze/Localizable.xcstrings) that holds what the real one does not yet: Japanese
+Three catalogs are used: the repository's own (keyed by ID), a small synthetic one
+(fixtures/squeeze/Localizable.xcstrings, keyed by English) that holds what the real one does not yet: Japanese
 (only `other`), Russian (`one`, `few`, `many`, `other`), and French (`one` covering 0), plus the
-awkward cases of the squeeze (an entry equal to its key, a plural string whose forms are one text).
+awkward cases of the squeeze (an entry equal to its key, a plural string whose forms are one text), and the same
+catalog keyed by ID with an `en` for each entry (fixtures/squeeze-ids/), which the engine reading needs.
 """
 import json
 import plistlib
@@ -26,8 +27,10 @@ sys.path.insert(0, str(HERE.parent))
 import compact_packs  # noqa: E402  (imported by path, after sys.path is set)
 import verify_packs  # noqa: E402
 
-# The synthetic catalog of the squeeze, in a folder of its own because the table is named for the file.
+# The synthetic catalog of the squeeze, in a folder of its own because the table is named for the file, and the same
+# catalog keyed by ID (probe.key0, ... in the code-point order of the English keys), each entry with its `en`.
 SQUEEZE_CATALOG = HERE / "fixtures" / "squeeze" / "Localizable.xcstrings"
+SQUEEZE_IDS_CATALOG = HERE / "fixtures" / "squeeze-ids" / "Localizable.xcstrings"
 
 
 class VerifyPacksCase(unittest.TestCase):
@@ -104,23 +107,23 @@ class RealCatalogTests(VerifyPacksCase):
         pack = self.changed_copy()
         path = pack / "es.lproj" / "Localizable.strings"
         text = path.read_bytes().decode("utf-8")
-        self.assertIn('"Bookmarks"="Marcadores";', text)
-        path.write_bytes(text.replace('"Bookmarks"="Marcadores";', '"Bookmarks"="Marcador";').encode("utf-8"))
+        self.assertIn('"common.bookmarks"="Marcadores";', text)
+        path.write_bytes(text.replace('"common.bookmarks"="Marcadores";', '"common.bookmarks"="Marcador";').encode("utf-8"))
         status, output = self.run_probe(pack)
         self.assertEqual(status, 1)
-        self.assertIn('DIFFERENT: es "Bookmarks"', output)
+        self.assertIn('DIFFERENT: es "common.bookmarks"', output)
 
     def test_a_changed_plural_form_is_reported_at_its_count(self):
         """A Spanish `many` form changed: only the count that reaches it (1,000,000) differs."""
         pack = self.changed_copy()
         path = pack / "es.lproj" / "Localizable.stringsdict"
         table = plistlib.loads(path.read_bytes())
-        table["%lld minutes"]["value"]["many"] += "!"
+        table["common.countMinutes"]["value"]["many"] += "!"
         path.write_bytes(plistlib.dumps(table, fmt=plistlib.FMT_BINARY))
         status, output = self.run_probe(pack)
         self.assertEqual(status, 1)
-        self.assertIn('es "%lld minutes" at 1000000', output)
-        self.assertNotIn('"%lld minutes" at 21', output)
+        self.assertIn('es "common.countMinutes" at 1000000', output)
+        self.assertNotIn('"common.countMinutes" at 21', output)
 
     def test_spanish_is_in_the_catalog(self):
         self.assertIn("es", self.languages)
@@ -229,41 +232,19 @@ class SqueezeCatalogTests(VerifyPacksCase):
 
 
 class EngineReadingTests(VerifyPacksCase):
-    """The third reading (FR39): the engine's text from the interface-text pack equals Xcode's `String(localized:)`.
+    """The third reading (FR39): the engine's text from the interface-text pack equals Apple's table for the same ID.
 
-    Only the synthetic catalog runs here, so no unit test of the tools runs the repository's real pack through the
-    engine: that is `make l10n-check`'s, after the hosted test of the shipped pack has passed on GitHub.
+    Only the synthetic catalog keyed by ID runs here, so no unit test of the tools runs the repository's real pack through
+    the engine: that is `make l10n-check`'s, after the hosted test of the shipped pack has passed on GitHub.
     """
 
-    catalog = SQUEEZE_CATALOG
-
-    def unnumbered_english(self, catalog):
-        """A copy of `catalog` whose English plural forms are written as the key is (`%@ ... %lld`, not `%1$@ ... %2$lld`).
-
-        The engine takes the pack's English forms when their `other` equals the call's format, which is the key, so a
-        catalog that numbers the English forms is not served from the pack (a finding of this phase, posted to the
-        engine's owner). The real catalog's English forms are unnumbered. Apple reads the same words either way, so
-        the files Xcode compiled from the original stay the comparison.
-        """
-        strings = json.loads(Path(catalog).read_text(encoding="utf-8"))
-        for entry in strings["strings"].values():
-            plural = entry.get("localizations", {}).get("en", {}).get("variations", {}).get("plural", {})
-            for form in plural.values():
-                form["stringUnit"]["value"] = re.sub(r"%\d+\$", "%", form["stringUnit"]["value"])
-        copy = self.root / f"unnumbered-{Path(catalog).name}"
-        copy.write_text(json.dumps(strings), encoding="utf-8")
-        return copy
+    catalog = SQUEEZE_IDS_CATALOG
 
     def engine_arguments(self, catalog=None):
-        """Builds the interface-text pack of `catalog` (the case's own by default), giving each key an ID, and returns the
-        probe's arguments that name the pack and the table."""
-        catalog = self.unnumbered_english(catalog or self.catalog)
-        keys = json.loads(Path(catalog).read_text(encoding="utf-8"))["strings"]
-        table = self.root / "ids.json"
-        ids = {key: f"probe.key{number}" for number, key in enumerate(sorted(keys))}
-        table.write_text(json.dumps({"version": 1, "ids": ids}), encoding="utf-8")
-        pack = verify_packs.build_engine_pack(Path(catalog), table, self.root)
-        return ["--pack", str(pack), "--ids", str(table)]
+        """Builds the interface-text pack of `catalog` (the case's own by default) and returns the probe's arguments that
+        name it."""
+        pack = verify_packs.build_engine_pack(Path(catalog or self.catalog), self.root)
+        return ["--pack", str(pack)]
 
     def run_engine_probe(self, catalog=None):
         """Run the probe with the engine's reading on the compiled and compact folders, the pack built from `catalog`
@@ -275,12 +256,12 @@ class EngineReadingTests(VerifyPacksCase):
         )
         return done.returncode, done.stdout + done.stderr
 
-    def test_the_engine_reads_every_key_as_xcode_does(self):
-        """The engine's text equals `String(localized:)` for every ID, in every language, at every count."""
+    def test_the_engine_reads_every_id_as_xcode_does(self):
+        """The engine's text equals Apple's table's for every ID, in every language, at every count."""
         status, output = self.run_engine_probe()
         self.assertEqual(status, 0, output)
         self.assertRegex(output, r"probe: engine compared [1-9][0-9]* lookups in %d languages" % len(self.languages))
-        self.assertIn(": 0 different, 0 keys the lookups cannot feed, 0 problems reported", output)
+        self.assertIn(": 0 different, 0 IDs the lookups cannot feed, 0 problems reported", output)
         self.assertRegex(output, r"probe: engine timing \(-O\): ID list decode [0-9.]+ ms .* median lookup [0-9.]+ us")
 
     def test_each_language_reports_its_lookups_and_locale(self):
@@ -291,12 +272,13 @@ class EngineReadingTests(VerifyPacksCase):
 
     def test_a_pack_that_says_something_else_is_reported(self):
         """The engine reading is not vacuous: a pack built from a catalog with one Russian text changed differs from
-        what Xcode ships, and the probe names the language and the key."""
+        what Xcode ships, and the probe names the language and the ID."""
         strings = json.loads(Path(self.catalog).read_text(encoding="utf-8"))
         changed = None
         for key, entry in sorted(strings["strings"].items()):
             unit = entry.get("localizations", {}).get("ru", {}).get("stringUnit")
-            if unit and unit.get("state") != "new" and "%" not in key:
+            english = entry.get("localizations", {}).get("en", {}).get("stringUnit", {}).get("value", "")
+            if unit and unit.get("state") != "new" and "%" not in english:
                 unit["value"] += " (changed)"
                 changed = key
                 break
@@ -306,17 +288,17 @@ class EngineReadingTests(VerifyPacksCase):
         status, output = self.run_engine_probe(altered)
         self.assertEqual(status, 1, output)
         self.assertIn("ENGINE DIFFERENT: ru ", output)
-        self.assertIn(f'"{changed}"', output)
+        self.assertIn(f"ru {changed} (", output)
         self.assertNotIn("ENGINE DIFFERENT: ja ", output)
 
-    def test_a_pack_named_without_its_table_is_a_usage_error(self):
-        """--pack without --ids stops the probe with status 2 rather than comparing nothing."""
+    def test_a_pack_that_is_not_there_is_a_usage_error(self):
+        """--pack naming no file stops the probe with status 2 rather than comparing nothing."""
         done = subprocess.run(
-            [str(self.probe), str(self.xcode), str(self.compact), str(self.catalog), "--pack", "x.pack", *self.languages],
+            [str(self.probe), str(self.xcode), str(self.compact), str(self.catalog), "--pack", "no-such.pack", *self.languages],
             capture_output=True, text=True, check=False,
         )
         self.assertEqual(done.returncode, 2)
-        self.assertIn("--pack and --ids go together", done.stdout + done.stderr)
+        self.assertIn("cannot open the pack", done.stdout + done.stderr)
 
 
 class FallbackCatalogTests(VerifyPacksCase):

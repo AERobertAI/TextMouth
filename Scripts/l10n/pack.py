@@ -5,11 +5,11 @@ The String Catalog (TextMouth/Localization/Localizable.xcstrings) stays the tran
 into the one file the apps read: the IDs, the English, the translators' notes, and one LZMA blob for each language.
 Standard library only, and it runs under Xcode's /usr/bin/python3 (3.9): nothing here needs a later Python.
 
-    pack.py build   --catalog PATH --out PATH [--ids PATH] [--max-id-length N] [--stamp PATH] [--force] [--no-stamp]
-    pack.py verify  PACK --catalog PATH [--ids PATH] [--max-id-length N]
+    pack.py build   --catalog PATH --out PATH [--max-id-length N] [--stamp PATH] [--force] [--no-stamp]
+    pack.py verify  PACK --catalog PATH [--max-id-length N]
     pack.py compare A B
     pack.py size    PACK [--compare-window]
-    pack.py corrupt-fixture --catalog PATH --out PATH [--ids PATH]    (a test-only pack: see below)
+    pack.py corrupt-fixture --catalog PATH --out PATH    (a test-only pack: see below)
 
 The format, version 1 (little-endian). research/STRINGS-SYSTEM-DESIGN-2026-11-21.md, "The pack", is the specification.
 - The header, 48 bytes: the magic `TMSP`, the version (u16), flags (u16, zero), the SHA-256 of the bytes of the catalog
@@ -32,9 +32,9 @@ blob's raw size (and at least 4 KiB), with preset 9 extreme otherwise. For input
 window does, give or take a few bytes, and it keeps the window a decoder may allocate small (`size --compare-window`
 measures the difference).
 
-Determinism. The same catalog (and ID table) gives the same bytes with the same Python. Compare entries, not compressed
+Determinism. The same catalog gives the same bytes with the same Python. Compare entries, not compressed
 bytes, between Pythons: two builds of liblzma may encode the same input differently. A stamp beside the output records
-the catalog's hash, the ID table's, this file's, and the output's, so a build skips when none has changed.
+the catalog's hash, this file's, and the output's, so a build skips when none has changed.
 """
 from __future__ import annotations
 
@@ -166,7 +166,7 @@ def compile_localization(localization, language, where, problems):
         return None
     if unit is not None:
         # An empty value ships as no entry: the reader uses English, as it does for a string with no translation.
-        return None if unit.get("state", "new") == "new" else (unit.get("value", "") or None)
+        return (unit.get("value", "") or None) if catalog.counts_as_text(unit.get("state", "new")) else None
     if plural is None:
         return None
     return compile_plural(plural, language, where, problems)
@@ -187,7 +187,7 @@ def compile_plural(plural, language, where, problems):
             problems.append(f"{where}: the {category} form holds a variation or substitution, which the pack cannot hold")
             return None
         unit = node.get("stringUnit", {})
-        if unit.get("state", "new") != "new":
+        if catalog.counts_as_text(unit.get("state", "new")):
             forms[category] = unit.get("value", "")
     if not forms:
         return None
@@ -266,27 +266,8 @@ def entry_problems(entry, language, reference, check_placeholders):
 
 
 # ---------------------------------------------------------------------------------------------------------------
-# The ID table, and the plan of what the pack holds.
+# The plan of what the pack holds.
 # ---------------------------------------------------------------------------------------------------------------
-
-def load_ids(path):
-    """The ID table in the file `path` as {catalog key: [IDs]}. Two shapes are read: the one `Scripts/l10n/ids.json` has
-    (`{"version": 1, "ids": {key: ID}, "splits": {key: [{"id": ID, ...}]}}`, a split key holding every one of its IDs), and
-    the flat {key: ID} table of the designer's prototype. Raises PackError for a file that is neither."""
-    try:
-        data = json.loads(Path(path).read_text(encoding="utf-8"))
-    except (OSError, ValueError) as error:
-        raise PackError(f"the ID table {path} cannot be read: {error}")
-    if not isinstance(data, dict):
-        raise PackError(f"the ID table {path} is not an object")
-    if data.get("version") == 1 and isinstance(data.get("ids"), dict):
-        table = {key: [identifier] for key, identifier in data["ids"].items()}
-        for key, splits in (data.get("splits") or {}).items():
-            table.setdefault(key, [])
-            table[key] += [split["id"] for split in splits if split["id"] not in table[key]]
-        return table
-    return {key: [identifier] for key, identifier in data.items()}
-
 
 @dataclass
 class Plan:
@@ -308,52 +289,34 @@ def id_problems(identifier, max_length):
     return problems
 
 
-def ids_of_keys(cat, table, problems, max_length):
-    """[(ID, key)] in code-point order of the IDs. With no `table` every key must itself be an ID (as after the catalog's
-    migration); with one, each key maps to its IDs, and a key without an ID, an ID given to two keys, and an ID outside
-    the pattern are refusals."""
-    owner = {}
-    for key in sorted(cat.strings):
-        if table is None:
-            identifiers = [key]
-        elif key in table:
-            identifiers = table[key]
-        else:
-            problems.append(f"{key}: the ID table has no ID for this key")
-            continue
-        for identifier in identifiers:
-            if identifier in owner and owner[identifier] != key:
-                problems.append(f"{identifier}: the ID belongs to two keys, {owner[identifier]!r} and {key!r}")
-            owner.setdefault(identifier, key)
-    for identifier in owner:
-        problems += [f"{owner[identifier]}: {sentence}" for sentence in id_problems(identifier, max_length)]
-    return sorted((identifier, key) for identifier, key in owner.items())
+def ids_of_keys(cat, problems, max_length):
+    """[(ID, key)] in code-point order of the IDs: the catalog is keyed by ID, so each key is its own ID, and one outside the
+    pattern (or too long) is a refusal."""
+    for key in cat.strings:
+        problems += [f"{key}: {sentence}" for sentence in id_problems(key, max_length)]
+    return sorted((key, key) for key in cat.strings)
 
 
-def english_entry(cat, key, table, problems):
-    """The English entry of `key`: its `en` localization when it has one that Xcode compiles, else the key, which is the
-    English while the catalog is keyed by it. With no ID table the key is an ID, so English must be in the catalog."""
+def english_entry(cat, key, problems):
+    """The English entry of `key` (an ID): its `en` localization, which Xcode compiles. An ID with none is a refusal: the key
+    is an ID and says nothing of the English."""
     where = f"{key} [en]"
     found = compile_localization(cat.strings[key].get("localizations", {}).get("en"), "en", where, problems)
-    if found is not None:
-        return found
-    if table is None:
+    if found is None:
         problems.append(f"{where}: the catalog has no English text for this ID (it needs an en localization)")
-        return None
-    return key
+    return found
 
 
-def build_plan(catalog_path, ids_path=None, max_id_length=MAX_ID_LENGTH):
-    """The Plan for the catalog file `catalog_path` (and the ID table `ids_path`, if any). Raises PackError listing every
+def build_plan(catalog_path, max_id_length=MAX_ID_LENGTH):
+    """The Plan for the catalog file `catalog_path` (keyed by ID). Raises PackError listing every
     refusal at once, each naming its key and language, so that nothing is written until all can be fixed."""
     catalog_bytes = Path(catalog_path).read_bytes()
     try:
         cat = catalog.Catalog.load(catalog_path)
     except ValueError as error:
         raise PackError(f"{catalog_path}: {error}")
-    table = load_ids(ids_path) if ids_path else None
     problems = []
-    rows = ids_of_keys(cat, table, problems, max_id_length)
+    rows = ids_of_keys(cat, problems, max_id_length)
     languages = [ENGLISH_BLOB] + [language for language in cat.languages() if language != ENGLISH_BLOB]
     for language in languages:
         if not language.isascii() or len(language) > NAME_BYTES:
@@ -361,7 +324,7 @@ def build_plan(catalog_path, ids_path=None, max_id_length=MAX_ID_LENGTH):
     entries = {language: {} for language in languages}
     keys = sorted({key for _, key in rows})
     for key in keys:
-        entries[ENGLISH_BLOB][key] = english_entry(cat, key, table, problems)
+        entries[ENGLISH_BLOB][key] = english_entry(cat, key, problems)
         english = entries[ENGLISH_BLOB][key]
         # English's own plural forms are compared with its `other`; its plain text only has to hold allowed specifiers.
         if english is not None:
@@ -528,10 +491,9 @@ def file_hash(path):
     return hashlib.sha256(path.read_bytes()).hexdigest() if path.is_file() else None
 
 
-def stamp_of(catalog_path, ids_path, max_id_length):
-    """What decides the output: the hashes of the catalog, the ID table, and this builder, and the ID length limit."""
-    return {"builder": file_hash(__file__), "catalog": file_hash(catalog_path),
-            "ids": file_hash(ids_path) if ids_path else None, "maxIdLength": max_id_length}
+def stamp_of(catalog_path, max_id_length):
+    """What decides the output: the hashes of the catalog and this builder, and the ID length limit."""
+    return {"builder": file_hash(__file__), "catalog": file_hash(catalog_path), "maxIdLength": max_id_length}
 
 
 def stamp_path(out):
@@ -597,10 +559,10 @@ def differences(want, got, label="", limit=LISTED_DIFFERENCES):
     return found
 
 
-def verify(pack_path, catalog_path, ids_path=None, max_id_length=MAX_ID_LENGTH):
+def verify(pack_path, catalog_path, max_id_length=MAX_ID_LENGTH):
     """The sentences about where the pack at `pack_path` differs from what `build_plan` decides for the catalog: the hash in
     the header, the IDs, and every entry of every blob. Empty when the pack is exactly the catalog's."""
-    plan = build_plan(catalog_path, ids_path, max_id_length)
+    plan = build_plan(catalog_path, max_id_length)
     pack = read_pack(Path(pack_path).read_bytes())
     expected = Pack(plan.digest.hex(), plan.ids,
                     {name: Blob(name, 0, 0, [encode_entry(entry) for entry in entries]) for name, entries in plan.blobs})
@@ -682,13 +644,13 @@ def write_atomically(path, data):
 
 def command_build(args):
     """`build`: refuses or writes the pack and its stamp, or skips when the stamp says nothing changed."""
-    stamp = stamp_of(args.catalog, args.ids, args.max_id_length)
+    stamp = stamp_of(args.catalog, args.max_id_length)
     # The stamp lives beside the pack unless --stamp says elsewhere (the app's build keeps it out of the app).
     stamp_file = Path(args.stamp) if args.stamp else stamp_path(args.out)
     if not args.force and not args.no_stamp and is_up_to_date(args.out, stamp, stamp_file):
-        print(f"{args.out} is up to date (the catalog, the ID table, and the builder are unchanged)")
+        print(f"{args.out} is up to date (the catalog and the builder are unchanged)")
         return 0
-    plan = build_plan(args.catalog, args.ids, args.max_id_length)
+    plan = build_plan(args.catalog, args.max_id_length)
     data = build_bytes(plan)
     write_atomically(args.out, data)
     # The stamp comes only after the pack is in place, so a stamp never vouches for a pack that is not there.
@@ -701,7 +663,7 @@ def command_build(args):
 
 def command_corrupt_fixture(args):
     """`corrupt-fixture`: writes the test-only pack whose English blob is not UTF-8."""
-    plan = build_plan(args.catalog, args.ids, args.max_id_length)
+    plan = build_plan(args.catalog, args.max_id_length)
     write_atomically(args.out, build_corrupt_utf8_pack_for_tests(plan))
     print(f"wrote {args.out}: A CORRUPT PACK, for tests only")
     return 0
@@ -724,7 +686,6 @@ def parser():
 
     def inputs(command):
         command.add_argument("--catalog", required=True, help="the String Catalog")
-        command.add_argument("--ids", help="the ID table; without it every catalog key must already be an ID")
         command.add_argument("--max-id-length", type=int, default=MAX_ID_LENGTH,
                              help="the longest ID allowed (default %(default)s; a measurement may raise it)")
 
@@ -758,7 +719,7 @@ def main(argv=None):
         if args.command == "corrupt-fixture":
             return command_corrupt_fixture(args)
         if args.command == "verify":
-            return command_report(verify(args.pack, args.catalog, args.ids, args.max_id_length),
+            return command_report(verify(args.pack, args.catalog, args.max_id_length),
                                   f"{args.pack} matches the catalog")
         if args.command == "compare":
             return command_report(compare(args.a, args.b), "the packs hold the same entries")

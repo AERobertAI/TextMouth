@@ -12,6 +12,7 @@
    "fixes": [
     {
      "key": "%@ also holds %lld books a newer TextMouth added, which are kept.",
+     "id": "folderRemoval.keptBooksChoiceSentences",
      "english": {
       "one": "%@ also holds %lld book a newer TextMouth added, which is kept.",
       "other": "%@ also holds %lld books a newer TextMouth added, which are kept."
@@ -28,6 +29,7 @@
     },
     {
      "key": "%@ by %@",
+     "id": "common.valueByValue",
      "english": "%1$@ by %2$@",
      "before": "%1$@, %2$@ tarafından",
      "after": "%1$@, yazar: %2$@",
@@ -35,6 +37,7 @@
     },
     {
      "key": "%@ is filed %@ in %@ and %@ in %@.",
+     "id": "libraryComparison.sentence.bookFiledDifferently",
      "english": "%1$@ is filed %2$@ in %3$@ and %4$@ in %5$@.",
      "before": "%1$@ yerleşimi, %3$@: %2$@; %5$@: %4$@.",
      "after": "%1$@ kitabının yeri, %3$@: %2$@; %5$@: %4$@.",
@@ -42,6 +45,7 @@
     },
     {
      "key": "%@, at %@",
+     "id": "bookSearch.timedLabel",
      "english": "%1$@, at %2$@",
      "before": "%1$@, %2$@ zamanında",
      "after": "%1$@, %2$@ noktasında",
@@ -49,6 +53,7 @@
     },
     {
      "key": "%@: Some changes are not saved, and switching libraries would lose them.",
+     "id": "libraryViewModel.message.switching",
      "english": "%@: Some changes are not saved, and switching libraries would lose them.",
      "before": "%@: Bazı değişiklikler kaydedilmedi ve kitaplığı değiştirmek bunları kaybettirir.",
      "after": "%@: Bazı değişiklikler kaydedilmedi; kitaplık değiştirilirse bunlar kaybolur.",
@@ -56,6 +61,7 @@
     },
     {
      "key": "%@: more than %lld matches",
+     "id": "librarySearch.bookHeading.more",
      "english": {
       "one": "%@: more than %lld match",
       "other": "%@: more than %lld matches"
@@ -72,6 +78,7 @@
     },
     {
      "key": "%lld Books",
+     "id": "removal.booksObject",
      "english": {
       "one": "%lld Book",
       "other": "%lld Books"
@@ -88,6 +95,7 @@
     },
     {
      "key": "%lld Selected",
+     "id": "removal.selectedObject",
      "english": {
       "one": "%lld Selected",
       "other": "%lld Selected"
@@ -104,6 +112,7 @@
     },
     {
      "key": "%lld books in the cloud were skipped.",
+     "id": "libraryViewModel.textReextractionOutcome.cloud",
      "english": {
       "one": "%lld book in the cloud was skipped.",
       "other": "%lld books in the cloud were skipped."
@@ -120,6 +129,7 @@
     },
     {
      "key": "A library in the cloud can take a while: its cloud-only files are downloaded to this Mac to be read.",
+     "id": "libraryComparison.comparingSentence.downloaded",
      "english": "A library in the cloud can take a while: its cloud-only files are downloaded to this Mac to be read.",
      "before": "Bulutta bir kitaplık biraz sürebilir: yalnızca bulutta olan dosyalar okunmak üzere bu Mac'e indirilir.",
      "after": "Buluttaki bir kitaplıkta bu işlem biraz sürebilir: yalnızca bulutta olan dosyaları okunmak üzere bu Mac'e indirilir.",
@@ -127,6 +137,7 @@
     },
     {
      "key": "A limit chooses among books, episodes, and articles, never feeds.",
+     "id": "libraryViewEditor.limitUnavailableHint",
      "english": "A limit chooses among books, episodes, and articles, never feeds.",
      "before": "Bir sınır kitaplar, podcast bölümleri ve makaleler arasında seçim yapar, beslemeler arasında asla.",
      "after": "Sınır, beslemeler arasından değil, yalnızca kitaplar, podcast bölümleri ve makaleler arasından seçer.",
@@ -134,6 +145,7 @@
     },
     {
      "key": "Adds or removes a bookmark at the current position",
+     "id": "settings.showBookmarkHint",
      "english": "Adds or removes a bookmark at the current position",
      "before": "Geçerli konuma yer imi ekler veya kaldırır.",
      "after": "Geçerli konumda yer imi ekler veya kaldırır.",
@@ -141,6 +153,7 @@
     },
     {
      "key": "An edit of its text is kept beside the new reading, as a copy in the book's package.",
+     "id": "textEncoding.keptTextNote",
      "english": "An edit of its text is kept beside the new reading, as a copy in the book's package.",
      "before": "Metinde yapılan bir düzenleme, kitabın paketinde bir kopya olarak yeni okumanın yanında saklanır.",
      "after": "Metinde yapılan bir düzenleme, kitabın paketinde bir kopya olarak yeniden okunan metnin yanında saklanır.",
@@ -148,6 +161,7 @@
     },
     {
      "key": "Asks whether to %@ or keep them in the TextMouth library folder.",
+     "id": "libraryRemoveCommand.accessibilityHint",
      "english": "Asks whether to %@ or keep them in the TextMouth library folder.",
      "before": "Şunlardan birini sorar: %@ veya dosyaları TextMouth kitaplık klasöründe tut.",
      "after": "Hangisini istediğinizi sorar: %@ veya dosyaları TextMouth kitaplık klasöründe tut.",
@@ -155,6 +169,7 @@
     },
     {
      "key": "Books can't be moved in this view. Go to a folder in Folders, or to the Reading List, then try again.",
+     "id": "manualBookOrder.noArrangedOrder.folders",
      "english": "Books can't be moved in this view. Go to a folder in Folders, or to the Reading List, then try again.",
      "before": "Kitaplar bu görünümde taşınamaz. Klasörlerde bir klasöre veya Okuma Listesine gidin, sonra tekrar deneyin.",
      "after": "Kitaplar bu görünümde taşınamaz. Klasörler görünümünde bir klasöre veya Okuma Listesine gidin, sonra tekrar deneyin.",
@@ -162,6 +177,7 @@
     },
     {
      "key": "But %@ also holds %lld books a newer TextMouth added: they are kept where they are, and so is every folder that holds one.",
+     "id": "folderRemoval.keptBooksConfirmationSentences",
      "english": {
       "one": "But %@ also holds %lld book a newer TextMouth added: it is kept where it is, and so is every folder that holds it.",
       "other": "But %@ also holds %lld books a newer TextMouth added: they are kept where they are, and so is every folder that holds one."
@@ -178,6 +194,7 @@
     },
     {
      "key": "Cancel New Folder",
+     "id": "libraryFolderPicker.cancelNewFolderTitle",
      "english": "Cancel New Folder",
      "before": "Yeni Klasörü İptal Et",
      "after": "Yeni Klasörden Vazgeç",
@@ -185,6 +202,7 @@
     },
     {
      "key": "Chapter %@ of %@ isn't downloaded.",
+     "id": "readerCloud.chapterNotDownloaded",
      "english": "Chapter %1$@ of %2$@ isn't downloaded.",
      "before": "%1$@ numaralı bölüm indirilmedi. Kitap: %2$@.",
      "after": "%2$@ kitabının %1$@ numaralı bölümü indirilmedi.",
@@ -192,6 +210,7 @@
     },
     {
      "key": "Check that %@ is running and that this Mac is online, then choose Try Again.",
+     "id": "dataDirectoryUnavailability.whatToCheck.running",
      "english": "Check that %@ is running and that this Mac is online, then choose Try Again.",
      "before": "Şunun çalıştığını ve bu Mac'in çevrimiçi olduğunu kontrol edin: %@. Sonra Tekrar Dene düğmesini seçin.",
      "after": "%@ çalışıyor mu, bu Mac çevrimiçi mi, denetleyin; sonra “Tekrar Dene” düğmesini seçin.",
@@ -199,6 +218,7 @@
     },
     {
      "key": "Checks the library's location again, and opens the library when it is there.",
+     "id": "dataDirectoryUnavailable.tryAgainHint",
      "english": "Checks the library's location again, and opens the library when it is there.",
      "before": "Kitaplığın konumunu yeniden denetler ve konum orada ise kitaplığı açar.",
      "after": "Kitaplığın konumunu yeniden denetler ve kitaplık oradaysa açar.",
@@ -206,6 +226,7 @@
     },
     {
      "key": "Choose another in Book Information.",
+     "id": "textEncoding.unknownChoice.information",
      "english": "Choose another in Book Information.",
      "before": "Kitap Bilgileri'nde başka birini seçin.",
      "after": "Kitap Bilgilerinde başka birini seçin.",
@@ -213,6 +234,7 @@
     },
     {
      "key": "Choose no per-book control, one shared picker, or a menu with separate forward and backward pickers",
+     "id": "settings.navigationUnitControlsHint",
      "english": "Choose no per-book control, one shared picker, or a menu with separate forward and backward pickers",
      "before": "Kitap başına denetim olmasın, tek bir ortak seçici olsun veya ileri ve geri için ayrı seçicileri olan bir menü kullanılsın.",
      "after": "Kitap başına denetim olmamasını, tek bir ortak seçiciyi veya ileri ve geri için ayrı seçicileri olan bir menüyü seçer.",
@@ -220,6 +242,7 @@
     },
     {
      "key": "Chooses whether The, A, and An at the start of a title count when sorting and when typing a title's first letters.",
+     "id": "leadingArticle.pickerHint",
      "english": "Chooses whether The, A, and An at the start of a title count when sorting and when typing a title's first letters.",
      "before": "The, A ve An kelimelerinin, başlığın başında sıralarken ve başlığın ilk harflerini yazarken sayılıp sayılmayacağını seçer.",
      "after": "Başlığın başındaki The, A ve An kelimelerinin sıralamada ve bir başlığın ilk harfleri yazılırken sayılıp sayılmayacağını seçer.",
@@ -227,6 +250,7 @@
     },
     {
      "key": "Compare Libraries in Storage settings lists every difference.",
+     "id": "libraryComparison.newerCopySentence.libraries",
      "english": "Compare Libraries in Storage settings lists every difference.",
      "before": "Depolama ayarlarındaki Kitaplıkları Karşılaştır tüm farkları listeler.",
      "after": "Depolama ayarlarındaki “Kitaplıkları Karşılaştır” komutu tüm farkları listeler.",
@@ -234,6 +258,7 @@
     },
     {
      "key": "Comparing this library with the copy in the folder you chose, to say which is newer. This can take up to a minute; choose Stop Comparing to skip it.",
+     "id": "libraryComparison.comparingForUseSentence",
      "english": "Comparing this library with the copy in the folder you chose, to say which is newer. This can take up to a minute; choose Stop Comparing to skip it.",
      "before": "Bu kitaplık, hangisinin daha yeni olduğunu söylemek için seçtiğiniz klasördeki kopyayla karşılaştırılıyor. Bu bir dakikaya kadar sürebilir; atlamak için Karşılaştırmayı Durdur'u seçin.",
      "after": "Bu kitaplık, hangisinin daha yeni olduğunu söylemek için seçtiğiniz klasördeki kopyayla karşılaştırılıyor. Bu bir dakikaya kadar sürebilir; atlamak için “Karşılaştırmayı Durdur” düğmesini seçin.",
@@ -241,6 +266,7 @@
     },
     {
      "key": "Condition %@ days",
+     "id": "libraryViewEditor.daysLabel",
      "english": "Condition %@ days",
      "before": "Koşul %@ gün",
      "after": "Koşul %@, gün",
@@ -248,6 +274,7 @@
     },
     {
      "key": "Condition %@ folder",
+     "id": "libraryViewEditor.folderLabel",
      "english": "Condition %@ folder",
      "before": "Koşul %@ klasör",
      "after": "Koşul %@, klasör",
@@ -255,6 +282,7 @@
     },
     {
      "key": "Condition %@ format",
+     "id": "libraryViewEditor.formatLabel",
      "english": "Condition %@ format",
      "before": "Koşul %@ biçim",
      "after": "Koşul %@, biçim",
@@ -262,6 +290,7 @@
     },
     {
      "key": "Condition %@ includes subfolders",
+     "id": "libraryViewEditor.subfoldersLabel",
      "english": "Condition %@ includes subfolders",
      "before": "Koşul %@ alt klasörleri içerir",
      "after": "Koşul %@, alt klasörler dahil",
@@ -269,6 +298,7 @@
     },
     {
      "key": "Condition %@ reading state",
+     "id": "libraryViewEditor.readingStateLabel",
      "english": "Condition %@ reading state",
      "before": "Koşul %@ okuma durumu",
      "after": "Koşul %@, okuma durumu",
@@ -276,6 +306,7 @@
     },
     {
      "key": "Condition %@ relation",
+     "id": "libraryViewEditor.relationLabel",
      "english": "Condition %@ relation",
      "before": "Koşul %@ ilişki",
      "after": "Koşul %@, ilişki",
@@ -283,6 +314,7 @@
     },
     {
      "key": "Condition %@ text",
+     "id": "libraryViewEditor.textLabel",
      "english": "Condition %@ text",
      "before": "Koşul %@ metin",
      "after": "Koşul %@, metin",
@@ -290,6 +322,7 @@
     },
     {
      "key": "Continue listening to %@",
+     "id": "libraryList.continueListeningTo",
      "english": "Continue listening to %@",
      "before": "%@ dinlemeye devam et",
      "after": "Dinlemeye devam et: %@",
@@ -297,6 +330,7 @@
     },
     {
      "key": "Default pitch for new books. 1.0 is normal. Each book can override this.",
+     "id": "settings.defaultPitchExplanation",
      "english": "Default pitch for new books. 1.0 is normal. Each book can override this.",
      "before": "Yeni kitaplar için varsayılan perde. 1.0 normaldir. Her kitap bunu geçersiz kılabilir.",
      "after": "Yeni kitaplar için varsayılan perde. 1,0 normaldir. Her kitap bunu geçersiz kılabilir.",
@@ -304,6 +338,7 @@
     },
     {
      "key": "Delete %@",
+     "id": "feedDownloadRemoval.accessibilityLabel",
      "english": "Delete %@",
      "before": "%@ öğesini sil",
      "after": "Sil: %@",
@@ -311,6 +346,7 @@
     },
     {
      "key": "Delete %@ Permanently",
+     "id": "removalMode.buttonTitle.deletePermanently.named",
      "english": "Delete %@ Permanently",
      "before": "%@ Öğesini Kalıcı Olarak Sil",
      "after": "Kalıcı Olarak %@ Sil",
@@ -318,6 +354,7 @@
     },
     {
      "key": "Delete %@ permanently",
+     "id": "removalMode.spokenLabel.deletePermanently",
      "english": "Delete %@ permanently",
      "before": "%@ öğesini kalıcı olarak sil",
      "after": "Kalıcı olarak sil: %@",
@@ -325,6 +362,7 @@
     },
     {
      "key": "Edit %@",
+     "id": "libraryViewEditor.editTitle",
      "english": "Edit %@",
      "before": "%@ öğesini düzenle",
      "after": "%@ Görünümünü Düzenle",
@@ -332,6 +370,7 @@
     },
     {
      "key": "Edit Text stops for this book; choose Edit Text again to edit the new reading.",
+     "id": "textEncoding.stopsEditingNote",
      "english": "Edit Text stops for this book; choose Edit Text again to edit the new reading.",
      "before": "Bu kitap için Metni Düzenle durur; yeni okumayı düzenlemek için Metni Düzenle'yi yeniden seçin.",
      "after": "Bu kitabın “Metni Düzenle” oturumu sona erer; yeniden okunan metni düzenlemek için “Metni Düzenle” komutunu yeniden seçin.",
@@ -339,6 +378,7 @@
     },
     {
      "key": "Everything",
+     "id": "removal.everythingObject",
      "english": "Everything",
      "before": "Her Şey",
      "after": "Her Şeyi",
@@ -346,6 +386,7 @@
     },
     {
      "key": "Everything in %@",
+     "id": "removal.everythingInObject",
      "english": "Everything in %@",
      "before": "%@ İçindeki Her Şey",
      "after": "%@ İçindeki Her Şeyi",
@@ -353,6 +394,7 @@
     },
     {
      "key": "Experimental. A sequence of media keys or AirPods controls within a short time window re-arms the last sleep timer, handy after one expires.",
+     "id": "miscellaneousSettings.restartGestureExplanation",
      "english": "Experimental. A sequence of media keys or AirPods controls within a short time window re-arms the last sleep timer, handy after one expires.",
      "before": "Deneysel. Kısa bir süre içinde bir dizi medya tuşu veya AirPods denetimi, son uyku zamanlayıcısını yeniden kurar; biri bittikten sonra işe yarar.",
      "after": "Deneysel. Kısa bir süre içinde bir dizi medya tuşu veya AirPods denetimi, son uyku zamanlayıcısını yeniden kurar; bir zamanlayıcı bittiğinde işe yarar.",
@@ -360,6 +402,7 @@
     },
     {
      "key": "Failed to rebuild to default",
+     "id": "libraryViewModel.resetFailureContext",
      "english": "Failed to rebuild to default",
      "before": "Varsayılana yeniden oluşturulamadı",
      "after": "Varsayılan konuma sıfırlanamadı",
@@ -367,6 +410,7 @@
     },
     {
      "key": "Folder “%@” in %@ is “%@” in %@.",
+     "id": "libraryComparison.sentence.folderPathDiffers",
      "english": "Folder “%1$@” in %2$@ is “%3$@” in %4$@.",
      "before": "Klasör yolu farklı: %2$@: “%1$@”, %4$@: “%3$@”.",
      "after": "Klasör yolu farklı: %2$@ içinde “%1$@”, %4$@ içinde “%3$@”.",
@@ -374,6 +418,7 @@
     },
     {
      "key": "Folders and the Reading List list what they always have. You can move them, and hide the Reading List.",
+     "id": "libraryViewEditor.editDisabledHint",
      "english": "Folders and the Reading List list what they always have. You can move them, and hide the Reading List.",
      "before": "Klasörler ve Okuma Listesi her zaman aynı öğeleri listeler. Bunları taşıyabilir ve Okuma Listesini gizleyebilirsiniz.",
      "after": "Klasörler ve Okuma Listesi her zaman kendi içeriklerini listeler. Bunları taşıyabilir ve Okuma Listesini gizleyebilirsiniz.",
@@ -381,6 +426,7 @@
     },
     {
      "key": "Guessed from the book's braille. If it reads wrongly, choose Unified English Braille in Braille Code.",
+     "id": "brailleCode.guessedRecovery",
      "english": "Guessed from the book's braille. If it reads wrongly, choose Unified English Braille in Braille Code.",
      "before": "Kitabın braille'inden tahmin edildi. Yanlış okunuyorsa Braille Kodu'nda Unified English Braille'i seçin.",
      "after": "Kitabın braille'inden tahmin edildi. Yanlış okunuyorsa Braille Kodu menüsünde Unified English Braille'i seçin.",
@@ -388,6 +434,7 @@
     },
     {
      "key": "If it is gone, choose %@.",
+     "id": "libraryFileWait.explanation.choose",
      "english": "If it is gone, choose %@.",
      "before": "Dosya yoksa “%@” seçeneğini seçin.",
      "after": "Dosya yoksa “%@” düğmesini seçin.",
@@ -395,6 +442,7 @@
     },
     {
      "key": "Import Behavior",
+     "id": "storageSettings.importBehaviorHeader",
      "english": "Import Behavior",
      "before": "İçe aktarma davranışı",
      "after": "İçe Aktarma Davranışı",
@@ -402,6 +450,7 @@
     },
     {
      "key": "Its text is replaced by the new reading.",
+     "id": "textEncoding.replacedNote",
      "english": "Its text is replaced by the new reading.",
      "before": "Metin, yeni okumayla değiştirilir.",
      "after": "Kitabın metni, yeniden okunan metinle değiştirilir.",
@@ -409,6 +458,7 @@
     },
     {
      "key": "Left %@ where it is: episodes and articles stay in their feeds; %@ makes one a book of your library.",
+     "id": "libraryTransition.feedItemsLeft.episodes",
      "english": "Left %1$@ where it is: episodes and articles stay in their feeds; %2$@ makes one a book of your library.",
      "before": "%1$@ olduğu yerde bırakıldı: podcast bölümleri ve makaleler beslemelerinde kalır; %2$@ birini kitaplığınızın kitabı yapar.",
      "after": "%1$@ olduğu yerde bırakıldı: podcast bölümleri ve makaleler beslemelerinde kalır; “%2$@” komutu birini kitaplığınızın bir kitabı yapar.",
@@ -416,6 +466,7 @@
     },
     {
      "key": "Left %@ where they are: episodes and articles stay in their feeds; %@ makes one a book of your library.",
+     "id": "libraryTransition.feedItemsLeft.they",
      "english": "Left %1$@ where they are: episodes and articles stay in their feeds; %2$@ makes one a book of your library.",
      "before": "%1$@ olduğu yerde bırakıldı: podcast bölümleri ve makaleler beslemelerinde kalır; %2$@ birini kitaplığınızın kitabı yapar.",
      "after": "%1$@ olduğu yerde bırakıldı: podcast bölümleri ve makaleler beslemelerinde kalır; “%2$@” komutu birini kitaplığınızın bir kitabı yapar.",
@@ -423,6 +474,7 @@
     },
     {
      "key": "Made %@, %lld of %lld.",
+     "id": "libraryViewsSettings.duplicated",
      "english": "Made %1$@, %2$lld of %3$lld.",
      "before": "%1$@ yapıldı, %3$lld içinden %2$lld.",
      "after": "%1$@ oluşturuldu, %3$lld içinden %2$lld.",
@@ -430,6 +482,7 @@
     },
     {
      "key": "More than %lld matches in %@",
+     "id": "librarySearch.found.more",
      "english": {
       "one": "More than %lld match in %@",
       "other": "More than %lld matches in %@"
@@ -446,6 +499,7 @@
     },
     {
      "key": "Move \"%@\"",
+     "id": "librarySheet.moveTitle.named",
      "english": "Move \"%@\"",
      "before": "“%@” öğesini taşı",
      "after": "“%@” Klasörünü Taşı",
@@ -453,6 +507,7 @@
     },
     {
      "key": "Move %@ to Trash",
+     "id": "removalMode.buttonTitle.moveToTrash.named",
      "english": "Move %@ to Trash",
      "before": "%@ Öğesini Çöp Sepetine Taşı",
      "after": "Çöp Sepetine %@ Taşı",
@@ -460,6 +515,7 @@
     },
     {
      "key": "Move %@ to the Trash",
+     "id": "removalMode.spokenLabel.moveToTrash",
      "english": "Move %@ to the Trash",
      "before": "%@ öğesini Çöp Sepetine taşı",
      "after": "Çöp Sepetine taşı: %@",
@@ -467,6 +523,7 @@
     },
     {
      "key": "Moved %@ above %@",
+     "id": "moveResult.announcement.above",
      "english": "Moved %1$@ above %2$@",
      "before": "%1$@, %2$@ üstüne taşındı",
      "after": "%1$@, %2$@ kitabının üstüne taşındı",
@@ -474,6 +531,7 @@
     },
     {
      "key": "Moved %@ below %@",
+     "id": "moveResult.announcement.below",
      "english": "Moved %1$@ below %2$@",
      "before": "%1$@, %2$@ altına taşındı",
      "after": "%1$@, %2$@ kitabının altına taşındı",
@@ -481,6 +539,7 @@
     },
     {
      "key": "Moved to %@, %@.",
+     "id": "bookSearch.movedTo.toTimeInChapter",
      "english": "Moved to %1$@, %2$@.",
      "before": "%1$@ konumuna taşındı, %2$@.",
      "after": "%1$@ konumuna gidildi, %2$@.",
@@ -488,6 +547,7 @@
     },
     {
      "key": "Moved to %@.",
+     "id": "bookSearch.movedTo.toTime",
      "english": "Moved to %@.",
      "before": "%@ konumuna taşındı.",
      "after": "%@ konumuna gidildi.",
@@ -495,6 +555,7 @@
     },
     {
      "key": "Moved to the match, %@.",
+     "id": "librarySearch.movedToMatch.atPlace",
      "english": "Moved to the match, %@.",
      "before": "Eşleşmeye taşındı, %@.",
      "after": "Eşleşmeye gidildi, %@.",
@@ -502,6 +563,7 @@
     },
     {
      "key": "Moved to the match.",
+     "id": "librarySearch.movedToMatch.alone",
      "english": "Moved to the match.",
      "before": "Eşleşmeye taşındı.",
      "after": "Eşleşmeye gidildi.",
@@ -509,6 +571,7 @@
     },
     {
      "key": "Moves data back to the default location at ~/.TextMouth",
+     "id": "storageSettings.resetToDefaultHint",
      "english": "Moves data back to the default location at ~/.TextMouth",
      "before": "Verileri ~/.TextMouth konumundaki varsayılan konuma geri taşır.",
      "after": "Verileri varsayılan konuma (~/.TextMouth) geri taşır.",
@@ -516,6 +579,7 @@
     },
     {
      "key": "None of the %@ selected books is kept on this Mac by your choice, and %lld is kept for the reading list.",
+     "id": "libraryCloud.noneSelectedBooksKeptMacChoice",
      "english": {
       "one": "None of the %@ selected books is kept on this Mac by your choice, and %lld is kept for the reading list.",
       "other": "None of the %@ selected books is kept on this Mac by your choice, and %lld are kept for the reading list."
@@ -532,6 +596,7 @@
     },
     {
      "key": "Nothing checks that this is the right choice. If numbers and punctuation sound wrong, choose another.",
+     "id": "brailleFileCode.uncheckedNote",
      "english": "Nothing checks that this is the right choice. If numbers and punctuation sound wrong, choose another.",
      "before": "Bunun doğru seçim olduğunu hiçbir şey denetlemez. Sayılar ve noktalama yanlış seslenirse başka birini seçin.",
      "after": "Bunun doğru seçim olduğunu hiçbir şey denetlemez. Sayılar ve noktalama işaretleri kulağa yanlış gelirse başka birini seçin.",
@@ -539,6 +604,7 @@
     },
     {
      "key": "Opens the library in the default location, ~/.TextMouth, or starts a new one there, instead of the library that isn't available.",
+     "id": "storageLocation.useDefaultHint",
      "english": "Opens the library in the default location, ~/.TextMouth, or starts a new one there, instead of the library that isn't available.",
      "before": "Kullanılamayan kitaplık yerine, varsayılan konumdaki ~/.TextMouth kitaplığını açar veya orada yeni bir tane başlatır.",
      "after": "Kullanılamayan kitaplık yerine, varsayılan konumdaki (~/.TextMouth) kitaplığı açar veya orada yeni bir kitaplık başlatır.",
@@ -546,6 +612,7 @@
     },
     {
      "key": "Position in %@: differs, and both were saved at the same time.",
+     "id": "libraryComparison.sentence.positionDiffersAtOnce",
      "english": "Position in %@: differs, and both were saved at the same time.",
      "before": "%@ konumu: farklı ve ikisi de aynı anda kaydedilmiş.",
      "after": "%@ kitabındaki konum: farklı ve ikisi de aynı anda kaydedilmiş.",
@@ -553,6 +620,7 @@
     },
     {
      "key": "Position in %@: newer in %@, %@.",
+     "id": "libraryComparison.positionNewer.inLibrary",
      "english": "Position in %1$@: newer in %2$@, %3$@.",
      "before": "%1$@ konumu: %2$@ içinde daha yeni, %3$@.",
      "after": "%1$@ kitabındaki konum: %2$@ içinde daha yeni, %3$@.",
@@ -560,6 +628,7 @@
     },
     {
      "key": "Reading list: %@ is only on %@'s list, at place %@.",
+     "id": "libraryComparison.sentence.readingListBookOnlyIn",
      "english": "Reading list: %1$@ is only on %2$@'s list, at place %3$@.",
      "before": "Okuma listesi: %1$@ yalnızca %2$@ listesinde, %3$@. sırada.",
      "after": "Okuma listesi: %1$@ yalnızca %2$@ içindeki listede, %3$@. sırada.",
@@ -567,6 +636,7 @@
     },
     {
      "key": "Redo Text Extraction?",
+     "id": "storageSettings.redoAlertTitle",
      "english": "Redo Text Extraction?",
      "before": "Metin Çıkarmayı Yeniden Yap?",
      "after": "Metin Çıkarma Yeniden Yapılsın mı?",
@@ -574,6 +644,7 @@
     },
     {
      "key": "Remove %@ from Library Only",
+     "id": "removalMode.buttonTitle.keepFiles.named",
      "english": "Remove %@ from Library Only",
      "before": "%@ Öğesini Yalnızca Kitaplıktan Kaldır",
      "after": "Yalnızca Kitaplıktan %@ Kaldır",
@@ -581,6 +652,7 @@
     },
     {
      "key": "Remove %@ from the library",
+     "id": "libraryRemoveCommand.accessibilityLabel",
      "english": "Remove %@ from the library",
      "before": "%@ öğesini kitaplıktan kaldır",
      "after": "Kitaplıktan kaldır: %@",
@@ -588,6 +660,7 @@
     },
     {
      "key": "Remove %@ from the library and keep the files",
+     "id": "removalMode.spokenLabel.keepFiles",
      "english": "Remove %@ from the library and keep the files",
      "before": "%@ öğesini kitaplıktan kaldır ve dosyaları sakla",
      "after": "Kitaplıktan kaldır ve dosyaları sakla: %@",
@@ -595,6 +668,7 @@
     },
     {
      "key": "Remove Downloads of %lld Books",
+     "id": "libraryCloud.removeDownloadTitle.downloads",
      "english": {
       "one": "Remove Download of %lld Book",
       "other": "Remove Downloads of %lld Books"
@@ -611,6 +685,7 @@
     },
     {
      "key": "Restore “%@” to its default?",
+     "id": "libraryViewsSettings.restoreTitle",
      "english": "Restore “%@” to its default?",
      "before": "“%@” varsayılanına geri yüklensin mi?",
      "after": "“%@” görünümünün varsayılanı geri yüklensin mi?",
@@ -618,6 +693,7 @@
     },
     {
      "key": "Sets when the View pop-up offers this view",
+     "id": "libraryViewsSettings.visibilityHint",
      "english": "Sets when the View pop-up offers this view",
      "before": "Görünüm açılır menüsünün bu görünümü ne zaman sunacağını belirler",
      "after": "Görünüm açılır menüsünün bu görünümü ne zaman sunacağını belirler.",
@@ -625,6 +701,7 @@
     },
     {
      "key": "Some files of “%@” are only in the cloud, and replacing it now would leave them behind. Download the book, then choose %@ again.",
+     "id": "refusal.sentence.filesInCloud",
      "english": "Some files of “%1$@” are only in the cloud, and replacing it now would leave them behind. Download the book, then choose %2$@ again.",
      "before": "“%1$@” kitabının bazı dosyaları yalnızca bulutta ve şimdi değiştirmek onları geride bırakır. Kitabı indirin, sonra “%2$@” düğmesini yeniden seçin.",
      "after": "“%1$@” kitabının bazı dosyaları yalnızca bulutta; kitap şimdi değiştirilirse bu dosyalar geride kalır. Kitabı indirin, sonra “%2$@” düğmesini yeniden seçin.",
@@ -632,6 +709,7 @@
     },
     {
      "key": "Sort Ascending",
+     "id": "librarySortState.directionTitle.ascending",
      "english": "Sort Ascending",
      "before": "Artan Sırala",
      "after": "Artan Şekilde Sırala",
@@ -639,6 +717,7 @@
     },
     {
      "key": "Sort Descending",
+     "id": "librarySortState.directionTitle.descending",
      "english": "Sort Descending",
      "before": "Azalan Sırala",
      "after": "Azalan Şekilde Sırala",
@@ -646,6 +725,7 @@
     },
     {
      "key": "Stop, and Play Starts Over",
+     "id": "endOfBookBehavior.title.stopAndPlayStartsOver",
      "english": "Stop, and Play Starts Over",
      "before": "Dur ve Oynat Baştan Başlatır",
      "after": "Dur ve Sonraki Oynatmada Baştan Başla",
@@ -653,6 +733,7 @@
     },
     {
      "key": "Switching loses the changes TextMouth couldn't save while the library isn't available.",
+     "id": "storage.unsavedSentence",
      "english": "Switching loses the changes TextMouth couldn't save while the library isn't available.",
      "before": "Geçiş yapmak, kitaplık kullanılamıyorken TextMouth'un kaydedemediği değişiklikleri kaybettirir.",
      "after": "Geçiş yaparsanız, kitaplık kullanılamıyorken TextMouth'un kaydedemediği değişiklikler kaybolur.",
@@ -660,6 +741,7 @@
     },
     {
      "key": "Test this rule against the input",
+     "id": "substitutions.testButtonLabel",
      "english": "Test this rule against the input",
      "before": "Bu kuralı girdiye karşı sına",
      "after": "Bu kuralı girdi üzerinde sına",
@@ -667,6 +749,7 @@
     },
     {
      "key": "TextMouth couldn't keep the text you changed in “%@” beside the new reading, so it left the book as it was.",
+     "id": "textEncoding.editNotKeptRefusal",
      "english": "TextMouth couldn't keep the text you changed in “%@” beside the new reading, so it left the book as it was.",
      "before": "TextMouth, “%@” içinde değiştirdiğiniz metni yeni okumanın yanında saklayamadı, bu yüzden kitabı olduğu gibi bıraktı.",
      "after": "TextMouth, “%@” içinde değiştirdiğiniz metni yeniden okunan metnin yanında saklayamadı, bu yüzden kitabı olduğu gibi bıraktı.",
@@ -674,6 +757,7 @@
     },
     {
      "key": "TextMouth couldn't read %lld files, so this may be incomplete.",
+     "id": "libraryComparison.newerCopySentence.incomplete",
      "english": {
       "one": "TextMouth couldn't read %lld file, so this may be incomplete.",
       "other": "TextMouth couldn't read %lld files, so this may be incomplete."
@@ -690,6 +774,7 @@
     },
     {
      "key": "TextMouth couldn't tell which copy is newer (%@).",
+     "id": "libraryComparison.newerCopySentence.couldntTell",
      "english": "TextMouth couldn't tell which copy is newer (%@).",
      "before": "TextMouth hangi kopyanın daha yeni olduğunu söyleyemedi (%@).",
      "after": "TextMouth hangi kopyanın daha yeni olduğunu belirleyemedi (%@).",
@@ -697,6 +782,7 @@
     },
     {
      "key": "TextMouth couldn't tell which copy is newer.",
+     "id": "libraryComparison.newerCopySentence.couldnt",
      "english": "TextMouth couldn't tell which copy is newer.",
      "before": "TextMouth hangi kopyanın daha yeni olduğunu söyleyemedi.",
      "after": "TextMouth hangi kopyanın daha yeni olduğunu belirleyemedi.",
@@ -704,6 +790,7 @@
     },
     {
      "key": "TextMouth moved %@ to the current library format, but with a problem:",
+     "id": "legacyMigrationReport.userSummary.problem",
      "english": "TextMouth moved %@ to the current library format, but with a problem:",
      "before": "TextMouth geçerli kitaplık biçimine kitap taşıdı (%@), ancak bir sorunla:",
      "after": "%@, TextMouth tarafından geçerli kitaplık biçimine taşındı, ancak bir sorun çıktı:",
@@ -711,6 +798,7 @@
     },
     {
      "key": "TextMouth moved %@ to the current library format, but with problems:",
+     "id": "legacyMigrationReport.userSummary.problems",
      "english": "TextMouth moved %@ to the current library format, but with problems:",
      "before": "TextMouth geçerli kitaplık biçimine kitap taşıdı (%@), ancak sorunlarla:",
      "after": "%@, TextMouth tarafından geçerli kitaplık biçimine taşındı, ancak sorunlar çıktı:",
@@ -718,6 +806,7 @@
     },
     {
      "key": "TextMouth will open the library in %@ the next time it opens, but it couldn't open again by itself: %@",
+     "id": "libraryViewModel.openNextTime",
      "english": "TextMouth will open the library in %1$@ the next time it opens, but it couldn't open again by itself: %2$@",
      "before": "TextMouth bir sonraki açılışında şu kitaplığı açacak: %1$@, ancak kendi kendine yeniden açılamadı: %2$@",
      "after": "TextMouth bir sonraki açılışında %1$@ içindeki kitaplığı açacak, ancak kendi kendine yeniden açılamadı: %2$@",
@@ -725,6 +814,7 @@
     },
     {
      "key": "That would put %@ %lld levels deep, but folders nest at most %lld levels.",
+     "id": "folderOperationConflict.tooDeep",
      "english": {
       "one": "That would put %@ %lld level deep, but folders nest at most %lld levels.",
       "other": "That would put %@ %lld levels deep, but folders nest at most %lld levels."
@@ -741,6 +831,7 @@
     },
     {
      "key": "The %@ in the list will be replaced by TextMouth's %@.",
+     "id": "substitutions.resetConfirmationMessage.replaced",
      "english": "The %1$@ in the list will be replaced by TextMouth's %2$@.",
      "before": "Listedeki %1$@, TextMouth'un %2$@ ile değiştirilecek.",
      "after": "Listedeki %1$@, TextMouth'un sunduğu %2$@ ile değiştirilecek.",
@@ -748,6 +839,7 @@
     },
     {
      "key": "The %@ of %lld of them are kept.",
+     "id": "feedDownloadRemoval.completionMessage.them",
      "english": {
       "one": "The %@ of %lld of them are kept.",
       "other": "The %@ of %lld of them are kept."
@@ -764,6 +856,7 @@
     },
     {
      "key": "The Hobbit counts as an H when you type. The list keeps its order and shows each title as it is written.",
+     "id": "leadingArticle.description.ignoredWhenTyping",
      "english": "The Hobbit counts as an H when you type. The list keeps its order and shows each title as it is written.",
      "before": "“The Hobbit” yazarken H harfi sayılır. Liste sırasını korur ve her başlığı yazıldığı gibi gösterir.",
      "after": "Yazarken “The Hobbit”, H ile başlayan bir başlık sayılır. Liste sırasını korur ve her başlığı yazıldığı gibi gösterir.",
@@ -771,6 +864,7 @@
     },
     {
      "key": "The Hobbit sorts among the H's and shows as Hobbit, The. Typing H finds it among the H's.",
+     "id": "leadingArticle.description.ignoredForBoth",
      "english": "The Hobbit sorts among the H's and shows as Hobbit, The. Typing H finds it among the H's.",
      "before": "“The Hobbit” H'ler arasında sıralanır ve “Hobbit, The” olarak görünür. H yazmak onu H'ler arasında bulur.",
      "after": "“The Hobbit” H'ler arasında sıralanır ve “Hobbit, The” olarak görünür. H yazdığınızda H'ler arasında bulunur.",
@@ -778,6 +872,7 @@
     },
     {
      "key": "The book %@ is stored at %@, outside the data directory, so the move cannot carry it.",
+     "id": "dataDirectoryMigrationError.bookOutside",
      "english": "The book %1$@ is stored at %2$@, outside the data directory, so the move cannot carry it.",
      "before": "Kitap “%1$@” veri klasörünün dışında depolanıyor (%2$@); bu yüzden taşıma onu taşıyamaz.",
      "after": "“%1$@” kitabı veri klasörünün dışında (%2$@) depolanıyor; bu yüzden taşımaya dahil edilemez.",
@@ -785,6 +880,7 @@
     },
     {
      "key": "The copy was already complete when Cancel was pressed, so the move went ahead.",
+     "id": "dataDirectoryMove.finishedDespiteCancelSentence",
      "english": "The copy was already complete when Cancel was pressed, so the move went ahead.",
      "before": "Vazgeç düğmesine basıldığında kopya zaten tamamlanmıştı; bu yüzden taşıma sürdü.",
      "after": "Vazgeç düğmesine basıldığında kopya zaten tamamlanmıştı; bu yüzden taşıma yine de yapıldı.",
@@ -792,6 +888,7 @@
     },
     {
      "key": "Their %@ are kept.",
+     "id": "feedDownloadRemoval.completionMessage.their",
      "english": "Their %@ are kept.",
      "before": "Bunların %@ saklanır.",
      "after": "Bunlar için şunlar saklanır: %@.",
@@ -799,6 +896,7 @@
     },
     {
      "key": "There is no view %@. Go to View reaches %lld views.",
+     "id": "libraryViewPicker.noView",
      "english": {
       "one": "There is no view %@. Go to View reaches %lld view.",
       "other": "There is no view %@. Go to View reaches %lld views."
@@ -815,6 +913,7 @@
     },
     {
      "key": "There's no library in %@ to use, and none to move there while the library isn't available.",
+     "id": "storage.thereNoLibrary",
      "english": "There's no library in %@ to use, and none to move there while the library isn't available.",
      "before": "Şurada kullanılacak kitaplık yok ve kitaplık kullanılamıyorken oraya taşınacak bir kitaplık da yok: %@.",
      "after": "%@ içinde kullanılacak bir kitaplık yok; kitaplık kullanılamıyorken oraya taşınacak bir kitaplık da yok.",
@@ -822,6 +921,7 @@
     },
     {
      "key": "This braille looks like English Braille, American Edition. Choose its Braille Code in Book Information.",
+     "id": "brailleCode.suggestsAmericanEdition",
      "english": "This braille looks like English Braille, American Edition. Choose its Braille Code in Book Information.",
      "before": "Bu braille, English Braille, American Edition gibi görünüyor. Braille Kodu'nu Kitap Bilgileri'nde seçin.",
      "after": "Bu braille, English Braille, American Edition gibi görünüyor. Kodunu Kitap Bilgilerindeki Braille Kodu menüsünden seçin.",
@@ -829,6 +929,7 @@
     },
     {
      "key": "To use another folder, open Settings, Storage, and choose %@ or %@.",
+     "id": "dataDirectoryUnavailable.anotherFolderPointer",
      "english": "To use another folder, open Settings, Storage, and choose %1$@ or %2$@.",
      "before": "Başka bir klasör kullanmak için Ayarlar'ı açın, Depolama'yı seçin ve “%1$@” veya “%2$@” seçeneğini seçin.",
      "after": "Başka bir klasör kullanmak için Ayarları açın, Depolama sekmesini seçin ve “%1$@” veya “%2$@” seçeneğini seçin.",
@@ -836,6 +937,7 @@
     },
     {
      "key": "Unread: %@ couldn't be read (%@), %@",
+     "id": "libraryComparison.sentence.cannotBeRead",
      "english": "Unread: %1$@ couldn't be read (%2$@), %3$@",
      "before": "Okunamadı: %1$@ okunamadı (%2$@), %3$@",
      "after": "Okunamayan dosya: %1$@ okunamadı (%2$@), %3$@",
@@ -843,6 +945,7 @@
     },
     {
      "key": "Unread: %@ hasn't arrived from the cloud after %lld seconds, %@",
+     "id": "libraryComparison.sentence.notArrived",
      "english": {
       "one": "Unread: %@ hasn't arrived from the cloud after %lld second, %@",
       "other": "Unread: %@ hasn't arrived from the cloud after %lld seconds, %@"
@@ -859,6 +962,7 @@
     },
     {
      "key": "Unread: %@ wasn't asked for again, because the drive hasn't answered an earlier read, %@",
+     "id": "libraryComparison.sentence.stillBeingFetched",
      "english": "Unread: %1$@ wasn't asked for again, because the drive hasn't answered an earlier read, %2$@",
      "before": "Okunamadı: %1$@ yeniden istenmedi, çünkü sürücü önceki bir okumaya yanıt vermedi, %2$@",
      "after": "Okunamayan dosya: %1$@ yeniden istenmedi, çünkü sürücü önceki bir okumaya yanıt vermedi, %2$@",
@@ -866,6 +970,7 @@
     },
     {
      "key": "Unread: %@ wasn't read, because TextMouth stopped waiting after %lld seconds in all, %@",
+     "id": "libraryComparison.sentence.timeRanOut",
      "english": {
       "one": "Unread: %@ wasn't read, because TextMouth stopped waiting after %lld second in all, %@",
       "other": "Unread: %@ wasn't read, because TextMouth stopped waiting after %lld seconds in all, %@"
@@ -882,6 +987,7 @@
     },
     {
      "key": "What happens when a book finishes playing",
+     "id": "settings.endOfBookHint",
      "english": "What happens when a book finishes playing",
      "before": "Bir kitabın oynatılması bittiğinde ne olacağı.",
      "after": "Bir kitabın oynatılması bittiğinde ne olacağını belirler.",
@@ -889,6 +995,7 @@
     },
     {
      "key": "What happens when you hold Shift and skip backward",
+     "id": "settings.shiftSkipBackwardHint",
      "english": "What happens when you hold Shift and skip backward",
      "before": "Shift tuşunu basılı tutup geri atladığınızda ne olacağı.",
      "after": "Shift tuşunu basılı tutup geri atladığınızda ne olacağını belirler.",
@@ -896,6 +1003,7 @@
     },
     {
      "key": "What happens when you hold Shift and skip forward",
+     "id": "settings.shiftSkipForwardHint",
      "english": "What happens when you hold Shift and skip forward",
      "before": "Shift tuşunu basılı tutup ileri atladığınızda ne olacağı.",
      "after": "Shift tuşunu basılı tutup ileri atladığınızda ne olacağını belirler.",
@@ -903,6 +1011,7 @@
     },
     {
      "key": "What happens when you skip backward",
+     "id": "settings.skipBackwardHint",
      "english": "What happens when you skip backward",
      "before": "Geri atladığınızda ne olacağı.",
      "after": "Geri atladığınızda ne olacağını belirler.",
@@ -910,6 +1019,7 @@
     },
     {
      "key": "What happens when you skip forward",
+     "id": "settings.skipForwardHint",
      "english": "What happens when you skip forward",
      "before": "İleri atladığınızda ne olacağı.",
      "after": "İleri atladığınızda ne olacağını belirler.",
@@ -917,6 +1027,7 @@
     },
     {
      "key": "What to do with the original file after importing a book",
+     "id": "storageSettings.originalFileHint",
      "english": "What to do with the original file after importing a book",
      "before": "Bir kitabı içe aktardıktan sonra orijinal dosyayla ne yapılacağı.",
      "after": "Bir kitabı içe aktardıktan sonra orijinal dosyayla ne yapılacağını belirler.",
@@ -924,6 +1035,7 @@
     },
     {
      "key": "When a book is deleted, %@.",
+     "id": "removalPreferences.deletionSummary",
      "english": "When a book is deleted, %@.",
      "before": "Bir kitap silindiğinde: %@.",
      "after": "Bir kitap silindiğinde %@.",
@@ -931,6 +1043,7 @@
     },
     {
      "key": "When articles are ignored, a book whose metadata names French, German, Spanish, Italian, Portuguese, Dutch, Catalan, Swedish, Danish, or Norwegian passes over that language's articles, such as Le and Die, and The.",
+     "id": "leadingArticle.languagesNote.portuguese",
      "english": "When articles are ignored, a book whose metadata names French, German, Spanish, Italian, Portuguese, Dutch, Catalan, Swedish, Danish, or Norwegian passes over that language's articles, such as Le and Die, and The.",
      "before": "Artikeller yoksayıldığında, meta verisi Fransızca, Almanca, İspanyolca, İtalyanca, Portekizce, Felemenkçe, Katalanca, İsveççe, Danca veya Norveççe olan bir kitap, o dilin Le ve Die gibi artiklerini ve The kelimeyi atlar.",
      "after": "Artikeller yoksayıldığında, meta verisinde dil olarak Fransızca, Almanca, İspanyolca, İtalyanca, Portekizce, Felemenkçe, Katalanca, İsveççe, Danca veya Norveççe belirtilen bir kitap, o dilin Le ve Die gibi artikellerini ve The kelimesini atlar.",
@@ -938,6 +1051,7 @@
     },
     {
      "key": "When off, removing a book will %@ at once.",
+     "id": "removalPreferences.confirmationExplanation.once",
      "english": "When off, removing a book will %@ at once.",
      "before": "Kapalıyken bir kitabı kaldırmak hemen şunu yapar: %@.",
      "after": "Kapalıyken, bir kitabı kaldırdığınızda hemen şu yapılır: %@.",
@@ -945,6 +1059,7 @@
     },
     {
      "key": "When on, removing a book first asks whether to %@ or keep them in the TextMouth library folder.",
+     "id": "removalPreferences.confirmation.whether",
      "english": "When on, removing a book first asks whether to %@ or keep them in the TextMouth library folder.",
      "before": "Açıkken bir kitabı kaldırmak önce şunlardan birini sorar: %@ veya dosyaları TextMouth kitaplık klasöründe tut.",
      "after": "Açıkken, bir kitabı kaldırdığınızda önce hangisini istediğiniz sorulur: %@ veya dosyaları TextMouth kitaplık klasöründe tut.",
@@ -952,6 +1067,7 @@
     },
     {
      "key": "When resuming playback, rewind to the start of this unit",
+     "id": "settings.rewindUnitHint",
      "english": "When resuming playback, rewind to the start of this unit",
      "before": "Oynatma devam ederken bu birimin başına geri sarar.",
      "after": "Oynatma sürdürüldüğünde bu birimin başına geri sarar.",
@@ -959,6 +1075,7 @@
     },
     {
      "key": "Where TextMouth writes its diagnostic logs. %@ keeps them with your books, so they move and sync with the library. %@ keeps them in %@, which never syncs. A change applies from the next line; existing logs stay.",
+     "id": "logsSettings.pickerHint",
      "english": "Where TextMouth writes its diagnostic logs. %1$@ keeps them with your books, so they move and sync with the library. %2$@ keeps them in %3$@, which never syncs. A change applies from the next line; existing logs stay.",
      "before": "TextMouth'un tanılama günlüklerini nereye yazacağı. %1$@ bunları kitaplarınızla birlikte tutar; böylece kitaplıkla birlikte taşınır ve eşzamanlanır. %2$@ bunları şurada tutar: %3$@; burası hiçbir zaman eşzamanlanmaz. Değişiklik bir sonraki satırdan itibaren uygulanır; mevcut günlükler kalır.",
      "after": "TextMouth'un tanılama günlüklerini nereye yazacağını seçer. “%1$@” bunları kitaplarınızla birlikte tutar; böylece kitaplıkla birlikte taşınır ve eşzamanlanır. “%2$@” bunları şurada tutar: %3$@; burası hiçbir zaman eşzamanlanmaz. Değişiklik bir sonraki satırdan itibaren uygulanır; mevcut günlükler kalır.",
@@ -966,6 +1083,7 @@
     },
     {
      "key": "Where none of their words are left, %@, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "id": "textEncoding.placesSentence.whereNoneTheirWords",
      "english": "Where none of their words are left, %@, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
      "before": "Kelimelerinden hiçbiri kalmadığında, %@, her biri bölümünde yaklaşık aynı noktaya ya da iki okumanın paylaştığı en yakın pasaja gider.",
      "after": "Kelimelerinden hiçbiri kalmadığında, %@, her biri bölümünde yaklaşık aynı noktaya ya da iki metnin ortak olduğu en yakın pasaja gider.",
@@ -973,6 +1091,7 @@
     },
     {
      "key": "Where none of their words are left, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "id": "textEncoding.placesSentence.whereNoneTheir",
      "english": "Where none of their words are left, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
      "before": "Kelimelerinden hiçbiri kalmadığında, her biri bölümünde yaklaşık aynı noktaya ya da iki okumanın paylaştığı en yakın pasaja gider.",
      "after": "Kelimelerinden hiçbiri kalmadığında, her biri bölümünde yaklaşık aynı noktaya ya da iki metnin ortak olduğu en yakın pasaja gider.",
@@ -980,6 +1099,7 @@
     },
     {
      "key": "With %@, %@.",
+     "id": "removalChoice.optionSentence",
      "english": "With %1$@, %2$@.",
      "before": "%1$@ ile: %2$@.",
      "after": "“%1$@” ile %2$@.",
@@ -987,6 +1107,7 @@
     },
     {
      "key": "With %@, the feed and its downloads stay, listed in no folder until Feed Info gives the feed another; Delete Feed… on its row deletes it.",
+     "id": "folderRemoval.feedsChoiceSentences.downloads",
      "english": "With %@, the feed and its downloads stay, listed in no folder until Feed Info gives the feed another; Delete Feed… on its row deletes it.",
      "before": "%@ ile besleme ve indirmeleri kalır; Besleme Bilgileri ona başka bir klasör verene kadar hiçbir klasörde listelenmez; satırındaki Beslemeyi Sil… onu siler.",
      "after": "“%@” ile besleme ve indirmeleri kalır; Besleme Bilgileri ona başka bir klasör verene kadar hiçbir klasörde listelenmez; satırındaki Beslemeyi Sil… onu siler.",
@@ -994,6 +1115,7 @@
     },
     {
      "key": "With %@, the feeds and their downloads stay, listed in no folder until Feed Info gives each another; Delete Feed… on a feed's row deletes it.",
+     "id": "folderRemoval.feedsChoiceSentences.each",
      "english": "With %@, the feeds and their downloads stay, listed in no folder until Feed Info gives each another; Delete Feed… on a feed's row deletes it.",
      "before": "%@ ile beslemeler ve indirmeleri kalır; Besleme Bilgileri her birine başka bir klasör verene kadar hiçbir klasörde listelenmez; bir beslemenin satırındaki Beslemeyi Sil… onu siler.",
      "after": "“%@” ile beslemeler ve indirmeleri kalır; Besleme Bilgileri her birine başka bir klasör verene kadar hiçbir klasörde listelenmez; bir beslemenin satırındaki Beslemeyi Sil… onu siler.",
@@ -1001,6 +1123,7 @@
     },
     {
      "key": "With %@, the folder and everything in it leave the library, and %@.",
+     "id": "folderRemoval.choiceMessage.everything",
      "english": "With %1$@, the folder and everything in it leave the library, and %2$@.",
      "before": "%1$@ ile klasör ve içindeki her şey kitaplıktan çıkar; %2$@.",
      "after": "“%1$@” ile klasör ve içindeki her şey kitaplıktan çıkar; %2$@.",
@@ -1008,6 +1131,7 @@
     },
     {
      "key": "With Move Contents Out, the feed's folder moves with the rest.",
+     "id": "folderRemoval.feedsChoiceSentences.moves",
      "english": "With Move Contents Out, the feed's folder moves with the rest.",
      "before": "İçeriği Dışarı Taşı ile beslemenin klasörü de diğerleriyle birlikte taşınır.",
      "after": "“İçeriği Dışarı Taşı” ile beslemenin klasörü de diğerleriyle birlikte taşınır.",
@@ -1015,6 +1139,7 @@
     },
     {
      "key": "With Move Contents Out, their folders move with the rest.",
+     "id": "folderRemoval.feedsChoiceSentences.contents",
      "english": "With Move Contents Out, their folders move with the rest.",
      "before": "İçeriği Dışarı Taşı ile beslemelerin klasörleri de diğerleriyle birlikte taşınır.",
      "after": "“İçeriği Dışarı Taşı” ile beslemelerin klasörleri de diğerleriyle birlikte taşınır.",
@@ -1022,6 +1147,7 @@
     },
     {
      "key": "With Move Contents Out, they stay in the library and only the folder is deleted.",
+     "id": "folderRemoval.choiceMessage.contents",
      "english": "With Move Contents Out, they stay in the library and only the folder is deleted.",
      "before": "İçeriği Dışarı Taşı ile bunlar kitaplıkta kalır ve yalnızca klasör silinir.",
      "after": "“İçeriği Dışarı Taşı” ile bunlar kitaplıkta kalır ve yalnızca klasör silinir.",
@@ -1029,6 +1155,7 @@
     },
     {
      "key": "more than %lld",
+     "id": "librarySearch.total",
      "english": {
       "one": "more than %lld",
       "other": "more than %lld"
@@ -1045,6 +1172,7 @@
     },
     {
      "key": "so TextMouth can't tell whether the two copies are one library, and compared nothing.",
+     "id": "libraryComparison.identityMarker.compared",
      "english": "so TextMouth can't tell whether the two copies are one library, and compared nothing.",
      "before": "bu yüzden TextMouth iki kopyanın tek bir kitaplık olup olmadığını söyleyemedi ve hiçbir şeyi karşılaştırmadı.",
      "after": "bu yüzden TextMouth iki kopyanın tek bir kitaplık olup olmadığını anlayamadı ve hiçbir şeyi karşılaştırmadı.",
@@ -1052,6 +1180,7 @@
     },
     {
      "key": "subscribed",
+     "id": "libraryViewEditor.phrase.subscribed.active",
      "english": "subscribed",
      "before": "abone",
      "after": "abone olunan",
@@ -1059,6 +1188,7 @@
     },
     {
      "key": "the identity marker of %@",
+     "id": "libraryComparison.shortReason.identityMarker",
      "english": "the identity marker of %@",
      "before": "%@ kimlik işareti",
      "after": "%@ içindeki kimlik işareti",
@@ -1066,6 +1196,7 @@
     },
     {
      "key": "the library index of %@",
+     "id": "libraryComparison.shortReason.libraryIndex",
      "english": "the library index of %@",
      "before": "%@ kitaplık dizini",
      "after": "%@ içindeki kitaplık dizini",
@@ -1073,6 +1204,7 @@
     },
     {
      "key": "unsubscribed",
+     "id": "libraryViewEditor.phrase.subscribed.unsubscribed",
      "english": "unsubscribed",
      "before": "abone değil",
      "after": "abone olunmayan",
@@ -1091,6 +1223,7 @@
    "fixes": [
     {
      "key": "%@ not recording",
+     "id": "recording.levelAnnouncement.idle",
      "english": "%@ not recording",
      "before": "%@ kayıt yapılmıyor",
      "after": "%@, kayıt yapılmıyor",
@@ -1098,6 +1231,7 @@
     },
     {
      "key": "%@ plays sections that are stretches of its tracks, so its tracks can't be edited yet.",
+     "id": "audioEditor.sectionsNotEditable",
      "english": "%@ plays sections that are stretches of its tracks, so its tracks can't be edited yet.",
      "before": "%@ kısımları parçalarının belirli aralıklarını oynatıyor, bu yüzden parçaları henüz düzenlenemez.",
      "after": "%@ kitabının kısımları ses parçalarının belirli aralıklarıdır, bu yüzden parçaları henüz düzenlenemez.",
@@ -1105,6 +1239,7 @@
     },
     {
      "key": "%@ use plain http, so others can read or change what they send; TextMouth still loads it.",
+     "id": "opmlImportSummary.sentence.they",
      "english": "%@ use plain http, so others can read or change what they send; TextMouth still loads it.",
      "before": "%@ düz http kullanıyor, bu yüzden başkaları gönderdiklerini okuyabilir veya değiştirebilir; TextMouth yine de yükler.",
      "after": "%@ şifrelenmemiş http kullanıyor, bu yüzden gönderdikleri veriler başkalarınca okunabilir veya değiştirilebilir; TextMouth yine de bunları yükler.",
@@ -1112,6 +1247,7 @@
     },
     {
      "key": "%@ uses plain http, so others can read or change what it sends; TextMouth still loads it.",
+     "id": "opmlImportSummary.sentence.sends",
      "english": "%@ uses plain http, so others can read or change what it sends; TextMouth still loads it.",
      "before": "%@ düz http kullanıyor, bu yüzden başkaları gönderdiklerini okuyabilir veya değiştirebilir; TextMouth yine de yükler.",
      "after": "%@ şifrelenmemiş http kullanıyor, bu yüzden gönderdiği veriler başkalarınca okunabilir veya değiştirilebilir; TextMouth yine de yükler.",
@@ -1119,6 +1255,7 @@
     },
     {
      "key": "%lld edits are undone. Redo brings them back until you make another edit.",
+     "id": "audioEditor.revertExplanation.another",
      "english": {
       "one": "%lld edit is undone. Redo brings them back until you make another edit.",
       "other": "%lld edits are undone. Redo brings them back until you make another edit."
@@ -1135,6 +1272,7 @@
     },
     {
      "key": "%lld edits, all saved",
+     "id": "audioEditor.edits.allSaved",
      "english": {
       "one": "%lld edit, all saved",
       "other": "%lld edits, all saved"
@@ -1151,6 +1289,7 @@
     },
     {
      "key": "%lld edits, not all saved",
+     "id": "audioEditor.edits.notAll",
      "english": {
       "one": "%lld edit, not all saved",
       "other": "%lld edits, not all saved"
@@ -1167,6 +1306,7 @@
     },
     {
      "key": "%lld other files",
+     "id": "importProgress.kindsHeld.other",
      "english": {
       "one": "%lld other file",
       "other": "%lld other files"
@@ -1183,6 +1323,7 @@
     },
     {
      "key": "%lld skipped as duplicates",
+     "id": "importProgress.finished.duplicates",
      "english": {
       "one": "%lld skipped as a duplicate",
       "other": "%lld skipped as duplicates"
@@ -1199,6 +1340,7 @@
     },
     {
      "key": "%lld timed passages were too long and cut short.",
+     "id": "transcription.attached.short",
      "english": {
       "one": "%lld timed passage was too long and cut short.",
       "other": "%lld timed passages were too long and cut short."
@@ -1215,6 +1357,7 @@
     },
     {
      "key": "%lld timed passages were unreadable and left out.",
+     "id": "transcription.attached.unreadable",
      "english": {
       "one": "%lld timed passage was unreadable and left out.",
       "other": "%lld timed passages were unreadable and left out."
@@ -1231,6 +1374,7 @@
     },
     {
      "key": "%lld unplayed",
+     "id": "feed.countsPhrase.unplayed",
      "english": {
       "one": "%lld unplayed",
       "other": "%lld unplayed"
@@ -1247,6 +1391,7 @@
     },
     {
      "key": "%lld unread",
+     "id": "feed.countsPhrase.unread",
      "english": {
       "one": "%lld unread",
       "other": "%lld unread"
@@ -1263,6 +1408,7 @@
     },
     {
      "key": "%lld%% of %@",
+     "id": "feedDownloadProgress.transfer.count",
      "english": {
       "one": "%lld%% of %@",
       "other": "%lld%% of %@"
@@ -1279,6 +1425,7 @@
     },
     {
      "key": "Audio that TextMouth converts at import keeps only the converted file.",
+     "id": "convertedOriginal.notKeepingCaption",
      "english": "Audio that TextMouth converts at import keeps only the converted file.",
      "before": "TextMouth'un içe aktarırken dönüştürdüğü ses yalnızca dönüştürülen dosyayı saklar.",
      "after": "TextMouth'un içe aktarırken dönüştürdüğü seslerin yalnızca dönüştürülmüş dosyası saklanır.",
@@ -1286,6 +1433,7 @@
     },
     {
      "key": "Choose an OPML file of subscriptions, as another feed reader exports them.",
+     "id": "feed.importPanelMessage",
      "english": "Choose an OPML file of subscriptions, as another feed reader exports them.",
      "before": "Başka bir besleme okuyucusunun dışa aktardığı gibi, abonelikleri içeren bir OPML dosyası seçin.",
      "after": "Başka bir besleme okuyucusunun dışa aktardığı türden, abonelikleri içeren bir OPML dosyası seçin.",
@@ -1293,6 +1441,7 @@
     },
     {
      "key": "Choosing another folder lists the feed's episodes and articles there instead, those already downloaded too.",
+     "id": "feed.folderInfoHelp",
      "english": "Choosing another folder lists the feed's episodes and articles there instead, those already downloaded too.",
      "before": "Başka bir klasör seçmek, beslemenin podcast bölümlerini ve makalelerini, zaten indirilenler dahil, onun yerine orada listeler.",
      "after": "Başka bir klasör seçerseniz beslemenin podcast bölümleri ve makaleleri, önceden indirilenler de dahil, artık orada listelenir.",
@@ -1300,6 +1449,7 @@
     },
     {
      "key": "Cleaned up on %@, with rules version %@: %@.",
+     "id": "transcriptCleanup.alreadyCleanedUp.version",
      "english": "Cleaned up on %1$@, with rules version %2$@: %3$@.",
      "before": "%1$@ tarihinde, %2$@ sürüm kurallarıyla temizlendi: %3$@.",
      "after": "%1$@ tarihinde, kural sürümü %2$@ ile temizlendi: %3$@.",
@@ -1307,6 +1457,7 @@
     },
     {
      "key": "Deleted “%@” from its feed; its book stays in your library.",
+     "id": "feed.itemDeleted.library",
      "english": "Deleted “%@” from its feed; its book stays in your library.",
      "before": "“%@” beslemesinden silindi; kitabı kitaplığınızda duruyor.",
      "after": "“%@” kendi beslemesinden silindi; kitabı kitaplığınızda kalıyor.",
@@ -1314,6 +1465,7 @@
     },
     {
      "key": "Every article listed, downloads by hand",
+     "id": "feed.itemPolicyTitle.byHandArticle",
      "english": "Every article listed, downloads by hand",
      "before": "Her makale listelenir, indirmeler elle",
      "after": "Her makale listelenir, elle indirilir",
@@ -1321,6 +1473,7 @@
     },
     {
      "key": "Every episode listed, downloads by hand",
+     "id": "feed.itemPolicyTitle.byHandEpisode",
      "english": "Every episode listed, downloads by hand",
      "before": "Her podcast bölümü listelenir, indirmeler elle",
      "after": "Her podcast bölümü listelenir, elle indirilir",
@@ -1328,6 +1481,7 @@
     },
     {
      "key": "Every item listed, downloads by hand",
+     "id": "feed.itemPolicyTitle.byHandItem",
      "english": "Every item listed, downloads by hand",
      "before": "Her öğe listelenir, indirmeler elle",
      "after": "Her öğe listelenir, elle indirilir",
@@ -1335,6 +1489,7 @@
     },
     {
      "key": "Feeds refresh only at launch, if that is on, and when you choose %@ or %@",
+     "id": "feedThreshold.refreshInterval.choose",
      "english": "Feeds refresh only at launch, if that is on, and when you choose %1$@ or %2$@",
      "before": "Beslemeler yalnızca açılışta, o açıksa, ve şunlardan birini seçtiğinizde yenilenir: %1$@, %2$@.",
      "after": "Beslemeler yalnızca açılışta (bu ayar açıksa) ve şunlardan birini seçtiğinizde yenilenir: %1$@ veya %2$@.",
@@ -1342,6 +1497,7 @@
     },
     {
      "key": "Getting ready to record",
+     "id": "audioEditor.punchInStartingStatus",
      "english": "Getting ready to record",
      "before": "Kayda hazırlanılıyor",
      "after": "Kayda hazırlanıyor",
@@ -1349,6 +1505,7 @@
     },
     {
      "key": "It belongs to its feed while it is downloaded. %@ removes its file and keeps its place and bookmarks.",
+     "id": "feedItemPackageError.staysInItsFeed",
      "english": "It belongs to its feed while it is downloaded. %@ removes its file and keeps its place and bookmarks.",
      "before": "İndirilmiş olduğu sürece beslemesine aittir. Şu komut dosyasını kaldırır ama yerini ve yer imlerini saklar: %@.",
      "after": "İndirilmiş olduğu sürece beslemesine aittir. %@ komutu, dosyasını kaldırır ama yerini ve yer imlerini saklar.",
@@ -1356,6 +1513,7 @@
     },
     {
      "key": "It skipped %lld entries: %@.",
+     "id": "playlistImport.skippedSentence",
      "english": {
       "one": "It skipped %lld entry: %@.",
       "other": "It skipped %lld entries: %@."
@@ -1372,6 +1530,7 @@
     },
     {
      "key": "Its folder “%@” goes too when nothing else is in it.",
+     "id": "feed.folderGoesToo",
      "english": "Its folder “%@” goes too when nothing else is in it.",
      "before": "Klasörü “%@” de, içinde başka bir şey yoksa silinir.",
      "after": "“%@” klasörü de, içinde başka bir şey yoksa silinir.",
@@ -1379,6 +1538,7 @@
     },
     {
      "key": "Its folder “%@” is empty, but could not be deleted.",
+     "id": "feed.deletedFeed.notDeleted",
      "english": "Its folder “%@” is empty, but could not be deleted.",
      "before": "Klasörü “%@” boş, ama silinemedi.",
      "after": "“%@” klasörü boş, ama silinemedi.",
@@ -1386,6 +1546,7 @@
     },
     {
      "key": "Its folder “%@” is gone too.",
+     "id": "feed.deletedFeed.folderGone",
      "english": "Its folder “%@” is gone too.",
      "before": "Klasörü “%@” de silindi.",
      "after": "“%@” klasörü de silindi.",
@@ -1393,6 +1554,7 @@
     },
     {
      "key": "Its folder “%@” stays, as something else is in it.",
+     "id": "feed.deletedFeed.stays",
      "english": "Its folder “%@” stays, as something else is in it.",
      "before": "Klasörü “%@” içinde başka şeyler olduğu için kalıyor.",
      "after": "“%@” klasörü, içinde başka şeyler olduğu için kalıyor.",
@@ -1400,6 +1562,7 @@
     },
     {
      "key": "Keep for a number of days",
+     "id": "audioEditingSettings.choiceTitle.deleteAfterDays",
      "english": "Keep for a number of days",
      "before": "Birkaç gün sakla",
      "after": "Belirli sayıda gün sakla",
@@ -1407,6 +1570,7 @@
     },
     {
      "key": "Lists every article; nothing downloads by itself, and a download stays until you delete it or its days after playing pass.",
+     "id": "feed.everyListedDownloadsByHand.article",
      "english": "Lists every article; nothing downloads by itself, and a download stays until you delete it or its days after playing pass.",
      "before": "Her makaleyi listeler; hiçbir şey kendiliğinden inmez ve bir indirme, siz silene veya oynatıldıktan sonraki günleri geçene kadar kalır.",
      "after": "Her makaleyi listeler; hiçbir şey kendiliğinden indirilmez ve bir indirme, siz silene veya oynatıldıktan sonraki gün sayısı dolana kadar kalır.",
@@ -1414,6 +1578,7 @@
     },
     {
      "key": "Lists every episode and article; nothing downloads by itself, and a download stays until you delete it or its days after playing pass.",
+     "id": "feed.everyListedDownloadsByHand.episodeArticle",
      "english": "Lists every episode and article; nothing downloads by itself, and a download stays until you delete it or its days after playing pass.",
      "before": "Her podcast bölümünü ve makaleyi listeler; hiçbir şey kendiliğinden inmez ve bir indirme, siz silene veya oynatıldıktan sonraki günleri geçene kadar kalır.",
      "after": "Her podcast bölümünü ve makaleyi listeler; hiçbir şey kendiliğinden indirilmez ve bir indirme, siz silene veya oynatıldıktan sonraki gün sayısı dolana kadar kalır.",
@@ -1421,6 +1586,7 @@
     },
     {
      "key": "Lists every episode; nothing downloads by itself, and a download stays until you delete it or its days after playing pass.",
+     "id": "feed.everyListedDownloadsByHand.episodeDownload",
      "english": "Lists every episode; nothing downloads by itself, and a download stays until you delete it or its days after playing pass.",
      "before": "Her podcast bölümünü listeler; hiçbir şey kendiliğinden inmez ve bir indirme, siz silene veya oynatıldıktan sonraki günleri geçene kadar kalır.",
      "after": "Her podcast bölümünü listeler; hiçbir şey kendiliğinden indirilmez ve bir indirme, siz silene veya oynatıldıktan sonraki gün sayısı dolana kadar kalır.",
@@ -1428,6 +1594,7 @@
     },
     {
      "key": "Move “%@” to Library",
+     "id": "feed.moveToLibraryHeading.named",
      "english": "Move “%@” to Library",
      "before": "“%@” Kitaplığa Taşı",
      "after": "Kitaplığa Taşı: “%@”",
@@ -1435,6 +1602,7 @@
     },
     {
      "key": "Moved %lld articles into %@. They're library books now, and their feeds list them %@.",
+     "id": "feed.movedToLibrary.articles",
      "english": {
       "one": "Moved %lld article into %@. It's a library book now, and its feed lists it %@.",
       "other": "Moved %lld articles into %@. They're library books now, and their feeds list them %@."
@@ -1451,6 +1619,7 @@
     },
     {
      "key": "Moved %lld episodes into %@. They're library books now, and their feeds list them %@.",
+     "id": "feed.movedToLibrary.episodes",
      "english": {
       "one": "Moved %lld episode into %@. It's a library book now, and its feed lists it %@.",
       "other": "Moved %lld episodes into %@. They're library books now, and their feeds list them %@."
@@ -1467,6 +1636,7 @@
     },
     {
      "key": "Moved %lld items into %@. They're library books now, and their feeds list them %@.",
+     "id": "feed.movedToLibrary.items",
      "english": {
       "one": "Moved %lld item into %@. It's a library book now, and its feed lists it %@.",
       "other": "Moved %lld items into %@. They're library books now, and their feeds list them %@."
@@ -1483,6 +1653,7 @@
     },
     {
      "key": "Moves these %lld articles into a library folder as books you can edit; they leave their feeds",
+     "id": "feed.moveToLibraryHint.articles",
      "english": {
       "one": "Moves this %lld article into a library folder as a book you can edit; it leaves the feed",
       "other": "Moves these %lld articles into a library folder as books you can edit; they leave their feeds"
@@ -1499,6 +1670,7 @@
     },
     {
      "key": "Moves these %lld episodes into a library folder as books you can edit; they leave their feeds",
+     "id": "feed.moveToLibraryHint.episodes",
      "english": {
       "one": "Moves this %lld episode into a library folder as a book you can edit; it leaves the feed",
       "other": "Moves these %lld episodes into a library folder as books you can edit; they leave their feeds"
@@ -1515,6 +1687,7 @@
     },
     {
      "key": "Moves these %lld items into a library folder as books you can edit; they leave their feeds",
+     "id": "feed.moveToLibraryHint.items",
      "english": {
       "one": "Moves this %lld item into a library folder as a book you can edit; it leaves the feed",
       "other": "Moves these %lld items into a library folder as books you can edit; they leave their feeds"
@@ -1531,6 +1704,7 @@
     },
     {
      "key": "Not checked since %@",
+     "id": "feed.notCheckedSince",
      "english": "Not checked since %@",
      "before": "şu zamandan beri denetlenmedi: %@",
      "after": "%@ tarihinden beri denetlenmedi",
@@ -1538,6 +1712,7 @@
     },
     {
      "key": "Not in the book's audio yet. Discard undoes them; next time you edit this book, Redo brings them back until you make another edit.",
+     "id": "audioEditor.closeExplanation",
      "english": "Not in the book's audio yet. Discard undoes them; next time you edit this book, Redo brings them back until you make another edit.",
      "before": "Henüz kitabın sesinde değil. At bunları geri alır; bu kitabı bir sonraki düzenlediğinizde, başka bir düzenleme yapana kadar Yinele bunları geri getirir.",
      "after": "Henüz kitabın sesinde değil. At düğmesi bunları geri alır; bu kitabı bir sonraki düzenlediğinizde, başka bir düzenleme yapana kadar Yinele bunları geri getirir.",
@@ -1545,6 +1720,7 @@
     },
     {
      "key": "Part of %@ could not be decoded and is kept as silence.",
+     "id": "ffmpegImport.partlyDecodedNotice.silence",
      "english": "Part of %@ could not be decoded and is kept as silence.",
      "before": "%@ dosyasının bir bölümü çözülemedi ve sessizlik olarak saklanıyor.",
      "after": "%@ dosyasının bir kısmı çözülemedi ve sessizlik olarak saklanıyor.",
@@ -1552,6 +1728,7 @@
     },
     {
      "key": "Part of %lld files, %@, could not be decoded and is kept as silence.",
+     "id": "ffmpegImport.partlyDecodedNotice.files",
      "english": {
       "one": "Part of %lld file, %@, could not be decoded and is kept as silence.",
       "other": "Part of %lld files, %@, could not be decoded and is kept as silence."
@@ -1568,6 +1745,7 @@
     },
     {
      "key": "Plain http: others can read or change what this feed sends.",
+     "id": "feed.insecureNote",
      "english": "Plain http: others can read or change what this feed sends.",
      "before": "Düz http: başkaları bu beslemenin gönderdiklerini okuyabilir veya değiştirebilir.",
      "after": "Şifrelenmemiş http: başkaları bu beslemenin gönderdiklerini okuyabilir veya değiştirebilir.",
@@ -1575,6 +1753,7 @@
     },
     {
      "key": "Presets from another Mac just arrived and replaced these. Make the change again.",
+     "id": "audioFilterPresetError.fileArrived",
      "english": "Presets from another Mac just arrived and replaced these. Make the change again.",
      "before": "Başka bir Mac'ten hazır ayarlar henüz geldi ve bunların yerini aldı. Değişikliği yeniden yapın.",
      "after": "Başka bir Mac'ten az önce hazır ayarlar geldi ve bunların yerini aldı. Değişikliği yeniden yapın.",
@@ -1582,6 +1761,7 @@
     },
     {
      "key": "Retranscribe %@",
+     "id": "transcription.retranscribeSheetTitle",
      "english": "Retranscribe %@",
      "before": "%@ Yeniden Yazıya Dök",
      "after": "Yeniden Yazıya Dök: %@",
@@ -1589,6 +1769,7 @@
     },
     {
      "key": "Revert to the original audio?",
+     "id": "audioEditor.revertQuestion",
      "english": "Revert to the original audio?",
      "before": "Orijinal ses eski haline döndürülsün mü?",
      "after": "Orijinal sese geri dönülsün mü?",
@@ -1596,6 +1777,7 @@
     },
     {
      "key": "Save the edits to “%@”?",
+     "id": "audioEditor.closeQuestion",
      "english": "Save the edits to “%@”?",
      "before": "“%@” düzenlemeleri kaydedilsin mi?",
      "after": "“%@” için yapılan düzenlemeler kaydedilsin mi?",
@@ -1603,6 +1785,7 @@
     },
     {
      "key": "Subscribed to %@. This feed uses plain http, so others can read or change what it sends; TextMouth still loads it.",
+     "id": "feed.insecureMessage",
      "english": "Subscribed to %@. This feed uses plain http, so others can read or change what it sends; TextMouth still loads it.",
      "before": "Abone olundu: %@. Bu besleme düz http kullanıyor, bu yüzden başkaları gönderdiklerini okuyabilir veya değiştirebilir; TextMouth yine de yükler.",
      "after": "Abone olundu: %@. Bu besleme şifrelenmemiş http kullanıyor, bu yüzden gönderdiği veriler başkalarınca okunabilir veya değiştirilebilir; TextMouth yine de yükler.",
@@ -1610,6 +1793,7 @@
     },
     {
      "key": "TextMouth is quitting and the book's audio doesn't hold these edits yet. Discard undoes them; next time you edit this book, Redo brings them back until you make another edit. Cancel keeps TextMouth open.",
+     "id": "audioEditor.quitExplanation",
      "english": "TextMouth is quitting and the book's audio doesn't hold these edits yet. Discard undoes them; next time you edit this book, Redo brings them back until you make another edit. Cancel keeps TextMouth open.",
      "before": "TextMouth kapanıyor ve kitabın sesinde bu düzenlemeler henüz yok. At bunları geri alır; bu kitabı bir sonraki düzenlediğinizde, başka bir düzenleme yapana kadar Yinele bunları geri getirir. Vazgeç, TextMouth'u açık tutar.",
      "after": "TextMouth kapanıyor ve kitabın sesinde bu düzenlemeler henüz yok. At düğmesi bunları geri alır; bu kitabı bir sonraki düzenlediğinizde, başka bir düzenleme yapana kadar Yinele bunları geri getirir. Vazgeç düğmesi TextMouth'u açık tutar.",
@@ -1617,6 +1801,7 @@
     },
     {
      "key": "TextMouth keeps the original file of audio it converts at import. An original takes about as much disk space as its converted file, or twice as much when uncompressed. Export offers it as the Original file. A feed episode's original is not kept: it can be downloaded again.",
+     "id": "convertedOriginal.keepingCaption",
      "english": "TextMouth keeps the original file of audio it converts at import. An original takes about as much disk space as its converted file, or twice as much when uncompressed. Export offers it as the Original file. A feed episode's original is not kept: it can be downloaded again.",
      "before": "TextMouth, içe aktarırken dönüştürdüğü sesin orijinal dosyasını saklar. Orijinal dosya, dönüştürülmüş dosyası kadar disk alanı kaplar; sıkıştırılmamışsa iki katı kadar. Dışa aktarma bunu Orijinal dosya olarak sunar. Bir besleme podcast bölümünün orijinali saklanmaz: yeniden indirilebilir.",
      "after": "TextMouth, içe aktarırken dönüştürdüğü sesin orijinal dosyasını saklar. Bir orijinal dosya, dönüştürülmüş dosyasıyla yaklaşık aynı disk alanını kaplar; sıkıştırılmamışsa iki katı kadar. Dışa aktarma bunu Orijinal dosya olarak sunar. Beslemedeki bir podcast bölümünün orijinali saklanmaz: yeniden indirilebilir.",
@@ -1624,6 +1809,7 @@
     },
     {
      "key": "TextMouth makes a folder named after the feed in %@, and its episodes and articles download into it.",
+     "id": "feed.folderHelp",
      "english": "TextMouth makes a folder named after the feed in %@, and its episodes and articles download into it.",
      "before": "TextMouth şu konumda beslemenin adını taşıyan bir klasör oluşturur: %@. Podcast bölümleri ve makaleler bu klasöre iner.",
      "after": "TextMouth şu konumda beslemenin adını taşıyan bir klasör oluşturur: %@. Podcast bölümleri ve makaleler bu klasöre indirilir.",
@@ -1631,6 +1817,7 @@
     },
     {
      "key": "TextMouth moved %lld new copies of duplicate books to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back.",
+     "id": "duplicateCopy.unansweredTrashed.other",
      "english": {
       "one": "TextMouth moved %lld new copy of duplicate books to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back.",
       "other": "TextMouth moved %lld new copies of duplicate books to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back."
@@ -1647,6 +1834,7 @@
     },
     {
      "key": "TextMouth skipped %lld entries of “%@”: %@.",
+     "id": "playlistImport.skippedEntries",
      "english": {
       "one": "TextMouth skipped %lld entry of “%@”: %@.",
       "other": "TextMouth skipped %lld entries of “%@”: %@."
@@ -1663,6 +1851,7 @@
     },
     {
      "key": "That file isn't an OPML list of subscriptions.",
+     "id": "opmlReadError.message.notOPML",
      "english": "That file isn't an OPML list of subscriptions.",
      "before": "Bu dosya, aboneliklerin OPML listesi değil.",
      "after": "Bu dosya bir OPML abonelik listesi değil.",
@@ -1670,6 +1859,7 @@
     },
     {
      "key": "That item isn't a plain file TextMouth can read.",
+     "id": "transcription.attachNotAFile",
      "english": "That item isn't a plain file TextMouth can read.",
      "before": "Bu öğe, TextMouth'un okuyabileceği düz bir dosya değil.",
      "after": "Bu öğe, TextMouth'un okuyabileceği normal bir dosya değil.",
@@ -1677,6 +1867,7 @@
     },
     {
      "key": "The archive also holds %lld other books that were not imported; unzip it to import them.",
+     "id": "daisyArchive.originalKept.import",
      "english": {
       "one": "The archive also holds %lld other book that was not imported; unzip it to import it.",
       "other": "The archive also holds %lld other books that were not imported; unzip it to import them."
@@ -1693,6 +1884,7 @@
     },
     {
      "key": "The disk is too full to keep this audio for pasting.",
+     "id": "audioEditor.diskTooFullToKeepClip",
      "english": "The disk is too full to keep this audio for pasting.",
      "before": "Disk bu sesi Yapıştır için saklayamayacak kadar dolu.",
      "after": "Disk bu sesi yapıştırmak için saklayamayacak kadar dolu.",
@@ -1700,6 +1892,7 @@
     },
     {
      "key": "The headings from %@ run past the end of the audio, so the tracks were imported without them.",
+     "id": "cueSheet.headingsDidNotFit",
      "english": "The headings from %@ run past the end of the audio, so the tracks were imported without them.",
      "before": "Başlıkları sesin sonunu aştığı için parçalar bunlarsız içe aktarıldı: %@.",
      "after": "%@ içindeki başlıklar sesin sonunu aştığı için parçalar başlıksız içe aktarıldı.",
@@ -1707,6 +1900,7 @@
     },
     {
      "key": "The list follows a change of %@ at once; what downloads or goes waits until the change has stayed for ten seconds, and VoiceOver announces it then.",
+     "id": "feed.itemPolicyQuietNote",
      "english": "The list follows a change of %@ at once; what downloads or goes waits until the change has stayed for ten seconds, and VoiceOver announces it then.",
      "before": "Liste, şu ayardaki değişikliği hemen izler: %@. Neyin indirileceği ya da gideceği, değişiklik on saniye durana kadar bekler ve VoiceOver o zaman duyurur.",
      "after": "Liste, %@ ayarındaki bir değişikliği hemen izler; indirilecekler ve kaldırılacaklar ise değişiklik on saniye boyunca aynı kalana kadar bekler ve VoiceOver bunları o zaman duyurur.",
@@ -1714,6 +1908,7 @@
     },
     {
      "key": "The original file was kept: it is a folder, and an import never deletes a folder.",
+     "id": "importedBook.originalKeptNotice",
      "english": "The original file was kept: it is a folder, and an import never deletes a folder.",
      "before": "Orijinal dosya saklandı: bir klasör ve içe aktarma hiçbir zaman klasör silmez.",
      "after": "Orijinal dosya saklandı: bu bir klasör ve içe aktarma hiçbir zaman klasör silmez.",
@@ -1721,6 +1916,7 @@
     },
     {
      "key": "This Feed Uses Plain http",
+     "id": "feed.insecureTitle",
      "english": "This Feed Uses Plain http",
      "before": "Bu Besleme Düz http Kullanıyor",
      "after": "Bu Besleme Şifrelenmemiş http Kullanıyor",
@@ -1728,6 +1924,7 @@
     },
     {
      "key": "To download the other %lld again, choose %@ on their rows.",
+     "id": "feedDownloadProgress.comingBack.other",
      "english": {
       "one": "To download the other %lld again, choose %@ on its row.",
       "other": "To download the other %lld again, choose %@ on their rows."
@@ -1744,6 +1941,7 @@
     },
     {
      "key": "Too many timed passages: the limit is %lld.",
+     "id": "timedTextError.tooManyCues",
      "english": {
       "one": "Too many timed passages: the limit is %lld.",
       "other": "Too many timed passages: the limit is %lld."
@@ -1760,6 +1958,7 @@
     },
     {
      "key": "Transcribe %@",
+     "id": "transcription.sheetTitle",
      "english": "Transcribe %@",
      "before": "%@ Yazıya Dök",
      "after": "Yazıya Dök: %@",
@@ -1767,6 +1966,7 @@
     },
     {
      "key": "Transcribes the book's audio again, replacing its transcript.",
+     "id": "transcription.transcribeAgainHint",
      "english": "Transcribes the book's audio again, replacing its transcript.",
      "before": "Kitabın sesini yeniden yazıya dökerek transkriptinin yerine geçer.",
      "after": "Kitabın sesini yeniden yazıya döker ve transkriptini değiştirir.",
@@ -1774,6 +1974,7 @@
     },
     {
      "key": "Transcribing again replaces it.",
+     "id": "transcription.transcriptFromLaterVersion",
      "english": "Transcribing again replaces it.",
      "before": "Yeniden yazıya dökmek onun yerine geçer.",
      "after": "Yeniden yazıya dökmek onu değiştirir.",
@@ -1781,6 +1982,7 @@
     },
     {
      "key": "Transcribing again replaces this transcript.",
+     "id": "transcription.transcribingAgainReplaces",
      "english": "Transcribing again replaces this transcript.",
      "before": "Yeniden yazıya dökmek bu transkriptin yerine geçer.",
      "after": "Yeniden yazıya dökmek bu transkripti değiştirir.",
@@ -1788,6 +1990,7 @@
     },
     {
      "key": "Transcribing it takes %@.",
+     "id": "transcription.offerMessage.transcribing",
      "english": "Transcribing it takes %@.",
      "before": "Yazıya dökmesi %@ sürer.",
      "after": "Yazıya dökülmesi %@ sürer.",
@@ -1795,6 +1998,7 @@
     },
     {
      "key": "Unsubscribe from %@?",
+     "id": "feed.unsubscribeQuestion",
      "english": "Unsubscribe from %@?",
      "before": "Abonelikten çıkılsın mı: %@?",
      "after": "%@ aboneliğinden çıkılsın mı?",
@@ -1802,6 +2006,7 @@
     },
     {
      "key": "Your copy of the rules is empty. Edit Rules… opens it to add some.",
+     "id": "transcriptCleanup.noRules.user",
      "english": "Your copy of the rules is empty. Edit Rules… opens it to add some.",
      "before": "Kurallarınızın kopyası boş. Kuralları Düzenle… onu eklemeniz için açar.",
      "after": "Kurallarınızın kopyası boş. Kuralları Düzenle… kural eklemeniz için onu açar.",
@@ -1809,6 +2014,7 @@
     },
     {
      "key": "“%@” changed while it was being replaced, so TextMouth left both copies as they are. Choose Replace Existing again.",
+     "id": "duplicateCopy.changedWhileReplacing",
      "english": "“%@” changed while it was being replaced, so TextMouth left both copies as they are. Choose Replace Existing again.",
      "before": "“%@” değiştirilirken değişti, bu yüzden TextMouth iki kopyayı da olduğu gibi bıraktı. Mevcut Olanı Değiştir'i yeniden seçin.",
      "after": "“%@”, yerine konacak yeni kopya hazırlanırken değişti, bu yüzden TextMouth iki kopyayı da olduğu gibi bıraktı. Mevcut Olanı Değiştir'i yeniden seçin.",
@@ -1827,6 +2033,7 @@
    "fixes": [
     {
      "key": "%@ has its default, %@",
+     "id": "shortcutsSettings.defaultsHeldElsewhere",
      "english": "%1$@ has its default, %2$@",
      "before": "%1$@ varsayılan olarak %2$@ tuşunu kullanıyor",
      "after": "Varsayılan kısayolunu %1$@ kullanıyor: %2$@",
@@ -1834,6 +2041,7 @@
     },
     {
      "key": "%@ not recorded for %@: %@",
+     "id": "shortcutsSettings.refused",
      "english": "%1$@ not recorded for %2$@: %3$@",
      "before": "%1$@ %2$@ için kaydedilmedi: %3$@",
      "after": "%1$@, %2$@ için kaydedilmedi: %3$@",
@@ -1841,6 +2049,7 @@
     },
     {
      "key": "%@ works in %@.",
+     "id": "shortcutsSettings.scopeChanged",
      "english": "%1$@ works in %2$@.",
      "before": "%1$@ çalıştığı yer: %2$@.",
      "after": "%1$@ şurada çalışır: %2$@.",
@@ -1848,6 +2057,7 @@
     },
     {
      "key": "%@, %@ quality",
+     "id": "common.valueValueQuality",
      "english": "%1$@, %2$@ quality",
      "before": "%1$@, %2$@ kalite",
      "after": "%1$@, kalite: %2$@",
@@ -1855,6 +2065,7 @@
     },
     {
      "key": "Adds the page, such as Page 12 of 300, to Where Am I?'s summaries, for books of more than one page.",
+     "id": "readerPage.sayInWhereAmIHint",
      "english": "Adds the page, such as Page 12 of 300, to Where Am I?'s summaries, for books of more than one page.",
      "before": "Sayfayı, örneğin Sayfa 12 / 300 gibi, birden çok sayfası olan kitaplar için Neredeyim? özetlerine ekler.",
      "after": "Birden çok sayfası olan kitaplarda, Sayfa 12 / 300 gibi sayfa bilgisini Neredeyim? özetlerine ekler.",
@@ -1862,6 +2073,7 @@
     },
     {
      "key": "At Sign",
+     "id": "keyBinding.localizedKeyWords.sign",
      "english": "At Sign",
      "before": "At İşareti",
      "after": "At işareti",
@@ -1869,6 +2081,7 @@
     },
     {
      "key": "Before page %@",
+     "id": "pagePosition.label.before",
      "english": "Before page %@",
      "before": "%@ sayfasından önce",
      "after": "%@ numaralı sayfadan önce",
@@ -1876,6 +2089,7 @@
     },
     {
      "key": "Changes the number by one, from 2 to 99",
+     "id": "repeatedSymbolsSettingsView.thresholdStepperHint",
      "english": "Changes the number by one, from 2 to 99",
      "before": "Sayıyı birer birer değiştirir, 2 ile 99 arasında.",
      "after": "Sayıyı 2 ile 99 arasında birer birer değiştirir.",
@@ -1883,6 +2097,7 @@
     },
     {
      "key": "Changes the speed in steps of %@ times",
+     "id": "audioSpeed.stepHint",
      "english": "Changes the speed in steps of %@ times",
      "before": "Hızı %@ kat adımlarla değiştirir.",
      "after": "Hızı %@ katlık adımlarla değiştirir.",
@@ -1890,6 +2105,7 @@
     },
     {
      "key": "Choosing makes the shortcut yours; Reset to Default restores where it works by default.",
+     "id": "shortcutsSettings.worksInHint",
      "english": "Choosing makes the shortcut yours; Reset to Default restores where it works by default.",
      "before": "Seçim kısayolu size özel yapar; Varsayılanı Geri Yükle, varsayılan çalışma yerini geri getirir.",
      "after": "Bir seçim yapmak kısayolu size özel kılar; Varsayılanı Geri Yükle, varsayılan çalışma yerini geri getirir.",
@@ -1897,6 +2113,7 @@
     },
     {
      "key": "How the BRF writes each braille cell. Most braille displays and embossers read North American Braille ASCII; those set up for German read Eurobraille. To share with a reader elsewhere, export a PEF.",
+     "id": "brailleExport.fileCodeHint",
      "english": "How the BRF writes each braille cell. Most braille displays and embossers read North American Braille ASCII; those set up for German read Eurobraille. To share with a reader elsewhere, export a PEF.",
      "before": "BRF her braille hücresini nasıl yazar. Çoğu braille ekranı ve kabartma yazıcı Kuzey Amerika Braille ASCII okur; Almanca için ayarlanmış olanlar Eurobraille okur. Başka yerdeki bir okuyucuyla paylaşmak için bir PEF dışa aktarın.",
      "after": "BRF dosyasının her braille hücresini nasıl yazdığı. Çoğu braille ekranı ve kabartma yazıcı Kuzey Amerika Braille ASCII okur; Almanca için ayarlanmış olanlar Eurobraille okur. Başka yerdeki bir okuyucuyla paylaşmak için bir PEF dışa aktarın.",
@@ -1904,6 +2121,7 @@
     },
     {
      "key": "Importing %@ was stopped when TextMouth closed.",
+     "id": "phoneImport.stoppedWhenClosed.importing",
      "english": "Importing %@ was stopped when TextMouth closed.",
      "before": "%@ içe aktarma, TextMouth kapandığında durdu.",
      "after": "%@ için içe aktarma, TextMouth kapandığında durdu.",
@@ -1911,6 +2129,7 @@
     },
     {
      "key": "In Library windows, a letter alone moves to the first book or folder starting with it, so a shortcut that is a letter alone, such as W, works only in other windows.",
+     "id": "shortcutsSettings.letterNavigationNote",
      "english": "In Library windows, a letter alone moves to the first book or folder starting with it, so a shortcut that is a letter alone, such as W, works only in other windows.",
      "before": "Kitaplık pencerelerinde tek başına bir harf, onunla başlayan ilk kitaba ya da klasöre gider; bu yüzden W gibi tek harflik bir kısayol yalnızca diğer pencerelerde çalışır.",
      "after": "Kitaplık pencerelerinde tek başına bir harf, onunla başlayan ilk kitaba ya da klasöre gider; bu yüzden W gibi tek harfli bir kısayol yalnızca diğer pencerelerde çalışır.",
@@ -1918,6 +2137,7 @@
     },
     {
      "key": "It has no headings, so the contents list has %lld entries for its chapters and the places it marks.",
+     "id": "epubPackageBuilder.accessibilitySummary.chapters",
      "english": {
       "one": "It has no headings, so the contents list has %lld entry for its chapters and the places it marks.",
       "other": "It has no headings, so the contents list has %lld entries for its chapters and the places it marks."
@@ -1934,6 +2154,7 @@
     },
     {
      "key": "It has no headings, so the contents list has one entry for the whole book.",
+     "id": "epubPackageBuilder.accessibilitySummary.entry",
      "english": "It has no headings, so the contents list has one entry for the whole book.",
      "before": "Başlığı yok, bu yüzden içindekiler listesinde tüm kitap için tek bir girdi var.",
      "after": "İçinde hiç başlık yok, bu yüzden içindekiler listesinde tüm kitap için tek bir girdi var.",
@@ -1941,6 +2162,7 @@
     },
     {
      "key": "Jumped to page %@, the %@ page labelled %@.",
+     "id": "readerPage.jumped.labelled",
      "english": "Jumped to page %1$@, the %2$@ page labelled %3$@.",
      "before": "%1$@ sayfasına gidildi, %3$@ etiketli %2$@ sayfa.",
      "after": "%1$@ numaralı sayfaya gidildi, %3$@ etiketli %2$@ sayfa.",
@@ -1948,6 +2170,7 @@
     },
     {
      "key": "Jumped to page %@.",
+     "id": "readerPage.jumped.numbered",
      "english": "Jumped to page %@.",
      "before": "%@ sayfasına gidildi.",
      "after": "%@ numaralı sayfaya gidildi.",
@@ -1955,6 +2178,7 @@
     },
     {
      "key": "Left Brace",
+     "id": "keyBinding.localizedKeyWords.leftBrace",
      "english": "Left Brace",
      "before": "Sol Süslü Parantez",
      "after": "Sol süslü parantez",
@@ -1962,6 +2186,7 @@
     },
     {
      "key": "Left Bracket",
+     "id": "keyBinding.localizedKeyWords.leftBracket",
      "english": "Left Bracket",
      "before": "Sol Köşeli Parantez",
      "after": "Sol köşeli parantez",
@@ -1969,6 +2194,7 @@
     },
     {
      "key": "Left Parenthesis",
+     "id": "keyBinding.localizedKeyWords.leftParenthesis",
      "english": "Left Parenthesis",
      "before": "Sol Parantez",
      "after": "Sol parantez",
@@ -1976,6 +2202,7 @@
     },
     {
      "key": "Make Double Press",
+     "id": "shortcutsSettings.makeDoublePress",
      "english": "Make Double Press",
      "before": "Çift Basma Yap",
      "after": "Çift Basmaya Dönüştür",
@@ -1983,6 +2210,7 @@
     },
     {
      "key": "Make Single Press",
+     "id": "shortcutsSettings.makeSinglePress",
      "english": "Make Single Press",
      "before": "Tek Basma Yap",
      "after": "Tek Basmaya Dönüştür",
@@ -1990,6 +2218,7 @@
     },
     {
      "key": "Moves back or forward by bookmark.",
+     "id": "phoneReader.playHint.bookmark",
      "english": "Moves back or forward by bookmark.",
      "before": "Yer imine göre geri veya ileri gider.",
      "after": "Yer imleri arasında geri veya ileri gider.",
@@ -1997,6 +2226,7 @@
     },
     {
      "key": "Moves back or forward by heading.",
+     "id": "phoneReader.playHint.heading",
      "english": "Moves back or forward by heading.",
      "before": "Başlığa göre geri veya ileri gider.",
      "after": "Başlıklar arasında geri veya ileri gider.",
@@ -2004,6 +2234,7 @@
     },
     {
      "key": "Moves back or forward by page.",
+     "id": "phoneReader.playHint.page",
      "english": "Moves back or forward by page.",
      "before": "Sayfaya göre geri veya ileri gider.",
      "after": "Sayfalar arasında geri veya ileri gider.",
@@ -2011,6 +2242,7 @@
     },
     {
      "key": "Moves back or forward by paragraph.",
+     "id": "phoneReader.playHint.paragraph",
      "english": "Moves back or forward by paragraph.",
      "before": "Paragrafa göre geri veya ileri gider.",
      "after": "Paragraflar arasında geri veya ileri gider.",
@@ -2018,6 +2250,7 @@
     },
     {
      "key": "Moves back or forward by sentence.",
+     "id": "phoneReader.playHint.sentence",
      "english": "Moves back or forward by sentence.",
      "before": "Cümleye göre geri veya ileri gider.",
      "after": "Cümleler arasında geri veya ileri gider.",
@@ -2025,6 +2258,7 @@
     },
     {
      "key": "Moves back or forward by subheading.",
+     "id": "phoneReader.playHint.subheading",
      "english": "Moves back or forward by subheading.",
      "before": "Alt başlığa göre geri veya ileri gider.",
      "after": "Alt başlıklar arasında geri veya ileri gider.",
@@ -2032,6 +2266,7 @@
     },
     {
      "key": "Playback stopped because TextMouth's memory grew to %@ GB while the audio played, a fault in the system's audio.",
+     "id": "readerViewModel.memoryRunawayMessage.system",
      "english": "Playback stopped because TextMouth's memory grew to %@ GB while the audio played, a fault in the system's audio.",
      "before": "Oynatma durduruldu: ses çalarken TextMouth'un belleği büyüdü ve %@ GB oldu; bu, sistemin ses sistemindeki bir hatadır.",
      "after": "Oynatma durduruldu: ses çalarken TextMouth'un belleği büyüdü ve %@ GB oldu; bu, sistemin ses altyapısındaki bir hatadır.",
@@ -2039,6 +2274,7 @@
     },
     {
      "key": "Quitting now leaves these changes unsaved:",
+     "id": "unsavedChangesPrompt.quittingLeavesUnsaved",
      "english": "Quitting now leaves these changes unsaved:",
      "before": "Şimdi çıkmak bu değişiklikleri kaydedilmemiş bırakır:",
      "after": "Şimdi çıkarsanız şu değişiklikler kaydedilmemiş kalır:",
@@ -2046,6 +2282,7 @@
     },
     {
      "key": "Refused here: %lld times while this window has been open.",
+     "id": "speechRefusal.refusedHere",
      "english": {
       "one": "Refused here: %lld time while this window has been open.",
       "other": "Refused here: %lld times while this window has been open."
@@ -2062,6 +2299,7 @@
     },
     {
      "key": "Reset %@ to Default",
+     "id": "shortcutsSettings.resetToDefaultLabel",
      "english": "Reset %@ to Default",
      "before": "%@ varsayılanı geri yükle",
      "after": "%@ için varsayılanı geri yükle",
@@ -2069,6 +2307,7 @@
     },
     {
      "key": "Right Brace",
+     "id": "keyBinding.localizedKeyWords.rightBrace",
      "english": "Right Brace",
      "before": "Sağ Süslü Parantez",
      "after": "Sağ süslü parantez",
@@ -2076,6 +2315,7 @@
     },
     {
      "key": "Right Bracket",
+     "id": "keyBinding.localizedKeyWords.rightBracket",
      "english": "Right Bracket",
      "before": "Sağ Köşeli Parantez",
      "after": "Sağ köşeli parantez",
@@ -2083,6 +2323,7 @@
     },
     {
      "key": "Right Parenthesis",
+     "id": "keyBinding.localizedKeyWords.rightParenthesis",
      "english": "Right Parenthesis",
      "before": "Sağ Parantez",
      "after": "Sağ parantez",
@@ -2090,6 +2331,7 @@
     },
     {
      "key": "Shows the page being read, such as Page 12 of 300, beside the percent, for books of more than one page.",
+     "id": "readerPage.showInReaderHint",
      "english": "Shows the page being read, such as Page 12 of 300, beside the percent, for books of more than one page.",
      "before": "Okunan sayfayı, örneğin Sayfa 12 / 300 gibi, yüzdenin yanında gösterir; birden çok sayfası olan kitaplar için.",
      "after": "Birden çok sayfası olan kitaplarda, Sayfa 12 / 300 gibi okunan sayfayı yüzdenin yanında gösterir.",
@@ -2097,6 +2339,7 @@
     },
     {
      "key": "TextMouth hasn't read the latest save yet.",
+     "id": "bookTextEdit.notReadYet",
      "english": "TextMouth hasn't read the latest save yet.",
      "before": "TextMouth en son kaydı henüz okumadı.",
      "after": "TextMouth, son kaydedilen metni henüz okumadı.",
@@ -2104,6 +2347,7 @@
     },
     {
      "key": "The Mac's speech engine refused to speak part of “%@”, even with its brackets made silent.",
+     "id": "speechRenderFailure.refused",
      "english": "The Mac's speech engine refused to speak part of “%@”, even with its brackets made silent.",
      "before": "Mac'in konuşma motoru, ayraçları sessiz yapıldığında bile “%@” bölümünün bir kısmını seslendirmeyi reddetti.",
      "after": "Mac'in konuşma motoru, ayraçları sessize alındığında bile “%@” bölümünün bir kısmını seslendirmeyi reddetti.",
@@ -2111,6 +2355,7 @@
     },
     {
      "key": "The export was stopped before the rest.",
+     "id": "bookExport.finished.before",
      "english": "The export was stopped before the rest.",
      "before": "Dışa aktarma, geri kalanından önce durduruldu.",
      "after": "Dışa aktarma, geri kalanı yazılmadan önce durduruldu.",
@@ -2118,6 +2363,7 @@
     },
     {
      "key": "The heading whose section ends the audio, with its subheadings, or the end of the book.",
+     "id": "speechExport.throughHint",
      "english": "The heading whose section ends the audio, with its subheadings, or the end of the book.",
      "before": "Bölümü sesi bitiren başlık, alt başlıklarıyla birlikte; ya da kitabın sonu.",
      "after": "Kısmı, alt başlıklarıyla birlikte sesi bitiren başlık ya da kitabın sonu.",
@@ -2125,6 +2371,7 @@
     },
     {
      "key": "The part of the book chosen has no words to speak.",
+     "id": "speechExportError.nothingToSpeak",
      "english": "The part of the book chosen has no words to speak.",
      "before": "Kitabın seçilen bölümünde seslendirilecek kelime yok.",
      "after": "Kitabın seçilen aralığında seslendirilecek kelime yok.",
@@ -2132,6 +2379,7 @@
     },
     {
      "key": "There is no page %@ in this book.",
+     "id": "readerPage.noSuchPage.there",
      "english": "There is no page %@ in this book.",
      "before": "Bu kitapta %@ sayfası yok.",
      "after": "Bu kitapta %@ numaralı bir sayfa yok.",
@@ -2139,6 +2387,7 @@
     },
     {
      "key": "This Kindle book has no flowing text, as in a comic or print replica, so TextMouth can't read it.",
+     "id": "kfxError.noFlowingText",
      "english": "This Kindle book has no flowing text, as in a comic or print replica, so TextMouth can't read it.",
      "before": "Bu Kindle kitabında çizgi roman ya da baskı kopyası gibi akan metin yok, bu yüzden TextMouth onu okuyamıyor.",
      "after": "Bu Kindle kitabında, çizgi romanlarda ya da baskı kopyalarında olduğu gibi akan metin yok; bu yüzden TextMouth onu okuyamıyor.",
@@ -2146,6 +2395,7 @@
     },
     {
      "key": "This book has no headings, so all of it is exported.",
+     "id": "speechExport.noHeadings",
      "english": "This book has no headings, so all of it is exported.",
      "before": "Bu kitabın başlığı yok, bu yüzden tamamı dışa aktarılıyor.",
      "after": "Bu kitapta hiç başlık yok, bu yüzden tamamı dışa aktarılıyor.",
@@ -2153,6 +2403,7 @@
     },
     {
      "key": "Voice: %@ (%@), %@, %@ quality",
+     "id": "speechRefusal.voice.quality",
      "english": "Voice: %1$@ (%2$@), %3$@, %4$@ quality",
      "before": "Ses: %1$@ (%2$@), %3$@, %4$@ kalite",
      "after": "Ses: %1$@ (%2$@), %3$@, kalite: %4$@",
@@ -2160,6 +2411,7 @@
     },
     {
      "key": "Writes the title, author, publisher, and date into the library's copy of this book.",
+     "id": "epubMetadataSave.writeBackToggleHint.publisher",
      "english": "Writes the title, author, publisher, and date into the library's copy of this book.",
      "before": "Başlığı, yazarı, yayıncıyı ve tarihi bu kitabın kitaplıktaki kopyasına yazar.",
      "after": "Kitap adını, yazarı, yayıncıyı ve tarihi bu kitabın kitaplıktaki kopyasına yazar.",
@@ -2167,6 +2419,7 @@
     },
     {
      "key": "before page %@",
+     "id": "readerPage.cursorPlace.before",
      "english": "before page %@",
      "before": "%@ sayfasından önce",
      "after": "%@ numaralı sayfadan önce",
@@ -2174,6 +2427,7 @@
     },
     {
      "key": "built %@",
+     "id": "speechRefusal.build.built",
      "english": "built %@",
      "before": "derlenme %@",
      "after": "derlenme tarihi %@",
@@ -2181,6 +2435,7 @@
     },
     {
      "key": "dots %@",
+     "id": "brailleCells.dotsInWords.other",
      "english": "dots %@",
      "before": "noktalar %@",
      "after": "nokta %@",
@@ -2188,6 +2443,7 @@
     },
     {
      "key": "on page %@",
+     "id": "readerPage.cursorPlace.numbered",
      "english": "on page %@",
      "before": "%@ sayfasında",
      "after": "%@ numaralı sayfada",
@@ -2195,6 +2451,7 @@
     },
     {
      "key": "pages %@",
+     "id": "pdfExtractionDiagnostics.pagePhrase.pages",
      "english": "pages %@",
      "before": "sayfalar %@",
      "after": "%@ numaralı sayfalar",
@@ -2202,6 +2459,7 @@
     },
     {
      "key": "stopping %lld speech exports with the chapters they finished kept",
+     "id": "speechExportsUnderWay.quitWork.they",
      "english": {
       "one": "stopping %lld speech export with the chapters it finished kept",
       "other": "stopping %lld speech exports with the chapters they finished kept"

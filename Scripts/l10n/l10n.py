@@ -6,12 +6,12 @@ Run from anywhere inside the repository or one of its worktrees:
     python3 -I -B Scripts/l10n/l10n.py COMMAND [OPTIONS]
 
 Commands (`--help` after each says more):
-  sync     Type-check both apps with the compiler's string extraction on, then merge what it found into the String
-           Catalog (TextMouth/Localization/Localizable.xcstrings) with `xcstringstool sync`, and write
-           build/l10n/locations.json (each key's files and lines, for the translators). It also writes each key's
-           translator's note, the `// Translators: ...` line directly above its literal in the code, into the catalog as
-           the key's comment (TL15: a `comment:` argument would be compiled into the app). Takes the heavy-work lock
-           through Scripts/ios/typecheck.py, twice, about two minutes each.
+  sync     Read the code's `InterfaceText.line("<ID>", "<English>")` calls with the lexer (seconds: no build, no lock)
+           and bring the String Catalog (TextMouth/Localization/Localizable.xcstrings, keyed by ID) into step with them: a
+           new ID gets its English as `en` and its `// Translators: ...` note as the comment, an ID the code no longer
+           has is marked stale, and an ID whose English changed gets the new `en` and every other language
+           `needs_review`. It refuses, writing nothing, what the lint's rules and the pattern forbid (see sync.py). It
+           writes build/l10n/locations.json (each ID's files and lines, for the translators).
   status   Per language: the strings translated, machine translated, new, needing review, stale, and missing, and the
            English bytes.
   size     The English bytes against the budget, and each language's shipped size in each format.
@@ -52,10 +52,10 @@ sys.path.insert(0, str(HERE.parent / "agents"))
 import catalog  # noqa: E402  (imported by path, after sys.path is set)
 import repo_paths  # noqa: E402
 import glossary as glossarylib  # noqa: E402
-import ids as idslib  # noqa: E402
-import interface_calls  # noqa: E402
 import merge  # noqa: E402
+import pack  # noqa: E402
 import reach  # noqa: E402
+import sync as syncing  # noqa: E402
 import translate  # noqa: E402
 
 EXIT_OK = 0        # the command did its work
@@ -69,48 +69,26 @@ ROOT = HERE.parents[1]
 CATALOG_FOLDER = Path("TextMouth/Localization")
 TABLE = "Localizable"
 CONFIG_PATH = HERE / "config.json"
-# The converted files' globs, one per line, beside the configuration. It is a file of its own so that git can merge it by
-# union (`.gitattributes`): each conversion wave adds its lines, and two waves never conflict.
-SYNC_PATHS_FILE = "sync-paths.txt"
-# The type-check that extracts the strings.
-TYPECHECK = HERE.parent / "ios" / "typecheck.py"
-# Both apps must be extracted in one sync: a string only the other app has would be marked stale.
-PLATFORMS = ("macos", "ios")
-PLATFORM_NAMES = {"macos": "Mac", "ios": "iPhone"}
 # The main checkout, which holds the tools' output whichever worktree runs them, and the folder in it they write to
-# (gitignored; the type-check's strings folders are there too), and the file that maps each key to its places.
+# (gitignored), and the file that maps each ID to its places.
 MAIN = repo_paths.main_checkout()
 OUTPUT = MAIN / "build" / "l10n"
 LOCATIONS_FILE = "locations.json"
 # The key of the locations file that holds the stamp of the code it was made from (`{"commit", "treeId"}`), beside the
-# tables (a table is named like a .strings file, never with a leading underscore).
+# table (a table is named like a .strings file, never with a leading underscore).
 EXTRACTED_KEY = "_extracted"
-# What the last sync left out by `syncPaths`, for `status` and `size` to say.
-LEFT_OUT_FILE = "left-out.json"
-# The line `typecheck.py --emit-strings` ends with, naming the folder of the strings it wrote, and the file in that folder
-# that says what the run found (both defined by typecheck.py; repeated here because that script is run, not imported).
-STRINGS_FOLDER_LINE = "Strings folder: "
-STRINGS_MANIFEST = "manifest.json"
-# The folder, inside a strings folder, where `sync` writes the `.stringsdata` files of the converted calls (FR39).
-CONVERTED_FOLDER = "converted"
-# How many of the converted calls' problems a refusal lists.
-CONVERTED_PROBLEMS_SHOWN = 15
+# How many of a refused sync's problems are listed.
+PROBLEMS_SHOWN = 15
 # The configuration's defaults: no language ships until Spanish is translated; the English budget in bytes (the
 # user's 150 KB for the interface text) only reports until the cutting is done.
-# The configuration has no `syncPaths`: the globs of the converted files are in SYNC_PATHS_FILE (see load_sync_paths).
-# The sync keeps only the strings found in them (see path_matcher), so the catalog holds exactly the converted areas and
-# `check`'s comment rule can hold from the first commit. The conversion waves add their globs, ending with "TextMouth/**".
 DEFAULT_CONFIG = {"languages": [], "budgetBytes": 150000, "budgetFails": False}
 # How many problems `check` prints unless --limit says otherwise.
 DEFAULT_LIMIT = 100
-# The longest a key is shown in a line.
+# The longest an ID (or any text) is shown in a line.
 KEY_WIDTH = 60
 # A translator's note in the code (TL15): a line comment that starts with this marker, on the line directly above the line
-# that holds the key's literal. `sync` writes it into the catalog; nothing of it is compiled into the apps, which a
-# `comment:` argument is (Foundation keeps every one as a constant string).
+# that holds the call's English. `sync` writes it into the catalog as the comment; nothing of it is compiled into the apps.
 NOTE_MARKER = "// Translators:"
-# How many of the sentences about unreadable notes a sync prints: a wrong copy of the sources gives one for every key.
-NOTE_PROBLEMS_SHOWN = 20
 
 
 class Refused(Exception):
@@ -141,58 +119,8 @@ def percent(part, whole):
     return f"{round(100 * part / whole)}%" if whole else "0%"
 
 
-def tracked_files(root):
-    """The repository-relative paths of the files under `root` that git tracks or would add (untracked and not ignored),
-    or None when `root` is not a repository (a made-up checkout in a test) or git cannot run."""
-    try:
-        done = subprocess.run(["git", "-C", str(root), "ls-files", "--cached", "--others", "--exclude-standard"],
-                              capture_output=True, text=True, timeout=60)
-    except (OSError, subprocess.SubprocessError):
-        return None
-    return done.stdout.splitlines() if done.returncode == 0 else None
-
-
-def unmatched_globs(globs, files):
-    """The globs that match none of `files` (repository-relative paths), in order. Each glob's matcher is built once, and a
-    glob with no wildcard is a set lookup, so hundreds of one-file globs against thousands of files stay fast."""
-    names = set(files)
-    missing = []
-    for glob in globs:
-        if not any(ch in glob for ch in "*?"):
-            found = glob in names
-        else:
-            matches = path_matcher([glob])
-            found = any(matches(name) for name in files)
-        if not found:
-            missing.append(glob)
-    return missing
-
-
-def load_sync_paths(path, root=None):
-    """The globs in the sync-paths file `path`: one per line, blank lines and whole-line `#` comments skipped, repeats
-    dropped (the first stays), in file order. A missing file is no globs. When `root` is a repository, a ValueError names
-    each glob that matches none of its files, since a typo would otherwise leave a whole area out of the catalog."""
-    try:
-        lines = Path(path).read_text(encoding="utf-8").splitlines()
-    except FileNotFoundError:
-        return []
-    globs = []
-    for line in lines:
-        glob = line.strip()
-        if glob and not glob.startswith("#") and glob not in globs:
-            globs.append(glob)
-    files = tracked_files(root) if root is not None else None
-    if files is not None:
-        nothing = unmatched_globs(globs, files)
-        if nothing:
-            raise ValueError("matches no file: " + ", ".join(nothing))
-    return globs
-
-
-def load_config(path=CONFIG_PATH, root=None):
-    """The configuration (see DEFAULT_CONFIG) read from `path`: its keys over the defaults, checked for type, and the key
-    `syncPaths` read from the sync-paths file beside `path`. `root` (the checkout whose files the globs must match; None
-    skips that check) is given by the commands that sync."""
+def load_config(path=CONFIG_PATH):
+    """The configuration (see DEFAULT_CONFIG) read from `path`: its keys over the defaults, checked for type."""
     config = dict(DEFAULT_CONFIG)
     try:
         config.update(json.loads(Path(path).read_text(encoding="utf-8")))
@@ -200,21 +128,12 @@ def load_config(path=CONFIG_PATH, root=None):
         pass
     except (OSError, ValueError) as error:
         raise Refused(f"cannot read {path}: {error}", EXIT_USAGE)
-    if "syncPaths" in config:
-        # A branch from before the move would otherwise sync with no globs, or with two lists, without a word.
-        raise Refused(f"{path}: syncPaths is no longer kept here; put the globs, one per line, in "
-                      f"{Path(path).parent / SYNC_PATHS_FILE}", EXIT_USAGE)
     if not (isinstance(config["languages"], list) and all(isinstance(code, str) and code for code in config["languages"])):
         raise Refused(f"{path}: languages must be a list of language codes", EXIT_USAGE)
     if not (isinstance(config["budgetBytes"], int) and not isinstance(config["budgetBytes"], bool) and config["budgetBytes"] > 0):
         raise Refused(f"{path}: budgetBytes must be a whole number above zero", EXIT_USAGE)
     if not isinstance(config["budgetFails"], bool):
         raise Refused(f"{path}: budgetFails must be true or false", EXIT_USAGE)
-    sync_paths = Path(path).parent / SYNC_PATHS_FILE
-    try:
-        config["syncPaths"] = load_sync_paths(sync_paths, root)
-    except (OSError, ValueError) as error:
-        raise Refused(f"{sync_paths}: {error}", EXIT_USAGE)
     return config
 
 
@@ -261,507 +180,62 @@ def run_xcstringstool(arguments):
         raise Refused(f"xcstringstool cannot be run ({error}); it comes with Xcode", EXIT_USAGE)
 
 
-def run_type_check(platform, tree_arguments, say, runner=None):
-    """Runs `typecheck.py --emit-strings` for `platform` (it takes the heavy-work lock itself, so this never wraps it in
-    run_locked.py) and returns the folder of the strings it wrote. A Refused when it fails or names no folder."""
-    say(f"type-checking the {PLATFORM_NAMES[platform]} app with the string extraction on (about two minutes)")
-    command = [sys.executable, "-I", "-B", str(TYPECHECK), "--platform", platform, "--emit-strings", "--agent", "l10n",
-               "--quiet", *tree_arguments]
-    # typecheck.py takes the repository from the folder it runs in, and the catalog is this checkout's: run it in this
-    # checkout, whatever folder the sync was started from (or another checkout's strings would reach this catalog).
-    done = (runner or subprocess.run)(command, capture_output=True, text=True, cwd=ROOT)
-    last = [line for line in done.stdout.splitlines() if line.startswith(STRINGS_FOLDER_LINE)]
-    if done.returncode != 0 or not last:
-        tail = "\n".join(done.stdout.splitlines()[:12] + done.stderr.splitlines()[-5:])
-        raise Refused(f"the {PLATFORM_NAMES[platform]} type-check did not succeed (exit status {done.returncode}); "
-                      f"its strings would be incomplete, so nothing was synced:\n{tail}")
-    return Path(last[-1][len(STRINGS_FOLDER_LINE):])
-
-
-def read_manifest(folder):
-    """The manifest of a strings folder (see typecheck.py's collect_strings), with its `folder` added."""
-    try:
-        manifest = json.loads((Path(folder) / STRINGS_MANIFEST).read_text(encoding="utf-8"))
-    except (OSError, ValueError) as error:
-        raise Refused(f"cannot read the strings manifest in {folder}: {error}", EXIT_USAGE)
-    manifest["folder"] = Path(folder)
-    return manifest
-
-
-def check_manifests(manifests):
-    """Raises Refused unless `manifests` are one run of each platform over the same tree, each complete. A sync of one
-    platform alone would mark the other app's own strings stale, and two different trees would mix their strings."""
-    platforms = sorted(manifest.get("platform", "?") for manifest in manifests)
-    if platforms != sorted(PLATFORMS):
-        raise Refused(f"a sync needs the strings of both apps, the Mac's and the iPhone's, and got {', '.join(platforms) or 'none'}: "
-                      "a string only the other app has would be marked stale")
-    first, second = manifests
-    for field in ("tree", "treeId"):
-        if not first.get(field) or first.get(field) != second.get(field):
-            raise Refused(f"the two runs are not of the same tree ({field}: {first.get(field)!r} and {second.get(field)!r}); "
-                          "run the sync again so both type-checks read the same files")
-    for manifest in manifests:
-        found, expected = len(manifest["files"]), manifest["swiftFiles"]
-        if found != expected:
-            raise Refused(f"the {PLATFORM_NAMES[manifest['platform']]} run wrote {found} .stringsdata files for {expected} Swift files "
-                          f"({manifest['folder']}): two files of one name, or a build that stopped early; its strings would be incomplete")
-
-
-def add_converted_calls(manifests, root=None):
-    """The transition's half of a sync (FR39): the `InterfaceText.line` calls of each run's sources, written as `.stringsdata`
-    files beside the compiler's, so that `xcstringstool sync` keeps the keys and notes of the files already converted (the
-    compiler no longer sees their keys, and the catalog must not mark them stale).
-
-    Each call is first checked against `ids.json` (read from `root`, this checkout's by default): its ID must be the ID of its
-    key, or of the right split, its English the key character for character, and it must be one plain literal each with a
-    note above. A Refused names the problems and nothing is written; otherwise one file for each source that holds calls is
-    written under the run's strings folder in CONVERTED_FOLDER, and listed in the run's `files`, so that the places and
-    notes are read like the compiler's. Returns how many calls were read (counting a file both apps compile once for each)."""
-    root = Path(root or ROOT)
-    table = idslib.load_table(idslib.table_path(root))
-    retired = idslib.retired_ids(root)
-    total, added = 0, []
-    problems = []
-    for manifest in manifests:
-        source_root = Path(manifest["sourceRoot"])
-        by_file = interface_calls.calls_in_tree(source_root)
-        problems += interface_calls.problems_of(source_root, by_file, table, retired)
-        added.append((manifest, source_root, by_file))
-        total += sum(len(calls) for calls in by_file.values())
-    if problems:
-        shown = sorted(set(problems))
-        raise Refused(f"{number(len(shown))} problems in the InterfaceText.line calls, so nothing was synced:\n"
-                      + "\n".join(shown[:CONVERTED_PROBLEMS_SHOWN])
-                      + (f"\nand {number(len(shown) - CONVERTED_PROBLEMS_SHOWN)} more" if len(shown) > CONVERTED_PROBLEMS_SHOWN else ""))
-    for manifest, source_root, by_file in added:
-        for name, calls in by_file.items():
-            relative = f"{CONVERTED_FOLDER}/{name.replace('/', '__')}.stringsdata"
-            target = Path(manifest["folder"]) / relative
-            target.parent.mkdir(parents=True, exist_ok=True)
-            data = interface_calls.stringsdata(str(source_root / name), calls)
-            target.write_text(json.dumps(data, indent=1, sort_keys=True, ensure_ascii=False) + "\n", encoding="utf-8")
-            manifest["files"].append(relative)
-    return total
-
-
-def read_stringsdata(path):
-    """One .stringsdata file's content, or a Refused that names the file."""
-    try:
-        return json.loads(Path(path).read_text(encoding="utf-8"))
-    except (OSError, ValueError) as error:
-        raise Refused(f"cannot read {path}: {error}", EXIT_USAGE)
-
-
-def glob_regex(glob):
-    """The regular expression of a repository-relative glob: `**` matches anything, slashes included (`**/` also no
-    folder at all, so `TextMouth/**/*.swift` matches `TextMouth/A.swift`), `*` and `?` match within one folder's name."""
-    pieces, index = [], 0
-    while index < len(glob):
-        if glob.startswith("**/", index):
-            pieces.append("(?:.*/)?")
-            index += 3
-        elif glob.startswith("**", index):
-            pieces.append(".*")
-            index += 2
-        elif glob[index] == "*":
-            pieces.append("[^/]*")
-            index += 1
-        elif glob[index] == "?":
-            pieces.append("[^/]")
-            index += 1
-        else:
-            pieces.append(re.escape(glob[index]))
-            index += 1
-    return re.compile("".join(pieces) + r"\Z")
-
-
-def path_matcher(globs):
-    """A function from a repository-relative path to whether any of `globs` matches it; with no globs, none does."""
-    patterns = [glob_regex(glob) for glob in globs]
-    return lambda path: any(pattern.match(path) for pattern in patterns)
-
-
-def relative_source(data, root):
-    """The repository-relative path of the source file a .stringsdata file records, under the type-check's copy `root`."""
-    try:
-        return Path(data["source"]).relative_to(root).as_posix()
-    except ValueError:
-        return Path(data["source"]).name
-
-
-def collect(manifests, keep=lambda path: True):
-    """What the runs found in the files whose repository path `keep` accepts: ({table: {key: [{"file": repository path,
-    "line": n}, ...]}} with each key's places sorted and without repeats, {platform: {table: set of keys}}, {table: set of
-    every key the runs found, kept or not}, the .stringsdata paths that were kept)."""
-    places, by_platform, everything, kept_files = {}, {}, {}, []
-    for manifest in manifests:
-        root = Path(manifest["sourceRoot"])
-        found = by_platform.setdefault(manifest["platform"], {})
-        for name in manifest["files"]:
-            data = read_stringsdata(manifest["folder"] / name)
-            relative = relative_source(data, root)
-            for table, entries in data.get("tables", {}).items():
-                everything.setdefault(table, set()).update(entry["key"] for entry in entries)
-            if not keep(relative):
-                continue
-            kept_files.append(manifest["folder"] / name)
-            for table, entries in data.get("tables", {}).items():
-                for entry in entries:
-                    key = entry["key"]
-                    where = {"file": relative, "line": entry.get("location", {}).get("startingLine", 0)}
-                    spots = places.setdefault(table, {}).setdefault(key, [])
-                    if where not in spots:
-                        spots.append(where)
-                    found.setdefault(table, set()).add(key)
-    for keys in places.values():
-        for spots in keys.values():
-            spots.sort(key=lambda spot: (spot["file"], spot["line"]))
-    return places, by_platform, everything, kept_files
-
-
-def note_above(lines, line):
-    """The translator's note on the line directly above the 1-based `line` of a source file (`lines` is its lines), or None:
-    that line, less its indentation, must start with NOTE_MARKER. The note is the text after the marker, stripped; a marker
-    with no text after it gives no note."""
-    if line < 2 or line > len(lines):
-        return None
-    above = lines[line - 2].strip()
-    if not above.startswith(NOTE_MARKER):
-        return None
-    return above[len(NOTE_MARKER):].strip() or None
-
-
-def literal_opens_at(lines, location):
-    """Whether the 1-based `location` ({"startingLine", "startingColumn"}) of a .stringsdata entry is a quote of the source
-    `lines`: the compiler gives the place of the key's string literal, and the column counts UTF-8 bytes. A source that is not
-    the one the compiler read (another run wrote the copy since) fails this, so that a note is never read from the wrong line."""
-    line, column = location.get("startingLine", 0), location.get("startingColumn", 0)
-    if not 1 <= line <= len(lines) or column < 1:
-        return False
-    encoded = lines[line - 1].encode("utf-8")
-    return column <= len(encoded) and encoded[column - 1:column] in (b'"', b"#")
-
-
-def read_source_lines(root, relative):
-    """The lines of the source file `relative` under the type-check's copy `root`, or None when it cannot be read."""
-    try:
-        return (Path(root) / relative).read_text(encoding="utf-8").splitlines()
-    except (OSError, ValueError):
-        return None
-
-
-def collect_notes(manifests, keep=lambda path: True):
-    """The translators' notes the code holds, with what went wrong reading them:
-    ({table: {key: set of notes}}, the sentences about the sources that could not be trusted).
-    A site (an entry of a .stringsdata file) gives its note from the `// Translators:` line above its literal, and also the
-    `comment:` the compiler recorded for it, so a tree that holds both forms (TL15's steps) syncs. Both apps compile the same
-    files, so a site is read once. A source that cannot be read, or that the entry's place does not match, gives a sentence and
-    no note (the catalog's own comment stays)."""
-    notes, problems, seen, line_notes = {}, [], set(), []
-    for manifest in manifests:
-        root = Path(manifest["sourceRoot"])
-        cache = {}
-        for name in manifest["files"]:
-            data = read_stringsdata(manifest["folder"] / name)
-            relative = relative_source(data, root)
-            if not keep(relative):
-                continue
-            for table, entries in data.get("tables", {}).items():
-                for entry in entries:
-                    location = entry.get("location", {})
-                    site = (relative, location.get("startingLine", 0), location.get("startingColumn", 0), table, entry["key"])
-                    if site in seen:
-                        continue
-                    seen.add(site)
-                    found = notes.setdefault(table, {}).setdefault(entry["key"], set())
-                    if entry.get("comment", "").strip():
-                        found.add(entry["comment"].strip())
-                    if relative not in cache:
-                        cache[relative] = read_source_lines(root, relative)
-                    lines = cache[relative]
-                    if lines is None:
-                        problems.append(f"{relative}: the source cannot be read under {root}, so its notes were not read")
-                    elif not literal_opens_at(lines, location):
-                        problems.append(f"{relative} line {location.get('startingLine', 0)}: the source does not match the compiler's "
-                                        f"place for {quote(entry['key'])} (another run wrote the copy?), so its note was not read")
-                    else:
-                        note = note_above(lines, location["startingLine"])
-                        if note:
-                            line_notes.append((relative, location["startingLine"], table, entry["key"], note))
-    # One note belongs to one key: a line that holds the literals of two keys gives its note to neither.
-    keys_on_line = {}
-    for relative, line, table, key, _note in line_notes:
-        keys_on_line.setdefault((relative, line), set()).add((table, key))
-    for relative, line, table, key, note in line_notes:
-        if len(keys_on_line[(relative, line)]) > 1:
-            problems.append(f"{relative} line {line}: the literals of more than one key are on this line, and a note belongs to one "
-                            f"key ({quote(key)} is one): start each key on a line of its own")
-        else:
-            notes[table][key].add(note)
-    return notes, sorted(set(problems))
-
-
-def joined_notes(found):
-    """A key's comment from its sites' notes: the distinct notes in code-point order, one to a line (the order
-    `xcstringstool sync` writes a key that several places give different comments, so that merges agree)."""
-    return "\n".join(sorted(found))
-
-
-def apply_notes(path, notes):
-    """Sets, in the catalog file `path`, the comment of each key of `notes` ({key: set of notes}) that has any note to the
-    notes joined (joined_notes); a key with no note keeps the comment it has. Returns the keys whose comment changed."""
-    cat = catalog.Catalog.load(path)
-    changed = []
-    for key, found in sorted(notes.items()):
-        entry = cat.strings.get(key)
-        if entry is None or not found:
-            continue
-        comment = joined_notes(found)
-        if entry.get("comment") != comment:
-            entry["comment"] = comment
-            changed.append(key)
-    if changed:
-        cat.save(path)
-    return changed
-
-
-class SyncReport:
-    """What a sync did to one catalog: the keys it added, those that became stale, those that are no longer stale, and
-    the English bytes before and after."""
-
-    def __init__(self, before, after):
-        self.added = sorted(set(after.strings) - set(before.strings))
-        self.removed = sorted(set(before.strings) - set(after.strings))
-        was = {key for key, entry in before.strings.items() if before.is_stale(entry)}
-        now = {key for key, entry in after.strings.items() if after.is_stale(entry)}
-        self.stale = sorted(now - was - set(self.added))
-        self.revived = sorted(was - now - set(self.removed))
-        self.bytes_before, self.bytes_after = before.english_bytes(), after.english_bytes()
-
-
-def refuse_misnamed(path, table):
-    """A Refused (status 2) unless the catalog file `path` is named for `table`: xcstringstool reads a catalog's strings from
-    the table its file is named for, and writes nothing, with no word, to a catalog of any other name."""
-    if Path(path).stem != table:
-        raise Refused(f"the catalog {path} is named {Path(path).stem!r} but holds the table {table!r}: xcstringstool "
-                      f"would write nothing to it, so name the file {table}.xcstrings", EXIT_USAGE)
-
-
-def sync_catalog(path, files, table=TABLE):
-    """Merges the strings of `files` (the .stringsdata paths of both apps) into the catalog at `path`, the catalog of
-    `table`, with `xcstringstool sync`, then writes it in the tool's layout; returns a SyncReport. A Refused when the file's
-    name is not the table's (the tool reads only the strings of the table its catalog is named for, and writes nothing, with
-    no word, to a catalog of another name), or when the tool fails."""
-    refuse_misnamed(path, table)
-    before = catalog.Catalog.load(path)
-    arguments = ["sync", str(path)]
-    for file in files:
-        arguments += ["--stringsdata", str(file)]
-    done = run_xcstringstool(arguments)
-    if done.returncode != 0:
-        raise Refused(f"xcstringstool sync failed on {path} (exit status {done.returncode}): {(done.stderr or done.stdout).strip()}")
-    # The tool writes its own layout when it changes a value; this makes sure of it when it changed nothing.
-    catalog.canonicalize(path)
-    return SyncReport(before, catalog.Catalog.load(path))
-
-
-def catalogs_present():
-    """The tables that have a catalog in this checkout's TextMouth/Localization/ (each catalog's file name, less its
-    extension): every one is synced, so that a table whose strings have all left the code is marked stale, not forgotten."""
-    return {path.stem for path in (ROOT / CATALOG_FOLDER).glob("*.xcstrings")}
-
-
 def describe(keys, limit=10):
     """Up to `limit` keys, quoted and joined, with the count of the rest."""
     shown = ", ".join(quote(key) for key in keys[:limit])
     return shown + (f", and {len(keys) - limit} more" if len(keys) > limit else "")
 
 
-def sync_manifests(args, manifests, say, output=None):
-    """The sync itself, from two strings folders' manifests: checks them, merges them into each catalog that has a table in
-    them, writes the locations, and prints what changed. Returns the exit status."""
-    check_manifests(manifests)
-    # The calls of converted files (FR39), checked and written as .stringsdata files, before anything else is written.
-    converted = add_converted_calls(manifests)
-    if converted:
-        say(f"read {number(converted)} InterfaceText.line calls and checked each against ids.json")
-    config = load_config(args.config, ROOT)
-    in_sync_paths = path_matcher(config["syncPaths"])
-    places, by_platform, everything, files = collect(sorted(manifests, key=lambda m: m["platform"]), in_sync_paths)
-    # The translators' notes of the code (TL15): read now, written into each catalog after the tool has synced it.
-    notes, note_problems = collect_notes(sorted(manifests, key=lambda m: m["platform"]), in_sync_paths)
-    # A sync with nothing kept would give xcstringstool no file; an empty one makes it drop every string it can.
-    nothing = manifests[0]["folder"] / "filtered" / "none.stringsdata"
-    nothing.parent.mkdir(parents=True, exist_ok=True)
-    nothing.write_text(json.dumps({"source": "none.swift", "tables": {}, "version": 1}), encoding="utf-8")
-    files = [nothing] + files
-    # A catalog takes the strings of the table it is named for, and no other: report a table nobody made a catalog for.
-    problems = 0
-    # A note that could not be read is a problem (the catalog keeps the comment it has, so nothing is lost, but it may be stale).
-    for sentence in note_problems[:NOTE_PROBLEMS_SHOWN]:
-        say(f"notes: {sentence}")
-    if len(note_problems) > NOTE_PROBLEMS_SHOWN:
-        say(f"notes: and {number(len(note_problems) - NOTE_PROBLEMS_SHOWN)} more (a copy of the sources that is not the one the compiler read gives one for each key)")
-    problems += bool(note_problems)
-    tables = set(places) | {TABLE} | catalogs_present()
-    reports, set_by_notes = {}, {}
-    # Every catalog's name is checked before any is written, so that a refusal leaves them all as they were.
-    for table in sorted(tables):
-        if catalog_path(args, table).exists():
-            refuse_misnamed(catalog_path(args, table), table)
-    for table in sorted(tables):
-        path = catalog_path(args, table)
-        if not path.exists():
-            if table == TABLE:
-                raise Refused(f"the catalog {path} does not exist", EXIT_USAGE)
-            say(f"no catalog for the table {table!r} ({number(len(places[table]))} strings, for example "
-                f"{describe(sorted(places[table]), 3)}): add {CATALOG_FOLDER / (table + '.xcstrings')} or use the main table")
-            problems += 1
-            continue
-        reports[table] = sync_catalog(path, files, table)
-        set_by_notes[table] = apply_notes(path, notes.get(table, {}))
-    found = {table: len(keys) for table, keys in places.items()}
-    left_out = {table: sorted(everything[table] - set(places.get(table, {}))) for table in everything}
-    say_left_out(say, config, found, left_out)
-    per_app = ", ".join(f"{PLATFORM_NAMES[p]} {number(sum(len(k) for k in by_platform[p].values()))}" for p in PLATFORMS)
-    # The files the compiler wrote: all but the placeholder first in the list and the converted calls' own.
-    xcode_files = sum(1 for file in files[1:] if Path(file).parent.name != CONVERTED_FOLDER)
-    say(f"kept {number(sum(found.values()))} strings of {number(xcode_files)} converted files ({per_app}; some are in both)")
-    for table, report in reports.items():
-        say(f"{table}: {number(len(report.added))} added, {number(len(report.stale))} became stale, "
-            f"{number(len(report.revived))} no longer stale, {number(len(report.removed))} removed")
-        say(f"{table}: the English text went from {number(report.bytes_before)} to {number(report.bytes_after)} bytes")
-        say(f"{table}: {number(len(set_by_notes[table]))} comments written from the code's \"{NOTE_MARKER}\" lines")
-        for label, keys in (("added", report.added), ("became stale", report.stale), ("removed", report.removed)):
-            if keys and args.verbose:
-                say(f"  {label}: {describe(keys, len(keys))}")
-            elif keys:
-                say(f"  {label}: {describe(keys)}")
-    destination = output or (OUTPUT / LOCATIONS_FILE)
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    # The stamp (TL12): the commit and sources the lines come from, so that `todo` can tell when it reads them in other code.
-    stamp = {"commit": manifests[0].get("commit"), "treeId": manifests[0].get("treeId")}
-    destination.write_text(json.dumps({EXTRACTED_KEY: stamp, **places}, indent=1, sort_keys=True, ensure_ascii=False) + "\n", encoding="utf-8")
-    say(f"wrote {destination.name}: the files and lines of {number(sum(found.values()))} strings, in {destination.parent}")
-    write_left_out(destination.parent / LEFT_OUT_FILE, config, found, left_out)
-    if reports.get(TABLE) is not None:
-        problems += give_new_keys_ids(catalog_path(args), destination, say)
-    return EXIT_PROBLEMS if problems else EXIT_OK
+def stamp_of(root):
+    """The stamp of the code a locations file is made from: {"commit", "treeId"} of `root`'s HEAD (both None when git cannot
+    say), which `todo` compares with its own checkout's (see locations_note)."""
+    commit, tree = head_ids(root)
+    return {"commit": commit, "treeId": tree}
 
 
-def retire_removed_ids(root, before, keys):
-    """Appends to retired-ids.txt every ID of `before` (an ids.json table) whose key is not among `keys`, a removed split key's
-    split IDs included; each is kept out of every later table (an ID is never given again). The file keeps its header and its
-    order: the new IDs go at the end, one a line, sorted. Returns {ID: its old key}, in that order; nothing is written when none."""
-    gone = {}
-    for key, ident in before["ids"].items():
-        if key not in keys:
-            gone[ident] = key
-    for key, uses in before.get("splits", {}).items():
-        if key not in keys:
-            gone.update({use["id"]: key for use in uses})
-    already = idslib.retired_ids(root)
-    fresh = {ident: key for ident, key in sorted(gone.items()) if ident not in already}
-    if fresh:
-        path = root / idslib.RETIRED_PATH
-        text = path.read_text(encoding="utf-8") if path.is_file() else ""
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(text + ("" if not text or text.endswith("\n") else "\n") + "".join(f"{ident}\n" for ident in fresh),
-                        encoding="utf-8")
-    return fresh
+def write_locations(path, found, root):
+    """Writes the locations file `path`: the stamp of the code under `root`, and each ID's files and lines under the main
+    table's name, in the layout `todo` reads."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    data = {EXTRACTED_KEY: stamp_of(root), TABLE: syncing.locations_of(found)}
+    path.write_text(json.dumps(data, indent=1, sort_keys=True, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
-def give_new_keys_ids(catalog_file, locations, say, root=None):
-    """After a sync (FR39): keeps `ids.json` in step with the catalog, so that the build phase that packs the interface text finds
-    an ID for every key and no ID passes to another string.
-
-    - An ID whose key left the catalog is retired first (see `retire_removed_ids`), with its `splits` entry, and printed with its
-      old key; no later key is given it.
-    - Each key with no ID is given one, by `ids.py`'s rules; every existing ID stays (an ID is permanent). Each is printed with
-      its key, for the developer to commit with the code that holds it.
-    - `ids.json` is written only when something changed, and nothing is printed when nothing did.
-    - Then `ids.py check` must be clean, else its problems are printed.
-
-    Returns 1 when the check is not clean, else 0. A checkout with no `ids.json` is left alone (the table is how a checkout takes
-    part in FR39)."""
-    root = Path(root or ROOT)
-    path = idslib.table_path(root)
-    if not path.is_file():
-        return 0
-    before = idslib.load_table(path)
-    keys = set(catalog.Catalog.load(catalog_file).strings)
-    # Retired before the proposal, which keeps retired IDs out of what it gives new keys.
-    retired = retire_removed_ids(root, before, keys)
-    table, _forms = idslib.propose(root, locations, False, catalog_file)
-    table["splits"] = {key: uses for key, uses in table["splits"].items() if key in keys}
-    added = {key: ident for key, ident in table["ids"].items() if key not in before["ids"]}
-    if table != before:
-        path.write_text(idslib.dump_table(table), encoding="utf-8")
-    if retired:
-        say(f"retired-ids.txt: {number(len(retired))} IDs retired, their keys having left the catalog:")
-        for ident, key in retired.items():
-            say(f"  {ident}  {quote(key)}")
-    if added:
-        say(f"ids.json: {number(len(added))} new IDs, to commit with the code that holds them:")
-        for key in sorted(added):
-            say(f"  {added[key]}  {quote(key)}")
-    problems = idslib.check(root, catalog_file)
-    for problem in problems:
-        say(f"ids.json: {problem}")
-    return 1 if problems else 0
-
-
-def left_out_summary(config, found, left_out):
-    """What a sync kept and left out, as a dict: the globs, how many strings it kept and left out (each key of each table
-    counted once), and the left-out keys by table, so that nothing falls through the cracks."""
-    return {"syncPaths": config["syncPaths"], "kept": sum(found.values()),
-            "leftOut": sum(len(keys) for keys in left_out.values()),
-            "leftOutKeys": {table: keys for table, keys in sorted(left_out.items()) if keys}}
-
-
-def say_left_out(say, config, found, left_out):
-    """Says how many of the strings the compiler found `syncPaths` left out of the catalog."""
-    count = sum(len(keys) for keys in left_out.values())
-    shown = ", ".join(config["syncPaths"]) or "none"
-    say(f"left out by syncPaths ({shown}): {number(count)} strings, found only in files not yet converted")
-
-
-def write_left_out(path, config, found, left_out):
-    """Writes the record of what the sync left out, which `status` and `size` read."""
-    path.write_text(json.dumps(left_out_summary(config, found, left_out), indent=1, sort_keys=True, ensure_ascii=False) + "\n",
-                    encoding="utf-8")
-
-
-def read_left_out(folder=None):
-    """The record of the last sync's left-out strings ({"leftOut": n, ...}), or None when none was written here."""
-    try:
-        return json.loads(((folder or OUTPUT) / LEFT_OUT_FILE).read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return None
-
-
-def left_out_line(record):
-    """The sentence `status` and `size` say about the strings syncPaths left out, from the last sync's record."""
-    if record is None:
-        return "Strings left out by syncPaths: unknown here, since no sync has been recorded (run make l10n-sync)."
-    return (f"Strings left out by syncPaths: {number(record['leftOut'])} found by the compiler in files not yet converted "
-            f"(the last sync kept {number(record['kept'])}; syncPaths: {', '.join(record['syncPaths']) or 'none'}).")
+def say_report(report, say, verbose):
+    """Says what a sync (or a dry run of one) did to the catalog: the counts, the English bytes, and the IDs by name."""
+    say(f"{TABLE}: {number(len(report.added))} added, {number(len(report.stale))} became stale, "
+        f"{number(len(report.revived))} no longer stale, {number(len(report.english_changed))} changed their English")
+    say(f"{TABLE}: the English text went from {number(report.bytes_before)} to {number(report.bytes_after)} bytes")
+    say(f"{TABLE}: {number(len(report.comments))} comments written from the code's \"{NOTE_MARKER}\" lines")
+    for label, keys in (("added", report.added), ("became stale", report.stale), ("no longer stale", report.revived),
+                        ("changed their English", report.english_changed)):
+        if keys:
+            say(f"  {label}: {describe(keys, len(keys) if verbose else 10)}")
 
 
 def cmd_sync(args):
-    """`sync`: type-checks both apps (unless --mac-strings and --ios-strings name folders of an earlier run) and merges."""
-    say = print
-    if bool(args.mac_strings) != bool(args.ios_strings):
-        raise Refused("--mac-strings and --ios-strings go together: a sync never takes one app alone", EXIT_USAGE)
+    """`sync [--verbose] [--locations FILE]`: reads the code's `InterfaceText.line` calls (see sync.py) and brings the catalog
+    into step with them. A refusal (exit status 1) lists up to PROBLEMS_SHOWN problems and writes nothing: neither the
+    catalog nor the locations."""
     started = time.monotonic()
-    if args.mac_strings:
-        folders = [Path(args.mac_strings), Path(args.ios_strings)]
-    else:
-        tree_arguments = ["--worktree"] if args.worktree else ["--ref", args.ref]
-        folders = [run_type_check(platform, tree_arguments, say) for platform in PLATFORMS]
-    status = sync_manifests(args, [read_manifest(folder) for folder in folders], say)
-    say(f"synced in {time.monotonic() - started:.0f} seconds")
-    return status
+    say = print
+    cat = load_catalog(args)
+    found, calls, problems = syncing.read_code(ROOT)
+    if problems:
+        shown = problems[:PROBLEMS_SHOWN]
+        raise Refused(f"{number(len(problems))} problems in the InterfaceText.line calls, so nothing was synced:\n" + "\n".join(shown)
+                      + (f"\nand {number(len(problems) - len(shown))} more" if len(problems) > len(shown) else ""))
+    report = syncing.sync_catalog(cat, found)
+    # Only a changed catalog is written: a write makes Xcode rebuild it, so a sync with nothing to do leaves the file alone.
+    if report.changed():
+        cat.save(catalog_path(args))
+    say(f"read {number(len(calls))} InterfaceText.line calls with {number(len(found))} IDs")
+    say_report(report, say, args.verbose)
+    destination = Path(args.locations) if args.locations else OUTPUT / LOCATIONS_FILE
+    write_locations(destination, found, ROOT)
+    say(f"wrote {destination.name}: the files and lines of {number(len(found))} IDs, in {destination.parent}")
+    say(f"synced in {time.monotonic() - started:.1f} seconds")
+    return EXIT_OK
 
 
 # ---------------------------------------------------------------------------------------------------------------
@@ -798,9 +272,6 @@ def cmd_status(args):
                      f"{number(counts['missing'])} missing")
     if not languages:
         lines.append("No language is shipped or translated yet.")
-    record = read_left_out()
-    data["leftOutBySyncPaths"] = record["leftOut"] if record else None
-    lines.append(left_out_line(record))
     emit(args, data, lines)
     return EXIT_OK
 
@@ -860,9 +331,6 @@ def cmd_size(args):
         lines.append(f"{language}: {shown}")
     if not sizes:
         lines.append("No language is in the catalog yet, so nothing is compiled.")
-    record = read_left_out()
-    data["leftOutBySyncPaths"] = record["leftOut"] if record else None
-    lines.append(left_out_line(record))
     emit(args, data, lines)
     return EXIT_OK
 
@@ -890,7 +358,8 @@ def check_language(cat, language):
         if not units:
             problems.append(f"{label}: missing translation")
             continue
-        english = {unit.path: unit.value for unit in cat.units(key, cat.source_language)}
+        english = translate.english_values(cat, key)
+        reference = translate.reference_of(english)
         for unit in units:
             where = f" ({unit.path})" if unit.path else ""
             if not unit.value.strip():
@@ -899,7 +368,7 @@ def check_language(cat, language):
                 problems.append(f"{label}{where}: not translated (state {unit.state})")
             else:
                 problems += [f"{label}{where}: {sentence}"
-                             for sentence in translate.unit_placeholder_problems(english, key, unit, language)]
+                             for sentence in translate.unit_placeholder_problems(english, reference, unit, language)]
         problems += [f"{label}: {sentence}" for sentence in plural_problems(units, english, required)]
         problems += [f"{label}: {sentence}" for sentence in substitution_problems(cat, key, language)]
     return problems
@@ -949,19 +418,60 @@ def readable(cat):
     return cat.without(broken), sentences
 
 
-def check_catalog(cat, config):
+def english_problems(cat, found=None):
+    """The sentences about the English of the catalog (FR39 phase 7). Without `found` (the code's calls, see sync.read_code)
+    each entry to be translated must hold an English text, and each text of every language that the pack ships must use only
+    the five specifiers the pack allows (`%@`, `%n$@`, `%lld`, `%n$lld`, and `%%`, see pack.text_problems); a translation
+    with plural forms where the English has none is a problem too (a sync that changed the English dropped its plural forms:
+    `plural` writes the new ones). With `found`, the code's English is the catalog's: each ID's `en` (a plural's `other`
+    form) equals the code's English exactly, each ID the code calls is in the catalog, and each ID that is not stale has a
+    call."""
+    problems = []
+    for key in cat.translatable():
+        label = quote(key)
+        english = translate.english_values(cat, key)
+        if not english:
+            problems.append(f"{label}: no English text (`en`); `sync` writes it from the code")
+        for language in [cat.source_language] + cat.languages():
+            for unit in cat.units(key, language):
+                if catalog.counts_as_text(unit.state) and unit.value:
+                    where = f" ({unit.path})" if unit.path else ""
+                    problems += [f"{language} {label}{where}: {sentence}" for sentence in pack.text_problems(unit.value)]
+            if language != cat.source_language and english and "" in english and any(
+                    unit.category and unit.path == f"plural.{unit.category}" for unit in cat.units(key, language)):
+                problems.append(f"{language} {label}: the translation has plural forms and the English has none (write the "
+                                "English forms with `plural --lang en`)")
+    if found is not None:
+        for identifier in sorted(found):
+            if identifier not in cat.strings:
+                problems.append(f"{quote(identifier)}: the code calls this ID and the catalog does not hold it (run sync)")
+        for key, entry in sorted(cat.strings.items()):
+            if cat.is_stale(entry):
+                continue
+            if key not in found:
+                problems.append(f"{quote(key)}: no call in the code has this ID, and it is not marked stale (run sync)")
+                continue
+            held = syncing.current_english(cat, key)
+            if held is not None and held != found[key].english:
+                problems.append(f"{quote(key)}: the English is {quote(held)} and the code's is {quote(found[key].english)} (run sync)")
+    return problems
+
+
+def check_catalog(cat, config, found=None):
     """(the problems, the note about the budget) of a catalog under a configuration. The problems are sentences: each
     string whose parts are not of their type (see readable), each shipped language's (check_language), each string to be
-    translated without a comment, each stale string, each English text with unreadable placeholders, and the budget when
-    the configuration makes it fail."""
+    translated without a comment, each stale string, each English text with unreadable placeholders, the English's own rules
+    (english_problems, with `found`: the code's calls), and the budget when the configuration makes it fail."""
     cat, problems = readable(cat)
     for language in sorted(config["languages"]):
         problems += check_language(cat, language)
+    problems += english_problems(cat, found)
     for key in cat.translatable():
         if not str(cat.strings[key].get("comment", "")).strip():
             problems.append(f"{quote(key)}: no comment for the translators (write a \"{NOTE_MARKER} ...\" line above its literal in the code, then sync)")
-        for sentence in catalog.placeholder_problems(key):
-            problems.append(f"{quote(key)}: the English key's placeholders cannot be read: {sentence}")
+        for text in cat.english_forms(key):
+            for sentence in catalog.placeholder_problems(text):
+                problems.append(f"{quote(key)}: the English's placeholders cannot be read: {sentence}")
     for key, entry in sorted(cat.strings.items()):
         if cat.is_stale(entry):
             problems.append(f"{quote(key)}: stale (the code no longer has it; `prune` deletes it, `prune --all` even with a translation)")
@@ -983,11 +493,12 @@ def glossary_warnings(cat, glossary, languages):
     warnings = []
     for language in languages:
         for key in cat.translatable():
-            english = {unit.path: unit.value for unit in cat.units(key, cat.source_language)}
+            english = translate.english_values(cat, key)
+            fallback = translate.reference_of(english)
             for unit in cat.units(key, language):
                 if not catalog.unit_done(unit):
                     continue
-                reference = english_text_for(english, key, unit)
+                reference = english_text_for(english, fallback, unit)
                 label = f"{language} {quote(key)}" + (f" ({unit.path})" if unit.path else "")
                 unused = glossary.unused_terms(reference, unit.value, language)
                 if unused:
@@ -1005,19 +516,26 @@ def precision_warnings(cat, languages):
     warnings = []
     for language in languages:
         for key in cat.translatable():
-            english = {unit.path: unit.value for unit in cat.units(key, cat.source_language)}
+            english = translate.english_values(cat, key)
+            fallback = translate.reference_of(english)
             for unit in cat.units(key, language):
                 if catalog.unit_done(unit):
                     label = f"{language} {quote(key)}" + (f" ({unit.path})" if unit.path else "")
-                    warnings += [f"{label}: {sentence}" for sentence in translate.unit_precision_warnings(english, key, unit)]
+                    warnings += [f"{label}: {sentence}" for sentence in translate.unit_precision_warnings(english, fallback, unit)]
     return warnings
 
 
 def cmd_check(args):
     """`check`: prints the problems (up to --limit), then the glossary's warnings (up to --limit, never a failure) and the
     budget note; exit status 1 when there is a problem. A glossary file that is malformed is a problem."""
-    cat, config = load_catalog(args), load_config(args.config, ROOT)
-    problems, note = check_catalog(cat, config)
+    cat, config = load_catalog(args), load_config(args.config)
+    # The code's English is the catalog's source: read when the catalog is this checkout's own (or --code-root names one).
+    code_root = Path(args.code_root) if args.code_root else (None if args.catalog else ROOT)
+    found, code_problems = None, []
+    if code_root is not None:
+        found, _calls, code_problems = syncing.read_code(code_root)
+    problems, note = check_catalog(cat, config, found)
+    problems = code_problems + problems
     # The rest reads the strings that are whole (check_catalog has reported the others).
     cat = readable(cat)[0]
     warnings = []
@@ -1071,7 +589,8 @@ def cmd_prune(args):
     """`prune [--all] [--dry-run]`: deletes the stale strings that hold no translation (`--all`: every stale string, so
     a stale string with a translation goes too). Prints each key it deletes (with --dry-run, each it would delete, and
     nothing is written), then saves the catalog through catalog.py. Stale strings that were kept because they hold a
-    translation are counted, so the report says what is left for `check` to name. Running it twice changes nothing."""
+    translation are counted, so the report says what is left for `check` to name. The IDs it deletes go to retired-ids.txt of
+    this checkout, so that no later sync accepts one again. Running it twice changes nothing."""
     cat = load_catalog(args)
     gone = stale_to_prune(cat, args.all)
     kept = sum(1 for entry in cat.strings.values() if cat.is_stale(entry)) - len(gone)
@@ -1084,6 +603,10 @@ def cmd_prune(args):
             del cat.strings[key]
         if gone:
             cat.save(catalog_path(args))
+            # An ID that leaves the catalog is never used again: `sync` refuses a retired ID (FR39).
+            retired = syncing.retire(ROOT, gone)
+            if retired:
+                lines.append(f"prune: {number(len(retired))} IDs added to retired-ids.txt")
     emit(args, {"deleted": gone, "dryRun": args.dry_run, "keptWithTranslation": kept}, lines)
     return EXIT_OK
 
@@ -1102,9 +625,9 @@ def cmd_reach(args):
 
 
 def cmd_plural(args):
-    """`plural KEY --lang L --one TEXT --other TEXT ...`: writes the plural forms of one string in one language. Refuses
-    (exit status 1, nothing written) a form the language does not use, a missing form, an empty form, or a form whose
-    placeholders differ from the key's."""
+    """`plural ID --lang L --one TEXT --other TEXT ...`: writes the plural forms of one string (by its ID) in one language.
+    Refuses (exit status 1, nothing written) a form the language does not use, a missing form, an empty form, or a form whose
+    placeholders differ from the English's."""
     cat = load_catalog(args)
     forms = {category: getattr(args, category) for category in PLURAL_OPTIONS if getattr(args, category) is not None}
     try:
@@ -1355,17 +878,15 @@ def build_parser():
         sub.add_argument("--json", action="store_true", help="print the result as JSON")
         return sub
 
-    sync = add("sync", "type-check both apps with the string extraction and merge what it finds into the catalog", cmd_sync)
-    tree = sync.add_mutually_exclusive_group()
-    tree.add_argument("--ref", default="HEAD", help="the commit to extract the strings from (default HEAD)")
-    tree.add_argument("--worktree", action="store_true", help="extract from the working tree's tracked and new files instead of a commit")
-    sync.add_argument("--mac-strings", help="the strings folder of an earlier Mac run (with --ios-strings: skips the type-checks)")
-    sync.add_argument("--ios-strings", help="the strings folder of an earlier iPhone run (with --mac-strings)")
-    sync.add_argument("--verbose", action="store_true", help="list every key that was added, became stale, or was removed")
+    sync = add("sync", "read the code's InterfaceText.line calls and bring the catalog into step with them", cmd_sync)
+    sync.add_argument("--verbose", action="store_true", help="list every ID that was added, became stale, or changed its English")
+    sync.add_argument("--locations", help="write the locations file here (default: build/l10n/locations.json of the main checkout)")
     status = add("status", "per language: the strings translated, machine translated, new, needing review, stale, and missing", cmd_status)
     status.add_argument("--lang", help="only this language")
     add("size", "the English bytes against the budget, and each language's shipped size in each format", cmd_size)
     check = add("check", "the rules a catalog keeps: translations, placeholders, plurals, comments, stale strings, the budget", cmd_check)
+    check.add_argument("--code-root", help="the checkout whose code holds the English (default: this checkout's, unless --catalog "
+                                           "names another catalog, which is then checked on its own)")
     check.add_argument("--limit", type=count_option, default=DEFAULT_LIMIT, help=f"print at most this many problems, 0 for all (default {DEFAULT_LIMIT})")
     prune = add("prune", "delete the stale strings that hold no translation (--all: every stale string)", cmd_prune)
     prune.add_argument("--all", action="store_true", help="delete every stale string, translated or not")
@@ -1375,7 +896,7 @@ def build_parser():
     reach_command.add_argument("--base", default="main", help="the branch to compare with (default main)")
     reach_command.add_argument("--explain", action="store_true", help="a line for each class and the reason it is reached")
     plural = add("plural", "write a string's plural forms in one language, English included", cmd_plural)
-    plural.add_argument("key", help="the string's key, such as '%%lld books'")
+    plural.add_argument("key", help="the string's ID, such as common.countMinutes")
     plural.add_argument("--lang", required=True, help="the language, such as en or es")
     for category in PLURAL_OPTIONS:
         plural.add_argument(f"--{category}", help=f"the text of the {category} form (give exactly the forms the language uses)")

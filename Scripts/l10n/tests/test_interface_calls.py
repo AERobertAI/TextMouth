@@ -1,6 +1,6 @@
 """Tests of interface_calls.py (FR39 phase 5): reading the `InterfaceText.line` calls of Swift sources (ID, English as the
-catalog's key, note, place), what makes a call unreadable, the check of each call against ids.json, and the
-`.stringsdata` written for the sync. Every test works on a snippet or a small tree of its own."""
+catalog's English, note, place), what makes a call unreadable, and the check of each call (pattern, retired list,
+note, line). Every test works on a snippet or a small tree of its own."""
 
 from __future__ import annotations
 
@@ -134,26 +134,24 @@ let doc = "InterfaceText.line(\\"a.b\\", \\"z\\")"
 
 
 class CheckCase(unittest.TestCase):
-    """A temporary repository with one source file and an ids.json."""
+    """A temporary repository with one source file."""
 
     def setUp(self) -> None:
         self._folder = tempfile.TemporaryDirectory()
         self.addCleanup(self._folder.cleanup)
         self.root = Path(self._folder.name)
 
-    def problems(self, source: str, table: Dict[str, str], splits: Optional[dict] = None, retired: Optional[set] = None,
-                 notes: bool = True) -> List[str]:
-        """The problems of the calls in `source` against an ids.json of `table` and `splits`."""
+    def problems(self, source: str, retired: Optional[set] = None, notes: bool = True) -> List[str]:
+        """The problems of the calls in `source`, with `retired` the retired IDs."""
         target = self.root / FILE
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(source, encoding="utf-8")
         calls = interface_calls.calls_in_tree(self.root)
-        return interface_calls.problems_of(self.root, calls, {"version": 1, "ids": table, "splits": splits or {}},
-                                           retired or set(), notes=notes)
+        return interface_calls.problems_of(self.root, calls, retired or set(), notes=notes)
 
 
 class ProblemTests(CheckCase):
-    """The check of each call against ids.json."""
+    """The check of each call: the pattern, the retired list, the note, and the line."""
 
     GOOD = '''enum SampleWording {
     // Translators: The title.
@@ -162,38 +160,30 @@ class ProblemTests(CheckCase):
 '''
 
     def test_a_right_call_has_no_problem(self) -> None:
-        self.assertEqual(self.problems(self.GOOD, {"Title": "sample.title"}), [])
+        self.assertEqual(self.problems(self.GOOD), [])
 
-    def test_an_id_that_is_not_the_keys_is_named_with_both(self) -> None:
-        found = self.problems(self.GOOD, {"Title": "sample.heading"})
-        self.assertEqual(len(found), 1)
-        self.assertIn(f"{FILE}:3:", found[0])
-        self.assertIn("'sample.title'", found[0])
-        self.assertIn("'sample.heading'", found[0])
-
-    def test_an_english_that_differs_from_the_key_by_one_character_is_refused(self) -> None:
-        found = self.problems(self.GOOD.replace('"Title"', '"Title."'), {"Title": "sample.title"})
-        self.assertEqual(len(found), 1)
-        self.assertIn("not a key in ids.json", found[0])
+    def test_any_english_is_right_it_is_not_checked_against_a_table(self) -> None:
+        self.assertEqual(self.problems(self.GOOD.replace('"Title"', '"Anything at all."')), [])
 
     def test_an_id_outside_the_pattern_is_refused(self) -> None:
-        found = self.problems(self.GOOD.replace("sample.title", "Sample_title"), {"Title": "Sample_title"})
+        found = self.problems(self.GOOD.replace("sample.title", "Sample_title"))
         self.assertTrue(any("outside the pattern" in p for p in found))
 
     def test_an_id_over_the_length_limit_is_refused(self) -> None:
         long_id = "sample." + "a" * 60
-        found = self.problems(self.GOOD.replace("sample.title", long_id), {"Title": long_id})
+        found = self.problems(self.GOOD.replace("sample.title", long_id))
         self.assertTrue(any("outside the pattern" in p for p in found))
 
     def test_a_retired_id_is_refused(self) -> None:
-        found = self.problems(self.GOOD, {"Title": "sample.title"}, retired={"sample.title"})
+        found = self.problems(self.GOOD, retired={"sample.title"})
         self.assertEqual(len(found), 1)
         self.assertIn("retired", found[0])
+        self.assertIn(f"{FILE}:3:", found[0])
 
     def test_a_missing_note_is_refused_but_not_when_the_notes_are_left_to_the_scanner(self) -> None:
         source = self.GOOD.replace("    // Translators: The title.\n", "")
-        self.assertTrue(any("no `// Translators:" in p for p in self.problems(source, {"Title": "sample.title"})))
-        self.assertEqual(self.problems(source, {"Title": "sample.title"}, notes=False), [])
+        self.assertTrue(any("no `// Translators:" in p for p in self.problems(source)))
+        self.assertEqual(self.problems(source, notes=False), [])
 
     def test_two_calls_on_one_line_are_refused(self) -> None:
         source = '''enum SampleWording {
@@ -201,51 +191,13 @@ class ProblemTests(CheckCase):
     static var both: String { InterfaceText.line("sample.a", "A") + InterfaceText.line("sample.b", "B") }
 }
 '''
-        found = self.problems(source, {"A": "sample.a", "B": "sample.b"})
+        found = self.problems(source)
         self.assertEqual(len(found), 2)
         self.assertTrue(all("another call is on this line" in p for p in found))
 
-    def test_a_split_key_takes_the_id_of_the_use_that_names_the_site(self) -> None:
-        source = '''enum BookWording {
-    // Translators: An author that is not known.
-    static var author: String { InterfaceText.line("book.author", "Unknown") }
-}
-enum TimeFormatting {
-    // Translators: A length that is not known.
-    static var totalSeconds: String { InterfaceText.line("book.author", "Unknown") }
-}
-'''
-        splits = {"Unknown": [{"id": "book.author", "sites": [f"{FILE}:BookWording.author"]},
-                              {"id": "timeFormatting.total", "sites": [f"{FILE}:TimeFormatting.totalSeconds"]}]}
-        found = self.problems(source, {"Unknown": "book.author"}, splits)
-        self.assertEqual(len(found), 1)
-        self.assertIn(f"{FILE}:7:", found[0])
-        self.assertIn("'timeFormatting.total'", found[0])
-
     def test_a_call_that_cannot_be_read_is_named_with_its_place(self) -> None:
-        found = self.problems(self.GOOD.replace('"sample.title"', "someID"), {"Title": "sample.title"})
+        found = self.problems(self.GOOD.replace('"sample.title"', "someID"))
         self.assertTrue(found and all(p.startswith(f"{FILE}:") for p in found))
-
-
-class StringsdataTests(unittest.TestCase):
-    """The `.stringsdata` of a file's calls, in the shape Xcode writes."""
-
-    def test_the_shape_and_the_entries(self) -> None:
-        calls = calls_of('''enum SampleWording {
-    // Translators: Count of books.
-    static func books(_ n: Int) -> String { InterfaceText.line("common.books", "\\(number: n) books") }
-}
-''')
-        data = interface_calls.stringsdata("/work/src/" + FILE, calls)
-        self.assertEqual(data["version"], 1)
-        self.assertEqual(data["source"], "/work/src/" + FILE)
-        self.assertEqual(data["tables"], {"Localizable": [{
-            "comment": "Count of books.", "key": "%lld books",
-            "location": {"startingColumn": calls[0].column, "startingLine": 3}}]})
-
-    def test_a_file_with_no_readable_call_has_no_table(self) -> None:
-        data = interface_calls.stringsdata("/work/src/" + FILE, calls_of('InterfaceText.line(someID, "Title")'))
-        self.assertEqual(data["tables"], {})
 
 
 if __name__ == "__main__":

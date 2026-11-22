@@ -6,7 +6,8 @@ import XCTest
 #endif
 
 /// What the two proofs that the interface-text pack says what Apple's tables say have in common (FR39, phase 4): the
-/// counts a line is asked for, the call a key makes, and the table of IDs.
+/// counts a line is asked for, and the call an ID makes. Apple's tables are keyed by ID since the catalog was (phase 7), so
+/// both proofs look an ID up in them, and take its English (the call's format) from the catalog's `en`.
 ///
 /// `Scripts/l10n/verify_packs.py` (run by `make l10n-check`) compiles this file with the probe
 /// `Scripts/l10n/pack-probe/main.swift` and the engine's core files (`-D PACK_PROBE`, which leaves the test class
@@ -31,69 +32,32 @@ enum InterfaceTextProof {
         init(_ description: String) { self.description = description }
     }
 
-    // MARK: - The ID table
-
-    /// `Scripts/l10n/ids.json`: each catalog key and the IDs it was given (more than one for a key that was split by
-    /// use), read as `Scripts/l10n/pack.py` reads it.
-    struct IDTable {
-        /// The IDs of each key, in the table's order.
-        let idsByKey: [String: [String]]
-
-        /// The key each ID belongs to.
-        var keyByID: [String: String] {
-            var result: [String: String] = [:]
-            for (key, ids) in idsByKey { for id in ids { result[id] = key } }
-            return result
-        }
-
-        /// Every key, sorted.
-        var keys: [String] { idsByKey.keys.sorted() }
-
-        /// Reads the table at `url`: `{"version": 1, "ids": {key: ID}, "splits": {key: [{"id": ID}]}}`. A key's IDs are
-        /// its own ID and then its splits', none twice.
-        init(contentsOf url: URL) throws {
-            guard let data = try? Data(contentsOf: url),
-                  let root = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
-                  root["version"] as? Int == 1, let ids = root["ids"] as? [String: String]
-            else { throw Failure("cannot read the ID table at \(url.lastPathComponent)") }
-            var table = ids.mapValues { [$0] }
-            let splits = root["splits"] as? [String: [[String: Any]]] ?? [:]
-            for (key, parts) in splits {
-                for part in parts {
-                    guard let id = part["id"] as? String else { throw Failure("a split of \(key) has no ID") }
-                    if !(table[key, default: []].contains(id)) { table[key, default: []].append(id) }
-                }
-            }
-            idsByKey = table
-        }
-    }
-
     // MARK: - What a key is asked
 
-    /// The specifiers of `key`, or nil when a lookup cannot feed one of them (a conversion other than `%@` and an
-    /// integer's, or a position, which no key of the catalog holds).
-    private static func feedableSpecifiers(of key: String) -> [LanguagePackLookups.Specifier]? {
-        guard let specifiers = LanguagePackLookups.specifiers(in: key),
+    /// The specifiers of `english`, or nil when a lookup cannot feed one of them (a conversion other than `%@` and an
+    /// integer's, or a position, which no English of the catalog holds).
+    private static func feedableSpecifiers(of english: String) -> [LanguagePackLookups.Specifier]? {
+        guard let specifiers = LanguagePackLookups.specifiers(in: english),
               specifiers.allSatisfy({ $0.position == nil && $0.kind != .real })
         else { return nil }
         return specifiers
     }
 
-    /// How many numbers the key's format takes (zero for a key that is no count: it is asked once).
-    static func numberCount(ofKey key: String) -> Int {
-        feedableSpecifiers(of: key)?.filter { $0.kind == .count }.count ?? 0
+    /// How many numbers the English's format takes (zero for an English that is no count: it is asked once).
+    static func numberCount(ofEnglish english: String) -> Int {
+        feedableSpecifiers(of: english)?.filter { $0.kind == .count }.count ?? 0
     }
 
-    /// How many times `key` is asked: once when it takes no number, else once for each of the `counts`.
-    static func askings(ofKey key: String) -> Int {
-        numberCount(ofKey: key) == 0 ? 1 : counts.count
+    /// How many times an ID is asked: once when its English takes no number, else once for each of the `counts`.
+    static func askings(ofEnglish english: String) -> Int {
+        numberCount(ofEnglish: english) == 0 ? 1 : counts.count
     }
 
-    /// The call `key` makes at its `asking`th asking (0 up to `askings(ofKey:)`): its format is the key itself, as the
+    /// The call an ID makes at its `asking`th asking (0 up to `askings(ofEnglish:)`): its format is the `english`, as the
     /// call site's English is, every `%@` is given "text", and the `n`th number is `counts[asking + 3n]`, wrapping. Nil
-    /// when a lookup cannot feed the key.
-    static func call(forKey key: String, asking: Int) -> InterfaceText.Format? {
-        guard let specifiers = feedableSpecifiers(of: key) else { return nil }
+    /// when a lookup cannot feed the English.
+    static func call(forEnglish english: String, asking: Int) -> InterfaceText.Format? {
+        guard let specifiers = feedableSpecifiers(of: english) else { return nil }
         var arguments: [InterfaceText.Format.Argument] = []
         var numbers = 0
         for specifier in specifiers {
@@ -107,7 +71,7 @@ enum InterfaceTextProof {
                 return nil
             }
         }
-        return InterfaceText.Format(format: key, arguments: arguments)
+        return InterfaceText.Format(format: english, arguments: arguments)
     }
 
     // MARK: - Texts
@@ -176,27 +140,26 @@ final class InterfaceTextShippedPackTests: XCTestCase {
     /// The folder of the app's resources: Contents/Resources in the Mac app, the bundle itself on the iPhone.
     private var resources: URL { Bundle.main.resourceURL ?? Bundle.main.bundleURL }
 
-    /// What every test needs: the shipped pack, the ID table of the repository, and the languages of the tables.
+    /// What every test needs: the shipped pack, the repository's catalog (the English of each ID), and the languages of the
+    /// tables.
     private struct Shipped {
         let pack: InterfaceTextPack
         let ids: [String]
-        let table: InterfaceTextProof.IDTable
+        let catalog: LanguagePackCatalog
         let languages: [String]
     }
 
-    /// The pack the host ships, the repository's ID table, and the languages of the host's tables; fails with what is
+    /// The pack the host ships, the repository's catalog, and the languages of the host's tables; fails with what is
     /// missing.
     private func shipped() throws -> Shipped {
         let packURL = resources.appendingPathComponent("\(InterfaceTextPack.resourceName).\(InterfaceTextPack.resourceExtension)")
         XCTAssertTrue(FileManager.default.fileExists(atPath: packURL.path), "the host ships no Strings.pack in \(resources.path)")
         let pack = try InterfaceTextPack(contentsOf: packURL)
-        // The table of IDs sits beside the catalog's tools, found from this file as `LanguagePackCatalog.load` finds the catalog.
-        let repository = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
-        let table = try InterfaceTextProof.IDTable(contentsOf: repository.appendingPathComponent("Scripts/l10n/ids.json"))
+        let catalog = try LanguagePackCatalog.load()
         let languages = LanguagePackLookups.languages(in: resources)
         XCTAssertTrue(languages.contains("es"), "the app's language folders: \(languages), in \(resources.path)")
         let list = try pack.idList()
-        return Shipped(pack: pack, ids: (0..<list.count).map { list.id(at: $0) }, table: table, languages: languages)
+        return Shipped(pack: pack, ids: (0..<list.count).map { list.id(at: $0) }, catalog: catalog, languages: languages)
     }
 
     // MARK: - The tables, as data
@@ -273,32 +236,29 @@ final class InterfaceTextShippedPackTests: XCTestCase {
     /// plural rules name), each of which has a blob in the pack.
     func testThePackHoldsEveryLineAndEveryLanguage() throws {
         let host = try shipped()
-        XCTAssertEqual(host.ids, host.table.idsByKey.values.flatMap { $0 }.sorted(), "the pack's IDs are the ID table's")
+        XCTAssertEqual(host.ids, host.catalog.texts.keys.sorted(), "the pack's IDs are the catalog's")
         XCTAssertEqual(host.languages, PluralRules.categories.keys.sorted(), "the tables' languages are the plural rules'")
         XCTAssertEqual(host.languages.count, 25)
         for language in host.languages { XCTAssertTrue(host.pack.hasLanguage(language), "the pack has no \(language) blob") }
     }
 
-    /// Every entry of every language of the pack equals the table's text or plural forms for its key, once the
-    /// numbered specifiers of Xcode's plurals and the pack's unnumbered ones are read alike. A key the table lacks is
-    /// the key itself (English): the pack has no entry for it, or the key as the text (the squeeze `compact_packs.py`
-    /// makes in the tables leaves out a text that equals its key).
+    /// Every entry of every language of the pack equals the table's text or plural forms for its ID, once the
+    /// numbered specifiers of Xcode's plurals and the pack's unnumbered ones are read alike. An ID the table lacks in a
+    /// language has no translation there: the pack has no entry for it (the engine shows the English).
     func testEveryEntryEqualsTheTables() throws {
         let host = try shipped()
-        let keyByID = host.table.keyByID
         var compared = 0
         var wrong: [String] = []
         for language in host.languages {
             let tables = try Tables(language: language, in: resources)
             let entries = try host.pack.entries(language: language)
             for (position, id) in host.ids.enumerated() {
-                guard let key = keyByID[id] else { wrong.append("\(id): no key"); continue }
                 let got = entries[position]
                 compared += 1
-                if let want = try tables.entry(forKey: key) {
+                if let want = try tables.entry(forKey: id) {
                     if positioned(got) != positioned(want) { wrong.append("\(language) \(id): pack \(got), tables \(want)") }
-                } else if got != .absent && got != .plain(key) {
-                    wrong.append("\(language) \(id): pack \(got), tables none (the key is the text)")
+                } else if got != .absent {
+                    wrong.append("\(language) \(id): pack \(got), tables none (no translation)")
                 }
             }
         }
@@ -322,23 +282,22 @@ final class InterfaceTextShippedPackTests: XCTestCase {
             let tables = try Tables(language: language, in: resources)
             // English is the tables' fallback for a key a language lacks, as it is the app's (Bundle's own choice).
             let english = language == "en" ? nil : try Tables(language: "en", in: resources)
-            for key in host.table.keys {
-                guard let ids = host.table.idsByKey[key] else { continue }
+            for id in host.ids {
+                // The ID's English, as the code writes it: the call's format.
+                guard let source = host.catalog.english(of: id) else { wrong.append("\(language) \(id): the catalog has no English"); continue }
                 // The table's entry, and the language whose plural rules choose its form.
-                let own = try tables.entry(forKey: key)
-                let entry = try own ?? english?.entry(forKey: key) ?? .plain(key)
+                let own = try tables.entry(forKey: id)
+                let entry = try own ?? english?.entry(forKey: id) ?? .plain(source)
                 let rules = own == nil && english != nil ? "en" : language
-                for asking in 0..<InterfaceTextProof.askings(ofKey: key) {
-                    guard let call = InterfaceTextProof.call(forKey: key, asking: asking) else {
-                        wrong.append("\(language) \(key.debugDescription): the lookups cannot feed this key")
+                for asking in 0..<InterfaceTextProof.askings(ofEnglish: source) {
+                    guard let call = InterfaceTextProof.call(forEnglish: source, asking: asking) else {
+                        wrong.append("\(language) \(id): the lookups cannot feed this English")
                         break
                     }
                     let want = Self.text(of: entry, rules: rules, call: call, locale: locale)
-                    for id in ids {
-                        let got = engine.text(runtimeID: id, english: call, language: language, locale: locale)
-                        compared += 1
-                        if got != want { wrong.append("\(language) \(id) asking \(asking): engine \(got.debugDescription), Foundation \(want.debugDescription)") }
-                    }
+                    let got = engine.text(runtimeID: id, english: call, language: language, locale: locale)
+                    compared += 1
+                    if got != want { wrong.append("\(language) \(id) asking \(asking): engine \(got.debugDescription), Foundation \(want.debugDescription)") }
                 }
             }
         }
@@ -372,14 +331,14 @@ final class InterfaceTextShippedPackTests: XCTestCase {
         XCTAssertEqual(InterfaceTextProof.withPositions("%2$lld of %1$@, 100%%"), "%2$lld of %1$@, 100%%")
         XCTAssertEqual(InterfaceTextProof.withPositions("No specifier"), "No specifier")
         XCTAssertEqual(InterfaceTextProof.counts.count, 13)
-        XCTAssertEqual(InterfaceTextProof.numberCount(ofKey: "%lld of %lld"), 2)
-        XCTAssertEqual(InterfaceTextProof.askings(ofKey: "Plain"), 1)
-        XCTAssertEqual(InterfaceTextProof.askings(ofKey: "%lld books"), 13)
-        let two = try XCTUnwrap(InterfaceTextProof.call(forKey: "%@: %lld of %lld", asking: 11))
+        XCTAssertEqual(InterfaceTextProof.numberCount(ofEnglish: "%lld of %lld"), 2)
+        XCTAssertEqual(InterfaceTextProof.askings(ofEnglish: "Plain"), 1)
+        XCTAssertEqual(InterfaceTextProof.askings(ofEnglish: "%lld books"), 13)
+        let two = try XCTUnwrap(InterfaceTextProof.call(forEnglish: "%@: %lld of %lld", asking: 11))
         // Asking 11: the first number is counts[11] = 2,000,000, the second counts[(11 + 3) % 13] = counts[1] = 1.
         XCTAssertEqual(two.arguments, [.text("text"), .number(2_000_000), .number(1)])
-        XCTAssertNil(InterfaceTextProof.call(forKey: "%s", asking: 0))
-        XCTAssertNil(InterfaceTextProof.call(forKey: "%f", asking: 0))
+        XCTAssertNil(InterfaceTextProof.call(forEnglish: "%s", asking: 0))
+        XCTAssertNil(InterfaceTextProof.call(forEnglish: "%f", asking: 0))
     }
 }
 
