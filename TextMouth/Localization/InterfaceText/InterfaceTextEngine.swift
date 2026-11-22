@@ -9,8 +9,9 @@ import os
 ///    without it;
 /// 2. find the ID's index by binary search over the ID list, comparing the `StaticString`'s bytes, with no allocation;
 /// 3. take the first of: the person's own line for the ID in this language; the language's entry; English;
-///    English is the call's own format for a plain line, and for a plural line the pack's English forms when their
-///    `other` equals the call's format, else the call's format at every count;
+///    English is the call's own format for a plain line, and for a plural line the pack's English forms whenever the
+///    ID has a plural English entry that fits the call's arguments (Apple's English table always picks the form,
+///    whichever form the code's literal is), else the call's format at every count;
 /// 4. a plural entry gives the form `PluralRules` picks for the call's first number;
 /// 5. the text's specifiers are checked against the call's arguments, once for each language and ID with the verdict
 ///    kept; a text that fails shows English and is reported once;
@@ -221,11 +222,14 @@ final class InterfaceTextEngine: Sendable {
         }
     }
 
-    /// The English pattern: the call's own format, except for a plural line whose English forms the pack holds and
-    /// whose `other` equals the call's format, which gives the form for the call's number.
+    /// The English pattern: the call's own format, except for a line with a number whose ID has a plural English entry in
+    /// the pack that passes the specifier check for the call's arguments, which gives the form for the call's number.
+    /// The code's literal may be any form (often `one`: "...%lld is kept..."), so it is not compared with the entry:
+    /// the build packs the catalog at every build, and the sync tool and the lint hold the code's English to the
+    /// catalog's, so the entry is the code's own text. The forms may number their specifiers (`%1$@ ... %2$lld`).
     private func englishPattern(index: Int?, table: LanguageTable?, english: InterfaceText.Format) -> String {
         guard let count = english.firstNumber, let index, let table,
-              case .plural(let forms) = table.entries[index], forms.last == english.format,
+              case .plural(let forms) = table.entries[index],
               table.accepts(at: index, kinds: { FormatSpecifiers.kinds(of: english.arguments) }),
               let form = pattern(of: .plural(forms), count: count, language: "en")
         else { return english.format }
