@@ -28142,7 +28142,7 @@
       }
     },
     "audioEditor.fileLabel" : {
-      "comment" : "Heading of the group of keyboard shortcuts of the File menu's commands in Settings, and the title of the File menu.\nLabel of the audio file's name in the audio editor's Audio Info sheet.",
+      "comment" : "Label of the audio file's name in the audio editor's Audio Info sheet.",
       "extractionState" : "manual",
       "localizations" : {
         "ar" : {
@@ -29390,7 +29390,7 @@
       }
     },
     "audioEditor.insertButton" : {
-      "comment" : "Button of the audio editor's Insert Silence and Insert Chapter Marker sheets that makes the insertion.\nName of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Insert\".",
+      "comment" : "Button of the audio editor's Insert Silence and Insert Chapter Marker sheets that makes the insertion.",
       "extractionState" : "manual",
       "localizations" : {
         "ar" : {
@@ -44546,7 +44546,7 @@
       }
     },
     "audioEditor.rowButton" : {
-      "comment" : "A row button's name with the row's subject, so VoiceOver tells one row's button from the next, such as \"Delete Marker 3\". %1$@ is the button's name and %2$@ the row's subject.\nAnnouncement of the microphone level every few seconds while recording. %1$@ is the level's label and %2$@ is the level in words, such as \"minus 12 decibels, good\".\nJoins two whole sentences into one text. %1$@ is the first sentence and %2$@ the second. English puts a space between them; Japanese and Chinese join sentences with no space at all, so change only the separator.",
+      "comment" : "A row button's name with the row's subject, so VoiceOver tells one row's button from the next, such as \"Delete Marker 3\". %1$@ is the button's name and %2$@ the row's subject.",
       "extractionState" : "manual",
       "localizations" : {
         "ar" : {
@@ -53906,7 +53906,7 @@
       }
     },
     "audioFilterPresets.added" : {
-      "comment" : "Said as a filter preset is added. %@ is the preset's name.\nSpeak Info: the part of a book's full summary that says when it was added. %@ is a date or time, such as \"today\" or \"3 days ago\".",
+      "comment" : "Said as a filter preset is added. %@ is the preset's name.",
       "extractionState" : "manual",
       "localizations" : {
         "ar" : {
@@ -62330,7 +62330,7 @@
       }
     },
     "avSpeechSynthesisVoice.unknownQuality" : {
-      "comment" : "A voice's quality tier when the system reports one TextMouth does not know, shown beside its name in the voice pickers.\nShown in place of a time (hours, minutes and seconds) that is not a usable number, such as an enormous or missing length.\nThe author shown for a book whose author nothing names, in the library's author column and a book's information.",
+      "comment" : "A voice's quality tier when the system reports one TextMouth does not know, shown beside its name in the voice pickers.",
       "extractionState" : "manual",
       "localizations" : {
         "ar" : {
@@ -62486,7 +62486,7 @@
       }
     },
     "book.unknownAuthor" : {
-      "comment" : "A voice's quality tier when the system reports one TextMouth does not know, shown beside its name in the voice pickers.\nShown in place of a time (hours, minutes and seconds) that is not a usable number, such as an enormous or missing length.\nThe author shown for a book whose author nothing names, in the library's author column and a book's information.",
+      "comment" : "The author shown for a book whose author nothing names, in the library's author column and a book's information.",
       "extractionState" : "manual",
       "localizations" : {
         "ar" : {
@@ -120410,7 +120410,7 @@
       }
     },
     "common.book" : {
-      "comment" : "The object of a removal confirmation's title for one book, in title case, as in \"Move Book to Trash?\".\nThe word that begins the title of a reader window for a book, before its title and author: \"Book: <title> by <author>\".\nTitle of the Book menu in the menu bar, which holds the commands about the open book, such as exporting or editing it. Only a reader window shows it.",
+      "comment" : "The word that begins the title of a reader window for a book, before its title and author: \"Book: <title> by <author>\".\nTitle of the Book menu in the menu bar, which holds the commands about the open book, such as exporting or editing it. Only a reader window shows it.",
       "extractionState" : "manual",
       "localizations" : {
         "ar" : {
@@ -128294,7 +128294,7 @@
       }
     },
     "common.delete" : {
-      "comment" : "A command on a bookmark of the Bookmarks list, as a button beside its row, a VoiceOver action, and a context menu item: deletes the bookmark.\nButton of a marker's row in the audio editor's list that deletes the marker.\nName of a filter preset's Delete button, also its VoiceOver action and context menu item.\nName of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Delete\".\nName of the command that deletes a substitution rule: a row button's label and tooltip, a VoiceOver action, and a context menu item.\nText of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The question's button that deletes.",
+      "comment" : "A command on a bookmark of the Bookmarks list, as a button beside its row, a VoiceOver action, and a context menu item: deletes the bookmark.\nButton of a marker's row in the audio editor's list that deletes the marker.\nName of a filter preset's Delete button, also its VoiceOver action and context menu item.\nName of the command that deletes a substitution rule: a row button's label and tooltip, a VoiceOver action, and a context menu item.\nText of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The question's button that deletes.",
       "extractionState" : "manual",
       "localizations" : {
         "ar" : {
@@ -133010,7 +133010,7 @@
       }
     },
     "common.goTo" : {
-      "comment" : "A command on a bookmark of the Bookmarks list, as a VoiceOver action and a context menu item: moves the book to the bookmark.\nButton of a marker's or a pause's row in the audio editor's list that moves the cursor there.\nLabel of the iPhone reader's button that opens the Go To sheet, and that sheet's title.\nName of a heading row's command that goes to the heading, as a VoiceOver action and a context menu item.",
+      "comment" : "A command on a bookmark of the Bookmarks list, as a VoiceOver action and a context menu item: moves the book to the bookmark.\nButton of a marker's or a pause's row in the audio editor's list that moves the cursor there.\nName of a heading row's command that goes to the heading, as a VoiceOver action and a context menu item.",
       "extractionState" : "manual",
       "localizations" : {
         "ar" : {
@@ -135818,7 +135818,7 @@
       }
     },
     "common.nameAndNote" : {
-      "comment" : "A braille table in words: its code's name, then how it contracts, in lower case. %1$@ is the code's name, such as Unified English Braille, and %2$@ the contraction, such as uncontracted (Grade 1).\nA heading's description followed by a detail such as its duration. %1$@ is the description, such as \"Chapter One - level 1\"; %2$@ is the detail, such as \"4 minutes\".\nA language's menu item in the transcription language pop-up, with its speech model's status. %1$@ is the language's name, such as \"English (United States)\"; %2$@ is the status: installed, needs download, or not supported.\nJoins a name and a note about it with a comma, such as an encoding or braille code and \"guessed\". %1$@ is the name and %2$@ the note.\nJoins two parts of a label with a comma. %1$@ is the text so far and %2$@ the next part. English puts a comma and a space between them.\nText of the Library window's View pop-up and Go to View. What a window says on going to the view name by Go to View's key or menu item: the name, then counts, what the view lists there (CountWording.listItems(of:feeds:)), as \"All Items, 743 books, 2 feeds\". Placeholders in order: name, counts.\nThe microphone level spoken in the Record window. %1$@ is the level in decibels in words, such as \"minus 12 decibels\", and %2$@ is a word for how loud that is, such as \"good\".\nThe right side of a row in the Library views settings: whether the view is built in or custom, then when it shows. %1$@ is built in or custom and %2$@ is its visibility, such as \"always\".",
+      "comment" : "A braille table in words: its code's name, then how it contracts, in lower case. %1$@ is the code's name, such as Unified English Braille, and %2$@ the contraction, such as uncontracted (Grade 1).\nA language's menu item in the transcription language pop-up, with its speech model's status. %1$@ is the language's name, such as \"English (United States)\"; %2$@ is the status: installed, needs download, or not supported.\nJoins a name and a note about it with a comma, such as an encoding or braille code and \"guessed\". %1$@ is the name and %2$@ the note.",
       "extractionState" : "manual",
       "localizations" : {
         "ar" : {
@@ -138782,7 +138782,7 @@
       }
     },
     "common.pause" : {
-      "comment" : "Label of the button that pauses the book while it is playing.\nLabel of the reader's play and pause button while the book plays; it pauses.\nName of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Pause\".\nName of the Pause media event, a choice for one step of the media-key pattern that starts a sleep timer in Settings.\nName of the playback event whose sound is chosen in Settings, Sound Effects: playing pauses.\nTitle of the button in the Record window that pauses the recording.",
+      "comment" : "Label of the button that pauses the book while it is playing.\nLabel of the reader's play and pause button while the book plays; it pauses.\nTitle of the button in the Record window that pauses the recording.",
       "extractionState" : "manual",
       "localizations" : {
         "ar" : {
@@ -138938,7 +138938,7 @@
       }
     },
     "common.pauseEvent" : {
-      "comment" : "Label of the button that pauses the book while it is playing.\nLabel of the reader's play and pause button while the book plays; it pauses.\nName of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Pause\".\nName of the Pause media event, a choice for one step of the media-key pattern that starts a sleep timer in Settings.\nName of the playback event whose sound is chosen in Settings, Sound Effects: playing pauses.\nTitle of the button in the Record window that pauses the recording.",
+      "comment" : "Name of the Pause media event, a choice for one step of the media-key pattern that starts a sleep timer in Settings.\nName of the playback event whose sound is chosen in Settings, Sound Effects: playing pauses.",
       "extractionState" : "manual",
       "localizations" : {
         "ar" : {
@@ -141746,7 +141746,7 @@
       }
     },
     "common.reset" : {
-      "comment" : "Button of an alert that confirms resetting every keyboard shortcut to its default.\nName of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Reset\".\nName of a premade filter preset's Reset button, also its VoiceOver action and context menu item: puts the preset back as it came.\nTitle of the button that goes ahead in the question asked before the Substitutions settings replace every rule with the defaults.",
+      "comment" : "Button of an alert that confirms resetting every keyboard shortcut to its default.\nName of a premade filter preset's Reset button, also its VoiceOver action and context menu item: puts the preset back as it came.\nTitle of the button that goes ahead in the question asked before the Substitutions settings replace every rule with the defaults.",
       "extractionState" : "manual",
       "localizations" : {
         "ar" : {
@@ -204938,7 +204938,7 @@
       }
     },
     "feed.byPublisher" : {
-      "comment" : "Part of a book's spoken row label, after the title. %@ is the author's name, or Unknown.\nWho publishes a podcast, in the line under its title in the search results. %@ is the publisher's name.",
+      "comment" : "Who publishes a podcast, in the line under its title in the search results. %@ is the publisher's name.",
       "extractionState" : "manual",
       "localizations" : {
         "ar" : {
@@ -244286,7 +244286,7 @@
       }
     },
     "feed.newNote" : {
-      "comment" : "Badge on a book's row in the Library list: the book has never been opened.\nThe note on a feed's episode or article that is new: published since the subscription began and neither played nor opened. Title case.",
+      "comment" : "The note on a feed's episode or article that is new: published since the subscription began and neither played nor opened. Title case.",
       "extractionState" : "manual",
       "localizations" : {
         "ar" : {
@@ -257702,7 +257702,7 @@
       }
     },
     "feed.subscribedLabel" : {
-      "comment" : "Label of when the listener subscribed to the feed, in Feed Info.\nText of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A condition's relation as its relation pop-up names it, by its test and whether it is negated. This is the form for the other case of the condition.",
+      "comment" : "Label of when the listener subscribed to the feed, in Feed Info.",
       "extractionState" : "manual",
       "localizations" : {
         "ar" : {
@@ -339830,7 +339830,7 @@
       }
     },
     "keyBinding.localizedKeyWords.delete" : {
-      "comment" : "A command on a bookmark of the Bookmarks list, as a button beside its row, a VoiceOver action, and a context menu item: deletes the bookmark.\nButton of a marker's row in the audio editor's list that deletes the marker.\nName of a filter preset's Delete button, also its VoiceOver action and context menu item.\nName of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Delete\".\nName of the command that deletes a substitution rule: a row button's label and tooltip, a VoiceOver action, and a context menu item.\nText of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The question's button that deletes.",
+      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Delete\".",
       "extractionState" : "manual",
       "localizations" : {
         "ar" : {
@@ -340610,7 +340610,7 @@
       }
     },
     "keyBinding.localizedKeyWords.end" : {
-      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + End\".\nPart of a spoken audio export's file name: the end of the book as one end of the range, as in \"Middlemarch - Chapter 2 to End\".",
+      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + End\".",
       "extractionState" : "manual",
       "localizations" : {
         "ar" : {
@@ -342170,7 +342170,7 @@
       }
     },
     "keyBinding.localizedKeyWords.insert" : {
-      "comment" : "Button of the audio editor's Insert Silence and Insert Chapter Marker sheets that makes the insertion.\nName of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Insert\".",
+      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Insert\".",
       "extractionState" : "manual",
       "localizations" : {
         "ar" : {
@@ -344354,7 +344354,7 @@
       }
     },
     "keyBinding.localizedKeyWords.pause" : {
-      "comment" : "Label of the button that pauses the book while it is playing.\nLabel of the reader's play and pause button while the book plays; it pauses.\nName of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Pause\".\nName of the Pause media event, a choice for one step of the media-key pattern that starts a sleep timer in Settings.\nName of the playback event whose sound is chosen in Settings, Sound Effects: playing pauses.\nTitle of the button in the Record window that pauses the recording.",
+      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Pause\".",
       "extractionState" : "manual",
       "localizations" : {
         "ar" : {
@@ -345758,7 +345758,7 @@
       }
     },
     "keyBinding.localizedKeyWords.reset" : {
-      "comment" : "Button of an alert that confirms resetting every keyboard shortcut to its default.\nName of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Reset\".\nName of a premade filter preset's Reset button, also its VoiceOver action and context menu item: puts the preset back as it came.\nTitle of the button that goes ahead in the question asked before the Substitutions settings replace every rule with the defaults.",
+      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Reset\".",
       "extractionState" : "manual",
       "localizations" : {
         "ar" : {
@@ -345914,7 +345914,7 @@
       }
     },
     "keyBinding.localizedKeyWords.return" : {
-      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Return\".\nTitle of the reader toolbar's button that goes back to the reading position left before browsing.",
+      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Return\".",
       "extractionState" : "manual",
       "localizations" : {
         "ar" : {
@@ -403706,7 +403706,7 @@
       }
     },
     "libraryInfo.addedDate" : {
-      "comment" : "Said as a filter preset is added. %@ is the preset's name.\nSpeak Info: the part of a book's full summary that says when it was added. %@ is a date or time, such as \"today\" or \"3 days ago\".",
+      "comment" : "Speak Info: the part of a book's full summary that says when it was added. %@ is a date or time, such as \"today\" or \"3 days ago\".",
       "extractionState" : "manual",
       "localizations" : {
         "ar" : {
@@ -431174,7 +431174,7 @@
       }
     },
     "librarySubview.byAuthor" : {
-      "comment" : "Part of a book's spoken row label, after the title. %@ is the author's name, or Unknown.\nWho publishes a podcast, in the line under its title in the search results. %@ is the publisher's name.",
+      "comment" : "Part of a book's spoken row label, after the title. %@ is the author's name, or Unknown.",
       "extractionState" : "manual",
       "localizations" : {
         "ar" : {
@@ -433934,7 +433934,7 @@
       }
     },
     "librarySubview.newBadge" : {
-      "comment" : "Badge on a book's row in the Library list: the book has never been opened.\nThe note on a feed's episode or article that is new: published since the subscription began and neither played nor opened. Title case.",
+      "comment" : "Badge on a book's row in the Library list: the book has never been opened.",
       "extractionState" : "manual",
       "localizations" : {
         "ar" : {
@@ -456158,7 +456158,7 @@
       }
     },
     "libraryViewEditor.relationName.subscribed" : {
-      "comment" : "Label of when the listener subscribed to the feed, in Feed Info.\nText of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A condition's relation as its relation pop-up names it, by its test and whether it is negated. This is the form for the other case of the condition.",
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A condition's relation as its relation pop-up names it, by its test and whether it is negated. This is the form for the other case of the condition.",
       "extractionState" : "manual",
       "localizations" : {
         "ar" : {
@@ -529946,7 +529946,7 @@
       }
     },
     "phoneReader.goTo" : {
-      "comment" : "A command on a bookmark of the Bookmarks list, as a VoiceOver action and a context menu item: moves the book to the bookmark.\nButton of a marker's or a pause's row in the audio editor's list that moves the cursor there.\nLabel of the iPhone reader's button that opens the Go To sheet, and that sheet's title.\nName of a heading row's command that goes to the heading, as a VoiceOver action and a context menu item.",
+      "comment" : "Label of the iPhone reader's button that opens the Go To sheet, and that sheet's title.",
       "extractionState" : "manual",
       "localizations" : {
         "ar" : {
@@ -568130,7 +568130,7 @@
       }
     },
     "readerView.returnTitle" : {
-      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Return\".\nTitle of the reader toolbar's button that goes back to the reading position left before browsing.",
+      "comment" : "Title of the reader toolbar's button that goes back to the reading position left before browsing.",
       "extractionState" : "manual",
       "localizations" : {
         "ar" : {
@@ -590714,7 +590714,7 @@
       }
     },
     "recording.levelAnnouncement" : {
-      "comment" : "A row button's name with the row's subject, so VoiceOver tells one row's button from the next, such as \"Delete Marker 3\". %1$@ is the button's name and %2$@ the row's subject.\nAnnouncement of the microphone level every few seconds while recording. %1$@ is the level's label and %2$@ is the level in words, such as \"minus 12 decibels, good\".\nJoins two whole sentences into one text. %1$@ is the first sentence and %2$@ the second. English puts a space between them; Japanese and Chinese join sentences with no space at all, so change only the separator.",
+      "comment" : "Announcement of the microphone level every few seconds while recording. %1$@ is the level's label and %2$@ is the level in words, such as \"minus 12 decibels, good\".",
       "extractionState" : "manual",
       "localizations" : {
         "ar" : {
@@ -600218,7 +600218,7 @@
       }
     },
     "recording.spokenLevel" : {
-      "comment" : "A braille table in words: its code's name, then how it contracts, in lower case. %1$@ is the code's name, such as Unified English Braille, and %2$@ the contraction, such as uncontracted (Grade 1).\nA heading's description followed by a detail such as its duration. %1$@ is the description, such as \"Chapter One - level 1\"; %2$@ is the detail, such as \"4 minutes\".\nA language's menu item in the transcription language pop-up, with its speech model's status. %1$@ is the language's name, such as \"English (United States)\"; %2$@ is the status: installed, needs download, or not supported.\nJoins a name and a note about it with a comma, such as an encoding or braille code and \"guessed\". %1$@ is the name and %2$@ the note.\nJoins two parts of a label with a comma. %1$@ is the text so far and %2$@ the next part. English puts a comma and a space between them.\nText of the Library window's View pop-up and Go to View. What a window says on going to the view name by Go to View's key or menu item: the name, then counts, what the view lists there (CountWording.listItems(of:feeds:)), as \"All Items, 743 books, 2 feeds\". Placeholders in order: name, counts.\nThe microphone level spoken in the Record window. %1$@ is the level in decibels in words, such as \"minus 12 decibels\", and %2$@ is a word for how loud that is, such as \"good\".\nThe right side of a row in the Library views settings: whether the view is built in or custom, then when it shows. %1$@ is built in or custom and %2$@ is its visibility, such as \"always\".",
+      "comment" : "The microphone level spoken in the Record window. %1$@ is the level in decibels in words, such as \"minus 12 decibels\", and %2$@ is a word for how loud that is, such as \"good\".",
       "extractionState" : "manual",
       "localizations" : {
         "ar" : {
@@ -606374,7 +606374,7 @@
       }
     },
     "removal.bookObject" : {
-      "comment" : "The object of a removal confirmation's title for one book, in title case, as in \"Move Book to Trash?\".\nThe word that begins the title of a reader window for a book, before its title and author: \"Book: <title> by <author>\".\nTitle of the Book menu in the menu bar, which holds the commands about the open book, such as exporting or editing it. Only a reader window shows it.",
+      "comment" : "The object of a removal confirmation's title for one book, in title case, as in \"Move Book to Trash?\".",
       "extractionState" : "manual",
       "localizations" : {
         "ar" : {
@@ -621134,7 +621134,7 @@
       }
     },
     "sentence.commaJoined" : {
-      "comment" : "A braille table in words: its code's name, then how it contracts, in lower case. %1$@ is the code's name, such as Unified English Braille, and %2$@ the contraction, such as uncontracted (Grade 1).\nA heading's description followed by a detail such as its duration. %1$@ is the description, such as \"Chapter One - level 1\"; %2$@ is the detail, such as \"4 minutes\".\nA language's menu item in the transcription language pop-up, with its speech model's status. %1$@ is the language's name, such as \"English (United States)\"; %2$@ is the status: installed, needs download, or not supported.\nJoins a name and a note about it with a comma, such as an encoding or braille code and \"guessed\". %1$@ is the name and %2$@ the note.\nJoins two parts of a label with a comma. %1$@ is the text so far and %2$@ the next part. English puts a comma and a space between them.\nText of the Library window's View pop-up and Go to View. What a window says on going to the view name by Go to View's key or menu item: the name, then counts, what the view lists there (CountWording.listItems(of:feeds:)), as \"All Items, 743 books, 2 feeds\". Placeholders in order: name, counts.\nThe microphone level spoken in the Record window. %1$@ is the level in decibels in words, such as \"minus 12 decibels\", and %2$@ is a word for how loud that is, such as \"good\".\nThe right side of a row in the Library views settings: whether the view is built in or custom, then when it shows. %1$@ is built in or custom and %2$@ is its visibility, such as \"always\".",
+      "comment" : "A heading's description followed by a detail such as its duration. %1$@ is the description, such as \"Chapter One - level 1\"; %2$@ is the detail, such as \"4 minutes\".\nJoins two parts of a label with a comma. %1$@ is the text so far and %2$@ the next part. English puts a comma and a space between them.\nText of the Library window's View pop-up and Go to View. What a window says on going to the view name by Go to View's key or menu item: the name, then counts, what the view lists there (CountWording.listItems(of:feeds:)), as \"All Items, 743 books, 2 feeds\". Placeholders in order: name, counts.\nThe right side of a row in the Library views settings: whether the view is built in or custom, then when it shows. %1$@ is built in or custom and %2$@ is its visibility, such as \"always\".",
       "extractionState" : "manual",
       "localizations" : {
         "ar" : {
@@ -621290,7 +621290,7 @@
       }
     },
     "sentence.pair" : {
-      "comment" : "A row button's name with the row's subject, so VoiceOver tells one row's button from the next, such as \"Delete Marker 3\". %1$@ is the button's name and %2$@ the row's subject.\nAnnouncement of the microphone level every few seconds while recording. %1$@ is the level's label and %2$@ is the level in words, such as \"minus 12 decibels, good\".\nJoins two whole sentences into one text. %1$@ is the first sentence and %2$@ the second. English puts a space between them; Japanese and Chinese join sentences with no space at all, so change only the separator.",
+      "comment" : "Joins two whole sentences into one text. %1$@ is the first sentence and %2$@ the second. English puts a space between them; Japanese and Chinese join sentences with no space at all, so change only the separator.",
       "extractionState" : "manual",
       "localizations" : {
         "ar" : {
@@ -639458,7 +639458,7 @@
       }
     },
     "shortcutAction.title.fileCategory" : {
-      "comment" : "Heading of the group of keyboard shortcuts of the File menu's commands in Settings, and the title of the File menu.\nLabel of the audio file's name in the audio editor's Audio Info sheet.",
+      "comment" : "Heading of the group of keyboard shortcuts of the File menu's commands in Settings, and the title of the File menu.",
       "extractionState" : "manual",
       "localizations" : {
         "ar" : {
@@ -648194,7 +648194,7 @@
       }
     },
     "shortcutScope.inSentence.library" : {
-      "comment" : "Choice of the Works in pop-up of a keyboard shortcut: the shortcut works in the Library windows, where the library's books are listed.\nNames where a keyboard shortcut works, inside a sentence such as \"Works in Library windows.\": the Library windows, where the library's books are listed.",
+      "comment" : "Names where a keyboard shortcut works, inside a sentence such as \"Works in Library windows.\": the Library windows, where the library's books are listed.",
       "extractionState" : "manual",
       "localizations" : {
         "ar" : {
@@ -648974,7 +648974,7 @@
       }
     },
     "shortcutScope.title.library" : {
-      "comment" : "Choice of the Works in pop-up of a keyboard shortcut: the shortcut works in the Library windows, where the library's books are listed.\nNames where a keyboard shortcut works, inside a sentence such as \"Works in Library windows.\": the Library windows, where the library's books are listed.",
+      "comment" : "Choice of the Works in pop-up of a keyboard shortcut: the shortcut works in the Library windows, where the library's books are listed.",
       "extractionState" : "manual",
       "localizations" : {
         "ar" : {
@@ -666866,7 +666866,7 @@
       }
     },
     "speechExport.endName" : {
-      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + End\".\nPart of a spoken audio export's file name: the end of the book as one end of the range, as in \"Middlemarch - Chapter 2 to End\".",
+      "comment" : "Part of a spoken audio export's file name: the end of the book as one end of the range, as in \"Middlemarch - Chapter 2 to End\".",
       "extractionState" : "manual",
       "localizations" : {
         "ar" : {
@@ -725558,7 +725558,7 @@
       }
     },
     "timeFormatting.unknownLength" : {
-      "comment" : "A voice's quality tier when the system reports one TextMouth does not know, shown beside its name in the voice pickers.\nShown in place of a time (hours, minutes and seconds) that is not a usable number, such as an enormous or missing length.\nThe author shown for a book whose author nothing names, in the library's author column and a book's information.",
+      "comment" : "Shown in place of a time (hours, minutes and seconds) that is not a usable number, such as an enormous or missing length.",
       "extractionState" : "manual",
       "localizations" : {
         "ar" : {

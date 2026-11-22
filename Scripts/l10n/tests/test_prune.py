@@ -11,6 +11,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
@@ -38,8 +39,12 @@ class PruneCase(unittest.TestCase):
         folder = tempfile.TemporaryDirectory()
         self.addCleanup(folder.cleanup)
         self.path = Path(folder.name) / "Localizable.xcstrings"
+        # `prune` retires the IDs it deletes in this checkout's retired-ids.txt: a made-up checkout, never the repository's.
+        patch = mock.patch.object(l10n, "ROOT", Path(folder.name) / "checkout")
+        patch.start()
+        self.addCleanup(patch.stop)
         strings = {
-            "Live": {"comment": "Still in the code", "localizations": {"es": unit("Vivo")}},
+            "Live": {"comment": "Still in the code", "localizations": {"en": unit("Live"), "es": unit("Vivo")}},
             "Stale bare": stale(),
             "Stale english only": stale(en=unit("Stale english only", "translated")),
             "%lld stale books": stale(en={"variations": {"plural": {"one": unit("%lld book", "translated"),

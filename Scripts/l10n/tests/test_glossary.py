@@ -222,13 +222,15 @@ class CheckWarningTests(shared.CatalogCase):
         self.assertNotIn("Close the Library\": does not use", out)
         self.assertIn("1 warning (the glossary's terms and the number formats; not failures)", out)
 
-    def test_a_number_printed_with_other_digits_is_a_warning_and_not_a_failure(self):
+    def test_a_number_printed_with_other_digits_is_a_warning_beside_the_packs_own_refusal_of_the_specifier(self):
+        # `%.1f` is no specifier the pack allows (FR39), so check also fails; the precision warning is still given.
         cat = self.load()
         cat.strings["%.1f seconds"] = base.entry("A duration", en=base.unit("%.1f seconds"), es=base.unit("%.3f segundos"))
         cat.strings["%.2f minutes"] = base.entry("A duration", en=base.unit("%.2f minutes"), es=base.unit("%.2f minutos"))
         cat.save()
         status, out = self.check()
-        self.assertEqual(status, 0, out)
+        self.assertEqual(status, 1, out)
+        self.assertIn('check: en "%.1f seconds": the specifier %.1f is not one the pack allows', out)
         self.assertIn("check: warning: es \"%.1f seconds\": placeholder 1 prints 3 digits where the English's prints 1", out)
         self.assertNotIn('"%.2f minutes": placeholder', out)
 

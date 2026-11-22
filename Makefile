@@ -132,7 +132,7 @@ help:
 	@echo "  make check-ios-plist - Fail if the iOS Info.plist is not what the Mac's gives (Scripts/ios/sync-info-plist.py --check)"
 	@echo "  make check-ios-licenses - Fail if a library the iPhone app links has no licence in the app (Scripts/ios/check-licenses.py)"
 	@echo "  make ios-size   - Build the iPhone app for a device (Release, unsigned) under the heavy-work lock, then measure it: app, IPA, App Store estimate, biggest files, libraries"
-	@echo "  make l10n-sync  - Type-check both apps with the string extraction on and merge what it finds into the String Catalog (REF=commit, or WORKTREE=1 for uncommitted work; takes the heavy-work lock, about four minutes)"
+	@echo "  make l10n-sync  - Read the code's InterfaceText.line calls and bring the String Catalog into step with them (seconds: no build, no lock)"
 	@echo "  make l10n-status - Per language: the strings translated, machine translated, new, needing review, stale, and missing, and the English bytes (LANG_CODE=es for one language)"
 	@echo "  make l10n-size  - The English bytes against the 150,000-byte budget, and each language's shipped size in each format"
 	@echo "  make l10n-check - Check the String Catalog: shipped languages translated, placeholders and plural forms agreeing, a comment on every string, nothing stale, and every lookup of the compact language files equal to Xcode's (run by make check)"
@@ -392,14 +392,14 @@ lint-docs:
 lint-l10n:
 	@python3 -I -B Scripts/l10n/scan.py lint --base $(LINT_BASE) $(L10N_ARGS)
 
-## The String Catalog's tools (Scripts/l10n/l10n.py, FR34): sync extracts both
-## apps' strings through the type-check (which takes the heavy-work lock
-## itself, so it is never wrapped in run_locked.py) and merges them into
-## TextMouth/Localization/Localizable.xcstrings; status, size, and check read
-## the catalog and build nothing. check is part of `make check`.
+## The String Catalog's tools (Scripts/l10n/l10n.py, FR34, FR39): sync reads the
+## code's InterfaceText.line calls with the lexer (seconds: no build, no
+## heavy-work lock) and brings TextMouth/Localization/Localizable.xcstrings into
+## step with them; status, size, and check read the catalog (check, the code too)
+## and build nothing. check is part of `make check`.
 .PHONY: l10n-sync l10n-status l10n-size l10n-check
 l10n-sync:
-	@python3 -I -B Scripts/l10n/l10n.py sync $(if $(WORKTREE),--worktree,$(if $(REF),--ref $(REF),))
+	@python3 -I -B Scripts/l10n/l10n.py sync
 
 l10n-status:
 	@python3 -I -B Scripts/l10n/l10n.py status $(if $(LANG_CODE),--lang $(LANG_CODE),)
