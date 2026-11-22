@@ -28,6 +28,7 @@ enum PhoneSettingsSection: CaseIterable, Identifiable {
     case pages
     case removalBehavior
     case statistics
+    case interfaceLanguage
     case about
 
     var id: Self { self }
@@ -46,6 +47,7 @@ enum PhoneSettingsSection: CaseIterable, Identifiable {
         case .reading: return PhoneSettingsWording.readingSection
         case .removalBehavior: return Words.removalBehavior.title
         case .statistics: return PhoneSettingsWording.statisticsSection
+        case .interfaceLanguage: return InterfaceLanguagePickerWording.title
         case .about: return PhoneSettingsWording.aboutSection
         }
     }
@@ -65,6 +67,7 @@ enum PhoneSettingsRow: Hashable, Identifiable {
     case rewindTo
     case endOfBook
     case readingStatistics
+    case interfaceLanguage
     case shareLogs
 
     var id: Self { self }
@@ -79,6 +82,7 @@ enum PhoneSettingsRow: Hashable, Identifiable {
         case .rewindTo: return Words.rewindTo.title
         case .endOfBook: return Words.whenBookEnds.title
         case .readingStatistics: return PhoneSettingsWording.readingStatistics
+        case .interfaceLanguage: return InterfaceLanguagePickerWording.title
         case .shareLogs: return PhoneSettingsWording.shareLogs
         }
     }
@@ -91,7 +95,7 @@ enum PhoneSettingsRow: Hashable, Identifiable {
         case .voice: return Words.selectVoice.title
         case .rewindTo: return Words.rewindOnResumeUnit.title
         case .endOfBook: return Words.endOfBookBehavior.title
-        case .textNavigationUnit, .audioNavigationUnit, .readingStatistics, .shareLogs: return title
+        case .textNavigationUnit, .audioNavigationUnit, .readingStatistics, .interfaceLanguage, .shareLogs: return title
         }
     }
 
@@ -103,6 +107,7 @@ enum PhoneSettingsRow: Hashable, Identifiable {
         case .rewindTo: return Words.rewindToHint.title
         case .endOfBook: return Words.endOfBookHint.title
         case .shareLogs: return PhoneSettingsWording.shareLogsHint
+        case .interfaceLanguage: return InterfaceLanguagePickerWording.hint
         case .language, .readingStatistics: return nil
         }
     }
