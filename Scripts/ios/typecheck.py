@@ -293,9 +293,10 @@ def prepare_sources(repo, commit, src, census, tests=False):
     return rewritten
 
 
-# The folder of TextMouth/ that holds the String Catalog (FR34): a resource Xcode compiles into each language's strings
-# files, which a Swift package would report as an unhandled file ("found 1 file(s) which are unhandled").
-LOCALIZATION_FOLDER = "Localization"
+# The String Catalog (FR34) in TextMouth/: a resource Xcode compiles into each language's strings files, which a Swift
+# package would report as an unhandled file ("found 1 file(s) which are unhandled"). Only the file is left out, not its
+# folder, since TextMouth/Localization/InterfaceText/ holds Swift sources (FR39).
+LOCALIZATION_FOLDER = "Localization/Localizable.xcstrings"
 
 
 def excluded_folders(src, platform):
