@@ -202,6 +202,14 @@ class PhraseTests(unittest.TestCase):
         line = 'a(String(localized: "Say \\"hello\\" to everyone", comment: "c"), String(localized: "Another long text", comment: "d"))'
         self.assertEqual(reach.phrases_of(line), ['Say "hello" to everyone', "Another long text"])
 
+    def test_the_english_of_an_interface_text_call_counts_as_much_as_a_string_localized_call(self):
+        line = 'x(InterfaceText.line("feed.folderMissing", "The folder of \\(name) is gone."), InterfaceText.line("a.b", "Short"))'
+        self.assertEqual(reach.phrases_of(line), ["The folder of "])
+        self.assertEqual(reach.phrases_of('InterfaceText.line("a.b", "Exactly 12 ch", language: "es")'), ["Exactly 12 ch"])
+
+    def test_the_id_of_an_interface_text_call_is_never_taken_for_an_english_phrase(self):
+        self.assertEqual(reach.phrases_of('InterfaceText.line("a.b", someFormat)'), [])
+
 
 if __name__ == "__main__":
     unittest.main()
