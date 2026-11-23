@@ -5,7 +5,7 @@ kind: format
 status: open
 priority: P2
 platform: both
-assignee:
+assignee: bardbraille
 created: 2026-11-23
 updated: 2026-11-23
 found-by: the user
