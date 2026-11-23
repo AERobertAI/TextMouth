@@ -418,11 +418,13 @@ targets:
         GENERATE_INFOPLIST_FILE: false
         # Where Swift finds the LAME module (Vendor/lame/include/module.modulemap),
         # the exception catcher's (Vendor/ObjCExceptionCatcher/include/module.modulemap),
+        # the system bzip2's, through which the interface-text pack's reader links libbz2
+        # (Vendor/CBZip2/include/module.modulemap; nothing of bzip2 is vendored),
         # the braille helper's protocol (TextMouthBraille/include/module.modulemap),
         # which the helper's translation (TextMouthBraille/TextMouthBrailleLibrary.c)
         # includes too, and the FFmpeg helper's stream
         # (TextMouthFFmpeg/include/module.modulemap), which its C includes too.
-        SWIFT_INCLUDE_PATHS: $(SRCROOT)/Vendor/lame/include $(SRCROOT)/Vendor/ObjCExceptionCatcher/include $(SRCROOT)/TextMouthBraille/include $(SRCROOT)/TextMouthFFmpeg/include
+        SWIFT_INCLUDE_PATHS: $(SRCROOT)/Vendor/lame/include $(SRCROOT)/Vendor/ObjCExceptionCatcher/include $(SRCROOT)/Vendor/CBZip2/include $(SRCROOT)/TextMouthBraille/include $(SRCROOT)/TextMouthFFmpeg/include
       # The Release app, which `make build` packages and `make install`
       # copies, is built to be small. Debug, where the hosted tests run, is
       # left as it is.
@@ -479,6 +481,9 @@ targets:
       - target: LAME
       # The Objective-C exception catcher (ObjCException).
       - target: ObjCExceptionCatcher
+      # The system's bzip2 library, which the interface-text pack's reader decodes bzip2 blobs
+      # with (InterfaceTextPack, through the CBZip2 module in Vendor/CBZip2).
+      - sdk: libbz2.tbd
       # The braille helper (FMT21), a command-line program copied into
       # Contents/MacOS beside the app's own executable, where
       # Bundle.main.url(forAuxiliaryExecutable:) finds it; never linked.
@@ -726,7 +731,7 @@ targets:
         # the braille library's (DR34), whose map is in
         # TextMouthBraille/include/TextMouthBrailleLibrary, where Clang looks
         # for a module of that name on this path.
-        SWIFT_INCLUDE_PATHS: $(SRCROOT)/Vendor/lame/include $(SRCROOT)/Vendor/ObjCExceptionCatcher/include $(SRCROOT)/TextMouthBraille/include $(SRCROOT)/TextMouthFFmpeg/include
+        SWIFT_INCLUDE_PATHS: $(SRCROOT)/Vendor/lame/include $(SRCROOT)/Vendor/ObjCExceptionCatcher/include $(SRCROOT)/Vendor/CBZip2/include $(SRCROOT)/TextMouthBraille/include $(SRCROOT)/TextMouthFFmpeg/include
     dependencies:
       - package: ZIPFoundation
       - target: SwiftSoup_iOS
@@ -737,6 +742,8 @@ targets:
         product: cmark-gfm-extensions
       - target: LAME_iOS
       - target: ObjCExceptionCatcher_iOS
+      # The system's bzip2 library, for the interface-text pack's reader (see the Mac target).
+      - sdk: libbz2.tbd
       # The braille translator (DR34): liblouis, and TextMouth's own
       # translation around it, which the app calls in its own process.
       - target: liblouis_iOS
@@ -948,7 +955,7 @@ targets:
         TEST_HOST: "$(BUILT_PRODUCTS_DIR)/TextMouth.app/Contents/MacOS/TextMouth"
         BUNDLE_LOADER: "$(TEST_HOST)"
         # The LAME, exception-catcher, braille-protocol, and FFmpeg-stream modules, which `@testable import TextMouth` may load.
-        SWIFT_INCLUDE_PATHS: $(SRCROOT)/Vendor/lame/include $(SRCROOT)/Vendor/ObjCExceptionCatcher/include $(SRCROOT)/TextMouthBraille/include $(SRCROOT)/TextMouthFFmpeg/include
+        SWIFT_INCLUDE_PATHS: $(SRCROOT)/Vendor/lame/include $(SRCROOT)/Vendor/ObjCExceptionCatcher/include $(SRCROOT)/Vendor/CBZip2/include $(SRCROOT)/TextMouthBraille/include $(SRCROOT)/TextMouthFFmpeg/include
     dependencies:
       - target: TextMouth
   # The iPhone app's own tests, run in the iOS simulator by
@@ -1186,7 +1193,7 @@ targets:
         TEST_HOST: "$(BUILT_PRODUCTS_DIR)/TextMouth.app/TextMouth"
         BUNDLE_LOADER: "$(TEST_HOST)"
         # The LAME, exception-catcher, braille-protocol, and FFmpeg-stream modules, which `@testable import TextMouth` may load.
-        SWIFT_INCLUDE_PATHS: $(SRCROOT)/Vendor/lame/include $(SRCROOT)/Vendor/ObjCExceptionCatcher/include $(SRCROOT)/TextMouthBraille/include $(SRCROOT)/TextMouthFFmpeg/include
+        SWIFT_INCLUDE_PATHS: $(SRCROOT)/Vendor/lame/include $(SRCROOT)/Vendor/ObjCExceptionCatcher/include $(SRCROOT)/Vendor/CBZip2/include $(SRCROOT)/TextMouthBraille/include $(SRCROOT)/TextMouthFFmpeg/include
     dependencies:
       - target: TextMouthiOS
   # The iPhone app driven from outside, in the simulator, by XCUITest: what

@@ -1,0 +1,10 @@
+// The Clang module Swift reaches the system's own bzip2 library by:
+// `import CBZip2`, in TextMouth's InterfaceTextPack, the only Swift file that
+// does (FR39: the interface-text pack's blobs are bzip2 streams or xz streams).
+// Nothing of bzip2 is vendored: the header is the SDK's `bzlib.h` (macOS and
+// iOS both have it), and `link "bz2"` makes the app link the SDK's libbz2.
+module CBZip2 {
+    header "CBZip2.h"
+    link "bz2"
+    export *
+}
