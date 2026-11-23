@@ -4,6 +4,19 @@ Part of [TextMouth's documentation](../../README.md).
 
 Every version of TextMouth, newest first, and what changed for you in each.
 
+## 0.5.9 (November 22, 2026)
+
+### Choose TextMouth's language in Settings
+- Settings has an Interface Language setting: at the top of the Miscellaneous tab on the Mac, and in a section of its own on the iPhone.
+- Choose System to follow your Mac's or iPhone's languages, or choose any of the 25 languages TextMouth speaks.
+- Each language is listed by its own name first, then by its name in the language TextMouth is in now, such as "Español, Spanish", so you can find your own after choosing one you can't read.
+- The change applies at once, without restarting TextMouth, and VoiceOver announces it. Some of macOS's or iOS's own words, such as the standard menu items, change the next time TextMouth opens.
+- Your choice is also TextMouth's language in System Settings on the Mac and in Settings on the iPhone, and a choice made there shows in TextMouth.
+
+### A smaller app
+- The Mac app is 22.3 MB, down from 32.2 MB, and the iPhone app 17.2 MB, down from 27.1 MB.
+- TextMouth keeps all 25 languages in one compressed file of its own, in place of macOS's and iOS's language files, and every line reads exactly as before.
+
 ## 0.5.8 (November 21, 2026)
 
 ### TextMouth in Urdu and Persian
