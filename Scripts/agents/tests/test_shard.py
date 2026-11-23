@@ -34,6 +34,12 @@ class SplitTests(unittest.TestCase):
         shards = shard.split(["Huge", "A", "B"], {"Huge": 500, "A": 5, "B": 5}, 2)
         self.assertEqual(shards, [["Huge"], ["A", "B"]])
 
+    def test_a_method_is_counted_as_one_unlisted_class_and_names_its_class(self):
+        self.assertEqual(shard.class_of("FooTests/testBar"), "FooTests")
+        self.assertEqual(shard.class_of("FooTests"), "FooTests")
+        self.assertEqual(shard.seconds_of("FooTests/testBar", {"FooTests": 500}), shard.DEFAULT_SECONDS)
+        self.assertEqual(sorted(sum(shard.split(["A/testX", "B/testY", "C"], {"C": 9}, 2), [])), ["A/testX", "B/testY", "C"])
+
     def test_the_split_does_not_depend_on_the_order_the_classes_come_in(self):
         names = list(self.TIMES)
         self.assertEqual(shard.split(names, self.TIMES, 3), shard.split(list(reversed(names)), self.TIMES, 3))

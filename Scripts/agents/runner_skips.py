@@ -13,6 +13,8 @@ from pathlib import Path
 
 # Importing this module must leave no __pycache__ folder in the repository.
 sys.dont_write_bytecode = True
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import shard  # noqa: E402  (the path above must be set first)
 
 # The skips file, beside this script.
 SKIPS_FILE = Path(__file__).resolve().parent / "runner-skips.conf"
@@ -61,13 +63,13 @@ def selected_skips(request, skips):
         return []
     if request["full"] or request["areas"]:
         return list(skips)
-    return [skip for skip in skips if skip[0] in set(request["classes"])]
+    return [skip for skip in skips if skip[0] in {shard.class_of(name) for name in request["classes"]}]
 
 
 def not_run_by(classes, skips):
     """The entries of `skips` that cover some of `classes`, each as a sentence part for a result: "Class (reason)" for a
     class left out whole, "Class.test (reason)" for a test. In the order of the file."""
-    wanted = set(classes)
+    wanted = {shard.class_of(name) for name in classes}
     return [f"{owner}.{test} ({reason})" if test else f"{owner} ({reason})"
             for owner, test, reason in skips if owner in wanted]
 

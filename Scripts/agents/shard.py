@@ -38,8 +38,14 @@ def load_times(path=TIMES_FILE):
     return {name: float(seconds) for name, seconds in data.items()} if isinstance(data, dict) else {}
 
 
+def class_of(name):
+    """The class part of a test NAME: `Class/testMethod` (one test method) gives `Class`, a plain class name itself."""
+    return name.split("/", 1)[0]
+
+
 def seconds_of(name, times):
-    """A class's time on the runner, or DEFAULT_SECONDS when the file doesn't know it."""
+    """A class's time on the runner, or DEFAULT_SECONDS when the file doesn't know it. A single method
+    (`Class/testMethod`) is counted as DEFAULT_SECONDS too, as one test is about as small as an unlisted class."""
     return times.get(name, DEFAULT_SECONDS)
 
 

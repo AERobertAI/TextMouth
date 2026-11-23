@@ -14,7 +14,9 @@ A request asks for the iPhone tests in these ways, strongest first:
 - the full suite (`"full": true`) runs every class of both bundles, and so does a request for the area "all" or the
   area "phone";
 - a request that names an iPhone test class (of either bundle), in `"classes"` or in `"ios_ui_classes"`, runs those
-  classes alone.
+  classes alone;
+- a name may also be `Class/testMethod`, one test method of such a class, and then only that method runs (a method whose
+  class is named whole runs with the class).
 
 The iPhone test classes are not Mac test classes, so Scripts/test/run-area.py does not know them: `split_classes`
 moves their names out of a request's `"classes"` into `"ios_ui_classes"` (the key is there only when it holds a name)
@@ -250,10 +252,29 @@ def all_classes(root=ROOT):
 
 
 def bundle_of(name, root=ROOT):
-    """The bundle the class `name` is in (UNIT_BUNDLE or UI_BUNDLE), or "" when neither holds it."""
+    """The bundle the class `name` (or the method `Class/testMethod`) is in (UNIT_BUNDLE or UI_BUNDLE), or "" when
+    neither holds it."""
+    name = shard.class_of(name)
     if name in unit_classes(root):
         return UNIT_BUNDLE
     return UI_BUNDLE if name in ui_classes(root) else ""
+
+
+def methods_of(name, root=ROOT):
+    """The test methods the iPhone class `name` holds, in file order, from its class and its extensions in the bundle's
+    sources (as `_counts_of` counts them); none for a name neither bundle holds."""
+    bundle = bundle_of(name, root)
+    files = unit_source_files(root) if bundle == UNIT_BUNDLE else swift_files(Path(root) / UI_FOLDER) if bundle else []
+    methods = []
+    for path in files:
+        text = without_mac_only(path.read_text(encoding="utf-8", errors="replace"))
+        scopes = [(match.start(), match.group("class") or match.group("ext").split(".")[-1])
+                  for match in _SCOPE.finditer(text)]
+        for index, (start, scope) in enumerate(scopes):
+            end = scopes[index + 1][0] if index + 1 < len(scopes) else len(text)
+            if scope == name:
+                methods += TEST_METHOD.findall(text[start:end])
+    return methods
 
 
 def test_counts(root=ROOT):
@@ -268,13 +289,18 @@ def unit_counts(root=ROOT):
 
 def counts_by_bundle(names, root=ROOT):
     """How many tests the classes `names` hold, as {bundle: count}, for the bundles they are in (a name in neither bundle
-    counts nowhere). The runner expects at least this many results back from each bundle."""
+    counts nowhere; a `Class/testMethod` counts one). The runner expects at least this many results back from each bundle."""
     held = {UNIT_BUNDLE: unit_counts(root), UI_BUNDLE: test_counts(root)}
     totals = {}
+    whole = {name for name in names if "/" not in name}
     for name in names:
+        # A `Class/testMethod` is one test; it adds nothing when its whole class is there too.
+        cls = shard.class_of(name)
+        if name != cls and cls in whole:
+            continue
         for bundle, counts in held.items():
-            if name in counts:
-                totals[bundle] = totals.get(bundle, 0) + counts[name]
+            if cls in counts:
+                totals[bundle] = totals.get(bundle, 0) + (counts[cls] if name == cls else 1)
     return totals
 
 
@@ -282,12 +308,12 @@ def split_classes(request, root=ROOT):
     """A copy of `request` with the iPhone test classes (of either bundle) named in its "classes" added to
     "ios_ui_classes" (joined with any already there, once each, in order). An iPhone-only class is moved out of "classes",
     so that "classes" holds only Mac test classes for run-area.py; a class the two bundles share stays in "classes" as
-    well, because the Mac still runs it."""
+    well, because the Mac still runs it. A `Class/testMethod` follows its class."""
     known = set(all_classes(root))
     shared = set(shared_classes(root))
     classes = list(request.get("classes", []))
-    moved = [name for name in classes if name in known]
-    kept = [name for name in classes if name not in known or name in shared]
+    moved = [name for name in classes if shard.class_of(name) in known]
+    kept = [name for name in classes if shard.class_of(name) not in known or shard.class_of(name) in shared]
     already = [name for name in request.get("ios_ui_classes", []) if isinstance(name, str)]
     joined = list(dict.fromkeys(already + moved))
     split = {**request, "classes": kept}
@@ -297,6 +323,20 @@ def split_classes(request, root=ROOT):
     else:
         split.pop("ios_ui_classes", None)
     return split
+
+
+def _named_in_order(every, names):
+    """The `names` that name a class or a method of a class in `every`, in the order of `every`: a class named whole stands
+    for itself (a method of it in `names` is dropped), and a class's methods follow in the order they were named."""
+    asked = [name for name in names if isinstance(name, str)]
+    whole = {name for name in asked if "/" not in name}
+    ordered = []
+    for cls in every:
+        if cls in whole:
+            ordered.append(cls)
+        else:
+            ordered += [name for name in dict.fromkeys(asked) if "/" in name and shard.class_of(name) == cls]
+    return ordered
 
 
 def wanted(request, root=ROOT):
@@ -310,7 +350,7 @@ def wanted(request, root=ROOT):
     if explicit is False:
         return []
     request = split_classes(request, root)
-    named = [name for name in every if name in set(request.get("ios_ui_classes", []))]
+    named = _named_in_order(every, request.get("ios_ui_classes", []))
     # "ios_ui": true with classes named runs those alone, as a request for classes does; with none it runs them all.
     if explicit is True:
         return named or every
@@ -373,7 +413,9 @@ def estimated_seconds(classes, root=ROOT, times=None):
         if name in times:
             seconds[name] = times[name]
             continue
-        counts = [(bundle, counted[name]) for bundle, counted in held.items() if name in counted]
+        # A `Class/testMethod` is one test of its class.
+        cls = shard.class_of(name)
+        counts = [(bundle, counted[cls] if name == cls else 1) for bundle, counted in held.items() if cls in counted]
         seconds[name] = counts[0][1] * SECONDS_PER_TEST[counts[0][0]] if counts else shard.DEFAULT_SECONDS
     return seconds
 

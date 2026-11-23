@@ -594,6 +594,16 @@ class SkipTests(RunnerTestCase):
         chosen = runner.selected_skips({"full": False, "areas": [], "classes": ["FooTests"]}, skips)
         self.assertEqual(chosen, [("FooTests", "testBar", "")])
 
+    def test_a_run_of_one_method_keeps_the_skips_of_its_class(self):
+        skips = [("FooTests", "testBar", ""), ("BazTests", "testQux", "")]
+        chosen = runner.selected_skips({"full": False, "areas": [], "classes": ["FooTests/testOther"]}, skips)
+        self.assertEqual(chosen, [("FooTests", "testBar", "")])
+
+    def test_a_result_tells_the_skips_of_the_class_of_a_method_asked_for(self):
+        import runner_skips
+        skips = [("FooTests", "testBar", "hangs"), ("BazTests", None, "slow")]
+        self.assertEqual(runner_skips.not_run_by(["FooTests/testOther"], skips), ["FooTests.testBar (hangs)"])
+
     def test_a_probe_request_leaves_nothing_out_however_much_it_asks_for(self):
         skips = [("FooTests", "testBar", ""), ("BazTests", "testQux", "")]
         for request in ({"full": True, "areas": [], "classes": []}, {"full": False, "areas": ["stats"], "classes": []},

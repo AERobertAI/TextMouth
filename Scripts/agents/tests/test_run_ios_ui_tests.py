@@ -428,6 +428,11 @@ class TheCommandTests(unittest.TestCase):
         self.assertEqual([a for a in self.command(["IOSRuntimeTests", "ReaderUITests"]) if a.startswith("-only-testing")],
                          ["-only-testing:TextMouthiOSTests/IOSRuntimeTests", "-only-testing:TextMouthiOSUITests/ReaderUITests"])
 
+    def test_a_method_is_named_under_its_class_in_its_bundle(self):
+        self.assertEqual([a for a in self.command(["ReaderUITests/testPlay", "IOSRuntimeTests/testA"]) if a.startswith("-only-testing")],
+                         ["-only-testing:TextMouthiOSUITests/ReaderUITests/testPlay",
+                          "-only-testing:TextMouthiOSTests/IOSRuntimeTests/testA"])
+
     def test_one_test_has_a_time_limit(self):
         command = self.command()
         self.assertEqual(command[command.index("-test-timeouts-enabled") + 1], "YES")
