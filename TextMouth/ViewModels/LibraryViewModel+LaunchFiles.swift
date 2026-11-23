@@ -4,8 +4,8 @@ import Foundation
 
 /// The few small files other services read when a library opens, besides
 /// the ones the library itself waits for: the settings (config.json), the
-/// substitutions, the reading statistics, and each feed's record. Never a
-/// book, and never an episode.
+/// substitutions, the reading statistics, the person's own interface lines,
+/// and each feed's record. Never a book, and never an episode.
 enum LibraryLaunchFile: Hashable, Sendable {
     /// config.json, the settings.
     case settings
@@ -13,6 +13,8 @@ enum LibraryLaunchFile: Hashable, Sendable {
     case substitutions
     /// reading_stats.json, the listening statistics.
     case readingStatistics
+    /// interface_text.json, the person's own interface lines (FR39).
+    case interfaceText
     /// A feed's record, in the Feeds folder.
     case feedRecord(UUID)
 }
@@ -30,6 +32,8 @@ struct LibraryLaunchFileTakeUp {
     var readingStatistics: @MainActor () -> Void
     /// A feed's record is on this Mac now.
     var feedRecords: @MainActor () -> Void
+    /// interface_text.json is on this Mac now.
+    var interfaceText: @MainActor () -> Void = {}
 
     /// The app's services.
     @MainActor static var app: LibraryLaunchFileTakeUp { LibraryLaunchFileTakeUp(
@@ -39,7 +43,8 @@ struct LibraryLaunchFileTakeUp {
             TextSubstitutionService.shared.readFileThatArrived()
         },
         readingStatistics: { ReadingStatsService.shared.fileMayHaveArrived() },
-        feedRecords: { Task { await FeedCenter.shared.store.loadRecordsInCloud() } }
+        feedRecords: { Task { await FeedCenter.shared.store.loadRecordsInCloud() } },
+        interfaceText: { InterfaceTextOverrides.shared.fileMayHaveArrived() }
     ) }
 
     /// Tells the service that reads `file` that it is on this Mac.
@@ -50,6 +55,7 @@ struct LibraryLaunchFileTakeUp {
         case .substitutions: substitutions()
         case .readingStatistics: readingStatistics()
         case .feedRecord: feedRecords()
+        case .interfaceText: interfaceText()
         }
     }
 }
@@ -79,7 +85,8 @@ extension LibraryViewModel {
         let known: [(LibraryLaunchFile, URL)] = [
             (.settings, TextMouthPaths.configFile),
             (.substitutions, TextMouthPaths.substitutionsFile),
-            (.readingStatistics, TextMouthPaths.readingStatsFile)
+            (.readingStatistics, TextMouthPaths.readingStatsFile),
+            (.interfaceText, TextMouthPaths.interfaceTextFile)
         ]
         let records = FeedPaths.recordsFolder(in: root)
         Task { [weak self] in

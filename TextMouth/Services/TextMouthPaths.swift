@@ -162,6 +162,15 @@ enum TextMouthPaths {
         root.appendingPathComponent("config.json")
     }
 
+    /// The person's own interface lines (FR39), beside config.json: written only by Edit Interface Text… on the Mac
+    /// (and by the person), never by a launch, a sync, or a move of the data directory.
+    static var interfaceTextFile: URL {
+        root.appendingPathComponent(interfaceTextFileName)
+    }
+
+    /// The file of own interface lines' name in the data directory.
+    static let interfaceTextFileName = "interface_text.json" // l10n: no (a file's name on disk)
+
     static var libraryIndexFile: URL {
         root.appendingPathComponent("library.json")
     }

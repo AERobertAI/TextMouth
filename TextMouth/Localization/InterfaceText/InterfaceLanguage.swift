@@ -74,6 +74,14 @@ enum InterfaceLanguage {
         publishChange()
     }
 
+    /// Tells everything that shows a line to read its text again, with the language unchanged: the person's own lines
+    /// changed (FR39). SwiftUI bodies that looked a line up run again, the `Commands` and the windows titled from code
+    /// follow, exactly as for a switch of language. Call it on the main thread.
+    static func refresh() {
+        observation.swap {}
+        publishChange()
+    }
+
     /// Tells the observers (the `Commands`' object and `didChange`'s listeners) on the main thread, whichever thread
     /// switched.
     private static func publishChange() {

@@ -535,6 +535,9 @@ final class LibraryViewModel: ObservableObject {
         // In a cloud library, the other small files it opens with that are
         // only in the cloud come down now, without holding anything back.
         fetchLaunchFilesInBackground()
+        // The person's own interface lines are read now, on a background queue (a file only in the cloud is read once
+        // the fetch above brings it), and followed from here on (FR39). Nothing here writes the file.
+        InterfaceTextOverrides.shared.start()
         // In a cloud library, a conflict copy a sync service set aside of
         // the index or a record is reported, once (Phase 0, compare0).
         reportConflictCopiesInBackground()

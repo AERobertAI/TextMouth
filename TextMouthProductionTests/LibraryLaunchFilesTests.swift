@@ -40,6 +40,19 @@ final class LibraryLaunchFilesTests: XCTestCase {
         XCTAssertTrue(waitUntil(timeout: 2) { model.libraryFilesBeingRead.isEmpty })
     }
 
+    /// The person's own interface lines (FR39) come down with the other launch files, and the service that reads them is
+    /// told when the file is on this Mac.
+    func testTheInterfaceTextFileIsFetchedAndItsServiceTold() throws {
+        let scene = try LaunchScene(test: self, label: "LaunchInterfaceText", inCloud: true)
+        let root = scene.fixture.root
+        scene.keepInCloud(root.appendingPathComponent(TextMouthPaths.interfaceTextFileName))
+
+        _ = scene.launch()
+
+        XCTAssertTrue(waitUntil(timeout: 5) { scene.takeUp.calls == ["interfaceText"] }, "heard \(scene.takeUp.calls)")
+        XCTAssertEqual(scene.fetched.names(in: root), [TextMouthPaths.interfaceTextFileName])
+    }
+
     /// A file that cannot be fetched is logged, not announced to its service,
     /// and no longer counts as being read.
     func testAFailedLaunchFileTellsNoService() throws {
@@ -184,7 +197,8 @@ private final class LaunchScene {
             settings: { takeUp.calls.append("settings") },
             substitutions: { takeUp.calls.append("substitutions") },
             readingStatistics: { takeUp.calls.append("readingStatistics") },
-            feedRecords: { takeUp.calls.append("feedRecords") }
+            feedRecords: { takeUp.calls.append("feedRecords") },
+            interfaceText: { takeUp.calls.append("interfaceText") }
         )
         return model
     }

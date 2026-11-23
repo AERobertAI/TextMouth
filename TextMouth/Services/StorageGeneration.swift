@@ -252,10 +252,14 @@ final class StorageBoundary: @unchecked Sendable {
         // Resolved before taking the lock: resolving reads the file system.
         let location = DataDirectoryLocation(root)
         condition.lock()
-        defer { condition.unlock() }
         earlierGenerations.append(generation)
         generation = StorageGeneration(number: generation.number + 1, root: root, location: location)
-        return generation
+        let published = generation
+        condition.unlock()
+        // Said with the lock released, so no observer can wait for it: what reads a file of the data directory by its
+        // path (the person's interface lines, FR39) reads it again at its new place.
+        NotificationCenter.default.post(name: .dataDirectoryDidMove, object: nil)
+        return published
     }
 
     /// The current generation and the earlier ones, read together.

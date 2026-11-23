@@ -149,6 +149,11 @@ extension Notification.Name {
     /// directory available again after it was not (FR02): services that
     /// left their files unread while it was missing read them now.
     static let dataDirectoryDidBecomeAvailable = Notification.Name("dataDirectoryDidBecomeAvailable")
+
+    /// Posted, on whichever thread published it, when a move of the data directory or a switch of library makes
+    /// another folder the data directory (`StorageBoundary.publish(root:)`): what reads a file there by its path reads it
+    /// again at the new place (FR39's interface lines).
+    static let dataDirectoryDidMove = Notification.Name("dataDirectoryDidMove")
 }
 
 /// Thrown in place of creating a data directory that is missing, or of
