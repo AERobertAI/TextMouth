@@ -44,6 +44,9 @@ sys.dont_write_bytecode = True
 
 # The repository's root: this file is in Scripts/ios.
 ROOT = Path(__file__).resolve().parents[2]
+# The Release size settings the Makefile gives the Mac build too, defined once in Scripts/size_settings.py.
+sys.path.insert(0, str(ROOT / "Scripts"))
+import size_settings  # noqa: E402
 
 # One megabyte, as Scripts/check.sh counts it.
 MEGABYTE = 1_000_000
@@ -290,7 +293,7 @@ def find_link_map(derived_data):
 
 def build_command(derived_data):
     """The argv of the device build: Release of the target TextMouthiOS for the iphoneos SDK, arm64, unsigned, small code
-    (-Osize, as the Makefile gives the Mac's Release build), no coverage, a link map, and the strip an archive does
+    (-Osize and Scripts/size_settings.py's LTO and reflection settings, as the Makefile gives the Mac's Release build), no coverage, a link map, and the strip an archive does
     (DEPLOYMENT_POSTPROCESSING=YES: a plain build leaves the symbol table in the executable, 14.1 MB of the iPhone app's
     27.5 MB on November 16, 2026, and the App Store's app is archived; the target's own STRIP_INSTALLED_PRODUCT=YES and
     STRIP_STYLE=all then apply, and the Mac app's Release settings in project.yml say the same)."""
@@ -299,7 +302,8 @@ def build_command(derived_data):
             f"SYMROOT={derived_data}/Build/Products", f"OBJROOT={derived_data}/Build/Intermediates.noindex",
             f"MODULE_CACHE_DIR={derived_data}/ModuleCache.noindex", "ARCHS=arm64",
             "CODE_SIGNING_ALLOWED=NO", "COMPILER_INDEX_STORE_ENABLE=NO", "CLANG_COVERAGE_MAPPING=NO",
-            "SWIFT_OPTIMIZATION_LEVEL=-Osize", "LD_GENERATE_MAP_FILE=YES", "DEPLOYMENT_POSTPROCESSING=YES"]
+            "SWIFT_OPTIMIZATION_LEVEL=-Osize", *size_settings.settings(), "LD_GENERATE_MAP_FILE=YES",
+            "DEPLOYMENT_POSTPROCESSING=YES"]
 
 
 def run_build(derived_data, limit_minutes):

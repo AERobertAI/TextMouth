@@ -63,6 +63,20 @@ NO_COVERAGE = CLANG_COVERAGE_MAPPING=NO
 # with NO_COVERAGE.
 SMALL_CODE = $(if $(filter Release,$(CONFIG)),SWIFT_OPTIMIZATION_LEVEL=-Osize)
 
+# The Release app's further size settings (November 23, 2026): link-time
+# optimization of the Swift and C code, -Oz for the C code, no names of
+# stored properties and enum cases in the reflection metadata, and two
+# experimental flags that drop unreferenced runtime records. Together they
+# took the Mac app from 22,295,720 to 18,125,080 bytes and the iPhone app from
+# 17,171,842 to 13,834,194 in the study of November 23, 2026
+# (research/SWIFT-SIZE-FLAGS-2026-11-23.md). Scripts/size_settings.py defines
+# them once, with what each one saved, and Scripts/ios/app-size.py reads the
+# same list for the iPhone build. Given on the command line, like SMALL_CODE,
+# they reach the Swift packages too. Release only: Debug, where the tests run,
+# keeps its own settings. The shell's quoting of each word is kept as written
+# (a value holds spaces and a "$(inherited)" xcodebuild reads itself).
+SIZE_SETTINGS = $(if $(filter Release,$(CONFIG)),$(shell python3 -I -B Scripts/size_settings.py))
+
 # Xcode records the exact Swift package revisions here. The file is committed,
 # so every checkout and CI run builds the same package versions.
 PACKAGE_RESOLVED = $(PROJECT)/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
@@ -219,6 +233,7 @@ build: generate
 		-destination 'platform=macOS' \
 		$(NO_COVERAGE) \
 		$(SMALL_CODE) \
+		$(SIZE_SETTINGS) \
 		CURRENT_PROJECT_VERSION="$(BUILD_NUMBER)" \
 		TEXTMOUTH_GIT_COMMIT="$(GIT_COMMIT)" \
 		TEXTMOUTH_BUILD_DATE="$(BUILD_DATE)" \
