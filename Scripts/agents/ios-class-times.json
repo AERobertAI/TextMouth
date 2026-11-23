@@ -1,6 +1,7 @@
 {
 "AudioZIPClassificationTests": 1.3,
 "BookSearchModelTests": 1.8,
+"BrailleUITests": 16.4,
 "CloudStorageContractTests": 1.9,
 "DOCXHiddenTextTests": 3.3,
 "DOCXMalformedXMLTests": 0.8,
@@ -9,6 +10,7 @@
 "InterfaceTextExportUITests": 50.6,
 "InterfaceTextOverridesIOSTests": 0.6,
 "KF8ReviewFixTests": 2.6,
+"LanguagePickerUITests": 296.2,
 "LargeTextUITests": 150.5,
 "LibrarySearchEngineTests": 11.7,
 "LibrarySearchSpecialsTests": 6.1,
@@ -26,6 +28,7 @@
 "ReaderUITests": 68.1,
 "ScreenOrderUITests": 261.1,
 "SearchUITests": 161.7,
+"SpanishUITests": 22.7,
 "SpeechPreparationSubstitutionTests": 3.9,
 "TextEncodingChoiceDecoderTests": 1.7,
 "TextutilHTMLStructureTests": 10.2,
