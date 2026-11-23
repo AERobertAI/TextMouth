@@ -8,6 +8,7 @@ final class FileEventWatcherTests: XCTestCase {
     // MARK: - Support
 
     /// What a watcher reported, and the descriptors it opened and closed.
+    @MainActor
     private final class Recorder {
         var settledBursts: [DispatchSource.FileSystemEvent] = []
         var gaveUp = 0
