@@ -982,26 +982,23 @@ final class BookExportModel: ObservableObject, Identifiable {
     // MARK: Choosing the Folder
 
     #if os(macOS)
-    /// The folder chooser of the dialog's Choose Folder… button: one folder,
-    /// with a button that makes a new one, starting in `folder`.
-    static func makeDestinationPanel(startingIn folder: URL) -> NSOpenPanel {
-        let panel = NSOpenPanel()
-        panel.canChooseDirectories = true
-        panel.canChooseFiles = false
-        panel.allowsMultipleSelection = false
-        panel.canCreateDirectories = true
-        panel.treatsFilePackagesAsDirectories = false
-        panel.title = BookExportWording.panelTitle
-        panel.message = BookExportWording.panelMessage
-        panel.prompt = BookExportWording.panelPrompt
-        panel.directoryURL = folder
-        return panel
+    /// The settings of the folder chooser of the dialog's Choose Folder…
+    /// button: one folder, with a button that makes a new one, starting in
+    /// `folder`. Settings only; the panel is built where it is presented.
+    static func makeDestinationPanel(startingIn folder: URL) -> FolderPanelSettings {
+        FolderPanelSettings(
+            canCreateDirectories: true,
+            title: BookExportWording.panelTitle,
+            message: BookExportWording.panelMessage,
+            prompt: BookExportWording.panelPrompt,
+            directoryURL: folder
+        )
     }
 
     /// Opens the folder chooser, as a sheet on `window` when there is one,
     /// and makes the folder chosen the destination.
     func chooseDestination(from window: PlatformWindow?) {
-        let panel = Self.makeDestinationPanel(startingIn: destination)
+        let panel = Self.makeDestinationPanel(startingIn: destination).makePanel()
         let take: (NSApplication.ModalResponse) -> Void = { [weak self] response in
             guard response == .OK, let folder = panel.url else { return }
             self?.destination = folder

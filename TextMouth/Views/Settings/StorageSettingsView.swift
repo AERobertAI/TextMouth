@@ -939,22 +939,22 @@ struct StorageSettingsView: View {
     /// chosen folder itself is the data directory; nothing is added to it.
     /// It starts in the folder holding the data directory, when that exists.
     @MainActor
-    static func makeLibraryFolderPanel(isLibraryAvailable: Bool) -> NSOpenPanel {
-        let panel = NSOpenPanel()
-        panel.canChooseDirectories = true
-        panel.canChooseFiles = false
-        panel.allowsMultipleSelection = false
-        panel.canCreateDirectories = true
-        panel.showsHiddenFiles = true
-        panel.treatsFilePackagesAsDirectories = false
-        panel.title = StorageLocationWording.panelTitle(isLibraryAvailable: isLibraryAvailable)
-        panel.message = StorageLocationWording.panelMessage(isLibraryAvailable: isLibraryAvailable)
-        panel.prompt = StorageLocationWording.panelPrompt(isLibraryAvailable: isLibraryAvailable)
+    static func makeLibraryFolderPanel(isLibraryAvailable: Bool) -> FolderPanelSettings {
+        FolderPanelSettings(
+            canCreateDirectories: true,
+            showsHiddenFiles: true,
+            title: StorageLocationWording.panelTitle(isLibraryAvailable: isLibraryAvailable),
+            message: StorageLocationWording.panelMessage(isLibraryAvailable: isLibraryAvailable),
+            prompt: StorageLocationWording.panelPrompt(isLibraryAvailable: isLibraryAvailable),
+            directoryURL: existingFolderHoldingTheLibrary()
+        )
+    }
+
+    /// The folder that holds the data directory, or nil when it doesn't
+    /// exist, where the storage choosers start.
+    private static func existingFolderHoldingTheLibrary() -> URL? {
         let holder = TextMouthPaths.root.deletingLastPathComponent()
-        if FileManager.default.fileExists(atPath: holder.path) {
-            panel.directoryURL = holder
-        }
-        return panel
+        return FileManager.default.fileExists(atPath: holder.path) ? holder : nil
     }
     #endif
 
@@ -963,22 +963,14 @@ struct StorageSettingsView: View {
     /// change: both copies are only read.
     #if os(macOS)
     @MainActor
-    static func makeCompareFolderPanel() -> NSOpenPanel {
-        let panel = NSOpenPanel()
-        panel.canChooseDirectories = true
-        panel.canChooseFiles = false
-        panel.allowsMultipleSelection = false
-        panel.canCreateDirectories = false
-        panel.showsHiddenFiles = true
-        panel.treatsFilePackagesAsDirectories = false
-        panel.title = LibraryComparisonWording.panelTitle
-        panel.message = LibraryComparisonWording.panelMessage
-        panel.prompt = LibraryComparisonWording.panelPrompt
-        let holder = TextMouthPaths.root.deletingLastPathComponent()
-        if FileManager.default.fileExists(atPath: holder.path) {
-            panel.directoryURL = holder
-        }
-        return panel
+    static func makeCompareFolderPanel() -> FolderPanelSettings {
+        FolderPanelSettings(
+            showsHiddenFiles: true,
+            title: LibraryComparisonWording.panelTitle,
+            message: LibraryComparisonWording.panelMessage,
+            prompt: LibraryComparisonWording.panelPrompt,
+            directoryURL: existingFolderHoldingTheLibrary()
+        )
     }
     #endif
 
@@ -986,7 +978,7 @@ struct StorageSettingsView: View {
     /// shows the Compare Libraries sheet for the folder chosen.
     private func chooseFolderToCompare() {
         #if os(macOS)
-        let panel = Self.makeCompareFolderPanel()
+        let panel = Self.makeCompareFolderPanel().makePanel()
         let compareChosenFolder: (NSApplication.ModalResponse) -> Void = { response in
             guard response == .OK, let folder = panel.url else { return }
             compareRequest = CompareRequest(folder: folder)
@@ -1005,7 +997,7 @@ struct StorageSettingsView: View {
     /// looks at the folder chosen.
     private func chooseFolder() {
         #if os(macOS)
-        let panel = Self.makeLibraryFolderPanel(isLibraryAvailable: unavailability == nil)
+        let panel = Self.makeLibraryFolderPanel(isLibraryAvailable: unavailability == nil).makePanel()
         let assessChosenFolder: (NSApplication.ModalResponse) -> Void = { response in
             guard response == .OK, let folder = panel.url else { return }
             assess(folder)
