@@ -54,14 +54,25 @@ final class LanguagePickerUITests: TextMouthUITestCase {
         // list (the last list in the tree: the screen under the sheet has one too), not on the whole app, whose swipe can drag
         // the sheet itself, and stops if the sheet is gone. Slowly, so the list's momentum does not carry a row past the screen
         // between two looks.
+        // A row counts as ready only when it is below the sheet's navigation bar: a row scrolled up under or past the bar
+        // still "exists" and "is hittable", but a tap on its middle lands on the bar or outside the sheet and chooses nothing
+        // (train 1123-0731 left the choices open that way, with the screen behind them unchanged). A row found above the
+        // bar is brought back by swiping down at once.
+        let bar = app.navigationBars[row]
+        func isReady() -> Bool {
+            choice.exists && choice.isHittable && (!bar.exists || choice.frame.minY >= bar.frame.maxY)
+        }
+        func isAboveTheBar() -> Bool {
+            choice.exists && bar.exists && choice.frame.minY < bar.frame.maxY
+        }
         for goingUp in [true, false] {
-            for _ in 0..<15 where !(choice.exists && choice.isHittable) {
-                guard app.navigationBars[row].exists, let list = app.collectionViews.allElementsBoundByIndex.last else { break }
-                if goingUp { list.swipeUp(velocity: .slow) } else { list.swipeDown(velocity: .slow) }
+            for _ in 0..<15 where !isReady() {
+                guard bar.exists, let list = app.collectionViews.allElementsBoundByIndex.last else { break }
+                if goingUp && !isAboveTheBar() { list.swipeUp(velocity: .slow) } else { list.swipeDown(velocity: .slow) }
             }
         }
         let seen = app.buttons.allElementsBoundByIndex.map(\.label).joined(separator: " | ")
-        XCTAssertTrue(choice.exists && choice.isHittable, "No such choice \(predicate). The buttons now made: \(seen)")
+        XCTAssertTrue(isReady(), "No such choice \(predicate), at \(choice.frame) under a bar ending at \(bar.frame.maxY). The buttons now made: \(seen)")
         choice.tap()
         for title in [row, rowAfter] where !app.navigationBars[title].waitForNonExistence(timeout: Self.patience) {
             // What is on the screen, sheet and all, so a failure says whether the choices were left open or only their bar.
