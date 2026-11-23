@@ -35,7 +35,7 @@ Every line is a call, written in a `…Wording` enum so that a test can name it:
   The first segment names the owner (the type without `Wording`), the next the member, and a switch's case may be a last segment.
   A text that several types share is `common.…`.
 - An ID is permanent and means one English text: a call elsewhere with other English needs an ID of its own.
-  Changing the English of an existing ID marks every other language's translation `needs_review`, so do it only on purpose.
+  Changing the English of an existing ID marks every other language's translation `needs_review`, so do it only on purpose, and translate it again.
 - An ID that left the catalog is never given again.
   `Scripts/l10n/retired-ids.txt` lists them, one to a line, `l10n.py prune` appends the ones it deletes, and `sync` and `lint` refuse a retired ID.
 - `python3 -I -B Scripts/l10n/ids.py suggest FILE:LINE` proposes an ID for the call on that line by these rules, clear of every ID in use and every retired one.
@@ -63,7 +63,7 @@ The pack's layout is in `Scripts/l10n/pack.py` and `InterfaceTextPack.swift`; th
 A lookup of `InterfaceText.line(id, english)` goes in this order:
 
 1. It finds the ID by binary search over the pack's ID list, with no allocation.
-2. For any language but English, it takes the language's entry for the ID.
+2. It takes the person's own line for the ID in the language when the person has one ([the person's own lines](../architecture/state/interface-text.md#the-persons-own-lines)), else, for any language but English, the language's entry for the ID.
    A plural entry gives the form `PluralRules` picks for the call's first number, and the last form when the call has no number.
 3. It checks the entry's specifiers against the call's arguments, once for each language and ID.
    Only five forms are allowed: `%@`, `%n$@`, `%lld`, `%n$lld`, and `%%`, each the kind of argument it reads, numbered and unnumbered never mixed.
@@ -90,7 +90,7 @@ Under hosted tests System is English with `en_US`, so the suite does not follow 
 - `followsInterfaceLanguage()` goes on the root of every window.
   It sets the view tree's locale and its layout direction, which is right to left for Arabic, Hebrew, Persian, and Urdu.
 - A window whose title the code sets once uses `WindowTitleFollower.follow(window) { title }`, which sets it again after each switch: the Record, Search Library, and audio editor windows, and the quit notice's panel.
-  A window or alert already open keeps its other words until it closes.
+  An alert or file panel already open keeps its words until it closes; every open window is worded again.
 - A test, or a title set that must read a line in another language, binds `InterfaceLanguage.$scopedLanguage.withValue("es") { … }`, or passes `language:` to `InterfaceText.line`, so nothing global changes.
 - A formatted number or date is written with the interface locale: use `interfaceFormatted()` (`TextMouth/Localization/InterfaceFormatting.swift`), not `Locale.current`, which keeps the launch's language after a live switch.
 
@@ -126,7 +126,8 @@ Run `l10n.py` as `python3 -I -B Scripts/l10n/l10n.py COMMAND`; `--help` lists ea
 
 - `make l10n-sync` brings the catalog into step with the code's calls, in about two seconds (below).
   Run it after adding or changing a line, commit the catalog with the code, and run `l10n.py check`, which must find 0 problems.
-  A new line ships in English until translators reach it.
+  The branch that adds or changes a line also translates it into all 24 other languages before it merges, with `l10n.py todo` and `apply` (see [Translating TextMouth](translation.md#the-steps)); `l10n.py status` must show 0 missing.
+  A line left in English shows English in every language, and each line is 24 texts to translate and review, so keep new text short and few.
 - `l10n.py check` holds the catalog to the code: each `en` equals the call's English, and the notes, placeholders, plural forms, empty values, stale IDs, and the bundle's language list are in order.
   `make l10n-check` runs it, then `verify_packs.py`, and `make check` runs `l10n-check`.
 - `make l10n-status` counts each language's strings by state (`LANG_CODE=es` for one), and `make l10n-size` is the size report.

@@ -24,6 +24,7 @@ Run every command as `python3 -I -B Scripts/l10n/l10n.py COMMAND`; `--help` afte
 
 1. `sync` reads the code's `InterfaceText.line` calls and merges them into the catalog, in about two seconds, with no build and no lock (see [How the sync reads the code](localization.md#how-the-sync-reads-the-code)).
    The agent that changed the code runs it, so a translator does not.
+   That agent also translates each line it added or changed, in all 24 languages, with steps 2 to 4 below, before its branch merges, and `status` must show 0 missing in every language.
    It also writes `build/l10n/locations.json`, the file and line of each ID and the commit it read them from, which `todo` reads for the code around a string.
    It copies each ID's note, the `// Translators:` line above its call, into the catalog as the ID's comment.
 2. `todo --lang es --out batch.json` writes a batch of up to 300 strings that still need Spanish.
