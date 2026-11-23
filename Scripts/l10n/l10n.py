@@ -270,7 +270,7 @@ def cmd_status(args):
 
 
 def pack_sizes(path):
-    """(the pack's total bytes, {blob name: (compressed bytes, raw bytes)}) of the pack that `pack.py` builds from the catalog at
+    """(the pack's total bytes, {blob name: (compressed bytes, raw bytes, method name)}) of the pack that `pack.py` builds from the catalog at
     `path`: `ids`, `notes`, `en`, and each language's blob, the sizes the apps ship. A Refused (status 1) when the catalog
     cannot be built into a pack (the sentences name why: `check` lists them all)."""
     try:
@@ -278,7 +278,7 @@ def pack_sizes(path):
     except pack.PackError as error:
         raise Refused("the pack cannot be built from the catalog, so it has no size (`check` says why): " + "; ".join(error.problems[:3]))
     blobs = pack.read_pack(data).blobs
-    return len(data), {name: (blob.compressed, blob.raw) for name, blob in blobs.items()}
+    return len(data), {name: (blob.compressed, blob.raw, pack.METHOD_NAMES[blob.method]) for name, blob in blobs.items()}
 
 
 def cmd_size(args):
@@ -289,14 +289,14 @@ def cmd_size(args):
     path = catalog_path(args)
     pack_bytes, blobs = pack_sizes(path)
     data = {"englishBytes": bytes_now, "budgetBytes": budget, "overBudget": bytes_now > budget, "catalogBytes": path.stat().st_size,
-            "packBytes": pack_bytes, "blobs": {name: {"compressed": packed, "raw": raw} for name, (packed, raw) in blobs.items()}}
+            "packBytes": pack_bytes, "blobs": {name: {"compressed": packed, "raw": raw, "method": method} for name, (packed, raw, method) in blobs.items()}}
     over = bytes_now - budget
     lines = [f"English text: {number(bytes_now)} bytes of {number(budget)} ({percent(bytes_now, budget)}); "
              + (f"{number(over)} over the budget." if over > 0 else f"{number(-over)} under the budget."),
              f"The catalog file: {number(data['catalogBytes'])} bytes (not shipped).",
-             f"The pack, Strings.pack: {number(pack_bytes)} bytes, one compressed blob for the IDs, the notes, English, and each language."]
-    for name, (packed, raw) in blobs.items():
-        lines.append(f"{name}: {number(packed)} bytes in the pack ({number(raw)} raw)")
+             f"The pack, Strings.pack: {number(pack_bytes)} bytes, one compressed blob (the smaller of LZMA and bzip2) for the IDs, the notes, English, and each language."]
+    for name, (packed, raw, method) in blobs.items():
+        lines.append(f"{name}: {number(packed)} bytes in the pack ({number(raw)} raw, {method})")
     emit(args, data, lines)
     return EXIT_OK
 

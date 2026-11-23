@@ -12,6 +12,7 @@ JSON what every language holds for every ID. To rewrite them after a change to t
 Tests compare decoded entries, never compressed bytes: the build phase's Python and a newer one may link different
 versions of liblzma, which may encode the same input differently.
 """
+import bz2
 import contextlib
 import hashlib
 import io
@@ -37,6 +38,8 @@ REAL_CATALOG = L10N.parent.parent / "TextMouth" / "Localization" / "Localizable.
 # The fixture catalogs, and the corrupt pack made from the first.
 FIXTURE_NAMES = ("lines", "plurals")
 CORRUPT_FIXTURE = FIXTURES / "lines-corrupt-utf8.pack"
+# The pack of the first catalog with both compression methods in it (ids, en, and es LZMA; the rest bzip2).
+MIXED_FIXTURE = FIXTURES / "lines-mixed-methods.pack"
 
 
 # ---------------------------------------------------------------------------------------------------------------
@@ -80,12 +83,23 @@ def regenerate():
         (FIXTURES / f"{name}.entries.json").write_text(description_text(data), encoding="utf-8")
         if name == "lines":
             CORRUPT_FIXTURE.write_bytes(pack.build_corrupt_utf8_pack_for_tests(plan))
+            MIXED_FIXTURE.write_bytes(pack.build_mixed_method_pack_for_tests(plan))
         print("wrote", name)
 
 
 # ---------------------------------------------------------------------------------------------------------------
 # Helpers that build small catalogs in a temporary folder.
 # ---------------------------------------------------------------------------------------------------------------
+
+def decompress_blob(data, method):
+    """The raw bytes of a blob `data` that `method` (a pack.METHOD_ code) compressed, by the standard library alone, so the
+    tests do not lean on pack.py's own reader."""
+    if method == pack.METHOD_LZMA:
+        return lzma.decompress(data, format=lzma.FORMAT_XZ)
+    if method == pack.METHOD_BZIP2:
+        return bz2.decompress(data)
+    raise AssertionError(f"unknown method {method}")
+
 
 def plain(text, state="translated"):
     """A plain localization."""
@@ -207,6 +221,16 @@ class FixtureTests(PackCase):
         self.assertIsNone(languages["ru"]["fixture.pendingBooks"])
         self.assertEqual({"text": "Półki: %lld"}, languages["pl"]["fixture.pendingBooks"])
 
+    def test_the_mixed_method_pack_holds_both_methods_and_the_same_entries(self):
+        mixed = MIXED_FIXTURE.read_bytes()
+        decoded = pack.read_pack(mixed)
+        methods = {name: blob.method for name, blob in decoded.blobs.items()}
+        self.assertEqual({"ids", "en", "es"}, {name for name, method in methods.items() if method == pack.METHOD_LZMA})
+        self.assertEqual({"notes", "ar", "ja", "ru"}, {name for name, method in methods.items() if method == pack.METHOD_BZIP2})
+        # The same entries as the builder's own pack, compressed differently.
+        self.assertEqual(self.raw_blobs_of((FIXTURES / "lines.pack").read_bytes()), self.raw_blobs_of(mixed))
+        self.assertEqual(pack.build_mixed_method_pack_for_tests(pack.build_plan(FIXTURES / "lines.xcstrings")), mixed)
+
     def test_the_corrupt_pack_is_well_formed_except_for_its_english(self):
         data = CORRUPT_FIXTURE.read_bytes()
         with self.assertRaises(pack.PackError) as caught:
@@ -229,9 +253,9 @@ class FixtureTests(PackCase):
         _, _, _, _, _, count = pack.HEADER.unpack_from(data)
         found = {}
         for index in range(count):
-            name, offset, size, raw_size, _ = pack.DIRECTORY_RECORD.unpack_from(
+            name, offset, size, raw_size, _, method = pack.DIRECTORY_RECORD.unpack_from(
                 data, pack.HEADER.size + index * pack.DIRECTORY_RECORD.size)
-            found[name.rstrip(b"\0").decode("ascii")] = lzma.decompress(data[offset:offset + size], format=lzma.FORMAT_XZ)
+            found[name.rstrip(b"\0").decode("ascii")] = decompress_blob(data[offset:offset + size], method)
             assert len(found[name.rstrip(b"\0").decode("ascii")]) == raw_size
         return found
 
@@ -251,21 +275,22 @@ class FormatTests(PackCase):
         path = FIXTURES / "lines.xcstrings"
         data = pack.build_bytes(pack.build_plan(path))
         magic, version, flags, digest, id_count, blob_count = struct.unpack_from("<4sHH32sII", data)
-        self.assertEqual((b"TMSP", 1, 0), (magic, version, flags))
+        self.assertEqual((b"TMSP", 2, 0), (magic, version, flags))
         self.assertEqual(hashlib.sha256(path.read_bytes()).digest(), digest)
         self.assertEqual(13, id_count)
         self.assertEqual(2 + 5, blob_count)
         self.assertEqual(48, pack.HEADER.size)
-        self.assertEqual(28, pack.DIRECTORY_RECORD.size)
-        offset = 48 + 28 * blob_count
+        self.assertEqual(32, pack.DIRECTORY_RECORD.size)
+        offset = 48 + 32 * blob_count
         names = []
         for index in range(blob_count):
-            raw_name, blob_offset, size, raw_size, count = struct.unpack_from("<12sIIII", data, 48 + 28 * index)
+            raw_name, blob_offset, size, raw_size, count, method = struct.unpack_from("<12sIIIII", data, 48 + 32 * index)
+            self.assertIn(method, pack.METHOD_NAMES)
             names.append(raw_name.rstrip(b"\0").decode("ascii"))
             self.assertEqual(12, len(raw_name))
             self.assertEqual(offset, blob_offset, "blobs follow the directory with no gap, in order")
             self.assertEqual(13, count)
-            raw = lzma.decompress(data[blob_offset:blob_offset + size], format=lzma.FORMAT_XZ)
+            raw = decompress_blob(data[blob_offset:blob_offset + size], method)
             self.assertEqual(raw_size, len(raw))
             self.assertEqual(13, raw.count(b"\0"), "every entry ends with a NUL")
             self.assertTrue(raw.endswith(b"\0"), "the last entry too")
@@ -792,7 +817,7 @@ class CheckTests(PackCase):
         data = bytearray(out.read_bytes())
         for label, damaged, phrase in (
             ("magic", b"XXXX" + bytes(data[4:]), "magic"),
-            ("version", bytes(data[:4]) + struct.pack("<H", 2) + bytes(data[6:]), "version"),
+            ("version", bytes(data[:4]) + struct.pack("<H", 1) + bytes(data[6:]), "version"),
             ("cut", bytes(data[:-5]), "past the end"),
             ("short", bytes(data[:10]), "shorter"),
         ):
@@ -814,6 +839,75 @@ class CheckTests(PackCase):
         with self.assertRaises(pack.PackError):
             pack.decode_blob("x", lzma.compress(b"one\0two", format=lzma.FORMAT_XZ), 7, 1)
 
+    def test_each_method_round_trips_through_the_reader(self):
+        raw = b"one\0two\0"
+        for method, data in ((pack.METHOD_LZMA, pack.compress(raw)), (pack.METHOD_BZIP2, pack.compress_bzip2(raw))):
+            with self.subTest(pack.METHOD_NAMES[method]):
+                blob = pack.decode_blob("x", data, len(raw), 2, method)
+                self.assertEqual(["one", "two"], blob.entries)
+                self.assertEqual(method, blob.method)
+
+    def test_a_bzip2_blob_that_is_cut_short_or_the_wrong_size_or_damaged_is_refused(self):
+        raw = b"one\0two\0" * 50
+        data = pack.compress_bzip2(raw)
+        for label, damaged, size in (
+            ("cut short", data[:-8], len(raw)),
+            ("a size too small", data, len(raw) - 1),
+            ("a size too large", data, len(raw) + 1),
+            # A byte flipped inside the block fails bzip2's own CRC.
+            ("a wrong checksum", data[:20] + bytes([data[20] ^ 0xFF]) + data[21:], len(raw)),
+        ):
+            with self.subTest(label), self.assertRaises(pack.PackError):
+                pack.decode_blob("x", damaged, size, 100, pack.METHOD_BZIP2)
+
+    def test_an_unknown_method_is_refused(self):
+        with self.assertRaisesRegex(pack.PackError, "method 7"):
+            pack.decode_blob("x", pack.compress(b"one\0"), 4, 1, 7)
+
+    def test_a_pack_that_names_an_unknown_method_is_refused(self):
+        _, out = self.build({"a.one": line("One", es="Uno")})
+        data = bytearray(out.read_bytes())
+        # The ids blob's record is the first; its method is the record's last field.
+        struct.pack_into("<I", data, pack.HEADER.size + pack.DIRECTORY_RECORD.size - 4, 9)
+        with self.assertRaisesRegex(pack.PackError, "method 9"):
+            pack.read_pack(bytes(data))
+
+    def test_the_smaller_method_is_chosen_and_a_tie_chooses_lzma(self):
+        tiny = b"x\0"
+        for raw in (tiny, ("A line of text, then another. " * 400).encode(), bytes(range(256)) * 20):
+            with self.subTest(len(raw)):
+                method, data = pack.compress_smallest(raw)
+                other = {pack.METHOD_LZMA: pack.compress_bzip2, pack.METHOD_BZIP2: pack.compress}[method](raw)
+                self.assertLessEqual(len(data), len(other))
+                self.assertEqual(raw, decompress_blob(data, method))
+        # A tie: both compressors replaced by ones that return equal-sized bytes.
+        with mock.patch.object(pack, "compress", return_value=b"aaaa"), mock.patch.object(pack, "compress_bzip2", return_value=b"bbbb"):
+            self.assertEqual((pack.METHOD_LZMA, b"aaaa"), pack.compress_smallest(b"x"))
+        with mock.patch.object(pack, "compress", return_value=b"aaaaa"), mock.patch.object(pack, "compress_bzip2", return_value=b"bbbb"):
+            self.assertEqual((pack.METHOD_BZIP2, b"bbbb"), pack.compress_smallest(b"x"))
+
+    def test_a_pack_uses_both_methods_and_is_the_same_bytes_twice(self):
+        strings = {f"a.line{index}": line("A line of English text, number %d." % index, es="Una línea de texto %d." % index)
+                   for index in range(60)}
+        plan = pack.build_plan(self.write_catalog(strings))
+        first, second = pack.build_bytes(plan), pack.build_bytes(plan)
+        self.assertEqual(first, second)
+        methods = {name: blob.method for name, blob in pack.read_pack(first).blobs.items()}
+        # The measure of the real pack: bzip2 is smaller for these blobs. The pack still reads whichever way each went.
+        self.assertIn(pack.METHOD_BZIP2, methods.values())
+        # A mixed pack: the ids blob forced to LZMA and the notes blob to bzip2, and both read back.
+        def by_name(raw, windowed=True):
+            if raw.startswith(b"a."):
+                return pack.METHOD_LZMA, pack.compress(raw, windowed)
+            return pack.METHOD_BZIP2, pack.compress_bzip2(raw)
+        with mock.patch.object(pack, "compress_smallest", side_effect=by_name):
+            decoded = pack.read_pack(pack.assemble(b"\0" * 32, 1, [("ids", b"a.one\0", 1), ("notes", b"note\0", 1)]))
+        self.assertEqual({"ids": pack.METHOD_LZMA, "notes": pack.METHOD_BZIP2}, {n: b.method for n, b in decoded.blobs.items()})
+
+    def test_the_stamp_names_the_format_version(self):
+        catalog_path = self.write_catalog({"a.one": line("One", es="Uno")})
+        self.assertEqual(pack.FORMAT_VERSION, pack.stamp_of(catalog_path, pack.MAX_ID_LENGTH)["formatVersion"])
+
     def test_size_reports_each_blob_and_the_window_comparison(self):
         _, out = self.build({"a.one": line("One", es="Uno")})
         code, said, _ = self.run_main("size", out, "--compare-window")
@@ -822,6 +916,8 @@ class CheckTests(PackCase):
             self.assertIn(name, said)
         self.assertIn("64 MiB window", said)
         self.assertIn("the pack", said)
+        # Each blob's method is shown.
+        self.assertRegex(said, r"es +\d+ +\d+ +\d+ +(lzma|bzip2)")
 
 
 # ---------------------------------------------------------------------------------------------------------------

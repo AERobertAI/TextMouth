@@ -2,7 +2,7 @@
 """pack.py: the builder of TextMouth's interface-text pack, `Strings.pack` (FR39, phase 2).
 
 The String Catalog (TextMouth/Localization/Localizable.xcstrings) stays the translators' database. This tool turns it
-into the one file the apps read: the IDs, the English, the translators' notes, and one LZMA blob for each language.
+into the one file the apps read: the IDs, the English, the translators' notes, and one compressed blob for each language.
 Standard library only, and it runs under Xcode's /usr/bin/python3 (3.9): nothing here needs a later Python.
 
     pack.py build   --catalog PATH --out PATH [--max-id-length N] [--stamp PATH] [--force] [--no-stamp]
@@ -11,14 +11,15 @@ Standard library only, and it runs under Xcode's /usr/bin/python3 (3.9): nothing
     pack.py size    PACK [--compare-window]
     pack.py corrupt-fixture --catalog PATH --out PATH    (a test-only pack: see below)
 
-The format, version 1 (little-endian). research/STRINGS-SYSTEM-DESIGN-2026-11-21.md, "The pack", is the specification.
+The format, version 2 (little-endian). research/STRINGS-SYSTEM-DESIGN-2026-11-21.md, "The pack", is the specification.
 - The header, 48 bytes: the magic `TMSP`, the version (u16), flags (u16, zero), the SHA-256 of the bytes of the catalog
   file the pack was built from (32 bytes: `shasum -a 256` of the file gives it), the number of IDs (u32), and the number of
   blobs (u32).
-- The directory, 28 bytes a blob: its name (12 bytes of ASCII padded with NULs), its offset from the start of the file,
-  its compressed size, its raw size, and its entry count (u32 each).
-- The blobs, each an xz stream (LZMA2), which Apple's COMPRESSION_LZMA decodes. In this order: `ids`, `notes`, `en`, and
-  then the other languages by code.
+- The directory, 32 bytes a blob: its name (12 bytes of ASCII padded with NULs), its offset from the start of the file,
+  its compressed size, its raw size, its entry count, and its method (u32 each).
+- The blobs, each compressed by its record's method: 0, an xz stream (LZMA2), which Apple's COMPRESSION_LZMA decodes, or
+  1, a bzip2 stream (level 9), which the system's libbz2 decodes. The builder compresses each blob both ways and keeps
+  the smaller, LZMA on a tie. In this order: `ids`, `notes`, `en`, and then the other languages by code.
 - A blob's raw bytes are its entries in UTF-8, each ending with a NUL, the last one too. `ids` holds the IDs in code-point
   order; every other blob holds one entry for each ID, in that order. `notes` holds each ID's translators' note ("" for
   none). A language entry is "" (no translation: the reader uses English), the text, or U+0001 followed by the plural
@@ -34,6 +35,10 @@ strings, and the .lproj folders keep the bundle's languages. Each file is replac
 stamp names each by hash. For now each holds only a comment; `info_plist_entries` is where future `infoPlist.*` IDs
 will be read.
 
+The compression method. Each blob is compressed both ways, LZMA and bzip2 (level 9), and the smaller is kept (LZMA on a
+tie); the directory record names the method, so the two can mix in one pack (the language blobs are bzip2's, as the
+measure of November 23, 2026 found). The apps' reader decodes bzip2 with the system's libbz2.
+
 The LZMA window. A blob's filter is given a dictionary size equal to the smallest power of two that is at least the
 blob's raw size (and at least 4 KiB), with preset 9 extreme otherwise. For inputs this small it compresses as the 64 MiB
 window does, give or take a few bytes, and it keeps the window a decoder may allocate small (`size --compare-window`
@@ -46,6 +51,7 @@ the catalog's hash, this file's, and the output's, so a build skips when none ha
 from __future__ import annotations
 
 import argparse
+import bz2
 import hashlib
 import json
 import lzma
@@ -67,11 +73,17 @@ import translate  # noqa: E402
 # ---------------------------------------------------------------------------------------------------------------
 
 MAGIC = b"TMSP"
-FORMAT_VERSION = 1
+FORMAT_VERSION = 2
 # The magic, the version, the flags, the catalog's SHA-256, the number of IDs, the number of blobs.
 HEADER = struct.Struct("<4sHH32sII")
-# The name, then the offset, the compressed size, the raw size, and the entry count.
-DIRECTORY_RECORD = struct.Struct("<12sIIII")
+# The name, then the offset, the compressed size, the raw size, the entry count, and the compression method.
+DIRECTORY_RECORD = struct.Struct("<12sIIIII")
+# The compression methods a directory record may name, and each one's name for the size report. LZMA is first, so that
+# it wins a tie.
+METHOD_LZMA, METHOD_BZIP2 = 0, 1
+METHOD_NAMES = {METHOD_LZMA: "lzma", METHOD_BZIP2: "bzip2"}
+# bzip2's level: the largest block (900 kB), which no blob here fills more than once.
+BZIP2_LEVEL = 9
 NAME_BYTES = 12
 # The marker that starts a plural entry, and the separator between its forms; every entry ends with the terminator.
 PLURAL_MARK = "\x01"
@@ -376,6 +388,29 @@ def compress(raw, windowed=True):
     return lzma.compress(raw, format=lzma.FORMAT_XZ, filters=[spec])
 
 
+def compress_bzip2(raw):
+    """The bzip2 stream of `raw`, at BZIP2_LEVEL."""
+    return bz2.compress(raw, BZIP2_LEVEL)
+
+
+def compress_with(method, raw, windowed=True):
+    """The bytes of `raw` compressed by `method` (a METHOD_ code); an unknown method is refused."""
+    if method == METHOD_LZMA:
+        return compress(raw, windowed)
+    if method == METHOD_BZIP2:
+        return compress_bzip2(raw)
+    raise PackError(f"there is no compression method {method}")
+
+
+def compress_smallest(raw, windowed=True):
+    """(method, bytes) of the smaller of `raw`'s two compressions, LZMA (`compress`) and bzip2 (`compress_bzip2`);
+    LZMA when they are the same size. Both compressors are deterministic, so the same raw bytes choose the same way."""
+    lzma_bytes, bzip2_bytes = compress(raw, windowed), compress_bzip2(raw)
+    if len(bzip2_bytes) < len(lzma_bytes):
+        return METHOD_BZIP2, bzip2_bytes
+    return METHOD_LZMA, lzma_bytes
+
+
 def raw_blob(entries):
     """The raw bytes of a blob: each entry as encode_entry writes it (an ID or a note is its own text), then a NUL."""
     return "".join(encode_entry(entry) + TERMINATOR for entry in entries).encode("utf-8")
@@ -386,20 +421,31 @@ def raw_blobs(plan):
     return [(name, raw_blob(entries), len(entries)) for name, entries in plan.blobs]
 
 
-def assemble(digest, id_count, blobs, windowed=True):
-    """The bytes of a pack: the header, the directory, and the blobs, each compressed. `blobs` is [(name, raw, count)]."""
-    packed = [compress(raw, windowed) for _, raw, _ in blobs]
+def assemble(digest, id_count, blobs, windowed=True, methods=None):
+    """The bytes of a pack: the header, the directory, and the blobs, each compressed by the method that makes it smaller.
+    `blobs` is [(name, raw, count)]. `methods` ({blob name: METHOD_ code}) forces a method for the blobs it names: for the
+    test fixtures only, since a shipped pack always takes the smaller."""
+    methods = methods or {}
+    packed = [(methods[name], compress_with(methods[name], raw, windowed)) if name in methods else compress_smallest(raw, windowed)
+              for name, raw, _ in blobs]
     offset = HEADER.size + DIRECTORY_RECORD.size * len(blobs)
     directory = b""
-    for (name, raw, count), data in zip(blobs, packed):
-        directory += DIRECTORY_RECORD.pack(name.encode("ascii"), offset, len(data), len(raw), count)
+    for (name, raw, count), (method, data) in zip(blobs, packed):
+        directory += DIRECTORY_RECORD.pack(name.encode("ascii"), offset, len(data), len(raw), count, method)
         offset += len(data)
-    return HEADER.pack(MAGIC, FORMAT_VERSION, 0, digest, id_count, len(blobs)) + directory + b"".join(packed)
+    return HEADER.pack(MAGIC, FORMAT_VERSION, 0, digest, id_count, len(blobs)) + directory + b"".join(data for _, data in packed)
 
 
 def build_bytes(plan, windowed=True):
     """The pack's bytes for `plan`."""
     return assemble(plan.digest, len(plan.ids), raw_blobs(plan), windowed)
+
+
+def build_mixed_method_pack_for_tests(plan, lzma_names=(IDS_BLOB, ENGLISH_BLOB, "es")):
+    """A pack for the Swift tests: the plan's pack, except that the blobs named in `lzma_names` are LZMA and every other
+    blob is bzip2, whichever is smaller, so that one file holds both methods whatever the sizes are."""
+    methods = {name: METHOD_LZMA if name in lzma_names else METHOD_BZIP2 for name, _ in plan.blobs}
+    return assemble(plan.digest, len(plan.ids), raw_blobs(plan), methods=methods)
 
 
 def build_corrupt_utf8_pack_for_tests(plan):
@@ -422,11 +468,12 @@ def build_corrupt_utf8_pack_for_tests(plan):
 @dataclass
 class Blob:
     """One decoded blob of a pack: its `name`, the compressed and raw sizes the directory gave, and its `entries`, the
-    texts as written (see decode_entry)."""
+    texts as written (see decode_entry). `method` is the METHOD_ code that compressed it."""
     name: str
     compressed: int
     raw: int
     entries: list
+    method: int = METHOD_LZMA
 
 
 @dataclass
@@ -451,11 +498,11 @@ def read_pack(data):
         raise PackError("the directory is cut short")
     blobs = {}
     for index in range(blob_count):
-        raw_name, offset, size, raw_size, count = DIRECTORY_RECORD.unpack_from(data, HEADER.size + index * DIRECTORY_RECORD.size)
+        raw_name, offset, size, raw_size, count, method = DIRECTORY_RECORD.unpack_from(data, HEADER.size + index * DIRECTORY_RECORD.size)
         name = raw_name.rstrip(b"\0").decode("ascii", "replace")
         if offset + size > len(data):
             raise PackError(f"blob {name} runs past the end of the file")
-        blobs[name] = decode_blob(name, data[offset:offset + size], raw_size, count)
+        blobs[name] = decode_blob(name, data[offset:offset + size], raw_size, count, method)
     if IDS_BLOB not in blobs:
         raise PackError("there is no ids blob")
     ids = blobs[IDS_BLOB].entries
@@ -464,13 +511,20 @@ def read_pack(data):
     return Pack(digest.hex(), ids, blobs)
 
 
-def decode_blob(name, data, raw_size, count):
-    """The Blob `name` from its xz bytes `data`, which must decode to exactly `raw_size` bytes of `count` NUL-terminated
-    UTF-8 entries. (The output is capped at one byte more than `raw_size`, so a hostile blob cannot grow without limit.)"""
-    decoder = lzma.LZMADecompressor(format=lzma.FORMAT_XZ)
+def decode_blob(name, data, raw_size, count, method=METHOD_LZMA):
+    """The Blob `name` from its compressed bytes `data` (compressed by `method`), which must decode to exactly `raw_size`
+    bytes of `count` NUL-terminated UTF-8 entries. (The output is capped at one byte more than `raw_size`, so a hostile
+    blob cannot grow without limit.) An unknown method is refused."""
+    if method == METHOD_LZMA:
+        decoder = lzma.LZMADecompressor(format=lzma.FORMAT_XZ)
+    elif method == METHOD_BZIP2:
+        decoder = bz2.BZ2Decompressor()
+    else:
+        raise PackError(f"blob {name} uses compression method {method}, which this tool does not know")
     try:
         raw = decoder.decompress(data, max_length=raw_size + 1)
-    except lzma.LZMAError as error:
+    except (lzma.LZMAError, OSError, ValueError) as error:
+        # bz2 reports damage as OSError ("Invalid data stream"), lzma as LZMAError.
         raise PackError(f"blob {name} does not decode: {error}")
     if len(raw) != raw_size or not decoder.eof:
         raise PackError(f"blob {name} decodes to a different size than the {raw_size} bytes its directory gives")
@@ -483,7 +537,7 @@ def decode_blob(name, data, raw_size, count):
     entries = text.split(TERMINATOR)[:-1]
     if len(entries) != count:
         raise PackError(f"blob {name} holds {len(entries)} entries and its directory says {count}")
-    return Blob(name, len(data), raw_size, entries)
+    return Blob(name, len(data), raw_size, entries, method)
 
 
 # ---------------------------------------------------------------------------------------------------------------
@@ -497,9 +551,9 @@ def file_hash(path):
 
 
 def stamp_of(catalog_path, max_id_length, display_name=""):
-    """What decides the output: the hashes of the catalog and this builder, the ID length limit, and the name a test
+    """What decides the output: the hashes of the format's version, the catalog and this builder, the ID length limit, and the name a test
     build gives the app (`display_name`, "" for none), so a build of another configuration writes its files again."""
-    return {"builder": file_hash(__file__), "catalog": file_hash(catalog_path), "maxIdLength": max_id_length,
+    return {"formatVersion": FORMAT_VERSION, "builder": file_hash(__file__), "catalog": file_hash(catalog_path), "maxIdLength": max_id_length,
             "displayName": display_name}
 
 
@@ -645,25 +699,30 @@ def compare(path_a, path_b):
 
 
 def size_report(pack_path, compare_window=False):
-    """Lines that report each blob of the pack (entries, compressed and raw bytes) and the totals; with `compare_window`,
-    each blob is recompressed with the preset's own 64 MiB window and both sizes are shown, with the saving."""
+    """Lines that report each blob of the pack (entries, raw and compressed bytes, and the method that compressed it) and
+    the totals; with `compare_window`, each blob is also compressed with LZMA twice, with the sized window and with the
+    preset's own 64 MiB one, and both sizes are shown, with the saving."""
     data = Path(pack_path).read_bytes()
     pack = read_pack(data)
-    lines = [f"{'blob':8} {'entries':>8} {'raw':>10} {'compressed':>11}" + (f" {'64 MiB window':>14} {'difference':>11}" if compare_window else "")]
-    total = unwindowed_total = 0
+    lines = [f"{'blob':8} {'entries':>8} {'raw':>10} {'compressed':>11} {'method':>7}"
+             + (f" {'lzma':>10} {'64 MiB window':>14} {'difference':>11}" if compare_window else "")]
+    total = sized_total = unwindowed_total = 0
     for name, blob in pack.blobs.items():
-        line = f"{name:8} {len(blob.entries):>8,} {blob.raw:>10,} {blob.compressed:>11,}"
+        line = f"{name:8} {len(blob.entries):>8,} {blob.raw:>10,} {blob.compressed:>11,} {METHOD_NAMES[blob.method]:>7}"
         if compare_window:
             raw = (TERMINATOR.join(blob.entries) + TERMINATOR).encode("utf-8")
-            wide = len(compress(raw, windowed=False))
+            sized, wide = len(compress(raw)), len(compress(raw, windowed=False))
+            sized_total += sized
             unwindowed_total += wide
-            line += f" {wide:>14,} {blob.compressed - wide:>+11,}"
+            line += f" {sized:>10,} {wide:>14,} {sized - wide:>+11,}"
         total += blob.compressed
         lines.append(line)
     overhead = len(data) - total
-    lines.append(f"blobs {total:,} bytes; header and directory {overhead:,}; the pack {len(data):,}")
+    methods = ", ".join(f"{sum(1 for b in pack.blobs.values() if b.method == code)} {label}" for code, label in METHOD_NAMES.items())
+    lines.append(f"blobs {total:,} bytes ({methods}); header and directory {overhead:,}; the pack {len(data):,}")
     if compare_window:
-        lines.append(f"with the 64 MiB window the blobs would be {unwindowed_total:,} bytes ({total - unwindowed_total:+,} with the sized window)")
+        lines.append(f"compressed by LZMA alone the blobs would be {sized_total:,} bytes with the sized window and "
+                     f"{unwindowed_total:,} with the 64 MiB window ({sized_total - unwindowed_total:+,})")
     return lines
 
 
