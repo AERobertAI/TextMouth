@@ -6,6 +6,8 @@
 "DOCXMalformedXMLTests": 0.8,
 "DOCXPictureAttributeTests": 1.8,
 "DOCXStructureTests": 0.6,
+"InterfaceTextExportUITests": 50.6,
+"InterfaceTextOverridesIOSTests": 0.6,
 "KF8ReviewFixTests": 2.6,
 "LargeTextUITests": 150.5,
 "LibrarySearchEngineTests": 11.7,
