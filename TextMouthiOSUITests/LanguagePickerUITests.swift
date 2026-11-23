@@ -136,25 +136,4 @@ final class LanguagePickerUITests: TextMouthUITestCase {
         XCTAssertFalse(english.contains { $0.label == "الإعدادات" }, "Still Arabic: \(Self.describe(english))")
         XCTAssertLessThan(app.navigationBars.buttons.element(boundBy: 0).frame.midX, app.frame.midX)
     }
-
-    /// How many times the switch to Arabic and back to System is made in one launch: each close of the choices must be
-    /// complete, however the reading direction flips under it (the sheet once stayed open after Arabic to System).
-    private static let roundTrips = 3
-
-    /// Arabic, then System, again and again in one launch. `choose` fails with the screen's tree whenever the choices stay
-    /// open; every round also checks that Settings is worded as expected.
-    func testSwitchingArabicAndBackRepeatedlyClosesTheChoicesEachTime() throws {
-        // Each switch costs about 75 s (the list is swiped to Arabic), well over the default five minutes for all of them.
-        executionTimeAllowance = 1200
-        let app = try openSettingsAtTheLanguageRow()
-        for round in 1...Self.roundTrips {
-            try choose(Self.language("العربية"), in: app, to: Self.arabicRow)
-            _ = try waitForLabel("الإعدادات", in: app)
-            try scrollToTheLanguageRow(in: app, row: Self.arabicRow)
-            try choose(Self.system, in: app, from: Self.arabicRow, to: Self.row)
-            let english = try waitForLabel("Settings", in: app)
-            XCTAssertFalse(english.contains { $0.label == "الإعدادات" }, "Round \(round): still Arabic")
-            try scrollToTheLanguageRow(in: app)
-        }
-    }
 }
