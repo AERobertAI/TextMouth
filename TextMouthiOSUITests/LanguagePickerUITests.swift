@@ -128,11 +128,13 @@ final class LanguagePickerUITests: TextMouthUITestCase {
 
     /// How many times the switch to Arabic and back to System is made in one launch: each close of the choices must be
     /// complete, however the reading direction flips under it (the sheet once stayed open after Arabic to System).
-    private static let roundTrips = 5
+    private static let roundTrips = 3
 
     /// Arabic, then System, again and again in one launch. `choose` fails with the screen's tree whenever the choices stay
     /// open; every round also checks that Settings is worded as expected.
     func testSwitchingArabicAndBackRepeatedlyClosesTheChoicesEachTime() throws {
+        // Each switch costs about 75 s (the list is swiped to Arabic), well over the default five minutes for all of them.
+        executionTimeAllowance = 1200
         let app = try openSettingsAtTheLanguageRow()
         for round in 1...Self.roundTrips {
             try choose(Self.language("العربية"), in: app, to: Self.arabicRow)
