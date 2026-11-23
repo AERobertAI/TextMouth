@@ -14,7 +14,8 @@ final class StorageDestinationSettingsTests: XCTestCase {
     // MARK: - The Folder Chooser
 
     /// The chooser picks one folder, never a file, shows hidden folders,
-    /// can make a new one, and its button names the action.
+    /// can make a new one, and its button names the action. Only its
+    /// settings are read: a test never builds a real panel.
     func testTheChooserShowsHiddenFoldersMakesNewOnesAndNamesItsAction() {
         let panel = StorageSettingsView.makeLibraryFolderPanel(isLibraryAvailable: true)
 

@@ -524,7 +524,7 @@ struct LibraryWindowView: View {
     /// books then joining the list (FR09).
     private func presentDAISYFolderPanel() {
         #if os(macOS)
-        let panel = LibraryViewModel.makeDAISYFolderPanel()
+        let panel = LibraryViewModel.makeDAISYFolderPanel().makePanel()
         let destination = currentFolderPath
         let origin = ImportOrigin(window: hostWindow)
         let addsToReadingList = shownView.kind == .readingList

@@ -997,8 +997,9 @@ final class DAISYPackageImportTests: XCTestCase {
     }
 
     /// The command's panel chooses folders, several at once, and no files,
-    /// with a title, message, and button that say what it does. The panel
-    /// is only built here, never presented.
+    /// with a title, message, and button that say what it does. Only its
+    /// settings are read here: a test never builds a real panel, which would
+    /// start the system's panel service and take the keyboard focus.
     @MainActor
     func testImportDAISYFolderPanelChoosesSeveralFoldersAndNoFiles() {
         let panel = LibraryViewModel.makeDAISYFolderPanel()

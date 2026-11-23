@@ -225,26 +225,24 @@ extension LibraryViewModel {
     // MARK: - Import Folder…
 
     #if os(macOS)
-    /// The panel the Import Folder… command presents (TODO I02, FR17): it
+    /// The settings of the panel the Import Folder… command presents (TODO I02, FR17): it
     /// chooses folders, several at once, and no files, since a DAISY book
     /// kept as loose files is imported by its folder, and so is a folder of
     /// audio tracks, as one audiobook. Here Return on a folder chooses it;
     /// the standard Open Book... panel offers files only, so Return on a
     /// folder there keeps opening the folder. A TextMouth package counts as
-    /// a file, so it cannot be chosen here.
-    static func makeDAISYFolderPanel() -> NSOpenPanel {
-        let panel = NSOpenPanel()
-        // Translators: Title of the panel that chooses folders to import. Title case.
-        panel.title = InterfaceText.line("libraryViewModel.makeDAISYFolderPanel.import", "Import Folder")
-        // Translators: Message of the panel that chooses folders to import. ncc.html and .opf are file names inside a DAISY book.
-        panel.message = InterfaceText.line("libraryViewModel.makeDAISYFolderPanel.audiobook", "Choose each folder to import: a DAISY book's folder, with its ncc.html or .opf file, or a folder of audio tracks, which becomes one audiobook.")
-        // Translators: Title of the button of the Import Folder panel that imports the chosen folders.
-        panel.prompt = InterfaceText.line("common.import", "Import")
-        panel.canChooseFiles = false
-        panel.canChooseDirectories = true
-        panel.allowsMultipleSelection = true
-        panel.canCreateDirectories = false
-        return panel
+    /// a file, so it cannot be chosen here. Settings only; the panel is
+    /// built where it is presented.
+    static func makeDAISYFolderPanel() -> FolderPanelSettings {
+        FolderPanelSettings(
+            allowsMultipleSelection: true,
+            // Translators: Title of the panel that chooses folders to import. Title case.
+            title: InterfaceText.line("libraryViewModel.makeDAISYFolderPanel.import", "Import Folder"),
+            // Translators: Message of the panel that chooses folders to import. ncc.html and .opf are file names inside a DAISY book.
+            message: InterfaceText.line("libraryViewModel.makeDAISYFolderPanel.audiobook", "Choose each folder to import: a DAISY book's folder, with its ncc.html or .opf file, or a folder of audio tracks, which becomes one audiobook."),
+            // Translators: Title of the button of the Import Folder panel that imports the chosen folders.
+            prompt: InterfaceText.line("common.import", "Import")
+        )
     }
     #endif
 
