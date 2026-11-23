@@ -8,13 +8,8 @@ import XCTest
 /// real domain. Nothing here makes sound: no book is sent, nothing is played or typed.
 @MainActor
 final class LanguagePickerUITests: TextMouthUITestCase {
-    /// The Language row's label, in English. The row and the choices' title are worded in the interface language, so after
-    /// a switch they are found by that language's words.
+    /// The Language row's label, in English.
     private static let row = "Interface Language"
-    /// The row's label, and the choices' title, in the catalog's Spanish.
-    private static let spanishRow = "Idioma de la interfaz"
-    /// The row's label, and the choices' title, in the catalog's Arabic.
-    private static let arabicRow = "لغة الواجهة"
 
     /// Opens Settings from the library and scrolls to the Language row, which waits among the later sections.
     private func openSettingsAtTheLanguageRow() throws -> XCUIApplication {
@@ -24,13 +19,13 @@ final class LanguagePickerUITests: TextMouthUITestCase {
         return app
     }
 
-    /// Swipes up until the row labelled `row` can be tapped, at most ten times.
-    private func scrollToTheLanguageRow(in app: XCUIApplication, row: String = LanguagePickerUITests.row) throws {
-        let button = app.buttons[row]
+    /// Swipes up until the row can be tapped, at most ten times.
+    private func scrollToTheLanguageRow(in app: XCUIApplication) throws {
+        let button = app.buttons[Self.row]
         for _ in 0..<10 where !(button.exists && button.isHittable) {
             app.swipeUp()
         }
-        XCTAssertTrue(button.exists && button.isHittable, "No \"\(row)\" row in Settings:\n\(app.debugDescription)")
+        XCTAssertTrue(button.exists && button.isHittable, "No Interface Language row in Settings:\n\(app.debugDescription)")
     }
 
     /// The first choice, System, whose label ends with the name of the language it gives (the simulator's English), however
@@ -42,11 +37,9 @@ final class LanguagePickerUITests: TextMouthUITestCase {
         NSPredicate(format: "label BEGINSWITH %@", ownName)
     }
 
-    /// Opens the choices from the row labelled `row`, in the words of the interface language now in use, and taps the one
-    /// `predicate` finds. `rowAfter` is the same title in the language the choice switches to: the open choices are worded
-    /// again at once, so they have closed only when neither title is left.
-    private func choose(_ predicate: NSPredicate, in app: XCUIApplication, from row: String = LanguagePickerUITests.row, to rowAfter: String) throws {
-        tap(app.buttons[row], until: app.navigationBars[row], in: app, what: "the \"\(row)\" row")
+    /// Opens the choices and taps the one `predicate` finds.
+    private func choose(_ predicate: NSPredicate, in app: XCUIApplication) throws {
+        tap(app.buttons[Self.row], until: app.navigationBars[Self.row], in: app, what: "the Interface Language row")
         let choice = app.buttons.matching(predicate).firstMatch
         // The list makes its rows lazily, sorts the languages by their own names, and opens at the current choice, so the row
         // wanted may be above or below: swipe up until it is made and can be tapped (a language in another script, Arabic, is
@@ -56,17 +49,14 @@ final class LanguagePickerUITests: TextMouthUITestCase {
         // between two looks.
         for goingUp in [true, false] {
             for _ in 0..<15 where !(choice.exists && choice.isHittable) {
-                guard app.navigationBars[row].exists, let list = app.collectionViews.allElementsBoundByIndex.last else { break }
+                guard app.navigationBars[Self.row].exists, let list = app.collectionViews.allElementsBoundByIndex.last else { break }
                 if goingUp { list.swipeUp(velocity: .slow) } else { list.swipeDown(velocity: .slow) }
             }
         }
         let seen = app.buttons.allElementsBoundByIndex.map(\.label).joined(separator: " | ")
         XCTAssertTrue(choice.exists && choice.isHittable, "No such choice \(predicate). The buttons now made: \(seen)")
         choice.tap()
-        for title in [row, rowAfter] where !app.navigationBars[title].waitForNonExistence(timeout: Self.patience) {
-            // What is on the screen, sheet and all, so a failure says whether the choices were left open or only their bar.
-            XCTFail("The choices stayed open, as \"\(title)\":\n\(app.debugDescription)")
-        }
+        XCTAssertTrue(app.navigationBars[Self.row].waitForNonExistence(timeout: Self.patience), "The choices stayed open")
     }
 
     /// Waits until the screen's elements include `label`, and returns them in order.
@@ -85,18 +75,17 @@ final class LanguagePickerUITests: TextMouthUITestCase {
     /// System puts English back. The Language row says the chosen language by its own name.
     func testSpanishAndBackToSystem() throws {
         let app = try openSettingsAtTheLanguageRow()
-        try choose(Self.language("Español"), in: app, to: Self.spanishRow)
+        try choose(Self.language("Español"), in: app)
         // "About" and "Version" in the catalog's Spanish, on the screen that was open: it was worded again in place.
         let spanish = try waitForLabel("Acerca de", in: app)
         XCTAssertTrue(spanish.contains { $0.label == "Versión" || $0.label.hasPrefix("Versión") }, "Spanish Settings: \(Self.describe(spanish))")
-        // The row is a button, worded in Spanish too; the section's heading carries the same words and no value, and comes
-        // first.
-        let languageRow = try XCTUnwrap(spanish.first { $0.label == Self.spanishRow && $0.type == .button })
+        // The row is a button; the section's heading carries the same words and no value, and comes first.
+        let languageRow = try XCTUnwrap(spanish.first { $0.label == Self.row && $0.type == .button })
         XCTAssertEqual(languageRow.value, "Español", "The row says the language by its own name")
         keepScreenshot(of: app, named: "Settings in Spanish")
 
-        try scrollToTheLanguageRow(in: app, row: Self.spanishRow)
-        try choose(Self.system, in: app, from: Self.spanishRow, to: Self.row)
+        try scrollToTheLanguageRow(in: app)
+        try choose(Self.system, in: app)
         let english = try waitForLabel("About", in: app)
         XCTAssertFalse(english.contains { $0.label == "Acerca de" }, "Still Spanish: \(Self.describe(english))")
     }
@@ -109,7 +98,7 @@ final class LanguagePickerUITests: TextMouthUITestCase {
         XCTAssertTrue(backBeforeTheSwitch.exists)
         XCTAssertLessThan(backBeforeTheSwitch.frame.midX, app.frame.midX, "Back starts at the left, in English")
 
-        try choose(Self.language("العربية"), in: app, to: Self.arabicRow)
+        try choose(Self.language("العربية"), in: app)
         // The title "Settings", and the heading "Times": the screen is worded again at its top.
         let arabic = try waitForLabel("الإعدادات", in: app)
         keepScreenshot(of: app, named: "Settings in Arabic")
@@ -117,9 +106,9 @@ final class LanguagePickerUITests: TextMouthUITestCase {
         let back = app.navigationBars.buttons.element(boundBy: 0)
         XCTAssertGreaterThan(back.frame.midX, app.frame.midX, "Back moved to the right, the reading direction of Arabic")
 
-        // Back to System, which puts English and the left-to-right layout back. The row is worded in Arabic now.
-        try scrollToTheLanguageRow(in: app, row: Self.arabicRow)
-        try choose(Self.system, in: app, from: Self.arabicRow, to: Self.row)
+        // Back to System, which puts English and the left-to-right layout back.
+        try scrollToTheLanguageRow(in: app)
+        try choose(Self.system, in: app)
         // English is back: the screen is at its top, where the title is "Settings" and no heading is Arabic.
         let english = try waitForLabel("Settings", in: app)
         XCTAssertFalse(english.contains { $0.label == "الإعدادات" }, "Still Arabic: \(Self.describe(english))")
