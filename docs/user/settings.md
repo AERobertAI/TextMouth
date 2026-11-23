@@ -41,9 +41,12 @@ The list holds System first, then the 25 languages in the order of their own nam
   Where the two names are the same, as "English" in an English interface, the label is that name alone.
 
 Choosing a language switches the whole interface at once: the menus, the windows, and the messages, with no restart.
+On the iPhone the switch happens as the list of choices closes.
+The picker's own words, its choices, and the announcement are translated too, so they read in the language you chose.
 VoiceOver then announces the new language's own name after the words "Interface language", in the new language.
 For Arabic, Hebrew, Persian, and Urdu the windows read from right to left.
-A window or alert that was open before the switch keeps its other words until it closes, and the titles of the windows that are open follow.
+Every open window is worded again, and its title follows.
+An alert or a file panel that was open before the switch keeps its words until it closes.
 Under the pop-up a line says that some of the words macOS itself supplies (the standard menu items, the open and save panels) change the next time TextMouth opens; the iPhone's says the same of iOS's own words.
 
 The choice is the same one System Settings shows for TextMouth.
@@ -51,6 +54,28 @@ On the Mac that is System Settings, General, Language & Region, Applications; on
 A choice made in either place, and the picker's own choice, are one setting.
 A choice made in System Settings reaches TextMouth the next time it opens, and the picker then shows it.
 The picker and System Settings do not change the language of the voice, which speaks a book in the voice's own language, the transcription language (see [Transcribing an audiobook](transcribing.md)), or the braille language (see the Braille tab).
+
+## Your own words for the interface
+<!-- id: interface-own-lines; keys: interface_text.json, own lines, Edit Interface Text, Export Interface Text, change a word, ignored lines, Miscellaneous tab; src: TextMouth/Views/Settings/InterfaceLanguageSettingsSection.swift, TextMouth/Models/InterfaceTextOverridesWording.swift, TextMouth/Platform/macOS/Services/InterfaceTextEditing.swift, TextMouth/Platform/iOS/Views/Settings/PhoneSettingsView.swift, TextMouth/Services/InterfaceTextOverrides.swift -->
+
+You can change any of TextMouth's words for the language you use, in a file named interface_text.json in the data folder (see [interface_text.json](data-directory-files.md#interface_textjson-your-own-interface-lines)).
+Your line wins over TextMouth's for that line, in that language, and TextMouth reads a change when you save the file, with no restart.
+Under the Interface Language pop-up on the Mac, and under its row on the iPhone, the group says:
+- "Your own lines in use:" and a number, then "Your own lines ignored:" and a number;
+- for each ignored line, "Ignored line", the line's ID, "in" the language, and the reason, as in "It has no text.";
+- for each line you changed whose English has since changed, "Check line", the ID, and the language: your line still applies;
+- and, after 50 of either kind, "And" a number "more ignored lines.
+  The debug log lists each one." or "And" a number "more lines to check, whose English has changed.
+  They are in your file."
+- A problem with the whole file is one sentence, "Problem with your file of own lines." and its reason.
+Each is plain text, so VoiceOver and a braille display read it where it is.
+The Mac's group has two buttons, and the iPhone's has the second:
+- Edit Interface Text… fills the file with every line of the interface language as it reads now, when the file does not exist or has no lines for that language, and opens it in your editor.
+  A file that already has the language is opened as it is, and a file whose version TextMouth does not know is left alone, which VoiceOver says.
+  If the file cannot be made or opened, VoiceOver says so.
+- Export Interface Text… saves every line of the interface language as it reads now, with your own lines marked, to a file you choose, named "interface_text-" and the language's code.
+  The Mac asks where in a save panel and the iPhone in the system's file exporter.
+  VoiceOver says "Exported the interface text to" and the file's name, or that it could not be exported, which the iPhone also shows as an alert.
 
 ## Open the next book in
 <!-- id: open-next-book; keys: nextBookWindow, End of Book, When book ends, This Window, A New Window, next book; src: TextMouth/Models/NextBookWindow.swift, TextMouth/Views/NextBookWindowPicker.swift, TextMouth/Views/Settings/SettingsView.swift -->
