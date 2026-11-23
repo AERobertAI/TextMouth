@@ -452,9 +452,12 @@ final class BardBrailleTests: XCTestCase {
     /// their volumes.
     func testEscapedAndNestedHrefsFindTheirVolumes() throws {
         let files = try volumeFiles()
+        let first = try XCTUnwrap(files["salt-v1.brf"])
+        let second = try XCTUnwrap(files["salt-v2.brf"])
+        let third = try XCTUnwrap(files["salt-v3.brf"])
         let (_, file) = try packageFolder(
             packageText(manifest: ["vol%201.brf", "sub/vol2.brf", "salt-v3.brf"]),
-            volumes: ["vol 1.brf": files["salt-v1.brf"]!, "sub/vol2.brf": files["salt-v2.brf"]!, "salt-v3.brf": files["salt-v3.brf"]!]
+            volumes: ["vol 1.brf": first, "sub/vol2.brf": second, "salt-v3.brf": third]
         )
         let package = try BardBraillePackage.open(at: file)
         XCTAssertEqual(package.volumePaths, ["vol 1.brf", "sub/vol2.brf", "salt-v3.brf"])
