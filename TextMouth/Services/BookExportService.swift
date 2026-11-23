@@ -979,9 +979,11 @@ enum BookExportService {
 
     /// Whether `file`, `book`'s own file, is the navigation or package file
     /// of a DAISY book kept as loose files, laid out at the top of its
-    /// package as in its own folder (TODO I02).
+    /// package as in its own folder (TODO I02), or the package file of an NLS
+    /// BARD braille book kept the same way (FMT56), whose volumes are then
+    /// exported with it.
     private static func isLooseDAISYEntry(_ file: URL, of book: Book) -> Bool {
-        book.format == .daisy
+        (book.format == .daisy || (book.format == .braille && BardBraillePackage.isPackageName(file.lastPathComponent)))
             && DAISYParser.isPackageEntryFile(file)
             && file.deletingLastPathComponent().standardizedFileURL.path == book.tmbDirectory.standardizedFileURL.path
     }
