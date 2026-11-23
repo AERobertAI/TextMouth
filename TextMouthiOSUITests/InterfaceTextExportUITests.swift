@@ -34,16 +34,19 @@ final class InterfaceTextExportUITests: TextMouthUITestCase {
         let cancels = app.descendants(matching: .any).matching(NSPredicate(format: "label == %@", "Cancel"))
         XCTAssertTrue(cancels.firstMatch.waitForExistence(timeout: Self.patience), "The exporter did not open:\n\(app.debugDescription)")
 
-        // Tap what the exporter offers as Cancel, the last one made first, until the app's own button can be tapped again:
-        // the exporter is closed then. (The exporter's tree holds more than one element with that label.)
-        var closed = false
-        for _ in 0..<3 where !closed {
-            for index in (0..<cancels.count).reversed() where !closed {
-                let candidate = cancels.element(boundBy: index)
-                guard candidate.exists, candidate.isHittable else { continue }
-                candidate.tap()
-                closed = XCTWaiter().wait(for: [expectation(for: NSPredicate(format: "isHittable == true"), evaluatedWith: app.buttons[Self.button])], timeout: 10) == .completed
-            }
+        // The exporter is closed when its Save button is gone. A person dismisses a sheet by dragging it down from its top, which
+        // is a cancel too; if that leaves it open, tap what it offers as Cancel, if that can be tapped (its only Cancel may
+        // share the place of the More button).
+        let save = app.buttons["Save"]
+        let from = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.08))
+        let to = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.98))
+        from.press(forDuration: 0.1, thenDragTo: to)
+        var closed = save.waitForNonExistence(timeout: 10)
+        for index in (0..<cancels.count).reversed() where !closed {
+            let candidate = cancels.element(boundBy: index)
+            guard candidate.exists, candidate.isHittable else { continue }
+            candidate.tap()
+            closed = save.waitForNonExistence(timeout: 10)
         }
         XCTAssertTrue(closed, "The exporter stayed open:\n\(app.debugDescription)")
         scrollToTheButton(in: app)
