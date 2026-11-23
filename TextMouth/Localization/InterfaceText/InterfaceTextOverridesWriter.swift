@@ -45,7 +45,8 @@ enum InterfaceTextOverridesWriter {
         kept["languages"] = nil
         kept["version"] = nil
         let others = kept.keys.sorted().map { ($0, Node(any: kept[$0] ?? NSNull())) }
-        let all = (languages.keys.sorted().map { ($0, Node(any: languages[$0] ?? NSNull())) } + [(reference.language, added)])
+        // Each other language keeps its lines, in the fixed order of a line (a person's editor may have put `base` first).
+        let all = (languages.keys.sorted().map { ($0, Node.existingLanguage(languages[$0] ?? NSNull(), code: $0)) } + [(reference.language, added)])
             .sorted { $0.0 < $1.0 }
         return root(languages: all, others: others).rendered
     }
@@ -119,6 +120,8 @@ enum InterfaceTextOverridesWriter {
 private indirect enum Node {
     case string(String)
     case int(Int)
+    /// A number of someone's file, as JSON writes it (`0.5`, a whole number past `Int`'s range).
+    case number(String)
     case bool(Bool)
     case null
     case array([Node])
@@ -141,10 +144,10 @@ private indirect enum Node {
             // A boolean is an NSNumber too; its type code tells it from a number.
             if String(cString: number.objCType) == "c" {
                 self = .bool(number.boolValue)
-            } else if NSNumber(value: number.intValue) == number {
-                self = .int(number.intValue)
+            } else if let data = try? JSONSerialization.data(withJSONObject: number, options: [.fragmentsAllowed]) {
+                self = .number(String(decoding: data, as: UTF8.self))
             } else {
-                self = .string(number.stringValue)
+                self = .null
             }
         case let list as [Any]:
             self = .array(list.map(Node.init(any:)))
@@ -153,6 +156,31 @@ private indirect enum Node {
         default:
             self = .null
         }
+    }
+
+    /// A language of someone's file that Edit does not fill: its content as it was, with each line's fields in the fixed order
+    /// (`text` or `plural`, `english`, `note`, `base` or `basePlural`, `changed`, then any other field by name) and its plural
+    /// forms in the language's own order. `code` is the key the file names the language by.
+    static func existingLanguage(_ value: Any, code: String) -> Node {
+        guard let body = value as? [String: Any] else { return Node(any: value) }
+        return .object(body.keys.sorted().map { key -> (String, Node) in
+            guard key == "lines", let lines = body[key] as? [String: Any] else { return (key, Node(any: body[key] ?? NSNull())) }
+            return (key, .object(lines.keys.sorted().map { ($0, existingLine(lines[$0] ?? NSNull(), code: code)) }))
+        })
+    }
+
+    /// One line of someone's file in the fixed order of a line.
+    private static func existingLine(_ value: Any, code: String) -> Node {
+        guard let line = value as? [String: Any] else { return Node(any: value) }
+        let first = ["text", "plural", "english", "note", "base", "basePlural", "changed"] // l10n: no (the file's own keys)
+        let ordered = first.filter { line[$0] != nil } + line.keys.filter { !first.contains($0) }.sorted()
+        let language = InterfaceLanguage.carriedLanguage(code) ?? code
+        return .object(ordered.map { key -> (String, Node) in
+            if ["plural", "basePlural", "english"].contains(key), let forms = line[key] as? [String: String] { // l10n: no (the file's own keys)
+                return (key, .forms(forms, language: key == "english" ? "en" : language)) // l10n: no (a language code)
+            }
+            return (key, Node(any: line[key] ?? NSNull()))
+        })
     }
 
     /// The UTF-8 bytes, with a line feed at the end.
@@ -169,6 +197,7 @@ private indirect enum Node {
         switch self {
         case .string(let text): out += Self.quoted(text)
         case .int(let number): out += String(number)
+        case .number(let text): out += text
         case .bool(let flag): out += flag ? "true" : "false"
         case .null: out += "null"
         case .array(let items):
