@@ -11,16 +11,15 @@
 #   TextPipelineGoldenTests, DocumentGoldenTests (the 57 files of
 #   TestData/golden), MarkupGuardTests (SwiftSoup's own output compared),
 #   PortableXMLDifferentialTests, ParserContentFidelityTests, and
-#   ReflectionNamesTests (the text of every name the Release build's reflection
-#   metadata no longer holds).
+#   ReflectionNamesTests (the text of the names the logs and IDs write out).
 #
 # The Release build here is the shipped one with only what a test host needs
 # changed, so the compiled Swift code is the shipped code:
 #   -configuration Release       Release's optimization (-Osize in project.yml)
 #   SWIFT_OPTIMIZATION_LEVEL     -Osize for the Swift packages too, as the
 #                                Makefile's build rule gives it (SMALL_CODE)
-#   the size settings            full LTO for Swift and C, -Oz for C, reflection
-#                                metadata without names, and -conditional-runtime-
+#   the size settings            full LTO for Swift and C, -Oz for C, and
+#                                -conditional-runtime-
 #                                records: Scripts/size_settings.py's list, the
 #                                Makefile's SIZE_SETTINGS, so the optimizer's
 #                                output is what is tested. One flag is LEFT OUT:

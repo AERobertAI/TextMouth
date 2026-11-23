@@ -293,7 +293,7 @@ def find_link_map(derived_data):
 
 def build_command(derived_data):
     """The argv of the device build: Release of the target TextMouthiOS for the iphoneos SDK, arm64, unsigned, small code
-    (-Osize and Scripts/size_settings.py's LTO and reflection settings, as the Makefile gives the Mac's Release build), no coverage, a link map, and the strip an archive does
+    (-Osize and Scripts/size_settings.py's size settings (LTO and the like), as the Makefile gives the Mac's Release build), no coverage, a link map, and the strip an archive does
     (DEPLOYMENT_POSTPROCESSING=YES: a plain build leaves the symbol table in the executable, 14.1 MB of the iPhone app's
     27.5 MB on November 16, 2026, and the App Store's app is archived; the target's own STRIP_INSTALLED_PRODUCT=YES and
     STRIP_STYLE=all then apply, and the Mac app's Release settings in project.yml say the same)."""

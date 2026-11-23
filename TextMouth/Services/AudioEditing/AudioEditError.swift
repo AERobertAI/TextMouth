@@ -101,9 +101,7 @@ enum AudioEditError: LocalizedError, Equatable, Sendable {
 
     /// The case's name alone, never its payload, for the debug log (which must
     /// not hold a file's name or path). Written out, not read from the value
-    /// with `String(describing:)`: the Release build drops enum case names
-    /// from the binary's reflection metadata (`Scripts/size_settings.py`), so
-    /// reflection would give the type's name for every case.
+    /// with `String(describing:)`, which would also print the payload.
     var caseName: String {
         switch self {
         case .bookNotInLibrary: return "bookNotInLibrary"

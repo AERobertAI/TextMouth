@@ -18,6 +18,7 @@ import shlex
 import sys
 
 # Each entry: (name, value, what it does and what it saved). Order is the order passed to xcodebuild.
+# Reflection metadata is left at its default, with names (see the note below SETTINGS).
 # The savings are the study's, in bytes on the Mac app and the iPhone app, measured on top of the others.
 SETTINGS = (
     # Full link-time optimization of the Swift code, packages included: the optimizer sees the whole program at
@@ -29,14 +30,15 @@ SETTINGS = (
     ("LLVM_LTO", "YES"),
     # -Oz for the C code, the smallest: LAME and liblouis run a little slower, which no one hears.
     ("GCC_OPTIMIZATION_LEVEL", "z"),
-    # Drop the names of stored properties and enum cases from the binary's reflection metadata
-    # (-disable-reflection-names; the types' own names stay): 132,096 bytes alone, 4,170,640 with the rest on the
-    # Mac, 3,337,648 on the iPhone. A value printed with String(describing:), "\(value)", print, dump, or Mirror
-    # then shows no case or field names: no shipped text depends on that (see EnumDescriptionTests), and any
-    # enum whose name is shown or stored has an explicit description or raw value.
-    ("SWIFT_REFLECTION_METADATA_LEVEL", "without-names"),
     # The experimental compiler flags, in FRONTEND_FLAGS below, are joined into this one setting.
 )
+
+# NOT adopted: SWIFT_REFLECTION_METADATA_LEVEL=without-names (the study's 132,096 bytes alone on the Mac). It drops the names of enum cases and stored properties, so `"\(error)"` and
+# `String(describing:)` then show only a type's name: 28 debug-log lines print an error or a case that way, and the
+# user's problem reports depend on those lines. Every future error enum would need its name written out by hand for
+# 0.13 MB, so names stay (the orchestrator's decision of November 23, 2026). Three places that stored or logged a
+# name through reflection are written out anyway (PhoneImportQuestion.Choice.id, AudioEditError.caseName,
+# RecordingCaptureError.description), pinned by ReflectionNamesTests.
 
 # Experimental frontend flags, each passed as `-Xfrontend FLAG`, with what it does and saved. Together they saved
 # 151,712 bytes on the Mac app on top of full LTO (the study measured the pair, not each alone).

@@ -1,14 +1,15 @@
 import XCTest
 @testable import TextMouth
 
-/// The Release build drops the names of enum cases and stored properties from
-/// the binary's reflection metadata (`SWIFT_REFLECTION_METADATA_LEVEL =
-/// without-names`, set by `Scripts/size_settings.py`), so `String(describing:)`,
-/// `"\(value)"`, `print`, and `Mirror` no longer show them: an enum case then
-/// prints as its type's name. These tests pin the text of every place that
-/// shows or stores such a name, by writing it out, so that the text is the same
-/// in Debug and in Release. They are in `Scripts/test/release-goldens.sh`'s
-/// classes, which run them against the optimizer's output.
+/// Three places show or store the name of an enum case, and write that name
+/// out instead of reading it by reflection (`String(describing:)`,
+/// `"\(value)"`): the audio editor's log line, the capture error's log text, and
+/// the iPhone import question's choice ID. These tests pin each text, so the
+/// text stays the same if the way it is made changes (the Release build could
+/// drop case names from reflection, `SWIFT_REFLECTION_METADATA_LEVEL =
+/// without-names`, which `Scripts/size_settings.py` does not set). They are in
+/// `Scripts/test/release-goldens.sh`'s classes, so they also run against the
+/// optimizer's output.
 final class ReflectionNamesTests: XCTestCase {
 
     /// Every audio edit error names itself in the debug log by its case

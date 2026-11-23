@@ -29,15 +29,18 @@ size_settings = load("size_settings", SCRIPTS / "size_settings.py")
 class SizeSettingsTests(unittest.TestCase):
     def test_the_recommended_set_and_nothing_the_study_rejected(self):
         found = size_settings.settings()
-        self.assertEqual(found[:4], ["SWIFT_LTO=YES", "LLVM_LTO=YES", "GCC_OPTIMIZATION_LEVEL=z",
-                                     "SWIFT_REFLECTION_METADATA_LEVEL=without-names"])
-        flags = found[4]
+        self.assertEqual(found[:3], ["SWIFT_LTO=YES", "LLVM_LTO=YES", "GCC_OPTIMIZATION_LEVEL=z"])
+        flags = found[3]
         self.assertTrue(flags.startswith("OTHER_SWIFT_FLAGS=$(inherited) "))
         self.assertIn("-Xfrontend -conditional-runtime-records", flags)
         self.assertIn("-Xfrontend -internalize-at-link", flags)
         # Saved nothing in the study, and "none" was left for a person to check in the app.
         for rejected in ("-enable-llvm-vfe", "-enable-llvm-wme", "=none"):
             self.assertNotIn(rejected, " ".join(found))
+
+    def test_reflection_metadata_keeps_its_names(self):
+        # The debug log prints errors and enum cases through reflection; without-names would show only the type.
+        self.assertFalse(any("REFLECTION" in item for item in size_settings.settings()))
 
     def test_the_makefile_form_is_shell_quoted_words(self):
         # One word per setting, the spaces of a value kept inside its word.
@@ -46,9 +49,9 @@ class SizeSettingsTests(unittest.TestCase):
 
     def test_the_goldens_leave_out_internalize_at_link_alone(self):
         found = size_settings.settings(without=size_settings.LEFT_OUT_FOR_TESTS)
-        self.assertEqual(len(found), 5)
-        self.assertIn("-Xfrontend -conditional-runtime-records", found[4])
-        self.assertNotIn("internalize", found[4])
+        self.assertEqual(len(found), 4)
+        self.assertIn("-Xfrontend -conditional-runtime-records", found[3])
+        self.assertNotIn("internalize", found[3])
         self.assertIn("SWIFT_LTO=YES", found)
 
     def test_leaving_out_every_flag_leaves_no_other_swift_flags(self):

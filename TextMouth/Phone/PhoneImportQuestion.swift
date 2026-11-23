@@ -18,7 +18,7 @@ struct PhoneImportQuestion: Equatable, Identifiable {
         /// What the choice answers, with the folder name for Create Folder
         /// read when it is pressed.
         /// The raw values are the case names, written out: `id` is built from
-        /// them, and the Release build drops case names from reflection.
+        /// them, so the ID never depends on how a case prints.
         enum Action: String, Equatable {
             case keepBoth
             case replaceExisting

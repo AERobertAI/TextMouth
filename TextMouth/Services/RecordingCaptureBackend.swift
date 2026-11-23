@@ -50,9 +50,8 @@ enum RecordingCaptureError: Error, Equatable, Sendable {
 
 /// How the debug log names a capture error: the case's name, then its words in
 /// quotes when it has them, as Swift's own description of an enum case reads
-/// (`setupFailed("no input")`). Written out because the Release build drops
-/// enum case names from the binary's reflection metadata
-/// (`Scripts/size_settings.py`), which Swift's own description reads.
+/// (`setupFailed("no input")`). Written out, so the log's text is one the
+/// code and its test own.
 extension RecordingCaptureError: CustomStringConvertible {
     var description: String {
         switch self {

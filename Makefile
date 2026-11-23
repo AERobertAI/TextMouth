@@ -64,8 +64,7 @@ NO_COVERAGE = CLANG_COVERAGE_MAPPING=NO
 SMALL_CODE = $(if $(filter Release,$(CONFIG)),SWIFT_OPTIMIZATION_LEVEL=-Osize)
 
 # The Release app's further size settings (November 23, 2026): link-time
-# optimization of the Swift and C code, -Oz for the C code, no names of
-# stored properties and enum cases in the reflection metadata, and two
+# optimization of the Swift and C code, -Oz for the C code, and two
 # experimental flags that drop unreferenced runtime records. Together they
 # took the Mac app from 22,295,720 to 18,125,080 bytes and the iPhone app from
 # 17,171,842 to 13,834,194 in the study of November 23, 2026

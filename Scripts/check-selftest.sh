@@ -1354,7 +1354,7 @@ makefile_cases() {
   expect_status 0
   expect_report "SWIFT_OPTIMIZATION_LEVEL=-Osize"
   expect_report "SWIFT_LTO=YES"
-  expect_report "SWIFT_REFLECTION_METADATA_LEVEL=without-names"
+  refute_report "SWIFT_REFLECTION_METADATA_LEVEL"
   expect_report "-Xfrontend -internalize-at-link"
   refute_report "SWIFT_COMPILATION_MODE"
   output=$(cd "$sandbox" && "$REAL_MAKE" -n build CONFIG=Debug 2>&1)
@@ -1381,7 +1381,7 @@ makefile_cases() {
   expect_report "DEPLOYMENT_POSTPROCESSING=NO"
   # The optimizer's own settings are tested too, less the one flag a test bundle cannot link against.
   expect_report "SWIFT_LTO=YES"
-  expect_report "SWIFT_REFLECTION_METADATA_LEVEL=without-names"
+  refute_report "SWIFT_REFLECTION_METADATA_LEVEL"
   expect_report "-Xfrontend -conditional-runtime-records"
   refute_report "-internalize-at-link"
   expect_report "-only-testing:TextMouthProductionTests/TextPipelineGoldenTests"
