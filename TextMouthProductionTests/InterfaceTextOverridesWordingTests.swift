@@ -93,6 +93,29 @@ final class InterfaceTextOverridesWordingTests: XCTestCase {
         XCTAssertEqual(summary.details.last, "And 70 more ignored lines. The debug log lists each one.")
     }
 
+    /// The line for the rest is a plural line: "1 more" says line, not lines.
+    func testTheMoreLineIsPlural() {
+        var outcome = InterfaceTextOverridesOutcome()
+        outcome.ignored = (0..<51).map { .init(key: key(String(format: "line.n%03d", $0)), reason: .unknownID) }
+
+        let summary = InterfaceTextOverridesSummary(outcome, languageName: names)
+
+        XCTAssertEqual(summary.details.last, "And 1 more ignored line. The debug log lists it.")
+    }
+
+    /// The list of lines whose English changed stops at 50 as well, and says how many more there are.
+    func testTheOutdatedListIsCutToo() {
+        var outcome = InterfaceTextOverridesOutcome()
+        outcome.outdatedEnglish = (0..<55).map { key(String(format: "line.n%03d", $0)) }
+
+        let summary = InterfaceTextOverridesSummary(outcome, languageName: names)
+
+        XCTAssertEqual(summary.details.count, InterfaceTextOverridesSummary.largestList + 1)
+        XCTAssertEqual(summary.details.last, "And 5 more lines to check, whose English has changed. They are in your file.")
+        outcome.outdatedEnglish.removeLast(54)
+        XCTAssertEqual(InterfaceTextOverridesSummary(outcome, languageName: names).details.count, 1)
+    }
+
     // MARK: - Reasons
 
     /// Every reason has its own sentence, in full, ending as a sentence ends, none repeated.

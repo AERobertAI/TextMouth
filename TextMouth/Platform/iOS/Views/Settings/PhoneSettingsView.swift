@@ -58,6 +58,8 @@ struct PhoneSettingsView: View {
     @State private var interfaceTextExport: InterfaceTextExportDocument?
     /// Whether the file exporter is up.
     @State private var isExportingInterfaceText = false
+    /// Whether the alert saying the interface text could not be exported is up.
+    @State private var exportFailed = false
 
     /// - Parameters:
     ///   - settings: The app's settings model.
@@ -125,8 +127,15 @@ struct PhoneSettingsView: View {
             document: interfaceTextExport,
             contentType: .json,
             defaultFilename: InterfaceTextOverrides.exportFileName(language: InterfaceLanguage.current.language),
-            onCompletion: finishInterfaceTextExport
+            onCompletion: { finishInterfaceTextExport(InterfaceTextExportOutcome($0)) },
+            // A cancel never reaches `onCompletion`: without this, focus would not come back and the document would stay.
+            onCancellation: { finishInterfaceTextExport(.cancelled) }
         )
+        // An export that failed is an alert, as the failure of Share Logs is, and not only a sentence VoiceOver speaks.
+        .alert(PhoneSettingsRow.exportInterfaceText.title, isPresented: isShowingExportFailure) {
+        } message: {
+            Text(InterfaceTextOverridesWording.exportFailed)
+        }
         // With no buttons given, the system gives an alert its standard OK.
         .alert(PhoneSettingsRow.shareLogs.title, isPresented: isShowingLogsFailure) {
         } message: {
@@ -449,24 +458,28 @@ struct PhoneSettingsView: View {
     /// system's file exporter. Say so when there is nothing to export.
     private func exportInterfaceText() {
         guard let data = overrides.exportData() else {
-            VoiceOverAnnouncer.announce(InterfaceTextOverridesWording.exportFailed)
+            InterfaceTextOverrides.logExportFailure("there is no pack to export from") // l10n: no (debug log text)
+            exportFailed = true
             return
         }
         interfaceTextExport = InterfaceTextExportDocument(data: data)
         isExportingInterfaceText = true
     }
 
-    /// The file exporter finished: tells how it went (a cancel says nothing), and brings focus back to the button.
-    private func finishInterfaceTextExport(_ result: Result<URL, Error>) {
-        switch result {
-        case .success(let url):
-            VoiceOverAnnouncer.announce(InterfaceTextOverridesWording.exported(fileName: url.lastPathComponent))
-        case .failure(let error):
-            if (error as? CocoaError)?.code != .userCancelled {
-                VoiceOverAnnouncer.announce(InterfaceTextOverridesWording.exportFailed)
-            }
-        }
+    /// The file exporter finished, or was cancelled: tells how it went (a cancel says nothing), lets go of the document, and
+    /// brings focus back to the button, unless an alert is up, whose closing does.
+    private func finishInterfaceTextExport(_ outcome: InterfaceTextExportOutcome) {
         interfaceTextExport = nil
+        switch outcome {
+        case .exported(let fileName):
+            VoiceOverAnnouncer.announce(InterfaceTextOverridesWording.exported(fileName: fileName))
+        case .cancelled:
+            break
+        case .failed(let reason):
+            InterfaceTextOverrides.logExportFailure(reason)
+            exportFailed = true
+            return
+        }
         returnFocus(to: .exportInterfaceText)
     }
 
@@ -551,6 +564,18 @@ struct PhoneSettingsView: View {
         Binding(
             get: { removal.preferences.confirmsFirst },
             set: { removal.setConfirmsFirst($0) }
+        )
+    }
+
+    /// Whether the alert saying the interface text could not be exported is up. Focus returns to the button when it's closed.
+    private var isShowingExportFailure: Binding<Bool> {
+        Binding(
+            get: { exportFailed },
+            set: { isShowing in
+                guard !isShowing else { return }
+                exportFailed = false
+                returnFocus(to: .exportInterfaceText)
+            }
         )
     }
 
