@@ -392,6 +392,14 @@ struct ImportedFileMetadata {
             if readingTextutilNames, let named = try? TextutilDocumentReader.readMetadata(from: url, bookFormat: format) {
                 adopt(title: named.title, author: named.author)
             }
+        case .braille where BardBraillePackage.isPackage(at: url):
+            // An NLS BARD braille book names its title, author, publisher,
+            // date, language, and identifier in its package (FMT56), which a
+            // BRF's title page is no match for.
+            if let named = BardBraillePackage.readMetadata(from: url) {
+                adopt(title: named.title, author: named.author)
+                metadata.epub = named.epub
+            }
         case .braille:
             // A PEF names its title and author in its head (FMT20); a BRF
             // names them on its title page, in braille (`BrailleTitlePage`);
@@ -1251,6 +1259,9 @@ enum FileImportService {
     /// the book is read.
     static func brailleFileCode(ofImported url: URL) -> String? {
         guard BrailleBookReader.kind(of: url) != .pef else { return nil }
+        // An NLS BARD braille book's volumes are BRF files in North American
+        // Braille ASCII, whatever the Braille setting's code is (FMT56).
+        if BardBraillePackage.isPackage(at: url) { return BrailleFileCode.northAmerican.id }
         return BrailleFileReader.certainCode(ofFileAt: url)?.id ?? BraillePreferences.importFileCode()
     }
 
@@ -1263,6 +1274,12 @@ enum FileImportService {
     /// `origin` saying it was guessed (`BrailleTableGuess`, brfguess).
     static func brailleReading(ofImported url: URL) -> (table: String, fileCode: String?, origin: BrailleTableOrigin?) {
         let fileCode = brailleFileCode(ofImported: url)
+        // An NLS BARD braille book's package names its table (FMT56): the
+        // choice stands for good, so it is not a guess. A package that names
+        // none TextMouth has is read as a plain BRF is, below.
+        if let packageTable = BardBraillePackage.importTable(forFileAt: url) {
+            return (packageTable, fileCode, nil)
+        }
         let chosen = BrailleTableGuess.table(
             forImportedFileAt: url, fileCode: fileCode,
             settingTable: BraillePreferences.importTable(), guessing: BraillePreferences.importGuessesTable()
@@ -1353,7 +1370,10 @@ enum FileImportService {
     /// source, a DAISY ZIP included, and for any source in another format,
     /// such as an unpacked EPUB that also has a package file.
     private static func daisyPackage(of source: URL, format: BookFormat?) throws -> DAISYPackageInventory? {
-        guard format == .daisy else { return nil }
+        // An NLS BARD braille book (FMT56) is a braille book kept as loose
+        // files the same way: its package file and its volumes. `ofSource`
+        // answers nil for any other braille source, a plain BRF included.
+        guard format == .daisy || format == .braille else { return nil }
         return try DAISYPackageInventory.ofSource(source)
     }
 
@@ -2400,6 +2420,7 @@ enum FileImportService {
               values.isRegularFile == true,
               let size = values.fileSize, size > 0,
               book.pathExtension.lowercased() != "zip",
+              !BardBraillePackage.isPackageName(book.lastPathComponent),
               let format = BookFormat.detect(from: book), format != .audio, format != .daisy else { return nil }
         return Int64(size)
     }
@@ -3250,6 +3271,9 @@ enum FileImportService {
         if let daisy = UTType("com.textmouth.daisy-book") {
             types.append(daisy)
         }
+        // NLS BARD braille books (FMT56): a .bopf package file, which macOS
+        // declares no type for; the app imports one in Info.plist.
+        types.append(UTType(importedAs: "com.textmouth.bopf-package", conformingTo: .xml))
         types.append(.zip)
         types.append(contentsOf: [UTType("public.text")].compactMap { $0 })
         if let tmb = UTType("com.textmouth.book-package") {

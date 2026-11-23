@@ -22,6 +22,9 @@ extension DAISYParser {
     /// a package file (`.opf`) or a navigation file (`ncc.html`).
     static func isPackageEntryName(_ name: String) -> Bool {
         (name as NSString).pathExtension.lowercased() == "opf" || isNCCFileName(name)
+            // An NLS BARD braille book's package, which has the form of a
+            // DAISY 3 package, stands for its book the same way (FMT56).
+            || BardBraillePackage.isPackageName(name)
     }
 
     /// Whether `url` names a file that stands for a DAISY book: its package
@@ -452,7 +455,10 @@ struct DAISYPackageInventory {
         // With no DTBook in its manifest, the reader searches the whole
         // folder for one (`DAISYParser.extractMarkdown`), so the copy must
         // hold everything that search would see.
-        guard package.manifest.values.contains(where: { $0.mediaType.contains("dtbook") }) else {
+        // A BARD braille book's package lists BRF volumes, no DTBook, and the
+        // reader reads those and nothing else (`BardBraillePackage`, FMT56).
+        guard BardBraillePackage.isPackageName(entryPath)
+                || package.manifest.values.contains(where: { $0.mediaType.contains("dtbook") }) else {
             return "the manifest of “\(entryPath)” lists no DTBook content file" // l10n: no (a parser's damage reason)
         }
         for href in package.manifest.values.map(\.href).sortedStably() {

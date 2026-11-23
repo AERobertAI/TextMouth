@@ -451,7 +451,10 @@ enum DAISYParser {
         // Cached, since detection and the count of books both list the archive.
         let provider = CachingFileProvider(wrapping: ArchiveFileProvider(archive: archive))
         guard !provider.listFiles().contains(where: FileImportService.liesInTMBPackage) else { return false }
-        guard detectVersion(in: provider) != nil else { return false }
+        // A DAISY book, or an NLS BARD braille book, whose package has the
+        // same form and imports as one book too (FMT56).
+        guard detectVersion(in: provider) != nil
+                || BardBraillePackage.holdsPackage(inArchivePaths: provider.listFiles()) else { return false }
         let folders = packageFolders(inArchivePaths: provider.listFiles())
         return folders.count <= 1 || folders.contains("")
     }
@@ -469,7 +472,10 @@ enum DAISYParser {
     /// Create the appropriate file provider for a URL (ZIP, directory, or single file).
     /// Returns a CachingFileProvider that avoids redundant listFiles() calls during
     /// version detection, OPF lookup, and metadata extraction.
-    private static func makeFileProvider(from url: URL) throws -> DAISYFileProvider {
+    /// Internal, since an NLS BARD braille book's package, which has the form
+    /// of a DAISY 3 package, is read through the same providers
+    /// (`BardBraillePackage`, FMT56).
+    static func makeFileProvider(from url: URL) throws -> DAISYFileProvider {
         guard FileManager.default.fileExists(atPath: url.path) else {
             throw DAISYParserError.fileNotFound(url.path)
         }
