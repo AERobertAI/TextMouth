@@ -33,6 +33,7 @@ struct FolderPanelSettings: Equatable {
     /// Sets every field on `panel`. The one place the settings become a
     /// panel's, so a recording fake in a test sees exactly what a real panel
     /// would. A nil `directoryURL` leaves the panel's own starting folder.
+    @MainActor
     func apply<Panel: FolderPanelConfigurable>(to panel: Panel) {
         panel.canChooseDirectories = canChooseDirectories
         panel.canChooseFiles = canChooseFiles
