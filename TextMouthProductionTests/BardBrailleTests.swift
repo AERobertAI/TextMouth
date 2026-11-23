@@ -677,6 +677,11 @@ final class BardBrailleTests: XCTestCase {
         XCTAssertEqual(try FileImportService.importHash(of: folder), same)
         let (_, otherFile) = try packageFolder()
         XCTAssertEqual(try FileImportService.importHash(of: otherFile), same)
+        // The same book as a ZIP, at its top level or in a folder, has the
+        // checksum of its folder: the two are found duplicates of each other
+        // (the ZIP is checksummed as its package inventory would be).
+        XCTAssertEqual(try FileImportService.importHash(of: try packageZip()), same)
+        XCTAssertEqual(try FileImportService.importHash(of: try packageZip(inFolder: "Salt Ledger")), same)
 
         let (changedFolder, changedFile) = try packageFolder()
         try Data("changed".utf8).write(to: changedFolder.appendingPathComponent("salt-v2.brf"))

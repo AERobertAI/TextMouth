@@ -1,5 +1,6 @@
 import Foundation
 import ZIPFoundation
+import CryptoKit
 
 // MARK: - An NLS BARD Braille Book (FMT56)
 
@@ -272,6 +273,38 @@ struct BardBraillePackage {
         // A plain BRF or PEF is no package, and is never tried as an archive.
         guard isPackage(at: url) else { return nil }
         return (try? open(at: url))?.table
+    }
+
+    // MARK: - The Checksum
+
+    /// The checksum the book is known by, made as the checksum of the same
+    /// book kept as loose files is (`DAISYPackageInventory.contentHash()`):
+    /// the digest of the package file and the paths and sizes of it and of
+    /// every file its manifest lists that the package holds, paths counted
+    /// from the package file's folder. A ZIP of a BARD book and its folder
+    /// have the same one, so the second is found a duplicate of the first.
+    func contentHash() throws -> String {
+        let folder = entryPath.split(separator: "/").dropLast().joined(separator: "/")
+        let entryName = (entryPath as NSString).lastPathComponent
+        let held = Set(provider.listFiles())
+        var sizes: [String: Int64] = [entryName: provider.byteCount(of: entryPath) ?? 0]
+        for href in package.manifest.values.map(\.href) {
+            // A reference that climbs out of the folder is no file of the book.
+            guard let path = try? DAISYPackageInventory.packagePath(of: href, in: entryName),
+                  DAISYPackageInventory.isBookPath(path) else { continue }
+            let inArchive = folder.isEmpty ? path : folder + "/" + path
+            if held.contains(inArchive) { sizes[path] = provider.byteCount(of: inArchive) ?? 0 }
+        }
+        let digest = Insecure.MD5.hash(data: try provider.readFile(at: entryPath)).map { String(format: "%02hhx", $0) }.joined()
+        return DAISYPackageInventory.contentHash(entryDigest: digest, files: sizes.map { (path: $0.key, size: $0.value) })
+    }
+
+    /// The checksum of the BARD braille book in the ZIP archive at `url`
+    /// (`contentHash()`); nil for any other file, and for an archive whose
+    /// package cannot be read.
+    static func contentHash(ofZipAt url: URL) -> String? {
+        guard url.pathExtension.lowercased() == "zip", isPackageZip(url: url) else { return nil }
+        return try? open(at: url).contentHash()
     }
 
     // MARK: - Reading the volumes

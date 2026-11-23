@@ -345,7 +345,18 @@ struct DAISYPackageInventory {
     /// it as it was: reading every audio file of a long book would take
     /// minutes.
     func contentHash() throws -> String {
-        var text = try FileImportService.md5Hash(of: files.first { $0.path == entryPath }?.source ?? entryURL)
+        let entryDigest = try FileImportService.md5Hash(of: files.first { $0.path == entryPath }?.source ?? entryURL)
+        return Self.contentHash(entryDigest: entryDigest, files: files.map { (path: $0.path, size: Int64($0.size)) })
+    }
+
+    /// The checksum of a package whose entry file has the MD5 digest
+    /// `entryDigest` and whose files, the entry file included, are `files`
+    /// (each a path inside the book's folder and a size), as `contentHash()`
+    /// describes it. The one place the checksum is made, so a ZIP of a BARD
+    /// braille book (`BardBraillePackage.contentHash()`) is known by the
+    /// checksum its folder has (FMT56).
+    static func contentHash(entryDigest: String, files: [(path: String, size: Int64)]) -> String {
+        var text = entryDigest
         let ordered = files
             .map { (path: $0.path.precomposedStringWithCanonicalMapping, size: $0.size) }
             .sortedStably { Self.pathPrecedes($0.path, $1.path) }
@@ -439,7 +450,7 @@ struct DAISYPackageInventory {
     /// Whether `first` comes before `second` in the code-point order of
     /// their Unicode NFC forms, the one order a book's files are listed and
     /// hashed in wherever they lie.
-    private static func pathPrecedes(_ first: String, _ second: String) -> Bool {
+    static func pathPrecedes(_ first: String, _ second: String) -> Bool {
         first.precomposedStringWithCanonicalMapping.utf8
             .lexicographicallyPrecedes(second.precomposedStringWithCanonicalMapping.utf8)
     }

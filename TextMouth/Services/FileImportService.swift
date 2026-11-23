@@ -922,6 +922,8 @@ enum FileImportService {
         if try contentChecksum(of: contentURL, format: format) == recorded {
             return true
         }
+        // A BARD braille book's ZIP is known by the checksum of its package (FMT56).
+        if BardBraillePackage.contentHash(ofZipAt: contentURL) == recorded { return true }
         guard let package = try? daisyPackage(of: contentURL, format: format) else { return false }
         return (try? package.contentHash()) == recorded
     }
@@ -1303,7 +1305,10 @@ enum FileImportService {
     /// The checksum a book imported from `source` is known by, when
     /// `package` is the DAISY package `source` is, or nil when it is none.
     private static func importHash(of source: URL, package: DAISYPackageInventory?) throws -> String {
-        try package?.contentHash() ?? contentChecksum(of: source, format: BookFormat.detect(from: source))
+        // A ZIP of a BARD braille book is known by the checksum its folder
+        // has, so the two are found duplicates of each other (FMT56).
+        try package?.contentHash() ?? BardBraillePackage.contentHash(ofZipAt: source)
+            ?? contentChecksum(of: source, format: BookFormat.detect(from: source))
     }
 
     /// The checksum of a book's own file, `url`, a book of `format`: the MD5
