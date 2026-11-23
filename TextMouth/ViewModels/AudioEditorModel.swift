@@ -127,6 +127,9 @@ final class AudioEditorModel: ObservableObject {
     /// and removed as the window closes; the launch sweep of this Mac's
     /// caches leaves it alone until then (`AudioEditCaches`).
     let clipFolder: URL
+    /// Reads the space free where clips are kept, before one is made
+    /// (`keepClip`); the system's reading unless a test gives another.
+    let freeSpace: AudioEditorClip.FreeSpaceReader
 
     /// Where the search for pauses is.
     enum PauseSearch: Equatable {
@@ -181,6 +184,8 @@ final class AudioEditorModel: ObservableObject {
     ///   - recorder: What punch-ins record with.
     ///   - clipFolder: Where the window keeps audio copied or cut; a folder
     ///     of its own in this Mac's caches unless a test gives one.
+    ///   - freeSpace: Reads the bytes free on the disk of the clip folder;
+    ///     the system's reading unless a test gives one.
     ///   - announce: Makes VoiceOver speak.
     init(
         bookID: UUID,
@@ -191,6 +196,7 @@ final class AudioEditorModel: ObservableObject {
         store: UserDefaults,
         recorder: AudioEditorRecorder,
         clipFolder: URL = AudioEditCaches.newClipFolder(),
+        freeSpace: @escaping AudioEditorClip.FreeSpaceReader = AudioEditorClip.systemFreeSpace(at:),
         announce: @escaping @MainActor (String) -> Void
     ) {
         self.bookID = bookID
@@ -201,6 +207,7 @@ final class AudioEditorModel: ObservableObject {
         self.store = store
         self.recorder = recorder
         self.clipFolder = clipFolder
+        self.freeSpace = freeSpace
         announcer = announce
         sessionChanges = session.objectWillChange.sink { [weak self] _ in
             self?.objectWillChange.send()
