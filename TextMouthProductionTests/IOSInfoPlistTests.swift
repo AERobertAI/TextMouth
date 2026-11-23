@@ -294,7 +294,8 @@ final class IOSInfoPlistTests: XCTestCase {
     func testTheDeclarationsAreTheMacs() throws {
         let mac = try imported(in: macPlist())
         let ios = try imported(in: iosPlist())
-        XCTAssertEqual(Set(ios.keys), Set(mac.keys))
+        // Less the declarations of the types only a refused document type names.
+        XCTAssertEqual(Set(ios.keys), Set(mac.keys).subtracting(Self.refusedTypes))
         for (identifier, declaration) in ios {
             XCTAssertEqual(NSDictionary(dictionary: declaration), NSDictionary(dictionary: try XCTUnwrap(mac[identifier])), identifier)
         }
@@ -340,7 +341,10 @@ final class IOSInfoPlistTests: XCTestCase {
 
         let named = macDeclared.filter { source.contains("\"\($0)\"") }
         XCTAssertFalse(named.isEmpty, "Found none of the Mac's declared types in the import's source")
-        XCTAssertEqual(named.subtracting(iOSDeclared), [], "Named by the import, and not declared for iOS")
+        // The Mac's picker names a refused type (the BARD package file) that the iPhone's does not.
+        XCTAssertEqual(
+            named.subtracting(iOSDeclared).subtracting(Self.refusedTypes), [], "Named by the import, and not declared for iOS"
+        )
 
         let importedAs = try matches(of: #"UTType\(importedAs: "([^"]+)""#, in: source)
         XCTAssertFalse(importedAs.isEmpty, "Found no UTType(importedAs:) in the import's source")
