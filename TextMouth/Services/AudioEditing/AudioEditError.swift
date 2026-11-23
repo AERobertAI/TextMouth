@@ -98,4 +98,28 @@ enum AudioEditError: LocalizedError, Equatable, Sendable {
             return InterfaceText.line("audioEditError.mp3NeedsFFmpeg", "MP3 can't be written: TextMouth's encoder couldn't start, and ffmpeg is missing or off in Storage settings.")
         }
     }
+
+    /// The case's name alone, never its payload, for the debug log (which must
+    /// not hold a file's name or path). Written out, not read from the value
+    /// with `String(describing:)`: the Release build drops enum case names
+    /// from the binary's reflection metadata (`Scripts/size_settings.py`), so
+    /// reflection would give the type's name for every case.
+    var caseName: String {
+        switch self {
+        case .bookNotInLibrary: return "bookNotInLibrary"
+        case .fileOutsidePackage: return "fileOutsidePackage"
+        case .unreadableAudio: return "unreadableAudio"
+        case .missingAudio: return "missingAudio"
+        case .historyInCloud: return "historyInCloud"
+        case .historyFromNewerVersion: return "historyFromNewerVersion"
+        case .historyUnusable: return "historyUnusable"
+        case .invalidEdit: return "invalidEdit"
+        case .processingUnavailable: return "processingUnavailable"
+        case .bookIsOpen: return "bookIsOpen"
+        case .audioInCloud: return "audioInCloud"
+        case .originalNeeded: return "originalNeeded"
+        case .renderFailed: return "renderFailed"
+        case .mp3NeedsFFmpeg: return "mp3NeedsFFmpeg"
+        }
+    }
 }
