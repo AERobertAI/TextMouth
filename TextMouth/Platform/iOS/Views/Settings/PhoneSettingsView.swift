@@ -125,7 +125,7 @@ struct PhoneSettingsView: View {
         .fileExporter(
             isPresented: $isExportingInterfaceText,
             document: interfaceTextExport,
-            contentType: .json,
+            contentTypes: [.json],
             defaultFilename: InterfaceTextOverrides.exportFileName(language: InterfaceLanguage.current.language),
             onCompletion: { finishInterfaceTextExport(InterfaceTextExportOutcome($0)) },
             // A cancel never reaches `onCompletion`: without this, focus would not come back and the document would stay.
