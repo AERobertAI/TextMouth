@@ -22,6 +22,15 @@ protocol InterfaceTextTables: Sendable {
     /// One entry for each ID of `idList()`, in its order, for `language`; throws when the source has no such language
     /// or its entries are malformed.
     func entries(language: String) throws -> [InterfaceTextEntry]
+
+    /// The translators' note of each ID, in the order of `idList()` ("" for none). Read only to write the person's file
+    /// of own lines (Edit and Export Interface Text); a source with no notes answers none, and every note is then "".
+    func notes() throws -> [String]
+}
+
+extension InterfaceTextTables {
+    /// A source with no notes (a test's, in memory) has none.
+    func notes() throws -> [String] { [] }
 }
 
 /// One entry of a language's table, as the pack writes it: nothing (English is used), a text, or the forms of a plural

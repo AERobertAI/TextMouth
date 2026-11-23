@@ -68,6 +68,8 @@ enum PhoneSettingsRow: Hashable, Identifiable {
     case endOfBook
     case readingStatistics
     case interfaceLanguage
+    /// Export Interface Text…, under Interface Language (FR39): the system's file exporter, which focus must come back from.
+    case exportInterfaceText
     case shareLogs
 
     var id: Self { self }
@@ -83,6 +85,7 @@ enum PhoneSettingsRow: Hashable, Identifiable {
         case .endOfBook: return Words.whenBookEnds.title
         case .readingStatistics: return PhoneSettingsWording.readingStatistics
         case .interfaceLanguage: return InterfaceLanguagePickerWording.title
+        case .exportInterfaceText: return InterfaceTextOverridesWording.exportTitle
         case .shareLogs: return PhoneSettingsWording.shareLogs
         }
     }
@@ -95,7 +98,7 @@ enum PhoneSettingsRow: Hashable, Identifiable {
         case .voice: return Words.selectVoice.title
         case .rewindTo: return Words.rewindOnResumeUnit.title
         case .endOfBook: return Words.endOfBookBehavior.title
-        case .textNavigationUnit, .audioNavigationUnit, .readingStatistics, .interfaceLanguage, .shareLogs: return title
+        case .textNavigationUnit, .audioNavigationUnit, .readingStatistics, .interfaceLanguage, .exportInterfaceText, .shareLogs: return title
         }
     }
 
@@ -108,6 +111,7 @@ enum PhoneSettingsRow: Hashable, Identifiable {
         case .endOfBook: return Words.endOfBookHint.title
         case .shareLogs: return PhoneSettingsWording.shareLogsHint
         case .interfaceLanguage: return InterfaceLanguagePickerWording.hint
+        case .exportInterfaceText: return InterfaceTextOverridesWording.exportHint
         case .language, .readingStatistics: return nil
         }
     }

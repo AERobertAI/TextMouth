@@ -306,6 +306,23 @@ class FormatTests(PackCase):
         self.assertEqual("%lld gatos", decoded.blobs["es"].entries[0])
         self.assertEqual("%lld匹", decoded.blobs["ja"].entries[0])
 
+    def test_an_english_plural_of_one_text_stays_plural_so_the_pack_tells_plural_lines_from_plain_ones(self):
+        # FR39: the person's file reads and writes a line by English's kind, so English keeps its forms even when they are all
+        # alike; every other language is squeezed as before. A plain line stays plain in English.
+        strings = {
+            "x.same": {"localizations": {
+                "en": plural({"one": "%lld items", "other": "%lld items"}),
+                "es": plural({"one": "%lld elementos", "many": "%lld elementos", "other": "%lld elementos"}),
+                "ja": plural({"other": "%lld件"})}},
+            "x.plain": line("Page %lld", es="Página %lld"),
+        }
+        decoded = pack.read_pack(self.build(strings))
+        position = {identifier: index for index, identifier in enumerate(decoded.ids)}
+        self.assertEqual("\x01%lld items\x01%lld items", decoded.blobs["en"].entries[position["x.same"]])
+        self.assertEqual("Page %lld", decoded.blobs["en"].entries[position["x.plain"]])
+        self.assertEqual("%lld elementos", decoded.blobs["es"].entries[position["x.same"]])
+        self.assertEqual("%lld件", decoded.blobs["ja"].entries[position["x.same"]])
+
     def test_plural_forms_follow_the_languages_category_order(self):
         arabic = {"zero": "%lld ٠", "one": "%lld ١", "two": "%lld ٢", "few": "%lld ٣", "many": "%lld ١١", "other": "%lld ١٠٠"}
         strings = {"x.count": {"localizations": {"en": plural({"other": "%lld x", "one": "%lld y"}), "ar": plural(arabic)}}}

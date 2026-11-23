@@ -27,16 +27,23 @@ enum FormatSpecifiers {
     /// The specifiers of `text` in order, `%%` skipped; nil when the text holds anything else after a `%`: a lone `%`,
     /// another conversion (`%s`, `%d`, `%n`, `%f`), flags, a width, a precision, or a malformed number.
     static func slots(in text: String) -> [Slot]? {
+        parse(text)?.slots
+    }
+
+    /// The specifiers of `text` in order, and how many `%%` (a literal percent sign) it holds; nil under the same
+    /// conditions as `slots(in:)`. The person's own lines are compared with the English by both (FR39).
+    static func parse(_ text: String) -> (slots: [Slot], percentSigns: Int)? {
         // The scan works on UTF-8 bytes: every character it looks for is ASCII, and an ASCII byte never occurs
         // inside another character's bytes.
         let bytes = Array(text.utf8)
         var found: [Slot] = []
+        var percentSigns = 0
         var index = 0
         while index < bytes.count {
             guard bytes[index] == UInt8(ascii: "%") else { index += 1; continue }
             index += 1
             guard index < bytes.count else { return nil }  // a lone `%` at the end
-            if bytes[index] == UInt8(ascii: "%") { index += 1; continue }
+            if bytes[index] == UInt8(ascii: "%") { index += 1; percentSigns += 1; continue }
             // An optional argument number: one to two digits and a dollar sign.
             var position: Int?
             var digitsEnd = index
@@ -62,7 +69,7 @@ enum FormatSpecifiers {
                 return nil
             }
         }
-        return found
+        return (found, percentSigns)
     }
 
     /// Whether `text` may be handed to Foundation's formatter with arguments of these kinds:
@@ -74,15 +81,35 @@ enum FormatSpecifiers {
     ///
     /// A text may leave an argument unused (a plural's `one` form often drops its number: "un libro").
     static func accepts(_ text: String, arguments: [Kind]) -> Bool {
-        guard let slots = slots(in: text) else { return false }
-        let numbered = slots.filter { $0.position != nil }.count
-        guard numbered == 0 || numbered == slots.count else { return false }
+        guard let slots = slots(in: text), !mixesNumbering(slots) else { return false }
         for (order, slot) in slots.enumerated() {
-            // The 0-based argument the specifier reads.
-            let argument = (slot.position ?? (order + 1)) - 1
+            let argument = argument(of: slot, order: order) - 1
             guard arguments.indices.contains(argument), arguments[argument] == slot.kind else { return false }
         }
         return true
+    }
+
+    /// Whether `slots` mix numbered (`%1$@`) and unnumbered (`%@`) specifiers, which no text may.
+    static func mixesNumbering(_ slots: [Slot]) -> Bool {
+        let numbered = slots.filter { $0.position != nil }.count
+        return numbered != 0 && numbered != slots.count
+    }
+
+    /// The argument number (1-based) `slot` reads, `order` being its place among the specifiers (0-based): its own number, or
+    /// the next one in order for an unnumbered specifier.
+    static func argument(of slot: Slot, order: Int) -> Int {
+        slot.position ?? (order + 1)
+    }
+
+    /// The kind of each argument `slots` read, by argument number; nil when one argument is read as two kinds.
+    static func argumentKinds(of slots: [Slot]) -> [Int: Kind]? {
+        var kinds: [Int: Kind] = [:]
+        for (order, slot) in slots.enumerated() {
+            let argument = argument(of: slot, order: order)
+            if let known = kinds[argument], known != slot.kind { return nil }
+            kinds[argument] = slot.kind
+        }
+        return kinds
     }
 
     /// The kinds of a call's arguments, in order.

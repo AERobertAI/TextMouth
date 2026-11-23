@@ -57,6 +57,14 @@ struct PhoneSettingsView: View {
     /// Why the logs couldn't be gathered, in the system's words, while an
     /// alert says so.
     @State private var logsFailure: String?
+    /// The person's own interface lines and what reading their file came to (FR39); the screen is drawn again when it changes.
+    @ObservedObject private var overrides = InterfaceTextOverrides.shared
+    /// The export of the interface text, while the system's file exporter is up.
+    @State private var interfaceTextExport: InterfaceTextExportDocument?
+    /// Whether the file exporter is up.
+    @State private var isExportingInterfaceText = false
+    /// Whether the alert saying the interface text could not be exported is up.
+    @State private var exportFailed = false
 
     /// - Parameters:
     ///   - settings: The app's settings model.
@@ -117,6 +125,21 @@ struct PhoneSettingsView: View {
         .onDisappear { preview?.stop() }
         .sheet(item: $openRow, onDismiss: returnFocusToLastOpenedRow) { row in
             sheet(for: row)
+        }
+        // Export Interface Text…: the system's file exporter, where the person chooses a place for the file.
+        .fileExporter(
+            isPresented: $isExportingInterfaceText,
+            document: interfaceTextExport,
+            contentTypes: [.json],
+            defaultFilename: InterfaceTextOverrides.exportFileName(language: InterfaceLanguage.current.language),
+            onCompletion: { finishInterfaceTextExport(InterfaceTextExportOutcome($0)) },
+            // A cancel never reaches `onCompletion`: without this, focus would not come back and the document would stay.
+            onCancellation: { finishInterfaceTextExport(.cancelled) }
+        )
+        // An export that failed is an alert, as the failure of Share Logs is, and not only a sentence VoiceOver speaks.
+        .alert(PhoneSettingsRow.exportInterfaceText.title, isPresented: isShowingExportFailure) {
+        } message: {
+            Text(InterfaceTextOverridesWording.exportFailed)
         }
         // With no buttons given, the system gives an alert its standard OK.
         .alert(PhoneSettingsRow.shareLogs.title, isPresented: isShowingLogsFailure) {
@@ -188,6 +211,7 @@ struct PhoneSettingsView: View {
             Text(InterfaceLanguagePickerWording.launchNote)
                 .font(.caption)
                 .phoneSecondaryText()
+            ownLinesRows
         case .about:
             versionRow
             shareLogsRow
@@ -290,6 +314,26 @@ struct PhoneSettingsView: View {
             .accessibilityElement(children: .combine)
     }
 
+    /// The person's own interface lines (FR39), under Interface Language: how many are in use and how many are ignored, each
+    /// problem as a sentence with its reason last, and the Export Interface Text… button. The sentences are static text, so
+    /// VoiceOver and a braille display read each where it is.
+    @ViewBuilder
+    private var ownLinesRows: some View {
+        let summary = InterfaceTextOverridesSummary(overrides.outcome)
+        Text(summary.inUse).phonePrimaryText()
+        Text(summary.ignored).phonePrimaryText()
+        ForEach(Array(summary.details.enumerated()), id: \.offset) { _, sentence in
+            Text(sentence)
+                .font(.caption)
+                .phoneSecondaryText()
+        }
+        let row = PhoneSettingsRow.exportInterfaceText
+        PhoneActionButton(title: row.title, action: exportInterfaceText)
+            .accessibilityHint(row.hint ?? "")
+            .accessibilityFocused($focusedRow, equals: row)
+            .id(row)
+    }
+
     /// The button that gathers the logs and offers them to the share sheet.
     private var shareLogsRow: some View {
         let row = PhoneSettingsRow.shareLogs
@@ -373,7 +417,8 @@ struct PhoneSettingsView: View {
             if let logsFile {
                 PhoneLogShareSheet(file: logsFile) { openRow = nil }
             }
-        case .readingStatistics:
+        case .readingStatistics, .exportInterfaceText:
+            // Pushed, or presented by the system's file exporter (`.fileExporter` below): never a sheet of this screen's.
             EmptyView()
         }
     }
@@ -419,6 +464,35 @@ struct PhoneSettingsView: View {
                 pitch: settings.pitchMultiplier
             )
         )
+    }
+
+    /// Export Interface Text…: makes the file of every line of the interface language as it reads now, and offers it to the
+    /// system's file exporter. Say so when there is nothing to export.
+    private func exportInterfaceText() {
+        guard let data = overrides.exportData() else {
+            InterfaceTextOverrides.logExportFailure("there is no pack to export from") // l10n: no (debug log text)
+            exportFailed = true
+            return
+        }
+        interfaceTextExport = InterfaceTextExportDocument(data: data)
+        isExportingInterfaceText = true
+    }
+
+    /// The file exporter finished, or was cancelled: tells how it went (a cancel says nothing), lets go of the document, and
+    /// brings focus back to the button, unless an alert is up, whose closing does.
+    private func finishInterfaceTextExport(_ outcome: InterfaceTextExportOutcome) {
+        interfaceTextExport = nil
+        switch outcome {
+        case .exported(let fileName):
+            VoiceOverAnnouncer.announce(InterfaceTextOverridesWording.exported(fileName: fileName))
+        case .cancelled:
+            break
+        case .failed(let reason):
+            InterfaceTextOverrides.logExportFailure(reason)
+            exportFailed = true
+            return
+        }
+        returnFocus(to: .exportInterfaceText)
     }
 
     /// Gathers the logs, off the main thread, and offers them. A press while
@@ -502,6 +576,18 @@ struct PhoneSettingsView: View {
         Binding(
             get: { removal.preferences.confirmsFirst },
             set: { removal.setConfirmsFirst($0) }
+        )
+    }
+
+    /// Whether the alert saying the interface text could not be exported is up. Focus returns to the button when it's closed.
+    private var isShowingExportFailure: Binding<Bool> {
+        Binding(
+            get: { exportFailed },
+            set: { isShowing in
+                guard !isShowing else { return }
+                exportFailed = false
+                returnFocus(to: .exportInterfaceText)
+            }
         )
     }
 

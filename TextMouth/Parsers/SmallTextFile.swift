@@ -17,12 +17,20 @@ enum SmallTextFile {
     /// - Throws: `CocoaError(.fileReadNoSuchFile)` for anything but a regular
     ///   file, or the error opening, reading, or decoding it.
     static func text(at url: URL, byteLimit: Int) throws -> String? {
+        guard let data = try data(at: url, byteLimit: byteLimit) else { return nil }
+        return try TextFileDecoder.decode(data, fileName: url.lastPathComponent, format: .txt).text
+    }
+
+    /// The bytes of the file at `url`, read as `text(at:byteLimit:)` reads them: only a regular file (or a link to one) is
+    /// opened, and at most `byteLimit` plus one bytes are read.
+    /// - Returns: nil when the file holds more than `byteLimit` bytes.
+    /// - Throws: `CocoaError(.fileReadNoSuchFile)` for anything but a regular file, or the error opening or reading it.
+    static func data(at url: URL, byteLimit: Int) throws -> Data? {
         let values = try url.resolvingSymlinksInPath().resourceValues(forKeys: [.isRegularFileKey])
         guard values.isRegularFile == true else { throw CocoaError(.fileReadNoSuchFile, userInfo: [NSURLErrorKey: url]) }
         let handle = try FileHandle(forReadingFrom: url)
         defer { try? handle.close() }
         let data = try handle.read(upToCount: byteLimit + 1) ?? Data()
-        guard data.count <= byteLimit else { return nil }
-        return try TextFileDecoder.decode(data, fileName: url.lastPathComponent, format: .txt).text
+        return data.count <= byteLimit ? data : nil
     }
 }

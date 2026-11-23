@@ -229,6 +229,9 @@ final class StorageBoundary: @unchecked Sendable {
     /// how deep that thread is inside work it is performing here.
     private let workDepthKey = "com.textmouth.storageWorkDepth.\(UUID().uuidString)"
 
+    /// The key of the notification `.dataDirectoryDidMove`'s `userInfo` that holds the new root's path.
+    static let movedRootKey = "root" // l10n: no (a notification's key)
+
     /// A boundary whose first generation is the data directory at `root`.
     init(root: URL) {
         generation = StorageGeneration(number: 0, root: root, location: DataDirectoryLocation(root))
@@ -252,10 +255,18 @@ final class StorageBoundary: @unchecked Sendable {
         // Resolved before taking the lock: resolving reads the file system.
         let location = DataDirectoryLocation(root)
         condition.lock()
-        defer { condition.unlock() }
         earlierGenerations.append(generation)
         generation = StorageGeneration(number: generation.number + 1, root: root, location: location)
-        return generation
+        let published = generation
+        condition.unlock()
+        // Said later, on the main queue, with the lock released and outside the persistence queues' write fence this is
+        // called in (`LibraryPersistenceService.betweenWrites`), so no observer can hold either: what reads a file of the data
+        // directory by its path (the person's interface lines, FR39) reads it again at its new place.
+        let movedRoot = published.root.path
+        DispatchQueue.main.async {
+            NotificationCenter.default.post(name: .dataDirectoryDidMove, object: nil, userInfo: [Self.movedRootKey: movedRoot])
+        }
+        return published
     }
 
     /// The current generation and the earlier ones, read together.

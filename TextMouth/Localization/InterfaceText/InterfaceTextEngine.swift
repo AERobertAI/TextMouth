@@ -275,6 +275,34 @@ extension InterfaceTextEngine {
     }
 }
 
+extension InterfaceTextEngine {
+    /// What the person's file of own lines is read and written against: the IDs, the English, the notes, and `language`'s
+    /// entries, all as the pack holds them (the person's own lines are not in them). Nil when there is no usable pack or no
+    /// English in it. Decodes the tables it needs (kept as for a lookup) and, when asked, the notes (not kept); safe from any thread.
+    func reference(language: String, withNotes: Bool = true) -> InterfaceTextReference? {
+        let (snapshot, tables) = locked { storage -> (Snapshot, (any InterfaceTextTables)?) in
+            let snapshot = storage.snapshot(language: language, needsEnglish: true, open: open)
+            if case .open(let tables, _) = storage.source { return (snapshot, tables) }
+            return (snapshot, nil)
+        }
+        guard let ids = snapshot.ids, let english = snapshot.englishTable else { return nil }
+        // A read for checking the person's file needs no notes; the commands that write the file ask for them.
+        let notes = withNotes ? ((try? tables?.notes()) ?? []) : []
+        return InterfaceTextReference(
+            ids: ids,
+            english: english.entries,
+            notes: notes.count == ids.count ? notes : [],
+            language: language,
+            entries: language == "en" ? english.entries : (snapshot.table?.entries ?? [])
+        )
+    }
+
+    /// The person's own lines now in force (language, then ID), for the Export.
+    var ownLines: [String: [String: InterfaceTextEntry]] {
+        locked { $0.overrides }
+    }
+}
+
 /// An ID's bytes, which become a `String` only when asked (for the person's own lines and for a report), so a plain
 /// lookup allocates nothing for its ID.
 private struct LazyID: CustomStringConvertible {

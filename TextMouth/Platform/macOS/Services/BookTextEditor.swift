@@ -395,108 +395,36 @@ final class BookTextEditor {
 
 // MARK: - Watching content.md
 
-/// Watches one file of a book's package for saves, its content.md (FR05)
-/// or its manifest.json (FR17), and says when a burst of them has settled.
-///
-/// An editor's save can replace the file, as TextEdit's does: the watcher
-/// then follows the file to wherever the book now keeps it, which `file`
-/// names, looking again for a moment while the new file lands. A save the
-/// watcher misses is still found when TextMouth becomes active, so the
-/// watcher only makes the edit arrive sooner.
-@MainActor
-final class ContentFileWatcher {
-    /// How long saves must stay quiet before `changed` is called: an
-    /// editor's save arrives as several events.
-    static let quietPeriod: TimeInterval = 0.75
+extension FileEventWatcher {
+    /// How long saves of a book's file must stay quiet before the book's editor looks: an editor's save arrives as
+    /// several events.
+    static let contentQuietPeriod: Duration = .milliseconds(750)
 
-    /// The file to watch, as the book keeps it now; nil once it has none.
-    private let file: @MainActor () -> URL?
-    /// Called once a burst of saves has settled.
-    private let changed: @MainActor () -> Void
-    /// The source listening to the file, while one does.
-    private var source: DispatchSourceFileSystemObject?
-    /// The call of `changed` waiting for the saves to settle.
-    private var settle: DispatchWorkItem?
-    /// Whether the watcher has stopped for good.
-    private var isCancelled = false
+    /// How long to wait between looks for a book's file that is not there yet, as while an editor replaces it.
+    static let contentRetryDelays = [Duration](repeating: .milliseconds(200), count: 10)
 
-    /// A watcher of the file `file` names, calling `changed` once each burst
-    /// of saves has settled.
-    init(file: @escaping @MainActor () -> URL?, changed: @escaping @MainActor () -> Void) {
-        self.file = file
-        self.changed = changed
-        arm(attempt: 0)
-    }
-
-    /// Stops watching for good.
-    func cancel() {
-        isCancelled = true
-        source?.cancel()
-        source = nil
-        settle?.cancel()
-        settle = nil
-    }
-
-    /// Listens to the file now there, or, when none is there yet, as while
-    /// an editor replaces it, looks again a few times.
-    private func arm(attempt: Int) {
-        guard !isCancelled, source == nil else { return }
-        guard let url = file(), !DatalessFiles.isDataless(url) else {
-            retry(after: attempt)
-            return
-        }
-        let descriptor = Darwin.open(url.path, O_EVTONLY)
-        guard descriptor >= 0 else {
-            retry(after: attempt)
-            return
-        }
-        let source = DispatchSource.makeFileSystemObjectSource(
-            fileDescriptor: descriptor,
-            eventMask: [.write, .extend, .delete, .rename, .revoke, .attrib, .link],
-            queue: .main
+    /// A watcher of one file of a book's package for saves, its content.md (FR05) or its manifest.json (FR17), which
+    /// calls `changed` once a burst of them has settled, and is already listening.
+    ///
+    /// An editor's save can replace the file, as TextEdit's does: the watcher then follows the file to wherever the
+    /// book now keeps it, which `file` names, looking again for a moment while the new file lands (a file only in the
+    /// cloud is not listened to). A save the watcher misses is still found when TextMouth becomes active, so the
+    /// watcher only makes the edit arrive sooner.
+    static func watchingContentFile(
+        file: @escaping @MainActor () -> URL?,
+        changed: @escaping @MainActor () -> Void
+    ) -> FileEventWatcher {
+        let watcher = FileEventWatcher(
+            // A file only in the cloud is not opened: listening would download nothing, and reading it would.
+            file: { file().flatMap { DatalessFiles.isDataless($0) ? nil : $0 } },
+            events: editedFileEvents,
+            quietPeriod: contentQuietPeriod,
+            retryDelays: contentRetryDelays,
+            // The editor checks the file itself when it starts watching and when TextMouth becomes active.
+            checksWhenAttached: false,
+            settled: { _ in changed() }
         )
-        source.setEventHandler { [weak self] in
-            MainActor.assumeIsolated {
-                self?.received(source.data)
-            }
-        }
-        // Dispatch runs this once the source has stopped using the
-        // descriptor, the only safe moment to close it.
-        source.setCancelHandler {
-            Darwin.close(descriptor)
-        }
-        source.resume()
-        self.source = source
-    }
-
-    /// Looks for the file again a little later, up to ten times; after
-    /// that, TextMouth's next activation still finds an edit.
-    private func retry(after attempt: Int) {
-        guard attempt < 10 else { return }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
-            MainActor.assumeIsolated {
-                self?.arm(attempt: attempt + 1)
-            }
-        }
-    }
-
-    /// One event from the file: a replaced file is followed to the new one,
-    /// and `changed` is put off until events stop.
-    private func received(_ event: DispatchSource.FileSystemEvent) {
-        if !event.isDisjoint(with: [.delete, .rename, .revoke]) {
-            source?.cancel()
-            source = nil
-            arm(attempt: 0)
-        }
-        settle?.cancel()
-        let item = DispatchWorkItem { [weak self] in
-            MainActor.assumeIsolated {
-                guard let self, !self.isCancelled else { return }
-                self.settle = nil
-                self.changed()
-            }
-        }
-        settle = item
-        DispatchQueue.main.asyncAfter(deadline: .now() + Self.quietPeriod, execute: item)
+        watcher.start()
+        return watcher
     }
 }

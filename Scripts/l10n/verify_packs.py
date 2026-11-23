@@ -53,7 +53,7 @@ ENGINE_SOURCES = [
     ROOT / "TextMouth" / "Localization" / "InterfaceText" / name
     for name in (
         "FormatSpecifiers.swift", "InterfaceTextEngine.swift", "InterfaceTextFormat.swift", "InterfaceTextPack.swift",
-        "InterfaceTextTables.swift", "PluralRules.swift",
+        "InterfaceTextTables.swift", "InterfaceTextWording.swift", "PluralRules.swift",
     )
 ]
 # The Swift sources of the probe: its own main file, the lookups and the proof's calls it shares with the hosted tests,
