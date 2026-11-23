@@ -575,9 +575,12 @@ require_app_free_of_mac_paths() {
 # folders has at least one, each with an InfoPlist.strings. A table means the
 # build still compiles the String Catalog (FR39); a missing or empty language
 # folder means the build phase "Pack interface text" did not write it (the bundle
-# would lose its languages). Reports what it found.
+# would lose its languages). No InfoPlist.strings may rename the app either: only
+# a Debug build, the tests', is named "TextMouth Test" (TEXTMOUTH_TEST_DISPLAY_NAME
+# in project.yml), and the app make install copies must stay "TextMouth".
+# Reports what it found.
 require_language_layout() {
-  local app_folder=$1 resources=$2 app=$3 tables folder count=0 missing=""
+  local app_folder=$1 resources=$2 app=$3 tables folder count=0 missing="" renamed=""
   if (( dry_run )); then
     detail "would require $app to hold no table of Apple's, and an $INFO_PLIST_TABLE in each .lproj folder"
     return 0
@@ -592,6 +595,9 @@ require_language_layout() {
     [[ -d $folder ]] || continue
     count=$(( count + 1 ))
     [[ -f $folder/$INFO_PLIST_TABLE ]] || missing+="${folder#"$resources"/}"$'\n'
+    if [[ -f $folder/$INFO_PLIST_TABLE ]] && grep -q 'CFBundleDisplayName' "$folder/$INFO_PLIST_TABLE"; then
+      renamed+="${folder#"$resources"/}"$'\n'
+    fi
   done
   if (( count == 0 )); then
     detail "NO LANGUAGES: no .lproj folder found in $resources"
@@ -600,6 +606,10 @@ require_language_layout() {
   if [[ -n $missing ]]; then
     detail_lines "NO $INFO_PLIST_TABLE: " "$(sed '/^$/d' <<<"$missing")"
     fail "step $step_number of $STEP_COUNT ($step_title): $app has a .lproj folder with no $INFO_PLIST_TABLE (the build phase \"Pack interface text\", Scripts/l10n/pack.py, writes it)"
+  fi
+  if [[ -n $renamed ]]; then
+    detail_lines "RENAMED: " "$(sed '/^$/d' <<<"$renamed")"
+    fail "step $step_number of $STEP_COUNT ($step_title): $app is renamed by an $INFO_PLIST_TABLE (only a Debug build, the tests', takes the name TEXTMOUTH_TEST_DISPLAY_NAME gives)"
   fi
   detail "$app holds $count .lproj folders, each with an $INFO_PLIST_TABLE, and no table of Apple's"
 }
