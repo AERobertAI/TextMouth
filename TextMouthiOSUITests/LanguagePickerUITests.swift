@@ -109,7 +109,9 @@ final class LanguagePickerUITests: TextMouthUITestCase {
         // Back to System, which puts English and the left-to-right layout back.
         try scrollToTheLanguageRow(in: app)
         try choose(Self.system, in: app)
-        _ = try waitForLabel("About", in: app)
+        // English is back: the screen is at its top, where the title is "Settings" and no heading is Arabic.
+        let english = try waitForLabel("Settings", in: app)
+        XCTAssertFalse(english.contains { $0.label == "الإعدادات" }, "Still Arabic: \(Self.describe(english))")
         XCTAssertLessThan(app.navigationBars.buttons.element(boundBy: 0).frame.midX, app.frame.midX)
     }
 }
