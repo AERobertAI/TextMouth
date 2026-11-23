@@ -63,8 +63,9 @@ final class LanguagePickerUITests: TextMouthUITestCase {
         let seen = app.buttons.allElementsBoundByIndex.map(\.label).joined(separator: " | ")
         XCTAssertTrue(choice.exists && choice.isHittable, "No such choice \(predicate). The buttons now made: \(seen)")
         choice.tap()
-        for title in [row, rowAfter] {
-            XCTAssertTrue(app.navigationBars[title].waitForNonExistence(timeout: Self.patience), "The choices stayed open, as \"\(title)\"")
+        for title in [row, rowAfter] where !app.navigationBars[title].waitForNonExistence(timeout: Self.patience) {
+            // What is on the screen, sheet and all, so a failure says whether the choices were left open or only their bar.
+            XCTFail("The choices stayed open, as \"\(title)\":\n\(app.debugDescription)")
         }
     }
 
