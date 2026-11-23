@@ -514,7 +514,7 @@ final class BrailleImportTests: XCTestCase {
         XCTAssertEqual(BookFormat.detect(from: xml), .braille)
         XCTAssertEqual(XMLDocumentSniffer.bookFormat(ofFileAt: xml), .braille)
         XCTAssertEqual(BookFormat.braille.displayName, "Braille")
-        XCTAssertEqual(BookFormat.braille.fileExtensions, ["brf", "brl", "pef"])
+        XCTAssertEqual(BookFormat.braille.fileExtensions, ["brf", "brl", "pef", "bopf"])
     }
 
     /// The kind of braille file is told by extension: BRL, PEF (and XML),

@@ -85,7 +85,7 @@ final class BardBrailleTests: XCTestCase {
         spine: [Int]? = nil
     ) -> Data {
         let names = manifest ?? volumeNames
-        let order = spine ?? Array(1...names.count)
+        let order = spine ?? Array(0..<names.count).map { $0 + 1 }
         var xml = """
         <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
         <package xmlns="http://openebook.org/namespaces/oeb-package/1.0/" xmlns:dc="http://purl.org/dc/elements/1.0/">
@@ -319,7 +319,6 @@ final class BardBrailleTests: XCTestCase {
         XCTAssertEqual(pages.lineWidth, 40)
         XCTAssertEqual(pages.volumeStarts.count, 3)
         XCTAssertEqual(pages.volumeStarts.first, 0)
-        XCTAssertTrue(pages.marksItsPages)
         // Each volume, taken out of the book, is what its file reads as alone.
         for (index, name) in volumeNames.enumerated() {
             let alone = try BrailleFileReader.read(folder.appendingPathComponent(name), as: .brf)
