@@ -45,7 +45,8 @@ enum InterfaceLanguage {
     @MainActor static let observer = InterfaceLanguageObserver()
 
     /// Posted (on the main thread) after the language in use changed. AppKit code that sets a title once observes it
-    /// and sets the title again; a window or alert already open keeps its words until it closes.
+    /// and sets the title again, so every open window is worded again; only an alert or a file panel already open
+    /// keeps its words until it closes.
     static let didChange = Notification.Name("TextMouthInterfaceLanguageDidChange")
 
     /// The language and locale in use now.
