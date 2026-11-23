@@ -220,11 +220,11 @@ final class BardBrailleTests: XCTestCase {
         XCTAssertEqual(BookFormat.braille.fileExtensions.contains("bopf"), true)
     }
 
-    /// Both apps' Info.plists, read from the source tree, declare the `.bopf`
-    /// document type in a Viewer role and its imported type, so each is
-    /// offered the file; the Mac's import panel lists the type, and the
-    /// iPhone's picker does not, since it copies only the file picked and a
-    /// `.bopf` alone would arrive without its volumes. (The source tree is
+    /// Both apps' Info.plists, read from the source tree, declare the imported
+    /// `.bopf` type; only the Mac's declares the document type, in a Viewer
+    /// role, and its import panel lists the type. The iPhone's picker and
+    /// "Open in" do not offer the file, since they copy only the file picked
+    /// and a `.bopf` alone would arrive without its volumes. (The source tree is
     /// the Mac's: the test is skipped where it is not.)
     func testBothAppsDeclareTheBopfType() throws {
         let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
@@ -236,8 +236,13 @@ final class BardBrailleTests: XCTestCase {
             )
             let documentTypes = plist["CFBundleDocumentTypes"] as? [[String: Any]] ?? []
             let type = documentTypes.first { ($0["CFBundleTypeExtensions"] as? [String] ?? []).contains("bopf") }
-            XCTAssertEqual(type?["CFBundleTypeRole"] as? String, "Viewer", path)
-            XCTAssertEqual(type?["LSItemContentTypes"] as? [String], ["com.textmouth.bopf-package"], path)
+            if path.contains("iOS") {
+                // The iPhone is offered no lone .bopf by "Open in": it would arrive without its volumes.
+                XCTAssertNil(type, path)
+            } else {
+                XCTAssertEqual(type?["CFBundleTypeRole"] as? String, "Viewer", path)
+                XCTAssertEqual(type?["LSItemContentTypes"] as? [String], ["com.textmouth.bopf-package"], path)
+            }
             let imported = plist["UTImportedTypeDeclarations"] as? [[String: Any]] ?? []
             let declared = imported.first { $0["UTTypeIdentifier"] as? String == "com.textmouth.bopf-package" }
             let tags = declared?["UTTypeTagSpecification"] as? [String: Any]

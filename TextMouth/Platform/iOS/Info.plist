@@ -621,22 +621,6 @@
 			</array>
 		</dict>
 		<dict>
-			<key>CFBundleTypeName</key>
-			<string>NLS BARD Braille Package</string>
-			<key>CFBundleTypeExtensions</key>
-			<array>
-				<string>bopf</string>
-			</array>
-			<key>LSItemContentTypes</key>
-			<array>
-				<string>com.textmouth.bopf-package</string>
-			</array>
-			<key>CFBundleTypeRole</key>
-			<string>Viewer</string>
-			<key>LSHandlerRank</key>
-			<string>Alternate</string>
-		</dict>
-		<dict>
 			<key>CFBundleTypeExtensions</key>
 			<array>
 				<string>cue</string>
