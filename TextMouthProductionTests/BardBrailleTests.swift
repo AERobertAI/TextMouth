@@ -174,8 +174,15 @@ final class BardBrailleTests: XCTestCase {
     /// each volume read as a plain BRF is, under a heading that names its
     /// place in the book.
     private func expectedMarkdown(ofVolumes volumes: [URL]) throws -> String {
-        try volumes.enumerated().map { index, url in
-            "# Volume \(index + 1)\n\n" + (try markdown(of: url))
+        // Under volume headings (of several volumes) the book's own headings
+        // are one level deeper than a plain BRF's.
+        let deeper = volumes.count > 1
+        return try volumes.enumerated().map { index, url in
+            let plain = try markdown(of: url)
+            let text = deeper
+                ? plain.components(separatedBy: "\n").map { $0.hasPrefix("#") ? "#" + $0 : $0 }.joined(separator: "\n")
+                : plain
+            return (deeper ? "# Volume \(index + 1)\n\n" : "") + text
         }.joined(separator: "\n\n")
     }
 
@@ -514,7 +521,7 @@ final class BardBrailleTests: XCTestCase {
         var volumes = try volumeFiles()
         let scratch = try makeSandboxDirectory("BardStray")
         var long = [BraillePrintBlock.heading(level: 1, EmphasizedText("The Harbour Office"))]
-        long += (0..<140).map { _ in
+        long += (0..<300).map { _ in
             BraillePrintBlock.paragraph(EmphasizedText("Nobody at the harbour office could explain the missing barrel."))
         }
         let data = try BrailleDocumentWriter.brf(of: long, options: writerOptions(), workingIn: scratch)
