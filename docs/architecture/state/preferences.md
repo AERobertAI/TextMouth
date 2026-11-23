@@ -107,7 +107,7 @@ The preferences store.
   SpeechService reads the speed, pitch, and voice from its store through SettingsPolicy.
 
 ## The config.json mirror
-<!-- id: config-json-mirror; keys: config file, settings file, save delay, file watcher, outside edit, dataDirectoryPath; src: TextMouth/Services/ConfigService.swift, TextMouth/ViewModels/SettingsViewModel.swift, TextMouth/Models/LenientFields.swift, TextMouth/App/UnsavedChangesTermination.swift, TextMouth/Services/PersistenceFailureCenter.swift, TextMouth/Services/DataDirectoryAvailability.swift, TextMouth/ViewModels/LibraryViewModel.swift -->
+<!-- id: config-json-mirror; keys: config file, settings file, save delay, file watcher, outside edit, dataDirectoryPath; src: TextMouth/Services/ConfigService.swift, TextMouth/ViewModels/SettingsViewModel.swift, TextMouth/Models/LenientFields.swift, TextMouth/App/UnsavedChangesTermination.swift, TextMouth/Services/PersistenceFailureCenter.swift, TextMouth/Services/DataDirectoryAvailability.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/Services/FileEventWatcher.swift, TextMouth/Platform/macOS/Services/PackageFileEditing.swift, TextMouth/Services/InterfaceTextOverrides.swift -->
 
 The config.json mirror.
 
@@ -121,7 +121,12 @@ The config.json mirror.
   Every read leaves dataless files in the cloud: a config.json only in the cloud is neither applied at launch nor written over, with one line in the debug log, until a save finds it on this Mac and merges it as an outside edit.
   While the data directory is unavailable, ConfigService neither reads, writes, nor watches the file; dataDirectoryBecameAvailable then merges it as an outside edit, keeping each setting changed meanwhile, saves it, and watches it again.
   A top-level key this version does not know is read into ConfigService.AppConfig's unknownKeys and written back ([Keys a later TextMouth adds](package-records.md)).
-- How others observe it: a file-system watcher notices saved edits, tells them from TextMouth's own saves by their bytes, and publishes each once through externalEdits, which SettingsViewModel.applyConfigChanges applies.
+- How others observe it: ConfigService's FileEventWatcher notices saved edits, ConfigService tells them from TextMouth's own saves by their bytes, and it publishes each once through externalEdits, which SettingsViewModel.applyConfigChanges applies.
+  FileEventWatcher (Services/FileEventWatcher.swift) is the app's one file watcher: ConfigService watches config.json, the editor of a book's text watches content.md and manifest.json (PackageFileEditing), and InterfaceTextOverrides watches interface_text.json, each with a watcher of its own.
+  - It listens with a DispatchSource on a descriptor opened for events only (O_EVTONLY), also O_NONBLOCK, so that a FIFO by the file's name cannot hold the main thread, and O_CLOEXEC, so that no helper program inherits it.
+  - It opens only a regular file: a FIFO, a device, or a folder by the name counts as a missing file.
+  - It follows a save that replaces the file, looks again after each of its retry delays (50 to 800 ms) for a file that went missing, and calls settled once, with the events combined, after a quiet period; config.json listens for whole-file events, and an edited text for every kind of change.
+  - A watcher's source is held by a SourceOwner that cancels it when the watcher is dropped, so a watcher released without stop() still closes its descriptor.
   A changed dataDirectoryPath posts dataDirectoryChangeRequested, and LibraryViewModel moves the data directory, unless DataDirectoryRequest finds the folder missing on this Mac or already holding a TextMouth library, as another Mac's path in a library in the cloud would.
   That edit is ignored with one CONFIG_FILE line.
 

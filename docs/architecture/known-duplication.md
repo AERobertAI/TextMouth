@@ -56,11 +56,6 @@ They could share one.
 
 ListingFailure (Services/ReaderWorkingCopy.swift) and FolderListingFailure (Services/DataDirectoryMigrator.swift) are the same small class, keeping the first error a folder enumeration's handler meets; one could serve both.
 
-## Content file watcher
-<!-- id: content-file-watcher; keys: DispatchSource, O_EVTONLY, file watcher, config.json watcher, file system events; src: TextMouth/Platform/macOS/Services/BookTextEditor.swift, TextMouth/Services/ConfigService.swift -->
-
-ContentFileWatcher (Platform/macOS/Services/BookTextEditor.swift) repeats ConfigService's file watcher: a DispatchSource on a descriptor opened for events only, armed again when a save replaces the file.
-
 ## Cached audio folder
 <!-- id: cached-audio-folder; keys: cachedAudio, unused code, package folder, tmb package; src: TextMouth/Services/TextMouthPaths.swift, TextMouth/Services/FileImportService+Packages.swift -->
 

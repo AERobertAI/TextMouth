@@ -128,8 +128,8 @@ They compare against `main`; `LINT_BASE=REF` on the `make` line compares against
   - `trap-lint.py`, which flags test lines that can crash the test host (a `try!`, a force unwrap, a literal subscript, a `.wait()`), play sound, record, or touch the real library, and
   - `test-diff.py`, which lists what the branch did to tests that already existed: removed, renamed, or moved a test, removed or changed an assertion, added a skip or an expected failure, raised a timeout, commented out test code, or changed a fixture.
 - `make lint-a11y` runs `a11y-lint.py`, which flags SwiftUI lines that VoiceOver or the keyboard cannot use: a control with no VoiceOver label or action, a tap with no VoiceOver action, a drag with no keyboard alternative, and the like.
-- `make lint-l10n` runs `scan.py lint`, which fails when a file has more unlocalized interface text than `Scripts/l10n/scan-baseline.json` records (see [Localizing TextMouth's code](localization.md#the-scanners-ratchet)).
-  `make check` also runs `make l10n-check` on the String Catalog, as its first step.
+- `make lint-l10n` runs `scan.py lint`, which fails when a file has more interface text outside an `InterfaceText.line` call than `Scripts/l10n/scan-baseline.json` records, or any lookup into Apple's tables (see [Localizing TextMouth's code](localization.md#the-scanners-lint)).
+  `make check` also runs `make l10n-check` on the catalog, as its first step.
 - `make lint-ogg` runs `ogg-lint.py`, which flags new calls that open audio with an Apple reader (`AVURLAsset`, `AVAssetReader`, `AVAudioFile`, an `AVPlayer`, or `AudioFileOpenURL`).
   Each must refuse every format the import converts first (`ImportAudioConverter.isNeverDecodedInApp`; see [Reading a source's audio facts](../architecture/state/imports-audio.md#reading-a-sources-audio-facts)), and a new call of `isOgg(` is flagged too, since a guard of that name refuses Ogg alone.
   The lint's own selftest runs with the others in `make check-selftest`.

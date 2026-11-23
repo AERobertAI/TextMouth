@@ -94,7 +94,7 @@ It is merged without a suite as a Markdown-only merge and recorded in the TODO w
 After each docs merge, run `python3 -I .claude/skills/doc-library/scripts/doclib.py lint --update-baseline`.
 When main's docs changed under a branch, run it with `--rebuild-baseline` instead, which only the orchestrator runs because it can raise a count.
 `Scripts/agents/merge-chain.sh` also runs the issue tracker's check on each merged tree before it commits, as a ratchet by file: it fails only on a problem that is new and in a file the merge changed ([When an issue file stops a merge](#when-an-issue-file-stops-a-merge)).
-It runs the unlocalized-text lint (`scan.py lint --base HEAD`) too, aborting the merge on `L10N_LINT_FAILED`, and on success lowers `Scripts/l10n/scan-baseline.json` into the merge itself ([The scanner's ratchet](../developer/localization.md#the-scanners-ratchet)).
+It runs the interface-text lint (`scan.py lint --base HEAD`) too, aborting the merge on `L10N_LINT_FAILED`, and on success lowers `Scripts/l10n/scan-baseline.json` into the merge itself ([The scanner's lint](../developer/localization.md#the-scanners-lint)).
 
 ## The end of a campaign
 <!-- id: end-campaign; keys: Where things stand, hand-over, campaign, history.md; src: AGENTS.md, docs/agents/history.md -->
@@ -222,7 +222,7 @@ Testing TextMouth (Tests on GitHub Actions) has how to read a run, what differs 
 `make typecheck-tests [REF=<commit>]` adds the Mac's hosted test target (`TextMouthProductionTests`), so a test file that does not compile is found before a train does; an agent runs it before every train request.
 All take `Scripts/agents/heavy_lock.py`'s lock, as each train does around its build and tests, so no two heavy jobs run at once on the 8 GB Mac.
 Each train result also counts the iOS errors in the agent's own files.
-For a train that carries a localization wave, `python3 -I -B Scripts/l10n/l10n.py reach --base main` names the Mac test classes to request, and `l10n.py sync` holds the same lock for about four minutes, so an agent's sync waits behind a train.
+For a train that carries a change to interface text, `python3 -I -B Scripts/l10n/l10n.py reach --base main` names the Mac test classes to request; `l10n.py sync` reads the code in about two seconds and takes no lock.
 An agent waits for its result with `Scripts/agents/wait-for-result.py --agent <slug>` in the background.
 
 
@@ -280,7 +280,7 @@ For a wave of small tasks, the orchestrator can launch team leads in place of ta
   A finished agent keeps its slot until it is stopped, so stop it, and launch the rest as slots free.
   Stopping it also ends its leftover background checks and timers.
 - An agent in an isolated worktree cannot write the main checkout, so scratch folders and reports go elsewhere, and the report is the agent's final message.
-- A translator must not run `check`: one run takes about 12 minutes on an eleven-language catalog, and twenty at once pushed the load past 80 (see [Translating TextMouth](../developer/translation.md#translating-at-scale)).
+- A translator must not run `check`: `apply` checks every string it writes, and the orchestrator runs `check` on the merged catalog (see [Translating TextMouth](../developer/translation.md#translating-at-scale)).
 
 ### Trains and builds
 <!-- id: lessons-trains-and-builds; keys: train base, zsh status, build-train, shared base; src: Scripts/agents/build-train.py -->

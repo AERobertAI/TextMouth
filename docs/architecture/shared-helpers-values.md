@@ -57,16 +57,16 @@ Where episodes and articles are listed beside books, as in Recently Opened and t
 A section is headed the same way, "Books (9), Articles (1)" (booksHeader(of:)).
 CountWording.list(_:) is the one "a, b, and c" joiner, which the cloud, removal, feed, shortcut, and filter wording use.
 The named counts are localized plural strings: books, feeds, bookmarks, hours, minutes, seconds, episodes, and articles.
-Each has its English `one` and `other` forms in the String Catalog, so each language counts by its own rules.
+Each is one `InterfaceText.line` call with a number interpolation, and has its English `one` and `other` forms in the catalog (written with `l10n.py plural`), so each language counts by its own rules.
 The number is written for the region, so 1,000 books has its separator.
 A list of two reads "A and B", and a count of one reads "1 item", since every counted string has a `one` form.
-list(_:), listItems, and booksAndFeeds join through the region's list style (`.list(type: .and)`), so the English follows the region too.
+list(_:), listItems, and booksAndFeeds join through the interface locale's list style (`.list(type: .and)`), so the English follows the region too.
 In en_US that is "A, B, and C", and in en_GB "A, B and C".
 booksHeader and the decimal of secondsToTheTenth are localized strings of their own.
-phrase(_:singular:plural:) and part(_:of:...) are still English, which is the limitation.
-Each phrase call becomes its sentence's own plural string as that sentence's area converts.
+phrase(_:singular:plural:) and part(_:of:singular:plural:) are still English, which is the limitation.
+A caller that uses them has a sentence that is not whole, and the code marks them as not localized.
 part needs a plural that agrees with a second number, which `l10n.py plural` does not write yet (TL14).
-How a count becomes a plural string is in [Localizing TextMouth's code](../developer/localization.md).
+How a count becomes a plural line is in [Localizing TextMouth's code](../developer/localization.md#plural-lines).
 
 ## ManualBookOrder and LibraryBookSorter
 <!-- id: manualbookorder-librarybooksorter; keys: drag reorder, library sort, tie-break; src: TextMouth/Models/LibraryBookSorter.swift, TextMouth/ViewModels/LibraryViewModel+SortAndOrder.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/Models/ReadingList.swift, TextMouth/Models/LibrarySortState.swift -->
@@ -132,7 +132,7 @@ The wording of each of these is built once for both the screen and VoiceOver, by
 - SpeechRefusalWording: the report of a speech refusal;
 - SentenceWording: `joined(_:)`, the one way to put whole sentences, each ended with its own full stop, into a longer text;
   an empty list is "", one sentence is returned as it is, and each pair is joined by a localized pattern (a space in English), so Japanese and Chinese can join with none;
-- PhoneAppWording (Phone/PhoneAppWording.swift): the iPhone's shared words (the alert's title and button, Cancel, Close, Save, OK, Play, and the like), localized once with the Mac's English keys, so one translation serves both apps.
+- PhoneAppWording (Phone/PhoneAppWording.swift): the iPhone's shared words (the alert's title and button, Cancel, Close, Save, OK, Play, and the like), each a line whose ID begins with common (common.cancel, common.ok), so one translation serves both apps.
 
 ## LibraryInfoWording
 <!-- id: libraryinfowording; keys: info sentence, full info, folder info, feed info; src: TextMouth/Models/LibraryInfoWording.swift, TextMouth/Views/Feeds/FeedWording.swift, TextMouthProductionTests/LibraryInfoWordingTests.swift, TextMouth/Models/CountWording.swift -->

@@ -46,7 +46,7 @@ The orchestrator's own rules are in [Orchestrating TextMouth's agents](docs/agen
 ## How a task agent works
 
 The orchestrator launches each agent in its own git worktree under `.claude/worktrees/` with a brief.
-The brief names the branch, a task slug, the regions to avoid, the numbered items (one commit each) with their tests, the baseline test count on main, and the report format.
+The brief names the branch, a slug, the regions to avoid, the numbered items (one commit each) with their tests, the baseline test count, and the report format.
 The agent:
 
 1. Makes its branch from `main` (or the team branch its brief names), since a worktree can start on an older commit.
@@ -62,6 +62,7 @@ The agent:
    [Making each train count](docs/agents/working-with-agents.md) in `working-with-agents.md` has the rest; Tests on GitHub Actions in [Testing TextMouth](docs/developer/testing-github.md) says how to read a result.
    A new test file needs `make generate` and the committed `project.pbxproj`, which the train regenerates and so never notices missing.
 4. Commits one logical change at a time, each message ending with the attribution the session's own instructions give, and leaves files outside its task alone except for a hook its brief names.
+   A line a person reads or hears is an `InterfaceText.line` call in a `…Wording` enum, then `make l10n-sync`, and translates it into all 24 languages (`l10n.py todo`, `apply`) before merging: [Localizing TextMouth's code](docs/developer/localization.md).
    It edits no `*.md` file, with two exceptions: it fixes the citations of any page its change leaves stale, when the change renames or removes a path or type that page cites (`doclib stale` lists them), and it adds one line to the doc-library `SKILL.md` for a new subcommand.
    The rest of the docs stay the documentation pass's, from the agent's report.
 5. Before reporting, rebases onto `main`, keeping both sides of adjacent-line conflicts (common in `ConfigService`, `SettingsViewModel`, `MenuCommands`, `AppDelegate.applicationShouldTerminate`, and the config test fixtures).
@@ -86,11 +87,10 @@ The agent:
 
 ## Where things stand
 
-- Main is version 0.5.8 (tag `v0.5.8`), and the user still runs 0.4.2.
-- 0.5.8 has 25 interface languages (FR36-FR38), each reviewed once (`Scripts/l10n/reviews/`): the Mac app is 32.2 MB, the iPhone's 27.1 MB; compressing them is TL19.
-- Localization (FR34, `docs/developer/localization.md`): the catalog, its tools, the pilot (FR35: the sleep timer, bookmarks, and Reading List, in Spanish), and the shared counts are on main.
-  Every file is converted and its English cut, keeping every fact; the user reads the cut lists (`build/orchestrator/nov18/*/cuts.md`, local).
-  Every language covers the whole app, for a native speaker's review; the user's questions are 16 to 25 of `humanQuestions/2026-11-18.md`.
-- Waiting for the user: `humanQuestions/2026-11-15.md` (the plans for FR22 and FR23 and the iCloud store, the audio decoders, C11's follow-ups), and the hand checks there.
-- Open: `issuelib list`, the files in `Issues/`, among them Ogg and Apple's converter's formats on the iPhone (FMT55), FFmpeg's leftovers (FU-FFMPEG2, FU01, B19, Q13), and braille's abandonment sentence (B20).
-  Also the train's census (TL08), cache (TL09), and iPhone log reader (TL17), localization's follow-ups (TL14, TL20, TL21, B23, B24, Q18), and the iPhone hang Q-HANG.
+- Main is version 0.5.10 (not yet tagged), and the user runs 0.5.9.
+- Interface text (FR39, `docs/developer/localization.md`): both apps look up their own words with their own engine, from `Strings.pack`, and ship no table of Apple's.
+  The Interface Language picker and the person's own lines (`interface_text.json`) are in Settings.
+- 25 languages (FR36-FR38), machine translated, each reviewed once (`Scripts/l10n/reviews/`); a native speaker's review and the user's questions 16 to 25 of `humanQuestions/2026-11-18.md` are open.
+- Waiting for the user: `humanQuestions/2026-11-15.md` (the plans for FR22, FR23, the iCloud store, the audio decoders, C11), and the hand checks there.
+- Open: `issuelib list` (the files in `Issues/`), among them Ogg and Apple's converter's formats on the iPhone (FMT55), FFmpeg's leftovers (FU-FFMPEG2, FU01, B19, Q13), and braille's abandonment sentence (B20).
+  Also the train's census (TL08), cache (TL09), and iPhone log reader (TL17), localization's follow-ups (TL14, TL20, TL21, B23, B24, Q18), and Q-HANG.

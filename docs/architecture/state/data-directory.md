@@ -101,12 +101,14 @@ Its location, and moving it.
   Before the confirmation, Storage settings runs the comparison of Compare Libraries for at most 60 seconds, which Stop Comparing (a cancel flag) ends, and the confirmation says which copy is newer (StorageWording.copyOfCurrentLibrarySentence(_:), LibraryComparisonWording.newerCopySentence).
 
 ### How a move is observed
-<!-- id: how-move-observed; keys: progress sheet, move progress, Move cancelled, quit during move, status line; src: TextMouth/ViewModels/DataDirectoryMoveProgress.swift, TextMouth/Views/Library/DataDirectoryMoveSheet.swift, TextMouth/Views/Settings/StorageSettingsView.swift, TextMouth/Platform/macOS/App/AppDelegate.swift, TextMouth/ViewModels/LibraryViewModel+Migration.swift, TextMouth/ViewModels/LibraryViewModel.swift -->
+<!-- id: how-move-observed; keys: progress sheet, move progress, Move cancelled, quit during move, status line; src: TextMouth/ViewModels/DataDirectoryMoveProgress.swift, TextMouth/Views/Library/DataDirectoryMoveSheet.swift, TextMouth/Views/Settings/StorageSettingsView.swift, TextMouth/Platform/macOS/App/AppDelegate.swift, TextMouth/ViewModels/LibraryViewModel+Migration.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/Services/StorageGeneration.swift, TextMouth/Services/InterfaceTextOverrides.swift -->
 
 - How others observe it: LibraryViewModel.dataDirectoryMove, a DataDirectoryMoveProgress, is set while a move runs.
   Every Library window shows DataDirectoryMoveSheet and refuses to open or add books.
   Storage settings show DataDirectoryMoveProgressView.
   VoiceOver hears what the move waits for, its start, each quarter, and Cancel.
+  Once a move or a switch of library makes another folder the data directory, StorageBoundary.publish(root:) posts .dataDirectoryDidMove on the main queue, with the new root's path in its userInfo, outside the write fence of the persistence queues.
+  What reads a file there by its path reads it again at the new place: InterfaceTextOverrides moves its watcher to interface_text.json there and reads it.
   And AppDelegate calls DataDirectoryMoveProgress.stopForQuit before quitting. config.json's dataDirectoryPath names the folder in use after every attempt.
   The Storage settings status line, which VoiceOver announces once, or else the library's alert, says "Done.
   Data is now at…", naming the folder a link leads to, "Move cancelled.
@@ -114,7 +116,7 @@ Its location, and moving it.
   The old folder is left where it was.
 
 ## Whether the data directory is available
-<!-- id: whether-data-directory-available; keys: Library Not Available, Try Again, unmounted volume, cloud sync, iCloud, bookmark, Use Default Location; src: TextMouth/Services/DataDirectoryAvailability.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/ViewModels/LibraryViewModel+IndexRecovery.swift, TextMouth/ViewModels/LibraryViewModel+LibraryFetch.swift, TextMouth/ViewModels/LibraryViewModel+LaunchFiles.swift, TextMouth/Services/LibraryPersistenceService.swift, TextMouth/Services/LibraryFileFetch.swift, TextMouth/Services/BookCloudStorageService.swift, TextMouth/Services/TextMouthPaths.swift, TextMouth/Services/ConfigService.swift, TextMouth/Services/ReadingStatsService.swift, TextMouth/Services/TextSubstitutionService.swift, TextMouth/Services/Feeds/FeedStore.swift, TextMouth/Models/CloudStorageContract.swift, TextMouth/Views/Library/DataDirectoryUnavailableView.swift, TextMouth/Views/Settings/StorageSettingsView.swift, TextMouth/Views/ContentView.swift -->
+<!-- id: whether-data-directory-available; keys: Library Not Available, Try Again, unmounted volume, cloud sync, iCloud, bookmark, Use Default Location; src: TextMouth/Services/DataDirectoryAvailability.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/ViewModels/LibraryViewModel+IndexRecovery.swift, TextMouth/ViewModels/LibraryViewModel+LibraryFetch.swift, TextMouth/ViewModels/LibraryViewModel+LaunchFiles.swift, TextMouth/Services/LibraryPersistenceService.swift, TextMouth/Services/LibraryFileFetch.swift, TextMouth/Services/BookCloudStorageService.swift, TextMouth/Services/TextMouthPaths.swift, TextMouth/Services/ConfigService.swift, TextMouth/Services/ReadingStatsService.swift, TextMouth/Services/TextSubstitutionService.swift, TextMouth/Services/Feeds/FeedStore.swift, TextMouth/Models/CloudStorageContract.swift, TextMouth/Views/Library/DataDirectoryUnavailableView.swift, TextMouth/Views/Settings/StorageSettingsView.swift, TextMouth/Views/ContentView.swift, TextMouth/Services/InterfaceTextOverrides.swift -->
 
 Its availability: whether the data directory can be used.
 
@@ -135,8 +137,8 @@ Its availability: whether the data directory can be used.
   It then checks again, up to six passes.
   Meanwhile the reason is .gettingFromCloud, and .cloudFetchFailed when a pass makes no progress after retries at 5, 15, and 30 seconds, or a read gives no answer for BookCloudStorageService.defaultStallLimit (60 s).
   A stuck path stays in libraryFilesBeingRead, so Try Again never reads it twice, and its late return checks again and opens the library, unless another library was chosen.
-  LibraryViewModel+LaunchFiles does the same for config.json, reading_stats.json, substitutions.json, and the feed records once a cloud library opens, without holding it back.
-  It also tells the service that owns each (ConfigService.fileMayHaveArrived, ReadingStatsService.fileMayHaveArrived, the substitutions' re-read, FeedStore.loadRecordsInCloud).
+  LibraryViewModel+LaunchFiles does the same for config.json, reading_stats.json, substitutions.json, interface_text.json, and the feed records once a cloud library opens, without holding it back.
+  It also tells the service that owns each (ConfigService.fileMayHaveArrived, ReadingStatsService.fileMayHaveArrived, the substitutions' re-read, InterfaceTextOverrides.fileMayHaveArrived, FeedStore.loadRecordsInCloud).
   Reads go through the library's own files only, never a book or an episode.
 - How others observe it: every Library window:
   - shows DataDirectoryUnavailableView in place of the library, with the reason and, read right after it, where to choose another folder (DataDirectoryUnavailableText.anotherFolderPointer, which names Storage settings' two buttons by their titles in StorageLocationWording, so it follows any rename),

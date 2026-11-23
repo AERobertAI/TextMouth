@@ -40,6 +40,7 @@ Each entry names a kind of state, then its owner, who may write it, how others o
 - [Timers and statistics](docs/architecture/state/timers-and-statistics.md)
 - [Windows](docs/architecture/state/windows.md)
   - [Windows: sheets, search, Speak Info](docs/architecture/state/windows-sheets.md)
+- [Interface text and language](docs/architecture/state/interface-text.md): the engine, the pack, and the switch.
 - [Saving failures](docs/architecture/state/saving-failures.md)
 
 ### Imports

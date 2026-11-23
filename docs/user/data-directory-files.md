@@ -105,6 +105,35 @@ TextMouth remembers the identifier it expects, so a folder that only has the rig
 config.json: your settings, which you can edit by hand (see [Editing settings in config.json](config-json.md)).
 From 0.5.0 on, TextMouth keeps a setting a later one added when it saves the file, and keeps a later one's keys in library.json, bookInfo.json, and reading_stats.json the same way.
 
+## interface_text.json, your own interface lines
+<!-- id: interface-text-json; keys: own lines, interface words, Edit Interface Text, Export Interface Text, base, plural forms; src: TextMouth/Services/TextMouthPaths.swift, TextMouth/Localization/InterfaceText/InterfaceTextOverridesFile.swift, TextMouth/Localization/InterfaceText/InterfaceTextOverridesWriter.swift, TextMouth/Services/InterfaceTextOverrides.swift -->
+
+interface_text.json: the words of TextMouth's interface that you changed (see [Your own words for the interface](settings.md#your-own-words-for-the-interface)).
+TextMouth never makes it by itself: Edit Interface Text… in Settings makes it, or you do.
+It is a JSON file with a version of 1 and a "languages" object.
+Each language, by its code (es, pt-BR, zh-Hant), holds "lines", and each line is keyed by the line's ID, such as common.sleepTimer.
+A line holds, in this order:
+- "text", or for a line with a count "plural", with a text for each form the language uses (one, many, other, and so on);
+- "english", the English of the line, and "note", what the line is for, which are there for you to read and are never used;
+- "base", or for plural forms "basePlural", the text TextMouth had when the file was written.
+
+A line applies when its text differs from its base, or when it has no base, as when you write it by hand or copy it from someone else's export.
+A line you leave alone never applies, so it keeps taking the better wording of each update.
+If the English of a line you changed has changed since, the line still applies, and Settings lists it to check.
+
+A line is ignored, and Settings says why, when:
+- its language or ID is not one TextMouth has;
+- it has no text, or both a text and plural forms, or a text where plural forms belong or the other way round;
+- a text is empty or holds a control character other than a line break or a tab;
+- its plural forms are not the ones the language uses;
+- its placeholders do not match the English's: only %@, %lld, their numbered forms such as %1$@, and %% are allowed, in the English's number and kinds, and in any order when numbered;
+- another key names the same language and has the same line.
+
+A file that is not JSON or not this shape, with another version, larger than 64 MB, or that is a folder or another thing that is not a file, is ignored whole, and Settings says so.
+A missing or empty file is no lines and no problem.
+An export has the same shape, with no "base", and with "changed": true on each line of your own.
+The file is in the data folder, so another Mac that shares the library in the cloud reads it too.
+
 ## substitutions.json
 <!-- id: substitutions-json; keys: text substitutions, pronunciation rules, Text tab; src: TextMouth/Services/TextSubstitutionService.swift -->
 
