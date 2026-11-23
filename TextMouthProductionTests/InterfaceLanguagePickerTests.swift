@@ -116,7 +116,7 @@ final class InterfaceLanguagePickerTests: XCTestCase {
 
     // MARK: - A change
 
-    /// A change saves the choice, swaps the state, and announces the new language by its own name.
+    /// A change saves the choice, swaps the state, and announces the new language by its own name, in that language.
     func testAChangeSavesSwitchesAndAnnounces() throws {
         let store = makeStoreRestoringSystem()
         let before = VoiceOverAnnouncer.recordedAnnouncements.count
@@ -126,7 +126,8 @@ final class InterfaceLanguagePickerTests: XCTestCase {
         XCTAssertEqual(InterfaceLanguage.current, state)
         XCTAssertEqual(store.storedLanguages(), ["es"])
         XCTAssertEqual(VoiceOverAnnouncer.recordedAnnouncements.count, before + 1)
-        XCTAssertEqual(VoiceOverAnnouncer.recordedAnnouncements.last?.message, "Interface language: Español")
+        // The catalog's Spanish for "Interface language: %@": the announcement is spoken in the language switched to.
+        XCTAssertEqual(VoiceOverAnnouncer.recordedAnnouncements.last?.message, "Idioma de la interfaz: Español")
 
         InterfaceLanguagePicker.apply(.system, store: store)
         XCTAssertEqual(InterfaceLanguage.current.language, "en")
