@@ -765,6 +765,22 @@
 		</dict>
 		<dict>
 			<key>CFBundleTypeName</key>
+			<string>NLS BARD Braille Package</string>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>bopf</string>
+			</array>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.textmouth.bopf-package</string>
+			</array>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+		</dict>
+		<dict>
+			<key>CFBundleTypeName</key>
 			<string>CUE Sheet</string>
 			<key>CFBundleTypeExtensions</key>
 			<array>
@@ -1041,6 +1057,23 @@
 				<key>public.mime-type</key>
 				<array>
 					<string>application/oebps-package+xml</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.textmouth.bopf-package</string>
+			<key>UTTypeDescription</key>
+			<string>NLS BARD Braille Package Document</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.xml</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>bopf</string>
 				</array>
 			</dict>
 		</dict>

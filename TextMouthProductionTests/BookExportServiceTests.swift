@@ -140,6 +140,34 @@ final class BookExportServiceTests: XCTestCase {
         XCTAssertEqual(original.byteCount, Int64(DAISYPackageFixtures.packageBook.values.map { $0.utf8.count }.reduce(0, +)))
     }
 
+    /// An NLS BARD braille book kept as loose files (FMT56) offers every
+    /// volume with its package file, as a loose DAISY book does, not the
+    /// package file alone.
+    func testALooseBardBrailleBookOffersItsVolumes() throws {
+        let world = try makeIntegrationWorld("Export BARD Offer")
+        let folder = try makeSandboxDirectory("Export BARD Source").appendingPathComponent("Two Volumes", isDirectory: true)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let package = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <package xmlns="http://openebook.org/namespaces/oeb-package/1.0/" xmlns:dc="http://purl.org/dc/elements/1.0/">
+          <metadata><dc-metadata><dc:Title>Two Volumes</dc:Title></dc-metadata></metadata>
+          <manifest>
+            <item id="v1" href="a1.brf" media-type="text/brf"/>
+            <item id="v2" href="a2.brf" media-type="text/brf"/>
+          </manifest>
+          <spine><itemref idref="v1"/><itemref idref="v2"/></spine>
+        </package>
+        """
+        try Data(package.utf8).write(to: folder.appendingPathComponent("two.bopf"))
+        try Data(",HELLO WORLD\r\n".utf8).write(to: folder.appendingPathComponent("a1.brf"))
+        try Data(",GOOD NIGHT\r\n".utf8).write(to: folder.appendingPathComponent("a2.brf"))
+        let book = try world.importBook(from: folder.appendingPathComponent("two.bopf"))
+
+        let original = try XCTUnwrap(BookExportService.offer(for: book).item(.originalFile))
+        XCTAssertEqual(original.files.map(\.path), ["a1.brf", "a2.brf", "two.bopf"])
+        XCTAssertEqual(original.folderName, BookExportService.fileNameStem(for: book.title))
+    }
+
     /// A DAISY book in a ZIP offers the ZIP as its own file.
     func testADAISYZipOffersTheZip() throws {
         let world = try makeIntegrationWorld("Export DAISY ZIP Offer")

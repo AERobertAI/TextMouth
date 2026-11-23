@@ -185,7 +185,9 @@ enum BookFormat: String, Codable, CaseIterable {
         // WordML is an .xml file, known by its root element through
         // `XMLDocumentSniffer` (see `detect(from:)`), never by an extension.
         case .wordml: return []
-        case .braille: return ["brf", "brl", "pef"]
+        // .bopf is an NLS BARD braille book's package file, which stands for
+        // its BRF volumes (FMT56).
+        case .braille: return ["brf", "brl", "pef", "bopf"]
         case .daisy: return ["daisy", "opf"]
         case .pdf: return ["pdf"]
         case .audio:
@@ -301,6 +303,16 @@ enum BookFormat: String, Codable, CaseIterable {
             if format.fileExtensions.contains(ext) {
                 return format
             }
+        }
+        // An NLS BARD braille book (FMT56) has a package of the DAISY 3 form
+        // and is told from a DAISY book by it: a ZIP holding one, or a folder
+        // with one at its top level, is a braille book, as a `.bopf` file is
+        // by its extension above.
+        if ext == "zip" && BardBraillePackage.isPackageZip(url: url) {
+            return .braille
+        }
+        if ext != "tmb", ext != "zip", BardBraillePackage.isPackage(at: url) {
+            return .braille
         }
         // Check if a ZIP file is actually a DAISY package
         if ext == "zip" && DAISYParser.isDAISYZip(url: url) {

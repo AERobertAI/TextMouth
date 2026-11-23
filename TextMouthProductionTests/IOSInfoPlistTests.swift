@@ -114,7 +114,7 @@ final class IOSInfoPlistTests: XCTestCase {
     /// and video only FFmpeg reads since FMT54: the iPhone runs the FFmpeg session
     /// in the app itself.
     private static let refused: Set<String> = [
-        "Ogg Audio", "Audio Converted at Import", "ALAC Audio",
+        "Ogg Audio", "Audio Converted at Import", "ALAC Audio", "NLS BARD Braille Package",
     ]
 
     /// The document type of the formats TextMouth's own readers decode, which iOS
@@ -158,6 +158,8 @@ final class IOSInfoPlistTests: XCTestCase {
         "org.xiph.ogg-audio",
         "public.aifc-audio", "com.apple.coreaudio-format", "public.au-audio", "com.sony.wave64", "public.ac3-audio",
         "public.enhanced-ac3-audio", "public.mp2", "org.3gpp.adaptive-multi-rate-audio", "public.3gpp", "public.3gpp2",
+        // A BARD package file alone arrives without its volumes (FMT56).
+        "com.textmouth.bopf-package",
     ]
 
     /// The keys only iOS has, which Scripts/ios/sync-info-plist.py adds.
@@ -292,7 +294,8 @@ final class IOSInfoPlistTests: XCTestCase {
     func testTheDeclarationsAreTheMacs() throws {
         let mac = try imported(in: macPlist())
         let ios = try imported(in: iosPlist())
-        XCTAssertEqual(Set(ios.keys), Set(mac.keys))
+        // Less the declarations of the types only a refused document type names.
+        XCTAssertEqual(Set(ios.keys), Set(mac.keys).subtracting(Self.refusedTypes))
         for (identifier, declaration) in ios {
             XCTAssertEqual(NSDictionary(dictionary: declaration), NSDictionary(dictionary: try XCTUnwrap(mac[identifier])), identifier)
         }
@@ -338,11 +341,17 @@ final class IOSInfoPlistTests: XCTestCase {
 
         let named = macDeclared.filter { source.contains("\"\($0)\"") }
         XCTAssertFalse(named.isEmpty, "Found none of the Mac's declared types in the import's source")
-        XCTAssertEqual(named.subtracting(iOSDeclared), [], "Named by the import, and not declared for iOS")
+        // The Mac's picker names a refused type (the BARD package file) that the iPhone's does not.
+        XCTAssertEqual(
+            named.subtracting(iOSDeclared).subtracting(Self.refusedTypes), [], "Named by the import, and not declared for iOS"
+        )
 
         let importedAs = try matches(of: #"UTType\(importedAs: "([^"]+)""#, in: source)
         XCTAssertFalse(importedAs.isEmpty, "Found no UTType(importedAs:) in the import's source")
-        XCTAssertEqual(importedAs.subtracting(iOSDeclared), [], "UTType(importedAs:) with no declaration")
+        // The BARD package type is named only under `#if os(macOS)`, so the iPhone's picker never asks for it.
+        XCTAssertEqual(
+            importedAs.subtracting(iOSDeclared).subtracting(Self.refusedTypes), [], "UTType(importedAs:) with no declaration"
+        )
 
         // A UTType("com.textmouth...") is nil without its declaration, and drops
         // out of the file picker in silence (F33).
@@ -354,7 +363,10 @@ final class IOSInfoPlistTests: XCTestCase {
         // formats' own types are found by extension there (FMT31), and iOS
         // declares them (FMT54), as it does the own readers'.
         let used = Set(FileImportService.supportedTypes.map(\.identifier)).intersection(macDeclared)
-        XCTAssertEqual(used.subtracting(iOSDeclared), [], "In supportedTypes, and not declared for iOS")
+        // (This process is the Mac's, whose list names the BARD package type; the iPhone's does not.)
+        XCTAssertEqual(
+            used.subtracting(iOSDeclared).subtracting(Self.refusedTypes), [], "In supportedTypes, and not declared for iOS"
+        )
     }
 
     /// What iOS cannot read is not offered: through no type it names, no

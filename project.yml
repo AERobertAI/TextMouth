@@ -980,6 +980,7 @@ targets:
       - TextMouthProductionTests/AudioEditTimelineTests.swift
       - TextMouthProductionTests/AudioSeekAndObserverTests.swift
       - TextMouthProductionTests/AudioZIPClassificationTests.swift
+      - TextMouthProductionTests/BardBrailleTests.swift
       - TextMouthProductionTests/BookAuthorPlaceholderTests.swift
       - TextMouthProductionTests/BookContentIndexTests.swift
       - TextMouthProductionTests/BookMetadataUpdateTests.swift

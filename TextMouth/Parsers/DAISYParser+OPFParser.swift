@@ -14,6 +14,20 @@ struct DAISYOPFResult {
     var manifestOrder: [String] = []
     /// Ordered list of manifest item IDs defining the reading sequence
     var spineItemRefs: [String] = []
+    /// The Dublin Core fields beyond the title and author, each the first
+    /// non-empty text the package gives it (empty when it gives none). A
+    /// DAISY book keeps none of them; an NLS BARD braille book's package
+    /// does (`BardBraillePackage`, FMT56).
+    var description: String = ""
+    var publisher: String = ""
+    var date: String = ""
+    var language: String = ""
+    var identifier: String = ""
+    /// Every `dc:subject`, in the order the package lists them.
+    var subjects: [String] = []
+    /// The `<meta name="…" content="…"/>` elements, by name in lowercase,
+    /// the first of a name kept. A BARD package's `brl:` series is here.
+    var metas: [String: String] = [:]
 }
 
 /// A single item from the OPF manifest
@@ -61,6 +75,13 @@ class DAISYOPFParser: DAISYSAXParser {
             if let idref = attributes["idref"] {
                 result.spineItemRefs.append(idref)
             }
+        case "meta":
+            // A named value, as the x-metadata of a BARD braille package
+            // holds them; a meta element with no name or no content is none.
+            if let name = attributes["name"]?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased(),
+               !name.isEmpty, let content = attributes["content"], result.metas[name] == nil {
+                result.metas[name] = content.trimmingCharacters(in: .whitespacesAndNewlines)
+            }
         default:
             break
         }
@@ -80,6 +101,18 @@ class DAISYOPFParser: DAISYSAXParser {
             if result.title.isEmpty && !text.isEmpty { result.title = text }
         case "creator":
             if result.author.isEmpty && !text.isEmpty { result.author = text }
+        case "description":
+            if result.description.isEmpty && !text.isEmpty { result.description = text }
+        case "publisher":
+            if result.publisher.isEmpty && !text.isEmpty { result.publisher = text }
+        case "date":
+            if result.date.isEmpty && !text.isEmpty { result.date = text }
+        case "language":
+            if result.language.isEmpty && !text.isEmpty { result.language = text }
+        case "identifier":
+            if result.identifier.isEmpty && !text.isEmpty { result.identifier = text }
+        case "subject":
+            if !text.isEmpty { result.subjects.append(text) }
         default:
             break
         }

@@ -197,7 +197,8 @@ enum BrailleBookReader {
         // whose pages are pages (`marksItsPages(_:_:)`).
         let translation = PagedTranslation(
             blocks: structure.blocks,
-            starts: includesPages && marksItsPages(pages, structure) ? pageStarts(of: structure) : []
+            starts: includesPages && marksItsPages(pages, structure) ? pageStarts(of: structure) : [],
+            volumeStarts: structure.volumeStarts
         )
 
         // One translation reads every text, with the emphasis liblouis reads:
