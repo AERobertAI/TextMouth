@@ -311,7 +311,7 @@ enum BookFormat: String, Codable, CaseIterable {
         if ext == "zip" && BardBraillePackage.isPackageZip(url: url) {
             return .braille
         }
-        if ext != "tmb" && BardBraillePackage.isPackage(at: url) {
+        if ext != "tmb", ext != "zip", BardBraillePackage.isPackage(at: url) {
             return .braille
         }
         // Check if a ZIP file is actually a DAISY package

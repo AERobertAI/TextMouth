@@ -213,14 +213,34 @@ final class BardBrailleTests: XCTestCase {
         XCTAssertEqual(BookFormat.braille.fileExtensions.contains("bopf"), true)
     }
 
-    /// Both apps offer the `.bopf` type: the Mac's and the iPhone's
-    /// Info.plist each declare it, in a Viewer role, and the import panel
-    /// lists its type.
+    /// Both apps' Info.plists, read from the source tree, declare the `.bopf`
+    /// document type in a Viewer role and its imported type, so each is
+    /// offered the file; the Mac's import panel lists the type, and the
+    /// iPhone's picker does not, since it copies only the file picked and a
+    /// `.bopf` alone would arrive without its volumes. (The source tree is
+    /// the Mac's: the test is skipped where it is not.)
     func testBothAppsDeclareTheBopfType() throws {
-        let type = documentType(listing: "bopf")
-        XCTAssertEqual(type?["CFBundleTypeRole"] as? String, "Viewer")
-        XCTAssertEqual(type?["LSItemContentTypes"] as? [String], ["com.textmouth.bopf-package"])
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        for path in ["TextMouth/Resources/Info.plist", "TextMouth/Platform/iOS/Info.plist"] {
+            let url = root.appendingPathComponent(path)
+            guard let data = try? Data(contentsOf: url) else { throw XCTSkip("the source tree is not here") }
+            let plist = try XCTUnwrap(
+                PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any], path
+            )
+            let documentTypes = plist["CFBundleDocumentTypes"] as? [[String: Any]] ?? []
+            let type = documentTypes.first { ($0["CFBundleTypeExtensions"] as? [String] ?? []).contains("bopf") }
+            XCTAssertEqual(type?["CFBundleTypeRole"] as? String, "Viewer", path)
+            XCTAssertEqual(type?["LSItemContentTypes"] as? [String], ["com.textmouth.bopf-package"], path)
+            let imported = plist["UTImportedTypeDeclarations"] as? [[String: Any]] ?? []
+            let declared = imported.first { $0["UTTypeIdentifier"] as? String == "com.textmouth.bopf-package" }
+            let tags = declared?["UTTypeTagSpecification"] as? [String: Any]
+            XCTAssertEqual(tags?["public.filename-extension"] as? [String], ["bopf"], path)
+        }
+        #if os(macOS)
         XCTAssertTrue(FileImportService.supportedTypes.contains { $0.identifier == "com.textmouth.bopf-package" })
+        #else
+        XCTAssertFalse(FileImportService.supportedTypes.contains { $0.identifier == "com.textmouth.bopf-package" })
+        #endif
     }
 
     // MARK: - Reading the Volumes
@@ -276,12 +296,12 @@ final class BardBrailleTests: XCTestCase {
     /// A package whose spine lists no volume is read in the manifest's order,
     /// as a DAISY book with no content file in its spine is.
     func testAPackageWithNoSpineIsReadInTheManifestsOrder() throws {
-        let text = String(decoding: packageText(), as: UTF8.self)
-            .replacingOccurrences(of: "<itemref idref=\"vol1\"/>", with: "")
-            .replacingOccurrences(of: "<itemref idref=\"vol2\"/>", with: "")
-            .replacingOccurrences(of: "<itemref idref=\"vol3\"/>", with: "")
-        let (folder, file) = try packageFolder(Data(text.utf8))
-        let volumes = volumeNames.map { folder.appendingPathComponent($0) }
+        // The manifest's order is not the order of the files' names, so a
+        // read in the names' order, or in any other, would fail the test.
+        let manifest = ["salt-v2.brf", "salt-v3.brf", "salt-v1.brf"]
+        let (folder, file) = try packageFolder(packageText(manifest: manifest, spine: []))
+        XCTAssertFalse(String(decoding: try Data(contentsOf: file), as: UTF8.self).contains("<itemref"))
+        let volumes = manifest.map { folder.appendingPathComponent($0) }
         XCTAssertEqual(try markdown(of: file), try expectedMarkdown(ofVolumes: volumes))
     }
 
@@ -526,18 +546,35 @@ final class BardBrailleTests: XCTestCase {
     }
 
     /// Each volume is laid out on its own: the structure names where each
-    /// begins, at the heading each volume of the fixture opens with.
+    /// begins, and a volume that begins in a paragraph, with no heading and
+    /// the sentence the volume before it left unfinished, still begins a block
+    /// of its own, so no paragraph runs from one volume into the next.
     func testEachVolumeIsLaidOutOnItsOwn() throws {
-        let (_, file) = try packageFolder()
+        // The second volume has no heading, and the first ends mid-sentence.
+        let scratch = try makeSandboxDirectory("BardOwnLayout")
+        var files = try volumeFiles()
+        files["salt-v1.brf"] = try BrailleDocumentWriter.brf(
+            of: [BraillePrintBlock.heading(level: 1, EmphasizedText("The Salt Ledger")),
+                 BraillePrintBlock.paragraph(EmphasizedText("Orsolya counted the barrels twice and wrote both"))],
+            options: writerOptions(), workingIn: scratch
+        )
+        files["salt-v2.brf"] = try BrailleDocumentWriter.brf(
+            of: [BraillePrintBlock.paragraph(EmphasizedText("numbers in her ledger, and nobody at the harbour office could explain the missing barrel."))],
+            options: writerOptions(), workingIn: scratch
+        )
+        let (_, file) = try packageFolder(volumes: files)
         let pages = try BardBraillePackage.open(at: file).readPages(code: .northAmerican)
         let structure = BraillePageAnalyzer.structure(of: pages)
+        let firstVolume = BraillePageAnalyzer.structure(of: pages.volume(at: 0))
         XCTAssertEqual(structure.volumeStarts.map(\.number), [1, 2, 3])
+        XCTAssertEqual(structure.volumeStarts.map(\.index), [0, 1, 2])
         XCTAssertEqual(structure.volumeStarts.first?.blockIndex, 0)
-        for start in structure.volumeStarts {
-            guard structure.blocks.indices.contains(start.blockIndex) else { return XCTFail("no block at \(start)") }
-            if case .heading = structure.blocks[start.blockIndex] { continue }
-            XCTFail("volume \(start.number) does not begin at a heading")
-        }
+        // The second volume's first block follows every block of the first.
+        XCTAssertEqual(structure.volumeStarts[1].blockIndex, firstVolume.blocks.count)
+        guard structure.blocks.indices.contains(structure.volumeStarts[1].blockIndex) else { return XCTFail("no block") }
+        if case .heading = structure.blocks[structure.volumeStarts[1].blockIndex] { XCTFail("the second volume has no heading") }
+        // The headings above the book's own are the volumes'.
+        XCTAssertEqual(try markdown(of: file).components(separatedBy: "\n").filter { $0.hasPrefix("# ") }, ["# Volume 1", "# Volume 2", "# Volume 3"])
     }
 
     // MARK: - The Table
