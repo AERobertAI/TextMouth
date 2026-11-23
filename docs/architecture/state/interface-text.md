@@ -14,7 +14,7 @@ The interface's words.
   It opens the app's Strings.pack at the first lookup (InterfaceTextPack.inMainBundle, memory-mapped).
   It keeps the decoded ID list, each language's decoded entries once that language is asked for, the verdict of the specifier check for each entry, and the problems already reported, all behind one lock.
 - Who may write it: only the engine, which fills its own caches.
-  The pack is read-only.
+  The pack is read-only, and the person's own lines (below) are the one thing set on it from outside.
   A test makes an engine of its own over tables in memory (InterfaceTextTables), or over a pack file.
 - How others observe it: they don't; a call returns a String, and is safe on any thread.
   It never traps: with no pack, no entry for the ID in the language, or a text that fails its check, the line shows the English the call holds.
@@ -47,6 +47,32 @@ The language and locale every lookup reads, and the person's choice.
     - RecordingWindowModel;
     - the iPhone window, for the reading direction UIKit's bars follow and the language VoiceOver reads in;
   - WindowTitleFollower, which sets again the title of a window whose title the code sets once: the Record, Search Library, and audio editor windows, and the quit notice's panel.
-- A window or alert already open keeps its other words until it closes.
+- Every open window is worded again, and the titles set from code follow didChange; an alert or file panel already open keeps its words until it closes.
 - InterfaceLanguage.scopedLanguage is a task-local language that tests and title sets bind to read a line in another language, with nothing global changed.
 - Formatted numbers and dates follow the state's locale (interfaceFormatted in InterfaceFormatting.swift), not Locale.current.
+
+## The person's own lines
+<!-- id: interface-text-own-lines; keys: interface_text.json, InterfaceTextOverrides, setOverrides, InterfaceLanguage.refresh, INTERFACE_TEXT_LOADED, INTERFACE_TEXT_IGNORED, Edit Interface Text, Export Interface Text; src: TextMouth/Services/InterfaceTextOverrides.swift, TextMouth/Localization/InterfaceText/InterfaceTextOverridesFile.swift, TextMouth/Localization/InterfaceText/InterfaceTextOverridesWriter.swift, TextMouth/Platform/macOS/Services/InterfaceTextEditing.swift, TextMouth/Platform/iOS/Views/Settings/PhoneSettingsView.swift, TextMouth/Services/FileEventWatcher.swift, TextMouth/Services/TextMouthPaths.swift -->
+
+The lines the person wrote in interface_text.json, which win over the pack's.
+
+- Owner: InterfaceTextOverrides.shared, on the main actor, for the file in the data directory in use (TextMouthPaths.interfaceTextFile).
+  It checks the file against the pack, hands the lines that apply to the engine (InterfaceTextEngine.setOverrides), and publishes what the read came to as outcome.
+  The outcome holds the lines in use, the lines ignored with a reason each, the lines in use whose English changed since they were written, and a problem with the whole file.
+  A lookup takes the person's line for the ID in the language before the pack's entry, and checks it against the call's arguments each time it is used.
+- Reading: the library model starts it once the library is open (not in a process that hosts the tests).
+  It reads again when the library's launch files arrive from the cloud, when the data directory becomes available or moves (.dataDirectoryDidMove), when the app becomes active, and when its FileEventWatcher settles on a change.
+  Every read runs on a background queue, never downloads a file only in the cloud, drops a read a newer one overtakes, and skips the check when the bytes are the ones last read.
+  These are ignored whole, with one reason: a file over 64 MB (InterfaceTextOverridesFile.largestSize), one that is not JSON or not the file's shape, one with a version it does not know, and a name that holds anything but a regular file.
+  A missing file is no lines and no problem.
+- The file's shape: a version, then languages, each with lines keyed by ID.
+  A line holds text, or plural forms, then english, note, and base (or basePlural) in that order, so an editor's reader meets the field to change first.
+  A line applies when its text differs from its base, or has no base; a line left alone keeps taking each update's wording.
+  english and note are context only: a line whose english is not the English now still applies and is listed to be checked.
+  A line is ignored, with a reason, for an unknown language or ID, the wrong shape for the line, an empty form, a control character, plural forms that are not the language's, or placeholders that break the engine's rules (the same five specifiers, and the English's slots).
+- Applying: after setOverrides it calls InterfaceLanguage.refresh, which reads every line again as a switch of language does, with the language unchanged.
+- Who may write the file: only the person, and Edit Interface Text… on the Mac, through InterfaceTextOverridesWriter, which fills the file with the interface language's lines as they read now when the file is missing, blank, or lacks that language, and leaves any other file as it is.
+  No launch, sync, or move of the data directory writes it, and neither does the service.
+- Export Interface Text… writes the same fields with no base and "changed": true on the person's own lines, to a file the person chooses: the Mac through a save panel, the iPhone through the system's file exporter.
+  The notes stay in the pack, and the commands that write read them; a check of the person's file reads none.
+- The log: one INTERFACE_TEXT_LOADED line for each change of what the file comes to, in counts, and one INTERFACE_TEXT_IGNORED line for each ignored line, in English.
