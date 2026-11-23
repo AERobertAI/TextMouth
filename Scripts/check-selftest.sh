@@ -1346,16 +1346,24 @@ makefile_cases() {
   # its own level, so make debug must not pass it.
   begin_case "make build compiles the Release app and its packages with -Osize, and make debug does not"
   cp "$ROOT/Makefile" "$sandbox/Makefile"
+  # The Makefile reads the further size settings from this script (SIZE_SETTINGS).
+  mkdir -p "$sandbox/Scripts"
+  cp "$ROOT/Scripts/size_settings.py" "$sandbox/Scripts/size_settings.py"
   output=$(cd "$sandbox" && "$REAL_MAKE" -n build 2>&1)
   status=$?
   expect_status 0
   expect_report "SWIFT_OPTIMIZATION_LEVEL=-Osize"
+  expect_report "SWIFT_LTO=YES"
+  refute_report "SWIFT_REFLECTION_METADATA_LEVEL"
+  expect_report "-Xfrontend -internalize-at-link"
   refute_report "SWIFT_COMPILATION_MODE"
   output=$(cd "$sandbox" && "$REAL_MAKE" -n build CONFIG=Debug 2>&1)
   status=$?
   expect_status 0
   expect_report "-configuration Debug"
   refute_report "SWIFT_OPTIMIZATION_LEVEL"
+  refute_report "SWIFT_LTO"
+  refute_report "SWIFT_REFLECTION_METADATA_LEVEL"
   end_case
 
   # The once-per-release run of the golden tests against a Release build must
@@ -1371,6 +1379,11 @@ makefile_cases() {
   expect_report "LD_EXPORT_SYMBOLS=YES"
   expect_report "DEAD_CODE_STRIPPING=NO"
   expect_report "DEPLOYMENT_POSTPROCESSING=NO"
+  # The optimizer's own settings are tested too, less the one flag a test bundle cannot link against.
+  expect_report "SWIFT_LTO=YES"
+  refute_report "SWIFT_REFLECTION_METADATA_LEVEL"
+  expect_report "-Xfrontend -conditional-runtime-records"
+  refute_report "-internalize-at-link"
   expect_report "-only-testing:TextMouthProductionTests/TextPipelineGoldenTests"
   expect_report "-only-testing:TextMouthProductionTests/DocumentGoldenTests"
   expect_report "-only-testing:TextMouthProductionTests/MarkupGuardTests"

@@ -17,7 +17,9 @@ struct PhoneImportQuestion: Equatable, Identifiable {
     struct Choice: Equatable, Identifiable {
         /// What the choice answers, with the folder name for Create Folder
         /// read when it is pressed.
-        enum Action: Equatable {
+        /// The raw values are the case names, written out: `id` is built from
+        /// them, so the ID never depends on how a case prints.
+        enum Action: String, Equatable {
             case keepBoth
             case replaceExisting
             case cancel
@@ -30,7 +32,7 @@ struct PhoneImportQuestion: Equatable, Identifiable {
         let action: Action
 
         /// Tells the choices apart in a list: no question has two of one.
-        var id: String { "\(action)" }
+        var id: String { action.rawValue }
 
         /// The answer this choice gives, with `folderName` the text of the
         /// folder name field for Create Folder.

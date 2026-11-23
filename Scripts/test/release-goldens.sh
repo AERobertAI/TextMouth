@@ -10,13 +10,25 @@
 # build settings in project.yml or the Makefile's build rule. It runs
 #   TextPipelineGoldenTests, DocumentGoldenTests (the 57 files of
 #   TestData/golden), MarkupGuardTests (SwiftSoup's own output compared),
-#   PortableXMLDifferentialTests, and ParserContentFidelityTests.
+#   PortableXMLDifferentialTests, ParserContentFidelityTests, and
+#   ReflectionNamesTests (the text of the names the logs and IDs write out).
 #
 # The Release build here is the shipped one with only what a test host needs
 # changed, so the compiled Swift code is the shipped code:
 #   -configuration Release       Release's optimization (-Osize in project.yml)
 #   SWIFT_OPTIMIZATION_LEVEL     -Osize for the Swift packages too, as the
 #                                Makefile's build rule gives it (SMALL_CODE)
+#   the size settings            full LTO for Swift and C, -Oz for C, and
+#                                -conditional-runtime-
+#                                records: Scripts/size_settings.py's list, the
+#                                Makefile's SIZE_SETTINGS, so the optimizer's
+#                                output is what is tested. One flag is LEFT OUT:
+#                                -internalize-at-link makes public symbols
+#                                internal at link time, and the test bundle links
+#                                against the app's symbols (BUNDLE_LOADER), so it
+#                                cannot be tested here (151,712 bytes on the Mac
+#                                app, with -conditional-runtime-records, in the
+#                                study of November 23, 2026). No test can verify it.
 #   ENABLE_TESTABILITY=YES       so the tests' @testable import finds the
 #                                app's internal types
 #   LD_EXPORT_SYMBOLS=YES        keep the app's export trie, which the shipped
@@ -27,7 +39,7 @@
 #                                shipped app strips
 #   CLANG_COVERAGE_MAPPING=NO    no coverage data, as in the shipped app
 # What it cannot show: the export trie, dead stripping, and stripping change no
-# code, but they are not in the tested binary.
+# code, but they are not in the tested binary; and -internalize-at-link, above.
 #
 # How long: one Release build of the app, its packages, and the tests, then
 # the tests, 14 minutes on the development Mac on November 13, 2026 (129
@@ -67,13 +79,22 @@ readonly GOLDEN_CLASSES=(
     MarkupGuardTests
     PortableXMLDifferentialTests
     ParserContentFidelityTests
+    ReflectionNamesTests
 )
 
 # The settings that make a Release build testable, each as one argument for
 # xcodebuild (see the header for why each is here).
+# The size settings come from Scripts/size_settings.py, less the flags in its
+# LEFT_OUT_FOR_TESTS (see the header).
+size_settings=()
+while IFS= read -r setting; do
+    size_settings+=("$setting")
+done < <(python3 -I -B "$SCRIPT_DIR/../size_settings.py" --list --without "-internalize-at-link")
+
 readonly RELEASE_TESTABLE_SETTINGS=(
     -configuration Release
     SWIFT_OPTIMIZATION_LEVEL=-Osize
+    "${size_settings[@]}"
     ENABLE_TESTABILITY=YES
     LD_EXPORT_SYMBOLS=YES
     DEAD_CODE_STRIPPING=NO

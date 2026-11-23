@@ -48,6 +48,21 @@ enum RecordingCaptureError: Error, Equatable, Sendable {
     case didNotFinish(String)
 }
 
+/// How the debug log names a capture error: the case's name, then its words in
+/// quotes when it has them, as Swift's own description of an enum case reads
+/// (`setupFailed("no input")`). Written out, so the log's text is one the
+/// code and its test own.
+extension RecordingCaptureError: CustomStringConvertible {
+    var description: String {
+        switch self {
+        case .deviceUnavailable: return "deviceUnavailable"
+        case .setupFailed(let words): return "setupFailed(\(String(reflecting: words)))"
+        case .didNotStart(let words): return "didNotStart(\(String(reflecting: words)))"
+        case .didNotFinish(let words): return "didNotFinish(\(String(reflecting: words)))"
+        }
+    }
+}
+
 // MARK: - A Capture Backend
 
 /// Records the audio of one microphone into a file. The app's backend is

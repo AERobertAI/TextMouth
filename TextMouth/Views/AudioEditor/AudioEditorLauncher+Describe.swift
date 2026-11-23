@@ -10,7 +10,7 @@ extension AudioEditorLauncher {
     /// file's name or path.
     static func describe(_ error: Error) -> String {
         if let edit = error as? AudioEditError {
-            return String(String(describing: edit).prefix { $0 != "(" })
+            return edit.caseName
         }
         let failure = error as NSError
         return "\(failure.domain) \(failure.code)"
