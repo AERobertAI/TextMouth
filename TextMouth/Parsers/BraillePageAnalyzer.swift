@@ -9,6 +9,17 @@ struct BrailleStructure: Equatable, Sendable {
     var blocks: [BrailleBlock]
     /// One entry for each page of the file, in order.
     var pages: [BraillePageNumbers]
+    /// For a book of several volumes (FMT56), where each volume that has
+    /// text begins, in order; empty for any other book, and for one volume.
+    var volumeStarts: [BrailleVolumeStart] = []
+}
+
+/// Where one volume of a braille book of several volumes begins: the
+/// volume's number in the book, from 1, and the index in the structure's
+/// blocks of its first block (FMT56). A volume with no text has none.
+struct BrailleVolumeStart: Equatable, Sendable {
+    var number: Int
+    var blockIndex: Int
 }
 
 /// The numbers a braille page carries, each braille cells such as "⠼⠁", and
@@ -124,6 +135,33 @@ enum BraillePageAnalyzer {
     /// every row that is not blank is a paragraph, there are no headings,
     /// and the book has one page with no numbers.
     static func structure(of file: BrailleFilePages) -> BrailleStructure {
+        // A book of several volumes (FMT56) is laid out one volume at a
+        // time, as each volume is a braille file of its own with its own
+        // pages and running heads, so no paragraph runs over from a volume
+        // into the next: the blocks and pages are joined, and each volume
+        // that has text says where it begins.
+        guard file.volumeStarts.count > 1 else { return structureOfOneFile(file) }
+        var joined = BrailleStructure(blocks: [], pages: [])
+        for index in file.volumeStarts.indices {
+            let part = structureOfOneFile(file.volume(at: index))
+            let blockBase = joined.blocks.count
+            if !part.blocks.isEmpty {
+                joined.volumeStarts.append(BrailleVolumeStart(number: index + 1, blockIndex: blockBase))
+            }
+            joined.blocks += part.blocks
+            // A page's first block is counted from the volume's own first.
+            joined.pages += part.pages.map { page in
+                var moved = page
+                moved.firstBlockIndex += blockBase
+                return moved
+            }
+        }
+        return joined
+    }
+
+    /// The structure of the book `file` holds, as one braille file
+    /// (`structure(of:)`).
+    private static func structureOfOneFile(_ file: BrailleFilePages) -> BrailleStructure {
         let book = Book(file: file)
         guard file.kind != .brl else { return book.unformattedStructure() }
 

@@ -44,6 +44,12 @@ struct BrailleFilePages: Equatable, Sendable {
     /// braille page numbers mark them (`BrailleBookReader.marksItsPages(_:_:)`).
     /// A BRL marks none.
     var marksItsPages = false
+    /// For a book of several volumes (an NLS BARD braille book, FMT56), the
+    /// index of the page each volume begins at, in reading order; empty for
+    /// every other file, and for a book with one volume. The analyzer lays
+    /// each volume out on its own (`BraillePageAnalyzer.structure(of:)`), so
+    /// a paragraph never runs from one volume into the next.
+    private(set) var volumeStarts: [Int] = []
 
     /// Every cell of the file, a byte each, page after page and row after
     /// row: the cell's dots (dot 1 is 1, dot 8 is 128), so the byte is the
@@ -140,6 +146,57 @@ struct BrailleFilePages: Equatable, Sendable {
     /// that is not a braille pattern.
     private static func dots(of scalar: Unicode.Scalar) -> UInt8 {
         BrailleCells.isPattern(scalar) ? UInt8(truncatingIfNeeded: scalar.value) : 0xFF
+    }
+
+    // MARK: Volumes
+
+    /// Adds `volume`, a file of its own, after the pages so far, as one more
+    /// volume of this book (FMT56). The book's line width is the first
+    /// volume's, and its pages are marked only when every volume's are. A
+    /// volume with no page adds nothing.
+    /// - Throws: `BrailleFileError.tooManyPages`, `.tooManyRows`, or
+    ///   `DocumentTooLargeError` for a book past the limits of one file.
+    mutating func append(volume: BrailleFilePages) throws {
+        guard volume.pageCount > 0 else { return }
+        guard pageCount + volume.pageCount <= Self.maxPages else { throw BrailleFileError.tooManyPages }
+        guard rowCount + volume.rowCount <= Self.maxRows else { throw BrailleFileError.tooManyRows }
+        guard cells.count + volume.cells.count <= Self.maxCells else {
+            throw DocumentTooLargeError(limit: Int64(Self.maxCells))
+        }
+        let isFirst = volumeStarts.isEmpty
+        volumeStarts.append(pageCount)
+        // The volume's offsets are its own: move them past what is here.
+        let cellBase = Int32(cells.count)
+        let rowBase = Int32(rowEnds.count)
+        cells += volume.cells
+        rowEnds += volume.rowEnds.map { $0 + cellBase }
+        pageEnds += volume.pageEnds.map { $0 + rowBase }
+        if isFirst {
+            lineWidth = volume.lineWidth
+            marksItsPages = volume.marksItsPages
+        } else {
+            marksItsPages = marksItsPages && volume.marksItsPages
+        }
+    }
+
+    /// Volume `index` as a file of its own, its pages renumbered from the
+    /// first; the whole book for a book that has no volumes marked.
+    func volume(at index: Int) -> BrailleFilePages {
+        guard volumeStarts.indices.contains(index) else { return self }
+        let firstPage = volumeStarts[index]
+        let endPage = index + 1 < volumeStarts.count ? volumeStarts[index + 1] : pageCount
+        // The volume's rows are those of its pages, its cells those of its rows.
+        let firstRow = firstPage == 0 ? 0 : Int(pageEnds[firstPage - 1])
+        let endRow = endPage == 0 ? 0 : Int(pageEnds[endPage - 1])
+        let firstCell = firstRow == 0 ? 0 : Int(rowEnds[firstRow - 1])
+        let endCell = endRow == 0 ? 0 : Int(rowEnds[endRow - 1])
+        var part = BrailleFilePages(kind: kind)
+        part.lineWidth = lineWidth
+        part.marksItsPages = marksItsPages
+        part.cells = Array(cells[firstCell..<endCell])
+        part.rowEnds = rowEnds[firstRow..<endRow].map { $0 - Int32(firstCell) }
+        part.pageEnds = pageEnds[firstPage..<endPage].map { $0 - Int32(firstRow) }
+        return part
     }
 
     // MARK: Building the pages
@@ -336,6 +393,11 @@ enum BrailleFileReader {
     ///   file system's error for one that cannot be read.
     static func read(_ url: URL, as kind: BrailleFileKind,
                      code: BrailleFileCode = .northAmerican) throws -> BrailleFilePages {
+        // An NLS BARD braille book (a .bopf, its folder, or its ZIP) is the
+        // pages of all its volumes, in the package's order (FMT56).
+        if kind == .brf, BardBraillePackage.isPackage(at: url) {
+            return try BardBraillePackage.open(at: url).readPages(code: code)
+        }
         let data = try DocumentByteLimit.contents(of: url)
         switch kind {
         case .brf, .brl: return try pages(fromText: data, kind: kind, code: code)
@@ -681,6 +743,8 @@ enum BrailleFileReader {
     /// bytes only, or nil. It never throws: a file that cannot be read, or
     /// is empty, gives nil.
     static func certainCode(ofFileAt url: URL) -> BrailleFileCode? {
+        // A BARD braille book's volumes are BRF files, in no code for certain.
+        guard !BardBraillePackage.isPackage(at: url) else { return nil }
         guard let handle = try? FileHandle(forReadingFrom: url) else { return nil }
         defer { try? handle.close() }
         guard let prefix = try? handle.read(upToCount: detectionByteCount) else { return nil }

@@ -90,6 +90,10 @@ extension BrailleBookReader {
         let blocks: [BrailleBlock]
         /// The book's pages, in order.
         let starts: [PageStart]
+        /// Where each volume of a book of several begins (FMT56): the
+        /// heading `BardBraillePackage.volumeHeading(number:)` is written
+        /// before the block it names. Empty for any other book.
+        let volumeStarts: [BrailleVolumeStart]
         /// What the helper translates, in order: the blocks, then the pieces.
         let texts: [EmphasizedText]
         /// For each block cut into pieces, by its index: where it is cut.
@@ -103,10 +107,12 @@ extension BrailleBookReader {
             let firstPiece: Int
         }
 
-        /// The translation of `blocks` with the pages `starts`.
-        init(blocks: [BrailleBlock], starts: [PageStart]) {
+        /// The translation of `blocks` with the pages `starts`, and a heading
+        /// before the block each of `volumeStarts` begins at.
+        init(blocks: [BrailleBlock], starts: [PageStart], volumeStarts: [BrailleVolumeStart] = []) {
             self.blocks = blocks
             self.starts = starts
+            self.volumeStarts = volumeStarts
             var texts = blocks.map { EmphasizedText($0.text) }
             var cuts: [Int: Cuts] = [:]
             // The starts come in book order, so each block's are together.
@@ -167,9 +173,17 @@ extension BrailleBookReader {
             func writeBlockMarker(_ start: PageStart) {
                 MarkdownMarkerWriter.write(start.marker.markdown, inline: false, into: &markdown)
             }
-            // The next page to write.
+            // The next page to write, and the next volume to head.
             var next = starts.startIndex
+            var nextVolume = volumeStarts.startIndex
             for (blockIndex, block) in blocks.enumerated() {
+                // A volume's heading comes before its first block and before
+                // the markers of the pages that begin there.
+                while nextVolume < volumeStarts.endIndex, volumeStarts[nextVolume].blockIndex <= blockIndex {
+                    MarkdownMarkerWriter.ensureBlankLine(&markdown)
+                    markdown += "# " + BardBraillePackage.volumeHeading(number: volumeStarts[nextVolume].number)
+                    nextVolume += 1
+                }
                 // The pages that begin in this block (any before it, which
                 // the analyzer never gives, are written here rather than lost).
                 let firstHere = next
