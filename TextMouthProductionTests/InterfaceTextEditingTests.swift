@@ -3,9 +3,10 @@ import SwiftUI
 import XCTest
 @testable import TextMouth
 
-/// The Mac's Edit Interface Text… and Export Interface Text… (FR39 phase 10, step 4), and the group that holds them. Every
-/// file is in a folder of the test's own inside the isolated test root, nothing is opened in an editor, and no panel is
-/// shown.
+/// The Mac's Edit Interface Text… and Export Interface Text… (FR39 phase 10, step 4). Every file is in a folder of the
+/// test's own inside the isolated test root, nothing is opened in an editor, and no panel is shown. The group that holds the
+/// two buttons draws them as SwiftUI views, not AppKit controls, so a hosted window cannot find them (the buttons' words,
+/// hints, and place are pinned by InterfaceTextOverridesWordingTests and the source).
 @MainActor
 final class InterfaceTextEditingTests: XCTestCase {
     // MARK: - Support
@@ -107,33 +108,5 @@ final class InterfaceTextEditingTests: XCTestCase {
 
         XCTAssertFalse(written)
         XCTAssertEqual(announced, [InterfaceTextOverridesWording.exportFailed])
-    }
-
-    // MARK: - The group
-
-    /// The group hosted in a window of a fixed size holds both commands, once each, as enabled buttons.
-    func testTheGroupHoldsBothCommands() throws {
-        let size = NSSize(width: 450, height: 900)
-        let view = Form { InterfaceLanguageSettingsSection(choice: .system) }
-            .frame(width: size.width, height: size.height)
-        let titles = { (hosting: NSView) in self.descendants(of: hosting, as: NSButton.self).map(\.title) }
-
-        try withHostedView(
-            view,
-            size: size,
-            until: { hosting in
-                titles(hosting).contains(InterfaceTextOverridesWording.editTitle)
-                    && titles(hosting).contains(InterfaceTextOverridesWording.exportTitle)
-            }
-        ) { hosting in
-            let buttons = self.descendants(of: hosting, as: NSButton.self)
-            let found = buttons.map(\.title)
-            let edit = try XCTUnwrap(buttons.first { $0.title == InterfaceTextOverridesWording.editTitle }, "buttons: \(found)")
-            let export = try XCTUnwrap(buttons.first { $0.title == InterfaceTextOverridesWording.exportTitle }, "buttons: \(found)")
-            XCTAssertTrue(edit.isEnabled)
-            XCTAssertTrue(export.isEnabled)
-            XCTAssertEqual(found.filter { $0 == InterfaceTextOverridesWording.editTitle }.count, 1)
-            XCTAssertEqual(found.filter { $0 == InterfaceTextOverridesWording.exportTitle }.count, 1)
-        }
     }
 }
