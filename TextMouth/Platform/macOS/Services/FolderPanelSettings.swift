@@ -62,7 +62,8 @@ struct FolderPanelSettings: Equatable {
 /// The part of `NSOpenPanel` that `FolderPanelSettings` sets, as a protocol,
 /// so a test can apply settings to a fake and so never build a real panel.
 /// The `String!` types are those AppKit gives `title`, `message`, and
-/// `prompt`, which are null-resettable.
+/// `prompt`, which are null-resettable. It is main-actor, as `NSOpenPanel` is.
+@MainActor
 protocol FolderPanelConfigurable: AnyObject {
     var canChooseDirectories: Bool { get set }
     var canChooseFiles: Bool { get set }

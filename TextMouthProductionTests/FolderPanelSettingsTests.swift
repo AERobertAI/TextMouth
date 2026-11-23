@@ -14,6 +14,7 @@ final class FolderPanelSettingsTests: XCTestCase {
     /// A stand-in for `NSOpenPanel` that only keeps what it is told. It
     /// starts with values unlike any the settings hold, so a field the
     /// function skips shows as unchanged.
+    @MainActor
     private final class RecordingPanel: FolderPanelConfigurable {
         var canChooseDirectories = false
         var canChooseFiles = true
