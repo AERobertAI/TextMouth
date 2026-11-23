@@ -96,9 +96,10 @@ final class LanguagePickerUITests: TextMouthUITestCase {
         XCTAssertLessThan(backBeforeTheSwitch.frame.midX, app.frame.midX, "Back starts at the left, in English")
 
         try choose(Self.language("العربية"), in: app)
-        let arabic = try waitForLabel("حول", in: app)  // "About"
+        // The title "Settings", and the heading "Times": the screen is worded again at its top.
+        let arabic = try waitForLabel("الإعدادات", in: app)
         keepScreenshot(of: app, named: "Settings in Arabic")
-        XCTAssertTrue(arabic.contains { $0.label.hasPrefix("الإصدار") }, "Arabic Settings: \(Self.describe(arabic))")  // "Version"
+        XCTAssertTrue(arabic.contains { $0.label == "الأوقات" }, "Arabic Settings: \(Self.describe(arabic))")
         let back = app.navigationBars.buttons.element(boundBy: 0)
         XCTAssertGreaterThan(back.frame.midX, app.frame.midX, "Back moved to the right, the reading direction of Arabic")
 
