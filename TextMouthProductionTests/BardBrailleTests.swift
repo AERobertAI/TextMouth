@@ -538,49 +538,68 @@ final class BardBrailleTests: XCTestCase {
         XCTAssertNotEqual(try FileImportService.importHash(of: changedFile), same)
     }
 
-    // MARK: - The User's Own Package
+    // MARK: - A BARD Package in HumanFiles
 
-    /// The user's War and Peace package, in `HumanFiles/` of the repository
-    /// (gitignored, so it is on the user's Mac only), reads as one book in
-    /// place: nothing of it is copied or imported. It runs in the
-    /// orchestrator's suite on the user's Mac, and skips on GitHub's runners
-    /// and anywhere the file is not.
+    /// A BARD package in `HumanFiles/` (gitignored, kept in the main checkout
+    /// only, so found from a worktree too), read in place: nothing of it is
+    /// copied or imported. It runs in the orchestrator's suite on the user's
+    /// Mac, and skips on GitHub's runners and wherever no ZIP there holds a
+    /// `.bopf`.
     ///
-    /// It has 14 volumes in order, a title and an author from its package,
-    /// the EBAE contracted table chosen, about 3,142 pages, and a heading
-    /// for each volume. Its checks print the volumes, the pages, and the
-    /// seconds the reading took.
-    func testThePrivateWarAndPeacePackageReadsAsOneBook() throws {
-        try XCTSkipIf(TestMachine.isGitHubRunner, "the user's private sample is on the user's Mac only")
-        let sample = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent().deletingLastPathComponent()
-            .appendingPathComponent("HumanFiles", isDirectory: true)
-            .appendingPathComponent("BR-Tolstoy_Leo_graf War and peace BR09710.zip")
-        try XCTSkipUnless(
-            FileManager.default.fileExists(atPath: sample.path),
-            "the user's War and Peace package is not in HumanFiles/ here"
+    /// Everything it expects comes from the package, read at run time: its
+    /// declared volumes in order, its title and author, the table it names,
+    /// and, of the text, that every volume has its heading, that the book has
+    /// far more headings than volumes (a width taken from the package's line
+    /// length once erased them all), and that few braille page numbers are
+    /// left in the text (that width left two thousand; the numbers that stand
+    /// in a long novel's own text are far fewer). It prints the volumes, the
+    /// pages, the headings, and the seconds the reading took.
+    func testAPackageInHumanFilesReadsAsOneBook() throws {
+        try XCTSkipIf(TestMachine.isGitHubRunner, "the user's private samples are on the user's Mac only")
+        #if os(macOS)
+        let sample = try XCTUnwrap(
+            humanFilesArchivesIfPresent().first { BardBraillePackage.isPackageZip(url: $0) },
+            "no ZIP in HumanFiles/ holds a BARD package"
         )
 
         XCTAssertEqual(BookFormat.detect(from: sample), .braille)
         let package = try BardBraillePackage.open(at: sample)
-        XCTAssertEqual(package.volumePaths.count, 14)
-        XCTAssertEqual(package.volumePaths, (1...14).map { String(format: "09710v%02d.brf", $0) })
-        XCTAssertEqual(package.title, "War and peace")
-        XCTAssertEqual(package.author, "Tolstoy, Leo")
-        XCTAssertEqual(package.table, "en_US.tbl")
-        let reading = FileImportService.brailleReading(ofImported: sample)
-        XCTAssertEqual(reading.table, "en_US.tbl")
+        let volumes = package.volumePaths.count
+        XCTAssertGreaterThan(volumes, 1)
+        XCTAssertEqual(package.declaredVolumeCount, volumes)
+        // The spine's order is the order of the names, as the package lists them.
+        XCTAssertEqual(package.volumePaths, package.volumePaths.sorted { $0.localizedStandardCompare($1) == .orderedAscending })
+        XCTAssertFalse(package.title.isEmpty)
+        XCTAssertFalse(package.author.isEmpty)
+        let table = try XCTUnwrap(package.table)
+        XCTAssertEqual(FileImportService.brailleReading(ofImported: sample).table, table)
 
         let started = Date()
         let pages = try package.readPages(code: .northAmerican)
-        XCTAssertEqual(pages.volumeStarts.count, 14)
-        XCTAssertEqual(Double(pages.pageCount), 3142, accuracy: 3142 * 0.05)
-        let text = try markdown(of: sample)
+        XCTAssertEqual(pages.volumeStarts.count, volumes)
+        if let declared = package.declaredPageCount {
+            XCTAssertEqual(Double(pages.pageCount), Double(declared), accuracy: Double(declared) * 0.05)
+        }
+        let structure = BraillePageAnalyzer.structure(of: pages)
+        XCTAssertEqual(structure.volumeStarts.map(\.number), Array(1...volumes))
+        let headingCount = structure.blocks.filter { if case .heading = $0 { return true } else { return false } }.count
+        XCTAssertGreaterThan(headingCount, volumes * 5)
+        // Number words (the number sign and digit cells a to j) left in the blocks.
+        let digitCells = Set("\u{2801}\u{2803}\u{2809}\u{2819}\u{2811}\u{280B}\u{281B}\u{2813}\u{280A}\u{281A}".unicodeScalars)
+        let numberWords = structure.blocks.reduce(0) { count, block in
+            count + block.text.split(separator: "\u{2800}").filter { word in
+                let scalars = Array(word.unicodeScalars)
+                return scalars.count > 1 && scalars[0] == "\u{283C}" && scalars.dropFirst().allSatisfy { digitCells.contains($0) }
+            }.count
+        }
+        XCTAssertLessThan(numberWords, 700, "braille page numbers left in the text")
+        let text = try markdown(of: sample, table: table)
         let seconds = Date().timeIntervalSince(started)
         let volumeHeadings = text.components(separatedBy: "\n").filter { $0.hasPrefix("# Volume ") }
-        XCTAssertEqual(volumeHeadings, (1...14).map { "# Volume \($0)" })
-        XCTAssertGreaterThan(text.count, 1_000_000)
-        print("BARD sample: \(package.volumePaths.count) volumes, \(pages.pageCount) pages, "
-              + "\(text.count) characters, read in \(String(format: "%.1f", seconds)) s")
+        XCTAssertEqual(volumeHeadings, (1...volumes).map { "# Volume \($0)" })
+        print("BARD package in HumanFiles: \(volumes) volumes, \(pages.pageCount) pages, \(headingCount) headings, "
+              + "\(numberWords) number words left, \(text.count) characters, read in \(String(format: "%.1f", seconds)) s")
+        #endif
     }
+
 }
