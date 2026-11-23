@@ -199,6 +199,42 @@ class TextMouthUITestCase: XCTestCase {
         try elementsInOrder(of: app).first { $0.label == "Book content" }?.value ?? ""
     }
 
+    /// The frames of every labeled element of `app`, read from one snapshot, as one list of lines to compare.
+    private func frames(of app: XCUIApplication) throws -> [String] {
+        try elementsInOrder(of: app).map { "\($0.label)@\($0.frame)" }
+    }
+
+    /// Waits until the screen has stopped moving: the frames of every labeled element are the same on two reads half a
+    /// second apart. A list lays its rows out lazily and a swipe's momentum carries it on after the swipe returns, so an
+    /// audit made at once can read rows still being laid out or scrolled (the clipped-text finding of train 1123-0905, on a
+    /// label whose frame was the same, whole, in every other run). Waits by that condition and for at most `Self.patience`,
+    /// then fails with the screen's tree.
+    func waitUntilStill(_ app: XCUIApplication) throws {
+        let deadline = Date().addingTimeInterval(Self.patience)
+        var previous = try frames(of: app)
+        while Date() < deadline {
+            Thread.sleep(forTimeInterval: 0.5)
+            let current = try frames(of: app)
+            if current == previous { return }
+            previous = current
+        }
+        XCTFail("The screen never stopped moving:\n\(app.debugDescription)")
+    }
+
+    /// Scrolls the list on screen to its end and back to its start, waiting for it to be still after each swipe, so that
+    /// every row has been made and laid out once before anything is audited. Each direction stops when a swipe moves nothing,
+    /// at most twenty swipes.
+    func scrollThroughTheList(of app: XCUIApplication) throws {
+        for goingDown in [true, false] {
+            for _ in 0..<20 {
+                let before = try frames(of: app)
+                if goingDown { app.swipeUp() } else { app.swipeDown() }
+                try waitUntilStill(app)
+                if try frames(of: app) == before { break }
+            }
+        }
+    }
+
     /// Taps `element` until `expected` shows, at most three times, five
     /// seconds apart: at the largest text size the first tap after a launch
     /// was seen to do nothing (a Back, an Add to Library; November 9, 2026), so

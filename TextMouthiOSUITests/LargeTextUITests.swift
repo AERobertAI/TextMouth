@@ -42,45 +42,15 @@ final class LargeTextUITests: TextMouthUITestCase {
     func testSettingsHoldsAtTheLargestText() throws {
         let app = try launch(sendingTheBook: false, textSize: Self.largestText)
         tap(app.buttons["Settings"], until: app.navigationBars["Settings"], in: app, what: "Settings")
+        // Every row made once and the screen still, so that the audit reads settled layout, not rows being laid out.
+        try scrollThroughTheList(of: app)
+        try waitUntilStill(app)
         try audit(app, screen: "Settings at the largest text", types: Self.sizeFindings, accepting: [.navigationTitle("Settings"), .unnamedUnsupported])
         // Two screens down, where the sliders' captions and the switches are.
         app.swipeUp()
         app.swipeUp()
+        try waitUntilStill(app)
         try audit(app, screen: "Settings at the largest text, scrolled", types: Self.sizeFindings, accepting: [.navigationTitle("Settings"), .scrolledPastTheEdge, .unnamedUnsupported, .unnamedPartlyUnsupported])
-    }
-
-    /// PROBE (temporary): the scrolled Settings audited again and again at the largest text, each time from the top, with
-    /// the sleep timer switch's label frame read before the audit, after it, and again once the screen has stopped moving, and
-    /// every clipped-text finding that names an element, with that element's frame at the moment of the finding.
-    func testProbeTheScrolledSettingsAuditRepeatedly() throws {
-        let app = try launch(sendingTheBook: false, textSize: Self.largestText)
-        tap(app.buttons["Settings"], until: app.navigationBars["Settings"], in: app, what: "Settings")
-        let label = app.staticTexts["Close sleep timer sheet after setting a timer"]
-        let deadline = Date().addingTimeInterval(240)
-        var round = 0
-        while Date() < deadline {
-            round += 1
-            // Back to the top, then two screens down, as the test does.
-            for _ in 0..<4 { app.swipeDown() }
-            app.swipeUp()
-            app.swipeUp()
-            let before = label.exists ? "\(label.frame)" : "absent"
-            var named: [String] = []
-            var unnamed = 0
-            try app.performAccessibilityAudit(for: .textClipped) { issue in
-                if let element = issue.element {
-                    named.append("\(element.label) at \(element.frame)")
-                } else {
-                    unnamed += 1
-                }
-                return true
-            }
-            let after = label.exists ? "\(label.frame)" : "absent"
-            let line = "PROBE-CLIP round \(round): label before \(before), after \(after), unnamed \(unnamed), named \(named.count): \(named.joined(separator: " || "))"
-            print(line)
-            NSLog("%@", line)
-            if !named.isEmpty { keepScreenshot(of: app, named: "Probe round \(round) with a named finding") }
-        }
     }
 
     /// The Add to Library sheet, at the largest size.
