@@ -102,6 +102,9 @@ enum InterfaceTextOverridesWording {
         case .controlCharacter:
             // Translators: The reason a line of the person's own lines is ignored: one of its texts has an invisible control character other than a line break or a tab.
             return InterfaceText.line("interfaceTextFile.reason.controlCharacter", "One of its texts has a control character.")
+        case .shadowed:
+            // Translators: The reason a line of the person's own lines is ignored: another language key in the file (such as pt and pt-BR) names the same language and has the same line, and that one is used.
+            return InterfaceText.line("interfaceTextFile.reason.shadowed", "Another key in the file names the same language and has this line, and that one is used.")
         }
     }
 
@@ -123,6 +126,9 @@ enum InterfaceTextOverridesWording {
         case .unreadable:
             // Translators: The reason the whole file of the person's own interface lines could not be used: it could not be read, so the lines already in use stay.
             return InterfaceText.line("interfaceTextFile.problem.unreadable", "The file could not be read, so the lines in use stay.")
+        case .notARegularFile:
+            // Translators: The reason the file of the person's own interface lines could not be used: its name holds something that is not a file (a folder, for example), so the lines already in use stay.
+            return InterfaceText.line("interfaceTextFile.problem.notAFile", "The file's name holds something that is not a file, so the lines in use stay.")
         }
     }
 

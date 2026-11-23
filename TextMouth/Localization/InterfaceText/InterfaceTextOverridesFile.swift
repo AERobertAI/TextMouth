@@ -33,6 +33,8 @@ enum InterfaceTextIgnoredReason: Equatable, Sendable, CaseIterable {
     case emptyForm
     /// A form holds a control character other than a line feed or a tab.
     case controlCharacter
+    /// Another key of the file names the same language and has the same line, which is the one in use.
+    case shadowed
 
     /// The reason in English, for the debug log (never shown to a person, who reads
     /// `InterfaceTextOverridesWording.reason`).
@@ -53,6 +55,7 @@ enum InterfaceTextIgnoredReason: Equatable, Sendable, CaseIterable {
         case .wrongPluralForms: return "its plural forms are not the language's" // l10n: no (debug log text)
         case .emptyForm: return "a form is empty" // l10n: no (debug log text)
         case .controlCharacter: return "a form has a control character" // l10n: no (debug log text)
+        case .shadowed: return "another key names the same language and has the same line, which is the one in use" // l10n: no (debug log text)
         }
     }
 }
@@ -69,6 +72,8 @@ enum InterfaceTextFileProblem: Equatable, Sendable, CaseIterable {
     case tooLarge
     /// The file exists and could not be read.
     case unreadable
+    /// What the file's name holds is not a regular file (a folder, a pipe, a link to nothing).
+    case notARegularFile
 
     /// The problem in English, for the debug log.
     var logSentence: String {
@@ -78,6 +83,7 @@ enum InterfaceTextFileProblem: Equatable, Sendable, CaseIterable {
         case .unknownVersion: return "the file's version is not one TextMouth reads" // l10n: no (debug log text)
         case .tooLarge: return "the file is larger than any file of lines can be" // l10n: no (debug log text)
         case .unreadable: return "the file could not be read" // l10n: no (debug log text)
+        case .notARegularFile: return "what the file's name holds is not a regular file" // l10n: no (debug log text)
         }
     }
 }
@@ -100,10 +106,11 @@ struct InterfaceTextOverridesOutcome: Equatable, Sendable {
         /// The line as the file names it (its language as written, so a report names what the person wrote).
         let key: Key
         let reason: InterfaceTextIgnoredReason
-        /// Whether the ID is one the app has, and the language one it carries: only those may go to the debug log as they
-        /// are, since any other key is the person's own text.
+        /// Whether the ID is one the app has, and the language the app carries that the written one names (nil when none):
+        /// only those go to the debug log, and the carried language by its own code, never the key as written (`es-my note`
+        /// names Spanish, and is the person's own text); any other key is logged as its length.
         var idIsKnown = true
-        var languageIsKnown = true
+        var carriedLanguage: String?
     }
 
     /// The person's own lines that apply: language, then ID, as the engine takes them.
@@ -198,11 +205,17 @@ enum InterfaceTextOverridesFile {
                     outcome.unchanged += 1
                 case .ignored(let reason):
                     outcome.ignored.append(.init(
-                        key: key, reason: reason, idIsKnown: reference.index(of: id) != nil, languageIsKnown: language != nil
+                        key: key, reason: reason, idIsKnown: reference.index(of: id) != nil, carriedLanguage: language
                     ))
                 case .applies(let entry, let outdated):
-                    // In use under the carried language's name, which the engine's lookups use.
+                    // In use under the carried language's name, which the engine's lookups use. Two keys that name one language
+                    // (`pt` and `pt-BR`) may both have a line: the first, in order of the keys, is in use, and the other is
+                    // ignored and says so, not silently in its place.
                     let carried = language ?? written
+                    if outcome.lines[carried]?[id] != nil {
+                        outcome.ignored.append(.init(key: key, reason: .shadowed, idIsKnown: true, carriedLanguage: language))
+                        continue
+                    }
                     outcome.lines[carried, default: [:]][id] = entry
                     let used = InterfaceTextOverridesOutcome.Key(language: carried, id: id)
                     outcome.inUse.append(used)

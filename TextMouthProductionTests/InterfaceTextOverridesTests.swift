@@ -365,15 +365,18 @@ final class InterfaceTextOverridesTests: XCTestCase {
         try JSONSerialization.data(withJSONObject: ["version": 1, "languages": [
             "Klingon": ["lines": ["Temporizador": ["text": "Kronos"]]],
             "es": ["lines": ["Temporizador": ["text": "Kronos"], "common.sleepTimer": ["text": "ok"]]],
+            // A key that begins like a carried language names it, and is the person's text after that.
+            "es-my private note": ["lines": ["Otro": ["text": "x"]]],
         ]]).write(to: url)
         let (service, _, record) = makeService(reading: { url })
 
         service.start()
 
-        XCTAssertTrue(waitUntil(timeout: 5) { record.log.count == 3 })
+        XCTAssertTrue(waitUntil(timeout: 5) { record.log.count == 4 })
         for line in record.log {
-            XCTAssertFalse(line.contains("Klingon") || line.contains("Temporizador"), line)
+            XCTAssertFalse(line.contains("Klingon") || line.contains("Temporizador") || line.contains("private") || line.contains("Otro"), line)
         }
+        XCTAssertTrue(record.log.contains("INTERFACE_TEXT_IGNORED: line (4 characters) in es: TextMouth has no line with that ID"), "\(record.log)")
         XCTAssertTrue(record.log.contains("INTERFACE_TEXT_IGNORED: line (12 characters) in (7 characters): the language is not one TextMouth carries"), "\(record.log)")
     }
 
@@ -392,22 +395,26 @@ final class InterfaceTextOverridesTests: XCTestCase {
         XCTAssertEqual(service.outcome.ignored.count, 130)
     }
 
-    /// Publishing another root as the data directory says so (`.dataDirectoryDidMove`), later, on the main queue, once the
-    /// publication's own lock is released. A boundary of the test's own is published, never the process's.
-    func testPublishingARootPostsDataDirectoryDidMove() throws {
+    /// Publishing another root as the data directory says so (`.dataDirectoryDidMove`) with the new root's path, later, on the main
+    /// queue, once `publish` has returned and its own lock is released, not before. A boundary of the test's own is published,
+    /// never the process's, and only the post that names its root counts (other posts in the process are not its).
+    func testPublishingARootPostsDataDirectoryDidMoveAfterItReturns() throws {
         let first = try makeFileURL().deletingLastPathComponent()
         let second = try makeFileURL().deletingLastPathComponent()
         let boundary = StorageBoundary(root: first)
-        var heard = 0
-        let token = NotificationCenter.default.addObserver(forName: .dataDirectoryDidMove, object: nil, queue: .main) { _ in
-            MainActor.assumeIsolated { heard += 1 }
+        var roots: [String] = []
+        let token = NotificationCenter.default.addObserver(forName: .dataDirectoryDidMove, object: nil, queue: .main) { note in
+            let root = note.userInfo?[StorageBoundary.movedRootKey] as? String
+            MainActor.assumeIsolated { if let root { roots.append(root) } }
         }
         defer { NotificationCenter.default.removeObserver(token) }
 
         let generation = boundary.publish(root: second)
 
         XCTAssertEqual(generation.root.path, second.path)
-        XCTAssertTrue(waitUntil(timeout: 5) { heard >= 1 })
+        XCTAssertFalse(roots.contains(second.path), "the post came before publish returned")
+        XCTAssertTrue(waitUntil(timeout: 5) { roots.contains(second.path) })
+        XCTAssertFalse(roots.contains(first.path), "the old root was named")
     }
 
     // MARK: - A file that cannot be read
@@ -452,16 +459,69 @@ final class InterfaceTextOverridesTests: XCTestCase {
         XCTAssertEqual(sleepTimer(engine), "Temporizador")
     }
 
-    /// A path that is no regular file (a folder here; a FIFO would block a plain read forever) is read as nothing and does
-    /// not hang the read.
-    func testAPathThatIsNoRegularFileIsNotRead() throws {
+    /// A pipe by the file's name is a problem that shows, and it is not read (a plain read of a pipe waits forever).
+    func testAPipeByTheFilesNameIsAProblemAndIsNotRead() throws {
+        let url = try makeFileURL()
+        XCTAssertEqual(mkfifo(url.path, 0o644), 0, "no pipe could be made")
+        let (service, engine, record) = makeService(reading: { url })
+
+        service.start()
+
+        XCTAssertTrue(waitUntil(timeout: 5) { service.outcome.fileProblem == .notARegularFile })
+        XCTAssertEqual(sleepTimer(engine), "Temporizador de apagado")
+        XCTAssertTrue(record.log.contains { $0.contains("could not be read and the lines in use stay") }, "\(record.log)")
+    }
+
+    /// A pipe or a folder takes the place of the file after its lines were read: the lines stay, and the problem shows, rather
+    /// than the lines dropping as if the file were gone.
+    func testAFileReplacedByAFolderKeepsTheLinesAndShowsTheProblem() throws {
+        let url = try makeFileURL()
+        try data(["common.sleepTimer": ["text": "Temporizador"]]).write(to: url)
+        let (service, engine, _) = makeService(reading: { url })
+        service.start()
+        XCTAssertTrue(waitUntil(timeout: 5) { self.sleepTimer(engine) == "Temporizador" })
+
+        try FileManager.default.removeItem(at: url)
+        try FileManager.default.createDirectory(at: url, withIntermediateDirectories: false)
+        service.reload()
+
+        XCTAssertTrue(waitUntil(timeout: 5) { service.outcome.fileProblem == .notARegularFile })
+        XCTAssertEqual(sleepTimer(engine), "Temporizador", "the lines in force stay")
+    }
+
+    /// Edit never writes over a pipe, a folder, or a link to nothing: it refuses, and the thing is as it was.
+    func testEditRefusesToWriteOverWhatIsNotAFile() throws {
+        let folder = try makeFileURL().deletingLastPathComponent()
+        let (service, _, _) = makeService(reading: { folder.appendingPathComponent("other.json") })
+        let pipe = folder.appendingPathComponent("pipe.json")
+        XCTAssertEqual(mkfifo(pipe.path, 0o644), 0)
+        let dangling = folder.appendingPathComponent("dangling.json")
+        try FileManager.default.createSymbolicLink(atPath: dangling.path, withDestinationPath: folder.appendingPathComponent("nowhere.json").path)
+        let directory = folder.appendingPathComponent("directory.json")
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false)
+
+        for target in [pipe, dangling, directory] {
+            let editing = makeService(reading: { target }).service
+            let refused = fill(editing, language: "es")
+            guard case .failed = refused else { return XCTFail("a fill over \(target.lastPathComponent) was not refused: \(refused)") }
+        }
+        var info = stat()
+        XCTAssertEqual(lstat(pipe.path, &info), 0)
+        XCTAssertEqual(info.st_mode & mode_t(S_IFMT), mode_t(S_IFIFO), "the pipe is still a pipe")
+        XCTAssertEqual(try FileManager.default.destinationOfSymbolicLink(atPath: dangling.path), folder.appendingPathComponent("nowhere.json").path)
+        XCTAssertTrue(try directory.resourceValues(forKeys: [.isDirectoryKey]).isDirectory == true)
+        _ = service
+    }
+
+    /// A folder by the file's name is a problem too, and not read.
+    func testAFolderByTheFilesNameIsAProblem() throws {
         let url = try makeFileURL()
         try FileManager.default.createDirectory(at: url, withIntermediateDirectories: false)
         let (service, engine, _) = makeService(reading: { url })
 
         service.start()
-        _ = waitUntil(timeout: 0.5) { false }
 
+        XCTAssertTrue(waitUntil(timeout: 5) { service.outcome.fileProblem == .notARegularFile })
         XCTAssertEqual(sleepTimer(engine), "Temporizador de apagado")
     }
 }

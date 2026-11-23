@@ -338653,6 +338653,162 @@
         }
       }
     },
+    "interfaceTextFile.problem.notAFile" : {
+      "comment" : "The reason the file of the person's own interface lines could not be used: its name holds something that is not a file (a folder, for example), so the lines already in use stay.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اسم الملف يشير إلى شيء ليس ملفًا، لذا تبقى الأسطر المستخدَمة."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ফাইলের নামটি এমন কিছুর যা ফাইল নয়, তাই ব্যবহারে থাকা লাইনগুলো থেকে যায়।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Der Name der Datei gehört zu etwas, das keine Datei ist, deshalb bleiben die verwendeten Zeilen bestehen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The file's name holds something that is not a file, so the lines in use stay."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El nombre del archivo corresponde a algo que no es un archivo, así que se mantienen las líneas en uso."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "نام فایل به چیزی اشاره دارد که فایل نیست، پس خط‌های در حال استفاده می‌مانند."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Le nom du fichier désigne autre chose qu’un fichier ; les lignes utilisées sont donc conservées."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "שם הקובץ מתייחס למשהו שאינו קובץ, ולכן השורות בשימוש נשארות."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "फ़ाइल का नाम किसी ऐसी चीज़ का है जो फ़ाइल नहीं है, इसलिए उपयोग में पंक्तियाँ बनी रहती हैं।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nama file merujuk pada sesuatu yang bukan file, jadi baris yang dipakai tetap ada."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Il nome del file corrisponde a qualcosa che non è un file, quindi le righe in uso restano."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ファイルの名前がファイルではないものを指しているため、使用中の行はそのままです。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "파일 이름이 파일이 아닌 것을 가리키므로 사용 중인 줄은 그대로 유지됩니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "De naam van het bestand hoort bij iets wat geen bestand is, dus de regels in gebruik blijven."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nazwa pliku oznacza coś, co nie jest plikiem, więc używane wiersze pozostają."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "O nome do arquivo corresponde a algo que não é um arquivo, então as linhas em uso continuam."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Имя файла относится к чему-то, что не является файлом, поэтому используемые строки остаются."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Filens namn hör till något som inte är en fil, så raderna som används finns kvar."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ชื่อไฟล์เป็นของสิ่งที่ไม่ใช่ไฟล์ บรรทัดที่ใช้อยู่จึงยังคงอยู่"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Dosyanın adı, dosya olmayan bir şeye ait; bu yüzden kullanılan satırlar kalıyor."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ім’я файлу належить чомусь, що не є файлом, тому рядки, що використовуються, залишаються."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "فائل کا نام کسی ایسی چیز کا ہے جو فائل نہیں، اس لیے استعمال میں لائنیں برقرار رہتی ہیں۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tên tệp trỏ tới thứ không phải tệp, nên các dòng đang dùng vẫn giữ nguyên."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "该文件名对应的不是文件，因此正在使用的行保持不变。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "該檔名對應的不是檔案，因此正在使用的行保持不變。"
+          }
+        }
+      }
+    },
     "interfaceTextFile.problem.notJSON" : {
       "comment" : "The reason the whole file of the person's own interface lines is ignored: it is not valid JSON.",
       "extractionState" : "manual",
@@ -340989,6 +341145,162 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "該行接受一段文字，而不是複數形式。"
+          }
+        }
+      }
+    },
+    "interfaceTextFile.reason.shadowed" : {
+      "comment" : "The reason a line of the person's own lines is ignored: another language key in the file (such as pt and pt-BR) names the same language and has the same line, and that one is used.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "مفتاح آخر في الملف يسمّي اللغة نفسها وفيه هذا السطر، ويُستخدم ذاك."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ফাইলের আরেকটি কী একই ভাষার নাম দেয় এবং এতে এই লাইনও আছে, আর সেটিই ব্যবহার হয়।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ein anderer Schlüssel der Datei benennt dieselbe Sprache und hat diese Zeile; dessen Zeile wird verwendet."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Another key in the file names the same language and has this line, and that one is used."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Otra clave del archivo nombra el mismo idioma y tiene esta línea, y se usa esa."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "کلید دیگری در فایل همین زبان را نام می‌برد و این خط را هم دارد، و آن یکی به کار می‌رود."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Une autre clé du fichier désigne la même langue et contient cette ligne ; c’est celle-là qui est utilisée."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "מפתח אחר בקובץ מציין את אותה שפה ויש בו שורה זו, והיא זו שבשימוש."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "फ़ाइल की एक और कुंजी उसी भाषा का नाम लेती है और उसमें यह पंक्ति भी है, और वही इस्तेमाल होती है।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kunci lain dalam file menamai bahasa yang sama dan memiliki baris ini, dan itulah yang dipakai."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Un’altra chiave del file indica la stessa lingua e ha questa riga, e si usa quella."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ファイル内の別のキーが同じ言語を指していて、この行も持っているため、そちらが使われます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "파일의 다른 키가 같은 언어를 가리키며 이 줄도 가지고 있어서, 그쪽이 사용됩니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Een andere sleutel in het bestand noemt dezelfde taal en heeft deze regel, en die wordt gebruikt."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Inny klucz w pliku nazywa ten sam język i ma ten wiersz, i to on jest używany."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Outra chave do arquivo nomeia o mesmo idioma e tem esta linha, e é essa que vale."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Другой ключ в файле называет тот же язык и содержит эту строку, и используется она."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "En annan nyckel i filen anger samma språk och har den här raden, och den används."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "คีย์อื่นในไฟล์ระบุภาษาเดียวกันและมีบรรทัดนี้ และใช้บรรทัดของคีย์นั้น"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Dosyadaki başka bir anahtar aynı dili adlandırıyor ve bu satıra sahip; o kullanılıyor."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Інший ключ у файлі називає ту саму мову й містить цей рядок, і використовується він."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "فائل کی ایک اور کلید اسی زبان کا نام لیتی ہے اور اس میں یہ لائن بھی ہے، اور وہی استعمال ہوتی ہے۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Một khóa khác trong tệp gọi cùng ngôn ngữ và có dòng này, và dòng đó được dùng."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "文件中的另一个键指向同一种语言并且也有这一行，使用的是那一行。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "檔案中的另一個鍵指向同一種語言並且也有這一行，使用的是那一行。"
           }
         }
       }

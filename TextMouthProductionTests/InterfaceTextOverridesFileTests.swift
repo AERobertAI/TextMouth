@@ -144,6 +144,24 @@ final class InterfaceTextOverridesFileTests: XCTestCase {
         XCTAssertEqual(result.ignored.map(\.key.language), ["xx"])
     }
 
+    /// Two keys that name one language (`es` and `es-MX`) with the same line: the first, in order of the keys, is in use once,
+    /// and the other is ignored and says it is shadowed; the line is not listed twice as in use.
+    func testTwoKeysNamingOneLanguageDoNotCollideSilently() throws {
+        let root: [String: Any] = ["version": 1, "languages": [
+            "es": ["lines": ["common.sleepTimer": ["text": "Uno"]]],
+            "es-MX": ["lines": ["common.sleepTimer": ["text": "Dos"], "feed.opening": ["text": "Abriendo %@ (%lld)"]]],
+        ]]
+
+        let result = InterfaceTextOverridesFile.read(try JSONSerialization.data(withJSONObject: root), reference: try makeReference())
+
+        XCTAssertEqual(result.lines["es"]?["common.sleepTimer"], .plain("Uno"))
+        XCTAssertEqual(result.lines["es"]?["feed.opening"], .plain("Abriendo %@ (%lld)"))
+        XCTAssertEqual(result.inUse.map(\.id), ["common.sleepTimer", "feed.opening"], "no line is listed twice")
+        XCTAssertEqual(result.ignored.map(\.reason), [.shadowed])
+        XCTAssertEqual(result.ignored.first?.key, InterfaceTextOverridesOutcome.Key(language: "es-MX", id: "common.sleepTimer"))
+        XCTAssertEqual(result.ignored.first?.carriedLanguage, "es")
+    }
+
     // MARK: - The rules of a line
 
     func testAnUnknownLanguageIsIgnored() throws {
@@ -486,6 +504,39 @@ final class InterfaceTextOverridesFileTests: XCTestCase {
         )
         XCTAssertEqual(root["comment"] as? String, "mine")
         XCTAssertEqual(root["version"] as? Int, 1)
+    }
+
+    /// What Edit leaves of the person's other content stays what it was: numbers stay numbers (`0.5`, a whole number past
+    /// `Int`'s range, `true`), and another language's lines keep their content with the fields in the fixed order, `text`
+    /// before `base` and the plural forms in the language's own order, though the person's editor had them the other way.
+    func testFillKeepsTheOtherContentAsItWasAndInTheFixedOrder() throws {
+        let existing = Data(#"""
+        {"version": 1, "weight": 0.5, "big": 18446744073709551615, "flag": true, "nothing": null,
+         "languages": {"fr": {"lines": {
+           "common.sleepTimer": {"base": "Minuterie", "english": "Sleep Timer", "text": "Minuteur", "extra": 2.25},
+           "common.countMinutes": {"basePlural": {"other": "b", "many": "b", "one": "b"}, "plural": {"other": "c", "many": "d", "one": "e"}}
+         }}}}
+        """#.utf8)
+
+        let data = try XCTUnwrap(InterfaceTextOverridesWriter.filled(existing: existing, reference: try makeReference(language: "es")))
+        let text = String(decoding: data, as: UTF8.self)
+
+        XCTAssertTrue(text.contains("\"weight\": 0.5"), text)
+        XCTAssertTrue(text.contains("\"big\": 18446744073709551615"), text)
+        XCTAssertTrue(text.contains("\"flag\": true"), text)
+        XCTAssertTrue(text.contains("\"extra\": 2.25"), text)
+        XCTAssertFalse(text.contains("\"0.5\""))
+        let french = try XCTUnwrap(text.range(of: "\"fr\""))
+        let textKey = try XCTUnwrap(text.range(of: "\"text\": \"Minuteur\"", range: french.upperBound..<text.endIndex))
+        let baseKey = try XCTUnwrap(text.range(of: "\"base\": \"Minuterie\"", range: french.upperBound..<text.endIndex))
+        XCTAssertTrue(textKey.lowerBound < baseKey.lowerBound, "text comes before base in a language Edit did not fill")
+        let one = try XCTUnwrap(text.range(of: "\"one\": \"e\""))
+        let many = try XCTUnwrap(text.range(of: "\"many\": \"d\""))
+        let other = try XCTUnwrap(text.range(of: "\"other\": \"c\""))
+        XCTAssertTrue(one.lowerBound < many.lowerBound && many.lowerBound < other.lowerBound, "French forms are in French's order")
+        // And it is still the same JSON as it was for what was kept.
+        let parsed = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        XCTAssertEqual(parsed["weight"] as? Double, 0.5)
     }
 
     /// The person's edits are theirs: a file that has the language is left as it is, so is one that is not JSON or not the

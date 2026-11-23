@@ -140,6 +140,8 @@ final class InterfaceTextOverrides: ObservableObject {
         case unreadable
         /// The file is larger than any file of lines can be.
         case tooLarge
+        /// The name holds something that is not a regular file.
+        case notARegularFile
         /// The file's bytes, and what checking them came to.
         case read(Data, InterfaceTextOverridesOutcome)
     }
@@ -159,6 +161,19 @@ final class InterfaceTextOverrides: ObservableObject {
         }
     }
 
+    /// What `url` names now: nothing, a regular file (or a link to one), or something else (a folder, a pipe, a link to
+    /// nothing). Only the first is "no file", which is no problem; the last is one, and Edit never writes over it.
+    private enum Kind { case missing, regular, other }
+
+    /// The kind of thing at `url`, by the file system's own answer (`stat` follows a link, `lstat` does not).
+    private nonisolated static func kind(of url: URL) -> Kind {
+        var info = stat()
+        if stat(url.path, &info) == 0 { return (info.st_mode & mode_t(S_IFMT)) == mode_t(S_IFREG) ? .regular : .other }
+        var link = stat()
+        // A link whose target is not there: something is at the name, and it is not a file.
+        return lstat(url.path, &link) == 0 ? .other : .missing
+    }
+
     /// The bytes of the file at `url`, read with a bound and only if it is a regular file (`SmallTextFile`: a FIFO by that
     /// name would block forever, and a huge file would be read whole), and never downloaded from the cloud.
     /// - Returns: nil when the file is larger than `InterfaceTextOverridesFile.largestSize`.
@@ -171,6 +186,7 @@ final class InterfaceTextOverrides: ObservableObject {
     private nonisolated static func read(_ url: URL, previous: Data?, engine: InterfaceTextEngine) -> Read {
         let data: Data
         do {
+            guard kind(of: url) != .other else { return .notARegularFile }
             guard let bytes = try bytes(at: url) else { return .tooLarge }
             data = bytes
         } catch {
@@ -225,6 +241,12 @@ final class InterfaceTextOverrides: ObservableObject {
         case .tooLarge:
             lastData = nil
             adopt(.ignoredWhole(.tooLarge))
+        case .notARegularFile:
+            // As an unreadable file: the lines in force stay, and the problem shows.
+            lastData = nil
+            var kept = outcome
+            kept.fileProblem = .notARegularFile
+            adopt(kept)
         case .read(let data, let checked):
             lastData = data
             adopt(checked)
@@ -257,7 +279,7 @@ final class InterfaceTextOverrides: ObservableObject {
         switch checked.fileProblem {
         case nil: break
         // An unreadable file leaves the lines in use: it is not ignored whole.
-        case .unreadable?: counts += ", the file could not be read and the lines in use stay" // l10n: no (debug log text)
+        case .unreadable?, .notARegularFile?: counts += ", the file could not be read and the lines in use stay" // l10n: no (debug log text)
         case .some: counts += ", the whole file ignored" // l10n: no (debug log text)
         }
         log("INTERFACE_TEXT_LOADED: \(counts)")
@@ -266,7 +288,8 @@ final class InterfaceTextOverrides: ObservableObject {
         }
         for ignored in checked.ignored.prefix(Self.largestIgnoredLog) {
             let id = Self.logged(ignored.key.id, isKnown: ignored.idIsKnown)
-            let language = Self.logged(ignored.key.language, isKnown: ignored.languageIsKnown)
+            // The carried language's code, never the key as written, which may hold anything after a carried prefix.
+            let language = ignored.carriedLanguage ?? Self.logged(ignored.key.language, isKnown: false)
             log("INTERFACE_TEXT_IGNORED: line \(id) in \(language): \(ignored.reason.logSentence)") // l10n: no (debug log text)
         }
         if checked.ignored.count > Self.largestIgnoredLog {
@@ -319,6 +342,8 @@ final class InterfaceTextOverrides: ObservableObject {
     /// The work of `fillFileForEditing`, off the main thread.
     private nonisolated static func fill(_ url: URL, language: String, engine: InterfaceTextEngine) -> FillResult {
         var existing: Data?
+        // Never written over: a folder, a pipe, or a link (to nothing too) is not a file TextMouth made or may replace.
+        if kind(of: url) == .other { return .failed("what the file's name holds is not a regular file") } // l10n: no (debug log text)
         do {
             guard let bytes = try bytes(at: url) else { return .leftAsItIs }
             existing = bytes
