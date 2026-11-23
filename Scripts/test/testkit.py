@@ -230,15 +230,65 @@ def area_classes(areas: Sequence[Area], name: str) -> Optional[List[str]]:
     return None
 
 
-def resolve_names(names: Sequence[str], areas: Sequence[Area],
-                  classes: Dict[str, HostedClass], classes_only: bool = False) -> List[str]:
-    """Turns area and class NAMEs into one ordered list of class names without repeats.
+# A test method's name as XCTest runs it: `test` and then word characters.
+_METHOD_NAME = re.compile(r"^test\w*$")
 
-    classes_only is for --classes, where an area name is refused. An unknown
-    name raises UnknownName with the closest matches in its message.
+
+def split_method(name: str) -> Tuple[str, Optional[str]]:
+    """Splits a NAME of the form `Class/testMethod` into (class, method); a plain NAME gives (name, None)."""
+    cls, slash, method = name.partition("/")
+    return (cls, method) if slash else (name, None)
+
+
+def declared_methods(root: Path, hosted: HostedClass) -> List[str]:
+    """The names of the `func testX()` methods written in the file of `hosted`, in file order."""
+    text = (root / hosted.path).read_text(encoding="utf-8", errors="replace")
+    return re.findall(r"^\s*(?:@\w+\s+)*(?:(?:private|fileprivate|override)\s+)*func\s+(test\w*)\s*\(\s*\)",
+                      text, flags=re.MULTILINE)
+
+
+def _resolve_method(name: str, cls: str, method: str, root: Optional[Path],
+                    classes: Dict[str, HostedClass]) -> str:
+    """Checks `Class/testMethod` and returns it, or raises UnknownName with the closest names.
+
+    The class must be a runnable hosted class and the method a `func testX()`
+    declared in the class's own file. Without a `root` the files cannot be read, so the
+    method is refused too, never taken on trust.
+    """
+    if cls not in classes:
+        close = difflib.get_close_matches(cls, list(classes), n=5, cutoff=0.6)
+        hint = f"; closest: {', '.join(close)}" if close else ""
+        raise UnknownName(f"no class named '{cls}' in '{name}'{hint}")
+    if not classes[cls].runnable:
+        raise UnknownName(f"'{cls}' is a helper class with no tests")
+    if not _METHOD_NAME.match(method):
+        raise UnknownName(f"'{method}' in '{name}' is not a test method name (they start with 'test')")
+    if root is None:
+        raise UnknownName(f"cannot check '{name}': no repository root given")
+    known = declared_methods(root, classes[cls])
+    if method not in known:
+        close = difflib.get_close_matches(method, known, n=5, cutoff=0.6)
+        hint = f"; closest: {', '.join(f'{cls}/{m}' for m in close)}" if close else ""
+        raise UnknownName(f"no test method '{method}' in {cls}{hint}")
+    return name
+
+
+def resolve_names(names: Sequence[str], areas: Sequence[Area],
+                  classes: Dict[str, HostedClass], classes_only: bool = False,
+                  root: Optional[Path] = None) -> List[str]:
+    """Turns area, class, and `Class/testMethod` NAMEs into one ordered list without repeats.
+
+    classes_only is for --classes, where an area name is refused (a method is fine). An
+    unknown name raises UnknownName with the closest matches in its message. A method
+    needs `root` (to read its class's file). A method whose class is also in the result,
+    by name or through an area, is dropped: the class runs once, with all its methods.
     """
     result: List[str] = []
     for name in names:
+        cls, method = split_method(name)
+        if method is not None:
+            result.append(_resolve_method(name, cls, method, root, classes))
+            continue
         members = None if classes_only else area_classes(areas, name)
         if members is not None and name == ALL_AREA:
             # `all` must really be all: a class no area lists yet (a new one)
@@ -256,7 +306,13 @@ def resolve_names(names: Sequence[str], areas: Sequence[Area],
             kind = "class" if classes_only else "area or class"
             hint = f"; closest: {', '.join(close)}" if close else ""
             raise UnknownName(f"no {kind} named '{name}'{hint}")
-    return _dedupe(result)
+    return drop_covered_methods(_dedupe(result))
+
+
+def drop_covered_methods(names: Sequence[str]) -> List[str]:
+    """Drops each `Class/method` whose whole `Class` is also in `names`, keeping the order."""
+    whole = {n for n in names if "/" not in n}
+    return [n for n in names if "/" not in n or split_method(n)[0] not in whole]
 
 
 # ---------------------------------------------------------------------------

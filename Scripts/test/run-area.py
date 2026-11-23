@@ -3,7 +3,10 @@
 
 Usage: Scripts/test/run-area.py [options] NAME [NAME ...]
 
-A NAME is an area (listed in Scripts/test/areas.conf) or a test class. `all`
+A NAME is an area (listed in Scripts/test/areas.conf), a test class, or one test
+method written Class/testMethod (a `func testX()` declared in the class's own file;
+a typo is refused with the closest names; a method whose class is also named runs
+once, with its class). `all`
 is a built-in area: every runnable hosted test class (those no area lists
 yet come last). Order is kept, repeats are
 dropped, and ONE xcodebuild run covers them all (each launch of the test host
@@ -24,7 +27,7 @@ Options:
   --list              with no NAME: one line per area (name, class count,
                       description); with NAMEs: their classes, one per line;
                       with --changed: only the --changed report, no run
-  --classes A,B       more classes, comma separated (repeatable)
+  --classes A,B       more classes (or Class/testMethod), comma separated (repeatable)
   --changed           pick the classes whose file mentions a type declared in a file
                       changed since the merge-base of --base and HEAD (staged,
                       unstaged, committed and untracked, under TextMouth/,
@@ -169,14 +172,14 @@ def split_classes(values):
 # Listing
 # ---------------------------------------------------------------------------
 
-def list_lines(names, areas, classes):
+def list_lines(names, areas, classes, root=None):
     """Lines for --list: every area when no NAME, else each NAME's classes."""
     if not names:
         everything = testkit.resolve_names([testkit.ALL_AREA], areas, classes)
         lines = [f"{a.name}: {len(a.classes)} classes. {a.description}" for a in areas]
         lines.append(f"{testkit.ALL_AREA}: {len(everything)} classes. Every runnable test class, those no area lists yet last")
         return lines
-    return testkit.resolve_names(names, areas, classes)
+    return testkit.resolve_names(names, areas, classes, root=root)
 
 
 def unassigned_lines(areas, classes):
@@ -672,6 +675,52 @@ def selftest() -> int:
     except testkit.UnknownName as error:
         check("an unknown name offers the closest", "no area or class named 'tw'; closest: two" in str(error), error)
 
+    # One test method, written Class/testMethod: it is checked against its class's file.
+    with tempfile.TemporaryDirectory() as folder:
+        scratch = Path(folder)
+        (scratch / "A.swift").write_text(
+            "final class A: XCTestCase {\n    func testOne() {}\n    @MainActor\n    func testTwo() throws {}\n}\n")
+        method_classes = {"A": testkit.HostedClass("A", "A.swift", 1, 2), "H": testkit.HostedClass("H", "A.swift", 1, 0)}
+
+        def methods(names, classes_only=False, root_arg=scratch):
+            """Resolves `names` against the scratch class A (two tests) and the helper H."""
+            return testkit.resolve_names(names, sample, method_classes, classes_only=classes_only, root=root_arg)
+
+        def refusal(names, **more):
+            """The message resolving `names` is refused with, or None when it is accepted."""
+            try:
+                methods(names, **more)
+            except testkit.UnknownName as error:
+                return str(error)
+            return None
+
+        check("a method resolves to itself", methods(["A/testOne"]) == ["A/testOne"])
+        check("a method with an attribute above it is found", methods(["A/testTwo"]) == ["A/testTwo"])
+        check("a method also works in --classes", methods(["A/testOne"], classes_only=True) == ["A/testOne"])
+        check("methods and classes mix in order, repeats dropped",
+              methods(["A/testOne", "A/testOne", "A/testTwo"]) == ["A/testOne", "A/testTwo"])
+        check("a method whose class is also named runs with its class",
+              methods(["A/testOne", "A"]) == ["A"] and methods(["A", "A/testOne"]) == ["A"])
+        check("a method whose class is in an area runs with its class",
+              testkit.resolve_names(["one", "A/testOne"], sample,
+                                    {n: testkit.HostedClass(n, "A.swift", 1, 1) for n in "ABC"}, root=scratch) == ["A", "B"])
+        check("a method of another class stays beside a named class",
+              testkit.drop_covered_methods(["B", "A/testOne"]) == ["B", "A/testOne"])
+        typo = refusal(["A/testOn"])
+        check("a method typo is refused with the closest names", typo is not None and "closest: A/testOne" in typo, typo)
+        check("an unknown class in a method is refused", "no class named 'Z'" in (refusal(["Z/testOne"]) or ""))
+        check("a helper class's method is refused", "helper class" in (refusal(["H/testOne"]) or ""))
+        check("a name that is not a test method is refused", "not a test method name" in (refusal(["A/helper"]) or ""))
+        check("a method is never taken on trust without a root",
+              "no repository root" in (refusal(["A/testOne"], root_arg=None) or ""))
+    # A method reaches xcodebuild as one more -only-testing level, in a --repeat run too.
+    check("a method becomes -only-testing:Target/Class/method",
+          testkit.build_command(Path("/r"), ["A/testOne", "B"], "/tmp/D", use_slot=False)[-2:]
+          == ["-only-testing:TextMouthProductionTests/A/testOne", "-only-testing:TextMouthProductionTests/B"])
+    check("--repeat runs carry methods too",
+          "-only-testing:TextMouthProductionTests/A/testOne" in repeat_plan(
+              Path("/r"), ["A/testOne"], "/tmp/D", 4, 2, "/tmp/log", {"X": "1"}, use_slot=False)[1][1][1])
+
     # The command.
     command = testkit.build_command(Path("/r"), ["A", "B"], "/tmp/D", jobs=3, use_slot=False)
     check("build_command is the documented argv", command == [
@@ -1020,13 +1069,14 @@ def main(argv) -> int:
             return 0
     try:
         if args.list:
-            print_lines(list_lines(names, areas, classes))
+            print_lines(list_lines(names, areas, classes, root))
             return 0
         if not names and not extra and not args.changed:
             return usage_error("no area or class named; try --list, or -h for help")
-        selected = testkit.resolve_names(names, areas, classes)
-        selected = list(dict.fromkeys(changed_picks + selected
-                                      + testkit.resolve_names(extra, areas, classes, classes_only=True)))
+        selected = testkit.resolve_names(names, areas, classes, root=root)
+        # Methods and classes mix in one run; a method whose class is also named runs with its class.
+        selected = testkit.drop_covered_methods(list(dict.fromkeys(
+            changed_picks + selected + testkit.resolve_names(extra, areas, classes, classes_only=True, root=root))))
     except testkit.UnknownName as error:
         return usage_error(str(error))
     if not selected:
