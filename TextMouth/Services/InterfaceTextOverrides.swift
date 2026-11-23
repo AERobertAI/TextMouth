@@ -168,6 +168,12 @@ final class InterfaceTextOverrides: ObservableObject {
         return .read(data, InterfaceTextOverridesFile.read(data, reference: reference))
     }
 
+    /// `error` as the log may hold it: its domain and code, never a path.
+    nonisolated static func describe(_ error: Error) -> String {
+        let nsError = error as NSError
+        return "\(nsError.domain) \(nsError.code)" // l10n: no (debug log text)
+    }
+
     /// Whether `error` says the file is not there.
     private nonisolated static func isMissingFile(_ error: Error) -> Bool {
         (error as? CocoaError)?.code == .fileReadNoSuchFile || (error as NSError).code == NSFileNoSuchFileError
@@ -259,7 +265,7 @@ final class InterfaceTextOverrides: ObservableObject {
             existing = try DatalessFiles.withoutDownloading { try Data(contentsOf: url) }
         } catch {
             if DatalessFiles.isDownloadRefusal(error) { return .leftAsItIs }
-            guard Self.isMissingFile(error) else { return .failed(String(describing: error)) }
+            guard Self.isMissingFile(error) else { return .failed(Self.describe(error)) }
         }
         guard let reference = engine.reference(language: language),
               let data = InterfaceTextOverridesWriter.filled(existing: existing, reference: reference)
@@ -267,7 +273,7 @@ final class InterfaceTextOverrides: ObservableObject {
         do {
             try data.write(to: url, options: .atomic)
         } catch {
-            return .failed(String(describing: error))
+            return .failed(Self.describe(error))
         }
         // The watcher is told at once, and the file read again, so what was written shows as the lines in force (none,
         // since every line equals its base).

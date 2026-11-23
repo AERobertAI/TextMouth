@@ -53,7 +53,7 @@ private func fileData(_ lines: [String: Any], language: String = "es", version: 
 }
 
 /// The outcome of a file holding `lines` for `language`.
-private func outcome(of lines: [String: Any], language: String = "es") throws -> InterfaceTextOverridesOutcome {
+private func readOutcome(of lines: [String: Any], language: String = "es") throws -> InterfaceTextOverridesOutcome {
     InterfaceTextOverridesFile.read(try fileData(lines, language: language), reference: try makeReference())
 }
 
@@ -62,7 +62,7 @@ private func reason(
     of line: [String: Any], id: String = "common.sleepTimer", language: String = "es",
     file: StaticString = #filePath, line number: UInt = #line
 ) throws -> InterfaceTextIgnoredReason? {
-    let result = try outcome(of: [id: line], language: language)
+    let result = try readOutcome(of: [id: line], language: language)
     XCTAssertEqual(result.inUse.count + result.ignored.count + result.unchanged, 1, file: file, line: number)
     return result.ignored.first?.reason
 }
@@ -72,7 +72,7 @@ private func reason(
 final class InterfaceTextOverridesFileTests: XCTestCase {
     /// A line whose text differs from its base is the person's own: it applies, in the language it is under.
     func testALineChangedFromItsBaseApplies() throws {
-        let result = try outcome(of: ["common.sleepTimer": ["text": "Temporizador", "base": "Temporizador de apagado"]])
+        let result = try readOutcome(of: ["common.sleepTimer": ["text": "Temporizador", "base": "Temporizador de apagado"]])
 
         XCTAssertEqual(result.lines, ["es": ["common.sleepTimer": .plain("Temporizador")]])
         XCTAssertEqual(result.inUse, [.init(language: "es", id: "common.sleepTimer")])
@@ -82,7 +82,7 @@ final class InterfaceTextOverridesFileTests: XCTestCase {
 
     /// A line left as it was never applies, so it keeps taking each update's better wording.
     func testALineLeftAloneNeverApplies() throws {
-        let result = try outcome(of: ["common.sleepTimer": ["text": "Temporizador de apagado", "base": "Temporizador de apagado"]])
+        let result = try readOutcome(of: ["common.sleepTimer": ["text": "Temporizador de apagado", "base": "Temporizador de apagado"]])
 
         XCTAssertEqual(result.lines, [:])
         XCTAssertEqual(result.unchanged, 1)
@@ -92,7 +92,7 @@ final class InterfaceTextOverridesFileTests: XCTestCase {
 
     /// A line with no base (written by hand, or copied from someone else's Export) applies in full.
     func testALineWithNoBaseApplies() throws {
-        let result = try outcome(of: ["common.sleepTimer": ["text": "Temporizador de apagado"]])
+        let result = try readOutcome(of: ["common.sleepTimer": ["text": "Temporizador de apagado"]])
 
         XCTAssertEqual(result.lines["es"]?["common.sleepTimer"], .plain("Temporizador de apagado"))
         XCTAssertEqual(result.unchanged, 0)
@@ -104,19 +104,19 @@ final class InterfaceTextOverridesFileTests: XCTestCase {
         var changed = forms
         changed["other"] = "%lld min"
 
-        let result = try outcome(of: [
+        let result = try readOutcome(of: [
             "common.countMinutes": ["plural": changed, "basePlural": forms],
         ])
         XCTAssertEqual(result.lines["es"]?["common.countMinutes"], .plural(["un minuto", "%lld de minutos", "%lld min"]))
 
-        XCTAssertEqual(try outcome(of: ["common.countMinutes": ["plural": forms, "basePlural": forms]]).unchanged, 1)
-        XCTAssertEqual(try outcome(of: ["common.countMinutes": ["plural": changed]]).inUse.count, 1)
+        XCTAssertEqual(try readOutcome(of: ["common.countMinutes": ["plural": forms, "basePlural": forms]]).unchanged, 1)
+        XCTAssertEqual(try readOutcome(of: ["common.countMinutes": ["plural": changed]]).inUse.count, 1)
     }
 
     /// A line left alone is not examined, so a line an update retired or reshaped is not reported to someone who never
     /// touched it: its ID, its language, and its shape may all be out of date.
     func testALineLeftAloneIsNotReportedWhateverIsWrongWithIt() throws {
-        let result = try outcome(of: [
+        let result = try readOutcome(of: [
             "retired.line": ["text": "x", "base": "x"],
             "common.countMinutes": ["text": "%s", "base": "%s"],
         ])
@@ -170,7 +170,7 @@ final class InterfaceTextOverridesFileTests: XCTestCase {
         XCTAssertEqual(try reason(of: ["text": ["one": "a"]]), .notALine)
         XCTAssertEqual(try reason(of: ["plural": "a"]), .notALine)
         XCTAssertEqual(try reason(of: ["plural": ["one": 1]]), .notALine)
-        let notAnObject = try outcome(of: ["common.sleepTimer": "Hola"])
+        let notAnObject = try readOutcome(of: ["common.sleepTimer": "Hola"])
         XCTAssertEqual(notAnObject.ignored.map(\.reason), [.notALine])
     }
 
@@ -210,7 +210,7 @@ final class InterfaceTextOverridesFileTests: XCTestCase {
 
     /// A line may reorder its placeholders with positions, and may say its literal percent sign.
     func testPlaceholdersMayMoveWithPositions() throws {
-        let result = try outcome(of: [
+        let result = try readOutcome(of: [
             "feed.opening": ["text": "Parte %2$lld: abriendo %1$@"],
             "sync.progress": ["text": "Hecho: %lld%%"],
         ])
@@ -222,7 +222,7 @@ final class InterfaceTextOverridesFileTests: XCTestCase {
     /// A line of no arguments that holds a lone `%` in its English ("Save 50%") is never given to the formatter, so
     /// neither is the person's text for it.
     func testALoneSignInTheEnglishOfANoArgumentLineIsAllowed() throws {
-        let result = try outcome(of: ["sale.banner": ["text": "¡Ahorra 50% hoy!"]])
+        let result = try readOutcome(of: ["sale.banner": ["text": "¡Ahorra 50% hoy!"]])
 
         XCTAssertEqual(result.ignored, [])
         XCTAssertEqual(result.lines["es"]?["sale.banner"], .plain("¡Ahorra 50% hoy!"))
@@ -276,7 +276,7 @@ final class InterfaceTextOverridesFileTests: XCTestCase {
 
     /// A line in use whose `english` is not the line's English now still applies, and is listed.
     func testALineWhoseEnglishChangedStillAppliesAndIsListed() throws {
-        let result = try outcome(of: [
+        let result = try readOutcome(of: [
             "common.sleepTimer": ["text": "Temporizador", "english": "Sleep Timer (old)"],
             "feed.opening": ["text": "Abriendo %@ (%lld)", "english": "Opening %@, part %lld"],
             "common.countMinutes": [
@@ -358,7 +358,7 @@ final class InterfaceTextOverridesFileTests: XCTestCase {
 
     /// The lines that apply reach a lookup, and a line left alone keeps the pack's text.
     func testAppliedLinesWinAtALookupAndOthersKeepThePacksText() throws {
-        let result = try outcome(of: [
+        let result = try readOutcome(of: [
             "common.sleepTimer": ["text": "Temporizador", "base": "Temporizador de apagado"],
             "feed.opening": ["text": "Abriendo %@, parte %lld", "base": "Abriendo %@, parte %lld"],
             "common.countMinutes": ["plural": ["one": "1 min", "many": "%lld de min", "other": "%lld min"]],

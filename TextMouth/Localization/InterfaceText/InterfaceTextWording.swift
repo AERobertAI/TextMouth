@@ -44,7 +44,7 @@ enum InterfaceTextWording: Equatable, Sendable {
     /// (Spanish's `many` is English's `other`).
     func adapted(toLanguage language: String) -> InterfaceTextWording {
         guard case .plural(let forms) = self, let names = PluralRules.categories[language] else { return self }
-        let fallback = forms["other"] ?? forms.values.first ?? ""
+        let fallback = forms["other"] ?? forms.values.first ?? "" // l10n: no (a plural category's name)
         return .plural(Dictionary(uniqueKeysWithValues: names.map { ($0, forms[$0] ?? fallback) }))
     }
 
@@ -105,7 +105,7 @@ struct InterfaceTextReference: Sendable {
 
     /// The English wording of the line at `index`; nil when the pack has none.
     func englishWording(at index: Int) -> InterfaceTextWording? {
-        english.indices.contains(index) ? InterfaceTextWording(entry: english[index], language: "en") : nil
+        english.indices.contains(index) ? InterfaceTextWording(entry: english[index], language: "en") : nil // l10n: no (a language code)
     }
 
     /// The note of the line at `index`, "" for none.

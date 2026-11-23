@@ -48,6 +48,10 @@ final class PhoneSettingsModelTests: XCTestCase {
                 "Chooses the language of TextMouth's menus, windows, and messages. The change applies at once."
             ),
             (
+                .exportInterfaceText, "Export Interface Text…", "Export Interface Text…",
+                "Saves every line of the interface language as it reads now, with your own lines marked, to a file you choose."
+            ),
+            (
                 .shareLogs, "Share Logs…", "Share Logs…",
                 "Shares recent logs as a text file. They hold no book text."
             ),

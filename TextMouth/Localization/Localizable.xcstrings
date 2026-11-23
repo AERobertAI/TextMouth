@@ -334453,6 +334453,402 @@
         }
       }
     },
+    "interfaceTextFile.editFailed" : {
+      "comment" : "VoiceOver announcement when Edit Interface Text could not fill in or open the file of the person's own lines.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The file of your own lines could not be made."
+          }
+        }
+      }
+    },
+    "interfaceTextFile.editHint" : {
+      "comment" : "VoiceOver hint of the Edit Interface Text button on the Mac. The file is interface_text.json in the data folder.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opens the file of your own lines in your editor. If it has none for this language, it first fills in every line as it reads now."
+          }
+        }
+      }
+    },
+    "interfaceTextFile.editTitle" : {
+      "comment" : "A button in Settings under Interface Language, on the Mac. It opens the file of the person's own interface lines in their editor, after filling it with the current text if it has none for this language.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edit Interface Text…"
+          }
+        }
+      }
+    },
+    "interfaceTextFile.exportFailed" : {
+      "comment" : "VoiceOver announcement when Export Interface Text could not write its file.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The interface text could not be exported."
+          }
+        }
+      }
+    },
+    "interfaceTextFile.exportHint" : {
+      "comment" : "VoiceOver hint of the Export Interface Text button. Lines the person changed are marked in the file.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saves every line of the interface language as it reads now, with your own lines marked, to a file you choose."
+          }
+        }
+      }
+    },
+    "interfaceTextFile.exportTitle" : {
+      "comment" : "A button in Settings under Interface Language. It saves every line of the interface language, as it reads now, to a file the person chooses.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Export Interface Text…"
+          }
+        }
+      }
+    },
+    "interfaceTextFile.exported" : {
+      "comment" : "VoiceOver announcement after Export Interface Text saved its file. %@ is the file's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exported the interface text to %@."
+          }
+        }
+      }
+    },
+    "interfaceTextFile.fileProblem" : {
+      "comment" : "A line in the list under Interface Language when the whole file of the person's own lines has a problem. %@ is the reason, a whole sentence.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Problem with your file of own lines. %@"
+          }
+        }
+      }
+    },
+    "interfaceTextFile.ignored" : {
+      "comment" : "A line in Settings under Interface Language. %lld is how many of the person's own lines, from the file interface_text.json in the data folder, are ignored because they break a rule; each is listed below with its reason.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your own lines ignored: %lld"
+          }
+        }
+      }
+    },
+    "interfaceTextFile.ignoredLine" : {
+      "comment" : "One ignored line in the list under Interface Language. The first %@ is the line's ID (such as common.sleepTimer), the second the language's name, the third the reason, a whole sentence. Keep the reason last.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ignored line %@ in %@. %@"
+          }
+        }
+      }
+    },
+    "interfaceTextFile.inUse" : {
+      "comment" : "A line in Settings under Interface Language. %lld is how many of the person's own lines, from the file interface_text.json in the data folder, are in use now.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your own lines in use: %lld"
+          }
+        }
+      }
+    },
+    "interfaceTextFile.moreIgnored" : {
+      "comment" : "The last line of a long list of ignored lines under Interface Language. %lld is how many more lines are ignored than the list shows.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "And %lld more ignored lines. The debug log lists each one."
+          }
+        }
+      }
+    },
+    "interfaceTextFile.outdatedLine" : {
+      "comment" : "One line in the list under Interface Language. The first %@ is the ID of a line the person changed (such as common.sleepTimer), the second the language's name. The English the line was written against has changed since, and the person's line still applies.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check line %@ in %@. Its English has changed since you wrote it, and your line still applies."
+          }
+        }
+      }
+    },
+    "interfaceTextFile.problem.notJSON" : {
+      "comment" : "The reason the whole file of the person's own interface lines is ignored: it is not valid JSON.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The file is not valid JSON."
+          }
+        }
+      }
+    },
+    "interfaceTextFile.problem.notThisShape" : {
+      "comment" : "The reason the whole file of the person's own interface lines is ignored: it is not a set of languages, each holding lines.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The file is not a set of languages, each with its lines."
+          }
+        }
+      }
+    },
+    "interfaceTextFile.problem.tooLarge" : {
+      "comment" : "The reason the whole file of the person's own interface lines is ignored: it is far larger than any such file.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The file is too large."
+          }
+        }
+      }
+    },
+    "interfaceTextFile.problem.unknownVersion" : {
+      "comment" : "The reason the whole file of the person's own interface lines is ignored: its version is not one this TextMouth reads.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The file's version is not one TextMouth reads."
+          }
+        }
+      }
+    },
+    "interfaceTextFile.problem.unreadable" : {
+      "comment" : "The reason the whole file of the person's own interface lines could not be used: it could not be read, so the lines already in use stay.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The file could not be read, so the lines in use stay."
+          }
+        }
+      }
+    },
+    "interfaceTextFile.reason.bothTextAndPlural" : {
+      "comment" : "The reason a line of the person's own lines is ignored: it has both a text and plural forms.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It has both a text and plural forms."
+          }
+        }
+      }
+    },
+    "interfaceTextFile.reason.controlCharacter" : {
+      "comment" : "The reason a line of the person's own lines is ignored: one of its texts has an invisible control character other than a line break or a tab.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "One of its texts has a control character."
+          }
+        }
+      }
+    },
+    "interfaceTextFile.reason.emptyForm" : {
+      "comment" : "The reason a line of the person's own lines is ignored: one of its texts is empty.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "One of its texts is empty."
+          }
+        }
+      }
+    },
+    "interfaceTextFile.reason.mixedPlaceholders" : {
+      "comment" : "The reason a line of the person's own lines is ignored: it mixes numbered placeholders (such as %1$@) with unnumbered ones (%@).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It mixes numbered and unnumbered placeholders."
+          }
+        }
+      }
+    },
+    "interfaceTextFile.reason.noEnglish" : {
+      "comment" : "The reason a line of the person's own lines is ignored: TextMouth holds no English for it to compare with.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "TextMouth has no English for it to be compared with."
+          }
+        }
+      }
+    },
+    "interfaceTextFile.reason.noText" : {
+      "comment" : "The reason a line of the person's own lines is ignored: it has neither a text nor plural forms.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It has no text."
+          }
+        }
+      }
+    },
+    "interfaceTextFile.reason.notALine" : {
+      "comment" : "The reason a line of the person's own lines is ignored: it is not a text, or a set of plural forms, in the form the file has.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It is not a text or a set of plural forms."
+          }
+        }
+      }
+    },
+    "interfaceTextFile.reason.percentSignsDiffer" : {
+      "comment" : "The reason a line of the person's own lines is ignored: it has a different number of doubled percent signs (%%, which shows one percent sign) than the English line.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Its doubled percent signs differ in number from the English line's."
+          }
+        }
+      }
+    },
+    "interfaceTextFile.reason.placeholdersDiffer" : {
+      "comment" : "The reason a line of the person's own lines is ignored: its placeholders (the parts such as %@ and %lld that TextMouth fills in) differ from the English line's in number or kind.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Its placeholders differ from the English line's."
+          }
+        }
+      }
+    },
+    "interfaceTextFile.reason.pluralForPlainLine" : {
+      "comment" : "The reason a line of the person's own lines is ignored: the line has one text, and the person gave plural forms.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "That line takes one text, not plural forms."
+          }
+        }
+      }
+    },
+    "interfaceTextFile.reason.textForPluralLine" : {
+      "comment" : "The reason a line of the person's own lines is ignored: the line has plural forms (one for each count), and the person gave one text.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "That line needs plural forms, not one text."
+          }
+        }
+      }
+    },
+    "interfaceTextFile.reason.unknownID" : {
+      "comment" : "The reason a line of the person's own lines is ignored: TextMouth has no line with that ID.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "TextMouth has no line with that ID."
+          }
+        }
+      }
+    },
+    "interfaceTextFile.reason.unknownLanguage" : {
+      "comment" : "The reason a line of the person's own lines is ignored: its language is not one TextMouth has.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "TextMouth does not have that language."
+          }
+        }
+      }
+    },
+    "interfaceTextFile.reason.unsupportedSpecifier" : {
+      "comment" : "The reason a line of the person's own lines is ignored: it has a percent sign that is not one of the allowed placeholders (%@, %lld, or the numbered forms %1$@ and %1$lld, and %% for a percent sign).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It has a percent sign that is not an allowed placeholder."
+          }
+        }
+      }
+    },
+    "interfaceTextFile.reason.wrongPluralForms" : {
+      "comment" : "The reason a line of the person's own lines is ignored: its plural forms are not exactly the ones its language uses.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Its plural forms are not the ones this language uses."
+          }
+        }
+      }
+    },
     "iosUnavailable.convertingThisKindOfFile" : {
       "comment" : "Error text when the iPhone app is asked to convert an audio file in a way only the Mac's helper program can.",
       "extractionState" : "manual",
