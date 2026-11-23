@@ -56,6 +56,17 @@ final class InterfaceTextOverridesTests: XCTestCase {
         try JSONSerialization.data(withJSONObject: ["version": 1, "languages": ["es": ["lines": lines]]])
     }
 
+    /// What Edit's fill comes to, waited for by spinning the run loop as the other tests of this class do (the fill runs on a
+    /// background queue and answers on the main actor; a test that is itself async and then spins the run loop would starve
+    /// the reads it waits for).
+    private func fill(_ service: InterfaceTextOverrides, language: String) -> InterfaceTextOverrides.FillResult {
+        final class Answer { var result: InterfaceTextOverrides.FillResult? }
+        let answer = Answer()
+        Task { @MainActor in answer.result = await service.fillFileForEditing(language: language) }
+        XCTAssertTrue(waitUntil(timeout: 5) { answer.result != nil }, "the fill never answered")
+        return answer.result ?? .leftAsItIs
+    }
+
     /// The Spanish text of the sleep timer's title now.
     private func sleepTimer(_ engine: InterfaceTextEngine) -> String {
         interfaceLine(engine, "common.sleepTimer", "Sleep Timer")
@@ -205,12 +216,12 @@ final class InterfaceTextOverridesTests: XCTestCase {
 
     /// Edit Interface Text… fills the file when there is none, with every line of the interface language as the pack has it,
     /// and nothing applies (every line equals its base).
-    func testEditFillsAMissingFileOnRequest() async throws {
+    func testEditFillsAMissingFileOnRequest() throws {
         let url = try makeFileURL()
         let (service, engine, _) = makeService(reading: { url })
         service.start()
 
-        let filled = await service.fillFileForEditing(language: "es")
+        let filled = fill(service, language: "es")
         XCTAssertEqual(filled, .written)
 
         let root = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any])
@@ -223,11 +234,11 @@ final class InterfaceTextOverridesTests: XCTestCase {
     }
 
     /// A line the person then edits in the filled file applies, and the file keeps what it said for the other lines.
-    func testALineEditedInTheFilledFileApplies() async throws {
+    func testALineEditedInTheFilledFileApplies() throws {
         let url = try makeFileURL()
         let (service, engine, _) = makeService(reading: { url })
         service.start()
-        let filled = await service.fillFileForEditing(language: "es")
+        let filled = fill(service, language: "es")
         XCTAssertEqual(filled, .written)
         XCTAssertTrue(waitUntil(timeout: 5) { service.outcome.unchanged == 2 })
 
@@ -248,28 +259,28 @@ final class InterfaceTextOverridesTests: XCTestCase {
     }
 
     /// A file that has the language, or that the person is mending, is left as it is; a file that lacks it gets it.
-    func testEditLeavesAFileThatHasTheLanguage() async throws {
+    func testEditLeavesAFileThatHasTheLanguage() throws {
         let url = try makeFileURL()
         let bytes = try data(["common.sleepTimer": ["text": "Temporizador"]])
         try bytes.write(to: url)
         let (service, _, _) = makeService(reading: { url })
 
-        let left = await service.fillFileForEditing(language: "es")
+        let left = fill(service, language: "es")
         XCTAssertEqual(left, .leftAsItIs)
         XCTAssertEqual(try Data(contentsOf: url), bytes)
 
-        let added = await service.fillFileForEditing(language: "en")
+        let added = fill(service, language: "en")
         XCTAssertEqual(added, .written)
         let root = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any])
         XCTAssertEqual(Set((root["languages"] as? [String: Any])?.keys.map { $0 } ?? []), ["es", "en"])
     }
 
     /// Nothing is written while the data directory is unavailable.
-    func testEditWritesNothingWhileTheDataDirectoryIsUnavailable() async throws {
+    func testEditWritesNothingWhileTheDataDirectoryIsUnavailable() throws {
         let url = try makeFileURL()
         let (service, _, _) = makeService(reading: { url }, isUnavailable: { true })
 
-        let refused = await service.fillFileForEditing(language: "es")
+        let refused = fill(service, language: "es")
         guard case .failed = refused else { return XCTFail("a fill was not refused") }
         XCTAssertFalse(FileManager.default.fileExists(atPath: url.path))
     }

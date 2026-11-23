@@ -30,7 +30,8 @@ final class InterfaceTextExportUITests: TextMouthUITestCase {
         export.tap()
 
         // The system's exporter has a Cancel button (a document picker in the app's own process or another's).
-        let cancel = app.buttons["Cancel"].firstMatch
+        // Found by its label among the elements of any kind: the exporter's Cancel is drawn as an element that is not a button.
+        let cancel = app.descendants(matching: .any).matching(NSPredicate(format: "label == %@", "Cancel")).firstMatch
         XCTAssertTrue(cancel.waitForExistence(timeout: Self.patience), "The exporter did not open:\n\(app.debugDescription)")
         cancel.tap()
 
