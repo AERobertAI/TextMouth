@@ -227,4 +227,53 @@ final class FileEventWatcherTests: XCTestCase {
         XCTAssertFalse(watcher.isArmed)
         XCTAssertEqual(recorder.opens, 0)
     }
+
+    // MARK: - What it opens
+
+    /// The descriptor an open off the main thread returned, read back on the main thread once the open has finished.
+    private final class OpenResult: @unchecked Sendable {
+        private let lock = NSLock()
+        private var stored: Int32?
+
+        var descriptor: Int32? { lock.withLock { stored } }
+
+        func record(_ descriptor: Int32) { lock.withLock { stored = descriptor } }
+    }
+
+    /// A FIFO by the file's name is not watched, and opening it returns at once. A blocking open waited for a writer,
+    /// forever, on the main thread (November 23, 2026). The open runs off the main thread here, so that a blocking open
+    /// fails this test rather than hanging the suite; the pipe's other end is then opened, which releases the stuck open.
+    func testAFIFOByTheFilesNameIsNotOpenedAndTheOpenNeverWaits() throws {
+        let url = try makeFileURL()
+        XCTAssertEqual(mkfifo(url.path, 0o644), 0, "no pipe could be made")
+        let path = url.path
+        let result = OpenResult()
+        let opened = expectation(description: "the open returned")
+        DispatchQueue.global().async {
+            result.record(FileEventWatcher.openRegularFileForEvents(path))
+            opened.fulfill()
+        }
+
+        guard XCTWaiter.wait(for: [opened], timeout: 2) == .completed else {
+            let writer = open(path, O_WRONLY | O_NONBLOCK)
+            if writer >= 0 { close(writer) }
+            XCTFail("Opening a FIFO by the file's name waited for a writer")
+            return
+        }
+        XCTAssertEqual(result.descriptor, -1, "a FIFO is no file to watch")
+    }
+
+    /// A regular file opens for events; a folder by the file's name does not, nor does a path with nothing at it.
+    func testOnlyARegularFileOpensForEvents() throws {
+        let url = try makeFileURL()
+        try Data("one".utf8).write(to: url)
+        let descriptor = FileEventWatcher.openRegularFileForEvents(url.path)
+        XCTAssertGreaterThanOrEqual(descriptor, 0)
+        if descriptor >= 0 { close(descriptor) }
+
+        let folder = try makeFileURL(named: "folder")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: false)
+        XCTAssertEqual(FileEventWatcher.openRegularFileForEvents(folder.path), -1)
+        XCTAssertEqual(FileEventWatcher.openRegularFileForEvents(url.deletingLastPathComponent().appendingPathComponent("absent.json").path), -1)
+    }
 }

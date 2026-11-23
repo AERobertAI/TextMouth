@@ -41,17 +41,53 @@ final class FileEventWatcher {
         /// The calls the app makes.
         static var system: Calls {
             Calls(
-                openForEvents: { path in Darwin.open(path, O_EVTONLY) },
+                openForEvents: { path in FileEventWatcher.openRegularFileForEvents(path) },
                 close: { descriptor in _ = Darwin.close(descriptor) }
             )
+        }
+    }
+
+    /// A descriptor for event notification only on the regular file at `path`, or -1 when there is none.
+    ///
+    /// - `O_NONBLOCK`: opening a FIFO by the file's name would otherwise wait for a writer, forever, on the main thread.
+    /// - `O_CLOEXEC`: the descriptor never passes to a helper program the app starts.
+    /// - Only a regular file is watched. A FIFO, a device, or a folder by that name is no file of the app's, so it is not
+    ///   watched, and the watcher treats it as missing.
+    nonisolated static func openRegularFileForEvents(_ path: String) -> Int32 {
+        let descriptor = Darwin.open(path, O_EVTONLY | O_NONBLOCK | O_CLOEXEC)
+        guard descriptor >= 0 else { return -1 }
+        var info = stat()
+        guard fstat(descriptor, &info) == 0, info.st_mode & mode_t(S_IFMT) == mode_t(S_IFREG) else {
+            _ = Darwin.close(descriptor)
+            return -1
+        }
+        return descriptor
+    }
+
+    /// Owns the source of a watched file, and cancels it when released, so that a watcher dropped without `stop()`
+    /// still closes its descriptor: cancelling runs the source's cancel handler, the one safe place to close it.
+    ///
+    /// Its own class, with an ordinary deinit, because `DispatchSource.cancel()` may be called from any thread. The
+    /// watcher itself keeps no deinit: an isolated deinit (SE-0371), which this used to be, crashed in the Swift runtime's
+    /// back-deployed `swift_task_deinitOnExecutor` ("pointer being freed was not allocated") when the last release came
+    /// on the main thread during a test's wait, on macOS 26.3 with the app's macOS 14 deployment target.
+    private final class SourceOwner {
+        let source: DispatchSourceFileSystemObject
+
+        init(_ source: DispatchSourceFileSystemObject) {
+            self.source = source
+        }
+
+        deinit {
+            source.cancel()
         }
     }
 
     /// The file listened to: which file it is, whatever path later leads to it, and the source delivering its events.
     private struct WatchedFile {
         let identity: FileIdentity
-        /// Delivers its events; cancelling it closes its descriptor.
-        let source: DispatchSourceFileSystemObject
+        /// Delivers its events; cancelling it, or releasing it, closes its descriptor.
+        let owner: SourceOwner
     }
 
     // MARK: - Settings (fixed at creation)
@@ -110,11 +146,8 @@ final class FileEventWatcher {
         self.gaveUp = gaveUp
     }
 
-    /// A watcher dropped without `stop()` closes its descriptor all the same: cancelling its source runs the cancel handler,
-    /// the one safe place to close it. (Isolated, so it may read the state that lives on the main actor.)
-    isolated deinit {
-        watchedFile?.source.cancel()
-    }
+    // A watcher dropped without `stop()` closes its descriptor all the same: releasing it releases its watched file's
+    // `SourceOwner`, which cancels the source. So the watcher needs no deinit of its own.
 
     // MARK: - Starting and stopping
 
@@ -216,7 +249,7 @@ final class FileEventWatcher {
             }
         }
         source.resume()
-        watchedFile = WatchedFile(identity: identity, source: source)
+        watchedFile = WatchedFile(identity: identity, owner: SourceOwner(source))
         if checksWhenAttached { scheduleCheck() }
         return true
     }
@@ -224,7 +257,7 @@ final class FileEventWatcher {
     /// Stops listening to the watched file. Cancelling its source closes the descriptor and releases the handlers that
     /// hold the source.
     private func disarm() {
-        watchedFile?.source.cancel()
+        watchedFile?.owner.source.cancel()
         watchedFile = nil
     }
 

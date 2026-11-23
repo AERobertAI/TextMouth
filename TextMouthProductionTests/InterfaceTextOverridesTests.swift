@@ -464,6 +464,16 @@ final class InterfaceTextOverridesTests: XCTestCase {
         let url = try makeFileURL()
         XCTAssertEqual(mkfifo(url.path, 0o644), 0, "no pipe could be made")
         let (service, engine, record) = makeService(reading: { url })
+        // A safety valve: should an open of the pipe ever wait for a writer again (as the watcher's did, November 23,
+        // 2026), opening the pipe's other end after a few seconds releases it, so this test fails rather than hanging the
+        // suite. With no open waiting, the valve's open finds no reader and does nothing.
+        let path = url.path
+        let valve = DispatchWorkItem {
+            let writer = open(path, O_WRONLY | O_NONBLOCK)
+            if writer >= 0 { close(writer) }
+        }
+        DispatchQueue.global().asyncAfter(deadline: .now() + 3, execute: valve)
+        addTeardownBlock { valve.cancel() }
 
         service.start()
 
