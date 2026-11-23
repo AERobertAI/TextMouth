@@ -39,7 +39,7 @@ into each build". So agents no longer build on their own:
   queued for the next train and tells the orchestrator who held the lock.
 
 Usage:
-  build-train.py request --agent SLUG --branch BRANCH [--classes A,B] [--areas x,y] [--note TEXT]
+  build-train.py request --agent SLUG --branch BRANCH [--classes A,B] [--areas x,y] [--note TEXT] [--now]
   build-train.py status
   build-train.py run [--base REF] [--remote]
   build-train.py loop [--every MINUTES (default 60)] [--hours HOURS] [--base REF] [--remote [--soon MINUTES]]
@@ -51,7 +51,9 @@ reads the log and summary the run uploads. It takes no heavy-work lock, since it
 with a merge and a push only. If the push or the run fails, every agent is told and the requests
 go back in the queue for the next train. With --soon MINUTES the loop leaves MINUTES after a
 request comes instead of on the hour. The tests' command is made in test_command.py, the one
-place the train, run_suite.py, and the workflow all take it from. The run also builds the iPhone
+place the train, run_suite.py, and the workflow all take it from. A name in --classes may be
+Class/testMethod, one test method of a Mac or iPhone class (see unknown_names), to retry one failing
+test; with --now the loop (with --soon) leaves at once, not MINUTES after the request. The run also builds the iPhone
 app and its UI tests for the iOS Simulator (run-ios-build.py), and each agent's result lists the
 errors in the files its branch changes, as the census of a train on this Mac does.
 
@@ -60,6 +62,7 @@ and results live in the main checkout's gitignored build/orchestrator/train/.
 """
 import argparse
 import contextlib
+import difflib
 import json
 import os
 import re
@@ -78,6 +81,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import github_run  # noqa: E402
 import heavy_lock  # noqa: E402  (imported by path, after sys.path is set)
 import ios_ui_tests  # noqa: E402
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "test"))
+import testkit  # noqa: E402  (reads the Mac test classes and their methods, as run-area.py does)
 import runner_module_cache  # noqa: E402
 import merge_ios_shards  # noqa: E402
 import repo_paths  # noqa: E402
@@ -177,10 +182,34 @@ def known_names(cwd):
     return areas | {"all"}, classes
 
 
-def unknown_names(request, areas, classes):
-    """The names in `request` that are neither a known area nor a known class."""
-    return ([a for a in request["areas"] if a not in areas]
-            + [c for c in request["classes"] if c not in classes])
+def methods_in(cls, cwd):
+    """The test methods the class `cls` declares in the checkout at `cwd`: a Mac class's, from its file (as
+    run-area.py reads them), and an iPhone class's, from the iPhone bundles' sources. A class that is both has both."""
+    hosted = testkit.hosted_test_classes(Path(cwd)).get(cls)
+    mac = testkit.declared_methods(Path(cwd), hosted) if hosted else []
+    return list(dict.fromkeys(mac + ios_ui_tests.methods_of(cls, cwd)))
+
+
+def unknown_names(request, areas, classes, cwd=None):
+    """The names in `request` that are neither a known area nor a known class. A class name may be
+    `Class/testMethod`: it is known when its class is, and, given the checkout `cwd` to read, when the method is
+    declared in the class's file (a typo is then unknown, and `closest_methods` can name the nearest)."""
+    unknown = [a for a in request["areas"] if a not in areas]
+    for name in request["classes"]:
+        cls, method = testkit.split_method(name)
+        if cls not in classes or (method is not None and cwd is not None and method not in methods_in(cls, cwd)):
+            unknown.append(name)
+    return unknown
+
+
+def closest_methods(name, cwd):
+    """The `Class/testMethod` names nearest to the unknown `name`, for a message ("" when none is near or `name` is
+    not a method of a known class)."""
+    cls, method = testkit.split_method(name)
+    if method is None:
+        return ""
+    close = difflib.get_close_matches(method, methods_in(cls, cwd), n=5, cutoff=0.6)
+    return ", ".join(f"{cls}/{m}" for m in close)
 
 
 # MARK: - Requests
@@ -195,7 +224,15 @@ def command_request(args):
     # Names are checked for certain against the merged tree at train time, where
     # a class new on the branch exists; main may lack it, so this is a warning.
     areas, classes = known_names(ROOT)
-    bad = unknown_names({"areas": split_list(args.areas), "classes": split_list(args.classes)}, areas, classes)
+    asked = {"areas": split_list(args.areas), "classes": split_list(args.classes)}
+    bad = unknown_names(asked, areas, classes, ROOT)
+    # A method of a class main knows is a typo, or new on the branch: say which, with the nearest names.
+    for name in [n for n in bad if "/" in n and testkit.split_method(n)[0] in classes]:
+        near = closest_methods(name, ROOT)
+        print(f"build-train: warning: main has no test method {name}" + (f"; closest: {near}" if near else "")
+              + ". If your branch adds it, it runs; a name still unknown on the merged tree is left out and you are told.",
+              file=sys.stderr)
+    bad = [name for name in bad if "/" not in name or testkit.split_method(name)[0] not in classes]
     if bad:
         print(f"build-train: warning: main has no area or class named {', '.join(bad)}. A class is the name "
               f"after `class`, not its file's name (`Scripts/test/run-area.py --list all` lists them). If your "
@@ -213,10 +250,17 @@ def command_request(args):
     if args.ios_size:
         # Asks the train's run on GitHub to also build the iPhone app for a device and measure it (remote trains only).
         request["ios_size"] = True
+    leaves = NEXT.read_text().strip() if NEXT.exists() else "when the orchestrator next runs one"
+    if getattr(args, "now", False):
+        # A retry of one failing class or method wants no batching wait; a run that covers areas is worth batching.
+        request["now"] = True
+        leaves = "at once, or as soon as the running train ends"
+        if request["areas"]:
+            print("build-train: --now skips the batching wait, though this run covers areas; "
+                  "--now is meant for a retry of one class or method with no --areas", file=sys.stderr)
     path = QUEUE / f"{int(time.time() * 1000)}-{re.sub(r'[^A-Za-z0-9_-]', '_', args.agent)}.json"
     path.write_text(json.dumps(request, indent=2))
-    when = NEXT.read_text().strip() if NEXT.exists() else "when the orchestrator next runs one"
-    print(f"queued {args.branch} at {head[:8]} for {args.agent}; the next train leaves {when}. "
+    print(f"queued {args.branch} at {head[:8]} for {args.agent}; the next train leaves {leaves}. "
           f"Your result will be posted to you on the board and written to {RESULTS / (args.agent + '.md')}.")
     return 0
 
@@ -231,7 +275,8 @@ def command_status(_args):
     for path in waiting:
         request = json.loads(path.read_text())
         print(f"  {request['agent']}: {request['branch']} ({request['head'][:8]}) "
-              f"classes={','.join(request['classes']) or '-'} areas={','.join(request['areas']) or '-'}")
+              f"classes={','.join(request['classes']) or '-'} areas={','.join(request['areas']) or '-'}"
+              + (" now" if request.get("now") else ""))
     return 0
 
 
@@ -441,15 +486,15 @@ def choose_tests(merged):
     known_areas, known_classes = known_names(WORKTREE)
     areas, classes = [], []
     for request in merged:
-        request["dropped"] = unknown_names(request, known_areas, known_classes)
+        request["dropped"] = unknown_names(request, known_areas, known_classes, WORKTREE)
         areas += [a for a in request["areas"] if a in known_areas and a not in areas]
         # The iPhone's classes go to GitHub's iPhone job by the one rule `ios_ui_tests.split_classes` keeps: an
         # iPhone-only class leaves the Mac's classes, and a class the two bundles share stays in them, since the Mac
         # runs it too. The request keeps its iPhone classes, in "ios_ui_classes", for choose_interface_tests.
         split = ios_ui_tests.split_classes({"classes": list(request["classes"])}, WORKTREE)
-        request["ios_ui_classes"] = split.get("ios_ui_classes", [])
-        classes += [c for c in split["classes"] if c in known_classes and c not in classes]
-    return areas, classes
+        request["ios_ui_classes"] = [c for c in split.get("ios_ui_classes", []) if c not in request["dropped"]]
+        classes += [c for c in split["classes"] if c not in request["dropped"] and c not in classes]
+    return areas, testkit.drop_covered_methods(classes)
 
 
 def choose_interface_tests(merged):
@@ -514,7 +559,8 @@ def mark_what_the_runner_leaves_out(merged):
     for request in merged:
         classes = selected_classes(request["areas"], request["classes"])
         request["not_run"] = runner_skips.not_run_by(classes, skips)
-        asked.update(classes)
+        # A method is as skipped as its class.
+        asked.update(testkit.split_method(name)[0] for name in classes)
     return bool(asked) and asked <= whole
 
 
@@ -785,6 +831,13 @@ def failure_class(line):
     return match.group(1) if match else ""
 
 
+def failed_in(line, names):
+    """Whether the FAILED `line` is in one of the `names` an agent asked for: a class named whole, or the one test
+    method named as `Class/testMethod`."""
+    match = re.match(r"FAILED\s+([A-Za-z0-9_]+)\.([A-Za-z0-9_]+)", line)
+    return bool(match) and (match.group(1) in names or f"{match.group(1)}/{match.group(2)}" in names)
+
+
 def remote_line(train_dir):
     """A summary line naming the GitHub run a remote train used, with its minutes, or
     "" for a train that ran on this Mac."""
@@ -847,7 +900,7 @@ def report(train_id, base, merged, conflicts, output, train_dir, census=None, br
 
     for request in merged:
         agent = request["agent"]
-        mine = [f for f in failures if failure_class(f) in request["classes"]]
+        mine = [f for f in failures if failed_in(f, request["classes"])]
         touched = changed_files(base, request["head"])
         my_errors = errors_in_branch(errors, base, request["head"])
         lines = [f"# {agent}: train {train_id}", "", f"- Your branch: {request['branch']} at {request['head'][:8]}",
@@ -866,7 +919,7 @@ def report(train_id, base, merged, conflicts, output, train_dir, census=None, br
             lines += [interface_line]
             if asked_ui:
                 # The failures in the iPhone test classes this agent asked for, named as the Mac's failures are.
-                mine_ui = [f for f in interface[2] if failure_class(f) in asked_ui]
+                mine_ui = [f for f in interface[2] if failed_in(f, asked_ui)]
                 lines += [f"- Failures in the iPhone test classes you asked for: {len(mine_ui)}",
                           *[f"  - {f}" for f in mine_ui]]
         elif asked_ui:
@@ -1048,7 +1101,7 @@ def command_run(args):
     return 0
 
 
-def next_train_time(args, now, queue_times, not_before=0):
+def next_train_time(args, now, queue_times, not_before=0, now_times=()):
     """When the loop's next train should leave, or None when none should yet.
 
     By default the schedule is clock time: the next whole multiple of `--every`
@@ -1056,18 +1109,37 @@ def next_train_time(args, now, queue_times, not_before=0):
     leaves MINUTES after the oldest waiting request was made (`queue_times`, their
     times in seconds), or at once if that has passed, and None means no request
     waits. Either way it never leaves before `not_before`, which a failed remote
-    train sets so that the loop does not ask a broken GitHub every few minutes."""
+    train sets so that the loop does not ask a broken GitHub every few minutes.
+
+    A waiting request made with `--now` (`now_times`, its time, a subset of `queue_times`) ends the `--soon` wait: the
+    train leaves at once, or at `not_before` after a failed one. Without `--soon` the clock rules and `--now` does not
+    change it, as a train on this Mac stays hourly. A train that is running has the loop busy, so the next train
+    leaves, as soon as that one ends, by this same rule."""
     if args.soon:
         if not queue_times:
             return None
+        if now_times:
+            return max(not_before, now)
         return max(min(queue_times) + args.soon * 60, not_before, now)
     period = args.every * 60
     return max((int(now // period) + 1) * period, not_before)
 
 
-def waiting_times():
-    """The times, in seconds, at which the waiting requests were made."""
-    return [path.stat().st_mtime for path in QUEUE.glob("*.json")] if QUEUE.exists() else []
+def waiting_times(only_now=False):
+    """The times, in seconds, at which the waiting requests were made; with `only_now`, only those of requests made
+    with `--now`."""
+    paths = QUEUE.glob("*.json") if QUEUE.exists() else []
+    if only_now:
+        paths = [path for path in paths if requested_now(path)]
+    return [path.stat().st_mtime for path in paths]
+
+
+def requested_now(path):
+    """Whether the queued request file `path` was made with `--now` (an unreadable file was not)."""
+    try:
+        return json.loads(path.read_text()).get("now") is True
+    except (OSError, ValueError, AttributeError):
+        return False
 
 
 def command_loop(args):
@@ -1086,14 +1158,18 @@ def command_loop(args):
     deadline = time.time() + args.hours * 3600
     not_before = 0
     while time.time() < deadline:
-        due = next_train_time(args, time.time(), waiting_times(), not_before)
+        due = next_train_time(args, time.time(), waiting_times(), not_before, waiting_times(only_now=True))
         NEXT.parent.mkdir(parents=True, exist_ok=True)
         if due is None:
             NEXT.write_text(f"within {args.soon:g} minutes of a request\n")
             time.sleep(min(SOON_POLL_SECONDS, max(0, deadline - time.time())))
             continue
         NEXT.write_text(datetime.fromtimestamp(due).strftime("%H:%M") + "\n")
-        time.sleep(max(0, due - time.time()))
+        # Sleep in short slices, so that a `--now` request made meanwhile ends the wait at once.
+        while time.time() < due:
+            time.sleep(min(SOON_POLL_SECONDS, max(0, due - time.time())))
+            if args.soon and waiting_times(only_now=True):
+                due = min(due, next_train_time(args, time.time(), waiting_times(), not_before, waiting_times(only_now=True)))
         outcome = run_one_train(args)
         # Requests that still wait after a train that did not run must not make the
         # loop try again at once: a failed remote train waits longer than a busy one.
@@ -1117,6 +1193,7 @@ def main(argv):
     request.add_argument("--classes", default="")
     request.add_argument("--areas", default="")
     request.add_argument("--note", default="")
+    request.add_argument("--now", action="store_true", help="leave at once, not after the --soon wait (or as soon as the running train ends); other waiting requests ride along. Meant for a retry of ONE failing class or method with no --areas; a run that covers areas should wait and batch (with --areas, one line says the batching was skipped)")
     request.add_argument("--ios-size", action="store_true", help="have the train's run on GitHub also build the iPhone app for a device (Release, unsigned) and measure it: the app, the IPA, the App Store download, the biggest files, the libraries (about 10 minutes more, once per iPhone job)")
     sub.add_parser("status", help="show waiting requests and the next train")
     run = sub.add_parser("run", help="run one train now")

@@ -357,6 +357,81 @@ class TheCountsInASummaryTests(unittest.TestCase):
         self.assertEqual(ui.executed_with_counts(["iOS UI tests: NOT ASKED", "Reason: x"]), "")
 
 
+class OneTestMethodTests(TreeCase):
+    """A name may be `Class/testMethod`: one test of an iPhone class, which follows its class everywhere."""
+
+    def tree_with_methods(self):
+        """An interface class of three tests, a unit class of two, and a Mac-only class name."""
+        root = self.tree(
+            TextMouthUITestCase="class TextMouthUITestCase: XCTestCase {\n}\n",
+            Reader=("final class ReaderUITests: TextMouthUITestCase {\n    func testOpen() {}\n    @MainActor\n"
+                    "    func testPlay() {}\n    func testStop() {}\n}\nextension ReaderUITests {\n    func testMore() {}\n}\n"),
+            Search="final class SearchUITests: TextMouthUITestCase {\n    func testFind() {}\n}\n")
+        (root / ui.UNIT_FOLDER).mkdir()
+        (root / ui.UNIT_FOLDER / "Units.swift").write_text(
+            "final class UnitsTests: XCTestCase {\n    func testX() {}\n    func testY() {}\n}\n")
+        return root
+
+    def test_a_method_moves_to_the_iphone_names_with_its_class(self):
+        split = ui.split_classes({"classes": ["FooTests", "ReaderUITests/testPlay", "FooTests/testA"]}, self.tree_with_methods())
+        self.assertEqual(split["ios_ui_classes"], ["ReaderUITests/testPlay"])
+        self.assertEqual(split["classes"], ["FooTests", "FooTests/testA"], "a Mac method stays for run-area")
+
+    def test_a_method_of_a_class_the_two_bundles_share_stays_for_the_mac_too(self):
+        root = self.tree_with_methods()
+        (root / "TextMouthProductionTests").mkdir()
+        (root / "TextMouthProductionTests" / "Shared.swift").write_text("final class SharedTests: XCTestCase {\n    func testS() {}\n}\n")
+        (root / "project.yml").write_text(
+            f"targets:\n  {ui.UNIT_BUNDLE}:\n    sources:\n      - TextMouthProductionTests/Shared.swift\n    settings:\n      x: y\n")
+        split = ui.split_classes({"classes": ["SharedTests/testS"]}, root)
+        self.assertEqual((split["classes"], split["ios_ui_classes"]), (["SharedTests/testS"], ["SharedTests/testS"]))
+
+    def test_the_methods_of_a_class_are_listed_with_its_extensions_in_file_order(self):
+        root = self.tree_with_methods()
+        self.assertEqual(ui.methods_of("ReaderUITests", root), ["testOpen", "testPlay", "testStop", "testMore"])
+        self.assertEqual(ui.methods_of("UnitsTests", root), ["testX", "testY"])
+        self.assertEqual(ui.methods_of("Nowhere", root), [])
+
+    def test_a_method_names_its_classs_bundle(self):
+        root = self.tree_with_methods()
+        self.assertEqual(ui.bundle_of("ReaderUITests/testPlay", root), ui.UI_BUNDLE)
+        self.assertEqual(ui.bundle_of("UnitsTests/testX", root), ui.UNIT_BUNDLE)
+        self.assertEqual(ui.bundle_of("Nowhere/testX", root), "")
+
+    def test_a_request_for_a_method_asks_for_that_method_alone(self):
+        root = self.tree_with_methods()
+        self.assertEqual(ui.wanted({"classes": ["ReaderUITests/testPlay"]}, root), ["ReaderUITests/testPlay"])
+        self.assertEqual(ui.wanted({"classes": ["UnitsTests/testY", "ReaderUITests/testStop", "ReaderUITests/testOpen"]}, root),
+                         ["UnitsTests/testY", "ReaderUITests/testStop", "ReaderUITests/testOpen"])
+
+    def test_a_method_whose_class_is_also_named_runs_with_its_class(self):
+        root = self.tree_with_methods()
+        self.assertEqual(ui.wanted({"classes": ["ReaderUITests/testPlay", "ReaderUITests", "SearchUITests/testFind"]}, root),
+                         ["ReaderUITests", "SearchUITests/testFind"])
+
+    def test_the_area_phone_still_runs_every_class_whole(self):
+        root = self.tree_with_methods()
+        self.assertEqual(ui.wanted({"areas": ["phone"], "classes": ["ReaderUITests/testPlay"]}, root), ui.all_classes(root))
+
+    def test_a_method_counts_as_one_test_and_a_class_with_its_method_as_the_class(self):
+        root = self.tree_with_methods()
+        self.assertEqual(ui.counts_by_bundle(["ReaderUITests/testPlay", "UnitsTests/testX", "UnitsTests/testY"], root),
+                         {ui.UI_BUNDLE: 1, ui.UNIT_BUNDLE: 2})
+        self.assertEqual(ui.counts_by_bundle(["ReaderUITests", "ReaderUITests/testPlay"], root), {ui.UI_BUNDLE: 4})
+
+    def test_a_method_is_estimated_as_one_test_of_its_bundle(self):
+        seconds = ui.estimated_seconds(["ReaderUITests/testPlay", "UnitsTests/testX", "Nowhere/testQ"], self.tree_with_methods(), times={})
+        self.assertEqual(seconds["ReaderUITests/testPlay"], ui.SECONDS_PER_TEST[ui.UI_BUNDLE])
+        self.assertEqual(seconds["UnitsTests/testX"], ui.SECONDS_PER_TEST[ui.UNIT_BUNDLE])
+        self.assertEqual(seconds["Nowhere/testQ"], 1.0)
+
+    def test_a_methods_slice_is_dealt_like_a_class(self):
+        root = self.tree_with_methods()
+        names = ["ReaderUITests/testPlay", "ReaderUITests/testOpen"]
+        slices = [ui.slice_for(names, number, 2, root, times={}) for number in (1, 2)]
+        self.assertEqual(sorted(name for one in slices for name in one), sorted(names))
+
+
 class ShardingTests(TreeCase):
     """Dealing the iPhone test classes over several jobs."""
 

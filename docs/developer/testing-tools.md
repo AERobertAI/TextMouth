@@ -25,7 +25,7 @@ The tests in the first five bullets are not load-sensitive, each made to wait fo
 
 The build train, `Scripts/agents/build-train.py`, is how agents build.
 Agents do not build on their own, since their builds froze the Mac.
-An agent commits its work on its branch and asks the train to test it (`build-train.py request --agent SLUG --branch BRANCH [--classes A,B] [--areas x,y] [--note TEXT]`), and one scheduled build every hour, on the hour (`build-train.py loop`, or `run` for one), pools every waiting request.
+An agent commits its work on its branch and asks the train to test it (`build-train.py request --agent SLUG --branch BRANCH [--classes A,B] [--areas x,y] [--note TEXT] [--now]`), and one scheduled build every hour, on the hour (`build-train.py loop`, or `run` for one), pools every waiting request.
 A test that hangs doesn't hold the train: when a run writes nothing to its log for 15 minutes, the train kills its test host, which fails that test as a crash, and the run goes on with the tests after it.
 That watches only the train's own copy of the app.
 
@@ -37,7 +37,8 @@ That watches only the train's own copy of the app.
   An agent that commits a fix before the train leaves asks again, and the newest request for a branch wins.
   `status` shows the queue and what a running train is doing.
   A train starts only with at least 3 GB free on the data volume.
-- The train checks the test names against the merged tree before the run, leaving out and reporting the names it does not know, since run-area.py refuses a whole run for one unknown name, so one agent's typo, or a file name given for a class, never sinks every agent's train.
+- A name in `--classes` may be `Class/testMethod`, of a Mac or an iPhone class: a Mac method goes to run-area, an iPhone method to the iPhone job as `-only-testing:<bundle>/Class/testMethod`, and the agent's result counts the failures of its own method.
+- The train checks the test names, methods included, against the merged tree before the run, leaving out and reporting the names it does not know, since run-area.py refuses a whole run for one unknown name, so one agent's typo, or a file name given for a class, never sinks every agent's train.
   A request with names the main branch lacks gets a warning when it is queued.
 - A train takes the machine-wide heavy-work lock before it merges anything, as the type-checks do (see [The heavy-work lock](building-ios.md#the-heavy-work-lock)).
   It waits for the lock first in line, so no other job takes it first, for up to 50 minutes, and never runs without it: a train that waited in vain leaves its requests queued for the next one and tells the orchestrator who held the lock.
@@ -47,7 +48,7 @@ That watches only the train's own copy of the app.
   A hung test holds every agent's request for the 15 minutes (`HUNG_RUN_MINUTES` in `Scripts/agents/build-train.py`) before the train kills the test host, so every wait in a test takes a limit.
 - A train can build and test on GitHub instead (`build-train.py run --remote`, `loop --remote`): it merges here, pushes the merged tree plus a request to the branch `TestBuild`, waits for the run, and reports from the log it downloads.
   It takes no heavy-work lock and runs no iOS census here: the run builds the iPhone app on GitHub and the result lists its errors by file.
-  With `loop --remote --soon N` it leaves N minutes after a request instead of on the hour.
+  With `loop --remote --soon N` it leaves N minutes after a request instead of on the hour, and at once for a request made with `--now`, or as soon as the running train ends; the requests waiting then ride along, and a failed train's hold still applies.
   See [Tests on GitHub Actions](testing-github.md).
 - A train pools every waiting branch, so a branch that is broken on purpose, to prove that a new test notices the break, breaks every other agent's result too: never queue one.
   Prove a test on a scratch copy of the committed sources instead (a SwiftPM copy run under the heavy-work lock with the real home patched out), one deliberate break at a time, and expect each test to fail with its break and pass without it.
@@ -101,7 +102,9 @@ Run the golden tests against a Release build with `make release-goldens` (`Scrip
 
 Run only some tests: `python3 Scripts/test/run-area.py feeds bookmarks`, or `make test-area AREAS="feeds bookmarks"`, where `AREA_ARGS` passes options, as in `make test-area AREAS=feeds AREA_ARGS=--dry-run`.
 
-- Each name is an area from `Scripts/test/areas.conf` or a test class.
+- Each name is an area from `Scripts/test/areas.conf`, a test class, or one test method written `Class/testMethod`.
+  The method must be a `func testX()` in the class's own file, and a typo is refused with the closest names.
+  Classes and methods mix in one run, and a method whose class is also named runs once, with its class.
   The file has 34 areas, such as `feeds`, `bookmarks`, `export`, `braille`, `readers`, `playback-end`, and `shortcuts`, which between them place every hosted test class.
   A merge that adds test classes should place them: `--unassigned` lists the classes no area names, and ends "0 unassigned classes" when every class is placed.
 - Name every area in one command.
@@ -109,7 +112,7 @@ Run only some tests: `python3 Scripts/test/run-area.py feeds bookmarks`, or `mak
   Each launch of the test host leaves about 23 MB in a system cache only you can purge, so never run the areas one after another.
 - While it runs nothing is printed; afterwards it prints one fact per line, ending with PASSED or FAILED and the time taken.
 - `--changed` picks the classes whose file mentions a type declared in a file changed since the merge-base with `--base REF` (default `main`), and runs them; it is a heuristic, so run the area or `all` before a merge.
-- `--repeat N` builds once, runs the classes N times, and ends with a report of the tests that changed outcome, for a suspected flaky test.
+- `--repeat N` builds once, runs the classes and methods N times, and ends with a report of the tests that changed outcome, for a suspected flaky test.
 - `--clean` unregisters the build folder's app and deletes the folder.
 - `-h` lists the facts it prints, the exit statuses, and the other options.
 - A small area takes a few seconds of tests.
