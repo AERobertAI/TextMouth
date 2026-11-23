@@ -111,27 +111,29 @@ final class InterfaceTextEditingTests: XCTestCase {
 
     // MARK: - The group
 
-    /// The group hosted in a window of a fixed size holds both commands, as buttons the keyboard reaches, and nowhere else do
-    /// the commands live.
+    /// The group hosted in a window of a fixed size holds both commands, once each, as enabled buttons.
     func testTheGroupHoldsBothCommands() throws {
+        let size = NSSize(width: 450, height: 900)
         let view = Form { InterfaceLanguageSettingsSection(choice: .system) }
-            .frame(width: 450, height: 420)
+            .frame(width: size.width, height: size.height)
+        let titles = { (hosting: NSView) in self.descendants(of: hosting, as: NSButton.self).map(\.title) }
 
         try withHostedView(
             view,
-            size: NSSize(width: 450, height: 420),
+            size: size,
             until: { hosting in
-                let titles = self.descendants(of: hosting, as: NSButton.self).map(\.title)
-                return titles.contains(InterfaceTextOverridesWording.editTitle) && titles.contains(InterfaceTextOverridesWording.exportTitle)
+                titles(hosting).contains(InterfaceTextOverridesWording.editTitle)
+                    && titles(hosting).contains(InterfaceTextOverridesWording.exportTitle)
             }
         ) { hosting in
             let buttons = self.descendants(of: hosting, as: NSButton.self)
-            let edit = try XCTUnwrap(buttons.first { $0.title == InterfaceTextOverridesWording.editTitle })
-            let export = try XCTUnwrap(buttons.first { $0.title == InterfaceTextOverridesWording.exportTitle })
+            let found = buttons.map(\.title)
+            let edit = try XCTUnwrap(buttons.first { $0.title == InterfaceTextOverridesWording.editTitle }, "buttons: \(found)")
+            let export = try XCTUnwrap(buttons.first { $0.title == InterfaceTextOverridesWording.exportTitle }, "buttons: \(found)")
             XCTAssertTrue(edit.isEnabled)
             XCTAssertTrue(export.isEnabled)
-            XCTAssertEqual(buttons.filter { $0.title == InterfaceTextOverridesWording.editTitle }.count, 1)
-            XCTAssertEqual(buttons.filter { $0.title == InterfaceTextOverridesWording.exportTitle }.count, 1)
+            XCTAssertEqual(found.filter { $0 == InterfaceTextOverridesWording.editTitle }.count, 1)
+            XCTAssertEqual(found.filter { $0 == InterfaceTextOverridesWording.exportTitle }.count, 1)
         }
     }
 }

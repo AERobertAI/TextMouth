@@ -47,7 +47,9 @@ final class LibraryLaunchFilesTests: XCTestCase {
         let root = scene.fixture.root
         scene.keepInCloud(root.appendingPathComponent(TextMouthPaths.interfaceTextFileName))
 
-        _ = scene.launch()
+        // Kept alive: the fetch holds the model weakly.
+        let model = scene.launch()
+        defer { withExtendedLifetime(model) {} }
 
         XCTAssertTrue(waitUntil(timeout: 5) { scene.takeUp.calls == ["interfaceText"] }, "heard \(scene.takeUp.calls)")
         XCTAssertEqual(scene.fetched.names(in: root), [TextMouthPaths.interfaceTextFileName])
