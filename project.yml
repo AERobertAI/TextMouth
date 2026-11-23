@@ -231,15 +231,26 @@ targetTemplates:
   # --remove-apple-tables: Xcode never cleans a product, so an incremental build would keep the
   # Localizable tables an earlier build wrote; without the flag pack.py deletes nothing.
   #
+  # A Debug build, the app every hosted and interface test runs in, is named "TextMouth Test"
+  # (TEXTMOUTH_TEST_DISPLAY_NAME, the user's request of November 22, 2026), so the Dock, the app
+  # switcher, and VoiceOver say which TextMouth is the tests' when one comes to the front. pack.py
+  # writes it as CFBundleDisplayName into every language's InfoPlist.strings, the one place Launch
+  # Services reads a shown name from while the bundle's file is TextMouth.app. Release, the app
+  # make build and make install make, sets no name and stays "TextMouth"; make check fails a
+  # Release app that a test name reached.
+  #
   # Script sandboxing is off: the script reads the repository and writes into the product.
   PackInterfaceText:
     postBuildScripts:
       - name: Pack interface text
-        script: /usr/bin/python3 -I -B "$SRCROOT/Scripts/l10n/pack.py" build --catalog "$SRCROOT/TextMouth/Localization/Localizable.xcstrings" --out "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Strings.pack" --remove-apple-tables --stamp "$DERIVED_FILE_DIR/Strings.pack.stamp"
+        script: /usr/bin/python3 -I -B "$SRCROOT/Scripts/l10n/pack.py" build --catalog "$SRCROOT/TextMouth/Localization/Localizable.xcstrings" --out "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Strings.pack" --remove-apple-tables --display-name "$TEXTMOUTH_TEST_DISPLAY_NAME" --stamp "$DERIVED_FILE_DIR/Strings.pack.stamp"
         basedOnDependencyAnalysis: false
     settings:
       base:
         ENABLE_USER_SCRIPT_SANDBOXING: NO
+      configs:
+        Debug:
+          TEXTMOUTH_TEST_DISPLAY_NAME: "TextMouth Test"
 
   # SwiftSoup 2.13.9, the HTML and XML parser, vendored in Vendor/SwiftSoup
   # (see its README.md): the release's own source with attributes changed

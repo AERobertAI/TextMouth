@@ -8665,7 +8665,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "/usr/bin/python3 -I -B \"$SRCROOT/Scripts/l10n/pack.py\" build --catalog \"$SRCROOT/TextMouth/Localization/Localizable.xcstrings\" --out \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Strings.pack\" --remove-apple-tables --stamp \"$DERIVED_FILE_DIR/Strings.pack.stamp\"";
+			shellScript = "/usr/bin/python3 -I -B \"$SRCROOT/Scripts/l10n/pack.py\" build --catalog \"$SRCROOT/TextMouth/Localization/Localizable.xcstrings\" --out \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Strings.pack\" --remove-apple-tables --display-name \"$TEXTMOUTH_TEST_DISPLAY_NAME\" --stamp \"$DERIVED_FILE_DIR/Strings.pack.stamp\"";
 		};
 		95A9340E5DF0C0BAE4AE8BCC /* Build FFmpeg */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -8726,7 +8726,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "/usr/bin/python3 -I -B \"$SRCROOT/Scripts/l10n/pack.py\" build --catalog \"$SRCROOT/TextMouth/Localization/Localizable.xcstrings\" --out \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Strings.pack\" --remove-apple-tables --stamp \"$DERIVED_FILE_DIR/Strings.pack.stamp\"";
+			shellScript = "/usr/bin/python3 -I -B \"$SRCROOT/Scripts/l10n/pack.py\" build --catalog \"$SRCROOT/TextMouth/Localization/Localizable.xcstrings\" --out \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Strings.pack\" --remove-apple-tables --display-name \"$TEXTMOUTH_TEST_DISPLAY_NAME\" --stamp \"$DERIVED_FILE_DIR/Strings.pack.stamp\"";
 		};
 		D4006D4DC2CA1958609F2B67 /* Copy Swift Objective-C Interface Header */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -12294,6 +12294,7 @@
 				SWIFT_INCLUDE_PATHS = "$(SRCROOT)/Vendor/lame/include $(SRCROOT)/Vendor/ObjCExceptionCatcher/include $(SRCROOT)/TextMouthBraille/include $(SRCROOT)/TextMouthFFmpeg/include";
 				TEXTMOUTH_BUILD_DATE = unknown;
 				TEXTMOUTH_GIT_COMMIT = unknown;
+				TEXTMOUTH_TEST_DISPLAY_NAME = "TextMouth Test";
 			};
 			name = Debug;
 		};
@@ -12695,6 +12696,7 @@
 				SDKROOT = iphoneos;
 				SWIFT_INCLUDE_PATHS = "$(SRCROOT)/Vendor/lame/include $(SRCROOT)/Vendor/ObjCExceptionCatcher/include $(SRCROOT)/TextMouthBraille/include $(SRCROOT)/TextMouthFFmpeg/include";
 				TARGETED_DEVICE_FAMILY = "1,2";
+				TEXTMOUTH_TEST_DISPLAY_NAME = "TextMouth Test";
 			};
 			name = Debug;
 		};

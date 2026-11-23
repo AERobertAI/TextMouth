@@ -496,10 +496,33 @@ class InfoPlistStringsTests(PackCase):
     def test_the_hook_writes_its_entries_escaped_in_key_order(self):
         plan = pack.build_plan(self.write_catalog({"a.one": line("One", es="Uno")}))
         entries = {"NSMicrophoneUsageDescription": 'Say "hi"\nand a back\\slash', "CFBundleDisplayName": "TextMouth"}
-        with mock.patch.object(pack, "info_plist_entries", lambda _plan, _language: entries):
+        with mock.patch.object(pack, "info_plist_entries", lambda _plan, _language, _display_name="": entries):
             text = pack.info_plist_text(plan, "es")
         self.assertEqual(['"CFBundleDisplayName" = "TextMouth";',
                           '"NSMicrophoneUsageDescription" = "Say \\"hi\\"\\nand a back\\\\slash";'], text.splitlines()[1:])
+
+    def test_a_test_build_is_named_in_every_languages_table(self):
+        """--display-name (the Debug configuration's TEXTMOUTH_TEST_DISPLAY_NAME) names the app in every language's
+        table, the one place Launch Services, the Dock, and VoiceOver read a bundle's shown name from."""
+        self.build(None, "--display-name", "TextMouth Test")
+        for language in ("en", "es"):
+            self.assertEqual(['"CFBundleDisplayName" = "TextMouth Test";'],
+                             self.table(language).read_text(encoding="utf-8").splitlines()[1:], language)
+
+    def test_a_build_without_a_display_name_keeps_the_apps_own_name(self):
+        """A Release build passes no name, so no table renames the app: it stays TextMouth, the bundle's own."""
+        self.build(None, "--display-name", "")
+        for language in ("en", "es"):
+            self.assertNotIn("CFBundleDisplayName", self.table(language).read_text(encoding="utf-8"), language)
+
+    def test_a_changed_display_name_writes_the_tables_again(self):
+        """The name is part of the stamp, so a build of the other configuration never keeps the last one's tables."""
+        out, catalog_path = self.build(None, "--display-name", "TextMouth Test")
+        _, said, _ = self.run_main("build", "--catalog", catalog_path, "--out", out)
+        self.assertIn("wrote", said)
+        self.assertNotIn("CFBundleDisplayName", self.table("en").read_text(encoding="utf-8"))
+        _, said, _ = self.run_main("build", "--catalog", catalog_path, "--out", out)
+        self.assertIn("up to date", said)
 
     def test_a_rebuild_replaces_each_table_and_never_rewrites_it_in_place(self):
         out, catalog_path = self.build()
