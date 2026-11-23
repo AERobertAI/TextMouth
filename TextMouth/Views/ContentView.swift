@@ -511,7 +511,7 @@ struct LibraryWindowView: View {
     private func refuseWhileTheLibraryMoves(_ action: GlobalAction) -> Bool {
         guard let move = libraryViewModel.dataDirectoryMove,
               let refusal = DataDirectoryMoveWording.refusal(of: action) else { return false }
-        move.notice = refusal
+        move.refuse { DataDirectoryMoveWording.refusal(of: action) ?? refusal }
         VoiceOverAnnouncer.announce(refusal)
         ReaderOpenRefusal.dropRequests(for: action)
         return true

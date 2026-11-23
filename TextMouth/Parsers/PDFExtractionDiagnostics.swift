@@ -129,7 +129,7 @@ struct PDFExtractionDiagnostics: Equatable, Sendable {
                 : InterfaceText.line("pdfExtractionDiagnostics.problem.allPages", "OCR could not run on all \(number: total) pages, so text found only in their images is missing: \(groups).")
         }
         // Translators: Warning after an import of a PDF where some pages needed text recognition (OCR) where it could not run. %1$@ is how many of them, one or more, written with digit grouping; %2$lld is how many pages the PDF has, two or more; %3$@ is the pages and why, such as "pages 3 and 7 (text recognition is not available)", the reasons in English.
-        return InterfaceText.line("pdfExtractionDiagnostics.problem.pages", "OCR could not run on \(failed.count.formatted()) of \(number: total) pages, so text found only in their images is missing: \(groups).")
+        return InterfaceText.line("pdfExtractionDiagnostics.problem.pages", "OCR could not run on \(failed.count.interfaceFormatted()) of \(number: total) pages, so text found only in their images is missing: \(groups).")
     }
 
     /// `problem` in English for the debug log, which stays English whatever

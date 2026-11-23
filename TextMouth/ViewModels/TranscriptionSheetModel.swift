@@ -210,7 +210,9 @@ final class TranscriptionSheetModel: ObservableObject, Identifiable {
     @Published private(set) var modelState: ModelState = .unsupported
     /// What the last download did, when it did not install the model: it
     /// was cancelled, or why it failed.
-    @Published private(set) var downloadNotice: String?
+    var downloadNotice: String? { downloadNoticeWording?() }
+    /// How the notice is worded, kept so that it is made in the interface language in use when it is shown (FR39).
+    @Published private var downloadNoticeWording: (() -> String)?
     /// The book's transcript, when it has one.
     @Published private(set) var existing: ExistingTranscript?
     /// The book's transcript when this TextMouth could not read it (it is
@@ -650,7 +652,7 @@ final class TranscriptionSheetModel: ObservableObject, Identifiable {
     func downloadModel() {
         guard offersDownload, let language, downloadTask == nil else { return }
         modelState = .downloading(nil)
-        downloadNotice = nil
+        downloadNoticeWording = nil
         let installer = services.installer
         // Each share done is shown on the main actor, as it is reported.
         let report: @Sendable (Double) -> Void = { [weak self] fraction in
@@ -689,11 +691,12 @@ final class TranscriptionSheetModel: ObservableObject, Identifiable {
         let name = modelLanguageName
         if let error {
             modelState = .needsDownload
-            let notice = error is CancellationError
-                ? TranscriptionWording.downloadCancelled(languageName: name)
-                : TranscriptionWording.downloadFailed(languageName: name, reason: error.localizedDescription)
-            downloadNotice = notice
-            services.announce(notice, window)
+            let reason = error.localizedDescription
+            let notice: () -> String = error is CancellationError
+                ? { TranscriptionWording.downloadCancelled(languageName: name) }
+                : { TranscriptionWording.downloadFailed(languageName: name, reason: reason) }
+            downloadNoticeWording = notice
+            services.announce(notice(), window)
             return
         }
         guard let language else { return }

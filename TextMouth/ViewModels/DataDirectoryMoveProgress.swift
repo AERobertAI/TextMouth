@@ -44,7 +44,14 @@ final class DataDirectoryMoveProgress: ObservableObject, Identifiable {
     @Published private(set) var isCancelRequested = false
     /// A sentence about the last action refused while the library moves,
     /// such as opening a book, for the sheet; nil when there is none.
-    @Published var notice: String?
+    var notice: String? { noticeWording?() }
+    /// How the notice is worded, kept so that it is made in the interface language in use when the sheet shows it (FR39).
+    @Published private var noticeWording: (() -> String)?
+
+    /// Shows the sentence `wording` makes as the notice, made again whenever the sheet shows it.
+    func refuse(_ wording: @escaping () -> String) {
+        noticeWording = wording
+    }
 
     /// Whether Cancel was pressed, read by the copy on its own thread.
     private let cancellation = OSAllocatedUnfairLock(initialState: false)

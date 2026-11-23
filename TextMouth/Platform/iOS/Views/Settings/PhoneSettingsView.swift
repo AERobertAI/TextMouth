@@ -176,6 +176,13 @@ struct PhoneSettingsView: View {
             switchRow(.confirmBeforeRemoving, isOn: confirmsBeforeRemoving)
         case .statistics:
             statisticsRow
+        case .interfaceLanguage:
+            let options = InterfaceLanguagePicker.options()
+            choiceRow(.interfaceLanguage, value: InterfaceLanguagePicker.option(for: interfaceLanguageChoice, in: options)?.label ?? "")
+            // Left where VoiceOver and braille can read it, as the End of Book caption is.
+            Text(InterfaceLanguagePickerWording.launchNote)
+                .font(.caption)
+                .phoneSecondaryText()
         case .about:
             versionRow
             shareLogsRow
@@ -348,6 +355,15 @@ struct PhoneSettingsView: View {
                 settings.endOfBookBehavior = behavior
                 noteChange()
             }
+        case .interfaceLanguage:
+            PhoneChoiceSheet(
+                title: row.title,
+                choices: InterfaceLanguagePicker.options().map { PhoneChoice(id: $0.choice, label: $0.label) },
+                selected: interfaceLanguageChoice
+            ) { choice in
+                InterfaceLanguagePicker.apply(choice)
+                noteChange()
+            }
         case .shareLogs:
             if let logsFile {
                 PhoneLogShareSheet(file: logsFile) { openRow = nil }
@@ -443,6 +459,12 @@ struct PhoneSettingsView: View {
     /// `PhoneDefaults`, in the app's preferences.
     private var textNavigationUnit: SkipUnit {
         PhoneSettingsModel.textNavigationUnit(in: TextMouthRuntime.current.preferences)
+    }
+
+    /// The interface language chosen: what is stored in the app's domain of `AppleLanguages`, which includes a choice made
+    /// in the iPhone's own Settings.
+    private var interfaceLanguageChoice: InterfaceLanguageChoice {
+        InterfaceLanguageStore().choice()
     }
 
     /// What an audiobook moves by until it has a unit of its own.

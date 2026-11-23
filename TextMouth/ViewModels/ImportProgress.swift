@@ -39,6 +39,16 @@ struct ImportProgressState: Equatable {
     /// alone, as an import starts or waits, or how far an archive's
     /// extraction has got.
     private(set) var notice = ""
+
+    /// An archive being extracted, which its line counts: kept as what it is made from, not as a sentence, so the line is
+    /// worded in the interface language in use when it is read (FR39).
+    struct Extracting: Equatable {
+        let archive: String
+        let progress: ArchiveExtractionProgress
+    }
+
+    /// The archive extracted while the bar only spins; nil otherwise.
+    private(set) var extracting: Extracting?
     /// The book under way, while one is.
     private(set) var book: BookUnderWay?
     /// What the batch's books timed so far took, those imported or failed,
@@ -79,7 +89,10 @@ struct ImportProgressState: Equatable {
     /// with how far an archive holding one audiobook has been extracted
     /// while it is, or, with none, the notice.
     var message: String {
-        guard let book else { return notice }
+        guard let book else {
+            if let extracting { return ImportProgressWording.extracting(archive: extracting.archive, progress: extracting.progress) }
+            return notice
+        }
         guard let number = book.number else {
             return ImportProgressWording.book(book.name, step: book.step, extraction: book.extractionShown)
         }
@@ -101,7 +114,8 @@ struct ImportProgressState: Equatable {
             current = 0
             total = 0
             book = nil
-            notice = ImportProgressWording.extracting(archive: archive, progress: extraction)
+            notice = ""
+            extracting = Extracting(archive: archive, progress: extraction)
         case let .foundBooks(sizes):
             bookSizes = sizes
         case let .importingBook(number, total, name, step):

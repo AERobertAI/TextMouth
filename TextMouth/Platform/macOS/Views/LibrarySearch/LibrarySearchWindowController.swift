@@ -66,8 +66,10 @@ final class LibrarySearchWindowController: NSObject, NSWindowDelegate {
         let view = LibrarySearchWindowView(model: model) { [weak self] in
             self?.window?.performClose(nil)
         }
-        let window = NSWindow(contentViewController: NSHostingController(rootView: view))
+        let window = NSWindow(contentViewController: NSHostingController(rootView: view.followsInterfaceLanguage()))
         window.title = LibrarySearchWording.windowTitle
+        // The title follows a switch of the interface language while the window is open (FR39).
+        WindowTitleFollower.follow(window) { LibrarySearchWording.windowTitle }
         window.identifier = NSUserInterfaceItemIdentifier(Self.windowIdentifier)
         window.styleMask = [.titled, .closable, .miniaturizable, .resizable]
         window.isReleasedWhenClosed = false

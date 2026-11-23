@@ -7,6 +7,8 @@ struct MiscellaneousSettingsView: View {
 
     var body: some View {
         Form {
+            // The language of the interface comes first, so someone who switched by mistake finds it at once (FR39).
+            InterfaceLanguageSettingsSection()
             bluetoothSection
             restartTimerGestureSection
         }

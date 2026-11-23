@@ -18,7 +18,7 @@ final class PhoneSettingsModelTests: XCTestCase {
             PhoneSettingsSection.allCases.map(\.title),
             [
                 "Voice", "Navigation", "Rewind on Resume", "Punctuation Pauses", "End of Book", "Sleep Timer",
-                "Reading", "Times", "Pages", "Removal Behavior", "Statistics", "About",
+                "Reading", "Times", "Pages", "Removal Behavior", "Statistics", "Interface Language", "About",
             ]
         )
     }
@@ -43,6 +43,10 @@ final class PhoneSettingsModelTests: XCTestCase {
             ),
             (.endOfBook, "When book ends", "End of book behavior", "What happens when a book finishes playing"),
             (.readingStatistics, "Reading Statistics", "Reading Statistics", nil),
+            (
+                .interfaceLanguage, "Interface Language", "Interface Language",
+                "Chooses the language of TextMouth's menus, windows, and messages. The change applies at once."
+            ),
             (
                 .shareLogs, "Share Logs…", "Share Logs…",
                 "Shares recent logs as a text file. They hold no book text."

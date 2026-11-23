@@ -144,7 +144,7 @@ struct ExtractionReport: Equatable, Sendable {
         }
         guard omissions.count == chapterCount else {
             // Translators: Starts the warning after an import that left chapters out: some of the book's chapters could not be read. %1$@ is how many could not be read, with digit grouping, and %2$lld how many chapters the book has, always two or more. Has no full stop.
-            return InterfaceText.line("extractionReport.summary.value", "\(omissions.count.formatted()) of \(number: chapterCount) chapters could not be read")
+            return InterfaceText.line("extractionReport.summary.value", "\(omissions.count.interfaceFormatted()) of \(number: chapterCount) chapters could not be read")
         }
         return chapterCount == 1
             // Translators: Starts the warning after an import of a book of one chapter that could not be read. Has no full stop.

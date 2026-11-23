@@ -781,7 +781,7 @@ enum BrailleTableCatalog {
     }
 
     /// The name of a language in the user's own language
-    /// (`Locale.current.localizedString(forIdentifier:)`), such as "English"
+    /// (`InterfaceLanguage.current.locale.localizedString(forIdentifier:)`), such as "English"
     /// for "en" and "German (Switzerland)" for "de-CH". A language the
     /// system cannot name, such as Classical Hebrew ("hbo"), is named by the
     /// first part of a table's `indexName` (liblouis's index names begin
@@ -789,7 +789,7 @@ enum BrailleTableCatalog {
     /// words of its `displayName` before "braille", as Munda ("mun") is by
     /// "Munda braille" (review F4), else by its code itself.
     static func languageName(_ language: String, indexName: String? = nil, displayName: String? = nil) -> String {
-        if let name = Locale.current.localizedString(forIdentifier: language) { return name }
+        if let name = InterfaceLanguage.current.locale.localizedString(forIdentifier: language) { return name }
         let fromIndex = indexName?.split(separator: ",").first?.trimmingCharacters(in: .whitespaces)
         let fromDisplay = displayName
             .flatMap { name in name.range(of: " braille", options: .caseInsensitive).map { String(name[..<$0.lowerBound]) } }?

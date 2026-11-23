@@ -334369,6 +334369,90 @@
         }
       }
     },
+    "interfaceLanguage.announcement" : {
+      "comment" : "VoiceOver announcement after the person switches the interface language, spoken in the new language. %@ is the new language's name in its own language.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Interface language: %@"
+          }
+        }
+      }
+    },
+    "interfaceLanguage.hint" : {
+      "comment" : "VoiceOver hint of the interface language picker. It says that the choice applies at once.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chooses the language of TextMouth's menus, windows, and messages. The change applies at once."
+          }
+        }
+      }
+    },
+    "interfaceLanguage.languageChoice" : {
+      "comment" : "One choice of the interface language picker. The first %@ is the language's name in that language (Español); the second is its name in the language the interface now speaks (Spanish). Keep the own name first.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, %@"
+          }
+        }
+      }
+    },
+    "interfaceLanguage.launchNote.mac" : {
+      "comment" : "A short note under the interface language picker on the Mac: some of the words macOS itself supplies (the standard menu items, the open and save panels) change only the next time TextMouth opens.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Some of macOS's own words change the next time TextMouth opens."
+          }
+        }
+      }
+    },
+    "interfaceLanguage.launchNote.phone" : {
+      "comment" : "A short note under the interface language picker on the iPhone: some of the words iOS itself supplies (system panels and alerts) change only the next time TextMouth opens.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Some of iOS's own words change the next time TextMouth opens."
+          }
+        }
+      }
+    },
+    "interfaceLanguage.systemChoice" : {
+      "comment" : "The first choice of the interface language picker, which follows the system's language. %@ is the name of the language the system gives, such as English, written in its own language.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "System (%@)"
+          }
+        }
+      }
+    },
+    "interfaceLanguage.title" : {
+      "comment" : "Title of the group in Settings where the person picks the language of TextMouth's own words (menus, windows, messages), and the label of its pop-up. Appears on the Mac in the Miscellaneous tab and on the iPhone in its own section.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Interface Language"
+          }
+        }
+      }
+    },
     "iosUnavailable.convertingThisKindOfFile" : {
       "comment" : "Error text when the iPhone app is asked to convert an audio file in a way only the Mac's helper program can.",
       "extractionState" : "manual",

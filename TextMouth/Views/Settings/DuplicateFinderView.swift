@@ -319,7 +319,7 @@ enum DuplicateFinderWording {
     /// shown.
     static func bookLabel(_ book: Book) -> String {
         // Translators: A duplicate book's row, spoken and shown as one label in Find Duplicate Books. %1$@ is the title, %2$@ the author, %3$@ the format, %4$@ the library folder it is in, and %5$@ the date it was added.
-        InterfaceText.line("duplicateFinder.bookLabel", "\(book.title), by \(book.author), \(book.format.displayName), in \(book.folderPath.isEmpty ? libraryRoot : book.folderPath), added \(book.dateAdded.formatted(date: .long, time: .omitted))")
+        InterfaceText.line("duplicateFinder.bookLabel", "\(book.title), by \(book.author), \(book.format.displayName), in \(book.folderPath.isEmpty ? libraryRoot : book.folderPath), added \(book.dateAdded.interfaceFormatted(date: .long, time: .omitted))")
     }
 
     /// What the sheet shows when a scan finds nothing.
@@ -372,10 +372,10 @@ enum DuplicateFinderWording {
     static func pageLine(groups range: Range<Int>, of total: Int) -> String {
         if range.count == 1 {
             // Translators: The line over a page of one group of duplicate books. %1$@ is the group's place and %2$@ is how many groups were found.
-            return InterfaceText.line("duplicateFinder.pageLine.group", "Showing group \(range.upperBound.formatted()) of \(total.formatted())")
+            return InterfaceText.line("duplicateFinder.pageLine.group", "Showing group \(range.upperBound.interfaceFormatted()) of \(total.interfaceFormatted())")
         }
         // Translators: The line over a page of groups of duplicate books. %1$@ is the place of the first group shown, %2$@ is the place of the last, and %3$@ is how many groups were found.
-        return InterfaceText.line("duplicateFinder.pageLine.groups", "Showing groups \((range.lowerBound + 1).formatted()) to \(range.upperBound.formatted()) of \(total.formatted())")
+        return InterfaceText.line("duplicateFinder.pageLine.groups", "Showing groups \((range.lowerBound + 1).interfaceFormatted()) to \(range.upperBound.interfaceFormatted()) of \(total.interfaceFormatted())")
     }
 
     /// The title of the button turning to the page of groups before.

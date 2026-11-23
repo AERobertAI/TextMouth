@@ -551,7 +551,7 @@ enum MarkupRefusal: LocalizedError, LogDescribing, Equatable {
         case let .nestedTooDeeply(limit):
             return SentenceWording.joined([
                 // Translators: First sentence of why a file was refused: its markup has elements inside elements more levels deep than TextMouth reads. %@ is the most levels, a number.
-                InterfaceText.line("markupRefusal.nestedTooDeeply", "This file's markup nests more than \(limit.formatted()) levels deep, which TextMouth can't read safely."),
+                InterfaceText.line("markupRefusal.nestedTooDeeply", "This file's markup nests more than \(limit.interfaceFormatted()) levels deep, which TextMouth can't read safely."),
                 Self.getAnotherCopyAdvice,
             ])
         case .tooMuchMarkup:
@@ -564,7 +564,7 @@ enum MarkupRefusal: LocalizedError, LogDescribing, Equatable {
         case let .tooManyAttributes(limit):
             return SentenceWording.joined([
                 // Translators: First sentence of why a file was refused: one of its markup tags has more attributes than TextMouth reads. %@ is the most attributes, a number.
-                InterfaceText.line("markupRefusal.tooManyAttributes", "One tag in this file has more than \(limit.formatted()) attributes, which TextMouth can't read safely."),
+                InterfaceText.line("markupRefusal.tooManyAttributes", "One tag in this file has more than \(limit.interfaceFormatted()) attributes, which TextMouth can't read safely."),
                 Self.getAnotherCopyAdvice,
             ])
         case .tooMuchWork:

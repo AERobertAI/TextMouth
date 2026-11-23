@@ -87,8 +87,10 @@ final class AudioEditorWindowController: NSObject, NSWindowDelegate {
             open.window.makeKeyAndOrderFront(nil)
             return
         }
-        let window = NSWindow(contentViewController: NSHostingController(rootView: AudioEditorView(model: model)))
+        let window = NSWindow(contentViewController: NSHostingController(rootView: AudioEditorView(model: model).followsInterfaceLanguage()))
         window.title = model.windowTitle
+        // The title follows a switch of the interface language while the window is open (FR39).
+        WindowTitleFollower.follow(window) { [weak model] in model?.windowTitle }
         window.identifier = NSUserInterfaceItemIdentifier(Self.windowIdentifier)
         window.styleMask = [.titled, .closable, .miniaturizable, .resizable]
         window.isReleasedWhenClosed = false

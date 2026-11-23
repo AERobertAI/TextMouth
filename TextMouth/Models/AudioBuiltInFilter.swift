@@ -444,7 +444,7 @@ enum AudioBuiltInFilter: Equatable, Sendable {
             guard let text = values[name] else { return fallback }
             guard let choice = Choice(rawValue: text.trimmingCharacters(in: .whitespaces)) else {
                 // Translators: What a choice option of a filter accepts, said at the end of a refusal such as "The afade filter's type can't be “x”: <this>." Written without its full stop. %@ is the allowed values, filter syntax, as a list such as "in, out".
-                throw bad(name, text, expected: InterfaceText.line("valueReader.choice", "give one of \(Choice.allCases.map(\.rawValue).formatted(.list(type: .and, width: .narrow)))"))
+                throw bad(name, text, expected: InterfaceText.line("valueReader.choice", "give one of \(Choice.allCases.map(\.rawValue).formatted(.list(type: .and, width: .narrow).locale(InterfaceLanguage.current.locale)))"))
             }
             return choice
         }

@@ -149,8 +149,10 @@ final class TranscriptCleanupSheetModel: ObservableObject, Identifiable {
     /// Whether Undo Cleanup is offered: the transcript is cleaned up, and
     /// the transcript from before is kept beside it.
     @Published private(set) var canUndo = false
-    /// Why Edit Rules… could not open the rules, after it tried.
-    @Published private(set) var editRulesNotice: String?
+    /// The system's reason Edit Rules… could not open the rules, after it tried.
+    @Published private var editRulesFailure: String?
+    /// Why Edit Rules… could not open the rules, after it tried: worded when read, so it follows the interface language (FR39).
+    var editRulesNotice: String? { editRulesFailure.map(TranscriptCleanupWording.editRulesFailed(reason:)) }
 
     /// The window the sheet sits on, where announcements come from.
     weak var window: PlatformWindow?
@@ -464,7 +466,7 @@ final class TranscriptCleanupSheetModel: ObservableObject, Identifiable {
     /// failure is shown and spoken.
     func editRules() async {
         guard phase == .ready else { return }
-        editRulesNotice = await services.editRules(window).map(TranscriptCleanupWording.editRulesFailed(reason:))
+        editRulesFailure = await services.editRules(window)
         if let notice = editRulesNotice {
             services.announce(notice, window)
         }

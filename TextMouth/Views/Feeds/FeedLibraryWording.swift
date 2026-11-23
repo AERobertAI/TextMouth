@@ -161,7 +161,7 @@ extension FeedWording {
         isSubscribed: Bool = true,
         now: Date,
         calendar: Calendar = .current,
-        locale: Locale = .current
+        locale: Locale = InterfaceLanguage.current.locale
     ) -> Check {
         guard isSubscribed else {
             guard let last = fetch.lastCheck else {
@@ -192,7 +192,7 @@ extension FeedWording {
 
     /// `date` as "today at 3:05 PM", "yesterday at 9:00 AM", "October 1 at
     /// 3:05 PM", or, in another year, "October 1, 2025 at 3:05 PM".
-    static func moment(_ date: Date, now: Date, calendar: Calendar = .current, locale: Locale = .current) -> String {
+    static func moment(_ date: Date, now: Date, calendar: Calendar = .current, locale: Locale = InterfaceLanguage.current.locale) -> String {
         let time = DateFormatter()
         time.locale = locale
         time.timeZone = calendar.timeZone
@@ -263,7 +263,7 @@ extension FeedWording {
     // MARK: Item Rows
 
     /// An item's date as its row shows and speaks it: "October 1, 2026".
-    static func itemDate(_ date: Date, calendar: Calendar = .current, locale: Locale = .current) -> String {
+    static func itemDate(_ date: Date, calendar: Calendar = .current, locale: Locale = InterfaceLanguage.current.locale) -> String {
         let formatter = DateFormatter()
         formatter.locale = locale
         formatter.timeZone = calendar.timeZone

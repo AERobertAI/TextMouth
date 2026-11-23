@@ -24,7 +24,9 @@ final class TextMouthSceneDelegate: UIResponder, UIWindowSceneDelegate {
         let model = TextMouthAppDelegate.model
         let window = MagicTapWindow(windowScene: windowScene)
         window.session = model.session
-        window.rootViewController = UIHostingController(rootView: PhoneRootView(model: model))
+        // UIKit's bars and VoiceOver's language follow the interface language (FR39).
+        window.followInterfaceLanguage()
+        window.rootViewController = UIHostingController(rootView: PhoneRootView(model: model).followsInterfaceLanguage())
         self.window = window
         window.makeKeyAndVisible()
         var opened = connectionOptions.urlContexts.map(\.url)

@@ -96,7 +96,7 @@ enum PronunciationLexiconWording {
         if unread > 0 {
             // The limit is written grouped for the region ("5,000"), like every count of rules; it is
             // a fixed cap, always a plural count of rules, so the sentence's plural varies on `unread` only.
-            let limit = PronunciationLexicon.ruleLimit.formatted()
+            let limit = PronunciationLexicon.ruleLimit.interfaceFormatted()
             sentences.append(
                 // Translators: A sentence of the alert after a pronunciation lexicon import. %1$lld is the number of entries left unread; %2$@ is the most rules one import adds, written as a grouped number (a fixed cap, always a plural count).
                 InterfaceText.line("pronunciationLexicon.imported.because", "\(number: unread) entries were not read, because a lexicon adds at most \(limit) rules at a time.")

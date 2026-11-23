@@ -180,7 +180,7 @@ enum ReadingStatsViewWording {
     /// What VoiceOver reads for a row of Recently Finished: "Moby Dick,
     /// finished November 18, 2026".
     static func finishedRowLabel(title: String, date: Date) -> String {
-        let when = date.formatted(date: .long, time: .omitted)
+        let when = date.interfaceFormatted(date: .long, time: .omitted)
         // Translators: VoiceOver label of a row of Recently Finished in Settings, Stats. %1$@ is the book's title; %2$@ is the date it was finished, such as November 18, 2026.
         return InterfaceText.line("readingStatsView.finishedRowLabel", "\(title), finished \(when)")
     }

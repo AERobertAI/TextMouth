@@ -43,6 +43,8 @@ final class QuitNotice {
             defer: false
         )
         panel.title = QuitHoldWording.title
+        // The title follows a switch of the interface language (FR39).
+        WindowTitleFollower.follow(panel) { QuitHoldWording.title }
         panel.isReleasedWhenClosed = false
         panel.level = .floating
         panel.hidesOnDeactivate = false

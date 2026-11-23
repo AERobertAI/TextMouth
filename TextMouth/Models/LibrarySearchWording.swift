@@ -101,7 +101,7 @@ enum LibrarySearchWording {
     /// books with its noun, which a translation agrees with.
     static func searched(_ done: Int, of total: Int) -> String {
         // Translators: Status line of the Search Library window while a search runs, once some books are done. %1$@ is the number of books searched so far, and %2$@ is the count of all the books with its noun, such as "750 books".
-        InterfaceText.line("librarySearch.searched", "Searched \(done.formatted()) of \(CountWording.books(total))…")
+        InterfaceText.line("librarySearch.searched", "Searched \(done.interfaceFormatted()) of \(CountWording.books(total))…")
     }
 
     /// Said while a search runs that has had to prepare a book on its way,
@@ -111,14 +111,14 @@ enum LibrarySearchWording {
     /// listener knows why it takes longer: "Preparing 120 of 737 books…".
     static func preparing(_ done: Int, of total: Int) -> String {
         // Translators: Status line of the Search Library window while a search must prepare books' text, which takes longer. %1$@ is the number of books prepared so far, and %2$@ is the count of all the books with its noun, such as "737 books".
-        InterfaceText.line("librarySearch.preparing", "Preparing \(done.formatted()) of \(CountWording.books(total))…")
+        InterfaceText.line("librarySearch.preparing", "Preparing \(done.interfaceFormatted()) of \(CountWording.books(total))…")
     }
 
     /// The opening of a stopped search's status, before what it had found:
     /// "Stopped after 120 of 750 books:".
     static func stopped(searched: Int, of total: Int) -> String {
         // Translators: Opening of the Search Library status after the user stopped a search, followed by what it had found. %1$@ is the number of books searched, and %2$@ is the count of all the books with its noun, such as "750 books". Ends with a colon.
-        InterfaceText.line("librarySearch.stopped", "Stopped after \(searched.formatted()) of \(CountWording.books(total)):")
+        InterfaceText.line("librarySearch.stopped", "Stopped after \(searched.interfaceFormatted()) of \(CountWording.books(total)):")
     }
 
     /// The Stop button's title, shown while a search runs.
@@ -282,7 +282,7 @@ enum LibrarySearchWording {
     /// A book's count of matches as a total: "700", or "more than 1,000"
     /// when the count stopped at its limit.
     private static func total(_ matches: Int, isLowerBound: Bool) -> String {
-        guard isLowerBound else { return matches.formatted() }
+        guard isLowerBound else { return matches.interfaceFormatted() }
         // Translators: A book's total number of matches when the count stopped at its limit, inside a longer sentence such as "Show the first 500 of more than 1,000 matches". %lld is the number the count stopped at.
         return InterfaceText.line("librarySearch.total", "more than \(number: matches)")
     }

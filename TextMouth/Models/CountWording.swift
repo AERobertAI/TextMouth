@@ -112,7 +112,7 @@ enum CountWording {
         }
         // A decimal has no plural form that varies with it, so it is one
         // string of its own around the formatted number.
-        let decimal = (tenths / 10).formatted(.number.precision(.fractionLength(1)))
+        let decimal = (tenths / 10).formatted(.number.precision(.fractionLength(1)).locale(InterfaceLanguage.current.locale))
         // Translators: A length of time in seconds with one decimal digit, such as "0.5 seconds". %@ is the already formatted number.
         return InterfaceText.line("common.valueSeconds", "\(decimal) seconds")
     }
@@ -207,7 +207,7 @@ enum CountWording {
     /// episodes, 1 article" in English, where a sentence's "and" would only
     /// slow VoiceOver and braille down. Each count is already localized.
     private static func joinedCounts(_ counts: [String]) -> String {
-        counts.formatted(.list(type: .and, width: .narrow))
+        counts.formatted(.list(type: .and, width: .narrow).locale(InterfaceLanguage.current.locale))
     }
 
     /// How many of a list's rows are books of the library's own, episodes,
@@ -247,7 +247,7 @@ enum CountWording {
     /// list style decides the commas and the word for "and", so en_GB writes
     /// "A, B and C" and Spanish "A, B y C". `locale` is the region whose
     /// style is used, the user's own unless a test names another.
-    static func list(_ items: [String], locale: Locale = .current) -> String {
+    static func list(_ items: [String], locale: Locale = InterfaceLanguage.current.locale) -> String {
         items.formatted(.list(type: .and).locale(locale))
     }
 }

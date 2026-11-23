@@ -367,7 +367,7 @@ struct LibraryBookInfoSheet: View {
                 }
                 if let words = book.totalWordCount {
                     LabeledContent(LibrarySheetWording.wordCountRow) {
-                        Text(words.formatted())
+                        Text(words.interfaceFormatted())
                     }
                 }
             }

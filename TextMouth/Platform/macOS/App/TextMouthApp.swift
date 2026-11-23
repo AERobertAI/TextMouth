@@ -28,6 +28,8 @@ struct TextMouthApp: App {
                 .environmentObject(shortcutManager)
                 .environmentObject(soundEffectService)
                 .environmentObject(libraryWindowRouter)
+                // The window follows the interface language: formatters, and layout direction (FR39).
+                .followsInterfaceLanguage()
                 .onAppear {
                     // Lists the installed voices once the first window shows,
                     // off the main thread, rather than before it (TODO PERF07).
@@ -68,6 +70,7 @@ struct TextMouthApp: App {
             .environmentObject(settingsViewModel)
             .environmentObject(shortcutManager)
             .environmentObject(soundEffectService)
+            .followsInterfaceLanguage()
         }
         // Without this, SwiftUI adds File > New > New Book Reader Window,
         // which opens a reader with no book: an empty window whose Playback
@@ -81,6 +84,7 @@ struct TextMouthApp: App {
                 .environmentObject(settingsViewModel)
                 .environmentObject(shortcutManager)
                 .environmentObject(soundEffectService)
+                .followsInterfaceLanguage()
         }
     }
 }

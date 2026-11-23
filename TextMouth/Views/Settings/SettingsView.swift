@@ -163,7 +163,7 @@ struct VoiceSettingsView: View {
             Picker(SettingsWording.languageTitle, selection: $settingsViewModel.selectedLanguage) {
                 Text(SettingsWording.allLanguages).tag("")
                 ForEach(settingsViewModel.availableLanguages, id: \.self) { lang in
-                    Text(Locale.current.localizedString(forLanguageCode: lang) ?? lang)
+                    Text(InterfaceLanguage.current.locale.localizedString(forLanguageCode: lang) ?? lang)
                         .tag(lang)
                 }
             }

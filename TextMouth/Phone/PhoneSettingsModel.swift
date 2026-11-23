@@ -28,6 +28,7 @@ enum PhoneSettingsSection: CaseIterable, Identifiable {
     case pages
     case removalBehavior
     case statistics
+    case interfaceLanguage
     case about
 
     var id: Self { self }
@@ -46,6 +47,7 @@ enum PhoneSettingsSection: CaseIterable, Identifiable {
         case .reading: return PhoneSettingsWording.readingSection
         case .removalBehavior: return Words.removalBehavior.title
         case .statistics: return PhoneSettingsWording.statisticsSection
+        case .interfaceLanguage: return InterfaceLanguagePickerWording.title
         case .about: return PhoneSettingsWording.aboutSection
         }
     }
@@ -65,6 +67,7 @@ enum PhoneSettingsRow: Hashable, Identifiable {
     case rewindTo
     case endOfBook
     case readingStatistics
+    case interfaceLanguage
     case shareLogs
 
     var id: Self { self }
@@ -79,6 +82,7 @@ enum PhoneSettingsRow: Hashable, Identifiable {
         case .rewindTo: return Words.rewindTo.title
         case .endOfBook: return Words.whenBookEnds.title
         case .readingStatistics: return PhoneSettingsWording.readingStatistics
+        case .interfaceLanguage: return InterfaceLanguagePickerWording.title
         case .shareLogs: return PhoneSettingsWording.shareLogs
         }
     }
@@ -91,7 +95,7 @@ enum PhoneSettingsRow: Hashable, Identifiable {
         case .voice: return Words.selectVoice.title
         case .rewindTo: return Words.rewindOnResumeUnit.title
         case .endOfBook: return Words.endOfBookBehavior.title
-        case .textNavigationUnit, .audioNavigationUnit, .readingStatistics, .shareLogs: return title
+        case .textNavigationUnit, .audioNavigationUnit, .readingStatistics, .interfaceLanguage, .shareLogs: return title
         }
     }
 
@@ -103,6 +107,7 @@ enum PhoneSettingsRow: Hashable, Identifiable {
         case .rewindTo: return Words.rewindToHint.title
         case .endOfBook: return Words.endOfBookHint.title
         case .shareLogs: return PhoneSettingsWording.shareLogsHint
+        case .interfaceLanguage: return InterfaceLanguagePickerWording.hint
         case .language, .readingStatistics: return nil
         }
     }
@@ -360,13 +365,13 @@ enum PhoneSettingsModel {
     /// A language's name, as the Language row and its choices say it: "All"
     /// for the empty code, otherwise the name in `locale`, or the code itself
     /// when the system has no name for it.
-    static func languageName(_ code: String, locale: Locale = .current) -> String {
+    static func languageName(_ code: String, locale: Locale = InterfaceLanguage.current.locale) -> String {
         code.isEmpty ? Words.allLanguages.title : locale.localizedString(forLanguageCode: code) ?? code
     }
 
     /// The Language row's choices: "All", whose code is empty, then the
     /// languages offered, in the Mac's order.
-    static func languageChoices(_ languages: [String], locale: Locale = .current) -> [PhoneChoice<String>] {
+    static func languageChoices(_ languages: [String], locale: Locale = InterfaceLanguage.current.locale) -> [PhoneChoice<String>] {
         ([""] + languages).map { PhoneChoice(id: $0, label: languageName($0, locale: locale)) }
     }
 

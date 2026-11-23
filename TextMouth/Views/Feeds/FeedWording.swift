@@ -260,7 +260,7 @@ enum FeedWording {
     /// heading counts its rows, "381"; "more than" comes first for a feed
     /// longer than TextMouth reads.
     static func entriesPhrase(_ total: FeedEntryTotal, noun: ItemNoun?) -> String {
-        let number = noun.map { count(total.count, $0) } ?? total.count.formatted()
+        let number = noun.map { count(total.count, $0) } ?? total.count.interfaceFormatted()
         guard total.listsMore else { return number }
         // Translators: A feed's size when it is longer than TextMouth reads. %@ is the size, such as "2000 episodes" or just "2000".
         return InterfaceText.line("feed.entriesPhrase", "more than \(number)")

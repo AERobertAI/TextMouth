@@ -99,8 +99,10 @@ final class RecordingWindowController: NSObject, NSWindowDelegate {
             return
         }
         let model = makeModel(library: library, recovered: recovered)
-        let window = NSWindow(contentViewController: NSHostingController(rootView: RecordingWindowView(model: model)))
+        let window = NSWindow(contentViewController: NSHostingController(rootView: RecordingWindowView(model: model).followsInterfaceLanguage()))
         window.title = RecordingWording.windowTitle
+        // The title follows a switch of the interface language while the window is open (FR39).
+        WindowTitleFollower.follow(window) { RecordingWording.windowTitle }
         window.identifier = NSUserInterfaceItemIdentifier(Self.windowIdentifier)
         window.styleMask = [.titled, .closable, .miniaturizable, .resizable]
         window.isReleasedWhenClosed = false
