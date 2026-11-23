@@ -1,3 +1,4 @@
+import CBZip2
 import Compression
 import Darwin
 import Foundation
@@ -77,30 +78,46 @@ struct InterfaceTextPackBytes {
         var count: Int
         /// Overrides the offset the directory states (nil: the blob's real place).
         var offset: Int?
+        /// The compression method the directory states (`lzma`, `bzip2`, or any other number to damage it).
+        var method: UInt32 = InterfaceTextPackBytes.lzma
     }
 
+    /// The directory's method numbers, as the reader and `pack.py` have them.
+    static let lzma: UInt32 = 0
+    static let bzip2: UInt32 = 1
+
     var magic = Array("TMSP".utf8)
-    var version: UInt16 = 1
+    var version: UInt16 = 2
     var flags: UInt16 = 0
     var idCount: Int
     var blobs: [Blob]
 
-    /// A blob of `entries` joined and compressed with LZMA, each entry ended by a NUL, stating the true sizes.
-    static func blob(_ name: String, entries: [String], terminator: UInt8 = 0) -> Blob {
+    /// A blob of `entries` joined and compressed with `method` (LZMA unless given), each entry ended by a NUL, stating the
+    /// true sizes.
+    static func blob(_ name: String, entries: [String], terminator: UInt8 = 0, method: UInt32 = lzma) -> Blob {
         var raw: [UInt8] = []
         for entry in entries { raw += Array(entry.utf8) + [terminator] }
-        return Blob(name: name, compressed: compress(raw), rawSize: raw.count, count: entries.count, offset: nil)
+        return Blob(name: name, compressed: compress(raw, method: method), rawSize: raw.count, count: entries.count, offset: nil, method: method)
     }
 
-    /// A blob of exactly these raw bytes, compressed.
-    static func blob(_ name: String, raw: [UInt8], count: Int) -> Blob {
-        Blob(name: name, compressed: compress(raw), rawSize: raw.count, count: count, offset: nil)
+    /// A blob of exactly these raw bytes, compressed with `method` (LZMA unless given).
+    static func blob(_ name: String, raw: [UInt8], count: Int, method: UInt32 = lzma) -> Blob {
+        Blob(name: name, compressed: compress(raw, method: method), rawSize: raw.count, count: count, offset: nil, method: method)
     }
 
-    /// `raw` compressed with Apple's LZMA, the algorithm the reader decodes.
-    static func compress(_ raw: [UInt8]) -> [UInt8] {
+    /// `raw` compressed with `method`: Apple's LZMA, or the system's libbz2 at level 9, the two algorithms the reader
+    /// decodes. Any other method compresses as LZMA (a test that names one changes the directory's number only).
+    static func compress(_ raw: [UInt8], method: UInt32 = lzma) -> [UInt8] {
         guard !raw.isEmpty else { return [] }
         var output = [UInt8](repeating: 0, count: raw.count + 4096)
+        if method == bzip2 {
+            var written = UInt32(output.count)
+            let status = BZ2_bzBuffToBuffCompress(
+                &output, &written, UnsafeMutableRawPointer(mutating: raw).assumingMemoryBound(to: CChar.self), UInt32(raw.count), 9, 0, 0
+            )
+            precondition(status == BZ_OK, "the test pack's bzip2 compression failed")
+            return Array(output[0..<Int(written)])
+        }
         let written = compression_encode_buffer(&output, output.count, raw, raw.count, nil, COMPRESSION_LZMA)
         return Array(output[0..<written])
     }
@@ -113,11 +130,11 @@ struct InterfaceTextPackBytes {
         var header = magic + le(version) + le(flags) + [UInt8](repeating: 0xAB, count: 32) + le(UInt32(idCount)) + le(UInt32(blobs.count))
         var directory: [UInt8] = []
         var body: [UInt8] = []
-        var offset = 48 + blobs.count * 28
+        var offset = 48 + blobs.count * 32
         for blob in blobs {
             let name = Array(blob.name.utf8)
             directory += name + [UInt8](repeating: 0, count: 12 - name.count)
-            directory += le(UInt32(blob.offset ?? offset)) + le(UInt32(blob.compressed.count)) + le(UInt32(blob.rawSize)) + le(UInt32(blob.count))
+            directory += le(UInt32(blob.offset ?? offset)) + le(UInt32(blob.compressed.count)) + le(UInt32(blob.rawSize)) + le(UInt32(blob.count)) + le(blob.method)
             body += blob.compressed
             offset += blob.compressed.count
         }
@@ -125,12 +142,13 @@ struct InterfaceTextPackBytes {
         return Data(header)
     }
 
-    /// A good pack of three IDs: English with one plural line, and Spanish.
+    /// A good pack of three IDs: English with one plural line, and Spanish. The IDs and English are LZMA blobs and Spanish
+    /// a bzip2 one, so every use of the sample reads both methods.
     static func sample() -> InterfaceTextPackBytes {
         InterfaceTextPackBytes(idCount: 3, blobs: [
             blob("ids", entries: ["greeting.hello", "library.books", "library.title"]),
             blob("en", entries: ["", pluralEntry("%lld book", "%lld books"), ""]),
-            blob("es", entries: ["Hola", pluralEntry("%lld libro", "%lld libros", "%lld libros"), "Biblioteca"]),
+            blob("es", entries: ["Hola", pluralEntry("%lld libro", "%lld libros", "%lld libros"), "Biblioteca"], method: bzip2),
         ])
     }
 }
@@ -980,7 +998,10 @@ final class InterfaceTextPackTests: XCTestCase {
         }
         refused("bad magic") { $0.magic = Array("TMSX".utf8) }
         refused("version 0") { $0.version = 0 }
-        refused("version 2") { $0.version = 2 }
+        refused("version 1, the format before each blob named its method") { $0.version = 1 }
+        refused("version 3") { $0.version = 3 }
+        refused("an unknown method") { $0.blobs[1].method = 2 }
+        refused("a method with a high bit set") { $0.blobs[1].method = 0x8000_0001 }
         refused("flags") { $0.flags = 1 }
         refused("no ids blob") { $0.blobs.removeFirst() }
         refused("a blob listed twice") { $0.blobs.append($0.blobs[1]) }
@@ -1018,43 +1039,87 @@ final class InterfaceTextPackTests: XCTestCase {
         }
     }
 
-    /// A blob whose bytes are not an LZMA stream.
+    /// A blob whose bytes are not a stream of the method its directory names.
     func testGarbageInPlaceOfALanguageBlobGivesEnglish() throws {
-        var bytes = InterfaceTextPackBytes.sample()
-        bytes.blobs[2] = InterfaceTextPackBytes.Blob(name: "es", compressed: Array(repeating: 0x5A, count: 64), rawSize: 100, count: 3, offset: nil)
-        let log = InterfaceTextReportLog()
-        let engine = InterfaceTextEngine(tables: try InterfaceTextPack(data: bytes.data()), report: log.sink)
-        for _ in 0..<3 { XCTAssertEqual(interfaceLine(engine, "greeting.hello", "Hello"), "Hello") }
-        XCTAssertEqual(log.messages.count, 1)
+        for method in [InterfaceTextPackBytes.lzma, InterfaceTextPackBytes.bzip2] {
+            var bytes = InterfaceTextPackBytes.sample()
+            bytes.blobs[2] = InterfaceTextPackBytes.Blob(
+                name: "es", compressed: Array(repeating: 0x5A, count: 64), rawSize: 100, count: 3, offset: nil, method: method
+            )
+            let log = InterfaceTextReportLog()
+            let engine = InterfaceTextEngine(tables: try InterfaceTextPack(data: bytes.data()), report: log.sink)
+            for _ in 0..<3 { XCTAssertEqual(interfaceLine(engine, "greeting.hello", "Hello"), "Hello", "method \(method)") }
+            XCTAssertEqual(log.messages.count, 1, "method \(method)")
+        }
     }
 
     /// A blob cut short, a raw size too large or too small, a wrong entry count, bad UTF-8, a missing terminator: each
-    /// fails the blob and the lookup shows English, with one report.
+    /// fails the blob and the lookup shows English, with one report. Each is tried under both compression methods, and
+    /// bzip2 has two faults of its own: a byte changed inside the stream, which fails its CRC, and a stream that is
+    /// longer than the raw size says.
     func testDamagedLanguageBlobsGiveEnglish() throws {
         let spanish = ["Hola", pluralEntry("%lld libro", "%lld libros", "%lld libros"), "Biblioteca"]
-        var cases: [(String, InterfaceTextPackBytes.Blob)] = []
-        let good = InterfaceTextPackBytes.blob("es", entries: spanish)
-        var cut = good; cut.compressed = Array(good.compressed.prefix(good.compressed.count / 2)); cases.append(("cut", cut))
-        var longer = good; longer.rawSize += 5; cases.append(("raw size too large", longer))
-        var shorter = good; shorter.rawSize -= 5; cases.append(("raw size too small", shorter))
-        var shortCount = good; shortCount.count = 2; cases.append(("count in the directory", shortCount))
-        var twoEntries = InterfaceTextPackBytes.blob("es", entries: Array(spanish.prefix(2))); twoEntries.count = 3
-        cases.append(("two entries under a directory that says three", twoEntries))
-        var fourEntries = InterfaceTextPackBytes.blob("es", entries: spanish + ["extra"]); fourEntries.count = 3
-        cases.append(("four entries under a directory that says three", fourEntries))
-        cases.append(("no last terminator", InterfaceTextPackBytes.blob("es", raw: Array("Hola\0".utf8) + Array("x\0".utf8) + Array("Biblioteca".utf8), count: 3)))
-        cases.append(("bad UTF-8", InterfaceTextPackBytes.blob("es", raw: [0x48, 0xFF, 0, 0x78, 0, 0x79, 0], count: 3)))
-        cases.append(("overlong UTF-8", InterfaceTextPackBytes.blob("es", raw: [0xC0, 0xAF, 0, 0x78, 0, 0x79, 0], count: 3)))
-        cases.append(("surrogate", InterfaceTextPackBytes.blob("es", raw: [0xED, 0xA0, 0x80, 0, 0x78, 0, 0x79, 0], count: 3)))
-        cases.append(("a plural of the wrong size", InterfaceTextPackBytes.blob("es", entries: ["Hola", pluralEntry("a", "b"), "x"])))
-        for (name, blob) in cases {
+        for method in [InterfaceTextPackBytes.lzma, InterfaceTextPackBytes.bzip2] {
+            func blob(_ entries: [String]) -> InterfaceTextPackBytes.Blob { InterfaceTextPackBytes.blob("es", entries: entries, method: method) }
+            func blob(raw: [UInt8]) -> InterfaceTextPackBytes.Blob { InterfaceTextPackBytes.blob("es", raw: raw, count: 3, method: method) }
+            var cases: [(String, InterfaceTextPackBytes.Blob)] = []
+            let good = blob(spanish)
+            var cut = good; cut.compressed = Array(good.compressed.prefix(good.compressed.count / 2)); cases.append(("cut", cut))
+            var cutByOne = good; cutByOne.compressed.removeLast(); cases.append(("cut by one byte", cutByOne))
+            var longer = good; longer.rawSize += 5; cases.append(("raw size too large", longer))
+            var shorter = good; shorter.rawSize -= 5; cases.append(("raw size too small", shorter))
+            var shortCount = good; shortCount.count = 2; cases.append(("count in the directory", shortCount))
+            var twoEntries = blob(Array(spanish.prefix(2))); twoEntries.count = 3
+            cases.append(("two entries under a directory that says three", twoEntries))
+            var fourEntries = blob(spanish + ["extra"]); fourEntries.count = 3
+            cases.append(("four entries under a directory that says three", fourEntries))
+            cases.append(("no last terminator", blob(raw: Array("Hola\0".utf8) + Array("x\0".utf8) + Array("Biblioteca".utf8))))
+            cases.append(("bad UTF-8", blob(raw: [0x48, 0xFF, 0, 0x78, 0, 0x79, 0])))
+            cases.append(("overlong UTF-8", blob(raw: [0xC0, 0xAF, 0, 0x78, 0, 0x79, 0])))
+            cases.append(("surrogate", blob(raw: [0xED, 0xA0, 0x80, 0, 0x78, 0, 0x79, 0])))
+            cases.append(("a plural of the wrong size", blob(["Hola", pluralEntry("a", "b"), "x"])))
+            if method == InterfaceTextPackBytes.bzip2 {
+                // The stream's block CRC covers the text, so a changed byte in the middle fails it (or the block's structure).
+                var flipped = good; flipped.compressed[flipped.compressed.count / 2] ^= 0xFF; cases.append(("a changed byte", flipped))
+                // The stream's own end-of-stream CRC, the last four bytes before the padding.
+                var checksum = good; checksum.compressed[checksum.compressed.count - 3] ^= 0x01; cases.append(("a wrong checksum", checksum))
+                // A stream that decodes to more bytes than the directory's raw size.
+                var tooLong = InterfaceTextPackBytes.blob("es", entries: spanish + ["more text than the directory says there is"], method: method)
+                tooLong.rawSize = good.rawSize; tooLong.count = 3; cases.append(("a stream longer than the raw size", tooLong))
+            }
+            for (name, blob) in cases {
+                var bytes = InterfaceTextPackBytes.sample()
+                bytes.blobs[2] = blob
+                let log = InterfaceTextReportLog()
+                guard let pack = try? InterfaceTextPack(data: bytes.data()) else { continue }
+                let engine = InterfaceTextEngine(tables: pack, report: log.sink)
+                for _ in 0..<3 { XCTAssertEqual(interfaceLine(engine, "greeting.hello", "Hello"), "Hello", "\(name), method \(method)") }
+                XCTAssertEqual(log.messages.count, 1, "\(name), method \(method): \(log.messages)")
+            }
+        }
+    }
+
+    /// One pack with an LZMA blob and a bzip2 blob reads both, and the sample's own (Spanish bzip2, English LZMA) says so.
+    func testABzip2BlobAndAnLZMABlobReadInOnePack() throws {
+        let bytes = InterfaceTextPackBytes.sample()
+        XCTAssertEqual(bytes.blobs.map(\.method), [InterfaceTextPackBytes.lzma, InterfaceTextPackBytes.lzma, InterfaceTextPackBytes.bzip2])
+        let pack = try InterfaceTextPack(data: bytes.data())
+        XCTAssertEqual(try pack.entries(language: "es").first, .plain("Hola"))
+        XCTAssertEqual(try pack.entries(language: "en").count, 3)
+        XCTAssertEqual(try pack.idList().count, 3)
+    }
+
+    /// A blob under the wrong method (an LZMA stream said to be bzip2, and the reverse) is damaged, not read as the other.
+    func testAStreamUnderTheWrongMethodGivesEnglish() throws {
+        for (actual, stated) in [(InterfaceTextPackBytes.lzma, InterfaceTextPackBytes.bzip2), (InterfaceTextPackBytes.bzip2, InterfaceTextPackBytes.lzma)] {
             var bytes = InterfaceTextPackBytes.sample()
+            var blob = InterfaceTextPackBytes.blob("es", entries: ["Hola", pluralEntry("%lld libro", "%lld libros", "%lld libros"), "Biblioteca"], method: actual)
+            blob.method = stated
             bytes.blobs[2] = blob
             let log = InterfaceTextReportLog()
-            guard let pack = try? InterfaceTextPack(data: bytes.data()) else { continue }
-            let engine = InterfaceTextEngine(tables: pack, report: log.sink)
-            for _ in 0..<3 { XCTAssertEqual(interfaceLine(engine, "greeting.hello", "Hello"), "Hello", name) }
-            XCTAssertEqual(log.messages.count, 1, "\(name): \(log.messages)")
+            let engine = InterfaceTextEngine(tables: try InterfaceTextPack(data: bytes.data()), report: log.sink)
+            XCTAssertEqual(interfaceLine(engine, "greeting.hello", "Hello"), "Hello")
+            XCTAssertEqual(log.messages.count, 1)
         }
     }
 

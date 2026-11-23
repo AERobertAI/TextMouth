@@ -64,6 +64,8 @@ PROBE_SOURCES = [
     ROOT / "TextMouthProductionTests" / "InterfaceTextShippedPackTests.swift",
     *ENGINE_SOURCES,
 ]
+# The system bzip2's module map, which the engine's pack reader imports (the module links the SDK's libbz2).
+CBZIP2_INCLUDE = ROOT / "Vendor" / "CBZip2" / "include"
 # The pack builder.
 PACK_TOOL = HERE / "pack.py"
 WORK = ROOT / "build" / "l10n-packs"
@@ -117,7 +119,7 @@ def build_probe(work: Path = WORK) -> Path:
     if probe.exists() and all(probe.stat().st_mtime >= source.stat().st_mtime for source in PROBE_SOURCES):
         return probe
     run(
-        ["xcrun", "swiftc", "-D", "PACK_PROBE", "-O", "-o", str(probe), *map(str, PROBE_SOURCES)],
+        ["xcrun", "swiftc", "-D", "PACK_PROBE", "-O", "-I", str(CBZIP2_INCLUDE), "-o", str(probe), *map(str, PROBE_SOURCES)],
         "compiling the probe",
     )
     return probe

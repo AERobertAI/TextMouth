@@ -401,7 +401,10 @@ def write_package(src, pkgs, platform, ios_target, tests=False, skipped_tests=()
     # The braille helper's protocol and the FFmpeg helper's stream are header-only modules, found by their maps,
     # and so is the braille library's interface, whose map is in the folder named after its module there
     # (TextMouthBraille/include/TextMouthBrailleLibrary).
-    include_flags = (f'"-I", "{src / "TextMouthBraille" / "include"}", '
+    # The system bzip2's module (Vendor/CBZip2/include), which the interface-text pack's reader imports, is found by its
+    # map too.
+    include_flags = (f'"-I", "{src / "Vendor" / "CBZip2" / "include"}", '
+                     f'"-I", "{src / "TextMouthBraille" / "include"}", '
                      f'"-I", "{src / "TextMouthFFmpeg" / "include"}"')
     # The iPhone app links liblouis and TextMouth's braille translation, which its BrailleTranslator calls in its own
     # process (DR34; project.yml's liblouis_iOS and TextMouthBrailleLibrary_iOS); the Mac app links neither, since

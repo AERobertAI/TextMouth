@@ -4,7 +4,8 @@ import XCTest
 
 /// The pack reader over the packs `Scripts/l10n/pack.py` wrote (FR39 phase 2), `lines.pack` and `plurals.pack`, against
 /// the `.entries.json` beside each, which spells out every decoded entry; and over `lines-corrupt-utf8.pack`, whose
-/// first English entry is the bytes C3 28. Also corrupt copies of a real pack, made in memory.
+/// first English entry is the bytes C3 28; and `lines-mixed-methods.pack`, the first catalog's pack with the ids, English,
+/// and Spanish blobs LZMA and the rest bzip2. Also corrupt copies of a real pack, made in memory.
 ///
 /// The fixture folder is a resource of both test bundles (project.yml), read where it is in the repository; a run
 /// without the resource finds the same files through this file's own path. Shared with the iPhone's unit bundle. The
@@ -66,6 +67,18 @@ final class InterfaceTextPackFixtureTests: XCTestCase {
         }
     }
 
+    /// The pack that holds both compression methods reads to the same entries as the pack that took the smaller of each.
+    func testAPackWithBothMethodsReadsTheSameEntries() throws {
+        let mixed = try pack("lines-mixed-methods.pack"), smaller = try pack("lines.pack")
+        XCTAssertEqual(mixed.idCount, smaller.idCount)
+        XCTAssertEqual(try mixed.idList().count, try smaller.idList().count)
+        let (_, languages) = try expected("lines")
+        for language in languages.keys {
+            XCTAssertEqual(try mixed.entries(language: language), try smaller.entries(language: language), language)
+        }
+        XCTAssertEqual(try mixed.notes(), try smaller.notes())
+    }
+
     /// The engine over a fixture pack: a plain line, a reordered one, and the plurals, including the forms that leave
     /// out the number and the English forms the pack holds.
     func testTheEngineReadsTheFixtures() throws {
@@ -118,9 +131,22 @@ final class InterfaceTextPackFixtureTests: XCTestCase {
         return copy
     }
 
+    /// `data` with the byte at `offset` replaced.
+    private func patchedByte(_ data: Data, at offset: Int, to value: UInt8) -> Data {
+        var copy = data
+        copy[offset] = value
+        return copy
+    }
+
     /// The position in the file of a directory field of blob `index` (0 ids, 1 notes, 2 en, 3 ar, 4 es, ...): `field` is
-    /// 12 for the offset, 16 the compressed size, 20 the raw size, and 24 the entry count.
-    private func position(blob index: Int, field: Int) -> Int { 48 + 28 * index + field }
+    /// 12 for the offset, 16 the compressed size, 20 the raw size, 24 the entry count, and 28 the compression method.
+    private func position(blob index: Int, field: Int) -> Int { 48 + 32 * index + field }
+
+    /// `data` with the byte `index` bytes into blob `blob`'s compressed stream XORed with `mask`.
+    private func changedByte(_ data: Data, blob: Int, from index: Int, with mask: UInt8) -> Data {
+        let at = Int(u32(data, at: position(blob: blob, field: 12))) + index
+        return patchedByte(data, at: at, to: data[at] ^ mask)
+    }
 
     /// The u32 at `offset` of `data`.
     private func u32(_ data: Data, at offset: Int) -> UInt32 {
@@ -134,11 +160,16 @@ final class InterfaceTextPackFixtureTests: XCTestCase {
         let whole = try Data(contentsOf: try fixture("lines.pack"))
         let spanish = 4
         var badMagic = whole; badMagic[0] = UInt8(ascii: "X")
-        var badVersion = whole; badVersion[4] = 2
+        var badVersion = whole; badVersion[4] = 3
+        let formerVersion = patchedByte(whole, at: 4, to: 1)
+        let unknownMethod = patched(whole, at: position(blob: spanish, field: 28), to: 2)
         var badFlags = whole; badFlags[6] = 1
         let cut = Data(whole.prefix(whole.count - 5))
         let badCount = patched(whole, at: position(blob: spanish, field: 24), to: 5)
-        for (name, data) in [("magic", badMagic), ("version", badVersion), ("flags", badFlags), ("a cut blob", cut), ("a wrong entry count", badCount)] {
+        for (name, data) in [
+            ("magic", badMagic), ("version", badVersion), ("the former version", formerVersion), ("flags", badFlags),
+            ("a cut blob", cut), ("a wrong entry count", badCount), ("an unknown method", unknownMethod),
+        ] {
             XCTAssertThrowsError(try InterfaceTextPack(data: data), name)
         }
 
@@ -148,6 +179,11 @@ final class InterfaceTextPackFixtureTests: XCTestCase {
             ("a raw size one too large", patched(whole, at: position(blob: spanish, field: 20), to: rawSize + 1)),
             ("a raw size one too small", patched(whole, at: position(blob: spanish, field: 20), to: rawSize - 1)),
             ("a compressed size four short", patched(whole, at: position(blob: spanish, field: 16), to: compressedSize - 4)),
+            // The Spanish blob of the pack is bzip2: a method that says LZMA of its bytes, a changed byte in the middle of
+            // its stream (the block's CRC fails), and its last bytes (the end-of-stream CRC) changed.
+            ("bzip2 bytes said to be LZMA", patched(whole, at: position(blob: spanish, field: 28), to: 0)),
+            ("a changed byte inside the stream", changedByte(whole, blob: spanish, from: Int(compressedSize) / 2, with: 0xFF)),
+            ("a wrong checksum", changedByte(whole, blob: spanish, from: Int(compressedSize) - 3, with: 0x01)),
         ]
         for (name, data) in damaged {
             let log = InterfaceTextReportLog()
