@@ -353,6 +353,48 @@ final class BardBrailleTests: XCTestCase {
         }
     }
 
+    /// With page markers on, a volume's heading comes right after the marker
+    /// of the volume's first page, so Go to Page lands on the heading; the
+    /// volume's own headings are one level deeper than the heading; and each
+    /// volume's last pages stay in their volume, ahead of the next heading.
+    func testAVolumeHeadingFollowsItsFirstPagesMarkerAndTheBooksHeadingsGoDeeper() throws {
+        let (_, file) = try packageFolder()
+        let text = try BrailleBookReader.markdown(of: file, table: ebaeContracted, includesPages: true)
+        let lines = text.components(separatedBy: "\n").filter { !$0.isEmpty }
+        for number in 1...3 {
+            let index = try XCTUnwrap(lines.firstIndex(of: "# Volume \(number)"))
+            XCTAssertTrue(index > 0 && lines[index - 1].hasPrefix(MarkdownPageMarker.prefix), "volume \(number): \(lines[max(index - 1, 0)])")
+            // The next line is the volume's own first heading, a level deeper.
+            XCTAssertTrue(lines[index + 1].hasPrefix("## "), lines[index + 1])
+        }
+        // No volume's heading is of the book's own level: every other heading is deeper.
+        XCTAssertEqual(lines.filter { $0.hasPrefix("# ") }, ["# Volume 1", "# Volume 2", "# Volume 3"])
+    }
+
+    /// A page with a number and no text at the end of a volume begins at the
+    /// next volume's first block, but stays in its own volume: its marker
+    /// comes before the next heading, and the next volume's first page marker
+    /// comes right before that heading.
+    func testATrailingPageWithNoTextStaysInItsOwnVolume() throws {
+        func start(_ label: String, block: Int, volume: Int) -> BrailleBookReader.PageStart {
+            BrailleBookReader.PageStart(
+                marker: MarkdownPageMarker(label: label, ordinal: 1), blockIndex: block, cellOffset: 0, volumeIndex: volume
+            )
+        }
+        let translation = BrailleBookReader.PagedTranslation(
+            blocks: [.paragraph(text: "\u{2801}"), .paragraph(text: "\u{2803}")],
+            starts: [start("p1", block: 0, volume: 0), start("p2", block: 1, volume: 0), start("p3", block: 1, volume: 1)],
+            volumeStarts: [BrailleVolumeStart(number: 1, index: 0, blockIndex: 0), BrailleVolumeStart(number: 2, index: 1, blockIndex: 1)]
+        )
+        let text = try XCTUnwrap(translation.markdown(from: [EmphasizedText("one"), EmphasizedText("two")]))
+        let order = ["page: p1", "# Volume 1", "one", "page: p2", "page: p3", "# Volume 2", "two"]
+        var from = text.startIndex
+        for piece in order {
+            let found = try XCTUnwrap(text.range(of: piece, range: from..<text.endIndex), "\(piece) in \(text)")
+            from = found.upperBound
+        }
+    }
+
     /// Volumes together past the size one braille file may have are refused
     /// from the sizes the file system gives, before any is read: here two
     /// volumes of 17 MB each, which hold no braille, so reading either would
@@ -599,6 +641,11 @@ final class BardBrailleTests: XCTestCase {
             XCTAssertEqual(try BrailleBookReader.markdown(of: book.bookFileURL, table: "en_US.tbl"), expected, name)
             let volumeHeadings = try headings(of: book).filter { $0.hasPrefix("1: Volume") }
             XCTAssertEqual(volumeHeadings, ["1: Volume 1", "1: Volume 2", "1: Volume 3"], name)
+            // The book's own headings are one level deeper than the volumes'.
+            XCTAssertEqual(
+                try headings(of: book),
+                ["1: Volume 1", "2: The Salt Ledger", "1: Volume 2", "2: The Harbour Office", "1: Volume 3", "2: The Answer"], name
+            )
         }
     }
 

@@ -19,6 +19,9 @@ struct BrailleStructure: Equatable, Sendable {
 /// blocks of its first block (FMT56). A volume with no text has none.
 struct BrailleVolumeStart: Equatable, Sendable {
     var number: Int
+    /// The volume's index in the book's volumes, from 0, which the pages of
+    /// the volume name (`BraillePageNumbers.volumeIndex`).
+    var index: Int
     var blockIndex: Int
 }
 
@@ -46,6 +49,11 @@ struct BraillePageNumbers: Equatable, Sendable {
     /// joined by one blank cell, so inside a block the cell before a page's
     /// first cell is that blank, and the page begins at a word.
     var firstCellOffset: Int = 0
+    /// For a book of several volumes (FMT56), the index of the volume the
+    /// page is in, from 0; 0 for any other book. A page with a number and no
+    /// text at a volume's end, which begins at the next volume's first block,
+    /// still belongs to its own volume by this.
+    var volumeIndex: Int = 0
     /// Whether any of the page's rows holds text: belongs to a block, rather
     /// than being blank, a page number, or a print page change line. A page
     /// without, such as the blank back of a two-sided page or the empty page
@@ -156,13 +164,16 @@ enum BraillePageAnalyzer {
             let part = structureOfOneFile(volume)
             let blockBase = joined.blocks.count
             if !part.blocks.isEmpty {
-                joined.volumeStarts.append(BrailleVolumeStart(number: file.volumeNumbers[index], blockIndex: blockBase))
+                joined.volumeStarts.append(BrailleVolumeStart(
+                    number: file.volumeNumbers[index], index: index, blockIndex: blockBase
+                ))
             }
             joined.blocks += part.blocks
             // A page's first block is counted from the volume's own first.
             joined.pages += part.pages.map { page in
                 var moved = page
                 moved.firstBlockIndex += blockBase
+                moved.volumeIndex = index
                 return moved
             }
         }

@@ -50,6 +50,9 @@ extension BrailleBookReader {
         /// The cell of that block's braille the page begins at: 0 at the
         /// block's start.
         var cellOffset: Int
+        /// The index of the volume the page is in, for a book of several
+        /// volumes (FMT56); 0 for any other.
+        var volumeIndex: Int = 0
     }
 
     /// The pages of the book `structure` describes, in order: where each
@@ -70,7 +73,8 @@ extension BrailleBookReader {
             starts.append(PageStart(
                 marker: MarkdownPageMarker(label: page.braillePageLabel ?? "", ordinal: starts.count + 1),
                 blockIndex: page.firstBlockIndex,
-                cellOffset: page.firstCellOffset
+                cellOffset: page.firstCellOffset,
+                volumeIndex: page.volumeIndex
             ))
         }
         return starts
@@ -176,23 +180,42 @@ extension BrailleBookReader {
             // The next page to write, and the next volume to head.
             var next = starts.startIndex
             var nextVolume = volumeStarts.startIndex
+            // In a book of several volumes each volume has a heading of the
+            // first level, so the book's own headings are one level deeper,
+            // to the sixth (FMT56).
+            let levelShift = volumeStarts.isEmpty ? 0 : 1
             for (blockIndex, block) in blocks.enumerated() {
-                // A volume's heading comes before its first block and before
-                // the markers of the pages that begin there.
-                while nextVolume < volumeStarts.endIndex, volumeStarts[nextVolume].blockIndex <= blockIndex {
-                    MarkdownMarkerWriter.ensureBlankLine(&markdown)
-                    markdown += "# " + BardBraillePackage.volumeHeading(number: volumeStarts[nextVolume].number)
-                    nextVolume += 1
-                }
                 // The pages that begin in this block (any before it, which
                 // the analyzer never gives, are written here rather than lost).
                 let firstHere = next
                 while next < starts.endIndex, starts[next].blockIndex <= blockIndex { next += 1 }
-                let pagesHere = starts[firstHere..<next]
+                var pagesHere = ArraySlice(starts[firstHere..<next])
+
+                // A volume begins here: its heading follows the marker of its
+                // first page, so that going to that page lands on the heading
+                // and the page at the heading is the volume's own. The pages
+                // of the volume before that have a number and no text and so
+                // begin here too; they stay with their own volume, ahead of
+                // the heading.
+                var volumeHeading: String?
+                if nextVolume < volumeStarts.endIndex, volumeStarts[nextVolume].blockIndex <= blockIndex {
+                    let volume = volumeStarts[nextVolume]
+                    nextVolume += 1
+                    pagesHere.filter { $0.volumeIndex < volume.index }.forEach(writeBlockMarker)
+                    pagesHere = ArraySlice(pagesHere.filter { $0.volumeIndex >= volume.index })
+                    volumeHeading = "# " + BardBraillePackage.volumeHeading(number: volume.number)
+                }
+                /// Writes the volume's heading, when one begins here.
+                func writeVolumeHeading() {
+                    guard let volumeHeading else { return }
+                    MarkdownMarkerWriter.ensureBlankLine(&markdown)
+                    markdown += volumeHeading
+                }
 
                 let whole = text(at: blockIndex, of: printed).trimmingWhitespace()
                 guard !whole.text.isEmpty else {
                     pagesHere.forEach(writeBlockMarker)
+                    writeVolumeHeading()
                     continue
                 }
                 let pagePlaces = places(of: pagesHere, in: blockIndex, print: whole, printed: printed)
@@ -200,9 +223,11 @@ extension BrailleBookReader {
                 for (start, place) in zip(pagesHere, pagePlaces) where place == 0 {
                     writeBlockMarker(start)
                 }
+                writeVolumeHeading()
                 MarkdownMarkerWriter.ensureBlankLine(&markdown)
                 if case let .heading(level, _) = block {
-                    markdown += String(repeating: "#", count: level) + " " + BrailleBookReader.markdownLine(of: whole)
+                    markdown += String(repeating: "#", count: min(level + levelShift, 6)) + " "
+                        + BrailleBookReader.markdownLine(of: whole)
                 } else {
                     let inside = zip(pagesHere, pagePlaces).filter { $0.1 > 0 }.map { (start: $0.0, place: $0.1) }
                     writeParagraph(whole, pages: inside, into: &markdown)
