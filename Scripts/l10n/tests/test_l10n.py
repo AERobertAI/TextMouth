@@ -190,7 +190,7 @@ class SizeTests(TemporaryCase):
                                                     es=plural(one=unit("%lld libro"), many=unit("%lld de libros"),
                                                               other=unit("%lld libros")))})
         printed = self.run_size(path)
-        self.assertRegex(printed, r"es: [\d,]+ bytes in the pack \([\d,]+ raw\)")
+        self.assertRegex(printed, r"es: [\d,]+ bytes in the pack \([\d,]+ raw, (lzma|bzip2)\)")
         self.assertRegex(printed, r"en: [\d,]+ bytes in the pack")
         self.assertRegex(printed, r"The pack, Strings.pack: [\d,]+ bytes")
         self.assertIn("catalog file", printed)
