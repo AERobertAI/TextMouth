@@ -348,7 +348,10 @@ final class IOSInfoPlistTests: XCTestCase {
 
         let importedAs = try matches(of: #"UTType\(importedAs: "([^"]+)""#, in: source)
         XCTAssertFalse(importedAs.isEmpty, "Found no UTType(importedAs:) in the import's source")
-        XCTAssertEqual(importedAs.subtracting(iOSDeclared), [], "UTType(importedAs:) with no declaration")
+        // The BARD package type is named only under `#if os(macOS)`, so the iPhone's picker never asks for it.
+        XCTAssertEqual(
+            importedAs.subtracting(iOSDeclared).subtracting(Self.refusedTypes), [], "UTType(importedAs:) with no declaration"
+        )
 
         // A UTType("com.textmouth...") is nil without its declaration, and drops
         // out of the file picker in silence (F33).
