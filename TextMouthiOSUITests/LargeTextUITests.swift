@@ -49,6 +49,30 @@ final class LargeTextUITests: TextMouthUITestCase {
         try audit(app, screen: "Settings at the largest text, scrolled", types: Self.sizeFindings, accepting: [.navigationTitle("Settings"), .scrolledPastTheEdge, .unnamedUnsupported, .unnamedPartlyUnsupported])
     }
 
+    /// PROBE (temporary): the scrolled Settings audited again and again at the largest text, printing each time the sleep timer
+    /// switch's label frame and every clipped-text finding with its element's frame, to tell a label that really clips from an
+    /// audit that runs mid-scroll or mid-layout.
+    func testProbeTheScrolledSettingsAuditRepeatedly() throws {
+        let app = try launch(sendingTheBook: false, textSize: Self.largestText)
+        tap(app.buttons["Settings"], until: app.navigationBars["Settings"], in: app, what: "Settings")
+        app.swipeUp()
+        app.swipeUp()
+        let label = app.staticTexts["Close sleep timer sheet after setting a timer"]
+        for round in 1...6 {
+            let before = label.exists ? "\(label.frame)" : "absent"
+            var findings: [String] = []
+            try app.performAccessibilityAudit(for: .textClipped) { issue in
+                let frame = issue.element.map { "\($0.frame)" } ?? "no element"
+                findings.append("\(issue.element?.label ?? "?") at \(frame): \(issue.compactDescription)")
+                return true
+            }
+            let after = label.exists ? "\(label.frame)" : "absent"
+            let line = "PROBE-CLIP round \(round): label before \(before), after \(after), \(findings.count) findings: \(findings.joined(separator: " || "))"
+            print(line)
+            NSLog("%@", line)
+        }
+    }
+
     /// The Add to Library sheet, at the largest size.
     func testAddToLibraryHoldsAtTheLargestText() throws {
         let app = try launch(sendingTheBook: false, textSize: Self.largestText)
