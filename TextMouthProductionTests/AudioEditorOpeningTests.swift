@@ -414,29 +414,37 @@ struct EditorHarness {
     /// The permission punch-ins ask.
     let permission: FakeMicrophonePermission
 
+    /// A disk reading that leaves room for any clip: a terabyte.
+    static let plentyOfSpace: Int64 = 1_000_000_000_000
+
     /// Opens `fixture`'s book, or its `track`, in a model of its own, with
     /// `test`'s own sandboxed preferences store, and microphones that say
-    /// yes unless `permission` says otherwise.
+    /// yes unless `permission` says otherwise. The disk reads as having
+    /// `freeSpace` bytes free, plenty unless a test says otherwise, so no
+    /// result depends on the disk the tests run on.
     static func open(
         _ fixture: AudioEditorTestBook,
         for test: XCTestCase,
         track: AudioEditorTrack? = nil,
-        permission: FakeMicrophonePermission = FakeMicrophonePermission(.authorized)
+        permission: FakeMicrophonePermission = FakeMicrophonePermission(.authorized),
+        freeSpace: Int64 = EditorHarness.plentyOfSpace
     ) async throws -> EditorHarness {
         let session = try await AudioEditSession.open(bookID: fixture.book.id, audioFile: track?.path, in: fixture.library)
-        return try make(session: session, of: fixture, for: test, track: track, permission: permission)
+        return try make(session: session, of: fixture, for: test, track: track, permission: permission, freeSpace: freeSpace)
     }
 
     /// A model of its own for `session`, an edit session of `fixture`'s
     /// book, or its `track`, already open, as the launcher opens one, with
     /// `test`'s own sandboxed preferences store, and microphones that say
-    /// yes unless `permission` says otherwise.
+    /// yes unless `permission` says otherwise, and a disk with `freeSpace`
+    /// bytes free.
     static func make(
         session: AudioEditSession,
         of fixture: AudioEditorTestBook,
         for test: XCTestCase,
         track: AudioEditorTrack? = nil,
-        permission: FakeMicrophonePermission = FakeMicrophonePermission(.authorized)
+        permission: FakeMicrophonePermission = FakeMicrophonePermission(.authorized),
+        freeSpace: Int64 = EditorHarness.plentyOfSpace
     ) throws -> EditorHarness {
         let player = FakeAudioEditorPlayer()
         let announcements = EditorAnnouncements()
@@ -457,6 +465,7 @@ struct EditorHarness {
             player: player,
             store: store,
             recorder: AudioEditorRecorder(service: service, catalog: catalog, countIn: {}, announcementLead: .zero),
+            freeSpace: { _ in freeSpace },
             announce: announcements.announce
         )
         // The markers asked to be kept are written before the book's folder,

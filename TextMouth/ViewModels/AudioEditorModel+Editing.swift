@@ -29,6 +29,17 @@ struct AudioEditorClip: Equatable {
 
     /// The space left on a disk below which nothing is kept for Paste.
     static let reserve: Int64 = 1_000_000_000
+
+    /// Reads the bytes free on the disk that holds a folder; the model's
+    /// default, so a test can give it another reading.
+    typealias FreeSpaceReader = (URL) -> Int64
+
+    /// The space the system says is free for important usage on the volume
+    /// holding `folder`, in bytes; unlimited when the volume doesn't say.
+    static func systemFreeSpace(at folder: URL) -> Int64 {
+        (try? folder.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey]))?
+            .volumeAvailableCapacityForImportantUsage ?? .max
+    }
 }
 
 /// What an edit did: its entry, and the audio's length around it.
@@ -237,8 +248,7 @@ extension AudioEditorModel {
             try FileManager.default.createDirectory(at: clipFolder, withIntermediateDirectories: true)
             // Stereo floats at the audio's rate: as much as a clip can take.
             let needed = Int64(range.duration * session.timeline.sampleRate * 8)
-            let free = (try? clipFolder.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey]))?
-                .volumeAvailableCapacityForImportantUsage ?? .max
+            let free = freeSpace(clipFolder)
             guard free - needed > AudioEditorClip.reserve else {
                 announce(AudioEditorWording.diskTooFullToKeepClip)
                 return nil

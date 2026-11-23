@@ -149,6 +149,20 @@ final class AudioEditorEditingTests: XCTestCase {
         XCTAssertEqual(samples[checked: 48_000].map(AudioTestFixtures.rampSample), .frame(.book, 40_000))
     }
 
+    /// On a disk with less free than the reserve the editor keeps nothing
+    /// for Paste and says why, whatever disk the test itself runs on.
+    func testCopyOnAFullDiskKeepsNoClipAndSaysSo() async throws {
+        let book = try AudioEditorTestBook.ramp(seconds: 10, for: self)
+        let harness = try await EditorHarness.open(book, for: self, freeSpace: AudioEditorClip.reserve)
+        let model = harness.model
+        addTeardownBlock { @MainActor in model.windowClosed() }
+        model.select(AudioTimeRange(start: 1, end: 2))
+        await model.copy()
+        XCTAssertEqual(harness.announcements.sentences.last, AudioEditorWording.diskTooFullToKeepClip)
+        XCTAssertNil(model.clip, "a clip was kept on a full disk")
+        XCTAssertEqual(model.duration, 10, accuracy: 0.000_1)
+    }
+
     /// A Paste over a selection replaces it with the audio copied.
     func testPasteOverASelectionReplacesIt() async throws {
         let harness = try await openRamp(seconds: 10)
