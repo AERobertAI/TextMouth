@@ -132,6 +132,14 @@ A fix committed meanwhile goes with the train only if the agent asks again befor
 A train whose Mac loses GitHub keeps watching its run, and the next train collects a run this one could not (see [A remote train and a lost connection](../developer/testing-tools.md#a-remote-train-and-a-lost-connection)).
 Never run `gh run watch` beside a train or a remote suite: `github_run.py` already polls the run, and the API allows 5,000 calls an hour for the whole account, shared by every agent and tool, so a second watcher only costs calls; wait with a local check.
 
+### Retry one failing test
+<!-- id: retry-one-failing-test; keys: --now, Class/testMethod, retry, one test, last train; src: Scripts/agents/build-train.py, Scripts/test/run-area.py -->
+
+**Retries one failing test cheaply.**
+To retry one failing test, request a train naming only its class or method (`--classes Class/testMethod`), with `--now` and no `--areas`: the train leaves at once, and runs only that test.
+`--now` with `--areas` still goes ahead, and prints a line that the batching was skipped.
+The last train names every class and area the change touches.
+
 ### Read the whole result first
 <!-- id: read-whole-result-first; keys: result file, one round, fix every failure; src: -->
 
