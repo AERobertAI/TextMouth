@@ -329,11 +329,12 @@ class RealL10nLintTests(MergeChainCase):
 
     PAUSE = ('enum PauseWording {\n    static var one: String { "First sentence of text" }\n'
              '    static var two: String { "Second sentence of text" }\n}\n')
-    # The localized call carries its translator's note on the line above it, as the l10n lint has required since
-    # November 20, 2026 (TL15), not in a `comment:` argument.
+    # The localized call is an InterfaceText.line (FR39), with its translator's note on the line above it, as the l10n
+    # lint has required since November 20, 2026 (TL15), not in a `comment:` argument. Apple's `String(localized:)` is
+    # refused since FR39 phase 8 took Apple's tables out of the apps: it would show its key.
     ONE_LOCALIZED = ('enum PauseWording {\n    static var one: String { "First sentence of text" }\n'
                      '    static var two: String {\n        // Translators: A title.\n'
-                     '        String(localized: "Second sentence of text")\n    }\n}\n')
+                     '        InterfaceText.line("pauseWording.two", "Second sentence of text")\n    }\n}\n')
 
     def make_repo_with_the_real_scanner(self):
         """main with the scanner's package, a wording file with two unlocalized literals, and its baseline."""
