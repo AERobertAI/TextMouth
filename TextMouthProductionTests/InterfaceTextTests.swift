@@ -121,7 +121,11 @@ struct InterfaceTextPackBytes {
                     )
                 }
             }
-            precondition(status == BZ_OK, "the test pack's bzip2 compression failed")
+            // A failure is the test's to report: a trap here would end the test host and every test after this one.
+            guard status == BZ_OK else {
+                XCTFail("the test pack's bzip2 compression failed, with status \(status)")
+                return []
+            }
             return Array(output[0..<Int(written)])
         }
         let written = compression_encode_buffer(&output, output.count, raw, raw.count, nil, COMPRESSION_LZMA)
