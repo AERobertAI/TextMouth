@@ -11,7 +11,7 @@ New tests belong in TextMouthProductionTests/.
 The files under TextMouthTests/Sources/Tests are older scenario groups that project.yml lists one by one.
 
 ### Hosted tests touch no user data
-<!-- id: hosted-tests-touch-no-user; keys: isHostedTest, test isolation, no user data, TextMouthRuntime, notifications, media keys; src: TextMouth/App/TextMouthRuntime.swift, TextMouth/Services/VoiceOverAnnouncer.swift, TextMouth/Services/AudioInputPermission.swift, TextMouth/Services/NowPlayingService.swift, TextMouth/Services/Feeds/FeedNetwork.swift, TextMouth/Services/Feeds/FeedCenter.swift, TextMouth/Views/Feeds/FeedArrivals.swift, TextMouthProductionTests/HostedTestIsolationTests.swift, TextMouthProductionTests/HostedTestIsolationSupport.swift, TextMouthProductionTests/HostedTestObservers.swift -->
+<!-- id: hosted-tests-touch-no-user; keys: isHostedTest, test isolation, no user data, TextMouthRuntime, notifications, media keys; src: TextMouth/App/TextMouthRuntime.swift, TextMouth/Services/VoiceOverAnnouncer.swift, TextMouth/Services/AudioInputPermission.swift, TextMouth/Services/NowPlayingService.swift, TextMouth/Services/Feeds/FeedNetwork.swift, TextMouth/Services/Feeds/FeedCenter.swift, TextMouth/Views/Feeds/FeedArrivals.swift, TextMouthProductionTests/HostedTestIsolationTests.swift, TextMouthProductionTests/HostedTestIsolationSupport.swift, TextMouthProductionTests/HostedTestObservers.swift, TextMouth/Platform/macOS/Services/FolderPanelSettings.swift -->
 
 A process hosting tests never touches your data.
 When the XCTestConfigurationFilePath environment variable is set, as XCTest sets it, TextMouth keeps these in a sandbox folder named TextMouthTests- followed by the process number, in the temporary directory:
@@ -24,6 +24,7 @@ In that process, VoiceOver announcements made through the app's announcer are re
 That process also takes no part in the system's media session: it never registers for the commands of headphones and media keys, nor tells the system it is playing, so a suite running while you listen can't take those commands from the TextMouth you are listening to.
 Nor does it reach the network: its feed connections refuse every request, the feed tests answer theirs from a stub server of their own, and the feed engine never refreshes, downloads, or deletes anything by itself there.
 Nor does that process post a notification, or ask permission for one.
+A test reads a folder panel's settings as a value (`FolderPanelSettings`) and never builds a real `NSOpenPanel`: in a sandboxed host that starts the open-and-save panel service, which can take the person's keyboard focus.
 
 ### Test sandboxes
 <!-- id: test-sandboxes; keys: temporary directory, sandbox sweep, abandonedSandboxes, TEXTMOUTH_KEEP_SANDBOX, leftover sandboxes; src: TextMouth/App/TextMouthRuntime.swift, TextMouthProductionTests/HostedTestIsolationTests.swift, TextMouthProductionTests/HostedTestObservers.swift -->
@@ -198,12 +199,12 @@ Delete a kept sandbox when you are done with it.
 ### Tests in Spanish
 <!-- id: tests-in-spanish; keys: SpanishLocalizationTests, SpanishUITests, Strings.pack, AppleLanguages, localization test, FR34; status: incomplete; issues: FR34, TL14; src: TextMouthProductionTests/SpanishLocalizationTests.swift, TextMouthiOSUITests/SpanishUITests.swift, TextMouthProductionTests/LanguagePackTests.swift, TextMouthiOSUITests/TextMouthUITestCase.swift, TextMouthProductionTests/AccessibilityTestSupport.swift, TextMouthProductionTests/RunLoopWaiting.swift -->
 
-- The suite runs in English, so a Spanish test reads Spanish a way that works inside the host.
+- The suite runs in English.
   `SpanishLocalizationTests` (the Mac app) reads the Spanish entries of the app's own `Strings.pack` by ID, and asks the engine for a line in Spanish (`InterfaceText.line(_:_:language:)`).
-  It checks each pilot area's strings with their Spanish, every plural string with its three Spanish categories, that no text is empty, and that a bookmark's number is never grouped.
-- `SpanishUITests` (the iPhone interface tests, on GitHub only) starts the app with `-AppleLanguages (es) -AppleLocale es_ES` and compares what VoiceOver is given, in order, with the catalog's Spanish.
-  Each expected word is written with its English beside it, so a failure that names what the app gave instead shows an English start at once.
-  They check the Sleep Timer and Bookmarks sheets, opened by their Spanish names, once the reader's Spanish Play button is there (`launchIntoTheReader(playLabel:loadingValue:)`).
+  It checks each pilot area's strings in Spanish, every plural string in its three categories, that no text is empty, and that a bookmark's number is never grouped.
+- `SpanishUITests` (the iPhone interface tests, on GitHub) starts the app with `-AppleLanguages (es) -AppleLocale es_ES` and compares what VoiceOver is given, in order, with the catalog's Spanish.
+  Each expected word has its English beside it, so a failure shows an English start at once.
+  They check the Sleep Timer and Bookmarks sheets.
 - `InterfaceTextShippedPackTests`, in both apps, compares every entry and lookup of the shipped pack with the catalog, plurals at 13 counts ([what the apps ship](localization.md#what-the-apps-ship)).
 - `AccessibleControl.title` is a hosted control's accessibility title, which VoiceOver reads beside its label.
   A test can require it empty, because a hidden title that repeats the label is read twice ("Adjust minutes, Adjust minutes").
