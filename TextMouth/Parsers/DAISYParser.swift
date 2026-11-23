@@ -91,9 +91,17 @@ protocol DAISYFileProvider {
     /// nothing is yet, holding it to the bounds `readFile(at:)` holds it to.
     /// DAISY audio conversion copies each audio file with it.
     func copyFile(at path: String, to destination: URL) throws
+    /// The size in bytes of the file at the given relative path, as the file
+    /// system or the archive records it, without reading the file; nil when
+    /// it is not known. A reader that must refuse a package past a limit
+    /// adds the sizes up before it reads any file (`BardBraillePackage`).
+    func byteCount(of path: String) -> Int64?
 }
 
 extension DAISYFileProvider {
+    /// No size is known unless a provider says it.
+    func byteCount(of path: String) -> Int64? { nil }
+
     /// Copy the file by reading it whole and writing it out: for a provider
     /// whose files are small or already in memory. The archive and folder
     /// providers copy without holding a file whole (PERF24).
@@ -127,6 +135,10 @@ class CachingFileProvider: DAISYFileProvider {
 
     func copyFile(at path: String, to destination: URL) throws {
         try inner.copyFile(at: path, to: destination)
+    }
+
+    func byteCount(of path: String) -> Int64? {
+        inner.byteCount(of: path)
     }
 }
 
@@ -210,6 +222,12 @@ class ArchiveFileProvider: DAISYFileProvider {
         }
     }
 
+    /// The size the archive records for the file at `path` (its entry found
+    /// as `readFile(at:)` finds it), or nil for a path it has none for.
+    func byteCount(of path: String) -> Int64? {
+        index.file(at: path).map { Int64($0.uncompressedSize) }
+    }
+
     /// How many bytes of an entry `copyFile(at:to:)` gathers before writing.
     private static let writeBatchSize = 1_048_576
 
@@ -284,6 +302,13 @@ class DirectoryFileProvider: DAISYFileProvider {
             }
         }
         return files
+    }
+
+    /// The size of the file at `path`, following a symbolic link to it, as the
+    /// file system gives it; nil for a path that is no file.
+    func byteCount(of path: String) -> Int64? {
+        let target = baseURL.appendingPathComponent(path).resolvingSymlinksInPath()
+        return (try? target.resourceValues(forKeys: [.fileSizeKey]))?.fileSize.map(Int64.init)
     }
 
     func readFile(at path: String) throws -> Data {

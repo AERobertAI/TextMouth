@@ -144,7 +144,9 @@ final class BardBrailleTests: XCTestCase {
         let folder = try makeSandboxDirectory("BardPackage").appendingPathComponent("Salt Ledger", isDirectory: true)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         for (name, data) in try volumes ?? volumeFiles() where !left.contains(name) {
-            try data.write(to: folder.appendingPathComponent(name))
+            let destination = folder.appendingPathComponent(name)
+            try FileManager.default.createDirectory(at: destination.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try data.write(to: destination)
         }
         let file = folder.appendingPathComponent("salt.bopf")
         try (package ?? self.packageText()).write(to: file)
@@ -283,21 +285,31 @@ final class BardBrailleTests: XCTestCase {
         XCTAssertEqual(try markdown(of: file), try expectedMarkdown(ofVolumes: volumes))
     }
 
+    /// What the damaged-file sentence of a book says of `file` and `reason`
+    /// (the sentence every refusal of a BARD book is made of, so none needs
+    /// a line of its own).
+    private func damagedSentence(_ file: String, _ reason: String) -> String {
+        "The file “\(file)” in this book is damaged or incomplete: \(reason). Get a fresh copy of the book, then import it again."
+    }
+
     /// A volume the package names that is not there fails the reading,
-    /// naming the file, as a DAISY book's missing content file does; the
-    /// import is refused, and leaves nothing in the library.
+    /// naming the file and saying why; the import is refused, and leaves
+    /// nothing in the library.
     func testAMissingVolumeFailsTheReadingAndTheImport() throws {
         let (_, file) = try packageFolder(leaving: ["salt-v2.brf"])
-        XCTAssertThrowsError(try markdown(of: file)) {
-            XCTAssertTrue($0.localizedDescription.contains("salt-v2.brf"), $0.localizedDescription)
+        let sentence = damagedSentence("salt-v2.brf", "the book's package lists it, but it is not there")
+        XCTAssertThrowsError(try markdown(of: file)) { XCTAssertEqual($0.localizedDescription, sentence) }
+        XCTAssertThrowsError(try FileImportService.importFileWithReport(from: file, toFolder: folderPath)) {
+            XCTAssertTrue($0.localizedDescription.contains(sentence), $0.localizedDescription)
         }
-        XCTAssertThrowsError(try FileImportService.importFileWithReport(from: file, toFolder: folderPath))
         let folder = TextMouthPaths.libraryDir.appendingPathComponent(folderPath, isDirectory: true)
         XCTAssertEqual((try? FileManager.default.contentsOfDirectory(atPath: folder.path)) ?? [], [])
     }
 
-    /// A damaged package, and one that lists no braille volume, are refused
-    /// by name: the first as a damaged file, the second as missing content.
+    /// A damaged package, one that lists no braille volume, and one of
+    /// several package files at the same level are each refused by name with
+    /// the damaged-file sentence; a damaged package in a folder is refused as
+    /// it is, with no fallback to the folder's files.
     func testABrokenPackageIsRefused() throws {
         let damaged = try packageFolder(Data("<package><metadata><dc-metadata><dc:Title>x".utf8))
         XCTAssertThrowsError(try BardBraillePackage.open(at: damaged.file)) {
@@ -305,12 +317,98 @@ final class BardBrailleTests: XCTestCase {
             XCTAssertEqual(name, "salt.bopf")
         }
         XCTAssertThrowsError(try markdown(of: damaged.file))
-        XCTAssertThrowsError(try FileImportService.importFileWithReport(from: damaged.file, toFolder: folderPath))
+        for source in [damaged.file, damaged.folder] {
+            XCTAssertThrowsError(try FileImportService.importFileWithReport(from: source, toFolder: folderPath)) {
+                XCTAssertTrue($0.localizedDescription.contains("“salt.bopf” in this book is damaged"), $0.localizedDescription)
+            }
+        }
 
         let empty = try packageFolder(packageText(manifest: []))
         XCTAssertThrowsError(try BardBraillePackage.open(at: empty.file)) {
-            guard case DAISYParserError.missingContent = $0 else { return XCTFail("\($0)") }
+            XCTAssertEqual($0.localizedDescription, damagedSentence("salt.bopf", "it lists no braille volume"))
         }
+
+        // Two package files at one level: no one book is meant.
+        let twin = try packageFolder()
+        try packageText().write(to: twin.folder.appendingPathComponent("other.bopf"))
+        XCTAssertThrowsError(try BardBraillePackage.open(at: twin.folder))
+        XCTAssertFalse(BardBraillePackage.holdsPackage(inArchivePaths: ["a.bopf", "b.bopf", "a1.brf"]))
+        XCTAssertTrue(BardBraillePackage.holdsPackage(inArchivePaths: ["a.bopf", "sub/b.bopf", "a1.brf"]))
+        // The package file chosen is the book, whatever lies beside it.
+        XCTAssertNoThrow(try BardBraillePackage.open(at: twin.file))
+    }
+
+    /// A volume that holds no braille, and one that is not braille in its
+    /// code, are refused naming the volume, with the reason after it.
+    func testAnEmptyVolumeAndOneThatIsNotBrailleAreRefusedByName() throws {
+        let empty = try packageFolder(volumes: try volumeFiles().merging(["salt-v2.brf": Data()]) { _, new in new })
+        XCTAssertThrowsError(try markdown(of: empty.file)) {
+            XCTAssertEqual($0.localizedDescription, damagedSentence("salt-v2.brf", "it holds no braille"))
+        }
+        let notBraille = try packageFolder(volumes: try volumeFiles().merging(["salt-v3.brf": Data("caf\u{E9}\r\n".utf8)]) { _, new in new })
+        XCTAssertThrowsError(try markdown(of: notBraille.file)) {
+            let sentence = $0.localizedDescription
+            XCTAssertTrue(sentence.hasPrefix("The file “salt-v3.brf” in this book is damaged or incomplete: "), sentence)
+            XCTAssertFalse(sentence.contains("DAISY"), sentence)
+        }
+    }
+
+    /// Volumes together past the size one braille file may have are refused
+    /// from the sizes the file system gives, before any is read: here two
+    /// volumes of 17 MB each, which hold no braille, so reading either would
+    /// have said so instead.
+    func testVolumesTogetherPastTheLimitAreRefusedBeforeAnyIsRead() throws {
+        let big = Data(count: 17 * 1_048_576)
+        let (_, file) = try packageFolder(volumes: ["salt-v1.brf": big, "salt-v2.brf": big, "salt-v3.brf": Data(",A\r\n".utf8)])
+        XCTAssertThrowsError(try BardBraillePackage.open(at: file).readPages(code: .northAmerican)) {
+            XCTAssertEqual($0 as? BrailleFileError, .fileTooLarge)
+        }
+        // The code detector's read, with no table named, has the same bound.
+        XCTAssertFalse(BrailleCodeDetector.looksLikeEBAE(fileAt: file, fileCode: nil))
+    }
+
+    /// Hrefs that are escaped (a space as %20) or nested in a folder find
+    /// their volumes.
+    func testEscapedAndNestedHrefsFindTheirVolumes() throws {
+        let files = try volumeFiles()
+        let (_, file) = try packageFolder(
+            packageText(manifest: ["vol%201.brf", "sub/vol2.brf", "salt-v3.brf"]),
+            volumes: ["vol 1.brf": files["salt-v1.brf"]!, "sub/vol2.brf": files["salt-v2.brf"]!, "salt-v3.brf": files["salt-v3.brf"]!]
+        )
+        let package = try BardBraillePackage.open(at: file)
+        XCTAssertEqual(package.volumePaths, ["vol 1.brf", "sub/vol2.brf", "salt-v3.brf"])
+        XCTAssertEqual(try package.readPages(code: .northAmerican).volumeStarts.count, 3)
+    }
+
+    /// A volume's number is its place in the spine, whatever came before it.
+    func testAVolumeIsNumberedByItsPlaceInTheSpine() throws {
+        let rows = [String(String.UnicodeScalarView([0x2801, 0x2803, 0x2809].compactMap(Unicode.Scalar.init)))]
+        var book = BrailleFilePages(kind: .brf)
+        try book.append(volume: BrailleFilePages(kind: .brf, pages: [rows]), number: 2)
+        try book.append(volume: BrailleFilePages(kind: .brf, pages: [rows]), number: 5)
+        XCTAssertEqual(book.volumeNumbers, [2, 5])
+        XCTAssertEqual(BraillePageAnalyzer.structure(of: book).volumeStarts.map(\.number), [2, 5])
+    }
+
+    /// A ZIP is one BARD book when it holds one package file, or one
+    /// shallowest, and the table at import is that package's, never one found
+    /// deeper; two package files at one level are two books, not one.
+    func testSeveralPackagesInAZIP() throws {
+        let deep = packageText(code: "UEB", level: "1")
+        var entries: [String: Data] = ["salt.bopf": packageText(), "sub/deep.bopf": deep]
+        for (name, data) in try volumeFiles() { entries[name] = data }
+        let archive = try makeTemporaryZip(prefix: "BardSeveral", entries: entries)
+        addTeardownBlock { try? FileManager.default.removeItem(at: archive) }
+        XCTAssertTrue(BardBraillePackage.isPackageZip(url: archive))
+        XCTAssertEqual(try BardBraillePackage.open(at: archive).entryPath, "salt.bopf")
+        XCTAssertEqual(FileImportService.brailleReading(ofImported: archive).table, "en_US.tbl")
+
+        entries["other.bopf"] = deep
+        let twoAtOneLevel = try makeTemporaryZip(prefix: "BardTwo", entries: entries)
+        addTeardownBlock { try? FileManager.default.removeItem(at: twoAtOneLevel) }
+        XCTAssertFalse(BardBraillePackage.isPackageZip(url: twoAtOneLevel))
+        XCTAssertNotEqual(BookFormat.detect(from: twoAtOneLevel), .braille)
+        XCTAssertThrowsError(try BardBraillePackage.open(at: twoAtOneLevel))
     }
 
     // MARK: - Pages

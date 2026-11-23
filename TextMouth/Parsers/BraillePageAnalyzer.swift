@@ -156,7 +156,7 @@ enum BraillePageAnalyzer {
             let part = structureOfOneFile(volume)
             let blockBase = joined.blocks.count
             if !part.blocks.isEmpty {
-                joined.volumeStarts.append(BrailleVolumeStart(number: index + 1, blockIndex: blockBase))
+                joined.volumeStarts.append(BrailleVolumeStart(number: file.volumeNumbers[index], blockIndex: blockBase))
             }
             joined.blocks += part.blocks
             // A page's first block is counted from the volume's own first.

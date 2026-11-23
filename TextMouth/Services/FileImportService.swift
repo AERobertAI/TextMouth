@@ -3272,8 +3272,13 @@ enum FileImportService {
             types.append(daisy)
         }
         // NLS BARD braille books (FMT56): a .bopf package file, which macOS
-        // declares no type for; the app imports one in Info.plist.
+        // declares no type for; the app imports one in Info.plist. The
+        // iPhone's picker copies only the file picked, so a .bopf chosen alone
+        // would arrive without its volumes: it offers the ZIP a BARD download
+        // is, and a folder is chosen with Import Folder.
+        #if os(macOS)
         types.append(UTType(importedAs: "com.textmouth.bopf-package", conformingTo: .xml))
+        #endif
         types.append(.zip)
         types.append(contentsOf: [UTType("public.text")].compactMap { $0 })
         if let tmb = UTType("com.textmouth.book-package") {

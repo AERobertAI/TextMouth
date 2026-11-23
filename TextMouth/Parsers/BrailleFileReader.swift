@@ -50,6 +50,9 @@ struct BrailleFilePages: Equatable, Sendable {
     /// each volume out on its own (`BraillePageAnalyzer.structure(of:)`), so
     /// a paragraph never runs from one volume into the next.
     private(set) var volumeStarts: [Int] = []
+    /// The number of each volume in its book, as its place in the package's
+    /// spine says (1 for the first), parallel to `volumeStarts`.
+    private(set) var volumeNumbers: [Int] = []
 
     /// Every cell of the file, a byte each, page after page and row after
     /// row: the cell's dots (dot 1 is 1, dot 8 is 128), so the byte is the
@@ -150,13 +153,23 @@ struct BrailleFilePages: Equatable, Sendable {
 
     // MARK: Volumes
 
+    /// Whether the last page holds no cell at all: the empty page a form
+    /// feed at a file's end leaves, which no embosser counts. False for a
+    /// file with no page.
+    var endsWithAnEmptyPage: Bool {
+        guard pageCount > 0 else { return false }
+        return rows(ofPage: pageCount - 1).allSatisfy { cellRange(ofRow: $0).isEmpty }
+    }
+
     /// Adds `volume`, a file of its own, after the pages so far, as one more
     /// volume of this book (FMT56). The book's line width is the first
     /// volume's, and its pages are marked only when every volume's are. A
-    /// volume with no page adds nothing.
+    /// volume with no page adds nothing. `number` is the volume's number in
+    /// its book, its place in the package's spine; the count of volumes so
+    /// far and one when nil.
     /// - Throws: `BrailleFileError.tooManyPages`, `.tooManyRows`, or
     ///   `DocumentTooLargeError` for a book past the limits of one file.
-    mutating func append(volume: BrailleFilePages) throws {
+    mutating func append(volume: BrailleFilePages, number: Int? = nil) throws {
         guard volume.pageCount > 0 else { return }
         guard pageCount + volume.pageCount <= Self.maxPages else { throw BrailleFileError.tooManyPages }
         guard rowCount + volume.rowCount <= Self.maxRows else { throw BrailleFileError.tooManyRows }
@@ -165,6 +178,7 @@ struct BrailleFilePages: Equatable, Sendable {
         }
         let isFirst = volumeStarts.isEmpty
         volumeStarts.append(pageCount)
+        volumeNumbers.append(number ?? volumeStarts.count)
         // The volume's offsets are its own: move them past what is here.
         let cellBase = Int32(cells.count)
         let rowBase = Int32(rowEnds.count)

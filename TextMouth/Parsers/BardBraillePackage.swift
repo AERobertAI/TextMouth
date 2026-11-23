@@ -68,9 +68,15 @@ struct BardBraillePackage {
     /// do. An archive of several books each in a folder of its own is a
     /// batch, whose books import one by one.
     static func holdsPackage(inArchivePaths paths: [String]) -> Bool {
-        let entries = paths.filter { DAISYParser.isPackageEntryName(($0 as NSString).lastPathComponent) }
+        let entries = paths.filter {
+            DAISYParser.isPackageEntryName(($0 as NSString).lastPathComponent) && !DAISYParser.isHiddenPackagePath($0)
+        }
         guard !entries.isEmpty,
               entries.allSatisfy({ isPackageName(($0 as NSString).lastPathComponent) }) else { return false }
+        // One book: exactly one package file, or one shallowest of them. Two
+        // at the same level are two books, which a batch imports one by one.
+        let shallowest = entries.map { $0.split(separator: "/").count }.min()
+        guard entries.filter({ $0.split(separator: "/").count == shallowest }).count == 1 else { return false }
         let folders = DAISYParser.packageFolders(inArchivePaths: paths)
         return !folders.isEmpty && (folders.count <= 1 || folders.contains(""))
     }
@@ -111,12 +117,26 @@ struct BardBraillePackage {
     static func open(at url: URL) throws -> BardBraillePackage {
         let provider = try DAISYParser.makeFileProvider(from: url)
         let files = provider.listFiles()
-        // The chosen package file is listed first (`EntryFirstFileProvider`);
-        // hidden files and the folder macOS adds to an archive hold no book.
-        guard let entryPath = files.first(where: { path in
-            let components = path.split(separator: "/")
-            return isPackageName(path) && !components.contains { $0.hasPrefix(".") || $0 == "__MACOSX" }
-        }) else { throw DAISYParserError.notDAISYBook }
+        // The package file: the one chosen, when `url` is a package file
+        // (listed first, `EntryFirstFileProvider`); otherwise the one
+        // package file of the folder or archive, or the shallowest, and
+        // several at that depth name no one book. Hidden files and the
+        // folder macOS adds to an archive hold no book.
+        let candidates = files.filter { isPackageName($0) && !DAISYParser.isHiddenPackagePath($0) }
+        guard let first = candidates.first else { throw DAISYParserError.notDAISYBook }
+        let entryPath: String
+        if isPackageName(url.lastPathComponent) {
+            entryPath = first
+        } else {
+            let depth = { (path: String) in path.split(separator: "/").count }
+            let shallowest = candidates.filter { depth($0) == candidates.map(depth).min() }
+            guard shallowest.count == 1 else {
+                throw DAISYParserError.malformedXML(
+                    file: shallowest[0], reason: "it is one of \(shallowest.count) package files at the same level, so no one book is meant" // l10n: no (a parser's damage reason)
+                )
+            }
+            entryPath = shallowest[0]
+        }
 
         let package = try DAISYOPFParser(path: entryPath, in: provider).parse()
 
@@ -145,7 +165,7 @@ struct BardBraillePackage {
             if !paths.contains(found) { paths.append(found) }
         }
         guard !paths.isEmpty else {
-            throw DAISYParserError.missingContent("No braille volumes found in the package") // l10n: no (a parser's damage reason)
+            throw DAISYParserError.malformedXML(file: entryPath, reason: "it lists no braille volume") // l10n: no (a parser's damage reason)
         }
         return BardBraillePackage(entryPath: entryPath, package: package, volumePaths: paths, provider: provider)
     }
@@ -249,51 +269,100 @@ struct BardBraillePackage {
     /// (the Braille setting's table, or the guess from the braille itself:
     /// `BrailleTableGuess`), and Book Information shows the table it used.
     static func importTable(forFileAt url: URL) -> String? {
-        (try? open(at: url))?.table
+        // A plain BRF or PEF is no package, and is never tried as an archive.
+        guard isPackage(at: url) else { return nil }
+        return (try? open(at: url))?.table
     }
 
     // MARK: - Reading the volumes
 
+    /// The sentence a refusal of the package or of one of its files is made
+    /// of: the damaged-file sentence of a book (`PackageDamage`), naming
+    /// `file`, with `reason`, in English, after it.
+    private static func damaged(_ file: String, _ reason: String) -> DAISYParserError {
+        DAISYParserError.malformedXML(file: file, reason: reason)
+    }
+
+    /// `error`'s sentence as the reason a file is damaged, which begins with a
+    /// lowercase letter and has no full stop, as the other reasons do.
+    private static func reason(of error: Error) -> String {
+        var text = error.localizedDescription.trimmingCharacters(in: .whitespacesAndNewlines)
+        if text.hasSuffix(".") { text.removeLast() }
+        guard let first = text.first else { return "it is not braille" } // l10n: no (a parser's damage reason)
+        return first.lowercased() + text.dropFirst()
+    }
+
+    /// Refuses the book when its volumes together are larger than one braille
+    /// file may be (`BrailleBookReader.maximumFileBytes`), by the sizes the
+    /// file system or the archive records, before any volume is read, as a
+    /// single BRF is refused by its size. A volume whose size is not known
+    /// is counted when it has been read.
+    /// - Throws: `BrailleFileError.fileTooLarge`.
+    private func requireVolumesWithinLimit() throws {
+        let known = volumePaths.compactMap { provider.byteCount(of: $0) }.reduce(0, +)
+        guard known <= BrailleBookReader.maximumFileBytes else { throw BrailleFileError.fileTooLarge }
+    }
+
     /// The pages of every volume, read as BRF files whose cells are written
     /// in `code`, as one set of pages whose volumes are marked
-    /// (`BrailleFilePages.volumeStarts`) and whose line width is the
-    /// package's, when it gives one. A volume with no braille in it is
-    /// passed over.
+    /// (`BrailleFilePages.volumeStarts`) and numbered by their place in the
+    /// spine. The package's line length is not used: the analyzer measures
+    /// the width the volumes are laid out in, which a package may not state.
     ///
     /// The package's declared page count is only checked: a difference is
     /// logged, never a reason to refuse the book.
-    /// - Throws: the provider's error naming a volume that is not in the
-    ///   package, `BrailleFileError.fileTooLarge` when the volumes together
-    ///   are larger than one braille file may be
-    ///   (`BrailleBookReader.maximumFileBytes`), what reading a volume throws
-    ///   (`BrailleFileReader.pages(fromText:kind:code:)`), and
-    ///   `FileImportError.noTextToRead` when no volume holds any braille.
+    /// - Throws: the damaged-file sentence (`DAISYParserError.malformedXML`)
+    ///   naming a volume that is not in the package, that is empty, or that
+    ///   is not braille in `code`, with the reason after it;
+    ///   `BrailleFileError.fileTooLarge` when the volumes together are larger
+    ///   than one braille file may be (`BrailleBookReader.maximumFileBytes`),
+    ///   checked from their sizes before any is read; and the errors of the
+    ///   limits of a braille file (`BrailleFileReader.pages(fromText:kind:code:)`).
     func readPages(code: BrailleFileCode) throws -> BrailleFilePages {
+        let files = Set(provider.listFiles())
+        // A volume the package lists that is not there is named before any is read.
+        for path in volumePaths where !files.contains(path) {
+            throw Self.damaged(path, "the book's package lists it, but it is not there") // l10n: no (a parser's damage reason)
+        }
+        try requireVolumesWithinLimit()
+
         var book = BrailleFilePages(kind: .brf)
         var bytes: Int64 = 0
-        for path in volumePaths {
+        var emptyLastPages = 0
+        for (index, path) in volumePaths.enumerated() {
             let data = try provider.readFile(at: path)
             bytes += Int64(data.count)
             guard bytes <= BrailleBookReader.maximumFileBytes else { throw BrailleFileError.fileTooLarge }
-            var volume = try BrailleFileReader.pages(fromText: data, kind: .brf, code: code)
-            try book.append(volume: volume)
+            let volume: BrailleFilePages
+            do {
+                volume = try BrailleFileReader.pages(fromText: data, kind: .brf, code: code)
+            } catch let error as BrailleFileError {
+                throw Self.damaged(path, Self.reason(of: error))
+            }
+            // An empty volume is refused, as DAISY refuses an empty content file.
+            guard volume.pageCount > 0 else {
+                throw Self.damaged(path, "it holds no braille") // l10n: no (a parser's damage reason)
+            }
+            if volume.endsWithAnEmptyPage { emptyLastPages += 1 }
+            try book.append(volume: volume, number: index + 1)
         }
-        guard book.pageCount > 0 else { throw FileImportError.noTextToRead }
-        // The package's line length is only checked: the analyzer measures
-        // the width the volumes are laid out in, which a package may not state.
-        if let declared = lineLength, book.volumeStarts.count > 0 {
+        // The package's line length is only checked.
+        if let declared = lineLength {
             let measured = BraillePageAnalyzer.commonWidth(ofVolumesIn: book)
             if measured != declared {
                 DiagnosticLog.event(.import, "BARD_BRAILLE_WIDTH: the package declares \(declared) cells a line; the volumes measure \(measured)")
             }
         }
-        if let declared = declaredPageCount, declared != book.pageCount {
+        // So is its page count, which leaves out each volume's empty last page.
+        let counted = book.pageCount - emptyLastPages
+        if let declared = declaredPageCount, declared != counted {
             DiagnosticLog.event(
                 .import,
                 "BARD_BRAILLE_PAGES: the package declares \(declared) page(s); its \(book.volumeStarts.count) "
-                    + "volume(s) hold \(book.pageCount)"
+                    + "volume(s) hold \(counted)"
             )
         }
         return book
     }
 }
+

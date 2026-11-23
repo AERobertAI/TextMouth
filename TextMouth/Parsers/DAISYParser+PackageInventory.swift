@@ -61,6 +61,14 @@ extension DAISYParser {
         return books.map { directory.appendingPathComponent($0) }
     }
 
+    /// Whether `path`, a path inside an archive or a package folder, is
+    /// hidden: a part of it begins with a dot (the `._book.opf` copies macOS
+    /// leaves in archives are one), or it lies in the `__MACOSX` folder macOS
+    /// adds to the archives it makes. Such a path is never a book's.
+    static func isHiddenPackagePath(_ path: String) -> Bool {
+        path.split(separator: "/").contains { $0.hasPrefix(".") || $0 == "__MACOSX" }
+    }
+
     /// The folders of an archive, whose files `paths` lists, that hold a
     /// DAISY book's package or navigation file at their top level: "" for
     /// the archive's own top level. Hidden entries, and the `__MACOSX`
@@ -71,7 +79,7 @@ extension DAISYParser {
             let components = path.split(separator: "/").map(String.init)
             guard let name = components.last,
                   isPackageEntryName(name),
-                  !components.contains(where: { $0.hasPrefix(".") || $0 == "__MACOSX" }) else { continue }
+                  !isHiddenPackagePath(path) else { continue }
             folders.insert(components.dropLast().joined(separator: "/"))
         }
         return folders
@@ -108,6 +116,11 @@ final class EntryFirstFileProvider: DAISYFileProvider {
     /// The file at `path`, as `inner` reads it.
     func readFile(at path: String) throws -> Data {
         try inner.readFile(at: path)
+    }
+
+    /// The size of the file at `path`, as `inner` gives it.
+    func byteCount(of path: String) -> Int64? {
+        inner.byteCount(of: path)
     }
 }
 
@@ -450,6 +463,10 @@ struct DAISYPackageInventory {
         do {
             package = try DAISYOPFParser(data: data, file: entryPath).parse()
         } catch {
+            // A damaged BARD package is refused as it is, with the parser's
+            // own error: its volumes are named by the package alone, so no
+            // other file of its folder could stand in (FMT56).
+            if BardBraillePackage.isPackageName(entryPath) { throw error }
             return error.localizedDescription
         }
         // With no DTBook in its manifest, the reader searches the whole
