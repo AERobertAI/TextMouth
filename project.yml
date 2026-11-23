@@ -1038,6 +1038,7 @@ targets:
       - TextMouthProductionTests/ImportProgressWordingTests.swift
       - TextMouthProductionTests/ImportRefusalTestSupport.swift
       - TextMouthProductionTests/InProcessEngineTests.swift
+      - TextMouthProductionTests/InterfaceTextOverridesFileTests.swift
       - TextMouthProductionTests/InterfaceTextPackFixtureTests.swift
       - TextMouthProductionTests/InterfaceTextShippedPackTests.swift
       - TextMouthProductionTests/InterfaceTextTests.swift
