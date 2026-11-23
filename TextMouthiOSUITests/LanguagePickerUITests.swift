@@ -41,14 +41,17 @@ final class LanguagePickerUITests: TextMouthUITestCase {
     private func choose(_ predicate: NSPredicate, in app: XCUIApplication) throws {
         tap(app.buttons[Self.row], until: app.navigationBars[Self.row], in: app, what: "the Interface Language row")
         let choice = app.buttons.matching(predicate).firstMatch
-        // The list makes its rows lazily and sorts the languages by their own names, so a language written in another
-        // script (Arabic) is far down the list: swipe up until its row is made and can be tapped, at most fifteen times.
-        // The swipe is made on the sheet's own list (the last list in the tree: the screen under the sheet has one too), not on
-        // the whole app, whose swipe can drag the sheet itself, and stops if the sheet is gone.
-        for _ in 0..<15 where !(choice.exists && choice.isHittable) {
-            guard app.navigationBars[Self.row].exists, let list = app.collectionViews.allElementsBoundByIndex.last else { break }
-            // Slowly, so the list's momentum does not carry a row past the screen between two looks.
-            list.swipeUp(velocity: .slow)
+        // The list makes its rows lazily, sorts the languages by their own names, and opens at the current choice, so the row
+        // wanted may be above or below: swipe up until it is made and can be tapped (a language in another script, Arabic, is
+        // far down), then, if it was above, swipe down, at most fifteen swipes each way. The swipe is made on the sheet's own
+        // list (the last list in the tree: the screen under the sheet has one too), not on the whole app, whose swipe can drag
+        // the sheet itself, and stops if the sheet is gone. Slowly, so the list's momentum does not carry a row past the screen
+        // between two looks.
+        for goingUp in [true, false] {
+            for _ in 0..<15 where !(choice.exists && choice.isHittable) {
+                guard app.navigationBars[Self.row].exists, let list = app.collectionViews.allElementsBoundByIndex.last else { break }
+                if goingUp { list.swipeUp(velocity: .slow) } else { list.swipeDown(velocity: .slow) }
+            }
         }
         let seen = app.buttons.allElementsBoundByIndex.map(\.label).joined(separator: " | ")
         XCTAssertTrue(choice.exists && choice.isHittable, "No such choice \(predicate). The buttons now made: \(seen)")
