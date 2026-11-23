@@ -320,7 +320,7 @@ Where there is no substitutions.json at all, as on a Mac's first launch before t
 ### Small files fetched when the library opens
 <!-- id: small-files-fetched-when-library; keys: config.json, feed records, background fetch, new value kept; src: TextMouth/Services/ConfigService.swift, TextMouth/ViewModels/LibraryViewModel+Migration.swift -->
 
-When a library in the cloud opens, TextMouth gets its other few small files in the background if they're only in the cloud: config.json, reading_stats.json, substitutions.json, and the feeds' records.
+When a library in the cloud opens, TextMouth gets its other few small files in the background if they're only in the cloud: config.json, reading_stats.json, substitutions.json, interface_text.json, and the feeds' records.
 Never a book or an episode, and the library doesn't wait for them.
 Until config.json arrives, the settings already on this Mac stand, nothing is saved over it, and a setting you change meanwhile keeps your new value when it arrives.
 
