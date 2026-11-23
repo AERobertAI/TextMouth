@@ -13,6 +13,7 @@ final class ReflectionNamesTests: XCTestCase {
 
     /// Every audio edit error names itself in the debug log by its case
     /// alone, never its payload (a file's name or path).
+    @MainActor
     func testAudioEditErrorsAreLoggedByCaseName() {
         let cases: [(AudioEditError, String)] = [
             (.bookNotInLibrary, "bookNotInLibrary"),
