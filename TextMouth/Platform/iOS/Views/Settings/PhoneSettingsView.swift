@@ -30,6 +30,11 @@ struct PhoneSettingsView: View {
     /// The row whose sheet was last opened: `onDismiss` runs once `openRow` is
     /// already nil, and focus returns here.
     @State private var lastOpenedRow: PhoneSettingsRow?
+    /// An interface language chosen in its sheet, held until the sheet has
+    /// closed. Switching at once flips the window's reading direction and
+    /// words the screen again while the dismissal is still under way, which
+    /// could leave the sheet open (the Arabic-to-System picker test).
+    @State private var pendingInterfaceLanguage: InterfaceLanguageChoice?
     /// Which row has VoiceOver's focus, set only on a return from what the row
     /// opened.
     @AccessibilityFocusState private var focusedRow: PhoneSettingsRow?
@@ -361,8 +366,8 @@ struct PhoneSettingsView: View {
                 choices: InterfaceLanguagePicker.options().map { PhoneChoice(id: $0.choice, label: $0.label) },
                 selected: interfaceLanguageChoice
             ) { choice in
-                InterfaceLanguagePicker.apply(choice)
-                noteChange()
+                // Applied in `onDismiss`, once the sheet is gone.
+                pendingInterfaceLanguage = choice
             }
         case .shareLogs:
             if let logsFile {
@@ -380,7 +385,14 @@ struct PhoneSettingsView: View {
     }
 
     /// Returns focus to the row whose sheet just closed.
+    /// First applies an interface language chosen in the sheet, now that it has closed, so the switch never
+    /// overlaps the dismissal; the switch is then announced as before.
     private func returnFocusToLastOpenedRow() {
+        if let choice = pendingInterfaceLanguage {
+            pendingInterfaceLanguage = nil
+            InterfaceLanguagePicker.apply(choice)
+            noteChange()
+        }
         guard let lastOpenedRow else { return }
         returnFocus(to: lastOpenedRow)
     }
