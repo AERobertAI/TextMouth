@@ -154,38 +154,29 @@ final class ConfigService: ObservableObject {
 
     // MARK: - Watcher State
 
-    /// Whether the watcher is on: from `startWatching()` until `shutdown()`.
-    private var isWatching = false
     /// How long a burst of file events must stay quiet before the file is
     /// read.
     private let coalescingDelay: Duration
-    /// The events received since the file was last checked, combined.
-    private var pendingEvents: DispatchSource.FileSystemEvent = []
-    /// The check that runs once the current burst of events settles.
-    private var pendingCheck: Task<Void, Never>?
 
-    /// The file the watcher listens to.
-    private struct WatchedFile {
-        /// Which file it is, whatever path later leads to it.
-        let identity: FileIdentity
-        /// Delivers its events; cancelling it closes its descriptor.
-        let source: DispatchSourceFileSystemObject
-    }
-
-    /// The file the watcher listens to, if any.
-    private var watchedFile: WatchedFile?
-    /// The search for a file that went missing, while it goes on.
-    private var rearmRetry: Task<Void, Never>?
-
-    /// The events that matter: a write in place, and the rename, deletion,
-    /// or revocation (its volume was unmounted) that ends the watched file's
-    /// time at the path.
-    private static let watchedEvents: DispatchSource.FileSystemEvent = [.write, .rename, .delete, .revoke]
-
-    /// The pauses before each look for a missing file: short at first, for an
-    /// editor that puts the new file in place a moment after removing the old
-    /// one, and longer at the end, for a slow volume. About 1.5 seconds in all.
-    private static let rearmRetryDelays: [Duration] = [50, 100, 200, 400, 800].map { .milliseconds($0) }
+    /// The watcher of config.json: the app's one file watcher
+    /// (`FileEventWatcher`), which follows the file when a save replaces it,
+    /// looks again for one that went missing, and hands the settled bursts of
+    /// events to `handleFileEvent(_:)`. Made at first use, since its calls
+    /// reach this service.
+    private lazy var watcher = FileEventWatcher(
+        file: { [weak self] in self?.fileURL },
+        // Nothing in a data directory found unavailable is watched (FR02);
+        // reconciling the file when the library is back rearms the watcher.
+        isAvailable: { [weak self] in self.map { !$0.isFileUnavailable } ?? false },
+        events: FileEventWatcher.wholeFileEvents,
+        quietPeriod: coalescingDelay,
+        calls: .init(openForEvents: fileOperations.openForEvents, close: fileOperations.close),
+        settled: { [weak self] events in self?.handleFileEvent(events) },
+        gaveUp: { [weak self] in
+            guard let self else { return }
+            self.log("\(self.fileURL.path) is missing; watching resumes when TextMouth next saves the settings")
+        }
+    )
 
     // MARK: - Watcher Decision
 
@@ -216,14 +207,9 @@ final class ConfigService: ObservableObject {
         lastHandledContents: Data?
     ) -> WatcherActions {
         WatcherActions(
-            rearm: replacesWatchedFile(event),
+            rearm: FileEventWatcher.replacesWatchedFile(event),
             reload: fileContents.map { $0 != lastHandledContents } ?? false
         )
-    }
-
-    /// Whether `event` means the watched file no longer sits at the path.
-    private nonisolated static func replacesWatchedFile(_ event: DispatchSource.FileSystemEvent) -> Bool {
-        !event.isDisjoint(with: [.rename, .delete, .revoke])
     }
 
     // MARK: - Settings
@@ -830,8 +816,7 @@ final class ConfigService: ObservableObject {
     /// Starts following config.json for edits made outside TextMouth. Launch
     /// calls this once it has reconciled the file with the preferences.
     func startWatching() {
-        isWatching = true
-        rearmWatcher()
+        watcher.start()
     }
 
     /// Stops following config.json: a save waiting for its delay is written
@@ -840,14 +825,8 @@ final class ConfigService: ObservableObject {
     /// later are ignored.
     func shutdown() {
         flushScheduledSave()
-        isWatching = false
-        pendingCheck?.cancel()
-        pendingCheck = nil
-        pendingEvents = []
-        rearmRetry?.cancel()
-        rearmRetry = nil
+        watcher.stop()
         availabilitySubscription = nil
-        disarm()
     }
 
     /// Follows config.json again once the data directory is back (FR02).
@@ -867,8 +846,8 @@ final class ConfigService: ObservableObject {
             // in a cloud location is waited for (risk 5).
             saveToDisk(creatingAwaitedFile: false)
         }
-        if watchedFile == nil {
-            rearmWatcher()
+        if !watcher.isArmed {
+            watcher.rearm()
         }
     }
 
@@ -1031,7 +1010,7 @@ final class ConfigService: ObservableObject {
         recordAgreement(data)
         // The atomic write replaced the watched file. Follow the new one now
         // rather than when its event arrives, leaving no moment unwatched.
-        rearmWatcher()
+        watcher.rearm()
     }
 
     /// Records that config.json holds `data`, the bytes of `config`: the
@@ -1350,135 +1329,11 @@ final class ConfigService: ObservableObject {
         // A file replaced again after the read above is checked once more
         // when the watcher attaches to it, so the order here loses nothing.
         if actions.rearm {
-            rearmWatcher()
+            watcher.rearm()
         }
         if actions.reload, let contents {
             applyExternalEdit(contents)
         }
-    }
-
-    /// Collects an event from the watched file's source, on the main actor.
-    /// A replacement is followed at once, so no edit to the new file goes
-    /// unreported while the burst settles; the batch goes to
-    /// `handleFileEvent(_:)` once no further event has arrived for
-    /// `coalescingDelay`.
-    private func receiveFileEvent(_ event: DispatchSource.FileSystemEvent) {
-        guard isWatching else { return }
-        if Self.replacesWatchedFile(event) {
-            rearmWatcher()
-        }
-        pendingEvents.formUnion(event)
-        scheduleCheck()
-    }
-
-    /// Checks the file once `coalescingDelay` passes without a new event,
-    /// handling every event collected until then as one batch: an editor's
-    /// save arrives as several events, and a file written in place may be
-    /// incomplete until they end.
-    private func scheduleCheck() {
-        pendingCheck?.cancel()
-        pendingCheck = Task { [weak self, coalescingDelay] in
-            try? await Task.sleep(for: coalescingDelay)
-            guard !Task.isCancelled, let self else { return }
-            let events = self.pendingEvents
-            self.pendingEvents = []
-            self.pendingCheck = nil
-            self.handleFileEvent(events)
-        }
-    }
-
-    /// Moves the watcher to the file now at `fileURL`.
-    ///
-    /// When no file is there, an editor may be partway through a save that
-    /// removes or renames the old file before putting the new one in place,
-    /// so the watcher looks again a few times before giving up until the
-    /// next save.
-    private func rearmWatcher() {
-        guard isWatching else { return }
-        // Nothing in a data directory found unavailable is watched (FR02);
-        // reconciling the file when the library is back rearms the watcher.
-        guard !isFileUnavailable else {
-            disarm()
-            return
-        }
-        if armWatcher() {
-            rearmRetry?.cancel()
-            rearmRetry = nil
-            return
-        }
-        // The watched file is gone or renamed away: stop listening to it.
-        disarm()
-        guard rearmRetry == nil else { return }
-        rearmRetry = Task { [weak self] in
-            await self?.lookForMissingFile()
-        }
-    }
-
-    /// Looks for the file after each of `rearmRetryDelays`, watching it as
-    /// soon as it is back. Giving up is logged.
-    private func lookForMissingFile() async {
-        for delay in Self.rearmRetryDelays {
-            try? await Task.sleep(for: delay)
-            guard !Task.isCancelled, isWatching else { return }
-            if armWatcher() {
-                rearmRetry = nil
-                return
-            }
-        }
-        rearmRetry = nil
-        log("\(fileURL.path) is missing; watching resumes when TextMouth next saves the settings")
-    }
-
-    /// Attaches the watcher to the file now at `fileURL`, unless it already
-    /// listens to that very file, and returns whether a file is watched.
-    ///
-    /// A newly attached file is checked once events settle: an edit saved
-    /// before the watcher attached reports no event of its own, so the check
-    /// is what keeps the moment between two watched files covered.
-    @discardableResult
-    private func armWatcher() -> Bool {
-        guard !isFileUnavailable else { return false }
-        // Identify the file before opening it. A replacement in between makes
-        // the next rearm see a different file and open it again: one open too
-        // many at worst, never an edit missed.
-        guard let identity = FileIdentity(of: fileURL) else { return false }
-        if watchedFile?.identity == identity { return true }
-        let descriptor = fileOperations.openForEvents(fileURL.path)
-        guard descriptor >= 0 else { return false }
-        disarm()
-
-        // The source delivers on the main queue, where all of the watcher's
-        // state lives: the handler only passes the event mask on, so nothing
-        // is read from another thread.
-        let source = DispatchSource.makeFileSystemObjectSource(
-            fileDescriptor: descriptor,
-            eventMask: Self.watchedEvents,
-            queue: .main
-        )
-        source.setEventHandler { [weak self] in
-            MainActor.assumeIsolated {
-                self?.receiveFileEvent(source.data)
-            }
-        }
-        // Dispatch runs this once the source has stopped using the
-        // descriptor, the only safe moment to close it.
-        let close = fileOperations.close
-        source.setCancelHandler {
-            MainActor.assumeIsolated {
-                close(descriptor)
-            }
-        }
-        source.resume()
-        watchedFile = WatchedFile(identity: identity, source: source)
-        scheduleCheck()
-        return true
-    }
-
-    /// Stops listening to the watched file. Cancelling its source closes the
-    /// descriptor, and releases the handlers that hold the source.
-    private func disarm() {
-        watchedFile?.source.cancel()
-        watchedFile = nil
     }
 
     // MARK: - Diagnostics
