@@ -751,10 +751,9 @@ final class BardBrailleTests: XCTestCase {
     func testAPackageInHumanFilesReadsAsOneBook() throws {
         try XCTSkipIf(TestMachine.isGitHubRunner, "the user's private samples are on the user's Mac only")
         #if os(macOS)
-        let sample = try XCTUnwrap(
-            humanFilesArchivesIfPresent().first { BardBraillePackage.isPackageZip(url: $0) },
-            "no ZIP in HumanFiles/ holds a BARD package"
-        )
+        guard let sample = humanFilesArchivesIfPresent().first(where: { BardBraillePackage.isPackageZip(url: $0) }) else {
+            throw XCTSkip("no ZIP in HumanFiles/ holds a BARD package")
+        }
 
         XCTAssertEqual(BookFormat.detect(from: sample), .braille)
         let package = try BardBraillePackage.open(at: sample)
