@@ -45,13 +45,13 @@ enum InterfaceLanguagePickerWording {
         withoutIsolates(InterfaceText.line("interfaceLanguage.announcement", "Interface language: \(language)"))
     }
 
-    /// `text` without the invisible isolates (U+2068 and U+2069) that Foundation wraps around an argument holding
+    /// `text` without the invisible isolates (U+2066 to U+2069: the left-to-right, right-to-left, and first-strong isolates and their end) that Foundation wraps around an argument holding
     /// right-to-left text. The picker's labels are names alone, which show in the right order in both directions without
     /// them, and a label that began with an invisible mark would defeat a pop-up's type-select (how someone who switched
     /// to a language they cannot read finds their own by its first letter) and could show as a mark on a braille display.
     /// Every other interface text keeps Foundation's isolates, as before: this is the one place the picker removes them.
     static func withoutIsolates(_ text: String) -> String {
-        text.filter { $0 != "\u{2068}" && $0 != "\u{2069}" }
+        String(String.UnicodeScalarView(text.unicodeScalars.filter { !(0x2066...0x2069).contains($0.value) }))
     }
 }
 

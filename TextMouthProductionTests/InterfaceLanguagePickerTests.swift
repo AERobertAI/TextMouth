@@ -69,7 +69,7 @@ final class InterfaceLanguagePickerTests: XCTestCase {
                 XCTAssertTrue(try label(of: code, in: options).hasPrefix(own), "\(code) in \(interface)")
                 XCTAssertFalse(own.isEmpty)
                 // No invisible isolate, which would defeat type-select and could show on a braille display.
-                XCTAssertFalse(try label(of: code, in: options).unicodeScalars.contains { $0.value == 0x2068 || $0.value == 0x2069 }, "\(code) in \(interface)")
+                XCTAssertFalse(try label(of: code, in: options).unicodeScalars.contains { (0x2066...0x2069).contains($0.value) }, "\(code) in \(interface)")
             }
         }
     }
