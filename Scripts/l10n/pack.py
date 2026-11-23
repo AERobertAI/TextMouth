@@ -493,9 +493,11 @@ def file_hash(path):
     return hashlib.sha256(path.read_bytes()).hexdigest() if path.is_file() else None
 
 
-def stamp_of(catalog_path, max_id_length):
-    """What decides the output: the hashes of the catalog and this builder, and the ID length limit."""
-    return {"builder": file_hash(__file__), "catalog": file_hash(catalog_path), "maxIdLength": max_id_length}
+def stamp_of(catalog_path, max_id_length, display_name=""):
+    """What decides the output: the hashes of the catalog and this builder, the ID length limit, and the name a test
+    build gives the app (`display_name`, "" for none), so a build of another configuration writes its files again."""
+    return {"builder": file_hash(__file__), "catalog": file_hash(catalog_path), "maxIdLength": max_id_length,
+            "displayName": display_name}
 
 
 def stamp_path(out):
@@ -531,15 +533,23 @@ def is_up_to_date(out, stamp, stamp_file=None):
 INFO_PLIST_TABLE = "InfoPlist.strings"
 
 
-def info_plist_entries(plan, language):
+def info_plist_entries(plan, language, display_name=""):
     """The Info.plist strings of `language`, as {Info.plist key: text}: THE ONE PLACE they will be read from.
 
-    Empty for now: the app's name is never translated, and the microphone and Apple Events prompts and the document
-    types' names get their IDs (`infoPlist.*`) and translations in a later batch (question 9 of
-    research/STRINGS-SYSTEM-DESIGN-2026-11-21.md). Then this function reads each such ID's entry from `plan`'s blob of
-    `language` and names the Info.plist key it stands for, and nothing else in this file changes: the files below are
-    already written from what it returns."""
-    return {}
+    The app's own name is never translated. A test build is renamed: with `display_name` (the Debug configuration's
+    TEXTMOUTH_TEST_DISPLAY_NAME, "TextMouth Test") every language's file names it as CFBundleDisplayName. Launch Services
+    reads the name from here, since the bundle's file is still TextMouth.app, so the Dock, the app switcher, and VoiceOver
+    say which TextMouth is the tests' (measured on November 22, 2026: an Info.plist's own CFBundleDisplayName or
+    CFBundleName leaves the shown name the file's). A Release build passes none and keeps the name "TextMouth".
+
+    The microphone and Apple Events prompts and the document types' names get their IDs (`infoPlist.*`) and
+    translations in a later batch (question 9 of research/STRINGS-SYSTEM-DESIGN-2026-11-21.md). Then this function reads
+    each such ID's entry from `plan`'s blob of `language` and names the Info.plist key it stands for, and nothing else in
+    this file changes: the files below are already written from what it returns."""
+    entries = {}
+    if display_name:
+        entries["CFBundleDisplayName"] = display_name
+    return entries
 
 
 def quote_strings_text(text):
@@ -547,18 +557,19 @@ def quote_strings_text(text):
     return text.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n")
 
 
-def info_plist_text(plan, language):
+def info_plist_text(plan, language, display_name=""):
     """The text of `language`'s InfoPlist.strings (UTF-8): a comment that names the tool that writes the file (so nobody
     edits it by hand), then one `"key" = "text";` line for each entry of `info_plist_entries`, in key order."""
     lines = [f"/* Written by Scripts/l10n/pack.py from the String Catalog's infoPlist.* IDs ({language}). Do not edit. */"]
-    entries = info_plist_entries(plan, language)
+    entries = info_plist_entries(plan, language, display_name)
     lines += [f'"{quote_strings_text(key)}" = "{quote_strings_text(entries[key])}";' for key in sorted(entries)]
     return "\n".join(lines) + "\n"
 
 
-def info_plist_files(plan, folder):
-    """{path: text} of the InfoPlist.strings for each language of `plan` (English included): `folder`/<language>.lproj/."""
-    return {Path(folder) / f"{name}.lproj" / INFO_PLIST_TABLE: info_plist_text(plan, name)
+def info_plist_files(plan, folder, display_name=""):
+    """{path: text} of the InfoPlist.strings for each language of `plan` (English included): `folder`/<language>.lproj/,
+    each naming a test build `display_name` when one is given (see info_plist_entries)."""
+    return {Path(folder) / f"{name}.lproj" / INFO_PLIST_TABLE: info_plist_text(plan, name, display_name)
             for name, _ in plan.blobs if name not in (IDS_BLOB, NOTES_BLOB)}
 
 
@@ -713,17 +724,17 @@ def command_build(args):
     if args.remove_apple_tables:
         for leftover in remove_apple_tables(Path(args.out).parent):
             print(f"removed {leftover}: the apps read no table of Apple's")
-    stamp = stamp_of(args.catalog, args.max_id_length)
+    stamp = stamp_of(args.catalog, args.max_id_length, args.display_name)
     # The stamp lives beside the pack unless --stamp says elsewhere (the app's build keeps it out of the app).
     stamp_file = Path(args.stamp) if args.stamp else stamp_path(args.out)
     if not args.force and not args.no_stamp and is_up_to_date(args.out, stamp, stamp_file):
-        print(f"{args.out} is up to date (the catalog and the builder are unchanged)")
+        print(f"{args.out} is up to date (the catalog, the builder, and the display name are unchanged)")
         return 0
     plan = build_plan(args.catalog, args.max_id_length)
     data = build_bytes(plan)
     write_atomically(args.out, data)
     # Each language's InfoPlist.strings goes beside the pack, replaced and never rewritten in place, as the pack is.
-    info_files = info_plist_files(plan, Path(args.out).parent)
+    info_files = info_plist_files(plan, Path(args.out).parent, args.display_name)
     for path, text in info_files.items():
         write_atomically(path, text)
     # The stamp comes only after the pack and the files are in place, so a stamp never vouches for what is not there.
@@ -772,6 +783,10 @@ def parser():
     build.add_argument("--remove-apple-tables", action="store_true",
                        help="first remove Localizable.strings and .stringsdict from the .lproj folders beside the pack "
                             "(the app's build phase passes it: Xcode never cleans a product)")
+    build.add_argument("--display-name", default="",
+                       help="the name a test build of the app shows (the Dock, the app switcher, VoiceOver), written as "
+                            "CFBundleDisplayName into every language's InfoPlist.strings; the app's build phase passes the "
+                            "Debug configuration's TEXTMOUTH_TEST_DISPLAY_NAME, and nothing for Release")
     build.add_argument("--no-stamp", action="store_true", help="write no stamp and never skip")
     build.add_argument("--stamp", help="where the stamp lives (default: beside the pack, as PACK.stamp)")
     check = commands.add_parser("verify", help="decode a pack and compare every entry with the catalog")

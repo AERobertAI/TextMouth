@@ -31,6 +31,8 @@ Start each call on a line of its own, so a note belongs to one call; `scan.py li
 Each app ships one `Strings.pack` (1,275,916 bytes: 4,211 IDs in 25 languages) and no table of Apple's.
 The same build phase writes an `InfoPlist.strings` into each language's `.lproj` folder, and removes any Localizable table of Apple's that an earlier build left there (`--remove-apple-tables`).
 Both Info.plists list the 25 languages in `CFBundleLocalizations`; that list and the `.lproj` folders keep the bundle's languages for the system, and `l10n.py check` holds the list to the catalog.
+A Debug build, the tests' host, is named TextMouth Test: the phase writes `TEXTMOUTH_TEST_DISPLAY_NAME` (`project.yml`) into each `InfoPlist.strings` as `CFBundleDisplayName`, so the Dock, the app switcher, and VoiceOver tell it from the installed app.
+A Release build keeps the name TextMouth, and `make check` fails one that a test name reached.
 Three checks hold it:
 - `make l10n-check` (`verify_packs.py`, with the probe in `Scripts/l10n/pack-probe/`) compiles the catalog with `xcstringstool` in a folder of its own.
   It compares the engine with Apple's lookup there, for every ID in every language at 13 counts, and checks the system's choice of language for 52 preference lists;

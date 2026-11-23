@@ -174,6 +174,7 @@ plant_language_files() {
     apple-dict) printf 'bplist0012345678' > "$1/es.lproj/Localizable.stringsdict" ;;
     apple-loctable) printf 'bplist0012345678' > "$1/es.lproj/Localizable.loctable" ;;
     apple-catalog) printf '{}' > "$1/es.lproj/Localizable.xcstrings" ;;
+    renamed) printf '"CFBundleDisplayName" = "TextMouth Test";' > "$1/es.lproj/InfoPlist.strings" ;;
     xctest-fixture) mkdir -p "$1/../PlugIns/Tests.xctest/pack"; printf '{}' > "$1/../PlugIns/Tests.xctest/pack/lines.xcstrings" ;;
   esac
 }
@@ -976,6 +977,13 @@ real_run_cases() {
   expect_status 1
   expect_report "NO InfoPlist.strings: es.lproj"
   expect_verdict "check: FAILED: step 3 of 4 (build the Release app): build/TextMouth.app has a .lproj folder with no InfoPlist.strings (the build phase \"Pack interface text\", Scripts/l10n/pack.py, writes it)"
+  end_case
+
+  begin_case "a Release Mac app that an InfoPlist.strings renames (the tests' name, TextMouth Test) fails the gate, naming the folder"
+  run_gate STUB_LPROJ=renamed
+  expect_status 1
+  expect_report "RENAMED: es.lproj"
+  expect_verdict "check: FAILED: step 3 of 4 (build the Release app): build/TextMouth.app is renamed by an InfoPlist.strings (only a Debug build, the tests', takes the name TEXTMOUTH_TEST_DISPLAY_NAME gives)"
   end_case
 
   begin_case "a Mac app with no language folder fails the gate"

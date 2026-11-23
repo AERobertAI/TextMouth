@@ -291,6 +291,25 @@ final class InterfaceTextShippedPackTests: XCTestCase {
         XCTAssertTrue(tables.isEmpty, "Apple's language tables ship in the bundle: \(tables.prefix(Self.listed))")
     }
 
+    /// A test build is named "TextMouth Test" in every language, so the Dock, the app switcher, and VoiceOver say which
+    /// TextMouth is the tests' when the host comes to the front (the user's request of November 22, 2026). The tests run
+    /// the Debug configuration, whose TEXTMOUTH_TEST_DISPLAY_NAME the build phase "Pack interface text" passes to
+    /// `pack.py`, which writes it into each `InfoPlist.strings`; the bundle's own `CFBundleDisplayName` stays
+    /// "TextMouth", the file's name, as Launch Services needs for a localized name to show. `make check` holds a Release
+    /// app to its own name.
+    func testATestBuildIsNamedTextMouthTestInEveryLanguage() throws {
+        let host = try shipped()
+        XCTAssertEqual(Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String, "TextMouth Test",
+                       "the language the host runs in names the test build")
+        XCTAssertEqual(Bundle.main.infoDictionary?["CFBundleDisplayName"] as? String, "TextMouth",
+                       "the Info.plist's own name stays the bundle file's, which a localized name needs")
+        for language in host.languages {
+            let table = resources.appendingPathComponent("\(language).lproj/InfoPlist.strings")
+            let entries = NSDictionary(contentsOf: table) as? [String: String]
+            XCTAssertEqual(entries?["CFBundleDisplayName"], "TextMouth Test", "\(language).lproj/InfoPlist.strings")
+        }
+    }
+
     /// The test of the bundle test: what counts as one of Apple's tables, by name, and what does not (the pack, and the
     /// `InfoPlist.strings` each language keeps).
     func testWhichFilesAreAppleTables() {
