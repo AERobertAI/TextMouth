@@ -334477,6 +334477,18 @@
         }
       }
     },
+    "interfaceTextFile.editOpenFailed" : {
+      "comment" : "VoiceOver announcement when Edit Interface Text could not open the file of the person's own lines in an editor.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The file of your own lines could not be opened."
+          }
+        }
+      }
+    },
     "interfaceTextFile.editTitle" : {
       "comment" : "A button in Settings under Interface Language, on the Mac. It opens the file of the person's own interface lines in their editor, after filling it with the current text if it has none for this language.",
       "extractionState" : "manual",
@@ -334485,6 +334497,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Edit Interface Text…"
+          }
+        }
+      }
+    },
+    "interfaceTextFile.editVersionUnknown" : {
+      "comment" : "VoiceOver announcement when Edit Interface Text found a file of the person's own lines whose version it does not know. It left the file as it was and opened it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The file's version is not one TextMouth knows, so it was left as it is."
           }
         }
       }
@@ -334586,13 +334610,49 @@
       }
     },
     "interfaceTextFile.moreIgnored" : {
-      "comment" : "The last line of a long list of ignored lines under Interface Language. %lld is how many more lines are ignored than the list shows.",
+      "comment" : "The last line of a long list of ignored lines under Interface Language, a plural line. %lld is how many more lines are ignored than the list shows.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "And %lld more ignored lines. The debug log lists each one."
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "And %lld more ignored line. The debug log lists it."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "And %lld more ignored lines. The debug log lists each one."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "interfaceTextFile.moreOutdated" : {
+      "comment" : "The last line of a long list under Interface Language, a plural line. %lld is how many more lines than the list shows were changed by the person and have English that changed since.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "And %lld more line to check, whose English has changed. It is in your file."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "And %lld more lines to check, whose English has changed. They are in your file."
+                }
+              }
+            }
           }
         }
       }

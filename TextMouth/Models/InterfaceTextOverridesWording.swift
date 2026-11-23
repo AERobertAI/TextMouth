@@ -42,8 +42,14 @@ enum InterfaceTextOverridesWording {
 
     /// The list stopped short: how many more ignored lines there are.
     static func moreIgnored(_ count: Int) -> String {
-        // Translators: The last line of a long list of ignored lines under Interface Language. %lld is how many more lines are ignored than the list shows.
+        // Translators: The last line of a long list of ignored lines under Interface Language, a plural line. %lld is how many more lines are ignored than the list shows.
         InterfaceText.line("interfaceTextFile.moreIgnored", "And \(number: count) more ignored lines. The debug log lists each one.")
+    }
+
+    /// The list of lines whose English changed stopped short: how many more there are.
+    static func moreOutdated(_ count: Int) -> String {
+        // Translators: The last line of a long list under Interface Language, a plural line. %lld is how many more lines than the list shows were changed by the person and have English that changed since.
+        InterfaceText.line("interfaceTextFile.moreOutdated", "And \(number: count) more lines to check, whose English has changed. They are in your file.")
     }
 
     // MARK: - Reasons
@@ -152,6 +158,18 @@ enum InterfaceTextOverridesWording {
         InterfaceText.line("interfaceTextFile.editFailed", "The file of your own lines could not be made.")
     }
 
+    /// Edit made or found the file, but the editor could not open it.
+    static var editOpenFailed: String {
+        // Translators: VoiceOver announcement when Edit Interface Text could not open the file of the person's own lines in an editor.
+        InterfaceText.line("interfaceTextFile.editOpenFailed", "The file of your own lines could not be opened.")
+    }
+
+    /// Edit left a file of a version it does not know as it is.
+    static var editVersionUnknown: String {
+        // Translators: VoiceOver announcement when Edit Interface Text found a file of the person's own lines whose version it does not know. It left the file as it was and opened it.
+        InterfaceText.line("interfaceTextFile.editVersionUnknown", "The file's version is not one TextMouth knows, so it was left as it is.")
+    }
+
     /// Why Export could not write the file.
     static var exportFailed: String {
         // Translators: VoiceOver announcement when Export Interface Text could not write its file.
@@ -202,6 +220,35 @@ struct InterfaceTextOverridesSummary: Equatable {
         for key in outcome.outdatedEnglish.prefix(Self.largestList) {
             sentences.append(InterfaceTextOverridesWording.outdatedLine(id: key.id, language: languageName(key.language)))
         }
+        if outcome.outdatedEnglish.count > Self.largestList {
+            sentences.append(InterfaceTextOverridesWording.moreOutdated(outcome.outdatedEnglish.count - Self.largestList))
+        }
         details = sentences
+    }
+}
+
+/// How an Export Interface Text… ended on the iPhone, from what the system's file exporter reported (FR39): the file was
+/// saved, the person cancelled (which says nothing), or it failed.
+enum InterfaceTextExportOutcome: Equatable {
+    /// The file was saved; its name.
+    case exported(fileName: String)
+    /// The person closed the exporter without saving.
+    case cancelled
+    /// The export failed; the system's error as the debug log may hold it (its domain and code, never a path).
+    case failed(reason: String)
+
+    /// The outcome of the exporter's result.
+    init(_ result: Result<URL, Error>) {
+        switch result {
+        case .success(let url):
+            self = .exported(fileName: url.lastPathComponent)
+        case .failure(let error):
+            let nsError = error as NSError
+            if nsError.domain == NSCocoaErrorDomain && nsError.code == CocoaError.userCancelled.rawValue {
+                self = .cancelled
+            } else {
+                self = .failed(reason: "\(nsError.domain) \(nsError.code)") // l10n: no (debug log text)
+            }
+        }
     }
 }

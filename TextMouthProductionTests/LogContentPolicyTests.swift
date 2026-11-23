@@ -418,6 +418,9 @@ final class LogContentPolicyTests: XCTestCase {
         // The person's own interface lines (FR39): how reading interface_text.json came out (counts), and each line, or
         // the whole file, that was ignored with why. They hold IDs and language codes, never a line's text.
         "INTERFACE_TEXT_LOADED", "INTERFACE_TEXT_IGNORED",
+        // Edit Interface Text… and Export Interface Text… that could not do their work, and why (a system error's domain
+        // and code, never a path).
+        "INTERFACE_TEXT_EDIT_FAILED", "INTERFACE_TEXT_EXPORT_FAILED",
     ]
 
     /// Each tag still begins a string literal in the app's code, so none was

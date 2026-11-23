@@ -33,51 +33,91 @@ final class InterfaceTextEditingTests: XCTestCase {
 
     // MARK: - Edit Interface Text…
 
-    /// Edit fills a missing file, then opens it, once.
-    func testEditFillsAMissingFileAndOpensIt() throws {
-        let (service, file) = try makeService()
+    /// What the editor was asked to open, and what VoiceOver was told.
+    private final class Calls {
         var opened: [URL] = []
         var announced: [String] = []
+    }
 
-        let result = InterfaceTextEditing.edit(service: service, language: "es", open: { opened.append($0); return true }, announce: { announced.append($0) })
+    /// Edit with an editor that opens (or refuses to open) nothing real, recording into `calls`.
+    private func edit(_ service: InterfaceTextOverrides, _ calls: Calls, opening succeeds: Bool = true) async -> Bool {
+        await InterfaceTextEditing.edit(
+            service: service,
+            language: "es",
+            open: { url in
+                calls.opened.append(url)
+                if !succeeds { throw CocoaError(.fileReadUnknown) }
+            },
+            announce: { calls.announced.append($0) }
+        )
+    }
+
+    /// Edit fills a missing file, then opens it, once.
+    func testEditFillsAMissingFileAndOpensIt() async throws {
+        let (service, file) = try makeService()
+        let calls = Calls()
+
+        let result = await edit(service, calls)
 
         XCTAssertTrue(result)
-        XCTAssertEqual(opened, [file])
-        XCTAssertEqual(announced, [])
+        XCTAssertEqual(calls.opened, [file])
+        XCTAssertEqual(calls.announced, [])
         XCTAssertTrue(FileManager.default.fileExists(atPath: file.path))
     }
 
     /// A file that has the language is opened as it is, never written over.
-    func testEditOpensAFileThatHasTheLanguageAsItIs() throws {
+    func testEditOpensAFileThatHasTheLanguageAsItIs() async throws {
         let (service, file) = try makeService()
         let bytes = Data(#"{"version": 1, "languages": {"es": {"lines": {}}}}"#.utf8)
         try bytes.write(to: file)
-        var opened: [URL] = []
+        let calls = Calls()
 
-        InterfaceTextEditing.edit(service: service, language: "es", open: { opened.append($0); return true }, announce: { _ in })
+        _ = await edit(service, calls)
 
-        XCTAssertEqual(opened, [file])
+        XCTAssertEqual(calls.opened, [file])
         XCTAssertEqual(try Data(contentsOf: file), bytes)
     }
 
-    /// When the file cannot be made, or cannot be opened, VoiceOver is told and nothing is opened.
-    func testEditSaysWhenItCannot() throws {
-        let (unavailable, file) = try makeService(isUnavailable: true)
-        var opened = 0
-        var announced: [String] = []
+    /// A file whose version this TextMouth does not know is left as it is, opened, and VoiceOver says so.
+    func testEditLeavesAFileOfAnUnknownVersionAndSaysSo() async throws {
+        let (service, file) = try makeService()
+        let bytes = Data(#"{"version": 2, "languages": {"fr": {"lines": {}}}}"#.utf8)
+        try bytes.write(to: file)
+        let calls = Calls()
 
-        let refused = InterfaceTextEditing.edit(service: unavailable, language: "es", open: { _ in opened += 1; return true }, announce: { announced.append($0) })
+        let result = await edit(service, calls)
+
+        XCTAssertFalse(result)
+        XCTAssertEqual(try Data(contentsOf: file), bytes)
+        XCTAssertEqual(calls.opened, [file])
+        XCTAssertEqual(calls.announced, [InterfaceTextOverridesWording.editVersionUnknown])
+    }
+
+    /// When the file cannot be made, nothing is opened and VoiceOver says it could not be made.
+    func testEditSaysWhenTheFileCannotBeMade() async throws {
+        let (unavailable, file) = try makeService(isUnavailable: true)
+        let calls = Calls()
+
+        let refused = await edit(unavailable, calls)
 
         XCTAssertFalse(refused)
-        XCTAssertEqual(opened, 0)
-        XCTAssertEqual(announced, [InterfaceTextOverridesWording.editFailed])
+        XCTAssertEqual(calls.opened, [])
+        XCTAssertEqual(calls.announced, [InterfaceTextOverridesWording.editFailed])
         XCTAssertFalse(FileManager.default.fileExists(atPath: file.path))
+    }
 
-        let (service, _) = try makeService()
-        announced = []
-        let notOpened = InterfaceTextEditing.edit(service: service, language: "es", open: { _ in false }, announce: { announced.append($0) })
-        XCTAssertFalse(notOpened)
-        XCTAssertEqual(announced, [InterfaceTextOverridesWording.editFailed])
+    /// When the file was made and the editor cannot open it, the sentence is its own: the file exists, so "could not be made"
+    /// would be false.
+    func testEditSaysWhenTheEditorCannotOpenTheFile() async throws {
+        let (service, file) = try makeService()
+        let calls = Calls()
+
+        let opened = await edit(service, calls, opening: false)
+
+        XCTAssertFalse(opened)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: file.path))
+        XCTAssertEqual(calls.announced, [InterfaceTextOverridesWording.editOpenFailed])
+        XCTAssertNotEqual(InterfaceTextOverridesWording.editOpenFailed, InterfaceTextOverridesWording.editFailed)
     }
 
     // MARK: - Export Interface Text…

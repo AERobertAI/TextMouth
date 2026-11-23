@@ -57,7 +57,7 @@ struct InterfaceLanguageSettingsSection: View {
                 .foregroundColor(.secondary)
         }
         #if os(macOS)
-        Button(InterfaceTextOverridesWording.editTitle) { InterfaceTextEditing.edit() }
+        Button(InterfaceTextOverridesWording.editTitle) { Task { await InterfaceTextEditing.edit() } }
             .accessibilityHint(InterfaceTextOverridesWording.editHint)
         Button(InterfaceTextOverridesWording.exportTitle) { InterfaceTextEditing.export() }
             .accessibilityHint(InterfaceTextOverridesWording.exportHint)

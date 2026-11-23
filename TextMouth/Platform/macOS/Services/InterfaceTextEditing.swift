@@ -11,31 +11,42 @@ enum InterfaceTextEditing {
     // MARK: - Edit Interface Text…
 
     /// Fills `interface_text.json` with the interface language's lines as they read now, when the file does not exist or has
-    /// none for the language, and opens it in the Mac's default editor. A file that has the language is opened as it is.
+    /// none for the language, and opens it in the Mac's default editor (as a book's text is opened, with TextEdit as the
+    /// fallback). A file that has the language is opened as it is; one whose `version` is not known is opened as it is
+    /// too, and VoiceOver says it was left alone.
     ///
     /// - Parameters:
     ///   - service: The person's own lines.
     ///   - language: The interface language, whose lines are filled in.
-    ///   - open: Opens the file in its default editor; tests open nothing.
+    ///   - open: Opens the file in its editor; tests open nothing.
     ///   - announce: Tells VoiceOver what could not be done.
-    /// - Returns: Whether the file was opened.
+    /// - Returns: Whether the file was filled or left as it is, and opened.
     @discardableResult
     static func edit(
         service: InterfaceTextOverrides = .shared,
         language: String = InterfaceLanguage.current.language,
-        open: (URL) -> Bool = { NSWorkspace.shared.open($0) },
+        open: (URL) async throws -> Void = { try await PackageFileEditing.openWithWorkspace($0, app: nil) },
         announce: (String) -> Void = { VoiceOverAnnouncer.announce($0) }
-    ) -> Bool {
-        if case .failed(let reason) = service.fillFileForEditing(language: language) {
-            DiagnosticLog.event(.app, "INTERFACE_TEXT_PROBLEM: Edit Interface Text could not fill the file: \(reason)") // l10n: no (debug log text)
+    ) async -> Bool {
+        let result = await service.fillFileForEditing(language: language)
+        switch result {
+        case .failed(let reason):
+            InterfaceTextOverrides.logEditFailure(reason)
             announce(InterfaceTextOverridesWording.editFailed)
             return false
+        case .unknownVersion:
+            announce(InterfaceTextOverridesWording.editVersionUnknown)
+        case .written, .leftAsItIs:
+            break
         }
-        guard open(service.file) else {
-            announce(InterfaceTextOverridesWording.editFailed)
+        do {
+            try await open(service.file)
+        } catch {
+            InterfaceTextOverrides.logEditFailure("the editor could not open the file: \(InterfaceTextOverrides.describe(error))") // l10n: no (debug log text)
+            announce(InterfaceTextOverridesWording.editOpenFailed)
             return false
         }
-        return true
+        return result != .unknownVersion
     }
 
     // MARK: - Export Interface Text…
@@ -52,6 +63,7 @@ enum InterfaceTextEditing {
         window: NSWindow? = NSApp.keyWindow
     ) {
         guard let data = service.exportData(language: language) else {
+            InterfaceTextOverrides.logExportFailure("there is no pack to export from") // l10n: no (debug log text)
             VoiceOverAnnouncer.announce(InterfaceTextOverridesWording.exportFailed)
             return
         }
@@ -79,7 +91,7 @@ enum InterfaceTextEditing {
         do {
             try data.write(to: url, options: .atomic)
         } catch {
-            DiagnosticLog.event(.app, "INTERFACE_TEXT_PROBLEM: Export Interface Text could not write its file: \(InterfaceTextOverrides.describe(error))") // l10n: no (debug log text)
+            InterfaceTextOverrides.logExportFailure("the file could not be written: \(InterfaceTextOverrides.describe(error))") // l10n: no (debug log text)
             announce(InterfaceTextOverridesWording.exportFailed)
             return false
         }
