@@ -359,7 +359,7 @@ final class BardBrailleTests: XCTestCase {
         let twin = try packageFolder()
         try packageText().write(to: twin.folder.appendingPathComponent("other.bopf"))
         XCTAssertThrowsError(try BardBraillePackage.open(at: twin.folder))
-        XCTAssertFalse(BardBraillePackage.holdsPackage(inArchivePaths: ["a.bopf", "b.bopf", "a1.brf"]))
+        XCTAssertTrue(BardBraillePackage.holdsPackage(inArchivePaths: ["a.bopf", "b.bopf", "a1.brf"]))
         XCTAssertTrue(BardBraillePackage.holdsPackage(inArchivePaths: ["a.bopf", "sub/b.bopf", "a1.brf"]))
         // The package file chosen is the book, whatever lies beside it.
         XCTAssertNoThrow(try BardBraillePackage.open(at: twin.file))
@@ -461,7 +461,7 @@ final class BardBrailleTests: XCTestCase {
 
     /// A ZIP is one BARD book when it holds one package file, or one
     /// shallowest, and the table at import is that package's, never one found
-    /// deeper; two package files at one level are two books, not one.
+    /// deeper; two package files at one level are no one book, and the import says so.
     func testSeveralPackagesInAZIP() throws {
         let deep = packageText(code: "UEB", level: "1")
         var entries: [String: Data] = ["salt.bopf": packageText(), "sub/deep.bopf": deep]
@@ -475,9 +475,15 @@ final class BardBrailleTests: XCTestCase {
         entries["other.bopf"] = deep
         let twoAtOneLevel = try makeTemporaryZip(prefix: "BardTwo", entries: entries)
         addTeardownBlock { try? FileManager.default.removeItem(at: twoAtOneLevel) }
-        XCTAssertFalse(BardBraillePackage.isPackageZip(url: twoAtOneLevel))
-        XCTAssertNotEqual(BookFormat.detect(from: twoAtOneLevel), .braille)
+        // The archive is a BARD archive, so the import says what is wrong with
+        // it, and names a package file, rather than calling it an unknown format.
+        XCTAssertTrue(BardBraillePackage.isPackageZip(url: twoAtOneLevel))
+        XCTAssertEqual(BookFormat.detect(from: twoAtOneLevel), .braille)
         XCTAssertThrowsError(try BardBraillePackage.open(at: twoAtOneLevel))
+        XCTAssertThrowsError(try FileImportService.importFileWithReport(from: twoAtOneLevel, toFolder: folderPath)) {
+            let text = $0.localizedDescription
+            XCTAssertTrue(text.contains(".bopf” in this book is damaged or incomplete: it is one of 2 package files at the same level"), text)
+        }
     }
 
     // MARK: - Pages

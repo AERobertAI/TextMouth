@@ -67,17 +67,18 @@ struct BardBraillePackage {
     /// book, which has its own, is not one), there is at least one, and they
     /// stand in one folder, or the archive's top level, as a DAISY book's
     /// do. An archive of several books each in a folder of its own is a
-    /// batch, whose books import one by one.
+    /// batch, whose books import one by one. Several package files at one
+    /// level are no one book, and the import refuses the archive saying so
+    /// (`open(at:)`).
     static func holdsPackage(inArchivePaths paths: [String]) -> Bool {
         let entries = paths.filter {
             DAISYParser.isPackageEntryName(($0 as NSString).lastPathComponent) && !DAISYParser.isHiddenPackagePath($0)
         }
         guard !entries.isEmpty,
               entries.allSatisfy({ isPackageName(($0 as NSString).lastPathComponent) }) else { return false }
-        // One book: exactly one package file, or one shallowest of them. Two
-        // at the same level are two books, which a batch imports one by one.
-        let shallowest = entries.map { $0.split(separator: "/").count }.min()
-        guard entries.filter({ $0.split(separator: "/").count == shallowest }).count == 1 else { return false }
+        // Several package files at the same level are still one archive of
+        // BARD braille: opening it refuses it by name (`open(at:)`), which
+        // tells the cause, where an archive of an unknown format would not.
         let folders = DAISYParser.packageFolders(inArchivePaths: paths)
         return !folders.isEmpty && (folders.count <= 1 || folders.contains(""))
     }
