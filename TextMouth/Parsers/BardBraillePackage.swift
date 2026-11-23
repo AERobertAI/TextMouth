@@ -276,10 +276,17 @@ struct BardBraillePackage {
             bytes += Int64(data.count)
             guard bytes <= BrailleBookReader.maximumFileBytes else { throw BrailleFileError.fileTooLarge }
             var volume = try BrailleFileReader.pages(fromText: data, kind: .brf, code: code)
-            volume.lineWidth = lineLength
             try book.append(volume: volume)
         }
         guard book.pageCount > 0 else { throw FileImportError.noTextToRead }
+        // The package's line length is only checked: the analyzer measures
+        // the width the volumes are laid out in, which a package may not state.
+        if let declared = lineLength, book.volumeStarts.count > 0 {
+            let measured = BraillePageAnalyzer.commonWidth(ofVolumesIn: book)
+            if measured != declared {
+                DiagnosticLog.event(.import, "BARD_BRAILLE_WIDTH: the package declares \(declared) cells a line; the volumes measure \(measured)")
+            }
+        }
         if let declared = declaredPageCount, declared != book.pageCount {
             DiagnosticLog.event(
                 .import,

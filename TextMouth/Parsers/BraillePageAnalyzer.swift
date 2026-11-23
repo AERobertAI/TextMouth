@@ -141,9 +141,19 @@ enum BraillePageAnalyzer {
         // into the next: the blocks and pages are joined, and each volume
         // that has text says where it begins.
         guard file.volumeStarts.count > 1 else { return structureOfOneFile(file) }
+        //
+        // The volumes are laid out at one width, the one most of them
+        // measure (the longer on a tie), as one book's volumes are: a volume
+        // that measures another width by an accident of its own pages is
+        // read at the book's, and no width is ever taken from a package,
+        // whose line length need not be the width the braille was laid out
+        // in (the sample of the review says 40 and is laid out at 38).
+        let width = commonWidth(ofVolumesIn: file)
         var joined = BrailleStructure(blocks: [], pages: [])
         for index in file.volumeStarts.indices {
-            let part = structureOfOneFile(file.volume(at: index))
+            var volume = file.volume(at: index)
+            volume.lineWidth = width
+            let part = structureOfOneFile(volume)
             let blockBase = joined.blocks.count
             if !part.blocks.isEmpty {
                 joined.volumeStarts.append(BrailleVolumeStart(number: index + 1, blockIndex: blockBase))
@@ -157,6 +167,24 @@ enum BraillePageAnalyzer {
             }
         }
         return joined
+    }
+
+    /// The line width the file `file` measures as (`Book.measure()`), a
+    /// declared width included.
+    static func measuredWidth(of file: BrailleFilePages) -> Int {
+        Book(file: file).measure().width
+    }
+
+    /// The width most of the volumes of `file` measure, each as a file of its
+    /// own, the longer where two are as common.
+    static func commonWidth(ofVolumesIn file: BrailleFilePages) -> Int {
+        var counts: [Int: Int] = [:]
+        for index in file.volumeStarts.indices {
+            var volume = file.volume(at: index)
+            volume.lineWidth = nil
+            counts[measuredWidth(of: volume), default: 0] += 1
+        }
+        return counts.max { ($0.value, $0.key) < ($1.value, $1.key) }?.key ?? measuredWidth(of: file)
     }
 
     /// The structure of the book `file` holds, as one braille file
@@ -333,7 +361,8 @@ enum BraillePageAnalyzer {
         ///    in a number word after at least 3 blank cells (a braille page
         ///    number, as the layout writes it at the right margin), the longer
         ///    length on a tie;
-        /// 3. else, when no page has such a row, the longest row, or a wider
+        /// 3. else, when no page has such a row, the longest row (leaving out
+        ///    the strays of a long book, `longestLine(ofPages:)`), or a wider
         ///    width that the headings set apart in the book imply (see
         ///    `WidthVotes.bestWidth(atLeast:)`).
         ///
@@ -346,18 +375,31 @@ enum BraillePageAnalyzer {
             var numberedLengths: [Int: Int] = [:]
             var votes = WidthVotes()
             var starts = ParagraphStarts()
-            var longest = 0
+            var longestOfPages: [Int] = []
             for page in 0..<file.pageCount {
                 let rows = self.rows(ofPage: page)
-                for row in rows { longest = max(longest, row.count) }
+                if let longestRow = rows.map(\.count).max(), longestRow > 0 { longestOfPages.append(longestRow) }
                 if let last = rows.last(where: { !$0.isEmpty }), numberWordAtRight(of: last) != nil {
                     numberedLengths[last.count, default: 0] += 1
                 }
                 noteImpliedWidths(ofRows: rows, in: &votes)
                 noteParagraphStarts(ofRows: rows, in: &starts)
             }
-            return Measure(width: lineWidth(longest: longest, numberedLengths: numberedLengths, votes: votes),
+            return Measure(width: lineWidth(longest: Self.longestLine(ofPages: longestOfPages), numberedLengths: numberedLengths, votes: votes),
                            dropsPageTopBlankRows: starts.beginInCellThree)
+        }
+
+        /// The longest line of a book, given the longest line of each of its
+        /// pages, with the strays left out: the longest one that more than
+        /// one page in twenty reaches, so that a few lines a cell or two
+        /// past the layout (an NLS volume has one on a page or two) cannot
+        /// widen the line and leave every centered heading and page number
+        /// off its place. A book of fewer than twenty pages has no stray to
+        /// leave out, and its longest line is the longest of all.
+        static func longestLine(ofPages longestOfPages: [Int]) -> Int {
+            let descending = longestOfPages.sorted(by: >)
+            guard !descending.isEmpty else { return 0 }
+            return descending[min(descending.count / 20, descending.count - 1)]
         }
 
         /// The line width of a book that has been measured (see `measure`).

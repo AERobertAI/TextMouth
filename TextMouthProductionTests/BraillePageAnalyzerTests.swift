@@ -621,6 +621,23 @@ final class BraillePageAnalyzerTests: XCTestCase {
         XCTAssertEqual(formattedStructure(wider).blocks.first, paragraph("EIGHTCHR"))
     }
 
+    /// A long book's width is the longest line that more than one page in
+    /// twenty reaches: a stray line a cell or ten past the layout, on one
+    /// page of 25, widens nothing, so the centered heading stays a heading
+    /// (FMT56: a BARD volume of the review had one such line).
+    func testAStrayLongLineOfALongBookDoesNotWidenIt() {
+        var pages = [[centered("EIGHTCHR", width: 30), "", row(2, String(repeating: "X", count: 28))]]
+        pages += (2...25).map { _ in [row(2, String(repeating: "X", count: 28))] }
+        pages[2].append(row(0, String(repeating: "Y", count: 40)))
+        let structure = BraillePageAnalyzer.structure(of: pages, formatted: true)
+        XCTAssertEqual(structure.blocks.first, .heading(level: 1, text: cells("EIGHTCHR")))
+        // The strays left out are the top twentieth of the pages: none in a short book.
+        XCTAssertEqual(BraillePageAnalyzer.measuredWidth(of: BrailleFilePages(kind: .brf, pages: pages)), 30)
+        XCTAssertEqual(BraillePageAnalyzer.measuredWidth(of: BrailleFilePages(kind: .brf, pages: Array(pages[0..<19]))), 40)
+        // With 20 pages one is a twentieth: it is left out too.
+        XCTAssertEqual(BraillePageAnalyzer.measuredWidth(of: BrailleFilePages(kind: .brf, pages: Array(pages[0..<20]))), 30)
+    }
+
     func testAFileOfShortRowsIsMeasuredAsEighteenCells() {
         // At 10 cells the row "    AB" would be centered (4 each side); held to 18 it is a cell-5 heading.
         let structure = formattedStructure([row(2, "ABCDEFGH"), "", row(4, "AB"), row(2, "TEXT")])

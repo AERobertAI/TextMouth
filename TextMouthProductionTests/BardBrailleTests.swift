@@ -58,6 +58,17 @@ final class BardBrailleTests: XCTestCase {
     /// The names of the volume files, in reading order.
     private let volumeNames = ["salt-v1.brf", "salt-v2.brf", "salt-v3.brf"]
 
+    /// The cells a line of the fixture's volumes holds: the 40 the package
+    /// declares, unless a test lays them out narrower.
+    private var cellsPerLine = 40
+
+    /// The options the fixture's volumes are written with.
+    private func writerOptions() -> BrailleExportOptions {
+        var options = BrailleExportOptions(table: ebaeContracted)
+        options.page = BraillePageFormat(cellsPerLine: cellsPerLine)
+        return options
+    }
+
     /// The BRF files of the three volumes, by file name, written by
     /// TextMouth's own forward translation with the table the package names.
     private func volumeFiles() throws -> [String: Data] {
@@ -65,7 +76,7 @@ final class BardBrailleTests: XCTestCase {
         var files: [String: Data] = [:]
         for (index, name) in volumeNames.enumerated() {
             files[name] = try BrailleDocumentWriter.brf(
-                of: blocks(ofVolume: index), options: BrailleExportOptions(table: ebaeContracted), workingIn: folder
+                of: blocks(ofVolume: index), options: writerOptions(), workingIn: folder
             )
         }
         return files
@@ -128,11 +139,11 @@ final class BardBrailleTests: XCTestCase {
     /// A folder of its own holding the three volumes and `package` as
     /// `salt.bopf`, and the file's URL.
     private func packageFolder(
-        _ package: Data? = nil, leaving left: Set<String> = []
+        _ package: Data? = nil, leaving left: Set<String> = [], volumes: [String: Data]? = nil
     ) throws -> (folder: URL, file: URL) {
         let folder = try makeSandboxDirectory("BardPackage").appendingPathComponent("Salt Ledger", isDirectory: true)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        for (name, data) in try volumeFiles() where !left.contains(name) {
+        for (name, data) in try volumes ?? volumeFiles() where !left.contains(name) {
             try data.write(to: folder.appendingPathComponent(name))
         }
         let file = folder.appendingPathComponent("salt.bopf")
@@ -304,10 +315,13 @@ final class BardBrailleTests: XCTestCase {
 
     // MARK: - Pages
 
-    /// The pages of the volumes are one book's, each volume marked, with the
-    /// package's line length as the line width; the package's page count is
-    /// only checked, so a count that is wrong refuses nothing.
-    func testThePackagesLineLengthIsUsedAndItsPageCountOnlyChecked() throws {
+    /// The package's numbers are only checked, never used: its line length
+    /// (40) is not the width the volumes are laid out in (30 here, as the
+    /// review's sample is laid out at 38 under a declared 40), and its page
+    /// count is wrong. The volumes measure their own width, so the book keeps
+    /// every centered heading and no page number is left in its text.
+    func testThePackagesNumbersAreOnlyCheckedNeverTheWidth() throws {
+        cellsPerLine = 30
         let (folder, file) = try packageFolder(packageText(pages: "9999"))
         let book = try BardBraillePackage.open(at: file)
         XCTAssertEqual(book.lineLength, 40)
@@ -316,19 +330,59 @@ final class BardBrailleTests: XCTestCase {
         XCTAssertEqual(book.declaredVolumeCount, 3)
 
         let pages = try book.readPages(code: .northAmerican)
-        XCTAssertEqual(pages.lineWidth, 40)
+        XCTAssertNil(pages.lineWidth)
         XCTAssertEqual(pages.volumeStarts.count, 3)
         XCTAssertEqual(pages.volumeStarts.first, 0)
+        XCTAssertEqual(BraillePageAnalyzer.commonWidth(ofVolumesIn: pages), 30)
         // Each volume, taken out of the book, is what its file reads as alone.
         for (index, name) in volumeNames.enumerated() {
             let alone = try BrailleFileReader.read(folder.appendingPathComponent(name), as: .brf)
             XCTAssertEqual(pages.volume(at: index).pages, alone.pages, name)
         }
-        XCTAssertNoThrow(try markdown(of: file))
+        assertEveryTitleIsAHeadingAndNoPageNumberRemains(in: try markdown(of: file))
 
-        // A line length the analyzer could not use is not passed on.
-        let odd = try BardBraillePackage.open(at: try packageFolder(packageText(lineLength: "7")).file)
-        XCTAssertNil(odd.lineLength)
+        // A line length the package gives that is no width at all is not one.
+        XCTAssertNil(try BardBraillePackage.open(at: try packageFolder(packageText(lineLength: "7")).file).lineLength)
+    }
+
+    /// A volume of 20 pages or more with one line of 39 cells on its third
+    /// is read at the book's width (30), keeping every title as a heading.
+    /// (The numbered pages decide the width here; the analyzer's own test
+    /// pins the stray line's being left out where no page is numbered.)
+    func testAVolumeWithAStrayLongLineKeepsItsHeadings() throws {
+        cellsPerLine = 30
+        var volumes = try volumeFiles()
+        let scratch = try makeSandboxDirectory("BardStray")
+        var long = [BraillePrintBlock.heading(level: 1, EmphasizedText("The Harbour Office"))]
+        long += (0..<140).map { _ in
+            BraillePrintBlock.paragraph(EmphasizedText("Nobody at the harbour office could explain the missing barrel."))
+        }
+        let data = try BrailleDocumentWriter.brf(of: long, options: writerOptions(), workingIn: scratch)
+        var pages = String(decoding: data, as: UTF8.self).components(separatedBy: "\u{0C}")
+        XCTAssertGreaterThanOrEqual(pages.count, 20)
+        let firstRowEnd = try XCTUnwrap(pages[2].range(of: "\r\n"))
+        pages[2].insert(contentsOf: "\r\n" + String(repeating: "x", count: 39), at: firstRowEnd.lowerBound)
+        volumes["salt-v2.brf"] = Data(pages.joined(separator: "\u{0C}").utf8)
+
+        let (_, file) = try packageFolder(volumes: volumes)
+        let read = try BardBraillePackage.open(at: file).readPages(code: .northAmerican)
+        XCTAssertEqual(BraillePageAnalyzer.commonWidth(ofVolumesIn: read), 30)
+        assertEveryTitleIsAHeadingAndNoPageNumberRemains(in: try markdown(of: file))
+    }
+
+    /// Asserts that each of the fixture's three titles is a heading line of
+    /// `text`, whatever its level, and that the text holds no digit: the
+    /// fixture has none, so any is a braille page number left in it.
+    private func assertEveryTitleIsAHeadingAndNoPageNumberRemains(
+        in text: String, file: StaticString = #filePath, line: UInt = #line
+    ) {
+        let lines = text.components(separatedBy: "\n")
+        for title in ["The Salt Ledger", "The Harbour Office", "The Answer"] {
+            XCTAssertTrue(lines.contains { $0.hasPrefix("#") && $0.hasSuffix(" " + title) }, title, file: file, line: line)
+        }
+        // The volume headings have their numbers; the volumes' own text has none.
+        let body = lines.filter { !($0.hasPrefix("#") && $0.contains(" Volume ")) }.joined(separator: "\n")
+        XCTAssertNil(body.rangeOfCharacter(from: .decimalDigits), file: file, line: line)
     }
 
     /// Each volume is laid out on its own: the structure names where each
