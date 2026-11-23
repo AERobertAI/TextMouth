@@ -196,13 +196,13 @@ Delete a kept sandbox when you are done with it.
   Read the system log for `terminate:`, and run the class alone before calling it a fault; a run cut short by an ordinary quit the host received while frontmost is settled the same way.
 
 ### Tests in Spanish
-<!-- id: tests-in-spanish; keys: SpanishLocalizationTests, SpanishUITests, es.lproj, AppleLanguages, localization test, FR34; status: incomplete; issues: FR34, TL14; src: TextMouthProductionTests/SpanishLocalizationTests.swift, TextMouthiOSUITests/SpanishUITests.swift, TextMouthProductionTests/LanguagePackTests.swift, TextMouthiOSUITests/TextMouthUITestCase.swift, TextMouthProductionTests/AccessibilityTestSupport.swift, TextMouthProductionTests/RunLoopWaiting.swift -->
+<!-- id: tests-in-spanish; keys: SpanishLocalizationTests, SpanishUITests, Strings.pack, AppleLanguages, localization test, FR34; status: incomplete; issues: FR34, TL14; src: TextMouthProductionTests/SpanishLocalizationTests.swift, TextMouthiOSUITests/SpanishUITests.swift, TextMouthProductionTests/LanguagePackTests.swift, TextMouthiOSUITests/TextMouthUITestCase.swift, TextMouthProductionTests/AccessibilityTestSupport.swift, TextMouthProductionTests/RunLoopWaiting.swift -->
 
 - The suite runs in English, so a Spanish test reads Spanish a way that works inside the host.
-  `SpanishLocalizationTests` (the Mac app) reads the compiled files of the app's own `es.lproj` and a string resource asked for in a Spanish locale; `String(localized:locale:)` is not used, because its locale only formats numbers and it reads the English.
-  It checks each converted area's strings with their Spanish, every plural string with its three Spanish categories, and that no text is empty.
+  `SpanishLocalizationTests` (the Mac app) reads the Spanish entries of the app's own `Strings.pack` by ID, and asks the engine for a line in Spanish (`InterfaceText.line(_:_:language:)`).
+  It checks each pilot area's strings with their Spanish, every plural string with its three Spanish categories, that no text is empty, and that a bookmark's number is never grouped.
 - `SpanishUITests` (the iPhone interface tests, on GitHub only) starts the app with `-AppleLanguages (es) -AppleLocale es_ES` and compares what VoiceOver is given, in order, with the catalog's Spanish.
-  Each expected word carries the key it comes from, so a failure that names what the app gave instead shows an English start at once.
+  Each expected word is written with its English beside it, so a failure that names what the app gave instead shows an English start at once.
   They check the Sleep Timer and Bookmarks sheets, opened by their Spanish names, once the reader's Spanish Play button is there (`launchIntoTheReader(playLabel:loadingValue:)`).
 - `InterfaceTextShippedPackTests`, in both apps, compares every entry and lookup of the shipped pack with the catalog, plurals at 13 counts ([what the apps ship](localization.md#what-the-apps-ship)).
 - `AccessibleControl.title` is a hosted control's accessibility title, which VoiceOver reads beside its label.
