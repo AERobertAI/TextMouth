@@ -110,6 +110,12 @@ final class FileEventWatcher {
         self.gaveUp = gaveUp
     }
 
+    /// A watcher dropped without `stop()` closes its descriptor all the same: cancelling its source runs the cancel handler,
+    /// the one safe place to close it. (Isolated, so it may read the state that lives on the main actor.)
+    isolated deinit {
+        watchedFile?.source.cancel()
+    }
+
     // MARK: - Starting and stopping
 
     /// Whether a file is being listened to now.

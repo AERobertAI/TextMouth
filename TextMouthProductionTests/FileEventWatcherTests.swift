@@ -200,6 +200,21 @@ final class FileEventWatcherTests: XCTestCase {
         XCTAssertFalse(watcher.isArmed)
     }
 
+    /// A watcher dropped without `stop()` closes its descriptor all the same.
+    func testADroppedWatcherClosesItsDescriptor() throws {
+        let url = try makeFileURL()
+        try Data("one".utf8).write(to: url)
+        let recorder = Recorder()
+        var watcher: FileEventWatcher? = FileEventWatcher(file: { url }, calls: recorder.calls, settled: { _ in })
+        watcher?.start()
+        XCTAssertEqual(recorder.opens, 1)
+        XCTAssertEqual(recorder.closes, 0)
+
+        watcher = nil
+
+        XCTAssertTrue(waitUntil(timeout: 5) { recorder.closes == 1 })
+    }
+
     /// A watcher that was never started listens to nothing.
     func testRearmingBeforeStartDoesNothing() throws {
         let url = try makeFileURL()
