@@ -4,6 +4,18 @@ Part of [TextMouth's documentation](../../README.md).
 
 Every version of TextMouth, newest first, and what changed for you in each.
 
+## 0.5.10 (November 23, 2026)
+
+### Your own words for TextMouth's interface
+- On the Mac, the Interface Language group in Settings has Edit Interface Text…. It fills a file named interface_text.json in your library's folder with every line of the language you use, then opens it in your text editor.
+- Each line in the file gives its text first, then its English and a note on where it appears. Change a line's text, save, and TextMouth uses your words at once. Lines you leave alone keep each update's better wording.
+- Export Interface Text…, on the Mac and the iPhone, saves every line as it reads now and marks the ones you changed. Someone else can use your file, and every line in it applies for them.
+- The group says how many of your lines are in use and lists any it set aside, each with its reason. For example, a line whose placeholders don't match its English is set aside.
+
+### The language picker in every language
+- The Interface Language picker's own label, hint, and announcement are now in all 25 languages, so after a switch the picker speaks the new language too.
+- On the iPhone, switching to or from Arabic, Hebrew, Persian, or Urdu no longer leaves the list of languages open on the screen.
+
 ## 0.5.9 (November 22, 2026)
 
 ### Choose TextMouth's language in Settings
