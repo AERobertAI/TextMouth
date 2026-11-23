@@ -39,6 +39,12 @@ enum InterfaceTextWording: Equatable, Sendable {
         }
     }
 
+    /// A text as plural forms: every category of `language` with the same text; a plural wording as it is.
+    func spread(overLanguage language: String) -> InterfaceTextWording {
+        guard case .text(let text) = self, let names = PluralRules.categories[language] else { return self }
+        return .plural(Dictionary(uniqueKeysWithValues: names.map { ($0, text) }))
+    }
+
     /// This wording, an English one, as the line would read in `language` where the pack has no text of its own: a text
     /// as it is, and each plural form of `language` taken from the English form of the same name, else from `other`
     /// (Spanish's `many` is English's `other`).
@@ -74,14 +80,6 @@ enum InterfaceTextWording: Equatable, Sendable {
         case .plural(let forms): return forms
         }
     }
-
-    /// Every text of the wording, in a fixed order (a text, or the forms by category name).
-    var texts: [String] {
-        switch self {
-        case .text(let text): return [text]
-        case .plural(let forms): return forms.keys.sorted().compactMap { forms[$0] }
-        }
-    }
 }
 
 /// What the person's file is read and written against: the pack's IDs, English, and notes, and the entries of one
@@ -113,12 +111,32 @@ struct InterfaceTextReference: Sendable {
         notes.indices.contains(index) ? notes[index] : ""
     }
 
-    /// The wording of the line at `index` in the language as the pack has it: its own text, else the English adapted to
-    /// the language (a line the translators have not reached shows its English).
+    /// Whether the line at `index` is a plural line: its English entry has plural forms. The pack keeps English's forms even
+    /// when they are all alike (`pack.py`), so this is one answer for the line in every language; the file's reader and its
+    /// writer both ask it, so a line is `text` or `plural` the same way in both.
+    func isPlural(at index: Int) -> Bool {
+        english.indices.contains(index) && { if case .plural = english[index] { return true } else { return false } }()
+    }
+
+    /// The wording of the line at `index` in the language as the pack has it, of the line's own kind (`isPlural(at:)`):
+    /// - a plural line in a language whose forms are all alike (the pack stores one text) is spread over the language's
+    ///   categories, so the file shows a plural line as `plural` in every language;
+    /// - a line the language has no text for shows its English, adapted to the language's categories;
+    /// - a plain line is its text.
     func wording(at index: Int) -> InterfaceTextWording? {
-        if entries.indices.contains(index), let own = InterfaceTextWording(entry: entries[index], language: language) {
-            return own
+        let own = entries.indices.contains(index) ? entries[index] : .absent
+        guard isPlural(at: index) else {
+            switch own {
+            case .plain(let text): return .text(text)
+            // Not a case the catalog has (a plural in a language for a line English has plain): its `other` form.
+            case .plural(let forms): return forms.last.map { .text($0) }
+            case .absent: return englishWording(at: index)
+            }
         }
-        return englishWording(at: index)?.adapted(toLanguage: language)
+        switch own {
+        case .plural: return InterfaceTextWording(entry: own, language: language)
+        case .plain(let text): return InterfaceTextWording.text(text).spread(overLanguage: language)
+        case .absent: return englishWording(at: index)?.adapted(toLanguage: language)
+        }
     }
 }

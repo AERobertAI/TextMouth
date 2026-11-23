@@ -23,7 +23,8 @@ The format, version 1 (little-endian). research/STRINGS-SYSTEM-DESIGN-2026-11-21
   order; every other blob holds one entry for each ID, in that order. `notes` holds each ID's translators' note ("" for
   none). A language entry is "" (no translation: the reader uses English), the text, or U+0001 followed by the plural
   forms in the language's category order (`catalog.PLURAL_CATEGORIES`), joined by U+0001. A plural whose forms are all
-  one text is written as that text.
+  one text is written as that text, except in English: an English entry that is plural stays plural, so that the pack
+  tells a plural line from a plain one (the person's file of own lines reads and writes a line by the English's kind).
 
 What goes in is exactly what Xcode compiled before the switch: every localization state except `new`.
 
@@ -176,7 +177,7 @@ def compile_localization(localization, language, where, problems):
 
 def compile_plural(plural, language, where, problems):
     """The entry of the plural forms `plural` ({category: node}) of `language`: the forms in the language's category order
-    (squeezed to one text when they are all the same), or None when every form is in state `new`. A category the language
+    (squeezed to one text when they are all the same, except English's), or None when every form is in state `new`. A category the language
     lacks, or one it needs and the forms lack, is a refusal (a form in state `new` counts as lacking)."""
     try:
         categories = catalog.plural_categories(language)
@@ -203,7 +204,9 @@ def compile_plural(plural, language, where, problems):
             words.append(f"lacks the plural form {', '.join(missing)} that the language needs")
         problems.append(f"{where}: " + " and ".join(words) + f" (it uses {', '.join(categories)})")
         return None
-    return squeeze_forms(categories, tuple(forms[category] for category in categories))
+    entry = tuple(forms[category] for category in categories)
+    # English keeps its forms, even all alike: they are what says that the line is plural (FR39, the person's own lines).
+    return entry if language == "en" else squeeze_forms(categories, entry)
 
 
 # ---------------------------------------------------------------------------------------------------------------

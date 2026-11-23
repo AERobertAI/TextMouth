@@ -260,6 +260,43 @@ final class InterfaceTextShippedPackTests: XCTestCase {
         return call.arguments.isEmpty ? pattern : String(format: pattern, locale: locale, arguments: call.formatterArguments)
     }
 
+    // MARK: - The person's file
+
+    /// A fill and an Export of every one of the 25 languages, made from the shipped pack, read back with no line ignored: a
+    /// fill leaves every line unchanged (each equals its `base`), an Export applies every line in full, and the plural lines
+    /// are `plural` in every language, though the pack stores a plural whose forms read alike as one text. Then one file
+    /// filled for all 25 languages, the largest the app writes, is read, not refused for its size. The sizes are printed.
+    func testAFillAndAnExportOfEveryLanguageReadBackWithNoLineIgnored() throws {
+        let host = try shipped()
+        let engine = InterfaceTextEngine(tables: host.pack, report: { _ in })
+        let english = try XCTUnwrap(engine.reference(language: "en"))
+        var wrong: [String] = []
+        var everyLanguage: Data?
+        var sizes: [String] = []
+        for language in host.languages {
+            let reference = try XCTUnwrap(engine.reference(language: language))
+            let fill = try XCTUnwrap(InterfaceTextOverridesWriter.filled(existing: nil, reference: reference), "no fill for \(language)")
+            let filled = InterfaceTextOverridesFile.read(fill, reference: english)
+            if filled.fileProblem != nil || !filled.ignored.isEmpty || !filled.inUse.isEmpty || filled.unchanged != host.ids.count {
+                wrong.append("fill \(language): problem \(String(describing: filled.fileProblem)), \(filled.ignored.count) ignored, \(filled.inUse.count) in use, \(filled.unchanged) unchanged")
+            }
+            let export = InterfaceTextOverridesWriter.export(reference: reference, own: [:])
+            let exported = InterfaceTextOverridesFile.read(export, reference: english)
+            if exported.fileProblem != nil || !exported.ignored.isEmpty || exported.inUse.count != host.ids.count {
+                wrong.append("export \(language): \(exported.ignored.count) ignored, \(exported.inUse.count) in use; first \(exported.ignored.prefix(3))")
+            }
+            sizes.append("\(language) \(fill.count)")
+            everyLanguage = InterfaceTextOverridesWriter.filled(existing: everyLanguage, reference: reference) ?? everyLanguage
+        }
+        XCTAssertTrue(wrong.isEmpty, "\(wrong.count) differ:\n" + wrong.prefix(Self.listed).joined(separator: "\n"))
+        let all = try XCTUnwrap(everyLanguage)
+        print("Shipped pack: fill sizes \(sizes.joined(separator: ", ")); all 25 languages in one file: \(all.count) bytes (limit \(InterfaceTextOverridesFile.largestSize))")
+        let combined = InterfaceTextOverridesFile.read(all, reference: english)
+        XCTAssertNil(combined.fileProblem, "a file filled for all 25 languages is refused: \(all.count) bytes")
+        XCTAssertEqual(combined.ignored.count, 0)
+        XCTAssertEqual(combined.unchanged, host.ids.count * host.languages.count)
+    }
+
     // MARK: - The bundle
 
     /// The files a bundle must not hold, by name: Apple's language tables of text (`Localizable.strings`, its plural

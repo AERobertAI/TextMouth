@@ -81,15 +81,35 @@ enum FormatSpecifiers {
     ///
     /// A text may leave an argument unused (a plural's `one` form often drops its number: "un libro").
     static func accepts(_ text: String, arguments: [Kind]) -> Bool {
-        guard let slots = slots(in: text) else { return false }
-        let numbered = slots.filter { $0.position != nil }.count
-        guard numbered == 0 || numbered == slots.count else { return false }
+        guard let slots = slots(in: text), !mixesNumbering(slots) else { return false }
         for (order, slot) in slots.enumerated() {
-            // The 0-based argument the specifier reads.
-            let argument = (slot.position ?? (order + 1)) - 1
+            let argument = argument(of: slot, order: order) - 1
             guard arguments.indices.contains(argument), arguments[argument] == slot.kind else { return false }
         }
         return true
+    }
+
+    /// Whether `slots` mix numbered (`%1$@`) and unnumbered (`%@`) specifiers, which no text may.
+    static func mixesNumbering(_ slots: [Slot]) -> Bool {
+        let numbered = slots.filter { $0.position != nil }.count
+        return numbered != 0 && numbered != slots.count
+    }
+
+    /// The argument number (1-based) `slot` reads, `order` being its place among the specifiers (0-based): its own number, or
+    /// the next one in order for an unnumbered specifier.
+    static func argument(of slot: Slot, order: Int) -> Int {
+        slot.position ?? (order + 1)
+    }
+
+    /// The kind of each argument `slots` read, by argument number; nil when one argument is read as two kinds.
+    static func argumentKinds(of slots: [Slot]) -> [Int: Kind]? {
+        var kinds: [Int: Kind] = [:]
+        for (order, slot) in slots.enumerated() {
+            let argument = argument(of: slot, order: order)
+            if let known = kinds[argument], known != slot.kind { return nil }
+            kinds[argument] = slot.kind
+        }
+        return kinds
     }
 
     /// The kinds of a call's arguments, in order.

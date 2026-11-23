@@ -200,6 +200,12 @@ final class InterfaceTextOverridesFileTests: XCTestCase {
             ("%lld hecho", "sync.progress", .percentSignsDiffer),
             ("%lld%%%% hecho", "sync.progress", .percentSignsDiffer),
             ("Hecho %%", "sync.progress", .placeholdersDiffer),
+            ("Parte %2$lld", "feed.opening", .placeholdersDiffer),
+            ("Abriendo %-5@, parte %lld", "feed.opening", .unsupportedSpecifier),
+            ("Abriendo %5@, parte %lld", "feed.opening", .unsupportedSpecifier),
+            ("Abriendo %*d, parte %lld", "feed.opening", .unsupportedSpecifier),
+            ("Abriendo %.3@, parte %lld", "feed.opening", .unsupportedSpecifier),
+            ("Abriendo %@, parte %lld, 100%\u{301}", "feed.opening", .unsupportedSpecifier),
             ("Hola %@", "common.sleepTimer", .placeholdersDiffer),
             ("Hola %%", "common.sleepTimer", .percentSignsDiffer),
         ]
@@ -412,6 +418,36 @@ final class InterfaceTextOverridesFileTests: XCTestCase {
         XCTAssertEqual(result.unchanged, overridesLines.count)
     }
 
+    /// The pack stores a plural whose forms all read alike as one text (`pack.py`), but a line is plural by its English, so a
+    /// fill and an Export write it as `plural` in every language, and read it back whole. The writer and the reader take
+    /// the line's kind from the English entry, the one answer for every language.
+    func testAPluralLineTheLanguageStoresAsOneTextIsStillPlural() throws {
+        let tables = InterfaceTextMemoryTables(lines: [
+            "a.count": ["en": pluralEntry("%lld item", "%lld item"), "ja": "%lld 件", "es": pluralEntry("un elemento", "%lld de elementos", "%lld elementos"), "ru": "%lld шт."],
+            "a.page": ["en": "Page %lld", "ja": "%lld ページ"],
+        ])
+        let engine = InterfaceTextEngine(tables: tables, report: { _ in })
+        let english = try XCTUnwrap(engine.reference(language: "en"))
+
+        for language in ["en", "ja", "es", "ru"] {
+            let reference = try XCTUnwrap(engine.reference(language: language))
+            let fill = try XCTUnwrap(InterfaceTextOverridesWriter.filled(existing: nil, reference: reference))
+            let root = try XCTUnwrap(JSONSerialization.jsonObject(with: fill) as? [String: Any])
+            let lines = try XCTUnwrap(((root["languages"] as? [String: Any])?[language] as? [String: Any])?["lines"] as? [String: [String: Any]])
+            let names = try XCTUnwrap(PluralRules.categories[language])
+            XCTAssertEqual(Set((lines["a.count"]?["plural"] as? [String: String] ?? [:]).keys), Set(names), language)
+            XCTAssertNil(lines["a.count"]?["text"], language)
+            XCTAssertNotNil(lines["a.page"]?["text"], language)
+
+            let read = InterfaceTextOverridesFile.read(fill, reference: english)
+            XCTAssertEqual(read.ignored, [], language)
+            XCTAssertEqual(read.unchanged, 2, language)
+            let exported = InterfaceTextOverridesFile.read(InterfaceTextOverridesWriter.export(reference: reference, own: [:]), reference: english)
+            XCTAssertEqual(exported.ignored, [], language)
+            XCTAssertEqual(exported.inUse.count, 2, language)
+        }
+    }
+
     /// A line the pack has no text for in the language is filled with the English, its plural forms taken by name.
     func testALineTheLanguageLacksIsFilledWithTheEnglish() throws {
         // A pack with no Spanish at all, so every line falls back to its English.
@@ -463,6 +499,80 @@ final class InterfaceTextOverridesFileTests: XCTestCase {
         XCTAssertNil(InterfaceTextOverridesWriter.filled(existing: Data("[1]".utf8), reference: reference))
         XCTAssertNil(InterfaceTextOverridesWriter.filled(existing: Data("{\"version\": 1}".utf8), reference: reference))
         XCTAssertNotNil(InterfaceTextOverridesWriter.filled(existing: Data(" \n".utf8), reference: reference))
+    }
+
+    /// A line is written with the field to edit first and its twin last (`text`, `english`, `note`, `base`), and plural forms
+    /// in the language's own order (`one`, `many`, `other`), not alphabetically, so a screen reader meets `base` last.
+    func testAFilledLineIsWrittenInAFixedOrder() throws {
+        let reference = try makeReference()
+
+        let text = String(decoding: try XCTUnwrap(InterfaceTextOverridesWriter.filled(existing: nil, reference: reference)), as: UTF8.self)
+
+        func offset(_ needle: String, after start: String.Index? = nil) throws -> String.Index {
+            let range = try XCTUnwrap(text.range(of: needle, range: (start ?? text.startIndex)..<text.endIndex), needle)
+            return range.lowerBound
+        }
+        let timer = try offset("\"common.sleepTimer\"")
+        let first = try offset("\"text\"", after: timer)
+        let english = try offset("\"english\"", after: first)
+        let note = try offset("\"note\"", after: english)
+        let base = try offset("\"base\"", after: note)
+        XCTAssertTrue(first < english && english < note && note < base)
+        let minutes = try offset("\"common.countMinutes\"")
+        let plural = try offset("\"plural\"", after: minutes)
+        let one = try offset("\"one\"", after: plural)
+        let many = try offset("\"many\"", after: one)
+        let other = try offset("\"other\"", after: many)
+        let basePlural = try offset("\"basePlural\"", after: other)
+        XCTAssertTrue(plural < one && one < many && many < other && other < basePlural)
+        XCTAssertTrue(text.hasPrefix("{\n  \"version\": 1,\n  \"languages\": {"), text.prefix(60).description)
+    }
+
+    /// An Export puts `changed` after the note, and the person's own line in the same order.
+    func testAnExportedLineIsWrittenInAFixedOrderToo() throws {
+        let reference = try makeReference()
+        let text = String(decoding: InterfaceTextOverridesWriter.export(reference: reference, own: ["common.sleepTimer": .plain("Temporizador")]), as: UTF8.self)
+
+        let timer = try XCTUnwrap(text.range(of: "\"common.sleepTimer\""))
+        let note = try XCTUnwrap(text.range(of: "\"note\"", range: timer.upperBound..<text.endIndex))
+        let changed = try XCTUnwrap(text.range(of: "\"changed\"", range: note.upperBound..<text.endIndex))
+        let first = try XCTUnwrap(text.range(of: "\"text\"", range: timer.upperBound..<text.endIndex))
+        XCTAssertTrue(first.lowerBound < note.lowerBound && note.lowerBound < changed.lowerBound)
+    }
+
+    /// Text with quotes, backslashes, line feeds, and non-ASCII letters is escaped as JSON needs and read back as it was.
+    func testTheWritersEscapesReadBackExactly() throws {
+        let tables = InterfaceTextMemoryTables(lines: ["a.line": ["en": "Say \"hi\"\\\n\tÜ 你好", "es": "Di \"hola\"\\\n\tÁ 世界 \u{1F600}"]])
+        let engine = InterfaceTextEngine(tables: tables, report: { _ in })
+        let reference = try XCTUnwrap(engine.reference(language: "es"))
+
+        let data = try XCTUnwrap(InterfaceTextOverridesWriter.filled(existing: nil, reference: reference))
+        let parsed = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        let line = try XCTUnwrap((((parsed["languages"] as? [String: Any])?["es"] as? [String: Any])?["lines"] as? [String: [String: Any]])?["a.line"])
+
+        XCTAssertEqual(line["text"] as? String, "Di \"hola\"\\\n\tÁ 世界 \u{1F600}")
+        XCTAssertEqual(line["english"] as? String, "Say \"hi\"\\\n\tÜ 你好")
+    }
+
+    /// A file whose version this TextMouth does not know is left as it is, whatever it holds.
+    func testFillLeavesAFileOfAnUnknownVersion() throws {
+        let reference = try makeReference()
+        let other = Data(#"{"version": 2, "languages": {"fr": {"lines": {}}}}"#.utf8)
+
+        XCTAssertNil(InterfaceTextOverridesWriter.filled(existing: other, reference: reference))
+        XCTAssertTrue(InterfaceTextOverridesWriter.hasUnknownVersion(other))
+        XCTAssertFalse(InterfaceTextOverridesWriter.hasUnknownVersion(Data(#"{"version": 1}"#.utf8)))
+        XCTAssertFalse(InterfaceTextOverridesWriter.hasUnknownVersion(Data(#"{"languages": {}}"#.utf8)))
+        XCTAssertFalse(InterfaceTextOverridesWriter.hasUnknownVersion(Data("not json".utf8)))
+    }
+
+    /// A language written as the rest of the app names one (`pt`, `zh`, `es-MX`) is a carried language; it applies under that
+    /// language's name.
+    func testALanguageKeyIsNamedAsTheRestOfTheAppNamesOne() throws {
+        let result = try readOutcome(of: ["common.sleepTimer": ["text": "Temporizador"]], language: "es-MX")
+
+        XCTAssertEqual(result.ignored, [])
+        XCTAssertEqual(result.lines["es"]?["common.sleepTimer"], .plain("Temporizador"))
     }
 
     /// The same bytes every time, so two fills are alike and a file in a synced folder does not churn.

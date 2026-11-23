@@ -97,8 +97,13 @@ struct InterfaceTextOverridesOutcome: Equatable, Sendable {
 
     /// A line that is ignored, with the reason.
     struct Ignored: Equatable, Sendable {
+        /// The line as the file names it (its language as written, so a report names what the person wrote).
         let key: Key
         let reason: InterfaceTextIgnoredReason
+        /// Whether the ID is one the app has, and the language one it carries: only those may go to the debug log as they
+        /// are, since any other key is the person's own text.
+        var idIsKnown = true
+        var languageIsKnown = true
     }
 
     /// The person's own lines that apply: language, then ID, as the engine takes them.
@@ -154,16 +159,17 @@ enum InterfaceTextOverridesFile {
     /// The version of the shape this reads and writes.
     static let version = 1
 
-    /// The largest file read: a full export of every line is about 1 MB.
-    static let largestSize = 16 * 1024 * 1024
+    /// The largest file read. A fill of one language is 1.8 to 2.2 MB and a full Export 1.5 to 1.7 MB (measured on the
+    /// shipped pack), so a file filled for all 25 languages is about 50 MB; this is above that, and below what a person's
+    /// editor or the parser could not hold.
+    static let largestSize = 64 * 1024 * 1024
 
     // MARK: - Reading
 
     /// The outcome of reading `data`, the bytes of the file, against `reference`.
     static func read(_ data: Data, reference: InterfaceTextReference) -> InterfaceTextOverridesOutcome {
         guard data.count <= largestSize else { return .ignoredWhole(.tooLarge) }
-        // An empty file, or one holding only whitespace, is a file the person has not filled yet.
-        if data.allSatisfy({ [0x20, 0x09, 0x0A, 0x0D].contains($0) }) { return .empty }
+        if isBlank(data) { return .empty }
         guard let parsed = try? JSONSerialization.jsonObject(with: data) else { return .ignoredWhole(.notJSON) }
         guard let root = parsed as? [String: Any] else { return .ignoredWhole(.notThisShape) }
         // A missing version is read as this one, for a file written by hand.
@@ -182,22 +188,34 @@ enum InterfaceTextOverridesFile {
         }
 
         var outcome = InterfaceTextOverridesOutcome()
-        for (language, lines) in shaped {
+        for (written, lines) in shaped {
+            // A language is named as the rest of the app names one: `pt` and `zh` and `es-MX` are carried languages.
+            let language = InterfaceLanguage.carriedLanguage(written)
             for id in lines.keys.sorted() {
-                let key = InterfaceTextOverridesOutcome.Key(language: language, id: id)
-                switch read(line: lines[id] ?? NSNull(), key: key, reference: reference) {
+                let key = InterfaceTextOverridesOutcome.Key(language: written, id: id)
+                switch read(line: lines[id] ?? NSNull(), id: id, language: language, reference: reference) {
                 case .unchanged:
                     outcome.unchanged += 1
                 case .ignored(let reason):
-                    outcome.ignored.append(.init(key: key, reason: reason))
+                    outcome.ignored.append(.init(
+                        key: key, reason: reason, idIsKnown: reference.index(of: id) != nil, languageIsKnown: language != nil
+                    ))
                 case .applies(let entry, let outdated):
-                    outcome.lines[language, default: [:]][id] = entry
-                    outcome.inUse.append(key)
-                    if outdated { outcome.outdatedEnglish.append(key) }
+                    // In use under the carried language's name, which the engine's lookups use.
+                    let carried = language ?? written
+                    outcome.lines[carried, default: [:]][id] = entry
+                    let used = InterfaceTextOverridesOutcome.Key(language: carried, id: id)
+                    outcome.inUse.append(used)
+                    if outdated { outcome.outdatedEnglish.append(used) }
                 }
             }
         }
         return outcome
+    }
+
+    /// Whether `data` holds only whitespace: a file the person has not filled yet, or made empty.
+    static func isBlank(_ data: Data) -> Bool {
+        data.allSatisfy { [0x20, 0x09, 0x0A, 0x0D].contains($0) }
     }
 
     /// What one line comes to.
@@ -211,7 +229,7 @@ enum InterfaceTextOverridesFile {
 
     /// One line, checked in the order of the rules: its shape, whether the person changed it, its language and ID, and
     /// then its text.
-    private static func read(line raw: Any, key: InterfaceTextOverridesOutcome.Key, reference: InterfaceTextReference) -> LineResult {
+    private static func read(line raw: Any, id: String, language: String?, reference: InterfaceTextReference) -> LineResult {
         guard let object = raw as? [String: Any] else { return .ignored(.notALine) }
         let hasText = object["text"] != nil
         let hasPlural = object["plural"] != nil
@@ -227,13 +245,13 @@ enum InterfaceTextOverridesFile {
             return .unchanged
         }
 
-        guard PluralRules.categories[key.language] != nil else { return .ignored(.unknownLanguage) }
-        guard let index = reference.index(of: key.id) else { return .ignored(.unknownID) }
+        guard let language else { return .ignored(.unknownLanguage) }
+        guard let index = reference.index(of: id) else { return .ignored(.unknownID) }
         guard let english = reference.englishWording(at: index) else { return .ignored(.noEnglish) }
-        if let reason = problem(with: wording, english: english, language: key.language) {
+        if let reason = problem(with: wording, english: english, language: language) {
             return .ignored(reason)
         }
-        guard let entry = wording.entry(language: key.language) else { return .ignored(.wrongPluralForms) }
+        guard let entry = wording.entry(language: language) else { return .ignored(.wrongPluralForms) }
         let writtenEnglish = InterfaceTextWording(json: object["english"])
         return .applies(entry, outdated: writtenEnglish.map { $0 != english } ?? false)
     }
@@ -288,9 +306,8 @@ enum InterfaceTextOverridesFile {
         guard let wanted = FormatSpecifiers.parse(reference) else { return nil }
         // The specifiers of the person's text: the engine's own check parses them (only the five, no lone `%`).
         guard let found = FormatSpecifiers.parse(text) else { return .unsupportedSpecifier }
-        let numbered = found.slots.filter { $0.position != nil }.count
-        guard numbered == 0 || numbered == found.slots.count else { return .mixedPlaceholders }
-        guard let got = argumentKinds(of: found.slots), let wantedKinds = argumentKinds(of: wanted.slots) else {
+        guard !FormatSpecifiers.mixesNumbering(found.slots) else { return .mixedPlaceholders }
+        guard let got = FormatSpecifiers.argumentKinds(of: found.slots), let wantedKinds = FormatSpecifiers.argumentKinds(of: wanted.slots) else {
             return .placeholdersDiffer
         }
         for (argument, kind) in wantedKinds where got[argument] == nil {
@@ -300,17 +317,5 @@ enum InterfaceTextOverridesFile {
         for (argument, kind) in got where wantedKinds[argument] != kind { return .placeholdersDiffer }
         guard found.percentSigns == wanted.percentSigns else { return .percentSignsDiffer }
         return nil
-    }
-
-    /// The kind of each argument the slots read, by argument number (an unnumbered specifier reads the next one in
-    /// order); nil when one argument is read as two kinds.
-    private static func argumentKinds(of slots: [FormatSpecifiers.Slot]) -> [Int: FormatSpecifiers.Kind]? {
-        var kinds: [Int: FormatSpecifiers.Kind] = [:]
-        for (order, slot) in slots.enumerated() {
-            let argument = slot.position ?? (order + 1)
-            if let known = kinds[argument], known != slot.kind { return nil }
-            kinds[argument] = slot.kind
-        }
-        return kinds
     }
 }

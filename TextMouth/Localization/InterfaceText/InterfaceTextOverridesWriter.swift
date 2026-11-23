@@ -10,6 +10,11 @@ import Foundation
 /// - the export writes no `base`, and `"changed": true` on the lines that are the person's own, so that what someone else
 ///   imports applies in full.
 ///
+/// A line is written in a fixed order, so that a VoiceOver or braille reader meets the field to edit first and its twin
+/// last: `text` or `plural` (its forms in the language's own category order), then `english`, then `note`, then `base` or
+/// `basePlural` (or, in an export, `changed`). The same input is always the same bytes. A line is plural when its English
+/// is (`InterfaceTextReference.isPlural`), whatever the pack stores for the language.
+///
 /// Nothing else writes the file: no launch, sync, or move of the data folder does. Foundation only.
 enum InterfaceTextOverridesWriter {
     // MARK: - Edit Interface Text…
@@ -19,27 +24,41 @@ enum InterfaceTextOverridesWriter {
     /// - A missing (or empty) file is made, holding the interface language alone.
     /// - A file that lacks the interface language gets it; every other language is kept as it was.
     /// - A file that already has the language is left alone, whatever its lines: the person's edits are theirs. So is a
-    ///   file that is not JSON or not the file's shape, which the person is mending.
+    ///   file that is not JSON or not the file's shape, which the person is mending, and one whose `version` this TextMouth
+    ///   does not know (`hasUnknownVersion`).
     ///
     /// - Parameters:
     ///   - existing: The file's bytes now, nil when there is no file.
     ///   - reference: The pack's lines for the interface language (`reference.language`).
     static func filled(existing: Data?, reference: InterfaceTextReference) -> Data? {
-        var root: [String: Any]
-        if let existing, !isBlank(existing) {
-            guard let parsed = (try? JSONSerialization.jsonObject(with: existing)) as? [String: Any] else { return nil }
-            root = parsed
-            guard var languages = root["languages"] as? [String: Any] else { return nil }
-            guard languages[reference.language] == nil else { return nil }
-            languages[reference.language] = ["lines": lines(of: reference, own: [:], forExport: false)]
-            root["languages"] = languages
-        } else {
-            root = [
-                "version": InterfaceTextOverridesFile.version,
-                "languages": [reference.language: ["lines": lines(of: reference, own: [:], forExport: false)]],
-            ]
+        let added = Node.object([("lines", lines(of: reference, own: [:], forExport: false))])
+        guard let existing, !InterfaceTextOverridesFile.isBlank(existing) else {
+            return root(languages: [(reference.language, added)]).rendered
         }
-        return serialized(root)
+        guard let parsed = (try? JSONSerialization.jsonObject(with: existing)) as? [String: Any],
+              !hasUnknownVersion(parsed),
+              let languages = parsed["languages"] as? [String: Any],
+              languages[reference.language] == nil
+        else { return nil }
+        // Every other part of the file as it was: its other top-level keys, and each other language's lines.
+        var kept = parsed
+        kept["languages"] = nil
+        kept["version"] = nil
+        let others = kept.keys.sorted().map { ($0, Node(any: kept[$0] ?? NSNull())) }
+        let all = (languages.keys.sorted().map { ($0, Node(any: languages[$0] ?? NSNull())) } + [(reference.language, added)])
+            .sorted { $0.0 < $1.0 }
+        return root(languages: all, others: others).rendered
+    }
+
+    /// Whether the file's `version` is one this TextMouth does not read: Edit leaves such a file as it is, and says so.
+    static func hasUnknownVersion(_ existing: Data) -> Bool {
+        guard let parsed = (try? JSONSerialization.jsonObject(with: existing)) as? [String: Any] else { return false }
+        return hasUnknownVersion(parsed)
+    }
+
+    private static func hasUnknownVersion(_ root: [String: Any]) -> Bool {
+        guard let given = root["version"] else { return false }
+        return (given as? Int) != InterfaceTextOverridesFile.version
     }
 
     // MARK: - Export Interface Text…
@@ -47,53 +66,160 @@ enum InterfaceTextOverridesWriter {
     /// The bytes an Export writes: every line of the interface language as it reads now, each with its English and its
     /// note, the person's own lines (`own`, by ID) in place of the pack's and marked `"changed": true`, and no `base`.
     static func export(reference: InterfaceTextReference, own: [String: InterfaceTextEntry]) -> Data {
-        let root: [String: Any] = [
-            "version": InterfaceTextOverridesFile.version,
-            "languages": [reference.language: ["lines": lines(of: reference, own: own, forExport: true)]],
-        ]
-        return serialized(root) ?? Data()
+        let language = Node.object([("lines", lines(of: reference, own: own, forExport: true))])
+        return root(languages: [(reference.language, language)]).rendered
     }
 
     // MARK: - The lines
 
-    /// One object for each line of the pack, by ID.
-    private static func lines(of reference: InterfaceTextReference, own: [String: InterfaceTextEntry], forExport: Bool) -> [String: Any] {
-        var lines: [String: Any] = [:]
+    /// The file: its version, then its other keys, then its languages.
+    private static func root(languages: [(String, Node)], others: [(String, Node)] = []) -> Node {
+        .object([("version", .int(InterfaceTextOverridesFile.version))] + others + [("languages", .object(languages))])
+    }
+
+    /// One object for each line of the pack, in the pack's order of IDs.
+    private static func lines(of reference: InterfaceTextReference, own: [String: InterfaceTextEntry], forExport: Bool) -> Node {
+        var lines: [(String, Node)] = []
         for index in 0..<reference.ids.count {
             let id = reference.ids.id(at: index)
             guard let english = reference.englishWording(at: index) else { continue }
-            let ownWording = own[id].flatMap { InterfaceTextWording(entry: $0, language: reference.language) }
             // The person's own line where one applies (the export only: the fill is made where there is none).
+            let ownWording = own[id].flatMap { InterfaceTextWording(entry: $0, language: reference.language) }
             guard let wording = ownWording ?? reference.wording(at: index) else { continue }
 
-            var line: [String: Any] = [:]
+            var line: [(String, Node)] = []
+            let twin: (String, Node)
             switch wording {
             case .text(let text):
-                line["text"] = text
-                if !forExport { line["base"] = text }
+                line.append(("text", .string(text)))
+                twin = ("base", .string(text))
             case .plural(let forms):
-                line["plural"] = forms
-                if !forExport { line["basePlural"] = forms }
+                let node = Node.forms(forms, language: reference.language)
+                line.append(("plural", node))
+                twin = ("basePlural", node)
             }
-            line["english"] = english.json
+            line.append(("english", english.node(language: "en")))
             let note = reference.note(at: index)
-            if !note.isEmpty { line["note"] = note }
-            if forExport && ownWording != nil { line["changed"] = true }
-            lines[id] = line
+            if !note.isEmpty { line.append(("note", .string(note))) }
+            if forExport {
+                if ownWording != nil { line.append(("changed", .bool(true))) }
+            } else {
+                line.append(twin)
+            }
+            lines.append((id, .object(line)))
         }
-        return lines
+        return .object(lines)
+    }
+}
+
+// MARK: - Ordered JSON
+
+/// JSON in an order the writer chooses, since `JSONSerialization` can only sort keys: indented with two spaces, strings with
+/// only the escapes JSON needs, and every other letter as it is.
+private indirect enum Node {
+    case string(String)
+    case int(Int)
+    case bool(Bool)
+    case null
+    case array([Node])
+    case object([(String, Node)])
+
+    /// Plural forms in the order of `language`'s categories (the forms the language lacks, last, by name).
+    static func forms(_ forms: [String: String], language: String) -> Node {
+        let order = PluralRules.categories[language] ?? []
+        let named = order.filter { forms[$0] != nil } + forms.keys.filter { !order.contains($0) }.sorted()
+        return .object(named.map { ($0, .string(forms[$0] ?? "")) })
     }
 
-    // MARK: - Bytes
-
-    /// `root` as JSON a person can read in an editor: indented, keys sorted (so two writes of the same lines are the same
-    /// bytes), and slashes and non-ASCII letters as they are.
-    private static func serialized(_ root: [String: Any]) -> Data? {
-        try? JSONSerialization.data(withJSONObject: root, options: [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes])
+    /// A node for what `JSONSerialization` parsed, its objects' keys sorted (a part of someone's file keeps its content,
+    /// not its order).
+    init(any value: Any) {
+        switch value {
+        case let text as String:
+            self = .string(text)
+        case let number as NSNumber:
+            // A boolean is an NSNumber too; its type code tells it from a number.
+            if String(cString: number.objCType) == "c" {
+                self = .bool(number.boolValue)
+            } else if NSNumber(value: number.intValue) == number {
+                self = .int(number.intValue)
+            } else {
+                self = .string(number.stringValue)
+            }
+        case let list as [Any]:
+            self = .array(list.map(Node.init(any:)))
+        case let object as [String: Any]:
+            self = .object(object.keys.sorted().map { ($0, Node(any: object[$0] ?? NSNull())) })
+        default:
+            self = .null
+        }
     }
 
-    /// Whether `data` holds only whitespace (a file the person made empty).
-    private static func isBlank(_ data: Data) -> Bool {
-        data.allSatisfy { [0x20, 0x09, 0x0A, 0x0D].contains($0) }
+    /// The UTF-8 bytes, with a line feed at the end.
+    var rendered: Data {
+        var out = ""
+        write(into: &out, depth: 0)
+        out += "\n"
+        return Data(out.utf8)
+    }
+
+    private func write(into out: inout String, depth: Int) {
+        let inner = String(repeating: "  ", count: depth + 1)
+        let outer = String(repeating: "  ", count: depth)
+        switch self {
+        case .string(let text): out += Self.quoted(text)
+        case .int(let number): out += String(number)
+        case .bool(let flag): out += flag ? "true" : "false"
+        case .null: out += "null"
+        case .array(let items):
+            guard !items.isEmpty else { out += "[]"; return }
+            out += "[\n"
+            for (index, item) in items.enumerated() {
+                out += inner
+                item.write(into: &out, depth: depth + 1)
+                out += index == items.count - 1 ? "\n" : ",\n"
+            }
+            out += outer + "]"
+        case .object(let members):
+            guard !members.isEmpty else { out += "{}"; return }
+            out += "{\n"
+            for (index, member) in members.enumerated() {
+                out += inner + Self.quoted(member.0) + ": "
+                member.1.write(into: &out, depth: depth + 1)
+                out += index == members.count - 1 ? "\n" : ",\n"
+            }
+            out += outer + "}"
+        }
+    }
+
+    /// `text` as a JSON string: quotes, backslashes, and control characters escaped.
+    private static func quoted(_ text: String) -> String {
+        var out = "\""
+        for scalar in text.unicodeScalars {
+            switch scalar {
+            case "\"": out += "\\\""
+            case "\\": out += "\\\\"
+            case "\n": out += "\\n"
+            case "\t": out += "\\t"
+            case "\r": out += "\\r"
+            default:
+                if scalar.value < 0x20 || scalar.value == 0x7F {
+                    out += String(format: "\\u%04X", scalar.value)
+                } else {
+                    out.unicodeScalars.append(scalar)
+                }
+            }
+        }
+        return out + "\""
+    }
+}
+
+private extension InterfaceTextWording {
+    /// This wording as a node: a string, or plural forms in `language`'s category order.
+    func node(language: String) -> Node {
+        switch self {
+        case .text(let text): return .string(text)
+        case .plural(let forms): return .forms(forms, language: language)
+        }
     }
 }
