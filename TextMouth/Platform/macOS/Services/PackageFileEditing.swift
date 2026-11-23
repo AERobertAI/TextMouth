@@ -6,7 +6,7 @@ import AppKit
 ///
 /// The file opens in the default app for it, or in an app the user chooses,
 /// after an explanation given the first time on this Mac. While a book is
-/// edited, a watcher on its file (`ContentFileWatcher`), and TextMouth
+/// edited, a watcher on its file (`FileEventWatcher`), and TextMouth
 /// becoming the active app, check it for an edit, which each editor takes
 /// in its own way. What VoiceOver is told is said at once while TextMouth
 /// is active, and otherwise kept until it becomes active, so it never talks
@@ -69,7 +69,7 @@ final class PackageFileEditing {
     var checkAll: @MainActor () -> Void = {}
 
     /// The watcher of each edited book's file, by book ID.
-    private var watchers: [UUID: ContentFileWatcher] = [:]
+    private var watchers: [UUID: FileEventWatcher] = [:]
     /// What waits to be announced until TextMouth becomes active.
     private var pendingAnnouncements: [String] = []
     /// The observation of TextMouth becoming active, while any book is edited.
@@ -123,15 +123,15 @@ final class PackageFileEditing {
     /// `changed` once each burst of saves has settled, and listens for
     /// TextMouth becoming active.
     func watch(_ bookID: UUID, file: @escaping @MainActor () -> URL?, changed: @escaping @MainActor () -> Void) {
-        watchers[bookID]?.cancel()
-        watchers[bookID] = ContentFileWatcher(file: file, changed: changed)
+        watchers[bookID]?.stop()
+        watchers[bookID] = FileEventWatcher.watchingContentFile(file: file, changed: changed)
         observeActivation()
     }
 
     /// Stops watching the book `bookID`'s file, and stops listening for
     /// TextMouth becoming active once no book is watched.
     func stopWatching(_ bookID: UUID) {
-        watchers.removeValue(forKey: bookID)?.cancel()
+        watchers.removeValue(forKey: bookID)?.stop()
         if watchers.isEmpty, let observer = activationObserver {
             notificationCenter.removeObserver(observer)
             activationObserver = nil
