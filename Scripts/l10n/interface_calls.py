@@ -89,9 +89,9 @@ def _skip(text: str, position: int) -> int:
     return position
 
 
-def _inside_comment_or_string(text: str, position: int, literals: Sequence[Literal]) -> bool:
+def inside_comment_or_string(text: str, position: int, literals: Sequence[Literal]) -> bool:
     """Whether the offset is in a `//` comment (on its line, before it) or in the text of a string literal (an
-    interpolation's code does not count as text), so that a mention of the call in prose is not taken for a call."""
+    interpolation's code does not count as text), so that a mention of the call in prose is not taken for a call. (apple_lookups.py asks it too, for the names of Apple's lookups.)"""
     line_start = text.rfind("\n", 0, position) + 1
     if "//" in text[line_start:position]:
         return True
@@ -112,7 +112,7 @@ def find_calls(text: str, path: str) -> List[Call]:
     lines = text.split("\n")
     calls: List[Call] = []
     for match in _CALL.finditer(text):
-        if _inside_comment_or_string(text, match.start(), literals):
+        if inside_comment_or_string(text, match.start(), literals):
             continue
         calls.append(read_call(text, lines, path, match, by_start))
     return calls

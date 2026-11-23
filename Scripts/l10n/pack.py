@@ -23,9 +23,15 @@ The format, version 1 (little-endian). research/STRINGS-SYSTEM-DESIGN-2026-11-21
   order; every other blob holds one entry for each ID, in that order. `notes` holds each ID's translators' note ("" for
   none). A language entry is "" (no translation: the reader uses English), the text, or U+0001 followed by the plural
   forms in the language's category order (`catalog.PLURAL_CATEGORIES`), joined by U+0001. A plural whose forms are all
-  one text is written as that text, by the rule `compact_packs.py` already applies to the compiled tables.
+  one text is written as that text.
 
-What goes in is exactly what Xcode compiles today: every localization state except `new`.
+What goes in is exactly what Xcode compiled before the switch: every localization state except `new`.
+
+The Info.plist strings (FR39 phase 8). Beside the pack `build` also writes `<language>.lproj/InfoPlist.strings` for each
+of the catalog's languages, English included, since the system reads those (not the pack) for the app's Info.plist
+strings, and the .lproj folders keep the bundle's languages. Each file is replaced, never rewritten in place, and the
+stamp names each by hash. For now each holds only a comment; `info_plist_entries` is where future `infoPlist.*` IDs
+will be read.
 
 The LZMA window. A blob's filter is given a dictionary size equal to the smallest power of two that is at least the
 blob's raw size (and at least 4 KiB), with preset 9 extreme otherwise. For inputs this small it compresses as the 64 MiB
@@ -53,7 +59,6 @@ sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import catalog  # noqa: E402  (imported by path, after sys.path is set)
-import compact_packs  # noqa: E402
 import translate  # noqa: E402
 
 # ---------------------------------------------------------------------------------------------------------------
@@ -122,16 +127,13 @@ def decode_entry(text):
 
 
 def squeeze_forms(categories, forms):
-    """The entry for plural `forms` (a tuple in the order of `categories`): the one text when all forms are the same,
-    else the tuple. The rule is `compact_packs.plain_text_of_plural`'s, asked of a stringsdict entry made from the forms
-    (a plain entry would read the same text for every count, so nothing a person hears changes)."""
-    stringsdict_entry = {
-        compact_packs.FORMAT_KEY: "%#@value@",
-        "value": {compact_packs.SPEC_TYPE_KEY: compact_packs.PLURAL_RULE, compact_packs.VALUE_TYPE_KEY: "lld",
-                  **dict(zip(categories, forms))},
-    }
-    one_text = compact_packs.plain_text_of_plural(stringsdict_entry)
-    return forms if one_text is None else one_text
+    """The entry for plural `forms` (a tuple in the order of `categories`): the one text when every form is the same
+    text, else the tuple. `other` is always among the categories (the catalog's check refuses a plural without it), so
+    no count can reach a category without a form, and a plain entry reads the same text for every count: nothing a
+    person hears changes. (The rule is the one the retired compact language files applied to Apple's tables.)"""
+    if "other" in categories and len(set(forms)) == 1:
+        return forms[0]
+    return forms
 
 
 def describe_entry(entry):
@@ -502,14 +504,62 @@ def stamp_path(out):
 
 
 def is_up_to_date(out, stamp, stamp_file=None):
-    """Whether `out` exists and its stamp equals `stamp` and names the output's own hash (so a changed output rebuilds).
+    """Whether `out` exists and its stamp equals `stamp` and names the output's own hash and each InfoPlist.strings'
+    (so a changed or missing output rebuilds).
 
     The stamp is read from `stamp_file`, or from beside `out` when none is given."""
     try:
         written = json.loads((Path(stamp_file) if stamp_file else stamp_path(out)).read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return False
-    return written == {**stamp, "pack": file_hash(out)} and file_hash(out) is not None
+    if not isinstance(written, dict) or file_hash(out) is None:
+        return False
+    # The stamp also names each InfoPlist.strings by hash; a file that is missing or changed since (a language's folder
+    # emptied, a hand edit) makes the hash differ, so the build runs again and writes it.
+    languages = written.get("infoPlist")
+    if not isinstance(languages, dict):
+        return False
+    current = {language: file_hash(Path(out).parent / f"{language}.lproj" / INFO_PLIST_TABLE) for language in languages}
+    return written == {**stamp, "pack": file_hash(out), "infoPlist": current} and None not in current.values()
+
+
+# ---------------------------------------------------------------------------------------------------------------
+# The Info.plist strings: one InfoPlist.strings in each language's .lproj folder (FR39 phase 8).
+# ---------------------------------------------------------------------------------------------------------------
+
+# The table the system reads the app's Info.plist strings from, in each language's .lproj folder.
+INFO_PLIST_TABLE = "InfoPlist.strings"
+
+
+def info_plist_entries(plan, language):
+    """The Info.plist strings of `language`, as {Info.plist key: text}: THE ONE PLACE they will be read from.
+
+    Empty for now: the app's name is never translated, and the microphone and Apple Events prompts and the document
+    types' names get their IDs (`infoPlist.*`) and translations in a later batch (question 9 of
+    research/STRINGS-SYSTEM-DESIGN-2026-11-21.md). Then this function reads each such ID's entry from `plan`'s blob of
+    `language` and names the Info.plist key it stands for, and nothing else in this file changes: the files below are
+    already written from what it returns."""
+    return {}
+
+
+def quote_strings_text(text):
+    """`text` as the inside of a double-quoted .strings string: a backslash, a quote, and a line break are escaped."""
+    return text.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n")
+
+
+def info_plist_text(plan, language):
+    """The text of `language`'s InfoPlist.strings (UTF-8): a comment that names the tool that writes the file (so nobody
+    edits it by hand), then one `"key" = "text";` line for each entry of `info_plist_entries`, in key order."""
+    lines = [f"/* Written by Scripts/l10n/pack.py from the String Catalog's infoPlist.* IDs ({language}). Do not edit. */"]
+    entries = info_plist_entries(plan, language)
+    lines += [f'"{quote_strings_text(key)}" = "{quote_strings_text(entries[key])}";' for key in sorted(entries)]
+    return "\n".join(lines) + "\n"
+
+
+def info_plist_files(plan, folder):
+    """{path: text} of the InfoPlist.strings for each language of `plan` (English included): `folder`/<language>.lproj/."""
+    return {Path(folder) / f"{name}.lproj" / INFO_PLIST_TABLE: info_plist_text(plan, name)
+            for name, _ in plan.blobs if name not in (IDS_BLOB, NOTES_BLOB)}
 
 
 # ---------------------------------------------------------------------------------------------------------------
@@ -642,8 +692,27 @@ def write_atomically(path, data):
         raise
 
 
+def remove_apple_tables(folder):
+    """Removes the Localizable.strings and Localizable.stringsdict that an earlier build of the app (before the switch, FR39
+    phase 8) left in the product's .lproj folders under `folder`: Xcode never cleans a product, so an incremental build, or a
+    build folder a machine kept, would ship a table the apps no longer read. Returns the paths removed."""
+    removed = []
+    for lproj in sorted(Path(folder).glob("*.lproj")):
+        for name in ("Localizable.strings", "Localizable.stringsdict"):
+            leftover = lproj / name
+            if leftover.is_file():
+                leftover.unlink()
+                removed.append(leftover)
+    return removed
+
+
 def command_build(args):
-    """`build`: refuses or writes the pack and its stamp, or skips when the stamp says nothing changed."""
+    """`build`: refuses or writes the pack and its stamp, or skips when the stamp says nothing changed. Only with
+    --remove-apple-tables (which the app's build phase passes) it first removes the Apple tables an earlier build left beside
+    the pack (see remove_apple_tables); a tool deletes only what it is asked to."""
+    if args.remove_apple_tables:
+        for leftover in remove_apple_tables(Path(args.out).parent):
+            print(f"removed {leftover}: the apps read no table of Apple's")
     stamp = stamp_of(args.catalog, args.max_id_length)
     # The stamp lives beside the pack unless --stamp says elsewhere (the app's build keeps it out of the app).
     stamp_file = Path(args.stamp) if args.stamp else stamp_path(args.out)
@@ -653,11 +722,18 @@ def command_build(args):
     plan = build_plan(args.catalog, args.max_id_length)
     data = build_bytes(plan)
     write_atomically(args.out, data)
-    # The stamp comes only after the pack is in place, so a stamp never vouches for a pack that is not there.
+    # Each language's InfoPlist.strings goes beside the pack, replaced and never rewritten in place, as the pack is.
+    info_files = info_plist_files(plan, Path(args.out).parent)
+    for path, text in info_files.items():
+        write_atomically(path, text)
+    # The stamp comes only after the pack and the files are in place, so a stamp never vouches for what is not there.
     if not args.no_stamp:
-        write_atomically(stamp_file,
-                         json.dumps({**stamp, "pack": hashlib.sha256(data).hexdigest()}, sort_keys=True) + "\n")
-    print(f"wrote {args.out}: {len(data):,} bytes, {len(plan.ids):,} IDs, {len(plan.blobs) - 2} languages")
+        hashes = {path.parent.name.removesuffix(".lproj"): hashlib.sha256(text.encode("utf-8")).hexdigest()
+                  for path, text in info_files.items()}
+        write_atomically(stamp_file, json.dumps({**stamp, "pack": hashlib.sha256(data).hexdigest(), "infoPlist": hashes},
+                                                sort_keys=True) + "\n")
+    print(f"wrote {args.out}: {len(data):,} bytes, {len(plan.ids):,} IDs, {len(plan.blobs) - 2} languages, "
+          f"and {len(info_files)} {INFO_PLIST_TABLE} files")
     return 0
 
 
@@ -693,6 +769,9 @@ def parser():
     inputs(build)
     build.add_argument("--out", required=True)
     build.add_argument("--force", action="store_true", help="rebuild even when the stamp says nothing changed")
+    build.add_argument("--remove-apple-tables", action="store_true",
+                       help="first remove Localizable.strings and .stringsdict from the .lproj folders beside the pack "
+                            "(the app's build phase passes it: Xcode never cleans a product)")
     build.add_argument("--no-stamp", action="store_true", help="write no stamp and never skip")
     build.add_argument("--stamp", help="where the stamp lives (default: beside the pack, as PACK.stamp)")
     check = commands.add_parser("verify", help="decode a pack and compare every entry with the catalog")

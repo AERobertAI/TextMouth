@@ -19,9 +19,12 @@ and the buckets that are not interface text and are never counted:
 - ``code``: a path, a pattern, a format, a name for the system, text with no letters.
 
 ``classify`` returns the bucket and the name of the rule that chose it, so a test can name both.
-The counted buckets (``COUNTED``) are the interface text; each is *localized* when it is the
-key of a call the compiler extracts (``String(localized:)``, ``Text("...")``, and the others),
-*marked* when its line ends with the comment ``// l10n: no`` (and any reason after it), and otherwise *unlocalized*.
+The counted buckets (``COUNTED``) are the interface text; each is *localized* when it is the English of an
+``InterfaceText.line("<ID>", "<English>")`` call (FR39), *marked* when its line ends with the comment ``// l10n: no``
+(and any reason after it), and otherwise *unlocalized*. The key of any other localizing call (``String(localized:)``,
+``Text("...")``, and the others the compiler extracts) keeps its rule, ``localized-key``, so that it can be named, but
+its status is ``apple-lookup``: no app ships Apple's tables since FR39 phase 8, so such a key would show itself, and
+the lint refuses it (``apple_lookups.py``).
 """
 
 from __future__ import annotations
@@ -132,8 +135,8 @@ KEY_CALLS: Dict[str, KeySpec] = {
 SWIFTUI_KEY_CALLS = frozenset(name for name, (labels, positional, _whole) in KEY_CALLS.items() if positional and not labels
                               and name in _SWIFTUI_TITLE_CALLS)
 # What `show` tells the converter about such a literal.
-NEEDS_COMMENT_HELP = ("extracted with no translator's note: write a `// Translators: ...` line directly above it, "
-                      "or move it into a wording static with `String(localized:)` and a note above")
+NEEDS_COMMENT_HELP = ("a SwiftUI literal key, which reads Apple's tables that no app ships: move it into a wording static "
+                      "as `InterfaceText.line(\"<ID>\", \"<English>\")` with a `// Translators: ...` line above it")
 # How far past a literal `call_has_comment` reads for the call's closing parenthesis.
 _COMMENT_SCAN_LIMIT = 800
 
@@ -288,7 +291,10 @@ def status_of(lit: Literal) -> str:
     """"localized", "marked" (left out on purpose), "unlocalized", or "" for text that is not
     interface text, given the literal's bucket and rule."""
     if lit.rule == "localized-key":
-        return "localized"
+        # The English of an InterfaceText.line call is localized. The key of any other localizing call (String(localized:),
+        # LocalizedStringResource, a SwiftUI literal such as Text("...")) reads Apple's tables, which no app ships since the
+        # switch (FR39 phase 8): it would show its key, so it is no localized text but an "apple-lookup" the lint refuses.
+        return "localized" if is_interface_text_english(lit) else APPLE_LOOKUP
     if lit.bucket not in COUNTED:
         return ""
     return "marked" if is_marked(lit) else "unlocalized"
@@ -338,6 +344,8 @@ def needs_comment(lit: Literal, source: str, lines: Optional[List[str]] = None) 
 # The marker of a translator's note: a line comment on the line directly above the line of the key's literal (TL15).
 # `l10n.py sync` reads it into the catalog; a `comment:` argument would be compiled into the app.
 NOTE_MARKER = "// Translators:"
+# The status of a literal that is the key of an Apple lookup (see `status_of`).
+APPLE_LOOKUP = "apple-lookup"
 # What `note_problem` says, and what each asks of the code.
 NOTE_PROBLEM_HELP = {
     "comment-argument": "a `comment:` argument is compiled into the app: write the note as a `// Translators: ...` line directly "

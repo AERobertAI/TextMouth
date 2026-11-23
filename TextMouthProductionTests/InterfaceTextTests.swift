@@ -835,6 +835,105 @@ extension InterfaceTextTests {
             }
         }
     }
+
+    /// Every language the bundle lists has a plural rule in `PluralRules`, so a language added later is checked at every
+    /// count, not skipped. (Moved from `LanguagePackTests`, which read the languages of the app's own tables, FR39 phase 8.)
+    func testEveryLanguageTheBundleListsHasAPluralRule() {
+        let listed = Bundle.main.localizations.filter { $0 != "Base" }
+        XCTAssertFalse(listed.isEmpty, "the bundle lists no language")
+        let without = listed.filter { PluralRules.category(of: 1, language: $0) == nil }
+        XCTAssertTrue(without.isEmpty, "Add a plural rule to PluralRules for: \(without)")
+    }
+
+    /// The arguments a key's format takes (`LanguagePackLookups.arguments`, which the harness and the hosted pack test
+    /// feed every lookup with): sequential and positional specifiers, `%%`, and a precision. (Moved from
+    /// `LanguagePackTests`.)
+    func testTheArgumentsOfAKeyFollowItsSpecifiers() {
+        XCTAssertEqual(LanguagePackLookups.arguments(forKey: "No specifier", count: 3)?.count, 0)
+        XCTAssertEqual(LanguagePackLookups.arguments(forKey: "%lld books", count: 3)?.count, 1)
+        // `%%` takes no argument: the text, the count, then the text.
+        XCTAssertEqual(LanguagePackLookups.arguments(forKey: "%lld%% of %@ and %@", count: 3)?.count, 3)
+        // A positional specifier goes to its own slot, and a gap before it is filled.
+        XCTAssertEqual(LanguagePackLookups.arguments(forKey: "%2$lld then %1$@", count: 3)?.count, 2)
+        XCTAssertEqual(LanguagePackLookups.arguments(forKey: "%3$lld", count: 3)?.count, 3)
+        // A conversion the lookups cannot feed is reported, not guessed.
+        XCTAssertNil(LanguagePackLookups.arguments(forKey: "%s", count: 3))
+        XCTAssertEqual(LanguagePackLookups.specifiers(in: "%1$@ of %2$lld")?.map(\.position), [1, 2])
+    }
+
+    /// The counts the plural probe asks Apple about: every count from 0 to 10,000, then each power of ten from 10^4
+    /// to 10^15 with the counts on either side, then the counts just below 2^53, the largest whole number a `Double`
+    /// holds exactly (Foundation rounds the count through a `Double`, so above it the category is no longer the
+    /// language's rule; no count in the app comes near), and the 13 counts the pack proof asks every line
+    /// (`InterfaceTextProof.counts`), so that the rule it relies on is Apple's at each of them.
+    static let pluralProbeCounts: [Int] = {
+        var counts = Array(0...10_000)
+        var power = 10_000
+        for _ in 4...15 {
+            counts.append(contentsOf: [power - 1, power, power + 1])
+            power *= 10
+        }
+        let limit = 1 << 53
+        counts.append(contentsOf: (limit - 3)...limit)
+        counts.append(contentsOf: InterfaceTextProof.counts.map { Int($0) })
+        return Array(Set(counts)).sorted()
+    }()
+
+    /// Apple's own plural rule picks, at each count the helpers use, the category `PluralRules` expects (CLDR's, and the
+    /// table `Scripts/l10n/catalog.py` keeps), for every language the table names. Each language gets a small bundle in the
+    /// test's own sandbox whose `.stringsdict` has a form for every category that names it, so the text that comes back is
+    /// the category Apple chose. The apps ship no table of Apple's, so this test writes its own (moved from
+    /// `LanguagePackTests`, FR39 phase 8); it stays so that an operating system that changes a rule shows.
+    func testApplesPluralRuleAgreesWithTheTableForEveryLanguage() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("PluralRules-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        addTeardownBlock { try? FileManager.default.removeItem(at: root) }
+
+        // Every category the languages use, each form's text being the category's own name. `zero` goes in only for
+        // a language whose own rule has it (Arabic): Foundation reads an explicit `zero` form as "the count is 0" in
+        // every language, which is not a language's own rule (the first run of this test, on GitHub, showed German at
+        // 0 choosing `zero`).
+        let key = "%lld probe"
+        func probeTable(withZero: Bool) throws -> Data {
+            var forms: [String: Any] = ["NSStringFormatSpecTypeKey": "NSStringPluralRuleType", "NSStringFormatValueTypeKey": "lld"]
+            for category in ["one", "two", "few", "many", "other"] + (withZero ? ["zero"] : []) {
+                forms[category] = "\(category) %lld"
+            }
+            let table: [String: Any] = [key: ["NSStringLocalizedFormatKey": "%#@value@", "value": forms]]
+            return try PropertyListSerialization.data(fromPropertyList: table, format: .binary, options: 0)
+        }
+
+        // Every count is compared in one pass, and the mismatches are collected, so a failure lists them all and the
+        // 250,000 comparisons carry no assertion each. The time is printed for the report, never asserted.
+        let counts = Self.pluralProbeCounts
+        var checked = 0
+        var wrong: [String] = []
+        let started = Date()
+        for (language, categories) in PluralRules.categories.sorted(by: { $0.key < $1.key }) {
+            let folder = root.appendingPathComponent("\(language).lproj", isDirectory: true)
+            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+            try probeTable(withZero: categories.contains("zero")).write(to: folder.appendingPathComponent("Localizable.stringsdict"))
+            let bundle = try XCTUnwrap(LanguagePackLookups.bundle(language: language, in: root), language)
+            // The bundle's text for the key, and the locale, are the same for every count: ask once for each language.
+            let format = LanguagePackLookups.effectiveText(bundle, key: key)
+            let locale = Locale(identifier: language)
+            for count in counts {
+                guard let expected = PluralRules.category(of: count, language: language), categories.contains(expected) else {
+                    wrong.append("\(language) at \(count): the table has no category in \(categories)")
+                    continue
+                }
+                // The text is "<category> <count>": the category is the first word.
+                let text = String(format: format, locale: locale, count)
+                let chosen = text.split(separator: " ").first.map(String.init)
+                if chosen != expected { wrong.append("\(language) at \(count): Apple picked \(String(describing: chosen)), the table \(expected)") }
+                checked += 1
+            }
+        }
+        print("Plural probe: \(checked) counts in \(PluralRules.categories.count) languages took \(Date().timeIntervalSince(started)) s")
+        XCTAssertTrue(wrong.isEmpty, "\(wrong.count) counts differ; the first:\n" + wrong.prefix(10).joined(separator: "\n"))
+        XCTAssertEqual(checked, PluralRules.categories.count * counts.count)
+    }
 }
 
 // MARK: - The pack reader

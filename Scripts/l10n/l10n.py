@@ -14,7 +14,8 @@ Commands (`--help` after each says more):
            writes build/l10n/locations.json (each ID's files and lines, for the translators).
   status   Per language: the strings translated, machine translated, new, needing review, stale, and missing, and the
            English bytes.
-  size     The English bytes against the budget, and each language's shipped size in each format.
+  size     The English bytes against the budget, and the bytes of each blob of the pack (the IDs, the notes, English, and
+           each language) that the apps ship.
   check    The rules a catalog must keep before a language ships. Fast, builds nothing, and is run by `make check`.
   plural   Write a string's plural forms in one language (English included).
   todo     A JSON batch of the strings to translate into a language, each with its comment, placeholders, code context,
@@ -37,7 +38,7 @@ Standard library only.
 """
 import argparse
 import json
-import re
+import plistlib
 import subprocess
 import sys
 import time
@@ -172,14 +173,6 @@ def emit(args, data, lines):
 # sync
 # ---------------------------------------------------------------------------------------------------------------
 
-def run_xcstringstool(arguments):
-    """Runs `xcrun xcstringstool` with `arguments`; returns the completed process. A Refused (status 2) when it is not there."""
-    try:
-        return subprocess.run(["xcrun", "xcstringstool", *arguments], capture_output=True, text=True)
-    except OSError as error:
-        raise Refused(f"xcstringstool cannot be run ({error}); it comes with Xcode", EXIT_USAGE)
-
-
 def describe(keys, limit=10):
     """Up to `limit` keys, quoted and joined, with the count of the rest."""
     shown = ", ".join(quote(key) for key in keys[:limit])
@@ -226,7 +219,7 @@ def cmd_sync(args):
         raise Refused(f"{number(len(problems))} problems in the InterfaceText.line calls, so nothing was synced:\n" + "\n".join(shown)
                       + (f"\nand {number(len(problems) - len(shown))} more" if len(problems) > len(shown) else ""))
     report = syncing.sync_catalog(cat, found)
-    # Only a changed catalog is written: a write makes Xcode rebuild it, so a sync with nothing to do leaves the file alone.
+    # Only a changed catalog is written: a sync with nothing to do leaves the file alone (a write would change its date for no reason).
     if report.changed():
         cat.save(catalog_path(args))
     say(f"read {number(len(calls))} InterfaceText.line calls with {number(len(found))} IDs")
@@ -276,61 +269,34 @@ def cmd_status(args):
     return EXIT_OK
 
 
-def encoding_setting():
-    """The value of STRINGS_FILE_OUTPUT_ENCODING in this checkout's project.yml, or None."""
+def pack_sizes(path):
+    """(the pack's total bytes, {blob name: (compressed bytes, raw bytes)}) of the pack that `pack.py` builds from the catalog at
+    `path`: `ids`, `notes`, `en`, and each language's blob, the sizes the apps ship. A Refused (status 1) when the catalog
+    cannot be built into a pack (the sentences name why: `check` lists them all)."""
     try:
-        match = re.search(r"^\s*STRINGS_FILE_OUTPUT_ENCODING:\s*(\S+)", (ROOT / "project.yml").read_text(encoding="utf-8"), re.MULTILINE)
-    except OSError:
-        return None
-    return match.group(1) if match else None
-
-
-def compile_sizes(path, languages, root):
-    """Compiles the catalog at `path` for `languages` with `xcstringstool compile` in each serialization format, into the
-    folders text/ and binary/ of `root` (fixed folders: files are overwritten, never deleted), and returns {language:
-    {format: bytes}} counting each language's Localizable.strings and Localizable.stringsdict. Only files this run
-    wrote are counted, so a leftover of an earlier run is not."""
-    sizes = {language: {} for language in languages}
-    for form in ("text", "binary"):
-        folder = root / form
-        folder.mkdir(parents=True, exist_ok=True)
-        started = time.time() - 1
-        arguments = ["compile", str(path), "--output-directory", str(folder), "--serialization-format", form]
-        for language in languages:
-            arguments += ["--language", language]
-        done = run_xcstringstool(arguments)
-        if done.returncode != 0:
-            raise Refused(f"xcstringstool compile failed ({form}): {(done.stderr or done.stdout).strip()}")
-        for language in languages:
-            total, found = 0, False
-            for name in ("Localizable.strings", "Localizable.stringsdict"):
-                file = folder / f"{language}.lproj" / name
-                if file.exists() and file.stat().st_mtime >= started:
-                    total, found = total + file.stat().st_size, True
-            sizes[language][form] = total if found else None
-    return sizes
+        data = pack.build_bytes(pack.build_plan(path))
+    except pack.PackError as error:
+        raise Refused("the pack cannot be built from the catalog, so it has no size (`check` says why): " + "; ".join(error.problems[:3]))
+    blobs = pack.read_pack(data).blobs
+    return len(data), {name: (blob.compressed, blob.raw) for name, blob in blobs.items()}
 
 
 def cmd_size(args):
-    """`size`: the English bytes against the budget, each language's shipped size in each format, and the catalog's own."""
+    """`size`: the English bytes against the budget, the pack's total, and each blob of the pack (the IDs, the notes, English,
+    and each language), compressed and raw; the catalog's own size is not shipped."""
     cat, config = load_catalog(args), load_config(args.config)
     bytes_now, budget = cat.english_bytes(), config["budgetBytes"]
     path = catalog_path(args)
-    languages = [language for language in languages_of(cat, config) if language in cat.languages()]
-    sizes = compile_sizes(path, languages, OUTPUT / "size") if languages else {}
+    pack_bytes, blobs = pack_sizes(path)
     data = {"englishBytes": bytes_now, "budgetBytes": budget, "overBudget": bytes_now > budget, "catalogBytes": path.stat().st_size,
-            "encodingSetting": encoding_setting(), "languages": sizes}
+            "packBytes": pack_bytes, "blobs": {name: {"compressed": packed, "raw": raw} for name, (packed, raw) in blobs.items()}}
     over = bytes_now - budget
     lines = [f"English text: {number(bytes_now)} bytes of {number(budget)} ({percent(bytes_now, budget)}); "
              + (f"{number(over)} over the budget." if over > 0 else f"{number(-over)} under the budget."),
              f"The catalog file: {number(data['catalogBytes'])} bytes (not shipped).",
-             f"Each language ships one Localizable.strings (and a .stringsdict for plurals); the Xcode build writes it with "
-             f"STRINGS_FILE_OUTPUT_ENCODING {data['encodingSetting'] or 'unset'}."]
-    for language, forms in sizes.items():
-        shown = ", ".join(f"{form} {number(size)} bytes" if size is not None else f"{form} none" for form, size in forms.items())
-        lines.append(f"{language}: {shown}")
-    if not sizes:
-        lines.append("No language is in the catalog yet, so nothing is compiled.")
+             f"The pack, Strings.pack: {number(pack_bytes)} bytes, one compressed blob for the IDs, the notes, English, and each language."]
+    for name, (packed, raw) in blobs.items():
+        lines.append(f"{name}: {number(packed)} bytes in the pack ({number(raw)} raw)")
     emit(args, data, lines)
     return EXIT_OK
 
@@ -486,6 +452,33 @@ def check_catalog(cat, config, found=None):
     return problems, note
 
 
+# The Mac app's Info.plist, from a checkout's root: it names the bundle's languages (FR39), and `sync-info-plist.py` carries
+# the key to the iPhone's.
+MAC_INFO_PLIST = Path("TextMouth/Resources/Info.plist")
+
+
+def bundle_languages(cat):
+    """The languages the app bundle must list in CFBundleLocalizations for `cat`: English (the source language) first, then
+    the catalog's other languages in code-point order."""
+    return [cat.source_language] + cat.languages()
+
+
+def bundle_language_problems(cat, plist):
+    """The sentences about the Mac's Info.plist at `plist` (a path) when its CFBundleLocalizations is not exactly
+    `bundle_languages(cat)`: with no Apple language table in the bundle that list is what offers each language to the
+    system, so a language added to the catalog alone would never be offered. Empty when the list is right."""
+    wanted = bundle_languages(cat)
+    try:
+        listed = plistlib.loads(Path(plist).read_bytes()).get("CFBundleLocalizations")
+    except (OSError, ValueError) as error:
+        return [f"{plist} cannot be read to compare its CFBundleLocalizations with the catalog's languages: {error}"]
+    if listed == wanted:
+        return []
+    return [f"the Mac's Info.plist ({plist}) lists the languages {listed} in CFBundleLocalizations, and the catalog's are "
+            f"{wanted} (English first, then the rest in code-point order; write the key there, then run "
+            f"Scripts/ios/sync-info-plist.py for the iPhone's)"]
+
+
 def glossary_warnings(cat, glossary, languages):
     """The sentences about translations (finished ones, in each of `languages`) that do not use the translation the glossary
     gives for a term of their English, or that drop a name the glossary says is never translated (`apply` refuses that, but a
@@ -534,6 +527,11 @@ def cmd_check(args):
     found, code_problems = None, []
     if code_root is not None:
         found, _calls, code_problems = syncing.read_code(code_root)
+        # The bundle's languages are the catalog's (FR39), as the code the catalog is checked against says. A checkout named
+        # with --code-root that has no Info.plist is a fixture of a test: nothing to compare.
+        plist = code_root / MAC_INFO_PLIST
+        if plist.exists() or not args.code_root:
+            code_problems += bundle_language_problems(cat, plist)
     problems, note = check_catalog(cat, config, found)
     problems = code_problems + problems
     # The rest reads the strings that are whole (check_catalog has reported the others).
@@ -883,7 +881,7 @@ def build_parser():
     sync.add_argument("--locations", help="write the locations file here (default: build/l10n/locations.json of the main checkout)")
     status = add("status", "per language: the strings translated, machine translated, new, needing review, stale, and missing", cmd_status)
     status.add_argument("--lang", help="only this language")
-    add("size", "the English bytes against the budget, and each language's shipped size in each format", cmd_size)
+    add("size", "the English bytes against the budget, the pack's total, and each blob of the pack (each language's bytes)", cmd_size)
     check = add("check", "the rules a catalog keeps: translations, placeholders, plurals, comments, stale strings, the budget", cmd_check)
     check.add_argument("--code-root", help="the checkout whose code holds the English (default: this checkout's, unless --catalog "
                                            "names another catalog, which is then checked on its own)")

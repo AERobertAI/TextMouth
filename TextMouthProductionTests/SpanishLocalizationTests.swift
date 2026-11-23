@@ -1,24 +1,33 @@
 import XCTest
 @testable import TextMouth
 
-/// The Spanish of the pilot's areas (FR35) as the built Mac app carries it: the sleep timer, bookmarks, and the
-/// Reading List are in the app's `es.lproj`, plural forms included, and a line asked for in Spanish reads its Spanish.
+/// The Spanish of the pilot's areas (FR35) as the built app carries it: the sleep timer, bookmarks, and the Reading List
+/// are in the app's `Strings.pack`, plural forms included, and a line asked for in Spanish reads its Spanish.
 ///
-/// The suite runs in English, so this reads Spanish the two ways that work inside the test host: the compiled files of
-/// `es.lproj` in the app bundle, whose keys are the lines' IDs since the catalog is keyed by ID (FR39 phase 7), and
-/// TextMouth's own engine, `InterfaceText.line(_:_:language:)`, which reads the pack with the language it is given.
+/// The suite runs in English, so this reads Spanish the two ways that work inside the test host: the pack's own Spanish
+/// entries, by the lines' IDs (the apps ship no Apple table since FR39 phase 8), and TextMouth's own engine,
+/// `InterfaceText.line(_:_:language:)`, which reads the pack with the language it is given.
 final class SpanishLocalizationTests: XCTestCase {
-    /// The app the tests run in, whose bundle carries the compiled catalog.
+    /// The app the tests run in, whose bundle carries the pack and lists its languages.
     private var app: Bundle { Bundle.main }
 
-    /// The app's Spanish table of `kind` ("strings" or "stringsdict") as a dictionary, or a failure that names the
-    /// bundle and the localizations it has.
-    private func spanishTable(_ kind: String) throws -> [String: Any] {
-        let url = try XCTUnwrap(
-            app.url(forResource: "Localizable", withExtension: kind, subdirectory: nil, localization: "es"),
-            "No es.lproj/Localizable.\(kind) in \(app.bundlePath); its localizations: \(app.localizations)"
-        )
-        return try XCTUnwrap(NSDictionary(contentsOf: url) as? [String: Any], "\(url.path) is not a property list")
+    /// The app's Spanish entries by ID, read from its `Strings.pack`: a text, a plural's forms in Spanish's category order
+    /// (`one`, `many`, `other`), or nothing for an ID with no Spanish. Fails with what is missing.
+    private func spanishEntries() throws -> [String: InterfaceTextEntry] {
+        let pack = try XCTUnwrap(try InterfaceTextPack.inMainBundle(), "No Strings.pack in \(app.bundlePath)")
+        XCTAssertTrue(pack.hasLanguage("es"), "The pack has no Spanish blob")
+        let list = try pack.idList()
+        let entries = try pack.entries(language: "es")
+        XCTAssertEqual(entries.count, list.count)
+        var found: [String: InterfaceTextEntry] = [:]
+        for (position, entry) in entries.enumerated() { found[list.id(at: position)] = entry }
+        return found
+    }
+
+    /// The text of a Spanish entry that is a plain text, or nil for a plural or no entry.
+    private func plainText(_ entry: InterfaceTextEntry?) -> String? {
+        if case .plain(let text)? = entry { return text }
+        return nil
     }
 
     /// The app carries Spanish beside English, its development language.
@@ -27,10 +36,10 @@ final class SpanishLocalizationTests: XCTestCase {
         XCTAssertEqual(app.developmentLocalization, "en")
     }
 
-    /// `es.lproj` holds each area's strings with their Spanish: a heading, a label, a hint, and an announcement of
-    /// each, every plural string in the `.stringsdict` with its three Spanish categories, and no empty text.
+    /// The pack's Spanish holds each area's strings: a heading, a label, a hint, and an announcement of each, every
+    /// plural string with its three Spanish categories, and no empty text.
     func testSpanishHoldsTheAreasStrings() throws {
-        let strings = try spanishTable("strings")
+        let entries = try spanishEntries()
         // ID (the line's permanent key) and its Spanish; the comment names where it comes from.
         let expected: [(id: String, spanish: String)] = [
             ("common.sleepTimer", "Temporizador de apagado"),  // SleepTimerView.title
@@ -51,29 +60,39 @@ final class SpanishLocalizationTests: XCTestCase {
             ("common.remove", "Eliminar"),  // PhoneBookmarksWording.removeButton: removing a bookmark deletes it
         ]
         var wrong: [String] = []
-        for (id, spanish) in expected where strings[id] as? String != spanish {
-            wrong.append("\(id): \(strings[id].map { "\($0)" } ?? "missing"), not \(spanish)")
+        for (id, spanish) in expected where plainText(entries[id]) != spanish {
+            wrong.append("\(id): \(entries[id].map { "\($0)" } ?? "missing"), not \(spanish)")
         }
-        XCTAssertTrue(wrong.isEmpty, "es.lproj/Localizable.strings:\n" + wrong.joined(separator: "\n"))
-        let empty = strings.filter { ($0.value as? String)?.isEmpty ?? true }.map(\.key)
-        XCTAssertTrue(empty.isEmpty, "Empty Spanish text ships for: \(empty)")
+        XCTAssertTrue(wrong.isEmpty, "Strings.pack, Spanish:\n" + wrong.joined(separator: "\n"))
 
-        // The tables are keyed by ID: every key is an ID (two to four lower camel case segments), never English text, so a
+        // Every Spanish text of the pack: the plain texts, and each plural's forms.
+        let texts = entries.values.flatMap { entry -> [String] in
+            switch entry {
+            case .absent: return []
+            case .plain(let text): return [text]
+            case .plural(let forms): return forms
+            }
+        }
+        XCTAssertGreaterThan(texts.count, 3000, "Too few Spanish texts in the pack")
+        XCTAssertTrue(texts.filter(\.isEmpty).isEmpty, "Empty Spanish text ships")
+        // The Spanish never says este Mac, which is Spain's: this Spanish is Latin American (esta Mac).
+        XCTAssertTrue(texts.filter { $0.contains("este Mac") }.isEmpty)
+
+        // The pack is keyed by ID: every key is an ID (two to four lower camel case segments), never English text, so a
         // fragment of an English sentence has no entry of its own (finding 3 of the review: "Downloading the next
         // episodio: ..." read half Spanish).
-        let notIDs = strings.keys.filter { $0.range(of: "^[a-z][A-Za-z0-9]*(\\.[a-z][A-Za-z0-9]*){1,3}$", options: .regularExpression) == nil }
-        XCTAssertTrue(notIDs.isEmpty, "es.lproj holds keys that are not IDs: \(notIDs.sorted().prefix(10))")
-        // The Spanish never says este Mac, which is Spain's: this Spanish is Latin American (esta Mac).
-        XCTAssertTrue(strings.values.compactMap { $0 as? String }.filter { $0.contains("este Mac") }.isEmpty)
+        let notIDs = entries.keys.filter { $0.range(of: "^[a-z][A-Za-z0-9]*(\\.[a-z][A-Za-z0-9]*){1,3}$", options: .regularExpression) == nil }
+        XCTAssertTrue(notIDs.isEmpty, "The pack holds keys that are not IDs: \(notIDs.sorted().prefix(10))")
 
-        let plurals = try spanishTable("stringsdict")
+        // The plural strings hold Spanish's three categories (`one`, `many`, `other`), in that order, each with a text.
         for id in ["common.countMinutes", "sleepTimerView.setTimerLabel", "readingList.addTitle", "readingList.addedAnnouncement.already"] {
-            let entry = plurals[id] as? [String: Any]
-            let forms = entry?.values.compactMap { $0 as? [String: Any] }.first
-            XCTAssertEqual(
-                Set(["one", "many", "other"]).subtracting(forms?.keys.map { $0 } ?? []), [],
-                "\(id) lacks Spanish plural forms in es.lproj/Localizable.stringsdict: \(String(describing: entry))"
-            )
+            guard case .plural(let forms)? = entries[id] else {
+                XCTFail("\(id) is not a plural entry in the Spanish of the pack: \(String(describing: entries[id]))")
+                continue
+            }
+            XCTAssertEqual(PluralRules.categories["es"], ["one", "many", "other"])
+            XCTAssertEqual(forms.count, 3, "\(id) lacks Spanish plural forms in the pack: \(forms)")
+            XCTAssertTrue(forms.filter(\.isEmpty).isEmpty, "\(id) has an empty Spanish plural form")
         }
     }
 

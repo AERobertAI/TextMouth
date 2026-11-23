@@ -127,12 +127,15 @@ write_stubs() {
 #                               app's): ok (the default, 8 bytes), none, twice (a second copy in a
 #                               Frameworks folder), misplaced (not in the resources folder), or big
 #                               (1,500,001 bytes, written sparse)
-#   STUB_LPROJ=<form>           the language files build packages in the app, in
-#                               Contents/Resources/es.lproj: compact (the default),
-#                               binary-strings (a .strings written as a binary list,
-#                               the other compact form, TL18), xml-strings (a
-#                               .strings left as XML), xml-dict (a .stringsdict left
-#                               as XML), or none
+#   STUB_LPROJ=<form>           the language folder build packages in the app, in
+#                               Contents/Resources/es.lproj: ok (the default: an
+#                               InfoPlist.strings and nothing else), apple-strings
+#                               (a Localizable.strings besides, a table of Apple's),
+#                               apple-dict (a Localizable.stringsdict), apple-loctable
+#                               (a Localizable.loctable), apple-catalog (a
+#                               Localizable.xcstrings), xctest-fixture (a fixture
+#                               catalog inside PlugIns/Tests.xctest, which is allowed), no-infoplist (an empty
+#                               folder), or none (no .lproj folder at all)
 #   STUB_TEST_OUTPUT=<file>     test prints <file>
 #   STUB_TEST_STATUS=<number>   test exits with <number> (default 0)
 # In the log and output files, @ROOT@ stands for the repository root, since
@@ -156,22 +159,22 @@ plant_pack() {
   case $2 in twice) mkdir -p "$1/../Frameworks"; printf 'TMSP0000' > "$1/../Frameworks/Strings.pack" ;; esac
 }
 
-# plant_language_files <resources folder> <form>: writes es.lproj's two files
-# there as the build phase leaves them (a text .strings of 8 bytes and a
-# binary .stringsdict of 16), or with one left in XML, or none at all.
+# plant_language_files <resources folder> <form>: writes es.lproj there as the
+# build phase leaves it (an InfoPlist.strings of 8 bytes), or with a table of
+# Apple's beside it, or empty, or no folder at all.
 plant_language_files() {
   mkdir -p "$1"
   plant_pack "$1" "${3:-ok}"
   case $2 in none) return 0 ;; esac
   mkdir -p "$1/es.lproj"
+  case $2 in no-infoplist) return 0 ;; esac
+  printf '"a"="b";' > "$1/es.lproj/InfoPlist.strings"
   case $2 in
-    xml-strings) printf '<?xml version="1.0" encoding="UTF-8"?>\n<plist/>' > "$1/es.lproj/Localizable.strings" ;;
-    binary-strings) printf 'bplist0012345678' > "$1/es.lproj/Localizable.strings" ;;
-    *) printf '"a"="b";' > "$1/es.lproj/Localizable.strings" ;;
-  esac
-  case $2 in
-    xml-dict) printf '<?xml version="1.0" encoding="UTF-8"?>\n<plist/>' > "$1/es.lproj/Localizable.stringsdict" ;;
-    *) printf 'bplist0012345678' > "$1/es.lproj/Localizable.stringsdict" ;;
+    apple-strings) printf '"a"="b";' > "$1/es.lproj/Localizable.strings" ;;
+    apple-dict) printf 'bplist0012345678' > "$1/es.lproj/Localizable.stringsdict" ;;
+    apple-loctable) printf 'bplist0012345678' > "$1/es.lproj/Localizable.loctable" ;;
+    apple-catalog) printf '{}' > "$1/es.lproj/Localizable.xcstrings" ;;
+    xctest-fixture) mkdir -p "$1/../PlugIns/Tests.xctest/pack"; printf '{}' > "$1/../PlugIns/Tests.xctest/pack/lines.xcstrings" ;;
   esac
 }
 
@@ -202,7 +205,7 @@ case $target in
       mkdir -p build/TextMouth.app/Contents/MacOS
       head -c 600 /dev/zero > build/TextMouth.app/Contents/Info.plist
       # The language files count toward the size, so the executable is sized to leave the total at STUB_APP_BYTES.
-      plant_language_files build/TextMouth.app/Contents/Resources "${STUB_LPROJ:-compact}" "${STUB_PACK:-ok}"
+      plant_language_files build/TextMouth.app/Contents/Resources "${STUB_LPROJ:-ok}" "${STUB_PACK:-ok}"
       language_bytes=$(cat build/TextMouth.app/Contents/Resources/es.lproj/* build/TextMouth.app/Contents/Resources/Strings.pack build/TextMouth.app/Contents/Frameworks/Strings.pack build/TextMouth.app/Contents/Resources/Elsewhere/Strings.pack 2>/dev/null | wc -c)
       dd if=/dev/zero of=build/TextMouth.app/Contents/MacOS/TextMouth bs=1 count=0 \
         seek=$(( STUB_APP_BYTES - 600 - language_bytes )) 2>/dev/null
@@ -285,9 +288,9 @@ import sys
 
 with open(os.environ["STUB_LOG"], "a") as log:
     log.write("app-size " + " ".join(sys.argv[1:]) + "\n")
-# The iPhone app the real tool builds, with the language files STUB_IOS_LPROJ names:
-# compact (the default), binary-strings, xml-strings, xml-dict, or none.
-form = os.environ.get("STUB_IOS_LPROJ", "compact")
+# The iPhone app the real tool builds, with the language folder STUB_IOS_LPROJ names (the forms of the Mac stub's
+# STUB_LPROJ): ok (the default), apple-strings, apple-dict, apple-loctable, apple-catalog, no-infoplist, or none.
+form = os.environ.get("STUB_IOS_LPROJ", "ok")
 app = "build/ios-size-DerivedData/Build/Products/Release-iphoneos/TextMouth.app"
 os.makedirs(app, exist_ok=True)
 # The interface-text pack STUB_IOS_PACK names: ok (the default), none, twice, misplaced, or big.
@@ -309,11 +312,15 @@ elif pack != "none":
 if form != "none":
     folder = app + "/es.lproj"
     os.makedirs(folder, exist_ok=True)
-    xml = b'<?xml version="1.0" encoding="UTF-8"?>\n<plist/>'
-    with open(folder + "/Localizable.strings", "wb") as out:
-        out.write(xml if form == "xml-strings" else b"bplist00" + b"12345678" if form == "binary-strings" else b'"a"="b";')
-    with open(folder + "/Localizable.stringsdict", "wb") as out:
-        out.write(xml if form == "xml-dict" else b"bplist00" + b"12345678")
+    if form != "no-infoplist":
+        with open(folder + "/InfoPlist.strings", "wb") as out:
+            out.write(b'"a"="b";')
+    # A table of Apple's, which the gate refuses: the file the form names.
+    apple = {"apple-strings": "Localizable.strings", "apple-dict": "Localizable.stringsdict",
+             "apple-loctable": "Localizable.loctable", "apple-catalog": "Localizable.xcstrings"}.get(form)
+    if apple:
+        with open(folder + "/" + apple, "wb") as out:
+            out.write(b"bplist0012345678")
 if os.environ.get("STUB_IOS_SIZE_OUTPUT"):
     with open(os.environ["STUB_IOS_SIZE_OUTPUT"]) as output:
         sys.stdout.write(output.read())
@@ -475,8 +482,6 @@ begin_case() {
   cp "$ROOT/Scripts/check.sh" "$sandbox/Scripts/check.sh"
   mkdir -p "$sandbox/Scripts/ios"
   cp "$IOS_SIZE_STUB" "$sandbox/Scripts/ios/app-size.py"
-  mkdir -p "$sandbox/Scripts/l10n"
-  cp "$ROOT/Scripts/l10n/compact_packs.py" "$sandbox/Scripts/l10n/compact_packs.py"
   cp "$ROOT/$RESOLVED" "$sandbox/$RESOLVED"
   stub_log="$sandbox/commands.log"
   : > "$stub_log"
@@ -916,76 +921,96 @@ real_run_cases() {
   expect_verdict "check: FAILED: step 3 of 4 (build the Release app): build/TextMouth.app holds a folder of this Mac (its home folder, the checkout, or \$TMPDIR)"
   end_case
 
-  begin_case "a Release app with compact language files passes, and the gate reports each file's size (TL16)"
+  begin_case "a Release app with an InfoPlist.strings in each language folder and no table of Apple's passes, and the gate reports what it found (FR39)"
   run_gate
   expect_status 0
-  expect_report "8 bytes  text   es.lproj/Localizable.strings"
-  expect_report "16 bytes  binary es.lproj/Localizable.stringsdict"
+  expect_report "build/TextMouth.app holds 1 .lproj folders, each with an InfoPlist.strings, and no table of Apple's"
   expect_verdict "check: PASSED"
   end_case
 
-  begin_case "a Mac app whose .strings is a binary property list passes, and the gate reports its form (TL18)"
-  run_gate STUB_LPROJ=binary-strings
-  expect_status 0
-  expect_report "16 bytes  binary es.lproj/Localizable.strings"
-  expect_verdict "check: PASSED"
-  end_case
-
-  begin_case "an iPhone app whose .strings is a binary property list passes too (TL18)"
-  run_gate STUB_IOS_LPROJ=binary-strings
-  expect_status 0
-  expect_report "16 bytes  binary es.lproj/Localizable.strings"
-  expect_verdict "check: PASSED"
-  end_case
-
-  begin_case "the iPhone app's language files are reported too, after its size"
+  begin_case "the iPhone app's language folders are checked too, after its size"
   run_gate
   expect_status 0
-  expect_report "build/ios-size-DerivedData/Build/Products/Release-iphoneos/TextMouth.app:"
+  expect_report "the iPhone app holds 1 .lproj folders, each with an InfoPlist.strings, and no table of Apple's"
   expect_commands "make generate" "make l10n-check" "make resolve-packages" "make build SIGN_APP=:" "$IOS_SIZE_RECORD" "make test TEST_DERIVED_DATA=build/DerivedData PERFORMANCE_STRICT=1"
   end_case
 
-  begin_case "a Mac app whose .strings is still XML fails the gate before the iPhone app is built, naming the file"
-  run_gate STUB_LPROJ=xml-strings
+  begin_case "a Mac app that still ships a Localizable.strings fails the gate before the iPhone app is built, naming the file"
+  run_gate STUB_LPROJ=apple-strings
   expect_status 1
   expect_commands "make generate" "make l10n-check" "make resolve-packages" "make build SIGN_APP=:"
-  expect_report "NOT COMPACT: es.lproj/Localizable.strings is xml, not text or binary"
-  expect_verdict "check: FAILED: step 3 of 4 (build the Release app): build/TextMouth.app ships a language file that is not compact (the build phase \"Compact language files\", Scripts/l10n/compact_packs.py, did not write it)"
+  expect_report "APPLE TABLE: Contents/Resources/es.lproj/Localizable.strings"
+  expect_verdict "check: FAILED: step 3 of 4 (build the Release app): build/TextMouth.app ships a table of Apple's (the apps read Strings.pack; the build must not compile the String Catalog)"
   end_case
 
-  begin_case "a Mac app whose .stringsdict is still XML fails the gate, naming the file"
-  run_gate STUB_LPROJ=xml-dict
+  begin_case "a Mac app that still ships a Localizable.stringsdict fails the gate, naming the file"
+  run_gate STUB_LPROJ=apple-dict
   expect_status 1
-  expect_report "NOT COMPACT: es.lproj/Localizable.stringsdict is xml, not binary"
-  expect_verdict "check: FAILED: step 3 of 4 (build the Release app): build/TextMouth.app ships a language file that is not compact"
+  expect_report "APPLE TABLE: Contents/Resources/es.lproj/Localizable.stringsdict"
+  expect_verdict "check: FAILED: step 3 of 4 (build the Release app): build/TextMouth.app ships a table of Apple's"
   end_case
 
-  begin_case "a Mac app with no language files fails the gate"
+  begin_case "a Mac app that ships a .loctable fails the gate, naming the file"
+  run_gate STUB_LPROJ=apple-loctable
+  expect_status 1
+  expect_report "APPLE TABLE: Contents/Resources/es.lproj/Localizable.loctable"
+  expect_verdict "check: FAILED: step 3 of 4 (build the Release app): build/TextMouth.app ships a table of Apple's"
+  end_case
+
+  begin_case "a Mac app that ships the String Catalog fails the gate, naming the file"
+  run_gate STUB_LPROJ=apple-catalog
+  expect_status 1
+  expect_report "APPLE TABLE: Contents/Resources/es.lproj/Localizable.xcstrings"
+  expect_verdict "check: FAILED: step 3 of 4 (build the Release app): build/TextMouth.app ships a table of Apple's"
+  end_case
+
+  begin_case "a fixture catalog inside a test bundle in PlugIns is no table of the app's: the gate passes"
+  run_gate STUB_LPROJ=xctest-fixture
+  expect_status 0
+  expect_report "build/TextMouth.app holds 1 .lproj folders, each with an InfoPlist.strings, and no table of Apple's"
+  expect_verdict "check: PASSED"
+  end_case
+
+  begin_case "a Mac app with a language folder that holds no InfoPlist.strings fails the gate, naming the folder"
+  run_gate STUB_LPROJ=no-infoplist
+  expect_status 1
+  expect_report "NO InfoPlist.strings: es.lproj"
+  expect_verdict "check: FAILED: step 3 of 4 (build the Release app): build/TextMouth.app has a .lproj folder with no InfoPlist.strings (the build phase \"Pack interface text\", Scripts/l10n/pack.py, writes it)"
+  end_case
+
+  begin_case "a Mac app with no language folder fails the gate"
   run_gate STUB_LPROJ=none
   expect_status 1
-  expect_report "NOT COMPACT: no language files found"
-  expect_verdict "check: FAILED: step 3 of 4 (build the Release app): build/TextMouth.app ships a language file that is not compact"
+  expect_report "NO LANGUAGES: no .lproj folder found in build/TextMouth.app/Contents/Resources"
+  expect_verdict "check: FAILED: step 3 of 4 (build the Release app): build/TextMouth.app holds no .lproj folder (the build phase \"Pack interface text\", Scripts/l10n/pack.py, writes one for each language)"
   end_case
 
-  begin_case "an iPhone app with no language files fails the gate"
+  begin_case "an iPhone app with no language folder fails the gate"
   run_gate STUB_IOS_LPROJ=none
   expect_status 1
-  expect_report "NOT COMPACT: no language files found"
-  expect_verdict "check: FAILED: step 3 of 4 (build the Release app): the iPhone app ships a language file that is not compact"
+  expect_report "NO LANGUAGES: no .lproj folder found in build/ios-size-DerivedData/Build/Products/Release-iphoneos/TextMouth.app"
+  expect_verdict "check: FAILED: step 3 of 4 (build the Release app): the iPhone app holds no .lproj folder"
   end_case
 
-  begin_case "an iPhone app whose .strings is still XML fails the gate, naming the file"
-  run_gate STUB_IOS_LPROJ=xml-strings
+  begin_case "an iPhone app that ships a Localizable.strings fails the gate, naming the file"
+  run_gate STUB_IOS_LPROJ=apple-strings
   expect_status 1
-  expect_report "NOT COMPACT: es.lproj/Localizable.strings is xml, not text or binary"
-  expect_verdict "check: FAILED: step 3 of 4 (build the Release app): the iPhone app ships a language file that is not compact"
+  expect_report "APPLE TABLE: es.lproj/Localizable.strings"
+  expect_verdict "check: FAILED: step 3 of 4 (build the Release app): the iPhone app ships a table of Apple's"
   end_case
 
-  begin_case "an iPhone app whose .stringsdict is still XML fails the gate, naming the file"
-  run_gate STUB_IOS_LPROJ=xml-dict -- --without-tests
+  begin_case "an iPhone app that ships a Localizable.stringsdict fails the gate, naming the file"
+  run_gate STUB_IOS_LPROJ=apple-dict -- --without-tests
   expect_status 1
-  expect_report "NOT COMPACT: es.lproj/Localizable.stringsdict is xml, not binary"
-  expect_verdict "check: FAILED: step 3 of 3 (build the Release app): the iPhone app ships a language file that is not compact"
+  expect_report "APPLE TABLE: es.lproj/Localizable.stringsdict"
+  expect_verdict "check: FAILED: step 3 of 3 (build the Release app): the iPhone app ships a table of Apple's"
+  end_case
+
+  begin_case "an iPhone app with a language folder that holds no InfoPlist.strings fails the gate"
+  run_gate STUB_IOS_LPROJ=no-infoplist
+  expect_status 1
+  expect_report "NO InfoPlist.strings: es.lproj"
+  expect_verdict "check: FAILED: step 3 of 4 (build the Release app): the iPhone app has a .lproj folder with no InfoPlist.strings"
   end_case
 
   begin_case "a Release app and an iPhone app with one small Strings.pack pass, and the gate reports each pack's size (FR39)"
@@ -1039,11 +1064,11 @@ real_run_cases() {
   expect_verdict "check: FAILED: step 3 of 4 (build the Release app): the iPhone app's Strings.pack is 1500001 bytes, over the 1500000-byte limit"
   end_case
 
-  begin_case "a dry run says it would require every language file to be compact"
+  begin_case "a dry run says it would require no table of Apple's and an InfoPlist.strings in each language folder"
   run_gate -- --dry-run
   expect_status 0
-  expect_report "would require every language file of build/TextMouth.app to be compact"
-  expect_report "would require every language file of the iPhone app to be compact"
+  expect_report "would require build/TextMouth.app to hold no table of Apple's, and an InfoPlist.strings in each .lproj folder"
+  expect_report "would require the iPhone app to hold no table of Apple's, and an InfoPlist.strings in each .lproj folder"
   expect_report "would require build/TextMouth.app to hold exactly one Strings.pack of at most 1500000 bytes"
   expect_report "would require the iPhone app to hold exactly one Strings.pack of at most 1500000 bytes"
   end_case

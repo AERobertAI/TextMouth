@@ -832,7 +832,6 @@
 		43CE4C8EE527E5C376A419BB /* AudioEditCachesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEB2723D1313BD8BBC8C1EBE /* AudioEditCachesTests.swift */; };
 		43D3B7EBB29B63DE4FAB1613 /* ExportDeepChapterExportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD86799BCF095CAE75433E35 /* ExportDeepChapterExportTests.swift */; };
 		43D9D2CC3D7D56E4FA259474 /* TranscriptionWording.swift in Sources */ = {isa = PBXBuildFile; fileRef = A53ACFB9E755A166658211D0 /* TranscriptionWording.swift */; };
-		4400DEAE13DC76C08EDFF128 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = B3C9C4CEE9850C04A88C055F /* Localizable.xcstrings */; };
 		441C7B55864ED1D0419F5661 /* PlaceRelocatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 172719D3EA0B851886F5242C /* PlaceRelocatorTests.swift */; };
 		441CDCF0A1F2C6E674772F10 /* PhoneSettingsVoicePreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = F83BE69CAE7B3F6A47ED123C /* PhoneSettingsVoicePreview.swift */; };
 		4426FF577541CDF7C430D43D /* FeedDownloadManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 050A9912D3B83783C358308B /* FeedDownloadManager.swift */; };
@@ -1116,7 +1115,6 @@
 		5AC82DC95B7A6924C31D2825 /* UnicodeCoordinateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67AB1E7D9F2BA08DEE887BD4 /* UnicodeCoordinateTests.swift */; };
 		5B11276424B70AD0E674FFC3 /* TimeEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = D636735FC99F6ECEFD7E4696 /* TimeEntry.swift */; };
 		5B1D9561B299B7BDB1AEB9AF /* FinishedBooksAtEndMoveTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEFA45A331D30C7553CA35C6 /* FinishedBooksAtEndMoveTests.swift */; };
-		5B36724FBDD47ABFD1F21B23 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = B3C9C4CEE9850C04A88C055F /* Localizable.xcstrings */; };
 		5B36BC40CCA951E767CDE5FC /* TranscriptBookInfoTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E4C60BFB652356FD3C060D3 /* TranscriptBookInfoTests.swift */; };
 		5B710B1A645C2A3788662DB3 /* FolderSettingsWording.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2C35A246F96386B0396F596 /* FolderSettingsWording.swift */; };
 		5BA117D22783844ED11CE83D /* AudioEditorFileSheets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B92300A4E8ADD6D54B898ED /* AudioEditorFileSheets.swift */; };
@@ -4879,7 +4877,6 @@
 		B3904FA9631114D91848CE68 /* EndOfBookRuleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndOfBookRuleTests.swift; sourceTree = "<group>"; };
 		B39FC7077639EA9EB594D4EF /* MarkdownPageMarker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownPageMarker.swift; sourceTree = "<group>"; };
 		B3C96459A7900F8C1561C1F3 /* TextutilPageBreaks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextutilPageBreaks.swift; sourceTree = "<group>"; };
-		B3C9C4CEE9850C04A88C055F /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		B41D7244F8A43D453E23A24C /* ImportStagingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportStagingTests.swift; sourceTree = "<group>"; };
 		B433F3CBEB863FC83D5ECAFE /* A10AccessibilityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = A10AccessibilityTests.swift; sourceTree = "<group>"; };
 		B461F020B6DAB98941630DB4 /* TranscriptionSheetViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptionSheetViewTests.swift; sourceTree = "<group>"; };
@@ -5557,7 +5554,6 @@
 		143865DDBB505CB01D60426C /* Localization */ = {
 			isa = PBXGroup;
 			children = (
-				B3C9C4CEE9850C04A88C055F /* Localizable.xcstrings */,
 				A412D645D3CE1DC2AD20CAE8 /* InterfaceText */,
 			);
 			path = Localization;
@@ -8245,7 +8241,6 @@
 			buildConfigurationList = 1DBB5DD3823D03C99944EC9F /* Build configuration list for PBXNativeTarget "TextMouthiOS" */;
 			buildPhases = (
 				CE998B74E067E280C173491C /* Sources */,
-				97A43B0181F4E2A392858610 /* Resources */,
 				A39FC5304C4E02A9AD636B71 /* CopyFiles */,
 				22F87EE1CD8EE45ABFA905DA /* CopyFiles */,
 				E59FEE7CCC021127BD65AEAA /* CopyFiles */,
@@ -8258,7 +8253,6 @@
 				1C95A964EBB5395E1F896244 /* CopyFiles */,
 				FF0E856FCEDDA3C191BC39A0 /* CopyFiles */,
 				BAC07B34CF68D2587F4A0963 /* Frameworks */,
-				F4C002DE3DE0291522FC0C06 /* Compact language files */,
 				C7D51574CF818E9E0B89197A /* Pack interface text */,
 			);
 			buildRules = (
@@ -8499,7 +8493,6 @@
 				9F57258FDEE304E9FBEBBDF0 /* CopyFiles */,
 				5B26D5AA6DDCEFAEAEB67A60 /* Frameworks */,
 				C0C794FB23B67989FD99D8E3 /* Embed Dependencies */,
-				89748C857B721999D73DFDFB /* Compact language files */,
 				59ED10AD1BDD8592D9AE5A35 /* Pack interface text */,
 			);
 			buildRules = (
@@ -8579,31 +8572,7 @@
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				Base,
-				ar,
-				bn,
-				de,
 				en,
-				es,
-				fa,
-				fr,
-				he,
-				hi,
-				id,
-				it,
-				ja,
-				ko,
-				nl,
-				pl,
-				"pt-BR",
-				ru,
-				sv,
-				th,
-				tr,
-				uk,
-				ur,
-				vi,
-				"zh-Hans",
-				"zh-Hant",
 			);
 			mainGroup = 186811333DB411ED58703F4D;
 			minimizedProjectReferenceProxies = 1;
@@ -8645,7 +8614,6 @@
 			files = (
 				C27AF83A000840D1E6EDA4BA /* Assets.xcassets in Resources */,
 				F883A0BDEEC4FA81F4AED6D3 /* Credits.rtf in Resources */,
-				4400DEAE13DC76C08EDFF128 /* Localizable.xcstrings in Resources */,
 				F4EBD2D3307B462BF9C8AD8B /* transcript-cleanup.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -8664,14 +8632,6 @@
 			files = (
 				E29F33675E009FCE72A473F0 /* alice.epub in Resources */,
 				64A257B62D21A7CB4DC376CA /* grade2-short.brf in Resources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		97A43B0181F4E2A392858610 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				5B36724FBDD47ABFD1F21B23 /* Localizable.xcstrings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -8705,26 +8665,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "/usr/bin/python3 -I -B \"$SRCROOT/Scripts/l10n/pack.py\" build --catalog \"$SRCROOT/TextMouth/Localization/Localizable.xcstrings\" --out \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Strings.pack\" --stamp \"$DERIVED_FILE_DIR/Strings.pack.stamp\"";
-		};
-		89748C857B721999D73DFDFB /* Compact language files */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-			);
-			name = "Compact language files";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "/usr/bin/python3 -I -B \"$SRCROOT/Scripts/l10n/compact_packs.py\" \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH\"";
+			shellScript = "/usr/bin/python3 -I -B \"$SRCROOT/Scripts/l10n/pack.py\" build --catalog \"$SRCROOT/TextMouth/Localization/Localizable.xcstrings\" --out \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Strings.pack\" --remove-apple-tables --stamp \"$DERIVED_FILE_DIR/Strings.pack.stamp\"";
 		};
 		95A9340E5DF0C0BAE4AE8BCC /* Build FFmpeg */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -8785,7 +8726,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "/usr/bin/python3 -I -B \"$SRCROOT/Scripts/l10n/pack.py\" build --catalog \"$SRCROOT/TextMouth/Localization/Localizable.xcstrings\" --out \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Strings.pack\" --stamp \"$DERIVED_FILE_DIR/Strings.pack.stamp\"";
+			shellScript = "/usr/bin/python3 -I -B \"$SRCROOT/Scripts/l10n/pack.py\" build --catalog \"$SRCROOT/TextMouth/Localization/Localizable.xcstrings\" --out \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Strings.pack\" --remove-apple-tables --stamp \"$DERIVED_FILE_DIR/Strings.pack.stamp\"";
 		};
 		D4006D4DC2CA1958609F2B67 /* Copy Swift Objective-C Interface Header */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -8818,25 +8759,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "ditto \"${SCRIPT_INPUT_FILE_0}\" \"${SCRIPT_OUTPUT_FILE_0}\"\n";
-		};
-		F4C002DE3DE0291522FC0C06 /* Compact language files */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-			);
-			name = "Compact language files";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "/usr/bin/python3 -I -B \"$SRCROOT/Scripts/l10n/compact_packs.py\" \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH\"";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -12336,15 +12258,13 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				STRINGS_FILE_OUTPUT_ENCODING = "UTF-8";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
-				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_STRICT_CONCURRENCY = complete;
 				SWIFT_VERSION = 6.0;
@@ -12422,14 +12342,12 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				STRINGS_FILE_OUTPUT_ENCODING = "UTF-8";
 				SWIFT_COMPILATION_MODE = wholemodule;
-				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_STRICT_CONCURRENCY = complete;
 				SWIFT_VERSION = 6.0;

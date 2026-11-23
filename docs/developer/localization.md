@@ -13,46 +13,38 @@ The third wave of two is Urdu and Persian.
 The plan and its measurements are in `research/LOCALIZATION-RESEARCH-2026-11-18.md`.
 
 ## The String Catalog
-<!-- id: localization-string-catalog; keys: Localizable.xcstrings, es.lproj, development language, SWIFT_EMIT_LOC_STRINGS, stringsdict, Translators, comment argument, TL15; src: TextMouth/Localization/Localizable.xcstrings, project.yml, TextMouth/Resources/Info.plist, TextMouth/Platform/iOS/Info.plist, Scripts/l10n/catalog.py, Scripts/l10n/l10n.py, Scripts/l10n/swiftscan/classify.py -->
+<!-- id: localization-string-catalog; keys: Localizable.xcstrings, InterfaceText.line, ID, Strings.pack, Translators, comment argument, TL15, ids.py suggest; src: TextMouth/Localization/Localizable.xcstrings, TextMouth/Localization/InterfaceText/InterfaceTextLine.swift, Scripts/l10n/pack.py, Scripts/l10n/sync.py, Scripts/l10n/ids.py, Scripts/l10n/apple_lookups.py, TextMouth/Resources/Info.plist, TextMouth/Platform/iOS/Info.plist -->
 
-Both apps share one catalog, `TextMouth/Localization/Localizable.xcstrings`, with English as the development language (`CFBundleDevelopmentRegion` in both Info.plists).
-The compiler extracts each string a source file uses, and `l10n.py sync` merges them into the catalog; nobody edits the catalog by hand.
-`project.yml` turns the extraction on (`SWIFT_EMIT_LOC_STRINGS`).
-It ships the catalog as `.strings` and `.stringsdict` files in each language's `.lproj` (`LOCALIZATION_PREFERS_STRING_CATALOGS`).
-It writes them as UTF-8 (`STRINGS_FILE_OUTPUT_ENCODING: UTF-8`), and a build phase then rewrites them compact (see The compact language files, below).
-Each string needs a note for the translators that says where it appears and what each placeholder holds, which `l10n.py check` enforces.
-The note is a `// Translators: <note>` line directly above the line that holds the key's literal, one line at that line's indentation, and `sync` copies it into the catalog as the key's comment.
-Never write a `comment:` argument: Foundation compiles every one into the app, which cost the Mac's executable 673 KB and the iPhone's 311 KB (TL15).
-Start each key on a line of its own, so a note belongs to one key; `scan.py lint` fails on a `comment:` argument, a key with no note above it, and a line that holds two keys.
-Apple's `String(localized:)`, or a SwiftUI literal, is the only way to write a string; never `NSLocalizedString`, and never a helper of TextMouth's own, which the scanner does not count as localized.
-A key is the English text, and keys are app-wide: one translation serves every place that shows the same words.
-A word with two meanings gets a key of its own only when a translator says so.
+Both apps share one catalog, `TextMouth/Localization/Localizable.xcstrings`, keyed by ID, with English as the development language (`CFBundleDevelopmentRegion` in both Info.plists) and each entry's English as its `en` value.
+`l10n.py sync` brings the catalog into step with the code's calls; nobody edits the catalog by hand.
+Neither app compiles the catalog: the build phase "Pack interface text" (`Scripts/l10n/pack.py`) builds `Strings.pack` from it, and the engine (`TextMouth/Localization/InterfaceText/`) reads the pack.
+Each line is an `InterfaceText.line("<ID>", "<English>")` call, the only way to write one: `make lint-l10n` refuses `String(localized:)`, `LocalizedStringResource`, `NSLocalizedString`, and SwiftUI literal keys, which would find no table and show their key (`Scripts/l10n/apple_lookups.py`).
+An ID is permanent and means one English text; `python3 -I -B Scripts/l10n/ids.py suggest FILE:LINE` proposes one that no line uses or has used.
+Each line needs a note for the translators that says where it appears and what each placeholder holds, which `l10n.py check` enforces.
+The note is a `// Translators: <note>` line directly above the line that holds the call's English, one line at that line's indentation, and `sync` copies it into the catalog as the line's comment.
+Never write a `comment:` argument: Foundation compiled every one into the app, which cost the Mac's executable 673 KB and the iPhone's 311 KB (TL15).
+Start each call on a line of its own, so a note belongs to one call; `scan.py lint` fails on a `comment:` argument, a call with no note above it, and a line that holds two calls.
 
-## The compact language files
-<!-- id: localization-compact-files; keys: TL16, compact_packs.py, verify_packs.py, LanguagePackTests, binary stringsdict, Compact language files, ENABLE_USER_SCRIPT_SANDBOXING, PluralRules; src: Scripts/l10n/compact_packs.py, Scripts/l10n/verify_packs.py, Scripts/l10n/pack-probe/main.swift, TextMouthProductionTests/LanguagePackTests.swift, project.yml, Scripts/check.sh -->
+## What the apps ship
+<!-- id: localization-what-ships; keys: Strings.pack, InfoPlist.strings, CFBundleLocalizations, lproj, verify_packs.py, InterfaceTextShippedPackTests, PluralRules, remove-apple-tables; src: Scripts/l10n/pack.py, Scripts/l10n/verify_packs.py, Scripts/l10n/pack-probe/main.swift, TextMouthProductionTests/InterfaceTextShippedPackTests.swift, Scripts/check.sh, project.yml, TextMouth/Resources/Info.plist -->
 
-Xcode writes each language's files as XML property lists, and the last build phase of both apps, "Compact language files" (`Scripts/l10n/compact_packs.py`), rewrites them before Xcode signs the app, in every configuration.
-Each `.strings` becomes the UTF-8 text form, `"key"="value";` with no whitespace, its keys in code-point order so every build writes the same bytes.
-Each `.stringsdict` becomes a binary property list: the text form would be larger for plurals, and a binary `.strings` larger for any language with accents, which a binary list stores as UTF-16.
-The phase reads each new file back with Apple's parser, and on any difference it leaves the file as it was, names the first differing key, and fails the build.
-Its script sandboxing is off: the files are each language the catalog holds, so a list of outputs would go stale when a language is added.
+Each app ships one `Strings.pack` (1,275,916 bytes: 4,211 IDs in 25 languages) and no table of Apple's.
+The same build phase writes an `InfoPlist.strings` into each language's `.lproj` folder, and removes any Localizable table of Apple's that an earlier build left there (`--remove-apple-tables`).
+Both Info.plists list the 25 languages in `CFBundleLocalizations`; that list and the `.lproj` folders keep the bundle's languages for the system, and `l10n.py check` holds the list to the catalog.
 Three checks hold it:
-- `make l10n-check` compiles the catalog with `xcstringstool`, compacts a copy, and compares every lookup through `Bundle`, plurals at seven counts (`verify_packs.py`, with the probe in `Scripts/l10n/pack-probe/`);
-- `LanguagePackTests`, on both apps, checks the built app's files are compact and every lookup equals the catalog;
-- `make check` fails when a file of either app is left in XML.
+- `make l10n-check` (`verify_packs.py`, with the probe in `Scripts/l10n/pack-probe/`) compiles the catalog with `xcstringstool` in a folder of its own.
+  It compares the engine with Apple's lookup there, for every ID in every language at 13 counts, and checks the system's choice of language for 52 preference lists;
+- `InterfaceTextShippedPackTests`, on both apps, compares the shipped pack with the catalog, and checks that the bundle holds the 25 languages and no table of Apple's;
+- `make check` fails an app that ships a table of Apple's, or a `.lproj` folder without its `InfoPlist.strings`.
 
-A new language needs its plural rule in `PluralRules` (`TextMouth/Localization/InterfaceText/PluralRules.swift`), or `LanguagePackTests` fails and names it.
-Compact, the eleven languages ship 4,810,232 bytes together, against 6,925,064 as Xcode writes them.
-By language, the files hold English 42,341, Spanish 466,619, Italian 462,144, French 494,321, Brazilian Portuguese 467,335, and German 452,004 bytes.
-The rest are Russian 580,548, Ukrainian 582,169, Simplified Chinese 372,313, Japanese 462,727, and Korean 427,711 bytes.
-Binary plurals compress worse than XML, so the IPA grows about 9 KB while each app shrinks 301 KB; the size limits count the app on disk.
+A new language needs its plural rule in `PluralRules` (`TextMouth/Localization/InterfaceText/PluralRules.swift`), which `InterfaceTextTests` checks against Apple's own rule.
 
 ## The size budget
 <!-- id: localization-size-budget; keys: 150 KB, budgetBytes, budgetFails, l10n-size, English bytes, es.lproj size; status: incomplete; issues: FR34; src: Scripts/l10n/config.json, Scripts/l10n/l10n.py -->
 
-The English text in the catalog has a budget of 150,000 bytes (`budgetBytes` in `Scripts/l10n/config.json`), and `make l10n-size` reports it, with each language's shipped size in each format.
+The English text in the catalog has a budget of 150,000 bytes (`budgetBytes` in `Scripts/l10n/config.json`), and `make l10n-size` reports it, with each blob of the pack.
 The budget only reports for now (`budgetFails` is false); it will fail once the cutting is done.
-The catalog holds 4,190 strings and 177,883 bytes of English; what each language ships is under The compact language files, above.
+The catalog holds 4,211 IDs and 176,099 bytes of English.
 Converting a sentence whole grows the English by about a fifth before any cut, because glued sentences become whole ones and each count gets its plural forms.
 
 ## The commands

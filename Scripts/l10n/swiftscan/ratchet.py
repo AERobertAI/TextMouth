@@ -167,7 +167,7 @@ def format_problems(problems: Sequence[Problem], width: int = 100) -> List[str]:
             room = max(20, width - 24)
             lines.append(f"  line {lit.line} [{lit.bucket}] {text if len(text) <= room else text[:room - 1] + '…'}")
     lines += [
-        "Make each one localized, as String(localized: \"...\", comment: \"...\") or a SwiftUI literal;",
+        "Make each one localized with InterfaceText.line(\"<ID>\", \"<English>\") and a `// Translators: ...` line above it;",
         "or, for an identifier, a name the system gives, or a test hook, end its line with `// l10n: no`.",
         "`scan.py show FILE` lists a file's unlocalized literals.",
         BASELINE_RULE,

@@ -22,7 +22,7 @@ class ReportTests(TreeCase):
             'import SwiftUI\n'
             'struct FeedSnippet: View {\n'
             '    var body: some View {\n'
-            '        Text("Add Feed")\n'
+            '        Text(verbatim: InterfaceText.line("feeds.add", "Add Feed"))\n'
             '    }\n'
             '    static let title = "Café feeds"\n'
             '    func note(_ name: String) -> String { "Subscribed to " + name }\n'

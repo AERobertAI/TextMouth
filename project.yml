@@ -6,10 +6,11 @@ options:
   xcodeVersion: "16.0"
   minimumXcodeGenVersion: "2.30"
   # English is the language the code is written in, and the String Catalog's
-  # source language (TextMouth/Localization/Localizable.xcstrings, FR34):
-  # each app's CFBundleDevelopmentRegion is $(DEVELOPMENT_LANGUAGE), so a
-  # person whose languages TextMouth lacks gets English, and a string with no
-  # translation falls back to its key, which is its English text.
+  # source language (TextMouth/Localization/Localizable.xcstrings, FR34, which
+  # neither app compiles since FR39: Strings.pack carries the text): each app's
+  # CFBundleDevelopmentRegion is $(DEVELOPMENT_LANGUAGE), so a person whose
+  # languages TextMouth lacks gets English; a line with no translation shows
+  # the English its InterfaceText.line call holds.
   developmentLanguage: en
 
 # Swift package versions are locked deliberately. Each direct dependency is
@@ -43,24 +44,19 @@ packages:
 # day it is written. Package targets are not affected: Xcode builds them with
 # their own settings and suppresses their warnings.
 #
-# The localization settings are project-wide too (FR34, TL10), so that both
-# apps and every target built later extract and ship their text the same way:
-# SWIFT_EMIT_LOC_STRINGS makes the compiler write each localized string it
-# finds (Scripts/l10n/l10n.py sync merges them into the catalog);
-# LOCALIZATION_PREFERS_STRING_CATALOGS ships a catalog as the .strings and
-# .stringsdict files of each language it holds, and writes none for English,
-# whose text is the key; STRINGS_FILE_OUTPUT_ENCODING sets how those files are
-# written. UTF-8 is the smallest: measured on a catalog of 200 real Spanish
-# strings, 117 of them with an accented letter, the Mac build wrote es.lproj
-# /Localizable.strings at 56,098 bytes by default (UTF-16), 28,263 as UTF-8,
-# and 32,456 as a binary property list.
+# The localization settings are gone (FR39 phase 8): neither app compiles a String
+# Catalog or writes Apple's language tables any more. SWIFT_EMIT_LOC_STRINGS is off,
+# so the compiler extracts no strings; the catalog is no part of either target's
+# resources (the `excludes` of the two app targets), and Strings.pack, built from it
+# by the phase "Pack interface text", carries every language. The two settings that
+# only shaped Apple's tables, LOCALIZATION_PREFERS_STRING_CATALOGS and
+# STRINGS_FILE_OUTPUT_ENCODING, left with them: with no catalog in a Resources phase
+# they change nothing.
 settings:
   base:
     SWIFT_VERSION: "6.0"
     SWIFT_STRICT_CONCURRENCY: complete
-    SWIFT_EMIT_LOC_STRINGS: YES
-    LOCALIZATION_PREFERS_STRING_CATALOGS: YES
-    STRINGS_FILE_OUTPUT_ENCODING: UTF-8
+    SWIFT_EMIT_LOC_STRINGS: NO
 
 # The version both apps carry, on one line: Scripts/set-version.sh (make
 # set-version, bump-patch, and bump-minor) changes exactly one
@@ -214,58 +210,32 @@ targetTemplates:
         # Its headers are found by their paths, never through the project's header map.
         USE_HEADERMAP: NO
 
-  # The compact language files (TL16, FR34), for both apps. Xcode compiles the String
-  # Catalog into XML property lists, about 80 bytes of markup an entry. This phase, the
-  # last of the target (so after the Resources phase has put the compiled files in the
-  # product, and before Xcode signs the product), rewrites every *.lproj/*.strings as
-  # UTF-8 text and every *.stringsdict as a binary list, and reads each one back with
-  # Apple's parser: a change to any lookup fails the build and leaves the file as it was
-  # (Scripts/l10n/compact_packs.py; make l10n-check proves the same on the catalog, and
-  # LanguagePackTests on each built app). UNLOCALIZED_RESOURCES_FOLDER_PATH is the folder
-  # that holds the *.lproj folders: Contents/Resources in the Mac app, the bundle itself
-  # on the iPhone. The system's Python 3, as the FFmpeg phase uses, so a runner needs no
-  # other.
-  #
-  # It runs on every build and in every configuration (the tests see what ships): Xcode's
-  # own copy of the compiled catalog is not a file this phase could name as an input, and
-  # an incremental build may or may not have replaced it. It runs again over files it
-  # already compacted and then changes nothing, in a fraction of a second.
-  #
-  # Script sandboxing is off for the two apps, as the FFmpeg target's is. A sandboxed phase
-  # may touch only the files it declares, and the files here are the languages the catalog
-  # holds, which grow with it (eleven are planned): a list of outputs in this file would go
-  # stale on the day a language is added, and then either the sandbox would stop the phase
-  # or the language would ship in XML. The build step checks its own output and
-  # `make check` fails on a file left in XML, so nothing ships unchecked.
-  CompactLanguageFiles:
-    postBuildScripts:
-      - name: Compact language files
-        script: /usr/bin/python3 -I -B "$SRCROOT/Scripts/l10n/compact_packs.py" "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH"
-        basedOnDependencyAnalysis: false
-    settings:
-      base:
-        ENABLE_USER_SCRIPT_SANDBOXING: NO
-
   # The interface-text pack (FR39), for both apps: Scripts/l10n/pack.py builds Strings.pack, the
   # IDs, the English, the translators' notes, and every language in one file, from the String
   # Catalog (keyed by ID, its `en` values the English since FR39 phase 7), into the folder that
   # holds the app's resources. A postBuildScript, after the Resources phase and before Xcode signs
-  # the product, as "Compact language files" is. Apple's own language files stay
-  # beside it until the switch (each app grows by about 1.3 MB until then).
+  # the product. Since the switch (FR39 phase 8) it is the only text either app carries: the
+  # catalog is no resource, and no Localizable table of Apple's is built.
   #
   # pack.py writes the file by replacing it (never in place), because the engine memory-maps the
   # pack and a file rewritten under a running process can end it with SIGBUS. Its stamp, which lets a
   # build with nothing changed skip the work, lives in DERIVED_FILE_DIR, outside the app. An entry
   # with no English, or any text the pack refuses, fails the build and leaves the earlier file as it
   # was. `make check` fails a pack over 1.5 MB or an app that holds other than one Strings.pack, and
-  # InterfaceTextShippedPackTests compares the pack each test host ships with Apple's tables.
+  # InterfaceTextShippedPackTests compares the pack each test host ships with the catalog.
   #
-  # Script sandboxing is off, as for the compact phase: the script reads the repository and writes
-  # into the product.
+  # The same build writes <language>.lproj/InfoPlist.strings for each of the catalog's 25 languages
+  # beside the pack: the *.lproj folders (with CFBundleLocalizations in both Info.plists) are what
+  # keep the bundle's languages for the system. They hold no entry yet (pack.py's
+  # info_plist_entries is where the Info.plist strings will come from). The phase passes
+  # --remove-apple-tables: Xcode never cleans a product, so an incremental build would keep the
+  # Localizable tables an earlier build wrote; without the flag pack.py deletes nothing.
+  #
+  # Script sandboxing is off: the script reads the repository and writes into the product.
   PackInterfaceText:
     postBuildScripts:
       - name: Pack interface text
-        script: /usr/bin/python3 -I -B "$SRCROOT/Scripts/l10n/pack.py" build --catalog "$SRCROOT/TextMouth/Localization/Localizable.xcstrings" --out "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Strings.pack" --stamp "$DERIVED_FILE_DIR/Strings.pack.stamp"
+        script: /usr/bin/python3 -I -B "$SRCROOT/Scripts/l10n/pack.py" build --catalog "$SRCROOT/TextMouth/Localization/Localizable.xcstrings" --out "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Strings.pack" --remove-apple-tables --stamp "$DERIVED_FILE_DIR/Strings.pack.stamp"
         basedOnDependencyAnalysis: false
     settings:
       base:
@@ -301,7 +271,6 @@ targets:
   TextMouth:
     type: application
     templates:
-      - CompactLanguageFiles
       - PackInterfaceText
     platform: macOS
     sources:
@@ -312,6 +281,9 @@ targets:
       - path: TextMouth
         excludes:
           - "Platform/iOS/**"
+          # The String Catalog is the pack's source, not a resource: neither app compiles it
+          # (FR39 phase 8), so Apple's language tables are not in the bundle.
+          - "Localization/Localizable.xcstrings"
       # liblouis's braille tables (FMT21), copied unchanged as one folder
       # into Contents/Resources/liblouis/tables, where the braille helper
       # finds them (see the liblouis target below).
@@ -598,7 +570,6 @@ targets:
   TextMouthiOS:
     type: application
     templates:
-      - CompactLanguageFiles
       - PackInterfaceText
     platform: iOS
     deploymentTarget: "26.0"
@@ -607,6 +578,8 @@ targets:
         excludes:
           - "Platform/macOS/**"
           - "Resources/**"
+          # The String Catalog is the pack's source, not a resource (as in the Mac target).
+          - "Localization/Localizable.xcstrings"
       # liblouis's braille tables (DR34), copied unchanged as one folder into
       # the app's liblouis/tables, as the Mac app copies them, where the
       # braille translation reads them in place: the only tables the iPhone

@@ -88,12 +88,12 @@ class StaticLetTests(ScanCase):
         code = 'enum CloudWording {\n    static func note() -> String { "Downloaded and ready to read." }\n}'
         self.assertEqual(scan_snippet(code, WORDING)[0].findings, ())
 
-    def test_a_localized_string_kept_in_a_static_let_is_a_finding_too(self) -> None:
-        # Synthetic: String(localized:) in a static let would be cached in the wrong language.
-        code = 'enum W {\n    static let title = String(localized: "Sleep timer", comment: "Title")\n}'
+    def test_a_localized_line_kept_in_a_static_let_is_a_finding_too(self) -> None:
+        # Synthetic: an InterfaceText.line in a static let would be cached in the wrong language.
+        code = 'enum W {\n    static let title = InterfaceText.line("sleep.title", "Sleep timer")\n}'
         found = scan_snippet(code)
         self.assertEqual([(l.text, l.status, l.findings) for l in found],
-                         [("Sleep timer", "localized", ("static-let",)), ("Title", "", ())])
+                         [("sleep.title", "", ()), ("Sleep timer", "localized", ("static-let",))])
 
     def test_a_static_let_that_is_a_key_or_a_number_is_not_text(self) -> None:
         code = 'enum Keys {\n    static let maximum = 10\n    static let cacheKey = "bookmarks.v2"\n}'

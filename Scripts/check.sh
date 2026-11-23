@@ -16,13 +16,13 @@
 #      without failing, when the app is larger than APP_SIZE_WARNING_MB, and
 #      reports the app's size either way, so growth is noticed long before
 #      the limit is reached. No file of the app may hold a folder of this
-#      Mac (its home folder, the checkout, or $TMPDIR). Every language file
-#      of each app must be compact (TL16): each `.strings` UTF-8 text or binary and each
-#      `.stringsdict` binary, as the build phase "Compact language files"
-#      writes them (Scripts/l10n/compact_packs.py); the gate reports each
-#      file's size and fails on one still in XML. Each app must also hold exactly
+#      Mac (its home folder, the checkout, or $TMPDIR). No app may ship a table
+#      of Apple's (FR39): no Localizable.strings, Localizable.stringsdict,
+#      .loctable, or .xcstrings anywhere in it, and every .lproj folder holds an
+#      InfoPlist.strings, which the build phase "Pack interface text" writes
+#      (Scripts/l10n/pack.py). Each app must also hold exactly
 #      one interface-text pack, Strings.pack, in its resources folder, of at most
-#      PACK_LIMIT_BYTES (1.5 MB), as the build phase "Pack interface text" writes
+#      PACK_LIMIT_BYTES (1.5 MB), as that build phase writes
 #      it (FR39; Scripts/l10n/pack.py); the gate reports its size. Still in step 3, a
 #      plain run (not --without-tests) then builds the iPhone app for a device
 #      (Scripts/ios/app-size.py build) and holds it to the same two limits: a
@@ -146,8 +146,11 @@ readonly IOS_APP="build/ios-size-DerivedData/Build/Products/Release-iphoneos/Tex
 # The folder of the Mac app that holds its *.lproj folders; the iPhone app's is
 # the bundle itself.
 readonly MAC_RESOURCES="$RELEASE_APP/Contents/Resources"
-# The tool that writes the language files compact and checks that they are (TL16).
-readonly COMPACT_TOOL="Scripts/l10n/compact_packs.py"
+# What an app must not hold (FR39): the names of Apple's tables of text. Nothing in the apps reads them, so a file of one
+# would be dead weight and a sign that the build still compiles the String Catalog.
+readonly APPLE_TABLE_NAMES=(-name Localizable.strings -o -name Localizable.stringsdict -o -name '*.loctable' -o -name '*.xcstrings')
+# The table every .lproj folder holds, which keeps the bundle's languages for the system.
+readonly INFO_PLIST_TABLE="InfoPlist.strings"
 # The interface-text pack's name, and the most bytes it may hold (1.5 MB of a million bytes; it is 1.28 MB today).
 readonly PACK_NAME="Strings.pack"
 readonly PACK_LIMIT_BYTES=1500000
@@ -566,24 +569,39 @@ require_app_free_of_mac_paths() {
   detail "$RELEASE_APP holds no folder of this Mac"
 }
 
-# require_language_files_compact <resources folder> <app name>: reports the size
-# of each language file in the folder that holds an app's *.lproj folders, and
-# fails the gate when the app has none, or when one is not in the compact form
-# the build phase "Compact language files" writes: a `.strings` that is XML
-# instead of UTF-8 text or a binary list (whichever is smaller for the language,
-# TL18), or a `.stringsdict` that is not binary. Such a file means the phase did
-# not run or did not finish (TL16).
-require_language_files_compact() {
-  local resources=$1 app=$2 report status=0
+# require_language_layout <app folder> <resources folder> <app name>: the app
+# ships no table of Apple's (no Localizable.strings, Localizable.stringsdict,
+# .loctable, or .xcstrings anywhere in it), and the folder that holds its *.lproj
+# folders has at least one, each with an InfoPlist.strings. A table means the
+# build still compiles the String Catalog (FR39); a missing or empty language
+# folder means the build phase "Pack interface text" did not write it (the bundle
+# would lose its languages). Reports what it found.
+require_language_layout() {
+  local app_folder=$1 resources=$2 app=$3 tables folder count=0 missing=""
   if (( dry_run )); then
-    detail "would require every language file of $app to be compact"
+    detail "would require $app to hold no table of Apple's, and an $INFO_PLIST_TABLE in each .lproj folder"
     return 0
   fi
-  report=$(python3 -I -B "$COMPACT_TOOL" --verify "$resources" 2>&1) || status=$?
-  detail_lines "" "$report"
-  if (( status != 0 )); then
-    fail "step $step_number of $STEP_COUNT ($step_title): $app ships a language file that is not compact (the build phase \"Compact language files\", Scripts/l10n/compact_packs.py, did not write it)"
+  # A test bundle in PlugIns/ (*.xctest) holds the tool tests' fixture catalogs, not the app's language files.
+  tables=$(find "$app_folder" -not -path "*/PlugIns/*.xctest/*" \( "${APPLE_TABLE_NAMES[@]}" \) -type f | sort)
+  if [[ -n $tables ]]; then
+    detail_lines "APPLE TABLE: " "$(sed "s#^$app_folder/##" <<<"$tables")"
+    fail "step $step_number of $STEP_COUNT ($step_title): $app ships a table of Apple's (the apps read Strings.pack; the build must not compile the String Catalog)"
   fi
+  for folder in "$resources"/*.lproj; do
+    [[ -d $folder ]] || continue
+    count=$(( count + 1 ))
+    [[ -f $folder/$INFO_PLIST_TABLE ]] || missing+="${folder#"$resources"/}"$'\n'
+  done
+  if (( count == 0 )); then
+    detail "NO LANGUAGES: no .lproj folder found in $resources"
+    fail "step $step_number of $STEP_COUNT ($step_title): $app holds no .lproj folder (the build phase \"Pack interface text\", Scripts/l10n/pack.py, writes one for each language)"
+  fi
+  if [[ -n $missing ]]; then
+    detail_lines "NO $INFO_PLIST_TABLE: " "$(sed '/^$/d' <<<"$missing")"
+    fail "step $step_number of $STEP_COUNT ($step_title): $app has a .lproj folder with no $INFO_PLIST_TABLE (the build phase \"Pack interface text\", Scripts/l10n/pack.py, writes it)"
+  fi
+  detail "$app holds $count .lproj folders, each with an $INFO_PLIST_TABLE, and no table of Apple's"
 }
 
 # require_one_interface_pack <app folder> <resources folder> <app name>: the app
@@ -796,13 +814,13 @@ main() {
   require_no_swift_warnings "$RELEASE_BUILD_LOG"
   require_app_within_size_limit
   require_app_free_of_mac_paths
-  require_language_files_compact "$MAC_RESOURCES" "$RELEASE_APP"
+  require_language_layout "$RELEASE_APP" "$MAC_RESOURCES" "$RELEASE_APP"
   require_one_interface_pack "$RELEASE_APP" "$MAC_RESOURCES" "$RELEASE_APP"
   if [[ ${GITHUB_ACTIONS:-} == true ]]; then
     detail "the iPhone app is not built or measured on a GitHub runner (GITHUB_ACTIONS=true); the trains measure it there"
   else
     require_ios_app_within_size_limit
-    require_language_files_compact "$IOS_APP" "the iPhone app"
+    require_language_layout "$IOS_APP" "$IOS_APP" "the iPhone app"
     require_one_interface_pack "$IOS_APP" "$IOS_APP" "the iPhone app"
   fi
 
