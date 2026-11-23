@@ -162,6 +162,17 @@ struct InterfaceTextPack: InterfaceTextTables {
         }
     }
 
+    /// The translators' note of each ID, in the order of the IDs ("" for none); empty when the pack has no notes blob.
+    /// A note is plain text, so each entry is read as one (a note never starts a plural).
+    func notes() throws -> [String] {
+        guard blobs["notes"] != nil else { return [] }
+        let entries = try InterfaceTextEntry.decodeAll(try decodedBlob(named: "notes"), count: idCount, formCount: nil)
+        return entries.map { entry in
+            if case .plain(let text) = entry { return text }
+            return ""
+        }
+    }
+
     /// The decoded bytes of the blob `name`: one `compression_decode_buffer` into a buffer of the directory's raw size
     /// plus one byte. The extra byte tells a stream that is longer than its raw size (the decoder would stop at the
     /// buffer's end and look exact) from a right one; the size written must be the raw size, to the byte.

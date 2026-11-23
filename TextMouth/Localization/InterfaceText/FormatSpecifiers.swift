@@ -27,16 +27,23 @@ enum FormatSpecifiers {
     /// The specifiers of `text` in order, `%%` skipped; nil when the text holds anything else after a `%`: a lone `%`,
     /// another conversion (`%s`, `%d`, `%n`, `%f`), flags, a width, a precision, or a malformed number.
     static func slots(in text: String) -> [Slot]? {
+        parse(text)?.slots
+    }
+
+    /// The specifiers of `text` in order, and how many `%%` (a literal percent sign) it holds; nil under the same
+    /// conditions as `slots(in:)`. The person's own lines are compared with the English by both (FR39).
+    static func parse(_ text: String) -> (slots: [Slot], percentSigns: Int)? {
         // The scan works on UTF-8 bytes: every character it looks for is ASCII, and an ASCII byte never occurs
         // inside another character's bytes.
         let bytes = Array(text.utf8)
         var found: [Slot] = []
+        var percentSigns = 0
         var index = 0
         while index < bytes.count {
             guard bytes[index] == UInt8(ascii: "%") else { index += 1; continue }
             index += 1
             guard index < bytes.count else { return nil }  // a lone `%` at the end
-            if bytes[index] == UInt8(ascii: "%") { index += 1; continue }
+            if bytes[index] == UInt8(ascii: "%") { index += 1; percentSigns += 1; continue }
             // An optional argument number: one to two digits and a dollar sign.
             var position: Int?
             var digitsEnd = index
@@ -62,7 +69,7 @@ enum FormatSpecifiers {
                 return nil
             }
         }
-        return found
+        return (found, percentSigns)
     }
 
     /// Whether `text` may be handed to Foundation's formatter with arguments of these kinds:
