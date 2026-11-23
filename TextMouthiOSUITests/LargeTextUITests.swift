@@ -42,10 +42,14 @@ final class LargeTextUITests: TextMouthUITestCase {
     func testSettingsHoldsAtTheLargestText() throws {
         let app = try launch(sendingTheBook: false, textSize: Self.largestText)
         tap(app.buttons["Settings"], until: app.navigationBars["Settings"], in: app, what: "Settings")
+        // Every row made once and the screen still, so that the audit reads settled layout, not rows being laid out.
+        try scrollThroughTheList(of: app)
+        try waitUntilStill(app)
         try audit(app, screen: "Settings at the largest text", types: Self.sizeFindings, accepting: [.navigationTitle("Settings"), .unnamedUnsupported])
         // Two screens down, where the sliders' captions and the switches are.
         app.swipeUp()
         app.swipeUp()
+        try waitUntilStill(app)
         try audit(app, screen: "Settings at the largest text, scrolled", types: Self.sizeFindings, accepting: [.navigationTitle("Settings"), .scrolledPastTheEdge, .unnamedUnsupported, .unnamedPartlyUnsupported])
     }
 
