@@ -363,7 +363,10 @@ final class IOSInfoPlistTests: XCTestCase {
         // formats' own types are found by extension there (FMT31), and iOS
         // declares them (FMT54), as it does the own readers'.
         let used = Set(FileImportService.supportedTypes.map(\.identifier)).intersection(macDeclared)
-        XCTAssertEqual(used.subtracting(iOSDeclared), [], "In supportedTypes, and not declared for iOS")
+        // (This process is the Mac's, whose list names the BARD package type; the iPhone's does not.)
+        XCTAssertEqual(
+            used.subtracting(iOSDeclared).subtracting(Self.refusedTypes), [], "In supportedTypes, and not declared for iOS"
+        )
     }
 
     /// What iOS cannot read is not offered: through no type it names, no
