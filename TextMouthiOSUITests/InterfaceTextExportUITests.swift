@@ -31,11 +31,21 @@ final class InterfaceTextExportUITests: TextMouthUITestCase {
 
         // The system's exporter has a Cancel button (a document picker in the app's own process or another's).
         // Found by its label among the elements of any kind: the exporter's Cancel is drawn as an element that is not a button.
-        let cancel = app.descendants(matching: .any).matching(NSPredicate(format: "label == %@", "Cancel")).firstMatch
-        XCTAssertTrue(cancel.waitForExistence(timeout: Self.patience), "The exporter did not open:\n\(app.debugDescription)")
-        cancel.tap()
+        let cancels = app.descendants(matching: .any).matching(NSPredicate(format: "label == %@", "Cancel"))
+        XCTAssertTrue(cancels.firstMatch.waitForExistence(timeout: Self.patience), "The exporter did not open:\n\(app.debugDescription)")
 
-        XCTAssertTrue(cancel.waitForNonExistence(timeout: Self.patience), "The exporter stayed open")
+        // Tap what the exporter offers as Cancel, the last one made first, until the app's own button can be tapped again:
+        // the exporter is closed then. (The exporter's tree holds more than one element with that label.)
+        var closed = false
+        for _ in 0..<3 where !closed {
+            for index in (0..<cancels.count).reversed() where !closed {
+                let candidate = cancels.element(boundBy: index)
+                guard candidate.exists, candidate.isHittable else { continue }
+                candidate.tap()
+                closed = XCTWaiter().wait(for: [expectation(for: NSPredicate(format: "isHittable == true"), evaluatedWith: app.buttons[Self.button])], timeout: 10) == .completed
+            }
+        }
+        XCTAssertTrue(closed, "The exporter stayed open:\n\(app.debugDescription)")
         scrollToTheButton(in: app)
         XCTAssertTrue(app.buttons[Self.button].exists, "The button is gone after the exporter was cancelled")
     }
