@@ -964,23 +964,6 @@
 			</dict>
 		</dict>
 		<dict>
-			<key>UTTypeIdentifier</key>
-			<string>com.textmouth.bopf-package</string>
-			<key>UTTypeDescription</key>
-			<string>NLS BARD Braille Package Document</string>
-			<key>UTTypeConformsTo</key>
-			<array>
-				<string>public.xml</string>
-			</array>
-			<key>UTTypeTagSpecification</key>
-			<dict>
-				<key>public.filename-extension</key>
-				<array>
-					<string>bopf</string>
-				</array>
-			</dict>
-		</dict>
-		<dict>
 			<key>UTTypeConformsTo</key>
 			<array>
 				<string>public.plain-text</string>

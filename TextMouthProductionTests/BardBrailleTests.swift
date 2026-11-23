@@ -220,9 +220,11 @@ final class BardBrailleTests: XCTestCase {
         XCTAssertEqual(BookFormat.braille.fileExtensions.contains("bopf"), true)
     }
 
-    /// Both apps' Info.plists, read from the source tree, declare the imported
-    /// `.bopf` type; only the Mac's declares the document type, in a Viewer
-    /// role, and its import panel lists the type. The iPhone's picker and
+    /// Only the Mac's Info.plist, read from the source tree, declares the
+    /// `.bopf` document type, in a Viewer role, and its imported type, and its
+    /// import panel lists the type; the iPhone's has neither (it is generated
+    /// from the Mac's less what the iPhone refuses,
+    /// `Scripts/ios/sync-info-plist.py`). The iPhone's picker and
     /// "Open in" do not offer the file, since they copy only the file picked
     /// and a `.bopf` alone would arrive without its volumes. (The source tree is
     /// the Mac's: the test is skipped where it is not.)
@@ -245,8 +247,13 @@ final class BardBrailleTests: XCTestCase {
             }
             let imported = plist["UTImportedTypeDeclarations"] as? [[String: Any]] ?? []
             let declared = imported.first { $0["UTTypeIdentifier"] as? String == "com.textmouth.bopf-package" }
-            let tags = declared?["UTTypeTagSpecification"] as? [String: Any]
-            XCTAssertEqual(tags?["public.filename-extension"] as? [String], ["bopf"], path)
+            if path.contains("iOS") {
+                // The declaration of a type no document type names goes with it.
+                XCTAssertNil(declared, path)
+            } else {
+                let tags = declared?["UTTypeTagSpecification"] as? [String: Any]
+                XCTAssertEqual(tags?["public.filename-extension"] as? [String], ["bopf"], path)
+            }
         }
         #if os(macOS)
         XCTAssertTrue(FileImportService.supportedTypes.contains { $0.identifier == "com.textmouth.bopf-package" })

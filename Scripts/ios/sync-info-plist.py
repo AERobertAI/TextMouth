@@ -34,6 +34,10 @@ is left out by name, with the declaration of any type nothing else names:
   are converted at import with afconvert. Leaving the type in would offer every
   `.caf`; leaving it out leaves `.alac` unoffered on iOS, which is the lesser
   harm.
+- "NLS BARD Braille Package" (`.bopf`, FMT56): the iPhone copies only the
+  file it is handed, and a package file alone would arrive without the BRF
+  volumes it lists. A BARD download is a ZIP, which the iPhone does import,
+  and a folder is chosen with Import Folder.
 - (Until November 16, 2026, also "BRF Braille File", "BRL Braille File", and
   "PEF Braille File", which the Mac's braille helper program reads. Since DR34
   the iPhone translates braille in the app itself, so they are offered as on
@@ -72,6 +76,7 @@ REFUSED = {
     "Ogg Audio",
     "Audio Converted at Import",
     "ALAC Audio",
+    "NLS BARD Braille Package",
 }
 
 # The keys of the Mac's plist that mean nothing on iOS.

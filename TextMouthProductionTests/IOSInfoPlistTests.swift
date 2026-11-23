@@ -114,7 +114,7 @@ final class IOSInfoPlistTests: XCTestCase {
     /// and video only FFmpeg reads since FMT54: the iPhone runs the FFmpeg session
     /// in the app itself.
     private static let refused: Set<String> = [
-        "Ogg Audio", "Audio Converted at Import", "ALAC Audio",
+        "Ogg Audio", "Audio Converted at Import", "ALAC Audio", "NLS BARD Braille Package",
     ]
 
     /// The document type of the formats TextMouth's own readers decode, which iOS
@@ -158,6 +158,8 @@ final class IOSInfoPlistTests: XCTestCase {
         "org.xiph.ogg-audio",
         "public.aifc-audio", "com.apple.coreaudio-format", "public.au-audio", "com.sony.wave64", "public.ac3-audio",
         "public.enhanced-ac3-audio", "public.mp2", "org.3gpp.adaptive-multi-rate-audio", "public.3gpp", "public.3gpp2",
+        // A BARD package file alone arrives without its volumes (FMT56).
+        "com.textmouth.bopf-package",
     ]
 
     /// The keys only iOS has, which Scripts/ios/sync-info-plist.py adds.
