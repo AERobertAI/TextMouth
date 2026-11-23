@@ -112,9 +112,15 @@ struct InterfaceTextPackBytes {
         var output = [UInt8](repeating: 0, count: raw.count + 4096)
         if method == bzip2 {
             var written = UInt32(output.count)
-            let status = BZ2_bzBuffToBuffCompress(
-                &output, &written, UnsafeMutableRawPointer(mutating: raw).assumingMemoryBound(to: CChar.self), UInt32(raw.count), 9, 0, 0
-            )
+            // libbz2 takes `char *` for both buffers: the source's bytes are rebound only for the call's duration.
+            let status = output.withUnsafeMutableBytes { destination in
+                raw.withUnsafeBytes { source in
+                    BZ2_bzBuffToBuffCompress(
+                        destination.baseAddress?.assumingMemoryBound(to: CChar.self), &written,
+                        UnsafeMutableRawPointer(mutating: source.baseAddress)?.assumingMemoryBound(to: CChar.self), UInt32(raw.count), 9, 0, 0
+                    )
+                }
+            }
             precondition(status == BZ_OK, "the test pack's bzip2 compression failed")
             return Array(output[0..<Int(written)])
         }

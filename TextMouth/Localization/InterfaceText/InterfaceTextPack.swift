@@ -21,7 +21,8 @@ import Foundation
 /// loads (`loadUnaligned` on a checked range), never a pointer cast or a force unwrap on file data, and a decoded blob
 /// is checked again for its size, its entry count, and UTF-8 before a byte of it is used.
 ///
-/// Foundation, the Compression framework, and the system's libbz2 (the CBZip2 module) only; no stored state beyond the mapped bytes and the directory.
+/// Foundation, the Compression framework, and the system's libbz2 (the CBZip2 module) only; no stored state beyond the
+/// mapped bytes and the directory.
 struct InterfaceTextPack: InterfaceTextTables {
     /// A blob's place and sizes, from the directory.
     private struct Blob: Sendable {
