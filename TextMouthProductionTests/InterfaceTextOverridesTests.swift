@@ -35,7 +35,9 @@ final class InterfaceTextOverridesTests: XCTestCase {
             isUnavailable: isUnavailable,
             linesDidChange: { record.changes += 1 },
             log: { record.log.append($0) },
-            quietPeriod: .milliseconds(60)
+            quietPeriod: .milliseconds(60),
+            // Short, so that a test can write a file after the watcher's own looks for it are over.
+            retryDelays: [.milliseconds(20)]
         )
         addTeardownBlock { service.stop() }
         return (service, engine, record)
@@ -100,8 +102,11 @@ final class InterfaceTextOverridesTests: XCTestCase {
         let (service, engine, _) = makeService(reading: { url })
         let center = NotificationCenter()
         service.start(observing: center)
-        _ = waitUntil(timeout: 0.3) { false }
+        // Past the watcher's looks for a file that is not there (20 ms, once), so only the activation can find it.
+        _ = waitUntil(timeout: 0.5) { false }
         try data(["common.sleepTimer": ["text": "Temporizador"]]).write(to: url)
+        _ = waitUntil(timeout: 0.5) { false }
+        XCTAssertEqual(sleepTimer(engine), "Temporizador de apagado", "nothing but the activation finds the file")
 
         center.post(name: PlatformApplication.didBecomeActiveNotification, object: nil)
 
@@ -130,8 +135,10 @@ final class InterfaceTextOverridesTests: XCTestCase {
         let url = try makeFileURL()
         let (service, engine, _) = makeService(reading: { url })
         service.start()
-        _ = waitUntil(timeout: 0.3) { false }
+        _ = waitUntil(timeout: 0.5) { false }
         try data(["common.sleepTimer": ["text": "Temporizador"]]).write(to: url)
+        _ = waitUntil(timeout: 0.5) { false }
+        XCTAssertEqual(sleepTimer(engine), "Temporizador de apagado", "nothing but the arrival finds the file")
 
         service.fileMayHaveArrived()
 
@@ -198,12 +205,13 @@ final class InterfaceTextOverridesTests: XCTestCase {
 
     /// Edit Interface Text… fills the file when there is none, with every line of the interface language as the pack has it,
     /// and nothing applies (every line equals its base).
-    func testEditFillsAMissingFileOnRequest() throws {
+    func testEditFillsAMissingFileOnRequest() async throws {
         let url = try makeFileURL()
         let (service, engine, _) = makeService(reading: { url })
         service.start()
 
-        XCTAssertEqual(service.fillFileForEditing(language: "es"), .written)
+        let filled = await service.fillFileForEditing(language: "es")
+        XCTAssertEqual(filled, .written)
 
         let root = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any])
         let lines = try XCTUnwrap(((root["languages"] as? [String: Any])?["es"] as? [String: Any])?["lines"] as? [String: [String: Any]])
@@ -215,11 +223,12 @@ final class InterfaceTextOverridesTests: XCTestCase {
     }
 
     /// A line the person then edits in the filled file applies, and the file keeps what it said for the other lines.
-    func testALineEditedInTheFilledFileApplies() throws {
+    func testALineEditedInTheFilledFileApplies() async throws {
         let url = try makeFileURL()
         let (service, engine, _) = makeService(reading: { url })
         service.start()
-        XCTAssertEqual(service.fillFileForEditing(language: "es"), .written)
+        let filled = await service.fillFileForEditing(language: "es")
+        XCTAssertEqual(filled, .written)
         XCTAssertTrue(waitUntil(timeout: 5) { service.outcome.unchanged == 2 })
 
         // The person edits one text in their editor.
@@ -239,26 +248,29 @@ final class InterfaceTextOverridesTests: XCTestCase {
     }
 
     /// A file that has the language, or that the person is mending, is left as it is; a file that lacks it gets it.
-    func testEditLeavesAFileThatHasTheLanguage() throws {
+    func testEditLeavesAFileThatHasTheLanguage() async throws {
         let url = try makeFileURL()
         let bytes = try data(["common.sleepTimer": ["text": "Temporizador"]])
         try bytes.write(to: url)
         let (service, _, _) = makeService(reading: { url })
 
-        XCTAssertEqual(service.fillFileForEditing(language: "es"), .leftAsItIs)
+        let left = await service.fillFileForEditing(language: "es")
+        XCTAssertEqual(left, .leftAsItIs)
         XCTAssertEqual(try Data(contentsOf: url), bytes)
 
-        XCTAssertEqual(service.fillFileForEditing(language: "en"), .written)
+        let added = await service.fillFileForEditing(language: "en")
+        XCTAssertEqual(added, .written)
         let root = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any])
         XCTAssertEqual(Set((root["languages"] as? [String: Any])?.keys.map { $0 } ?? []), ["es", "en"])
     }
 
     /// Nothing is written while the data directory is unavailable.
-    func testEditWritesNothingWhileTheDataDirectoryIsUnavailable() throws {
+    func testEditWritesNothingWhileTheDataDirectoryIsUnavailable() async throws {
         let url = try makeFileURL()
         let (service, _, _) = makeService(reading: { url }, isUnavailable: { true })
 
-        guard case .failed = service.fillFileForEditing(language: "es") else { return XCTFail("a fill was not refused") }
+        let refused = await service.fillFileForEditing(language: "es")
+        guard case .failed = refused else { return XCTFail("a fill was not refused") }
         XCTAssertFalse(FileManager.default.fileExists(atPath: url.path))
     }
 
@@ -301,7 +313,7 @@ final class InterfaceTextOverridesTests: XCTestCase {
         let ignored = Set(record.log.dropFirst())
         XCTAssertEqual(ignored, [
             "INTERFACE_TEXT_IGNORED: line feed.opening in es: it has a specifier other than the five, or a lone percent sign",
-            "INTERFACE_TEXT_IGNORED: line common.nonsense in es: TextMouth has no line with that ID",
+            "INTERFACE_TEXT_IGNORED: line (15 characters) in es: TextMouth has no line with that ID",
         ])
         for line in record.log {
             XCTAssertFalse(line.contains("secreto") || line.contains("privadas"), line)
@@ -327,13 +339,118 @@ final class InterfaceTextOverridesTests: XCTestCase {
         XCTAssertEqual(sleepTimer(engine), "Temporizador de apagado")
     }
 
-    /// A key of the person's file that is not an ID is never logged as it is.
-    func testAKeyThatIsNotAnIDIsLoggedAsALength() {
-        XCTAssertEqual(InterfaceTextOverrides.loggable("common.sleepTimer"), "common.sleepTimer")
-        XCTAssertEqual(InterfaceTextOverrides.loggable("pt-BR"), "pt-BR")
-        XCTAssertEqual(InterfaceTextOverrides.loggable("my secret words"), "(15 characters)")
-        XCTAssertEqual(InterfaceTextOverrides.loggable("é"), "(1 characters)")
-        XCTAssertEqual(InterfaceTextOverrides.loggable(String(repeating: "a", count: 65)), "(65 characters)")
-        XCTAssertEqual(InterfaceTextOverrides.loggable(String(repeating: "a", count: 64)), String(repeating: "a", count: 64))
+    /// A key of the person's file that the app does not know is the person's own text: it is logged as its length only.
+    func testAKeyTheAppDoesNotKnowIsLoggedAsALength() {
+        XCTAssertEqual(InterfaceTextOverrides.logged("common.sleepTimer", isKnown: true), "common.sleepTimer")
+        XCTAssertEqual(InterfaceTextOverrides.logged("pt-BR", isKnown: true), "pt-BR")
+        XCTAssertEqual(InterfaceTextOverrides.logged("Temporizador", isKnown: false), "(12 characters)")
+        XCTAssertEqual(InterfaceTextOverrides.logged("common.sleeptimer", isKnown: false), "(17 characters)")
+    }
+
+    /// A key typed as a word ("Temporizador" for an ID, "Klingon" for a language) never reaches the log, though it looks
+    /// like an ID or a code: only keys the app knows do.
+    func testTypedKeysNeverReachTheLog() throws {
+        let url = try makeFileURL()
+        try JSONSerialization.data(withJSONObject: ["version": 1, "languages": [
+            "Klingon": ["lines": ["Temporizador": ["text": "Kronos"]]],
+            "es": ["lines": ["Temporizador": ["text": "Kronos"], "common.sleepTimer": ["text": "ok"]]],
+        ]]).write(to: url)
+        let (service, _, record) = makeService(reading: { url })
+
+        service.start()
+
+        XCTAssertTrue(waitUntil(timeout: 5) { record.log.count == 3 })
+        for line in record.log {
+            XCTAssertFalse(line.contains("Klingon") || line.contains("Temporizador"), line)
+        }
+        XCTAssertTrue(record.log.contains("INTERFACE_TEXT_IGNORED: line (12 characters) in (7 characters): the language is not one TextMouth carries"), "\(record.log)")
+    }
+
+    /// The log names the first 100 ignored lines, then says how many more there were.
+    func testTheLogIsCappedAtOneHundredIgnoredLines() throws {
+        let url = try makeFileURL()
+        var lines: [String: Any] = [:]
+        for index in 0..<130 { lines[String(format: "no.such%03d", index)] = ["text": "x"] }
+        try data(lines).write(to: url)
+        let (service, _, record) = makeService(reading: { url })
+
+        service.start()
+
+        XCTAssertTrue(waitUntil(timeout: 5) { record.log.count == 1 + 100 + 1 })
+        XCTAssertEqual(record.log.last, "INTERFACE_TEXT_IGNORED: and 30 more lines")
+        XCTAssertEqual(service.outcome.ignored.count, 130)
+    }
+
+    /// Publishing another root as the data directory says so (`.dataDirectoryDidMove`), later, on the main queue, once the
+    /// publication's own lock is released. A boundary of the test's own is published, never the process's.
+    func testPublishingARootPostsDataDirectoryDidMove() throws {
+        let first = try makeFileURL().deletingLastPathComponent()
+        let second = try makeFileURL().deletingLastPathComponent()
+        let boundary = StorageBoundary(root: first)
+        var heard = 0
+        let token = NotificationCenter.default.addObserver(forName: .dataDirectoryDidMove, object: nil, queue: .main) { _ in
+            MainActor.assumeIsolated { heard += 1 }
+        }
+        defer { NotificationCenter.default.removeObserver(token) }
+
+        let generation = boundary.publish(root: second)
+
+        XCTAssertEqual(generation.root.path, second.path)
+        XCTAssertTrue(waitUntil(timeout: 5) { heard >= 1 })
+    }
+
+    // MARK: - A file that cannot be read
+
+    /// A file larger than any real one is ignored whole, without being read whole.
+    func testAFileLargerThanAnyRealOneIsIgnoredWhole() throws {
+        let url = try makeFileURL()
+        XCTAssertTrue(FileManager.default.createFile(atPath: url.path, contents: nil))
+        let handle = try FileHandle(forWritingTo: url)
+        // A sparse file: its size is past the limit, its blocks are not written.
+        try handle.truncate(atOffset: UInt64(InterfaceTextOverridesFile.largestSize) + 10)
+        try handle.close()
+        let (service, _, _) = makeService(reading: { url })
+
+        service.start()
+
+        XCTAssertTrue(waitUntil(timeout: 5) { service.outcome.fileProblem == .tooLarge })
+    }
+
+    /// A file that cannot be read keeps the lines in force and says so; the same bytes read well later are applied again and
+    /// the problem goes (the bytes last read are forgotten by an unreadable read).
+    func testAnUnreadableFileKeepsTheLinesAndTheProblemGoesWhenItReadsAgain() throws {
+        try XCTSkipIf(geteuid() == 0, "a file's permissions do not stop root")
+        let url = try makeFileURL()
+        try data(["common.sleepTimer": ["text": "Temporizador"]]).write(to: url)
+        let (service, engine, record) = makeService(reading: { url })
+        service.start()
+        XCTAssertTrue(waitUntil(timeout: 5) { self.sleepTimer(engine) == "Temporizador" })
+
+        try FileManager.default.setAttributes([.posixPermissions: 0o000], ofItemAtPath: url.path)
+        defer { try? FileManager.default.setAttributes([.posixPermissions: 0o644], ofItemAtPath: url.path) }
+        service.reload()
+        XCTAssertTrue(waitUntil(timeout: 5) { service.outcome.fileProblem == .unreadable })
+        XCTAssertEqual(sleepTimer(engine), "Temporizador", "the lines in force stay")
+        XCTAssertTrue(record.log.contains { $0.contains("the file could not be read and the lines in use stay") }, "\(record.log)")
+        XCTAssertFalse(record.log.contains { $0.contains("lines in use") && $0.contains("could not be read") && $0.contains("whole file ignored") })
+
+        try FileManager.default.setAttributes([.posixPermissions: 0o644], ofItemAtPath: url.path)
+        service.reload()
+        XCTAssertTrue(waitUntil(timeout: 5) { service.outcome.fileProblem == nil })
+        XCTAssertEqual(service.outcome.inUse.count, 1)
+        XCTAssertEqual(sleepTimer(engine), "Temporizador")
+    }
+
+    /// A path that is no regular file (a folder here; a FIFO would block a plain read forever) is read as nothing and does
+    /// not hang the read.
+    func testAPathThatIsNoRegularFileIsNotRead() throws {
+        let url = try makeFileURL()
+        try FileManager.default.createDirectory(at: url, withIntermediateDirectories: false)
+        let (service, engine, _) = makeService(reading: { url })
+
+        service.start()
+        _ = waitUntil(timeout: 0.5) { false }
+
+        XCTAssertEqual(sleepTimer(engine), "Temporizador de apagado")
     }
 }

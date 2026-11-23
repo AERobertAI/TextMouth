@@ -537,7 +537,11 @@ final class LibraryViewModel: ObservableObject {
         fetchLaunchFilesInBackground()
         // The person's own interface lines are read now, on a background queue (a file only in the cloud is read once
         // the fetch above brings it), and followed from here on (FR39). Nothing here writes the file.
-        InterfaceTextOverrides.shared.start()
+        // Not in a process hosting tests, where the shared service would follow every test's data folder and could change
+        // the lines every later test reads; the tests of the service start their own.
+        if !TextMouthRuntime.current.isHostedTest {
+            InterfaceTextOverrides.shared.start()
+        }
         // In a cloud library, a conflict copy a sync service set aside of
         // the index or a record is reported, once (Phase 0, compare0).
         reportConflictCopiesInBackground()

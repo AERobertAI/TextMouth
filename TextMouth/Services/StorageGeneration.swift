@@ -256,9 +256,10 @@ final class StorageBoundary: @unchecked Sendable {
         generation = StorageGeneration(number: generation.number + 1, root: root, location: location)
         let published = generation
         condition.unlock()
-        // Said with the lock released, so no observer can wait for it: what reads a file of the data directory by its
-        // path (the person's interface lines, FR39) reads it again at its new place.
-        NotificationCenter.default.post(name: .dataDirectoryDidMove, object: nil)
+        // Said later, on the main queue, with the lock released and outside the persistence queues' write fence this is
+        // called in (`LibraryPersistenceService.betweenWrites`), so no observer can hold either: what reads a file of the data
+        // directory by its path (the person's interface lines, FR39) reads it again at its new place.
+        DispatchQueue.main.async { NotificationCenter.default.post(name: .dataDirectoryDidMove, object: nil) }
         return published
     }
 

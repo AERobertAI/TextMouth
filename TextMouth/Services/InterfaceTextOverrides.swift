@@ -40,6 +40,8 @@ final class InterfaceTextOverrides: ObservableObject {
     private let log: @MainActor (String) -> Void
     private let calls: FileEventWatcher.Calls
     private let quietPeriod: Duration
+    /// The pauses before each look for a file that is not there (tests shorten them).
+    private let retryDelays: [Duration]
 
     // MARK: - State
 
@@ -53,6 +55,7 @@ final class InterfaceTextOverrides: ObservableObject {
         file: { [weak self] in self?.fileURL() },
         isAvailable: { [weak self] in self.map { !$0.isUnavailable() } ?? false },
         quietPeriod: quietPeriod,
+        retryDelays: retryDelays,
         calls: calls,
         settled: { [weak self] _ in self?.reload() }
     )
@@ -66,7 +69,8 @@ final class InterfaceTextOverrides: ObservableObject {
         linesDidChange: @escaping @MainActor () -> Void = { InterfaceLanguage.refresh() },
         log: @escaping @MainActor (String) -> Void = { DiagnosticLog.event(.app, $0) },
         calls: FileEventWatcher.Calls = .system,
-        quietPeriod: Duration = .milliseconds(300)
+        quietPeriod: Duration = .milliseconds(300),
+        retryDelays: [Duration] = FileEventWatcher.defaultRetryDelays
     ) {
         self.engine = engine
         self.fileURL = fileURL
@@ -75,6 +79,7 @@ final class InterfaceTextOverrides: ObservableObject {
         self.log = log
         self.calls = calls
         self.quietPeriod = quietPeriod
+        self.retryDelays = retryDelays
     }
 
     // MARK: - Starting
@@ -131,8 +136,10 @@ final class InterfaceTextOverrides: ObservableObject {
         case notNow
         /// The same bytes as the last read: nothing changes.
         case same
-        /// The file exists and could not be read.
+        /// The file exists and could not be read (or is no regular file).
         case unreadable
+        /// The file is larger than any file of lines can be.
+        case tooLarge
         /// The file's bytes, and what checking them came to.
         case read(Data, InterfaceTextOverridesOutcome)
     }
@@ -152,20 +159,40 @@ final class InterfaceTextOverrides: ObservableObject {
         }
     }
 
+    /// The bytes of the file at `url`, read with a bound and only if it is a regular file (`SmallTextFile`: a FIFO by that
+    /// name would block forever, and a huge file would be read whole), and never downloaded from the cloud.
+    /// - Returns: nil when the file is larger than `InterfaceTextOverridesFile.largestSize`.
+    /// - Throws: the error reading it, a refusal to download (`DatalessFiles.isDownloadRefusal`), or a missing file.
+    private nonisolated static func bytes(at url: URL) throws -> Data? {
+        try DatalessFiles.withoutDownloading { try SmallTextFile.data(at: url, byteLimit: InterfaceTextOverridesFile.largestSize) }
+    }
+
     /// Reads and checks the file at `url`, off the main thread. Never downloads a file that is only in the cloud.
     private nonisolated static func read(_ url: URL, previous: Data?, engine: InterfaceTextEngine) -> Read {
         let data: Data
         do {
-            data = try DatalessFiles.withoutDownloading { try Data(contentsOf: url) }
+            guard let bytes = try bytes(at: url) else { return .tooLarge }
+            data = bytes
         } catch {
             if DatalessFiles.isDownloadRefusal(error) { return .notNow }
             return Self.isMissingFile(error) ? .missing : .unreadable
         }
         if data == previous { return .same }
-        // The English of the pack is what each line is checked against; with no pack nothing can be checked, so nothing
-        // changes.
-        guard let reference = engine.reference(language: "en") else { return .notNow }
+        // The English of the pack is what each line is checked against, and nothing else (no notes are decoded); with no
+        // pack nothing can be checked, so nothing changes.
+        guard let reference = engine.reference(language: "en", withNotes: false) else { return .notNow }
         return .read(data, InterfaceTextOverridesFile.read(data, reference: reference))
+    }
+
+    /// Records that Edit Interface Text… could not do its work, as `INTERFACE_TEXT_EDIT_FAILED: <reason>` (an event of the
+    /// app category). The reason is English and holds no path or line text.
+    nonisolated static func logEditFailure(_ reason: String) {
+        DiagnosticLog.event(.app, "INTERFACE_TEXT_EDIT_FAILED: \(reason)")
+    }
+
+    /// Records that Export Interface Text… could not do its work, as `INTERFACE_TEXT_EXPORT_FAILED: <reason>`.
+    nonisolated static func logExportFailure(_ reason: String) {
+        DiagnosticLog.event(.app, "INTERFACE_TEXT_EXPORT_FAILED: \(reason)")
     }
 
     /// `error` as the log may hold it: its domain and code, never a path.
@@ -189,10 +216,15 @@ final class InterfaceTextOverrides: ObservableObject {
             lastData = nil
             adopt(.empty)
         case .unreadable:
-            // The lines in force stay, as the person may be partway through a save; the problem shows.
+            // The lines in force stay, as the person may be partway through a save; the problem shows. The bytes last read
+            // are forgotten, so the same bytes read well later are checked and applied, and the problem goes.
+            lastData = nil
             var kept = outcome
             kept.fileProblem = .unreadable
             adopt(kept)
+        case .tooLarge:
+            lastData = nil
+            adopt(.ignoredWhole(.tooLarge))
         case .read(let data, let checked):
             lastData = data
             adopt(checked)
@@ -214,28 +246,38 @@ final class InterfaceTextOverrides: ObservableObject {
 
     // MARK: - The log
 
-    /// One `INTERFACE_TEXT_LOADED` line for what the file comes to, and one `INTERFACE_TEXT_IGNORED` line for each ignored
-    /// line, or for the whole file; in English, holding IDs and language codes of lines (never a line's text).
+    /// The most ignored lines the log names; the rest are one line with their count.
+    static let largestIgnoredLog = 100
+
+    /// One `INTERFACE_TEXT_LOADED` line for what the file comes to, and one `INTERFACE_TEXT_IGNORED` line for each of the
+    /// first 100 ignored lines (then one with the count of the rest), or for the whole file; in English, holding only IDs
+    /// and language codes the app knows (`logged`), never a line's text.
     private func writeLog(for checked: InterfaceTextOverridesOutcome, before: InterfaceTextOverridesOutcome) {
-        log("INTERFACE_TEXT_LOADED: \(checked.inUse.count) lines in use, \(checked.ignored.count) ignored, \(checked.unchanged) left alone" // l10n: no (debug log text)
-            + (checked.fileProblem == nil ? "" : ", the whole file ignored")) // l10n: no (debug log text)
+        var counts = "\(checked.inUse.count) lines in use, \(checked.ignored.count) ignored, \(checked.unchanged) left alone" // l10n: no (debug log text)
+        switch checked.fileProblem {
+        case nil: break
+        // An unreadable file leaves the lines in use: it is not ignored whole.
+        case .unreadable?: counts += ", the file could not be read and the lines in use stay" // l10n: no (debug log text)
+        case .some: counts += ", the whole file ignored" // l10n: no (debug log text)
+        }
+        log("INTERFACE_TEXT_LOADED: \(counts)")
         if let problem = checked.fileProblem {
             log("INTERFACE_TEXT_IGNORED: the whole file: \(problem.logSentence)") // l10n: no (debug log text)
         }
-        for ignored in checked.ignored {
-            log("INTERFACE_TEXT_IGNORED: line \(Self.loggable(ignored.key.id)) in \(Self.loggable(ignored.key.language)): \(ignored.reason.logSentence)") // l10n: no (debug log text)
+        for ignored in checked.ignored.prefix(Self.largestIgnoredLog) {
+            let id = Self.logged(ignored.key.id, isKnown: ignored.idIsKnown)
+            let language = Self.logged(ignored.key.language, isKnown: ignored.languageIsKnown)
+            log("INTERFACE_TEXT_IGNORED: line \(id) in \(language): \(ignored.reason.logSentence)") // l10n: no (debug log text)
+        }
+        if checked.ignored.count > Self.largestIgnoredLog {
+            log("INTERFACE_TEXT_IGNORED: and \(checked.ignored.count - Self.largestIgnoredLog) more lines") // l10n: no (debug log text)
         }
     }
 
-    /// `text` as the log may hold it. An ID or a language code is ASCII letters, digits, and dots; the person's file may
-    /// hold anything as a key, so a key is kept to those characters and to 64 of them, and shown as a count otherwise.
-    nonisolated static func loggable(_ text: String) -> String {
-        let allowed = text.unicodeScalars.allSatisfy { scalar in
-            (0x30...0x39).contains(scalar.value) || (0x41...0x5A).contains(scalar.value) || (0x61...0x7A).contains(scalar.value)
-                || scalar == "." || scalar == "-"
-        }
-        guard allowed, text.count <= 64 else { return "(\(text.count) characters)" } // l10n: no (debug log text)
-        return text
+    /// `key` as the log may hold it: as it is when the app knows it (an ID the pack has, a language it carries), since those are
+    /// the app's own words; any other key is the person's content, so only its length is logged.
+    nonisolated static func logged(_ key: String, isKnown: Bool) -> String {
+        isKnown ? key : "(\(key.count) characters)" // l10n: no (debug log text)
     }
 
     // MARK: - Writing for Edit Interface Text…
@@ -246,6 +288,8 @@ final class InterfaceTextOverrides: ObservableObject {
         case written
         /// The file was left as it is: it has the language, or the person is mending it.
         case leftAsItIs
+        /// The file's `version` is not one this TextMouth knows, so it was left as it is.
+        case unknownVersion
         /// The file could not be written; the system's reason, in English, for the log.
         case failed(String)
     }
@@ -256,29 +300,41 @@ final class InterfaceTextOverrides: ObservableObject {
     /// Fills the file for editing, on the person's request only (the Mac's Edit Interface Text…): when the file does not
     /// exist yet, or lacks the interface language, it is written with every line of the language as the pack has it now
     /// (`InterfaceTextOverridesWriter.filled`); otherwise it is left as it is. A file only in the cloud is never written
-    /// over: it is left as it is, for the editor to download.
-    func fillFileForEditing(language: String = InterfaceLanguage.current.language) -> FillResult {
+    /// over: it is left as it is, for the editor to download; neither is a file whose `version` is not known. The reading,
+    /// the checking, and the writing of a file of about 2 MB run on a background queue.
+    func fillFileForEditing(language: String = InterfaceLanguage.current.language) async -> FillResult {
         guard !isUnavailable() else { return .failed("the data directory is not available") } // l10n: no (debug log text)
         let url = fileURL()
+        let engine = engine
+        let result = await OffMainWork.run { Self.fill(url, language: language, engine: engine) }
+        if result == .written {
+            // The watcher is told at once, and the file read again, so what was written shows as the lines in force (none,
+            // since every line equals its base).
+            watcher.rearm()
+            reload()
+        }
+        return result
+    }
+
+    /// The work of `fillFileForEditing`, off the main thread.
+    private nonisolated static func fill(_ url: URL, language: String, engine: InterfaceTextEngine) -> FillResult {
         var existing: Data?
         do {
-            existing = try DatalessFiles.withoutDownloading { try Data(contentsOf: url) }
+            guard let bytes = try bytes(at: url) else { return .leftAsItIs }
+            existing = bytes
         } catch {
             if DatalessFiles.isDownloadRefusal(error) { return .leftAsItIs }
-            guard Self.isMissingFile(error) else { return .failed(Self.describe(error)) }
+            guard isMissingFile(error) else { return .failed(describe(error)) }
         }
+        if let existing, InterfaceTextOverridesWriter.hasUnknownVersion(existing) { return .unknownVersion }
         guard let reference = engine.reference(language: language),
               let data = InterfaceTextOverridesWriter.filled(existing: existing, reference: reference)
         else { return .leftAsItIs }
         do {
             try data.write(to: url, options: .atomic)
         } catch {
-            return .failed(Self.describe(error))
+            return .failed(describe(error))
         }
-        // The watcher is told at once, and the file read again, so what was written shows as the lines in force (none,
-        // since every line equals its base).
-        watcher.rearm()
-        reload()
         return .written
     }
 
