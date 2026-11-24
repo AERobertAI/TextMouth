@@ -117,7 +117,9 @@ Run `make bump-minor` instead when that day holds a change that is not backward 
 - Commit the bump on its own;
 - add the day's dated section to the top of `docs/user/changelog.md` with one plain sentence per change (a MINOR section first says what an older TextMouth can no longer do with the library);
 - tag the commit the user is to install as `vX.Y.Z` with an annotated tag (the orchestrator pushes tags only at a stable release, with main, as AGENTS.md says);
-- run `make release-goldens` once before the user installs, and again after a change to the Release build settings (`Scripts/size_settings.py` among them), through `Scripts/agents/run_locked.py` while other agents work ([The Release golden tests](../developer/building.md#the-release-golden-tests));
+- run `make release-goldens` before the user installs, and after a change to the Release build settings (`Scripts/size_settings.py`), through `Scripts/agents/run_locked.py` while other agents work ([The Release golden tests](../developer/building-release.md#the-release-golden-tests)).
+  On a Mac it tests the light profile; the full build's golden tests wait for a GitHub job (TL22);
+- never build the full profile on the Mac (`make install`, `make release`, `SIZE_PROFILE=full`): its link takes several GB of memory and once froze the user's Mac, and installing is the user's;
 - and record the bump in the TODO.
 
 MAJOR stays 0 until the user calls TextMouth released.
