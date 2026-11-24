@@ -93,9 +93,11 @@ final class MacBrailleTableCatalogTests: XCTestCase {
     }
 
     /// A stored value is kept when it is a bundled table or names a Mac
-    /// table by a bare file name, without reading this Mac's folder: a Mac
+    /// table by a `mac:` value, without reading this Mac's folder: a Mac
     /// table no Mac has is kept too, to be refused by name when used
-    /// (review R3).
+    /// (review R3). A bare file name the pack lacks is kept only when it
+    /// names a table VoiceOver's folder offers, so an include of that folder
+    /// (`en-ueb-chardefs.uti`) is refused.
     func testStorableValues() {
         XCTAssertEqual(BrailleTableCatalog.storableValue("en-ueb-g2.ctb"), "en-ueb-g2.ctb")
         XCTAssertEqual(BrailleTableCatalog.storableValue("mac:no-such-table-on-any-mac.ctb"), "mac:no-such-table-on-any-mac.ctb")

@@ -809,22 +809,24 @@ enum BrailleTableCatalog {
     /// The value the setting and config.json keep for `value`: a bundled
     /// table's file name when the bundle offers it, and a Mac table's value
     /// as it is when it names one by a bare file name
-    /// (`BrailleTableSource.isMacValue(_:)`); nil for anything else. It
-    /// never reads this Mac's folder (review R3), so reading the setting or
-    /// decoding config.json, which happens on the main thread at every
-    /// launch, never reads the Mac's table headers. A Mac table this Mac
-    /// does not offer is kept so, and refused by name when it is used
-    /// (decision 5).
+    /// (`BrailleTableSource.isMacValue(_:)`); nil for anything else. A value
+    /// of either of those kinds never reads this Mac's folder (review R3), so
+    /// reading the setting or decoding config.json, which happens on the main
+    /// thread at every launch, does not read the Mac's table headers for it.
+    /// A Mac table this Mac does not offer is kept so, and refused by name
+    /// when it is used (decision 5).
     ///
-    /// On the Mac a bare value its own pack lacks, such as the `fr-bfu-g2.ctb` an iPhone stores (FR32), is kept too when
-    /// VoiceOver's folder has a file of that name: the same rule `table(withID:)` follows, found by looking for the file,
-    /// never by reading the folder's headers, so a shared config.json or a stored setting is not turned into nothing.
+    /// On the Mac a bare value its own pack lacks, such as the `fr-bfu-g2.ctb` an iPhone stores (FR32), is kept too when it
+    /// names a table the catalog lists from VoiceOver's folder, for reading or for export: the same rule `table(withID:)`
+    /// follows. A file of that folder that is no table (an include such as `en-ueb-chardefs.uti`, or a chardefs file) is
+    /// refused, as it was before the iPhone's values were kept. Judging it needs the folder's tables, which the app reads
+    /// once at launch in the background (`loadInBackground`), so a value the pack holds, the common case, never waits on it.
     static func storableValue(_ value: String) -> String? {
         if BrailleTableSource.isMacValue(value) { return value }
         if let found = bundledAll.first(where: { $0.id == value }) { return found.id }
         #if os(macOS)
-        if BrailleTableSource.isMacValue(BrailleTableSource.mac.storedValue(ofFile: value)),
-           FileManager.default.fileExists(atPath: macTablesFolder.appendingPathComponent(value).path) {
+        let asMacValue = BrailleTableSource.mac.storedValue(ofFile: value)
+        if BrailleTableSource.isMacValue(asMacValue), macTablesOfEveryDirection.contains(where: { $0.id == asMacValue }) {
             return value
         }
         #endif
