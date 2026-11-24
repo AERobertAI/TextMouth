@@ -269,8 +269,13 @@ struct PhoneSettingsView: View {
     /// A switch, with its hint below it for the eye where the Mac shows one.
     private func switchRow(_ item: PhoneSettingsSwitch, isOn: Binding<Bool>, isEnabled: Bool = true) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Toggle(item.title, isOn: isOn)
-                .accessibilityLabel(item.label)
+            // The label takes the height its words need at any text size: a label left to the row's own proposal was
+            // measured clipped by the accessibility audit at the largest size, with the same frame that passed other runs.
+            Toggle(isOn: isOn) {
+                Text(item.title)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .accessibilityLabel(item.label)
                 .accessibilityHint(item.hint ?? "")
             if item.showsHintAsCaption, let hint = item.hint {
                 caption(hint)
@@ -286,6 +291,8 @@ struct PhoneSettingsView: View {
         Text(words)
             .font(.caption)
             .phoneSecondaryText()
+            // Wraps to as many lines as the words need at any text size, never cut.
+            .fixedSize(horizontal: false, vertical: true)
             .accessibilityHidden(true)
     }
 
