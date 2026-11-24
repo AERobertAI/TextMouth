@@ -40,7 +40,7 @@ final class BrailleEbaeFixesTests: XCTestCase {
         let helper = BrailleTranslator.Tool.helper
         var tool = helper
         tool.command = { mode, table, input, output in
-            helper.command(liblouisAlone && mode == "back" ? "back-liblouis" : mode, table, input, output)
+            try helper.command(liblouisAlone && mode == "back" ? "back-liblouis" : mode, table, input, output)
         }
         let print = try BrailleTranslator.$tool.withValue(tool, operation: reading)
         #endif
