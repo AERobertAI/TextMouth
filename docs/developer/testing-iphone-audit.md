@@ -111,6 +111,8 @@ Part of [TextMouth's documentation](../../README.md).
   - `testTheLibraryWithABookHoldsAtTheLargestText` audits the Library with a book, as it first appears and then scrolled once, since the summary row is below the first screen at this size.
     It accepts the system parts and `librarySummary`, and, scrolled, the three nameless findings.
   - `testSettingsHoldsAtTheLargestText` audits Settings as it first appears and then scrolled two screens down.
+    A list lays its rows out lazily and a swipe's momentum carries on after the swipe returns, so the audit must not read it mid-scroll.
+    The test first scrolls the whole list through once (`scrollThroughTheList`), so every row has been laid out, and before each audit waits for a still screen (`waitUntilStill`): the frames of every labeled element are the same on two reads half a second apart, for at most `patience`.
     It accepts the title and `unnamedUnsupported`, and, scrolled, the other two nameless findings.
     `PhoneValueRow` stacks the value under the name at these sizes, and the screenshots show nothing cut or overlapped.
   - `testAddToLibraryHoldsAtTheLargestText` audits the Add to Library sheet.
