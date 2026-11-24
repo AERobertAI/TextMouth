@@ -13,6 +13,7 @@ Every version of TextMouth, newest first, and what changed for you in each.
 
 ### Braille files with a stray long line
 - A braille file with a few lines longer than the rest no longer loses its centered headings, because TextMouth now leaves such stray lines out when it measures the page's width.
+- Every braille book is read again once at the first launch of this version, and your place follows its words; only a book with such stray lines reads differently.
 
 ### A smaller app
 - The Mac app is 18.2 MB, down from 22.4 MB, and the iPhone app 14.0 MB, down from 17.3 MB.

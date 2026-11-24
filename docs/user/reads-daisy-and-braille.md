@@ -178,6 +178,7 @@ Every format TextMouth reads, with how well each is tested, is in [the list of f
     For a book added before TextMouth kept a record of your edits, the launch fills in only an author that says Unknown, and leaves the title alone.
 - Every braille book is read again once for this, at the first launch after the update that added it (0.4.8), so a BRF added before it gets its title and author, and its text loses its running heads and change lines.
   Every braille book is read again once more at the first launch of 0.4.9 (braille page reader 1.1.1), for the running heads that differ only by a number.
+  Every braille book is read again once more at the first launch of 0.5.11 (braille page reader 1.1.2), so a few stray long lines no longer widen its pages (see Braille layout, above).
 
 ### BARD braille books
 <!-- id: bard-braille-books; keys: BARD, .bopf, braille package, volumes, NLS BARD Braille Package, Volume 1, spine, Import Folder; src: TextMouth/Parsers/BardBraillePackage.swift, TextMouth/Parsers/BrailleBookReader+Pages.swift, TextMouth/Parsers/BrailleFileReader.swift, TextMouth/Models/Book.swift, TextMouth/Services/FileImportService.swift -->
