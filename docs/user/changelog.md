@@ -4,6 +4,20 @@ Part of [TextMouth's documentation](../../README.md).
 
 Every version of TextMouth, newest first, and what changed for you in each.
 
+## 0.5.11 (November 23, 2026)
+
+### BARD braille books
+- TextMouth reads braille books from NLS BARD. Add the ZIP as you downloaded it or its unzipped folder, and on the Mac the book's .bopf file too, and TextMouth reads all of the book's volumes as one book.
+- In a book of several volumes, each volume starts with a heading, Volume 1, Volume 2, and so on, and the book's own headings sit one level below.
+- The title, the author, and the braille code, UEB or EBAE, contracted or uncontracted, come from the book itself.
+
+### Braille files with a stray long line
+- A braille file with a few lines longer than the rest no longer loses its centered headings, because TextMouth now leaves such stray lines out when it measures the page's width.
+
+### A smaller app
+- The Mac app is 18.2 MB, down from 22.4 MB, and the iPhone app 14.0 MB, down from 17.3 MB.
+- The compiler now optimizes the whole app at once for size, and the file that holds TextMouth's 25 languages is compressed better.
+
 ## 0.5.10 (November 23, 2026)
 
 ### Your own words for TextMouth's interface
