@@ -252,6 +252,32 @@ targetTemplates:
         Debug:
           TEXTMOUTH_TEST_DISPLAY_NAME: "TextMouth Test"
 
+  # The braille-table pack (FR40), for both apps: Scripts/packs/braille_tables.py builds
+  # BrailleTables.pack from liblouis's tables (Vendor/liblouis/tables), into the folder that
+  # holds the app's resources. The Mac's pack (profile mac) holds the 20 files the Mac app
+  # bundled before the pack; the iPhone's (profile iphone) holds every table whose license
+  # TextMouth may ship (Vendor/liblouis/TABLES-LICENSES.md). Each target says its profile in
+  # BRAILLE_TABLES_PROFILE. A postBuildScript, as PackInterfaceText is, with its inputs and
+  # its output declared so that Xcode runs it only when one of them changes, and its own
+  # stamp (in DERIVED_FILE_DIR) so that it does nothing when the content is the same. No raw
+  # table is in either app: `make check` fails an app that holds a liblouis tables folder.
+  PackBrailleTables:
+    postBuildScripts:
+      - name: Pack braille tables
+        script: /usr/bin/python3 -I -B "$SRCROOT/Scripts/packs/braille_tables.py" build --profile "$BRAILLE_TABLES_PROFILE" --tables "$SRCROOT/Vendor/liblouis/tables" --out "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/BrailleTables.pack" --stamp "$DERIVED_FILE_DIR/BrailleTables.pack.stamp"
+        inputFiles:
+          - $(SRCROOT)/Scripts/packs/braille_tables.py
+          - $(SRCROOT)/Scripts/packs/packfile.py
+          - $(SRCROOT)/Scripts/packs/braille_tables_mac.txt
+          - $(SRCROOT)/Vendor/liblouis/config.h
+          - $(SRCROOT)/Vendor/liblouis/tables
+        outputFiles:
+          - $(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/BrailleTables.pack
+        basedOnDependencyAnalysis: true
+    settings:
+      base:
+        ENABLE_USER_SCRIPT_SANDBOXING: NO
+
   # SwiftSoup 2.13.9, the HTML and XML parser, vendored in Vendor/SwiftSoup
   # (see its README.md): the release's own source with attributes changed
   # and nothing else, written by Scripts/vendor/swiftsoup/make_vendor.py. A
@@ -283,6 +309,7 @@ targets:
     type: application
     templates:
       - PackInterfaceText
+      - PackBrailleTables
     platform: macOS
     sources:
       # Every source file, less the iOS app's own folder: a new file is
@@ -295,15 +322,11 @@ targets:
           # The String Catalog is the pack's source, not a resource: neither app compiles it
           # (FR39 phase 8), so Apple's language tables are not in the bundle.
           - "Localization/Localizable.xcstrings"
-      # liblouis's braille tables (FMT21), copied unchanged as one folder
-      # into Contents/Resources/liblouis/tables, where the braille helper
-      # finds them (see the liblouis target below).
-      - path: Vendor/liblouis/tables
-        type: folder
-        buildPhase:
-          copyFiles:
-            destination: resources
-            subpath: liblouis
+      # liblouis's braille tables are no resource: the "Pack braille tables" phase
+      # (PackBrailleTables) packs the four English tables and what they include
+      # into Contents/Resources/BrailleTables.pack, and the app unpacks the ones
+      # it needs into its Caches folder at first use, where the braille helper
+      # finds them (FR40; see the liblouis target below).
       # The licences of the code TextMouth bundles, copied unchanged from the
       # vendored files into Contents/Resources/Licenses, one folder for each:
       # liblouis (FMT21) is under the GNU Lesser General Public License 2.1,
@@ -416,6 +439,8 @@ targets:
         CODE_SIGN_IDENTITY: "-"
         PRODUCT_NAME: TextMouth
         GENERATE_INFOPLIST_FILE: false
+        # What the "Pack braille tables" phase packs (PackBrailleTables): the Mac's 20 files.
+        BRAILLE_TABLES_PROFILE: mac
         # Where Swift finds the LAME module (Vendor/lame/include/module.modulemap),
         # the exception catcher's (Vendor/ObjCExceptionCatcher/include/module.modulemap),
         # the system bzip2's, through which the interface-text pack's reader links libbz2
@@ -587,6 +612,7 @@ targets:
     type: application
     templates:
       - PackInterfaceText
+      - PackBrailleTables
     platform: iOS
     deploymentTarget: "26.0"
     sources:
@@ -596,16 +622,10 @@ targets:
           - "Resources/**"
           # The String Catalog is the pack's source, not a resource (as in the Mac target).
           - "Localization/Localizable.xcstrings"
-      # liblouis's braille tables (DR34), copied unchanged as one folder into
-      # the app's liblouis/tables, as the Mac app copies them, where the
-      # braille translation reads them in place: the only tables the iPhone
-      # ever compiles.
-      - path: Vendor/liblouis/tables
-        type: folder
-        buildPhase:
-          copyFiles:
-            destination: resources
-            subpath: liblouis
+      # liblouis's braille tables are no resource here either: the "Pack braille tables"
+      # phase (PackBrailleTables) packs every table TextMouth ships into the app's
+      # BrailleTables.pack, and the braille translation reads the ones it needs from the
+      # Caches folder, where the app unpacks them at first use (DR34, FR40).
       # The licences of every library the iPhone app links, and of the code
       # its shared readers follow, copied unchanged into the app's Licenses
       # folder, one folder for each, as the Mac app does (see the TextMouth
@@ -702,6 +722,8 @@ targets:
       base:
         PRODUCT_NAME: TextMouth
         PRODUCT_MODULE_NAME: TextMouth
+        # What the "Pack braille tables" phase packs (PackBrailleTables): every table TextMouth ships.
+        BRAILLE_TABLES_PROFILE: iphone
         # An identifier of its own: a free team registers it, the background
         # task identifiers must begin with it, and an iOS app running on a
         # Mac would otherwise collide with the Mac app's container and
@@ -998,6 +1020,7 @@ targets:
       - TextMouthProductionTests/BrailleImportTests.swift
       - TextMouthProductionTests/BrailleLayoutTests.swift
       - TextMouthProductionTests/BraillePageAnalyzerTests.swift
+      - TextMouthProductionTests/BrailleTablePackTests.swift
       - TextMouthProductionTests/BrailleTranslatorTests.swift
       - TextMouthProductionTests/CloudStorageContractTests.swift
       - TextMouthProductionTests/CloudTestDoubles.swift

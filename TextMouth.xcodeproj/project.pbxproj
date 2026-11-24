@@ -234,6 +234,7 @@
 		122D72EC05FB190C99EB90BC /* LibraryComparisonTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAFF689B265A0AB95DE3E583 /* LibraryComparisonTests.swift */; };
 		122DF8B8B2431FD690C3A51E /* LibraryAndSectionPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98556C9CF97D9116A6192403 /* LibraryAndSectionPolicyTests.swift */; };
 		1231DFE73A264BFBD272D41C /* QueryParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCCD067DF488C01AF4145D5B /* QueryParser.swift */; };
+		123C68A4FE28DA6C094657BD /* BrailleTablePack.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE26223C25D946F0EFED15C3 /* BrailleTablePack.swift */; };
 		12425F311629526B0F9921B6 /* CompletionGenerationReaderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0CE51BFB689CBF4303F135F /* CompletionGenerationReaderTests.swift */; };
 		12587A3FBED81391FF2AC3A5 /* SubstitutionsSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1989F1DC4B2A079BAB658FB4 /* SubstitutionsSettingsView.swift */; };
 		12722018CFC61AB2F078A681 /* LibraryIndexFailureReportingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D997C20EEE20A86719BAFC9 /* LibraryIndexFailureReportingTests.swift */; };
@@ -442,6 +443,7 @@
 		22B0A3681D373AB2C3168C6E /* PlaceRelocatorSharedRuleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16CF390E4F4B3B7800849DB1 /* PlaceRelocatorSharedRuleTests.swift */; };
 		22B8BD14FB99F235B0E3F556 /* AudioEditorModel+Saving.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAC8743B4259438DF7B07831 /* AudioEditorModel+Saving.swift */; };
 		230C0DED4B5B6FDE756214AE /* TextCacheFingerprint.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9998D0949EC2FB8D5A1216C4 /* TextCacheFingerprint.swift */; };
+		2310B838C7A4C125988B60E3 /* BrailleTableUnpacker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6562258E5E3F4EA59AD56E1A /* BrailleTableUnpacker.swift */; };
 		2329633D2DEAED41D00B2047 /* BrailleFileCodeReplaceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB845412C7344F489B8B2258 /* BrailleFileCodeReplaceTests.swift */; };
 		232EDDD34176B3169DC9C72D /* DiskImageDrill.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC61B26855110CF5898C20F8 /* DiskImageDrill.swift */; };
 		233D21424094B44C9DE63D2D /* PhoneScreenHolds.swift in Sources */ = {isa = PBXBuildFile; fileRef = E204B7384179A2F1C8B5F132 /* PhoneScreenHolds.swift */; };
@@ -541,6 +543,7 @@
 		2AD55EEB78FBC8B15B91179C /* InterfaceLanguage.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA37CE453A1179FD471A7BFA /* InterfaceLanguage.swift */; };
 		2AE306DB3D90BBA63D5A2315 /* PhoneAppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2591B9F1467361D3CDA4A378 /* PhoneAppModel.swift */; };
 		2AE7CF1EBD9159183ED85C8A /* ReaderViewModel+EditedText.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFB10241A4D89A2A85B74E6B /* ReaderViewModel+EditedText.swift */; };
+		2AF8FD2B8B3984545E3317F8 /* BrailleTablePack.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE26223C25D946F0EFED15C3 /* BrailleTablePack.swift */; };
 		2B073AFAE8C29827C3B736FC /* BookRereadChoosing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FB4EA2B01A1C83BA33DD197 /* BookRereadChoosing.swift */; };
 		2B2889D59CDD802B94232359 /* TextAnchorFinder.swift in Sources */ = {isa = PBXBuildFile; fileRef = B554241E3AD0887149023CFD /* TextAnchorFinder.swift */; };
 		2B33AC8E789BB53FA7C36D88 /* AudioOriginalPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B421E73458A5C5BDC2BBBF2 /* AudioOriginalPolicy.swift */; };
@@ -607,7 +610,6 @@
 		312F6E770BCB7FDA2FADBCDC /* SpeechRefusalSheetTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CE0128FC4D8CBCFBBB84437 /* SpeechRefusalSheetTests.swift */; };
 		3165FD0C677725EF0D651FD8 /* HtmlTreeBuilderState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5387A4EF3ED58D5B35B8BB02 /* HtmlTreeBuilderState.swift */; };
 		317DF1E3DD7600BA77100C43 /* pattern.c in Sources */ = {isa = PBXBuildFile; fileRef = 4BDF6D78507B24E702085BAB /* pattern.c */; };
-		318911E558FCC3DD1F3FC007 /* tables in CopyFiles */ = {isa = PBXBuildFile; fileRef = 09883462A53C249CB78C2482 /* tables */; };
 		318DE3BFE4F367A413B4F38B /* ImportProgressWordingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FDDCFC7923138030C4580C5 /* ImportProgressWordingTests.swift */; };
 		31ABAB4A932F21D9C7352D6C /* PhoneNavigationUnits.swift in Sources */ = {isa = PBXBuildFile; fileRef = C90B532399DA51DBF2FBE52D /* PhoneNavigationUnits.swift */; };
 		31B74F52A28B0D1E1003524B /* InterfaceTextOverridesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF899AC6F7AF6C12489EBE03 /* InterfaceTextOverridesTests.swift */; };
@@ -695,6 +697,7 @@
 		385E091B7907028CAAAAC89B /* EPUBPageListTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E409911ED32ECB321520D44 /* EPUBPageListTests.swift */; };
 		38643E1A08498476ACAF9548 /* BrailleBookPageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D9F0AF152658103B381C5B9 /* BrailleBookPageTests.swift */; };
 		386452B3A9D8A078EEBDE962 /* HeadingVocabularyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9CD237F330B64C86A072FF4 /* HeadingVocabularyTests.swift */; };
+		386A853F10F150841B879948 /* BrailleTablePackTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7ED7E699BB297551093883ED /* BrailleTablePackTests.swift */; };
 		387AF262A04E662020BEB836 /* TextAnchorRealReadings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8353A9046D06AF4368A0D20D /* TextAnchorRealReadings.swift */; };
 		388F26AB134FF826BAA4D70A /* TranscriptAccuracy.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6A0D773BF8F74475C20EA44 /* TranscriptAccuracy.swift */; };
 		38969EDCDE4FCEFAB40D1EE7 /* ZIPFoundation in Frameworks */ = {isa = PBXBuildFile; productRef = E1D510C21942802DDB141687 /* ZIPFoundation */; };
@@ -709,7 +712,6 @@
 		3A12681AC219F3639ECD6B15 /* LibraryViewModel+OggConversion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EC9BF4C615DF60966CC3385 /* LibraryViewModel+OggConversion.swift */; };
 		3A18A844C980B9137E785382 /* ListeningDayKeyMigrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87D36D271CEF23FFE5E2C89C /* ListeningDayKeyMigrationTests.swift */; };
 		3A50D0ADA2A05829B8A87083 /* Book.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20A7970E91CA6E948DFB0B82 /* Book.swift */; };
-		3A51785A5917A4A480610B55 /* tables in CopyFiles */ = {isa = PBXBuildFile; fileRef = 09883462A53C249CB78C2482 /* tables */; };
 		3A5EB7F2628ACD06F03227D9 /* AudioEditComposition.swift in Sources */ = {isa = PBXBuildFile; fileRef = 482C6A9E665B132940901E4F /* AudioEditComposition.swift */; };
 		3AA6839798BA588F9AE383CE /* MP3Encoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 231478495494DE4D0FDB2B13 /* MP3Encoder.swift */; };
 		3AADA59CDE3372DE119C5AE5 /* PhoneReaderVocabularyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 862515B8D643E5B1B087DB10 /* PhoneReaderVocabularyTests.swift */; };
@@ -1527,6 +1529,7 @@
 		7C447F0AB0E0D2F260133247 /* MOBIBookStructureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32380021A079E8D0F0840AE7 /* MOBIBookStructureTests.swift */; };
 		7C6735F173229332BBFC9536 /* FrontWindowKind.swift in Sources */ = {isa = PBXBuildFile; fileRef = 947A2B8E1DFAFE920F129FD8 /* FrontWindowKind.swift */; };
 		7C6DEB2D58D864EB8117D576 /* ImportRefusalTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAD9D58AE728EFE1B5DD5B0C /* ImportRefusalTestSupport.swift */; };
+		7C85AFA300A07742023662B1 /* BrailleTablePackTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7ED7E699BB297551093883ED /* BrailleTablePackTests.swift */; };
 		7C98AB66F14A45C3FA479AD7 /* AudioFilterRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 702BDA9CA984C68888D3832D /* AudioFilterRunner.swift */; };
 		7CB48ABD9A7727CEAB193153 /* TextEncodingImportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 204B41AB8BFCBDA4C779A441 /* TextEncodingImportTests.swift */; };
 		7CEAA674355B6F6B246BE185 /* cmark-gfm in Frameworks */ = {isa = PBXBuildFile; productRef = 05111FED4A4029757B11A261 /* cmark-gfm */; };
@@ -1624,6 +1627,7 @@
 		8502B27890E069899A3D9014 /* EPUBBlankChapterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC9AD76026E060E0E4A9C6AB /* EPUBBlankChapterTests.swift */; };
 		853D31F5E620359F8FE5053C /* TranscriptModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EAA5F081A65127198260665 /* TranscriptModelTests.swift */; };
 		855470C12B0208D172A36D6D /* MoveToLibrarySheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 273BB2031FD27AEF49E672F9 /* MoveToLibrarySheet.swift */; };
+		857B252C8E08210B0086590F /* BrailleTableUnpacker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6562258E5E3F4EA59AD56E1A /* BrailleTableUnpacker.swift */; };
 		857F242779B72D873D69A88F /* ReaderRequestStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C560ED228BECB71A8181B29B /* ReaderRequestStore.swift */; };
 		85AA840DB936925F96AD721E /* PodcastChapters.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0376DF82434987C42AD30989 /* PodcastChapters.swift */; };
 		85AEE697BE0D8045FC874F79 /* FeedRecordTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 593F507CF89D611AE2C62C3D /* FeedRecordTests.swift */; };
@@ -3267,20 +3271,20 @@
 		0AABD80E61E84073ACA0DB62 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = Licenses/WavPack;
+			dstPath = "Licenses/swift-cmark";
 			dstSubfolderSpec = 7;
 			files = (
-				A403CDD4AF53BA525D9A8BA5 /* COPYING in CopyFiles */,
+				7F45AD2B57BD2C0A720765D2 /* COPYING in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		1110009E1C26377EA9791632 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = liblouis;
+			dstPath = Licenses/ZIPFoundation;
 			dstSubfolderSpec = 7;
 			files = (
-				318911E558FCC3DD1F3FC007 /* tables in CopyFiles */,
+				3370DE8FDC01A3938CD98B7E /* LICENSE in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3297,31 +3301,32 @@
 		22F87EE1CD8EE45ABFA905DA /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = Licenses/liblouis;
+			dstPath = Licenses/SwiftSoup;
 			dstSubfolderSpec = 7;
 			files = (
-				6A2194EEB02426EF8CA8ED1F /* COPYING.LESSER in CopyFiles */,
-				7F7F033846B83E56E2E332D4 /* README in CopyFiles */,
+				8060835D3173CF79D3AAC057 /* LICENSE in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		38646AF7EBDB1D27AC1D1A34 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = Licenses/ZIPFoundation;
+			dstPath = Licenses/TrueAudio;
 			dstSubfolderSpec = 7;
 			files = (
-				3370DE8FDC01A3938CD98B7E /* LICENSE in CopyFiles */,
+				F670EE7321BFD5392BFC3FE0 /* COPYRIGHT in CopyFiles */,
+				B64321B34FC2B5BA08402448 /* README in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		43D860587E3D34D99DBE20EE /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = Licenses/ZIPFoundation;
+			dstPath = Licenses/liblouis;
 			dstSubfolderSpec = 7;
 			files = (
-				B53CF54032772DDA4A07FE3E /* LICENSE in CopyFiles */,
+				6A2194EEB02426EF8CA8ED1F /* COPYING.LESSER in CopyFiles */,
+				7F7F033846B83E56E2E332D4 /* README in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3338,6 +3343,38 @@
 		722FBEEA65BD1330BA160782 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
+			dstPath = Licenses/ZIPFoundation;
+			dstSubfolderSpec = 7;
+			files = (
+				B53CF54032772DDA4A07FE3E /* LICENSE in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9084BB8B81525DF351B483C8 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = Licenses/FFmpeg;
+			dstSubfolderSpec = 7;
+			files = (
+				0CB57D63797A2CB23667DA51 /* COPYING.LGPLv2.1 in CopyFiles */,
+				8AD9A5F1823B2868D241DD63 /* LICENSE.md in CopyFiles */,
+				AE61909BFC965F3A9F5A3772 /* README in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9279BF2ABA7F3526AB66874A /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = Licenses/SwiftSoup;
+			dstSubfolderSpec = 7;
+			files = (
+				8DC4D0E2FA5CA1FD85E21A03 /* LICENSE in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A39FC5304C4E02A9AD636B71 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
 			dstPath = "Licenses/foliate-js";
 			dstSubfolderSpec = 7;
 			files = (
@@ -3345,56 +3382,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		9084BB8B81525DF351B483C8 /* CopyFiles */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = Licenses/LAME;
-			dstSubfolderSpec = 7;
-			files = (
-				7FB7320636AAD01C531190FE /* COPYING in CopyFiles */,
-				943853340D2809882740233D /* LICENSE in CopyFiles */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		9279BF2ABA7F3526AB66874A /* CopyFiles */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "Licenses/swift-cmark";
-			dstSubfolderSpec = 7;
-			files = (
-				7F45AD2B57BD2C0A720765D2 /* COPYING in CopyFiles */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		9F57258FDEE304E9FBEBBDF0 /* CopyFiles */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "Licenses/foliate-js";
-			dstSubfolderSpec = 7;
-			files = (
-				90056498A62AF125B0A40193 /* LICENSE in CopyFiles */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		A39FC5304C4E02A9AD636B71 /* CopyFiles */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = Licenses/TrueAudio;
-			dstSubfolderSpec = 7;
-			files = (
-				AB4BEB5B8C2E800487E3E266 /* COPYRIGHT in CopyFiles */,
-				9982A0233B5090F0D459A278 /* README in CopyFiles */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		A8EA7A5970473F9D2BA7FBC3 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = Licenses/liblouis;
+			dstPath = Licenses/MonkeysAudio;
 			dstSubfolderSpec = 7;
 			files = (
-				0AD845456256B3A16D7C8818 /* COPYING.LESSER in CopyFiles */,
-				41F911ECAF492222AF723C10 /* README in CopyFiles */,
+				63226C27B2F3926F3C2FDEC5 /* License.txt in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3412,10 +3406,10 @@
 		BF489798E33F1F27D1434BD7 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = Licenses/SwiftSoup;
+			dstPath = "Licenses/foliate-js";
 			dstSubfolderSpec = 7;
 			files = (
-				8DC4D0E2FA5CA1FD85E21A03 /* LICENSE in CopyFiles */,
+				90056498A62AF125B0A40193 /* LICENSE in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3434,43 +3428,43 @@
 		C4DD7093AEE01EB21DD71ECD /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = Licenses/FFmpeg;
+			dstPath = Licenses/WavPack;
 			dstSubfolderSpec = 7;
 			files = (
-				0CB57D63797A2CB23667DA51 /* COPYING.LGPLv2.1 in CopyFiles */,
-				8AD9A5F1823B2868D241DD63 /* LICENSE.md in CopyFiles */,
-				AE61909BFC965F3A9F5A3772 /* README in CopyFiles */,
+				A403CDD4AF53BA525D9A8BA5 /* COPYING in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		C5522D8A663C635367E6426B /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = Licenses/SwiftSoup;
+			dstPath = Licenses/TrueAudio;
 			dstSubfolderSpec = 7;
 			files = (
-				8060835D3173CF79D3AAC057 /* LICENSE in CopyFiles */,
+				AB4BEB5B8C2E800487E3E266 /* COPYRIGHT in CopyFiles */,
+				9982A0233B5090F0D459A278 /* README in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		C91BEB2BE96CF7A4E3259148 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = Licenses/MonkeysAudio;
+			dstPath = Licenses/liblouis;
 			dstSubfolderSpec = 7;
 			files = (
-				63226C27B2F3926F3C2FDEC5 /* License.txt in CopyFiles */,
+				0AD845456256B3A16D7C8818 /* COPYING.LESSER in CopyFiles */,
+				41F911ECAF492222AF723C10 /* README in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		CC116469FE973F113685AE31 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = Licenses/TrueAudio;
+			dstPath = Licenses/LAME;
 			dstSubfolderSpec = 7;
 			files = (
-				F670EE7321BFD5392BFC3FE0 /* COPYRIGHT in CopyFiles */,
-				B64321B34FC2B5BA08402448 /* README in CopyFiles */,
+				7FB7320636AAD01C531190FE /* COPYING in CopyFiles */,
+				943853340D2809882740233D /* LICENSE in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3493,16 +3487,6 @@
 			dstSubfolderSpec = 7;
 			files = (
 				97915D3B357764DFC5D554AB /* COPYING in CopyFiles */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		FF0E856FCEDDA3C191BC39A0 /* CopyFiles */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = liblouis;
-			dstSubfolderSpec = 7;
-			files = (
-				3A51785A5917A4A480610B55 /* tables in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3577,7 +3561,6 @@
 		09029F21B8236C81E8327DB1 /* RemovedFromLibraryMarker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemovedFromLibraryMarker.swift; sourceTree = "<group>"; };
 		0916D8A1D4B45FEC3CBC8A5B /* VoiceCatalogTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceCatalogTests.swift; sourceTree = "<group>"; };
 		0966AD0F70950EE774A4826C /* MOBIRealBookTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MOBIRealBookTests.swift; sourceTree = "<group>"; };
-		09883462A53C249CB78C2482 /* tables */ = {isa = PBXFileReference; lastKnownFileType = folder; name = tables; path = Vendor/liblouis/tables; sourceTree = SOURCE_ROOT; };
 		09C295EF6A927BE6077EE5BF /* VoiceOverAnnouncerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceOverAnnouncerTests.swift; sourceTree = "<group>"; };
 		09EDB76336CF260A5F765436 /* ODTReaderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ODTReaderTests.swift; sourceTree = "<group>"; };
 		0A00167EDEB4C3FB86260D10 /* AudioEditBookRender.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEditBookRender.swift; sourceTree = "<group>"; };
@@ -4336,6 +4319,7 @@
 		64D30472BB7C7CC9D8D4F7B9 /* CompoundFileTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompoundFileTests.swift; sourceTree = "<group>"; };
 		65114ED487BA92F337B99C40 /* ImportFuzzMutator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportFuzzMutator.swift; sourceTree = "<group>"; };
 		654A6E284BD07F90C8BCFCCC /* MetadataReaderVersionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetadataReaderVersionTests.swift; sourceTree = "<group>"; };
+		6562258E5E3F4EA59AD56E1A /* BrailleTableUnpacker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrailleTableUnpacker.swift; sourceTree = "<group>"; };
 		658547559121347327EE4D06 /* PhoneNowPlayingInfoTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneNowPlayingInfoTests.swift; sourceTree = "<group>"; };
 		6595E8E60E1A98D56206F7C1 /* BrailleCodeRereadTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrailleCodeRereadTests.swift; sourceTree = "<group>"; };
 		65975C06BFA32E3D48086801 /* BookSearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookSearchView.swift; sourceTree = "<group>"; };
@@ -4521,6 +4505,7 @@
 		7E771FFBB9272C947C5E3C20 /* PlaceSnapshotRecoveryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaceSnapshotRecoveryTests.swift; sourceTree = "<group>"; };
 		7E998E064ABDC5639F00FF48 /* metadata.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = metadata.c; sourceTree = "<group>"; };
 		7E9E6333DD9D197655A5C717 /* ReaderSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReaderSnapshot.swift; sourceTree = "<group>"; };
+		7ED7E699BB297551093883ED /* BrailleTablePackTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrailleTablePackTests.swift; sourceTree = "<group>"; };
 		7EF58037BD59E772E8386B9C /* InProcessEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InProcessEngine.swift; sourceTree = "<group>"; };
 		7F08B442AB929E1B25CC8FD7 /* PageImageArchiveTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageImageArchiveTests.swift; sourceTree = "<group>"; };
 		7F60415B600D803D2F8D8AD8 /* TextEncodingBookInfoTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextEncodingBookInfoTests.swift; sourceTree = "<group>"; };
@@ -5275,6 +5260,7 @@
 		DD447A0AC11EA0281C75E54B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		DD8831C5F19702544D785ECF /* AudioBuiltInFilter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioBuiltInFilter.swift; sourceTree = "<group>"; };
 		DE0343B2CDF1DACFD97FFFEF /* quantize.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = quantize.c; sourceTree = "<group>"; };
+		DE26223C25D946F0EFED15C3 /* BrailleTablePack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrailleTablePack.swift; sourceTree = "<group>"; };
 		DE6A5C6D0EA499925EF7184E /* transcript-cleanup.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "transcript-cleanup.json"; sourceTree = "<group>"; };
 		DE828500AAF872513D7C6FEC /* MarkupFuzzGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkupFuzzGenerator.swift; sourceTree = "<group>"; };
 		DE8EB77F940C8880B8A24F75 /* DOCXPictureAttributeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DOCXPictureAttributeTests.swift; sourceTree = "<group>"; };
@@ -5669,7 +5655,6 @@
 			isa = PBXGroup;
 			children = (
 				69193665C96140EC59B3F228 /* pack */,
-				09883462A53C249CB78C2482 /* tables */,
 				C77F31DA31BAF4B183D1DFC2 /* brf */,
 				56D234399AE02471057FAE2D /* FFmpeg */,
 				CFEE772A98FE2477CC004F27 /* foliate-js */,
@@ -6283,6 +6268,8 @@
 		768860AA27A7B4D75067FACC /* Packs */ = {
 			isa = PBXGroup;
 			children = (
+				DE26223C25D946F0EFED15C3 /* BrailleTablePack.swift */,
+				6562258E5E3F4EA59AD56E1A /* BrailleTableUnpacker.swift */,
 				C80E4011CB6F111965BD5C0E /* PackContainer.swift */,
 			);
 			path = Packs;
@@ -7081,6 +7068,7 @@
 				D74ECF5C1E9782911D9CB5D5 /* BrailleSettingsViewTests.swift */,
 				C2A9614130B87AF85BFCC298 /* BrailleTableCatalogTests.swift */,
 				4D6EE0F7DD696C64E629BCD2 /* BrailleTableGuessTests.swift */,
+				7ED7E699BB297551093883ED /* BrailleTablePackTests.swift */,
 				21DCC7EAD2395E4AF650BF99 /* BrailleTranslatorTests.swift */,
 				DF9FA767F3F6013D0359B401 /* BuildIdentityTests.swift */,
 				BC18FF7AF9D78D55959F862D /* BundledLicenseTests.swift */,
@@ -8383,9 +8371,9 @@
 				6B0B86279E79DE3F37623761 /* CopyFiles */,
 				AEEC52048DCF4B83D3509FCE /* CopyFiles */,
 				1C95A964EBB5395E1F896244 /* CopyFiles */,
-				FF0E856FCEDDA3C191BC39A0 /* CopyFiles */,
 				BAC07B34CF68D2587F4A0963 /* Frameworks */,
 				C7D51574CF818E9E0B89197A /* Pack interface text */,
+				D1DCA5A2F8A0BB6C76FA2DC7 /* Pack braille tables */,
 			);
 			buildRules = (
 			);
@@ -8622,10 +8610,10 @@
 				A8EA7A5970473F9D2BA7FBC3 /* CopyFiles */,
 				CC116469FE973F113685AE31 /* CopyFiles */,
 				0AABD80E61E84073ACA0DB62 /* CopyFiles */,
-				9F57258FDEE304E9FBEBBDF0 /* CopyFiles */,
 				5B26D5AA6DDCEFAEAEB67A60 /* Frameworks */,
 				C0C794FB23B67989FD99D8E3 /* Embed Dependencies */,
 				59ED10AD1BDD8592D9AE5A35 /* Pack interface text */,
+				D839CE08A13319C206E4B9EE /* Pack braille tables */,
 			);
 			buildRules = (
 			);
@@ -8860,6 +8848,30 @@
 			shellPath = /bin/sh;
 			shellScript = "/usr/bin/python3 -I -B \"$SRCROOT/Scripts/l10n/pack.py\" build --catalog \"$SRCROOT/TextMouth/Localization/Localizable.xcstrings\" --out \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Strings.pack\" --remove-apple-tables --display-name \"$TEXTMOUTH_TEST_DISPLAY_NAME\" --stamp \"$DERIVED_FILE_DIR/Strings.pack.stamp\"";
 		};
+		D1DCA5A2F8A0BB6C76FA2DC7 /* Pack braille tables */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/Scripts/packs/braille_tables.py",
+				"$(SRCROOT)/Scripts/packs/packfile.py",
+				"$(SRCROOT)/Scripts/packs/braille_tables_mac.txt",
+				"$(SRCROOT)/Vendor/liblouis/config.h",
+				"$(SRCROOT)/Vendor/liblouis/tables",
+			);
+			name = "Pack braille tables";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/BrailleTables.pack",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "/usr/bin/python3 -I -B \"$SRCROOT/Scripts/packs/braille_tables.py\" build --profile \"$BRAILLE_TABLES_PROFILE\" --tables \"$SRCROOT/Vendor/liblouis/tables\" --out \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/BrailleTables.pack\" --stamp \"$DERIVED_FILE_DIR/BrailleTables.pack.stamp\"";
+		};
 		D4006D4DC2CA1958609F2B67 /* Copy Swift Objective-C Interface Header */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -8892,6 +8904,30 @@
 			shellPath = /bin/sh;
 			shellScript = "ditto \"${SCRIPT_INPUT_FILE_0}\" \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 		};
+		D839CE08A13319C206E4B9EE /* Pack braille tables */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/Scripts/packs/braille_tables.py",
+				"$(SRCROOT)/Scripts/packs/packfile.py",
+				"$(SRCROOT)/Scripts/packs/braille_tables_mac.txt",
+				"$(SRCROOT)/Vendor/liblouis/config.h",
+				"$(SRCROOT)/Vendor/liblouis/tables",
+			);
+			name = "Pack braille tables";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/BrailleTables.pack",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "/usr/bin/python3 -I -B \"$SRCROOT/Scripts/packs/braille_tables.py\" build --profile \"$BRAILLE_TABLES_PROFILE\" --tables \"$SRCROOT/Vendor/liblouis/tables\" --out \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/BrailleTables.pack\" --stamp \"$DERIVED_FILE_DIR/BrailleTables.pack.stamp\"";
+		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -8923,6 +8959,7 @@
 				410530AF3CAE3616F9A5CBFE /* BrailleLayoutTests.swift in Sources */,
 				648DD12990BA3CCEC0E4FC44 /* BrailleLibraryTests.swift in Sources */,
 				5C414DDE898363AE3B14B86E /* BraillePageAnalyzerTests.swift in Sources */,
+				7C85AFA300A07742023662B1 /* BrailleTablePackTests.swift in Sources */,
 				795DE157CBB305F7774EC601 /* BrailleTranslatorTests.swift in Sources */,
 				EB1241A73FD78A15D872D539 /* BundledLicenseIOSTests.swift in Sources */,
 				1DF5B6E368E3F8BAD454E37D /* CloudStorageContractTests.swift in Sources */,
@@ -9233,6 +9270,7 @@
 				65B9C9DF4B771B62D4B00DE8 /* BrailleSettingsViewTests.swift in Sources */,
 				B16BBDC6F50633D9BBE57B5F /* BrailleTableCatalogTests.swift in Sources */,
 				D6ED0E2D4EC9C26D6BB4448E /* BrailleTableGuessTests.swift in Sources */,
+				386A853F10F150841B879948 /* BrailleTablePackTests.swift in Sources */,
 				341DA372EF8FD040EB2A252D /* BrailleTranslatorTests.swift in Sources */,
 				146A7A5E7BCA6C21044F99B8 /* BugRegressionTests.swift in Sources */,
 				B00F229176E72DD2B394AB20 /* BuildIdentityTests.swift in Sources */,
@@ -10307,6 +10345,8 @@
 				E44628D7C27151E4F2ACE968 /* BrailleSettingsView.swift in Sources */,
 				A8B58A8E997575544D7BE7A6 /* BrailleTableCatalog.swift in Sources */,
 				E904971A3318CBD635B2B399 /* BrailleTableOrigin.swift in Sources */,
+				2AF8FD2B8B3984545E3317F8 /* BrailleTablePack.swift in Sources */,
+				857B252C8E08210B0086590F /* BrailleTableUnpacker.swift in Sources */,
 				C743B440AC5C1A5C5FDF0A26 /* BrailleTitlePage.swift in Sources */,
 				42FBD9DFE86FDFDDA519A0CD /* BrailleTranslator.swift in Sources */,
 				224C5E69897A8AC4AB2D40CF /* BuildIdentity.swift in Sources */,
@@ -11307,6 +11347,8 @@
 				93166638619B55C5408BA293 /* BrailleSettingsView.swift in Sources */,
 				26E330C223B57A39F702B43C /* BrailleTableCatalog.swift in Sources */,
 				24F82EFF4E2720DE5DB69F08 /* BrailleTableOrigin.swift in Sources */,
+				123C68A4FE28DA6C094657BD /* BrailleTablePack.swift in Sources */,
+				2310B838C7A4C125988B60E3 /* BrailleTableUnpacker.swift in Sources */,
 				A77375F24303F4DF0D329B29 /* BrailleTitlePage.swift in Sources */,
 				E3FC369D83F5787C38572600 /* BrailleTranslator.swift in Sources */,
 				3BD16D6250648B0752307F27 /* BuildIdentity.swift in Sources */,
@@ -12274,6 +12316,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				BRAILLE_TABLES_PROFILE = iphone;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -12455,6 +12498,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				BRAILLE_TABLES_PROFILE = mac;
 				CODE_SIGN_ENTITLEMENTS = TextMouth/Resources/TextMouth.entitlements;
 				CODE_SIGN_IDENTITY = "-";
 				COMBINE_HIDPI_IMAGES = YES;
@@ -12856,6 +12900,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				BRAILLE_TABLES_PROFILE = iphone;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -13016,6 +13061,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				BRAILLE_TABLES_PROFILE = mac;
 				CODE_SIGN_ENTITLEMENTS = TextMouth/Resources/TextMouth.entitlements;
 				CODE_SIGN_IDENTITY = "-";
 				COMBINE_HIDPI_IMAGES = YES;
