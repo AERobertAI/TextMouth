@@ -330,6 +330,7 @@ check-selftest:
 	@python3 -I -B -m unittest discover -s .claude/skills/issue-library/tests
 	@python3 -I -B Scripts/ios/app-size.py --selftest
 	@python3 -I -B -m unittest discover -s Scripts/l10n/tests
+	@python3 -I -B -m unittest discover -s Scripts/packs/tests
 
 ## Build the iPhone app for a device (Release, unsigned, small code) in its own
 ## derived data folder, build/ios-size-DerivedData (an absolute path, which

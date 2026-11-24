@@ -12,6 +12,8 @@ Standard library only, and it runs under Xcode's /usr/bin/python3 (3.9): nothing
     pack.py corrupt-fixture --catalog PATH --out PATH    (a test-only pack: see below)
 
 The format, version 2 (little-endian). research/STRINGS-SYSTEM-DESIGN-2026-11-21.md, "The pack", is the specification.
+The framing (the header, the directory, the compression) is the container's, in Scripts/packs/packfile.py, which
+TextMouth's other pack, BrailleTables.pack, is written in too; what follows is how this pack uses it.
 - The header, 48 bytes: the magic `TMSP`, the version (u16), flags (u16, zero), the SHA-256 of the bytes of the catalog
   file the pack was built from (32 bytes: `shasum -a 256` of the file gives it), the number of IDs (u32), and the number of
   blobs (u32).
@@ -51,22 +53,27 @@ the catalog's hash, this file's, and the output's, so a build skips when none ha
 from __future__ import annotations
 
 import argparse
-import bz2
 import hashlib
 import json
-import lzma
 import os
 import re
-import struct
 import sys
 from dataclasses import dataclass
 from pathlib import Path
 
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+# The container both packs share (FR40): the framing and the compression live in Scripts/packs/packfile.py.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "packs"))
 
 import catalog  # noqa: E402  (imported by path, after sys.path is set)
 import translate  # noqa: E402
+import packfile  # noqa: E402
+# The container's names stay available as `pack.NAME`, as they were before the container was shared.
+from packfile import (  # noqa: E402,F401
+    DIRECTORY_RECORD, HEADER, METHOD_BZIP2, METHOD_LZMA, METHOD_NAMES, NAME_BYTES, PackError, compress, compress_bzip2,
+    compress_smallest, compress_with, window_size,
+)
 
 # ---------------------------------------------------------------------------------------------------------------
 # The format's constants.
@@ -74,17 +81,7 @@ import translate  # noqa: E402
 
 MAGIC = b"TMSP"
 FORMAT_VERSION = 2
-# The magic, the version, the flags, the catalog's SHA-256, the number of IDs, the number of blobs.
-HEADER = struct.Struct("<4sHH32sII")
-# The name, then the offset, the compressed size, the raw size, the entry count, and the compression method.
-DIRECTORY_RECORD = struct.Struct("<12sIIIII")
-# The compression methods a directory record may name, and each one's name for the size report. LZMA is first, so that
-# it wins a tie.
-METHOD_LZMA, METHOD_BZIP2 = 0, 1
-METHOD_NAMES = {METHOD_LZMA: "lzma", METHOD_BZIP2: "bzip2"}
-# bzip2's level: the largest block (900 kB), which no blob here fills more than once.
-BZIP2_LEVEL = 9
-NAME_BYTES = 12
+# (The header, the directory record, and the compression methods are the container's: Scripts/packs/packfile.py.)
 # The marker that starts a plural entry, and the separator between its forms; every entry ends with the terminator.
 PLURAL_MARK = "\x01"
 FORM_SEPARATOR = "\x01"
@@ -96,21 +93,10 @@ ID_PATTERN = re.compile(r"[a-z][A-Za-z0-9]*(\.[a-z][A-Za-z0-9]*){1,3}")
 MAX_ID_LENGTH = 48
 # What an entry's format specifiers may be: `%@` and `%lld`, each with an optional position, and nothing else.
 ALLOWED_SPECIFIER = re.compile(r"%(?:[1-9][0-9]*\$)?(?:@|lld)")
-# LZMA2's smallest dictionary, and the preset every blob is compressed with.
-MIN_WINDOW = 4096
-PRESET = 9 | lzma.PRESET_EXTREME
 # The most refusals a report lists before it says how many more there were.
 LISTED_PROBLEMS = 200
 # The entries a `compare` lists before it stops.
 LISTED_DIFFERENCES = 50
-
-
-class PackError(Exception):
-    """A pack or an input that cannot be used; `problems` are sentences, each naming its key and language."""
-
-    def __init__(self, problems):
-        self.problems = [problems] if isinstance(problems, str) else list(problems)
-        super().__init__("; ".join(self.problems[:3]))
 
 
 # ---------------------------------------------------------------------------------------------------------------
@@ -371,46 +357,6 @@ def build_plan(catalog_path, max_id_length=MAX_ID_LENGTH):
 # Writing a pack.
 # ---------------------------------------------------------------------------------------------------------------
 
-def window_size(raw_size):
-    """The LZMA window for a blob of `raw_size` bytes: the smallest power of two at or above it, and at least 4 KiB."""
-    size = MIN_WINDOW
-    while size < raw_size:
-        size *= 2
-    return size
-
-
-def compress(raw, windowed=True):
-    """The xz stream of `raw` (LZMA2, preset 9 extreme); with `windowed`, its dictionary is `window_size(len(raw))`,
-    otherwise the preset's own (64 MiB)."""
-    spec = {"id": lzma.FILTER_LZMA2, "preset": PRESET}
-    if windowed:
-        spec["dict_size"] = window_size(len(raw))
-    return lzma.compress(raw, format=lzma.FORMAT_XZ, filters=[spec])
-
-
-def compress_bzip2(raw):
-    """The bzip2 stream of `raw`, at BZIP2_LEVEL."""
-    return bz2.compress(raw, BZIP2_LEVEL)
-
-
-def compress_with(method, raw, windowed=True):
-    """The bytes of `raw` compressed by `method` (a METHOD_ code); an unknown method is refused."""
-    if method == METHOD_LZMA:
-        return compress(raw, windowed)
-    if method == METHOD_BZIP2:
-        return compress_bzip2(raw)
-    raise PackError(f"there is no compression method {method}")
-
-
-def compress_smallest(raw, windowed=True):
-    """(method, bytes) of the smaller of `raw`'s two compressions, LZMA (`compress`) and bzip2 (`compress_bzip2`);
-    LZMA when they are the same size. Both compressors are deterministic, so the same raw bytes choose the same way."""
-    lzma_bytes, bzip2_bytes = compress(raw, windowed), compress_bzip2(raw)
-    if len(bzip2_bytes) < len(lzma_bytes):
-        return METHOD_BZIP2, bzip2_bytes
-    return METHOD_LZMA, lzma_bytes
-
-
 def raw_blob(entries):
     """The raw bytes of a blob: each entry as encode_entry writes it (an ID or a note is its own text), then a NUL."""
     return "".join(encode_entry(entry) + TERMINATOR for entry in entries).encode("utf-8")
@@ -425,15 +371,7 @@ def assemble(digest, id_count, blobs, windowed=True, methods=None):
     """The bytes of a pack: the header, the directory, and the blobs, each compressed by the method that makes it smaller.
     `blobs` is [(name, raw, count)]. `methods` ({blob name: METHOD_ code}) forces a method for the blobs it names: for the
     test fixtures only, since a shipped pack always takes the smaller."""
-    methods = methods or {}
-    packed = [(methods[name], compress_with(methods[name], raw, windowed)) if name in methods else compress_smallest(raw, windowed)
-              for name, raw, _ in blobs]
-    offset = HEADER.size + DIRECTORY_RECORD.size * len(blobs)
-    directory = b""
-    for (name, raw, count), (method, data) in zip(blobs, packed):
-        directory += DIRECTORY_RECORD.pack(name.encode("ascii"), offset, len(data), len(raw), count, method)
-        offset += len(data)
-    return HEADER.pack(MAGIC, FORMAT_VERSION, 0, digest, id_count, len(blobs)) + directory + b"".join(data for _, data in packed)
+    return packfile.assemble(MAGIC, FORMAT_VERSION, digest, id_count, blobs, windowed, methods)
 
 
 def build_bytes(plan, windowed=True):
@@ -487,47 +425,23 @@ class Pack:
 def read_pack(data):
     """Decodes the pack `data` (bytes), checking the magic, the version, every blob's bounds, its raw size, its entry
     count, its terminators, and its UTF-8, as the apps' reader does. Raises PackError on the first thing wrong."""
-    if len(data) < HEADER.size:
-        raise PackError("the pack is shorter than its header")
-    magic, version, flags, digest, id_count, blob_count = HEADER.unpack_from(data)
-    if magic != MAGIC:
-        raise PackError(f"the magic is {magic!r}, not {MAGIC!r}")
-    if version != FORMAT_VERSION or flags != 0:
-        raise PackError(f"the version is {version} with flags {flags}, not {FORMAT_VERSION} with none")
-    if len(data) < HEADER.size + blob_count * DIRECTORY_RECORD.size:
-        raise PackError("the directory is cut short")
+    directory = packfile.read_directory(data, MAGIC, FORMAT_VERSION)
     blobs = {}
-    for index in range(blob_count):
-        raw_name, offset, size, raw_size, count, method = DIRECTORY_RECORD.unpack_from(data, HEADER.size + index * DIRECTORY_RECORD.size)
-        name = raw_name.rstrip(b"\0").decode("ascii", "replace")
-        if offset + size > len(data):
-            raise PackError(f"blob {name} runs past the end of the file")
-        blobs[name] = decode_blob(name, data[offset:offset + size], raw_size, count, method)
+    for record in directory.records:
+        blobs[record.name] = decode_blob(
+            record.name, data[record.offset:record.offset + record.compressed], record.raw, record.count, record.method)
     if IDS_BLOB not in blobs:
         raise PackError("there is no ids blob")
     ids = blobs[IDS_BLOB].entries
-    if len(ids) != id_count:
-        raise PackError(f"the header says {id_count} IDs and the ids blob holds {len(ids)}")
-    return Pack(digest.hex(), ids, blobs)
+    if len(ids) != directory.count:
+        raise PackError(f"the header says {directory.count} IDs and the ids blob holds {len(ids)}")
+    return Pack(directory.digest.hex(), ids, blobs)
 
 
 def decode_blob(name, data, raw_size, count, method=METHOD_LZMA):
     """The Blob `name` from its compressed bytes `data` (compressed by `method`), which must decode to exactly `raw_size`
-    bytes of `count` NUL-terminated UTF-8 entries. (The output is capped at one byte more than `raw_size`, so a hostile
-    blob cannot grow without limit.) An unknown method is refused."""
-    if method == METHOD_LZMA:
-        decoder = lzma.LZMADecompressor(format=lzma.FORMAT_XZ)
-    elif method == METHOD_BZIP2:
-        decoder = bz2.BZ2Decompressor()
-    else:
-        raise PackError(f"blob {name} uses compression method {method}, which this tool does not know")
-    try:
-        raw = decoder.decompress(data, max_length=raw_size + 1)
-    except (lzma.LZMAError, OSError, ValueError) as error:
-        # bz2 reports damage as OSError ("Invalid data stream"), lzma as LZMAError.
-        raise PackError(f"blob {name} does not decode: {error}")
-    if len(raw) != raw_size or not decoder.eof:
-        raise PackError(f"blob {name} decodes to a different size than the {raw_size} bytes its directory gives")
+    bytes of `count` NUL-terminated UTF-8 entries (the container checks the size and the method)."""
+    raw = packfile.decode_raw(name, data, raw_size, method)
     if not raw.endswith(b"\0") and raw_size:
         raise PackError(f"blob {name} does not end with a terminator")
     try:
@@ -551,10 +465,11 @@ def file_hash(path):
 
 
 def stamp_of(catalog_path, max_id_length, display_name=""):
-    """What decides the output: the hashes of the format's version, the catalog and this builder, the ID length limit, and the name a test
-    build gives the app (`display_name`, "" for none), so a build of another configuration writes its files again."""
-    return {"formatVersion": FORMAT_VERSION, "builder": file_hash(__file__), "catalog": file_hash(catalog_path), "maxIdLength": max_id_length,
-            "displayName": display_name}
+    """What decides the output: the hashes of the format's version, the catalog, this builder and the container's writer
+    (packfile.py), the ID length limit, and the name a test build gives the app (`display_name`, "" for none), so a build of
+    another configuration writes its files again."""
+    return {"formatVersion": FORMAT_VERSION, "builder": file_hash(__file__), "container": file_hash(packfile.__file__),
+            "catalog": file_hash(catalog_path), "maxIdLength": max_id_length, "displayName": display_name}
 
 
 def stamp_path(out):
