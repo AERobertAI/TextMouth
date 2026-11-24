@@ -117,3 +117,77 @@ Pages of the schemes are in Sources.
 - **7z:** AES-256 (coder ID 06F10701, seen in libarchive's source), with a key from SHA-256 iterated over salt and a UTF-16LE password, and an option to encrypt the file names too (recalled; 7zFormat.txt not checked).
 - **RAR 3 and 4:** AES-128 with a SHA-1 based key derivation; **RAR 5:** AES-256 with PBKDF2-HMAC-SHA256 and a password check value; both can encrypt headers (recalled; RARLAB's technote not checked).
 - TextMouth reads neither format today, so the password work waits for the reading work.
+
+## 2. Decrypting, on both platforms
+<!-- Question 2: Apple's frameworks, what TextMouth has, what it would add. -->
+
+### What each Apple framework offers
+
+- **PDFKit** (macOS 10.4, iOS 11): `PDFDocument.isEncrypted`, `isLocked`, `unlock(withPassword:)`, `allowsCopying`, `allowsPrinting`, `permissionsStatus`, and `write(to:withOptions:)` with `userPasswordOption` and `ownerPasswordOption`.
+  - **Probed on macOS 26.3:** a wrong password returns false; the user and the owner password both unlock; a file with only an owner password opens unlocked.
+  - **Probed:** a hand-built revision 6 (AES-256) file, made with CommonCrypto and CryptoKit, opens, unlocks with the user and the owner password, and gives its text.
+    So the common modern PDF is covered.
+    Whether macOS 14 and iOS 26.0 do the same was not checked (only this Mac could be run).
+  - **Probed:** `write(to:)` of an unlocked document keeps the file encrypted with the same password, and `write` with empty password options makes a file with an empty user password.
+    Copying the pages into a new `PDFDocument` and writing, or redrawing each page into a new Core Graphics PDF context, gives an unencrypted file whose text still reads.
+    A page copy leaves behind the document-level outline, labels, and information, which TextMouth uses for headings and page labels, so permanent decryption must carry those over (not checked).
+- **Core Graphics:** `CGPDFDocument` can unlock; `CGContext` writes passwords at 40 or 128 bits only (probed).
+- **CommonCrypto** (both platforms): AES in ECB, CBC, CFB, OFB, and CTR (`CCCrypt`, `CCCryptorCreateWithMode`), RC4, Blowfish, 3DES; `CCKeyDerivationPBKDF` with HMAC-SHA1 through SHA-512; `CCHmac`; `CCCalibratePBKDF`.
+  - **Counter mode is big-endian only** (the header says "now only Big Endian mode is supported"), so WinZip's little-endian counter is made by encrypting counter blocks in ECB mode and XORing.
+  - MD5 and SHA-1 in `CommonDigest.h` are deprecated since macOS 10.15 and iOS 13, so use CryptoKit's `Insecure.MD5` and `Insecure.SHA1`.
+  - **Probed:** RC4 with key "Key" gives BBF316E8D940AF0AD3 for "Plaintext", and a Blowfish CFB cryptor can be created.
+- **CryptoKit** (macOS 10.15, iOS 13; the SDK's interface lists no more): `AES.GCM`, `ChaChaPoly`, `AES.KeyWrap`, `HKDF`, `HMAC`, SHA-2, `Insecure.SHA1` and `MD5`, and `SymmetricKey`.
+  There is **no CBC, ECB, CTR, RC4, PBKDF2, scrypt, or Argon2**.
+  CommonCrypto must do all Office and ODF work, and CryptoKit suits only TextMouth's own AES-GCM container.
+- **Compression:** raw deflate, needed after decrypting a ZIP entry, comes from ZIPFoundation or the Compression framework's `COMPRESSION_ZLIB` (recalled to be raw deflate).
+- **AppleArchive** (macOS 11, iOS 14, password mode macOS 11.3 and iOS 14.5, read in the SDK headers): Apple Encrypted Archive with profile 5, `HKDF_SHA256_AESCTR_HMAC__SCRYPT__NONE`, and `AEAContextSetPassword`; random-access decryption exists.
+  Apple's `aea` tool reads and writes it **(probed)**: a round trip matched, and a wrong password failed with "Failed to unlock container".
+  Its fixed overhead is about 18.6 KB: a 103-byte file became 18,723 bytes, and 100,000 bytes became 118,620.
+  The scrypt cost is not settable through the header's fields, and the tool refuses a password under eight characters.
+- **libarchive in the SDK:** the tbd lists `archive_read_add_passphrase`, `archive_read_support_format_7zip`, and `_rar5` for macOS and iOS, but the SDK has no `archive.h`.
+  It is undocumented for apps, so I would not depend on it.
+
+### A probe that decrypts a real WinZip AES file
+
+A Swift program (not committed, in the session's scratch folder) took the first entry of the AES-256 ZIP that Apple's `tar` wrote, derived keys with `CCKeyDerivationPBKDF` (HMAC-SHA1, 1000 rounds, 66 bytes), and checked the password verifier and the HMAC-SHA1-80 with CryptoKit.
+Both matched for the right password and failed for a wrong one, and the AES-CTR stream (counter blocks through ECB) gave deflate data that begins as the text's deflate does.
+So WinZip AES needs no library on either platform.
+
+### What TextMouth has
+
+- **`TextMouth/Parsers/CompoundFile.swift` (424 lines):** a reader, hardened against hostile files, that returns the root storage's streams by name.
+  It has no writer, so re-protecting an Office Open XML or a Word 97 file needs one.
+- **Word 97 reader (`WordDocumentReader.swift`, `WordDocumentStructure.swift`):** reads `WordDocument` and the table stream as `Data` from the compound file.
+  Decrypting those two streams in memory, just after the encrypted-bit guard, is the whole change for Word.
+- **ZIPFoundation 0.9.20 (MIT, read at tag 0.9.20):** `Entry.init?` returns nil when bit 0 is set ("We currently don't support encrypted archives"), the archive's iterator ends at the first nil, so `subscript(path:)` cannot see later entries, and `extract` throws `invalidCompressionMethod` for method 99.
+  It has no password argument.
+  It can write ZIPs, but not encrypted ones.
+  `IndexedArchive` (`TextMouth/Parsers/ArchiveEntryReader.swift`) iterates with `for entry in archive`, so every ZIP-based reader inherits this.
+- **Seams that already exist:** `BookParser.parse(url:format:...)` is the one place every format is read from a URL; `PDFTextParser`, `WordDocumentReader`, `TextutilSourceCheck`, and `DOCXParser.openArchive(at:)` are the four places that meet a protected file today.
+
+### What it would add
+
+- **ZIP, and every format inside a ZIP:** one small `ZipDecryptor` of my own (estimate 400 to 600 lines) that reads the central directory itself, decrypts ZipCrypto and WinZip AES, and **writes a plain ZIP** with the same entries.
+  Decryption does not change the compressed bytes, so the plain ZIP needs no recompression: clear bit 0, restore the real method, and rewrite the headers (AE-2 needs the CRC computed once from the inflated data).
+  Every existing ZIP reader (EPUB, DOCX, ODT, DAISY, CBZ, audio ZIPs, KFX) then works unchanged, and the same output is the permanent decryption.
+- **Office Open XML:** an `OfficeCryptoReader` (estimate 400 lines) for Standard and Agile, which hands the decrypted ZIP to the same path.
+- **Word 97:** RC4, CryptoAPI, and XOR over the streams (estimate 300 lines).
+- **OpenDocument:** the manifest's parameters, PBKDF2, AES-256-CBC (and Blowfish CFB), and raw inflate per entry, then the same plain-ZIP output (estimate 250 lines).
+- **A library instead of my own ZIP code:**
+  - **minizip-ng** (zlib licence, read): WinZip AES and PKWARE traditional encryption, read and write, switchable at build time; its Apple crypto backend was not confirmed (the README names OpenSSL only).
+    It would add a C library to both apps and a second ZIP implementation beside ZIPFoundation; I would not take it for the reading side but it is the one to check if TextMouth later writes encrypted ZIPs.
+  - **libarchive** (BSD, vendored): reads encrypted ZIP with a passphrase (probed through Apple's `tar`), but its 7z and RAR readers detect encryption and decline (read, v3.7.4: "The file content is encrypted, but currently not supported", RAR5: "Encryption is not supported").
+    So libarchive would not help with 7z or RAR passwords.
+  - **LZMA SDK** (public domain, read): 7z decompression in C; its support for encrypted archives was not confirmed.
+    AES and SHA-256 would come from CommonCrypto either way.
+  - **unrar** (the UnRAR licence, SPDX "UnRAR"): decodes and decrypts RAR, may not be used to re-create the RAR compression algorithm; the Fedora project calls it non-free (read in search results).
+    It is neither in the brief's acceptable list nor GPL, so it needs the user's ruling, as the braille tables did.
+    A RAR decoder of my own is a large job (LZ, PPMd, and filters) and I do not recommend it.
+
+### Passwords are bytes, and the encodings differ
+
+- ZipCrypto takes the bytes of the password in whatever encoding the writer's tool used (a legacy code page on Windows, the locale on Info-ZIP) (recalled); WinZip AES takes UTF-8.
+- PDF revisions 2 to 4 take PDFDocEncoding or Latin-1 bytes, and revision 6 takes UTF-8 after SASLprep (recalled).
+- Office Agile and Standard, and 7z, take UTF-16LE; OpenDocument takes UTF-8.
+- A password with an accent can therefore fail for a file that is fine.
+  The unlock step should try the typed password in NFC and NFD, and in UTF-8, Latin-1, and CP437 where the scheme leaves it open, before saying "wrong password".
