@@ -45,7 +45,7 @@ final class PhoneSettingsModelTests: XCTestCase {
             (.readingStatistics, "Reading Statistics", "Reading Statistics", nil),
             (
                 .brailleTable, "Braille code", "Braille code",
-                "The braille code for reading and writing braille."
+                "The braille code for reading braille files."
             ),
             (
                 .brailleFileCode, "Braille file characters", "Braille file characters",
