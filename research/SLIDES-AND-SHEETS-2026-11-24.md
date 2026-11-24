@@ -167,7 +167,7 @@ date system: 1900                                   date system: 1904 (same cell
 - **Strings:** a cell is a shared string (`t="s"`, from `sharedStrings.xml`, its `<r><t>` runs joined and phonetic `rPh` text dropped; unchecked), an inline string (`t="inlineStr"`), a formula's string (`t="str"`), a boolean (`t="b"`, TRUE or FALSE), an error (`t="e"`, read as its text such as "#DIV/0!"), or a number.
 - **Formulas:** the cached `<v>` is read; the formula is never spoken. A formula with no cached value (a file a program wrote without calculating) is empty.
 - **Dates:** a number is a date when its style's number format is one of the built-in ids 14 to 22 or 45 to 47 ([ISO 29500 list](https://learn.microsoft.com/en-us/dotnet/api/documentformat.openxml.spreadsheet.numberingformat?view=openxml-3.0.1), verified), or a custom code (id 164 and up) with a date letter outside quotes, brackets, and escapes; the `[$-409]` locale prefix and `[h]` elapsed forms need care.
-- **Epochs:** `workbookPr date1904="1"` shifts every date by 1,462 days; the same 45123 is 2023-07-16 or 2027-07-17 (observed). Excel's 1900 system counts a 29 February 1900 that never existed, so serial 60 has no true date and serials below 60 are one day off if the usual formula is used (observed).
+- **Epochs:** `workbookPr date1904="1"` shifts every date by 1,462 days; the same 45123 is 2023-07-16 or 2027-07-17 (observed). Excel's 1900 system counts a 29 February 1900 that never existed: the usual base of 30 December 1899 is right from serial 61, a reader must use 31 December 1899 below 60, and serial 60 has no true date (the probe printed 1900-02-28 for it, a day early).
 - **Spoken form of a date:** a long date in the interface language ("July 16, 2023") reads better than ISO digits; this is Question 7.
 - **Numbers:** the file holds only the raw value, never Excel's display string, so "0%" on 0.255 needs a number-format engine: General, fixed decimals, thousands separators, percent, currency, and scientific cover most cells, and anything else falls back to General.
 - General shows at most 11 digits and then exponential form (ISO 29500, verified), so a raw `0.30000000000000004` must not be spoken. Rounding must be half away from zero, as Excel does; a binary `printf` can differ on 25.5 (unchecked).
@@ -184,3 +184,39 @@ date system: 1900                                   date system: 1904 (same cell
 - **Comments:** legacy notes (`xl/comments*.xml`) and threaded comments (whose fallback text is boilerplate, unchecked) are skipped, as Word's comments are.
 - **Encrypted workbooks** are compound files with an `EncryptedPackage` stream; they and sheet-protection passwords (which only hash a password and never encrypt) are the password report's matter, not this one. A protected sheet reads freely.
 - **Strict OOXML** uses other namespaces (`purl.oclc.org/ooxml`); a reader that takes only the transitional ones reads nothing from a Strict file (unchecked here; a fixture is cheap).
+
+## Question 5: picture descriptions in every format
+
+`imageresearch` covers describing a picture by machine; this section covers only what the files already say and what to do with it.
+
+### Where each format keeps the description
+
+| Format | Where the description is | What TextMouth does today |
+| --- | --- | --- |
+| HTML, EPUB, Markdown | `alt` (empty `alt=""` marks decoration) | read as words in the flow (observed: `HTMLToMarkdownConverter`, `HTMLReadingText`) |
+| DAISY | `img` `alt` | written as `![alt](src)` and read as words; captions and `prodnote` unchecked |
+| MOBI, KF8, KFX | `alt`, or KFX's alt text | read as words; none is silent (docs: "a picture without one is silent") |
+| OpenDocument text | `svg:desc`, else `svg:title` on the frame | its own paragraph after the anchor's paragraph; none is silent (observed: `ODTContentReader.readDescription`) |
+| Word (.docx) | `descr` and `title` on `wp:docPr` and `pic:cNvPr`; VML `alt` | silent (issue DR35, question unanswered) |
+| Word 97 (.doc) | the Escher shape property `wzDescription`, id 0x0381 ([MS-ODRAW](https://msdn.microsoft.com/en-us/library/3fcb6cc3-b8c2-481b-aa47-078898d87c78), verified) | silent |
+| RTF, Word 2003 XML | `\sp` shape properties; `wp:docPr` equivalents in WordML (unchecked) | silent |
+| PowerPoint, Excel | `descr` and `title` on `p:cNvPr` and `xdr:cNvPr`; the decorative mark below | not read at all |
+| PDF | `/Alt` on a tagged Figure ([WCAG PDF1](https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF1)) | not read; whether PDFKit exposes the structure tree is unchecked |
+
+### The decorative mark
+
+- A picture is decorative when its `cNvPr` carries the extension `{C183D7F6-B498-43B3-948B-1728B52AA6E4}` with `decorative val="1"` in the namespace `http://schemas.microsoft.com/office/drawing/2017/decorative` ([MS-ODRAWXML schema](https://learn.microsoft.com/en-us/openspecs/office_standards/ms-odrawxml/6146d89f-9146-415b-99e2-39e694b5a980): the element and its boolean `val` verified; the extension URI is the value the probe used and is unchecked).
+- The Reading Order pane drops such an object from the order ([Microsoft](https://support.microsoft.com/en-US/PowerPoint/make-slides-easier-to-read-by-using-the-reading-order-pane), verified), so a reader that skips it agrees with what PowerPoint's screen readers do.
+- A `descr` that is empty, or a picture with no `descr`, is silent.
+
+### A policy for every format
+
+1. **One type, `PictureDescription`,** takes the raw `descr` or `alt` and `title` and returns the words to speak, or nothing. Every reader calls it, so the rules live once.
+2. **Order:** description, else title, as `ODTContentReader` does now.
+3. **Cleaning:** collapse white space; remove Office's machine suffix "Description automatically generated" with its optional "with low, medium, or high confidence" tail (the suffix is real, per [Clemson](https://clemson.edu/accessibility/digital/guides/powerpoint/images.html); the confidence wording is from the probe's assumption, unchecked); and treat a value that is only a file name (`image1.png`, `IMG_0042.JPG`) or an unedited default (`Picture 3`) as no description.
+4. **Silent** for decorative, empty, or default descriptions, as every reader but none is today.
+5. **Marked:** where nothing else in the reading says what the words are (a slide, a sheet, and the formats that are silent today), the paragraph begins with a short localized lead, "Picture: ", so a listener or a braille reader knows a description from a sentence of the text.
+6. **Where:** as its own paragraph right after the paragraph that holds the picture (the ODT precedent), or in the shape's place on a slide.
+7. **Not changed:** existing readers' bare alt text. Adding a lead there changes saved text and positions; Question 10 asks whether to do it anyway.
+- **Order of work:** the type and its tests first, with .docx (DR35's cheapest part; the description is in plain view of the converter), then each new reader.
+- **No description at all:** silent, as now. What would fill that gap is a machine description, and `imageresearch` owns it; this policy gives it one place to plug in, since `PictureDescription` is where the answer would be asked for.
