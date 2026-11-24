@@ -20,8 +20,9 @@ import os
 ///   unpacker's life is a launch); later the length alone is looked at. A missing file, one of another length, and one
 ///   whose hash differs is unpacked again, since iOS may clear Caches and a run may end half way.
 /// - **Damage.** A damaged blob or index makes the table unavailable: `unpackedFolder(for:)` throws and the translation fails
-///   as it does for a table the app does not have. The file and the error's domain and code are logged once
-///   (`BRAILLE_TABLES_UNAVAILABLE`), never a path, and never again however often the table is asked for. Nothing traps.
+///   as it does for a table the app does not have. The first file to fail and the error's domain and code are logged
+///   (`BRAILLE_TABLES_UNAVAILABLE`), never a path, and the same error is not logged again however many tables it fails.
+///   Nothing traps.
 /// - **Tidiness.** The first unpacking of a launch, under the lock, removes the temporary files an earlier run left (those
 ///   more than ten minutes old, which no unpacking is still writing) and, for the app's own unpacker, the folders of other
 ///   liblouis versions beside `folder`.
@@ -164,9 +165,10 @@ final class BrailleTableUnpacker: Sendable {
         return "\(underlying.domain) \(underlying.code)"
     }
 
-    /// Logs `reason` for `file` unless it has been logged before.
+    /// Logs `reason` for `file` unless the same reason has been logged before: the set is keyed by the error's domain and code
+    /// alone, so a full disk, which fails every table the same way, logs one line, not one for each table asked for.
     private func logOnce(file: String, reason: String) {
-        let first = logged.withLock { $0.insert("\(file): \(reason)").inserted }
+        let first = logged.withLock { $0.insert(reason).inserted }
         if first { DiagnosticLog.event(.import, "BRAILLE_TABLES_UNAVAILABLE: \(file): \(reason)") }  // l10n: no (a debug log reason, which stays English)
     }
 

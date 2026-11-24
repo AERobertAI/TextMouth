@@ -105,7 +105,12 @@ enum BrailleSettingsWording {
     /// tables, each with its liblouis version when known, or that this Mac
     /// no longer has the chosen Mac table (`isOffered` false), as after a
     /// macOS update that removed it.
-    static func source(ofTable tableID: String, isOffered: Bool, macLiblouisVersion: String?) -> String {
+    static func source(ofTable tableID: String, isOffered: Bool, macLiblouisVersion: String?, writesOnly: Bool = false) -> String {
+        // A table the setting already names that only writes braille (FR40): it keeps working, and is not offered here.
+        guard !writesOnly else {
+            // Translators: Under the pop-ups in the Braille tab of Settings: the table chosen earlier only writes braille from print, so it is not among the choices for reading. Choosing another is the way to change it.
+            return InterfaceText.line("brailleSettings.source.writesOnly", "The chosen table only writes braille, so it is not offered for reading braille files; choose another.")
+        }
         guard BrailleTableSource.parse(tableID).source == .mac else {
             // Translators: Under the pop-ups in the Braille tab of Settings: the chosen braille table comes with TextMouth. %@ is the version of liblouis, the braille library, written as a version number.
             return InterfaceText.line("brailleSettings.source.built", "The chosen table is built into TextMouth (liblouis \(BrailleTableCatalog.bundledLiblouisVersion)).")
@@ -262,7 +267,8 @@ struct BrailleSettingsView: View {
         return BrailleSettingsWording.source(
             ofTable: id,
             isOffered: codes.contains { code in code.tables.contains { $0.id == id } },
-            macLiblouisVersion: BrailleTableCatalog.mac?.liblouisVersion
+            macLiblouisVersion: BrailleTableCatalog.mac?.liblouisVersion,
+            writesOnly: BrailleTableCatalog.table(withID: id)?.isPrintOnly == true
         )
     }
 

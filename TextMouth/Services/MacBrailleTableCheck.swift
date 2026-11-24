@@ -329,10 +329,14 @@ enum MacBrailleTableCheck {
         )
         let forwardSeconds = measure.lastRunSeconds
         guard table.declaresSixDots || cells.allSatisfy(writesSixDotsOnly) else { return .refused(.writesEightDots) }
-        _ = try BrailleTranslator.translate(
-            cells, table: table.id, direction: .brailleToPrint, workingIn: folder, checksMacTable: false, measure: measure
-        )
-        let backSeconds = measure.lastRunSeconds
+        // A table that writes braille only is never read back (FR40): its check measures the way it is used.
+        var backSeconds: TimeInterval = 0
+        if !table.isPrintOnly {
+            _ = try BrailleTranslator.translate(
+                cells, table: table.id, direction: .brailleToPrint, workingIn: folder, checksMacTable: false, measure: measure
+            )
+            backSeconds = measure.lastRunSeconds
+        }
         let needs = TableNeeds(
             loadSeconds: loadSeconds,
             forwardSecondsPerMB: secondsPerMB(forwardSeconds - loadSeconds, input: print),

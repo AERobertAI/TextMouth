@@ -419,8 +419,9 @@ struct BrailleExportOptionsView: View {
     /// Whether the line end and the braille file characters are chosen
     /// here: a BRF's are, a PEF's are not.
     let choosesLineEnds: Bool
-    /// The codes the table pop-ups offer (see `BrailleTablePickers`).
-    var codes: [BrailleCode] = BrailleTableCatalog.offeredCodes
+    /// The codes the table pop-ups offer (see `BrailleTablePickers`): every code exporting offers, the tables that write
+    /// braille only among them (FR40), since an export only ever writes braille.
+    var codes: [BrailleCode] = BrailleTableCatalog.exportCodes
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {

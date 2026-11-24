@@ -48,6 +48,16 @@ struct BrailleTablePack: Sendable {
         let includeOnly: [String]?
     }
 
+    /// Which of the release's literary tables write braille from print only (`direction: forward`) and which read it back too,
+    /// by file name, judged over the whole release though a pack carries some of its files: the Mac, which carries four, judges
+    /// VoiceOver's older copies of a table by it whenever the release has a table of that file name.
+    struct ReleaseDirections: Sendable, Equatable {
+        /// The names of the tables that write braille only.
+        let printOnly: Set<String>
+        /// The names of the tables that also read braille back.
+        let twoWay: Set<String>
+    }
+
     /// The file's name inside an app's resources.
     static let resourceName = "BrailleTables"  // l10n: no (a resource's file name, never shown)
     static let resourceExtension = "pack"
@@ -71,6 +81,8 @@ struct BrailleTablePack: Sendable {
     private let container: PackContainer
     /// The liblouis release the tables are from, such as "3.39.0".
     let liblouisVersion: String
+    /// The release's directions (`ReleaseDirections`), empty for a pack whose index names none.
+    let releaseDirections: ReleaseDirections
     /// Every file, by name.
     let files: [String: File]
     /// Every file's name, in order.
@@ -109,6 +121,7 @@ struct BrailleTablePack: Sendable {
         let checked = try Self.checkedFiles(of: document, in: opened)
         self.container = opened
         self.liblouisVersion = document.liblouis
+        self.releaseDirections = try Self.checkedDirections(of: document)
         self.files = checked
         self.names = checked.keys.sorted()
     }
@@ -120,6 +133,9 @@ struct BrailleTablePack: Sendable {
         let v: Int
         let liblouis: String
         let files: [IndexFile]
+        /// The release's tables that write braille only, and those that also read it back (`ReleaseDirections`).
+        let f: [String]?
+        let w: [String]?
     }
 
     /// One file's entry of the index.
@@ -160,6 +176,15 @@ struct BrailleTablePack: Sendable {
                 || (UInt8(ascii: "0")...UInt8(ascii: "9")).contains(byte)
                 || byte == UInt8(ascii: "_") || byte == UInt8(ascii: ".") || byte == UInt8(ascii: "+") || byte == UInt8(ascii: "-")
         }
+    }
+
+    /// The release's directions in `document`, every name plain and no list absurdly long.
+    private static func checkedDirections(of document: IndexDocument) throws -> ReleaseDirections {
+        let printOnly = document.f ?? [], twoWay = document.w ?? []
+        guard printOnly.count <= 10_000, twoWay.count <= 10_000, printOnly.allSatisfy(isPlainName), twoWay.allSatisfy(isPlainName) else {
+            throw BrailleTablePackFailure("the index's directions are not file names")  // l10n: no (English text for the debug log, never shown)
+        }
+        return ReleaseDirections(printOnly: Set(printOnly), twoWay: Set(twoWay))
     }
 
     /// The name of the blob that holds group `number`.
