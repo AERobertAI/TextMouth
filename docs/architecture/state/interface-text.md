@@ -12,6 +12,7 @@ The interface's words.
 
 - Owner: InterfaceTextEngine.shared, one engine for the process, which InterfaceText.line asks.
   It opens the app's Strings.pack at the first lookup (InterfaceTextPack.inMainBundle, memory-mapped).
+  It decodes each blob by the method its directory record names, LZMA or bzip2 (see [the pack's compression](../../developer/localization.md#the-packs-compression)).
   It keeps the decoded ID list, each language's decoded entries once that language is asked for, the verdict of the specifier check for each entry, and the problems already reported, all behind one lock.
 - Who may write it: only the engine, which fills its own caches.
   The pack is read-only, and the person's own lines (below) are the one thing set on it from outside.
