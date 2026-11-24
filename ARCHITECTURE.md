@@ -56,6 +56,7 @@ Each entry names a kind of state, then its owner, who may write it, how others o
   - [Kindle books](docs/architecture/state/imports-kindle.md): KFX, MOBI 6, and KF8.
   - [Braille files](docs/architecture/state/imports-braille.md): BRF, BRL, PEF, and BARD braille books, and their records.
   - [Braille tables](docs/architecture/state/imports-braille-tables.md): the catalog, the translator helper, and the guess.
+  - [Braille table pack](docs/architecture/state/braille-table-pack.md): the pack, the unpacker, and the table lists.
   - [Text in other encodings](docs/architecture/state/imports-text-encodings.md): finding and guessing the encoding.
   - [Choosing the encoding](docs/architecture/state/imports-text-encoding-choice.md): the listener's way to mend a guess.
 
