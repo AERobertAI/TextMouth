@@ -197,3 +197,73 @@ Your question:
 - Every text of this is a line in an `InterfaceText.line` wording enum, translated into all 24 languages before the merge, as the translation rule requires.
 - Nothing is told only by sight: no badge without a spoken label, the sheet's focus and announcements follow the Transcribe Audio sheet.
 
+## Recommendation
+
+- Build Tier 1 first, on both platforms, as "Describe Pictures…" for a book, with the record, the marker, the edit and again flows of transcripts.
+- Add the language model's sentence on 26 (labels and text in, one sentence out, English and 22 other languages), with the evidence check.
+- Add the 27 caption when Xcode's 27 SDK is in use, behind `#available`, preferring it over the sentence on a device that has it.
+- Read the author's alt first everywhere, including a PDF's `/Alt`.
+- Do not ship a downloaded model, any cloud path, or anything of VoiceOver's.
+- Order the labels by confidence and stay silent about a picture rather than guess.
+
+## Plan in phases
+
+Sizes are estimates, not measurements.
+
+1. **Evidence engine (Mac and iPhone).**
+   - `PictureEvidence` and `PictureEvidenceReader`: kind, labels above a threshold, text lines, table cells, codes, saliency order; a protocol with a fake for tests, as `PDFPageTextRecognizer` has.
+   - Size: about 600 lines of code, 20 to 40 KB of binary on each app; no models.
+   - Tests: fake-driven tests of thresholds and ordering; a smoke test on a drawn chart, table, and QR code from a generator the test target holds.
+2. **Record and reading (Mac and iPhone).**
+   - `descriptions.json`, its store, the marker in content.md, the reader's "Image" line, the setting, and the braille line.
+   - Size: about 1,200 lines; about 30 interface lines, 5 to 10 KB of catalog across 25 languages.
+   - Tests: round trips, a re-read keeping and dropping by digest, an edit turning `machine` into `edited`, the setting's three values, cloud-only and stale files as transcripts have them.
+3. **Sources (Mac and iPhone, the same parsers).**
+   - EPUB, HTML in archives, DAISY, DOCX, ODT, Kindle: find pictures without alt, give the bytes and the locator; PDF figure `/Alt` and PDF regions.
+   - Size: about 800 lines, spread over the parsers; no new binary weight beyond the code.
+   - Tests: made EPUB, DOCX, and PDF files with and without alt, and with a tagged figure.
+4. **The sheet and commands (Mac and iPhone).**
+   - Describe Pictures…, Describe Pictures Again…, Delete Descriptions…, progress, Cancel, VoiceOver announcements, a library badge like Transcribed.
+   - Tests as the Transcribe Audio sheet's: phases, focus, refusals while another job runs.
+5. **Language model sentence (OS 26; Mac 26 and iPhone 26).**
+   - Prompt, the evidence check, the language by instruction, refusal handling.
+   - Size: about 300 lines and a dozen prompt lines; no model of ours.
+   - Tests: a fake session; real runs only where Apple Intelligence is on, skipped elsewhere.
+6. **Image caption (OS 27; Mac 27 and iPhone 27).**
+   - `Attachment` with the `OCRTool` in the session; needs the 27 SDK.
+   - Size: about 200 lines; no model of ours.
+   - Tests: a fake session, and a run on a device on 27 with Apple Intelligence.
+   - A later step: "Ask about this picture" on the same session, which is what VoiceOver's Image Explorer offers.
+
+## Fixtures
+
+- One generator in the test target draws the pictures of this research with Core Graphics, Core Text, and `CIFilter.qrCodeGenerator` and `code128BarcodeGenerator`: a bar chart, a flow diagram, a captioned figure, a table, a QR code, a Code 128, and a drawn scene.
+- Emoji artwork is system-drawn and changes with each macOS, so it is not used in tests; a Vision result is asserted by shape (the kind is "chart", the text contains the title), never by exact labels.
+- EPUB, DOCX, and PDF fixtures with and without alt text are written by code the tests hold, with these pictures inside.
+- No photograph is in the repository; a test of real-photograph behaviour waits for a licensed one (question 6).
+
+## Risks
+
+- A wrong label spoken as fact (the dog was a squirrel): the threshold, the "computer's" mark, and the edit flow.
+- Vision's labels and results change with each macOS, so goldens would break: assert shapes, and record the OS version in each record.
+- The 27 API cannot be compiled or tested until Xcode 27 is used; its quality and speed are unknown until a Mac or iPhone on 27 runs it.
+- This Mac has Apple Intelligence off, so the 26 sentence step is unmeasured; a Mac with it on must run the probe.
+- Apple Intelligence is missing in some regions, on older devices, and for languages outside the 23; the tier fallback must be spoken plainly, not hidden.
+- Guardrails may refuse a picture; the model's context is small (4,096 tokens, unchecked with images).
+- Time and battery on a book with thousands of pictures: on request only, a cap, and Cancel.
+- Descriptions add text that moves places and positions: a description is part of content.md and the index, so adding one is a rebuild; a re-read and Edit Text interactions need the same care transcripts got.
+- Speech language for descriptions in a language the system voice does not match (question 5).
+- Machine descriptions in an exported book: exports should say they are the computer's (question 7).
+
+## Questions for you, with my answers
+
+1. Describe on request only, or also at import? I recommend on request, with a later option, because the sentence tiers take seconds a picture.
+2. Read the computer's descriptions by default? I recommend yes once a book has been described on request, always saying the computer wrote it, with the setting to read only the author's.
+3. Raise the iPhone's floor to 27 for captions? I recommend no: gate with `#available`, and let 26 phones use tiers 1 and 2.
+4. Ever bundle or download an open captioning model (SmolVLM, Florence-2) for Macs 14 and 15 and for Apple Intelligence off? I recommend not now; revisit after tier 3 is measured.
+5. For languages outside the model's 23, speak an English description in an English voice? I recommend yes, marked, if the speech code can switch voices; otherwise read it in the book's voice.
+6. May a later agent use a licensed photograph in `TestData/` (for example a public-domain one) to measure the real quality? I recommend yes, with its license in the repository, and that someone run `probefm.swift` on a Mac with Apple Intelligence on.
+7. Should exports (Markdown, braille, speech) include machine descriptions? I recommend yes, with the same "described by the computer" mark and a switch.
+8. Describe comic pages? I recommend no for now.
+9. May a later version use Private Cloud Compute if you opt in? I recommend never, since on-device only is the promise.
+10. Add "Ask about this picture" (VoiceOver's Image Explorer) on 27? I recommend yes, as a later phase, once the caption is measured.
