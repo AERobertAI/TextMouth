@@ -74,7 +74,18 @@ SMALL_CODE = $(if $(filter Release,$(CONFIG)),SWIFT_OPTIMIZATION_LEVEL=-Osize)
 # they reach the Swift packages too. Release only: Debug, where the tests run,
 # keeps its own settings. The shell's quoting of each word is kept as written
 # (a value holds spaces and a "$(inherited)" xcodebuild reads itself).
-SIZE_SETTINGS = $(if $(filter Release,$(CONFIG)),$(shell python3 -I -B Scripts/size_settings.py))
+#
+# Which of them a build takes is its profile, SIZE_PROFILE: "full" takes them
+# all, "light" only those that cost no memory at link time, and "auto" is full
+# on GitHub Actions and light on a Mac. Full link-time optimization's link
+# takes several GB of memory, which can freeze a Mac with 8 GB, so a Mac builds
+# full only the app that ships: `make install` and `make release` (below).
+# Every other build on a Mac, `make build`, `make check`, and the golden tests
+# among them, is light. Give it on the command line to choose another, as in
+# `make install SIZE_PROFILE=light`. No settings at all is an error, since every
+# profile has some: the script refused its command line and said why.
+SIZE_PROFILE = auto
+SIZE_SETTINGS = $(if $(filter Release,$(CONFIG)),$(or $(shell python3 -I -B Scripts/size_settings.py --profile "$(SIZE_PROFILE)"),$(error Scripts/size_settings.py gave no settings for SIZE_PROFILE=$(SIZE_PROFILE))))
 
 # Xcode records the exact Swift package revisions here. The file is committed,
 # so every checkout and CI run builds the same package versions.
@@ -114,7 +125,7 @@ RESOLVE_PACKAGES = xcodebuild -resolvePackageDependencies \
 	-scheme $(SCHEME) \
 	-derivedDataPath "$(DERIVED_BUILD_DIR)"
 
-.PHONY: all clean build debug run install uninstall generate set-version bump-patch bump-minor resolve-packages update-packages test check release-goldens check-selftest issues-merge-driver test-area lint-tests lint-a11y lint-ogg lint-docs lint-l10n check-ios-plist check-ios-licenses typecheck-ios typecheck-mac typecheck-tests typecheck-ios-tests typecheck-tests-census mac-projection perf-baselines open xcode help signing-identity ios-size
+.PHONY: all clean build debug run install release full-build-note uninstall generate set-version bump-patch bump-minor resolve-packages update-packages test check release-goldens check-selftest issues-merge-driver test-area lint-tests lint-a11y lint-ogg lint-docs lint-l10n check-ios-plist check-ios-licenses typecheck-ios typecheck-mac typecheck-tests typecheck-ios-tests typecheck-tests-census mac-projection perf-baselines open xcode help signing-identity ios-size
 
 ## Default: build the app
 all: build
@@ -261,9 +272,26 @@ open: build
 	@echo "==> Opening $(APP_NAME).app..."
 	open "$(APP_BUNDLE)"
 
-## Install to /Applications, keeping the installed build's dSYM in
+## Build the app as it ships, with every size setting (SIZE_PROFILE=full), into
+## build/ without installing it. Its link takes several GB of memory: on a Mac
+## with 8 GB, quit other heavy apps first
+release: SIZE_PROFILE = full
+release: full-build-note build
+	@echo "==> Release build ready: $(APP_BUNDLE)"
+
+# What `make install` and `make release` say before their build, when it is
+# full: its link can take several GB of memory for some minutes.
+full-build-note:
+	@if [ "$(SIZE_PROFILE)" = "full" ]; then \
+		echo "==> Building with every size setting: the last step, the link, takes several GB of memory for some minutes."; \
+		echo "==> On a Mac with 8 GB, quit other heavy apps (a web browser, TextMouth) before it starts."; \
+	fi
+
+## Install to /Applications with every size setting (SIZE_PROFILE=full), as
+## make release builds, keeping the installed build's dSYM in
 ## INSTALLED_DSYMS_DIR for reading its crash reports
-install: build
+install: SIZE_PROFILE = full
+install: full-build-note build
 	@echo "==> Installing to $(INSTALL_DIR)/$(APP_NAME).app..."
 	@rm -rf "$(INSTALL_DIR)/$(APP_NAME).app"
 	cp -R "$(APP_BUNDLE)" "$(INSTALL_DIR)/$(APP_NAME).app"

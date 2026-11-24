@@ -493,6 +493,14 @@ begin_case() {
 # the caller's build-slot or simulation settings, and the given variables,
 # which override the defaults. Stores the report in $output and the exit
 # status in $status.
+# Copies the Makefile into the case's sandbox with the script its size settings
+# come from (SIZE_SETTINGS): a Release build stops when the script gives none.
+copy_makefile() {
+  cp "$ROOT/Makefile" "$sandbox/Makefile"
+  mkdir -p "$sandbox/Scripts"
+  cp "$ROOT/Scripts/size_settings.py" "$sandbox/Scripts/size_settings.py"
+}
+
 run_gate() {
   local -a command=(./Scripts/check.sh) settings=()
   if [[ ${1:-} == --via-make ]]; then
@@ -739,7 +747,7 @@ dry_run_cases() {
   end_case
 
   begin_case "make check runs the gate with CHECK_ARGS"
-  cp "$ROOT/Makefile" "$sandbox/Makefile"
+  copy_makefile
   run_gate --via-make -- CHECK_ARGS=--dry-run
   expect_status 0
   expect_verdict "check: PASSED (dry run)"
@@ -1304,7 +1312,7 @@ real_run_cases() {
 # strictness from the caller's environment, storing the report in $output
 # and the exit status in $status.
 run_make_test() {
-  cp "$ROOT/Makefile" "$sandbox/Makefile"
+  copy_makefile
   mkdir -p "$sandbox/TextMouthTests"
   output=$(cd "$sandbox" && env -u TEST_RUNNER_TEXTMOUTH_PERFORMANCE_STRICT \
       PATH="$SWIFT_RECORDER:$PATH" STUB_LOG="$stub_log" \
@@ -1333,7 +1341,7 @@ makefile_cases() {
 
   # make -n prints the build's commands and runs none of them.
   begin_case "make build turns off the code coverage the scheme would build into the app"
-  cp "$ROOT/Makefile" "$sandbox/Makefile"
+  copy_makefile
   output=$(cd "$sandbox" && "$REAL_MAKE" -n build 2>&1)
   status=$?
   expect_status 0
@@ -1345,11 +1353,9 @@ makefile_cases() {
   # included, which only a setting on the command line reaches; Debug keeps
   # its own level, so make debug must not pass it.
   begin_case "make build compiles the Release app and its packages with -Osize, and make debug does not"
-  cp "$ROOT/Makefile" "$sandbox/Makefile"
-  # The Makefile reads the further size settings from this script (SIZE_SETTINGS).
-  mkdir -p "$sandbox/Scripts"
-  cp "$ROOT/Scripts/size_settings.py" "$sandbox/Scripts/size_settings.py"
-  output=$(cd "$sandbox" && "$REAL_MAKE" -n build 2>&1)
+  copy_makefile
+  # On GitHub Actions a build takes every size setting (the profile "auto").
+  output=$(cd "$sandbox" && env GITHUB_ACTIONS=true "$REAL_MAKE" -n build 2>&1)
   status=$?
   expect_status 0
   expect_report "SWIFT_OPTIMIZATION_LEVEL=-Osize"
@@ -1357,6 +1363,28 @@ makefile_cases() {
   refute_report "SWIFT_REFLECTION_METADATA_LEVEL"
   expect_report "-Xfrontend -internalize-at-link"
   refute_report "SWIFT_COMPILATION_MODE"
+  # On a Mac a development build is light: no link-time optimization, which
+  # takes several GB of memory, and none of the flags tested only with it.
+  output=$(cd "$sandbox" && env -u GITHUB_ACTIONS "$REAL_MAKE" -n build 2>&1)
+  status=$?
+  expect_status 0
+  expect_report "SWIFT_OPTIMIZATION_LEVEL=-Osize"
+  expect_report "GCC_OPTIMIZATION_LEVEL=z"
+  refute_report "SWIFT_LTO"
+  refute_report "LLVM_LTO"
+  refute_report "-Xfrontend"
+  # The app that ships is full on a Mac too: make install and make release.
+  output=$(cd "$sandbox" && env -u GITHUB_ACTIONS "$REAL_MAKE" -n release 2>&1)
+  status=$?
+  expect_status 0
+  expect_report "SWIFT_LTO=YES"
+  expect_report "-Xfrontend -internalize-at-link"
+  expect_report "quit other heavy apps"
+  # A profile the script does not know stops the build rather than leave the settings out.
+  output=$(cd "$sandbox" && "$REAL_MAKE" -n build SIZE_PROFILE=fulll 2>&1)
+  status=$?
+  expect_status 2
+  expect_report "gave no settings for SIZE_PROFILE=fulll"
   output=$(cd "$sandbox" && "$REAL_MAKE" -n build CONFIG=Debug 2>&1)
   status=$?
   expect_status 0
@@ -1370,7 +1398,7 @@ makefile_cases() {
   # build what ships (Release, -Osize) with testability on and the settings
   # that would hide the app's symbols from the test bundle switched back.
   begin_case "release-goldens.sh builds a testable Release app and names the golden classes"
-  output=$("$ROOT/Scripts/test/release-goldens.sh" --dry-run --no-slot 2>&1)
+  output=$(env -u GITHUB_ACTIONS "$ROOT/Scripts/test/release-goldens.sh" --dry-run --no-slot 2>&1)
   status=$?
   expect_status 0
   expect_report "-configuration Release"
@@ -1379,9 +1407,15 @@ makefile_cases() {
   expect_report "LD_EXPORT_SYMBOLS=YES"
   expect_report "DEAD_CODE_STRIPPING=NO"
   expect_report "DEPLOYMENT_POSTPROCESSING=NO"
-  # The optimizer's own settings are tested too, less the one flag a test bundle cannot link against.
-  expect_report "SWIFT_LTO=YES"
+  # The size settings are the profile's ("auto"): on a Mac, light.
+  expect_report "GCC_OPTIMIZATION_LEVEL=z"
+  refute_report "SWIFT_LTO"
   refute_report "SWIFT_REFLECTION_METADATA_LEVEL"
+  # On GitHub Actions, every one, less the one flag a test bundle cannot link against.
+  output=$(env GITHUB_ACTIONS=true "$ROOT/Scripts/test/release-goldens.sh" --dry-run --no-slot 2>&1)
+  status=$?
+  expect_status 0
+  expect_report "SWIFT_LTO=YES"
   expect_report "-Xfrontend -conditional-runtime-records"
   refute_report "-internalize-at-link"
   expect_report "-only-testing:TextMouthProductionTests/TextPipelineGoldenTests"
@@ -1442,7 +1476,7 @@ run_make_install() {
     status=1
     return
   fi
-  cp "$ROOT/Makefile" "$sandbox/Makefile"
+  copy_makefile
   mkdir -p "$sandbox/Scripts" "$sandbox/Applications"
   cp "$ROOT/Scripts/keep-installed-dsym.sh" "$sandbox/Scripts/keep-installed-dsym.sh"
   output=$(cd "$sandbox" && env PATH="$STUBS:$PATH" STUB_LOG="$stub_log" \
@@ -1677,7 +1711,7 @@ signing_identity_cases() {
 
   # make -n prints the targets' commands and runs none of them.
   begin_case "make build signs the app it packages, and make signing-identity makes the identity"
-  cp "$ROOT/Makefile" "$sandbox/Makefile"
+  copy_makefile
   output=$(cd "$sandbox" && "$REAL_MAKE" -n build signing-identity 2>&1)
   status=$?
   expect_status 0
