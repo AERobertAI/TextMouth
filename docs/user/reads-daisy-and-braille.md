@@ -192,7 +192,7 @@ Every format TextMouth reads, with how well each is tested, is in [the list of f
 - The volumes are read in the order the package gives, and each begins with a level-1 heading, "Volume 1", "Volume 2", and so on, in English whatever the book's language.
   The book's own headings sit one level below, so its level-1 headings are level 2, and none is deeper than level 6.
 - Its title and author come from the package, not from a title page, and its publisher, date, language, and identifier are kept with the book, as an EPUB's are.
-- Its braille code comes from the package, whatever the Braille tab says, and TextMouth never guesses it.
+- Its braille code comes from the package, whatever the Braille tab says, and is never said to be guessed.
   - English Braille, American Edition, contracted (Grade 2) or uncontracted (Grade 1).
   - Unified English Braille, contracted (Grade 2) or uncontracted (Grade 1).
   - For any other code, or none, the book is read as any BRF is, with the Braille tab's code or the guess described above.
