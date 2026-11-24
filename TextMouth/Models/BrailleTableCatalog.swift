@@ -435,8 +435,9 @@ enum BrailleTableCatalog {
         )
     }
 
-    /// `candidates` with each wrapper judged as the table it only includes is: a table whose only rule is one include of a
-    /// print-only table of its language writes braille only too, as macOS's `zh_TW.tbl` includes `zh-tw.ctb` (FR40).
+    /// `candidates` with each wrapper judged as the table it includes is: a table that only includes others, one of them a
+    /// print-only table of its language, writes braille only too, as macOS's `zh_TW.tbl` includes `zh-tw.ctb` and
+    /// `braille-patterns.cti` and does nothing else (FR40).
     private static func followingTheirTargets(
         _ candidates: [(table: BrailleTable, includeOnly: [String]?)]
     ) -> [(table: BrailleTable, includeOnly: [String]?)] {
@@ -447,8 +448,8 @@ enum BrailleTableCatalog {
             let printOnly = Set(found.filter(\.table.isPrintOnly).map { $0.table.fileName })
             let languages = Dictionary(found.map { ($0.table.fileName, $0.table.language) }) { first, _ in first }
             for index in found.indices where !found[index].table.isPrintOnly {
-                guard let includes = found[index].includeOnly, includes.count == 1, let target = includes.first,
-                      printOnly.contains(target), languages[target] == found[index].table.language
+                guard let includes = found[index].includeOnly,
+                      includes.contains(where: { printOnly.contains($0) && languages[$0] == found[index].table.language })
                 else { continue }
                 found[index].table = found[index].table.making(printOnly: true)
                 changed = true
@@ -887,9 +888,12 @@ enum BrailleTableCatalog {
             guard let members = groups[id], let first = members.first else { return nil }
             let sorted = members.sortedStably { lhs, rhs in
                 // A tuple of the sort keys, compared in order: contraction,
-                // then a bundled table (0) before a Mac one (1), then name.
-                (lhs.contraction.rank, lhs.source == .bundled ? 0 : 1, lhs.fileName)
-                    < (rhs.contraction.rank, rhs.source == .bundled ? 0 : 1, rhs.fileName)
+                // then a table that reads back (0) before one that only writes
+                // braille (1), so export's list never loses a table reading
+                // has to one of the same words, then a bundled table (0)
+                // before a Mac one (1), then name.
+                (lhs.contraction.rank, lhs.isPrintOnly ? 1 : 0, lhs.source == .bundled ? 0 : 1, lhs.fileName)
+                    < (rhs.contraction.rank, rhs.isPrintOnly ? 1 : 0, rhs.source == .bundled ? 0 : 1, rhs.fileName)
             }
             var labels = Set<String>()
             return BrailleCode(
