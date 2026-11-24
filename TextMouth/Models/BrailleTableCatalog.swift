@@ -1143,11 +1143,12 @@ enum BraillePreferences {
     /// otherwise. A Mac table is kept even when this Mac no longer has it,
     /// as after a macOS update, so that an import or an export refuses it by
     /// name rather than quietly using another table (decision 5); reading
-    /// the setting so never reads this Mac's folder.
+    /// the setting never lists this Mac's folder (at most the one header of a
+    /// bare name the pack lacks: `storableValue(_:)`).
     static let table = StoredPreference<String>(
         key: "brailleTable",
         read: { store, key in
-            store.string(forKey: key).flatMap(BrailleTableCatalog.storableValue) ?? BrailleTableCatalog.defaultTableID
+            store.string(forKey: key).flatMap { BrailleTableCatalog.storableValue($0) } ?? BrailleTableCatalog.defaultTableID
         },
         write: { id, store, key in store.set(id, forKey: key) }
     )
