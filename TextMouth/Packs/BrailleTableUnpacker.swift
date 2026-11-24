@@ -84,7 +84,7 @@ final class BrailleTableUnpacker: Sendable {
             DiagnosticLog.event(.import, "BRAILLE_TABLES_UNAVAILABLE: the pack cannot be used: \(failure.description)")  // l10n: no (a debug log reason, which stays English)
             return nil
         } catch {
-            DiagnosticLog.event(.import, "BRAILLE_TABLES_UNAVAILABLE: the pack cannot be used: \(Self.describe(error))")  // l10n: no (a debug log reason, which stays English)
+            DiagnosticLog.event(.import, "BRAILLE_TABLES_UNAVAILABLE: the pack cannot be used: \(BrailleTableUnpacker.describe(error))")  // l10n: no (a debug log reason, which stays English)
             return nil
         }
     }()
