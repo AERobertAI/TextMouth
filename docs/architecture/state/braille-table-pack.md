@@ -170,3 +170,21 @@ A platform never rewrites a value it reads: `table(withID:)` answers with the id
   The four tables both apps carry (`tablesOfEveryPack`) record none, since both read them with the same files.
   `BrailleBookReader.requireUnchangedTable` compares the recorded version with what this platform reads with now, and throws `Failure.changedTable`, worded by the reading platform: the iPhone's sentence never says "This Mac's".
 - The setting and config.json's mirror of it keep a value as read (`storableValue`), and a book keeps the table it was read with (see [The table](imports-braille.md#the-table)).
+
+## Tests
+<!-- id: braille-table-pack-tests; keys: BrailleTablePackTests, BrailleTableUnpackerTests, PackContainerTests, test_braille_tables, braille area, BrailleSettingsUITests, BRAILLE_COUNTS; src: Scripts/packs/tests/test_braille_tables.py, Scripts/packs/tests/test_packfile.py, TextMouthProductionTests/PackContainerTests.swift, TextMouthProductionTests/BrailleTablePackTests.swift, TextMouthProductionTests/BrailleTablePrintOnlyTests.swift, TextMouthProductionTests/BrailleFileCodeReplaceTests.swift, TextMouthProductionTests/PhoneBrailleSettingsTests.swift, TextMouthProductionTests/PhoneSettingsModelTests.swift, TextMouthProductionTests/PhoneImportWordingTests.swift, TextMouthiOSTests/BrailleLibraryTests.swift, TextMouthiOSUITests/BrailleSettingsUITests.swift, TextMouthiOSUITests/LanguagePickerUITests.swift, Scripts/test/areas.conf -->
+
+- The Python tests run with `make check-selftest`, or `python3 -I -B -m unittest discover -s Scripts/packs/tests`:
+  - `test_packfile.py` tests the container's writer and reader;
+  - `test_braille_tables.py` tests the headers, the license classes, the plan and the license rule, and the groups;
+  - it also tests the real tables: every shipped file is in exactly one group, the index's closure of every file is what its include lines reach, and a table missing an include fails the build;
+  - and that the license list is what the files say, and that the same files give the same pack.
+- The Swift tests of the packs run in the areas of `Scripts/test/areas.conf` (`python3 Scripts/test/run-area.py braille`), and the iPhone's unit bundle shares them with the Mac's test host:
+  - `PackContainerTests` (area support) reads the container with a format of its own;
+  - `BrailleTablePackTests` (area braille) holds the reader's, the unpacker's (`BrailleTableUnpackerTests`), and the catalog's (`BrailleTablePackCatalogTests`) tests, including the `mac:` mapping, a table that vanishes between the check and the open, and the helper reading an unpacked folder;
+  - `BrailleTablePrintOnlyTests` (area braille) holds the lists, VoiceOver's wrappers, and a shared config.json;
+  - `BrailleFileCodeReplaceTests` checks that Replace Existing keeps a `mac:` value as it is.
+- Every test that unpacks makes its own folder, never the app's Caches.
+- The iPhone's own: `BrailleLibraryTests` in the iPhone's unit bundle translates in process with a table other than English, and checks the `mac:` mapping and the phone's wording of a changed liblouis.
+  `PhoneBrailleSettingsTests` (the groups, the rows, and a choice), `PhoneSettingsModelTests` (the section's place and its rows' words), and `PhoneImportWordingTests` (which `mac:` tables the iPhone refuses) run on the Mac's test host too.
+  `BrailleSettingsUITests` and `ScreenOrderUITests` read the section, its list, and a choice with VoiceOver's labels and values on the hosted iPhone runs, and `LanguagePickerUITests` scrolls to the rows it needs, since the Braille section moved the About row off the first screen.

@@ -42,7 +42,7 @@ Run these from the repository root:
   The app includes LAME 3.100's MP3 encoder, which project.yml builds from Vendor/lame as a static library the app links, about 0.13 MB of it (see [Third-party code](third-party-code.md)).
   It includes the TextMouthBraille helper too, a command-line program of TextMouth's own, in TextMouthBraille/main.c, that links liblouis 3.39.0, which project.yml builds from Vendor/liblouis as a static library only the helper links.
   The iPhone app links its own build, liblouis_iOS, and runs it in the app.
-  The app copies the helper into Contents/MacOS, about 0.15 MB, liblouis's four braille tables into Contents/Resources/liblouis/tables, about 0.29 MB, and the licence files of LAME and liblouis into Contents/Resources/Licenses, about 0.07 MB.
+  The app copies the helper into Contents/MacOS, about 0.15 MB, and the licence files of LAME and liblouis into Contents/Resources/Licenses, about 0.07 MB; the build phase "Pack braille tables" packs its braille tables into Contents/Resources/BrailleTables.pack.
   Xcode's header map is off (USE_HEADERMAP: NO) for LAME, liblouis, and the helper: it lists every header of the project under its bare name, and it handed liblouis LAME's config.h, so each of them finds its own through its search paths.
   The full build log is build/xcodebuild-Release.log.
   It then signs build/TextMouth.app with this Mac's TextMouth Developer identity, when it has one, so that macOS keeps the app's microphone permission from one build to the next, and prints the app's designated requirement.
@@ -250,6 +250,8 @@ Run `make check` before merging.
 It also reports the size of the Release app it built, build/TextMouth.app, the app `make install` copies, counted as Finder counts it (the sizes of its files, a megabyte being a million bytes), as in "build/TextMouth.app is 17.9 MB (17,888,466 bytes), within the 30 MB limit".
 It warns, without failing, above 30 MB and fails above 40 MB, limits set once, as APP_SIZE_WARNING_MB and APP_SIZE_LIMIT_MB in Scripts/check.sh, which `app-size.py` reads for the iPhone app too ([the gate's step](#the-iphone-app-in-the-gate)).
 It fails when either app ships a table of Apple's, or a `.lproj` folder without its `InfoPlist.strings` ([what the apps ship](localization.md#what-the-apps-ship)).
+It fails when either app does not hold exactly one BrailleTables.pack in its resources, within BRAILLE_PACK_LIMIT_BYTES (the iPhone's) or MAC_BRAILLE_PACK_LIMIT_BYTES (the Mac's), or holds a raw liblouis table.
+A raw table is a `liblouis/tables` folder, or a `.ctb`, `.cti`, `.utb`, `.uti`, `.tbl`, `.dis`, or `.dic` file anywhere (`require_braille_pack` in Scripts/check.sh; see [Braille table pack](../architecture/state/braille-table-pack.md#building-the-pack)).
 Its Release build runs `make build SIGN_APP=:`, so the app keeps Xcode's ad hoc signature and the gate never asks for the keychain (`make install` builds and signs its own app).
 It repeats, once each, the PERFORMANCE WARNING: and PERFORMANCE SKIPPED: lines those tests print; neither kind fails the gate, since a number more than twice its baseline has already failed its test.
 Both builds start from scratch: the gate first removes `build/DerivedData/Build` and `TextMouthTests/.build`, keeping the package checkouts, because xcodebuild prints a file's warnings only when it compiles that file.
@@ -271,7 +273,7 @@ One machine could not finish the whole suite in the old job's 60-minute limit (r
 - the baseline-recording script;
 - the storage drill script's verdicts (see [Reusable test tools](testing-tools.md));
 - the version script (see Versions, above);
-- the Python tools in `Scripts/test` (see [Reusable test tools](testing-tools.md)) and the l10n tools (`Scripts/l10n/tests`: the catalog, the scanner, the sync, the pack, the merge driver);
+- the Python tools in `Scripts/test` (see [Reusable test tools](testing-tools.md)), the l10n tools (`Scripts/l10n/tests`: the catalog, the scanner, the sync, the pack, the merge driver), and the pack tools (`Scripts/packs/tests`: the container's writer and the braille-table builder);
 - the vendored SwiftSoup's script, `Scripts/vendor/swiftsoup/test_make_vendor.py`, the FFmpeg build script's tests (`Scripts/vendor/ffmpeg/test_build.py`), and the iPhone size tool's (`app-size.py --selftest`);
 - the policy test that no tracked file holds a path of one Mac (see [Working with agents](../agents/working-with-agents.md)), and the issue tracker's tests (`.claude/skills/issue-library/tests`), which work only in temporary folders;
 - that `make build` builds without code coverage and with `-Osize` while `make debug` does not;
