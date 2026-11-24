@@ -75,7 +75,7 @@ Each problem (a missing or damaged pack, an unknown ID, a text that fails its ch
 Each language's decoded entries are kept after their first use, and the notes are never decoded.
 
 ## The pack's compression
-<!-- id: localization-pack-compression; keys: Strings.pack, bzip2, LZMA, xz, libbz2, CBZip2, directory record, format 2; src: Scripts/l10n/pack.py, TextMouth/Localization/InterfaceText/InterfaceTextPack.swift, Vendor/CBZip2/include/module.modulemap, project.yml, TextMouthProductionTests/InterfaceTextTests.swift, Scripts/l10n/tests/test_pack.py -->
+<!-- id: localization-pack-compression; keys: Strings.pack, bzip2, LZMA, xz, libbz2, CBZip2, directory record, format 2; src: Scripts/l10n/pack.py, TextMouth/Localization/InterfaceText/InterfaceTextPack.swift, Vendor/CBZip2/include/module.modulemap, project.yml, Scripts/check.sh, TextMouthProductionTests/InterfaceTextTests.swift, Scripts/l10n/tests/test_pack.py -->
 
 The pack is format 2: the header's version is 2, and each blob's 32-byte directory record ends with its method.
 - Method 0 is an xz stream (LZMA2), which Apple's Compression framework decodes (`COMPRESSION_LZMA`).
@@ -83,6 +83,7 @@ The pack is format 2: the header's version is 2, and each blob's 32-byte directo
 - `pack.py build` compresses each blob both ways and keeps the smaller, LZMA on a tie, so the two can mix in one pack.
 - The reader refuses any other version, format 1 included, right after the magic, and any other method.
   A pack it refuses gives English, as a missing one does, and the problem is reported once (see The engine, above).
+- `make check` holds each app's pack to `PACK_LIMIT_BYTES` in `Scripts/check.sh`.
 - The apps link the system's `libbz2` through the `CBZip2` module, whose module map (`Vendor/CBZip2/include/module.modulemap`) imports the SDK's own bzip2 header and links `bz2`; project.yml puts it on `SWIFT_INCLUDE_PATHS`.
   Nothing of bzip2 is vendored.
 - `InterfaceTextTests` reads both methods in one pack, a stream under the wrong method, and garbage in a blob, each giving English and one report; `Scripts/l10n/tests/test_pack.py` tests the builder.
