@@ -298,6 +298,21 @@ final class BrailleTablePrintOnlyTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(export.count, reading.count)
     }
 
+    /// The folder a run reads: a table of the app's pack is read from the unpacked pack; a Mac's own table, and a bare value
+    /// the pack lacks that VoiceOver has, from VoiceOver's folder, on the Mac only. The iPhone never falls back to a folder of
+    /// the host, which a simulator sees at its own path: a table its pack lacks is refused.
+    func testTheFolderARunReadsFollowsTheAppsOwnTables() throws {
+        let work = BrailleTranslator.Tool.helper
+        XCTAssertNotEqual(try work.tablesFolder("en-ueb-g2.ctb"), BrailleTableCatalog.macTablesFolder)
+        #if os(iOS)
+        XCTAssertThrowsError(try work.tablesFolder("mac:no-such-table-on-any-device.ctb"))
+        XCTAssertThrowsError(try work.tablesFolder("no-such-table-on-any-device.ctb"))
+        #else
+        XCTAssertEqual(try work.tablesFolder("mac:no-such-table-on-any-device.ctb"), BrailleTableCatalog.macTablesFolder)
+        XCTAssertThrowsError(try work.tablesFolder("no-such-table-on-any-device.ctb"))
+        #endif
+    }
+
     /// A book or a setting that already names a print-only table keeps working: the table is found, its value is stored as
     /// it is, a translation with it goes on, and a read of a book with it is never refused as an unknown table.
     func testATableAlreadyInUseKeepsWorking() throws {

@@ -176,14 +176,14 @@ enum BrailleTranslator {
         ///   unpacked: the app has no pack, or a blob of it is damaged (the
         ///   unpacker has logged why, once).
         private static func appTablesFolder(for table: String) throws -> URL? {
-            let (source, fileName) = BrailleTableSource.parse(table)
-            if source == .mac { return BrailleTableCatalog.macTablesFolder }
+            #if os(macOS)
+            // A Mac's own table, and a bare value the app's pack lacks that VoiceOver has (`readsFromMacFolder`): read from
+            // VoiceOver's folder. Only a Mac has one: a simulator sees the host's folder at its own path, and the iPhone reads
+            // its pack alone.
+            if BrailleTableCatalog.readsFromMacFolder(table) { return BrailleTableCatalog.macTablesFolder }
+            #endif
             guard let unpacker = BrailleTableUnpacker.app else { throw Failure.unknownTable(table) }
-            // A bare value the app's pack lacks is read with this Mac's own file of that name, when VoiceOver has one.
-            if unpacker.pack.files[fileName] == nil,
-               FileManager.default.fileExists(atPath: BrailleTableCatalog.macTablesFolder.appendingPathComponent(fileName).path) {
-                return BrailleTableCatalog.macTablesFolder
-            }
+            let fileName = BrailleTableSource.parse(table).fileName
             do {
                 return try unpacker.unpackedFolder(for: fileName)
             } catch {
