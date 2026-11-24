@@ -205,8 +205,8 @@ final class BrailleTablePackTests: XCTestCase {
         try refused("a length past the group") { $0.damageIndex = damagingFirstFile("l", to: 1_000_000) }
         try refused("a negative length") { $0.damageIndex = damagingFirstFile("l", to: -1) }
         try refused("an offset and length that overflow") { $0.damageIndex = { document in
-            damagingFirstFile("o", to: Int.max)(&document)
-            damagingFirstFile("l", to: 5)(&document)
+            self.damagingFirstFile("o", to: Int.max)(&document)
+            self.damagingFirstFile("l", to: 5)(&document)
         } }
         try refused("an include the pack lacks") { $0.files["chars.uti"] = "include gone.uti\n" }
         try refused("a group whose count is not its files'") { $0.groupCount = { _, count in count + 1 } }
@@ -583,7 +583,7 @@ final class BrailleTablePackCatalogTests: XCTestCase {
         XCTAssertEqual(again.withLock { $0 }, 2)
 
         let alone = OSAllocatedUnfairLock<Int>(initialState: 0)
-        BrailleTranslator.$tool.withValue(tool(calls: alone, statuses: [2], withFolder: false)) {
+        try BrailleTranslator.$tool.withValue(tool(calls: alone, statuses: [2], withFolder: false)) {
             XCTAssertThrowsError(try BrailleTranslator.check(table: "en-ueb-g1.ctb", workingIn: work)) {
                 XCTAssertEqual($0 as? BrailleTranslator.Failure, .unknownTable("en-ueb-g1.ctb"))
             }
@@ -591,7 +591,7 @@ final class BrailleTablePackCatalogTests: XCTestCase {
         XCTAssertEqual(alone.withLock { $0 }, 1, "a tool with no folder was asked twice")
 
         let never = OSAllocatedUnfairLock<Int>(initialState: 0)
-        BrailleTranslator.$tool.withValue(tool(calls: never, statuses: [2], withFolder: true)) {
+        try BrailleTranslator.$tool.withValue(tool(calls: never, statuses: [2], withFolder: true)) {
             XCTAssertThrowsError(try BrailleTranslator.check(table: "en-ueb-g1.ctb", workingIn: work)) {
                 XCTAssertEqual($0 as? BrailleTranslator.Failure, .unknownTable("en-ueb-g1.ctb"))
             }
