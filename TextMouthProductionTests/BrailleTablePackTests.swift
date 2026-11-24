@@ -436,7 +436,7 @@ final class BrailleTablePackCatalogTests: XCTestCase {
         try Data("\(BrailleEmphasis.protocolHeader)\nab ba\n\n".utf8).write(to: input)
         XCTAssertEqual(try runHelper(["check", folder.path, "plain.ctb"]), 0)
         XCTAssertEqual(try runHelper(["forward", folder.path, "plain.ctb", input.path, output.path]), 0)
-        XCTAssertEqual(try String(contentsOf: output, encoding: .utf8), "\(BrailleEmphasis.protocolHeader)\n\u{2801}\u{2803}\u{2800}\u{2803}\u{2801}\n")
+        XCTAssertEqual(try String(contentsOf: output, encoding: .utf8), "\(BrailleEmphasis.protocolHeader)\n\u{2801}\u{2803}\u{2800}\u{2803}\u{2801}\n\n")
         // A folder that holds the table without the file it includes does not load: the closure is what makes a table work.
         let bare = work.appendingPathComponent("bare", isDirectory: true)
         try FileManager.default.createDirectory(at: bare, withIntermediateDirectories: true)

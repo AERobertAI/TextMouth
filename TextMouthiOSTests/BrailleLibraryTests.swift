@@ -64,7 +64,7 @@ final class BrailleLibraryTests: XCTestCase {
         maxOutput: Int = 0,
         stops: Bool = false
     ) throws -> Outcome {
-        let folder = try XCTUnwrap(tables ?? (try BrailleTranslator.Tool.helper.tablesFolder(table))?.path, "the app has no tables folder")
+        let folder = try XCTUnwrap(tables ?? (try BrailleTranslator.Tool.helper.tablesFolder(BrailleTableCatalog.bundled.contains(where: { $0.id == table }) ? table : grade1))?.path, "the app has no tables folder")
         let rawMode = mode.rawValue
         return try engine.run(limit: 60) { _ in
             folder.withCString { folder in
@@ -124,7 +124,7 @@ final class BrailleLibraryTests: XCTestCase {
         }
         XCTAssertEqual(failed, [], "tables that did not load")
         let print = "\u{E9}t\u{E9} bonjour"
-        let spanish = try BrailleTranslator.translate([print], table: "es-g1.ctb", direction: .printToBraille, workingIn: work)
+        let spanish = try BrailleTranslator.translate([print], table: "es.tbl", direction: .printToBraille, workingIn: work)
         XCTAssertEqual(spanish, ["\u{282E}\u{281E}\u{282E}\u{2800}\u{2803}\u{2815}\u{281D}\u{281A}\u{2815}\u{2825}\u{2817}"])
         let french = try BrailleTranslator.translate([print], table: "fr-bfu-g2.ctb", direction: .printToBraille, workingIn: work)
         XCTAssertEqual(french, ["\u{2836}\u{2800}\u{2803}\u{281A}"])
@@ -132,7 +132,7 @@ final class BrailleLibraryTests: XCTestCase {
         XCTAssertNotEqual(english, spanish)
         XCTAssertNotEqual(english, french)
         // And back, with the table's own letters.
-        XCTAssertEqual(try BrailleTranslator.translate(spanish, table: "es-g1.ctb", direction: .brailleToPrint, workingIn: work), [print])
+        XCTAssertEqual(try BrailleTranslator.translate(spanish, table: "es.tbl", direction: .brailleToPrint, workingIn: work), [print])
     }
 
     /// A Mac's own table whose file name the iPhone's pack has is read with the pack's table (a library shared with a Mac,

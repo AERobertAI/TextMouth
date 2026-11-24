@@ -761,8 +761,8 @@ final class BrailleTranslatorTests: XCTestCase {
         XCTAssertEqual(command.arguments, ["check", tables.path, "en-ueb-g1.ctb"])
         let input = URL(fileURLWithPath: "/tmp/in"), output = URL(fileURLWithPath: "/tmp/out")
         XCTAssertEqual(
-            try XCTUnwrap(tool.command("back", "x.ctb", input, output)).arguments,
-            ["back", tables.path, "x.ctb", "/tmp/in", "/tmp/out"]
+            try XCTUnwrap(tool.command("back", "en-ueb-g1.ctb", input, output)).arguments,
+            ["back", tables.path, "en-ueb-g1.ctb", "/tmp/in", "/tmp/out"]
         )
     }
     #endif
