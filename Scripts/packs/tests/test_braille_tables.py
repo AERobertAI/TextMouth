@@ -356,6 +356,25 @@ class RealTablesTests(unittest.TestCase):
     def test_the_license_list_is_what_the_files_say(self):
         self.assertEqual(bt.LICENSES_FILE.read_text(encoding="utf-8"), bt.license_list(self.phone_plan, self.version))
 
+    def test_the_index_names_the_tables_that_write_braille_only_and_the_two_way_ones(self):
+        for pack in (self.phone, self.mac):
+            forward, two_way = pack["index"]["f"], pack["index"]["w"]
+            self.assertEqual(sorted(forward), forward)
+            self.assertFalse(set(forward) & set(two_way))
+            for name in ("de-g1.ctb", "cs.tbl", "lv.tbl", "sl.tbl", "zh_CHN.tbl", "zh-tw.ctb", "th-g2.ctb", "ko-g2.ctb"):
+                self.assertIn(name, forward, name)
+            for name in ("en-ueb-g2.ctb", "fr-bfu-g2.ctb", "en_US.tbl", "zh-hk.ctb", "ar.tbl"):
+                self.assertIn(name, two_way, name)
+        # The Mac's pack names the whole release's directions, though it carries 20 of its files.
+        self.assertEqual(self.phone["index"]["f"], self.mac["index"]["f"])
+        self.assertEqual(self.phone["index"]["w"], self.mac["index"]["w"])
+
+    def test_directions_of_a_small_release(self):
+        files = {"a.ctb": table(body=b"#+direction:forward\n"), "b.ctb": table(), "c.cti": b"letter a 1\n", "d.ctb": b"#+type:computer\n#+direction:forward\n"}
+        files["a.ctb"] = b"#+type:literary\n#+direction:forward\n#-display-name: A\n" + LGPL % b"2.1"
+        with folder_of(files) as folder:
+            self.assertEqual((["a.ctb"], ["b.ctb"]), bt.plan(folder, "iphone").directions)
+
     def test_every_file_is_recorded_with_its_sha_256(self):
         for pack in (self.phone, self.mac):
             for entry in pack["index"]["files"]:
@@ -395,7 +414,7 @@ class RealTablesTests(unittest.TestCase):
 
     def test_the_index_is_json_of_the_shape_the_reader_expects(self):
         index = self.phone["index"]
-        self.assertEqual({"v", "liblouis", "files"}, set(index))
+        self.assertEqual({"v", "liblouis", "files", "f", "w"}, set(index))
         self.assertEqual(bt.INDEX_VERSION, index["v"])
         for entry in index["files"]:
             self.assertTrue({"n", "g", "o", "l"} <= set(entry), entry)

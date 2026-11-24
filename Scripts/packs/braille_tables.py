@@ -293,11 +293,13 @@ class Plan:
     """What a folder's pack holds: `files` shipped ({name: bytes}), `includes` ({name: [names]} for the shipped ones), and
     `excluded` ({name: reason}) for the rest, with `licenses` ({name: class}) for every file read."""
 
-    def __init__(self, files, includes, excluded, licenses):
+    def __init__(self, files, includes, excluded, licenses, directions=None):
         self.files = files
         self.includes = includes
         self.excluded = excluded
         self.licenses = licenses
+        # (names of the release's literary tables that write braille only, names of those that read it back too).
+        self.directions = directions or ([], [])
 
 
 def leave_out(includes, licenses, fields, protected):
@@ -336,6 +338,20 @@ def leave_out(includes, licenses, fields, protected):
     return excluded
 
 
+def release_directions(everything):
+    """(forward, two_way): the sorted names of the release's literary tables whose `direction` is `forward` (they write braille
+    from print and cannot read it back, which TextMouth's reading needs), and of those that are not (`both`, or no mark). Every
+    file of the release is judged, shipped or not: the Mac, which carries only four tables, judges VoiceOver's older copies of a
+    table by the release's direction whenever the release has a table of that file name (`BrailleTableCatalog`)."""
+    forward, two_way = [], []
+    for name, data in everything.items():
+        fields = catalog_fields(data)
+        if fields.get("type", "").lower() != "literary":
+            continue
+        (forward if fields.get("direction", "both").lower() == "forward" else two_way).append(name)
+    return sorted(forward), sorted(two_way)
+
+
 def plan(folder, profile="iphone", mac_list=None):
     """The `Plan` of the tables in `folder` for `profile`.
     Raises BuildError for a file that includes one the folder lacks, and, for the mac profile, for a listed file the folder
@@ -353,6 +369,7 @@ def plan(folder, profile="iphone", mac_list=None):
             if name not in everything:
                 raise BuildError(f"the Mac's list names {name}, which the tables folder lacks")
     excluded = leave_out(includes, licenses, {name: catalog_fields(data) for name, data in everything.items()}, set(listed))
+    directions = release_directions(everything)
     if profile == "mac":
         for name in listed:
             if name in excluded:
@@ -360,7 +377,7 @@ def plan(folder, profile="iphone", mac_list=None):
             for target in includes[name]:
                 if target not in listed:
                     raise BuildError(f"the Mac's list has {name}, which includes {target}, which the list lacks")
-        return Plan({name: everything[name] for name in sorted(listed)}, {name: includes[name] for name in sorted(listed)}, {}, licenses)
+        return Plan({name: everything[name] for name in sorted(listed)}, {name: includes[name] for name in sorted(listed)}, {}, licenses, directions)
     if profile != "iphone":
         raise BuildError(f"there is no profile {profile}")
     # A hyphenation dictionary ships only when a shipped file includes it.
@@ -369,7 +386,7 @@ def plan(folder, profile="iphone", mac_list=None):
         if name.endswith(".dic") and name not in excluded and name not in included_by_shipped:
             excluded[name] = "a dictionary no shipped table includes"
     shipped = sorted(name for name in everything if name not in excluded)
-    return Plan({name: everything[name] for name in shipped}, {name: includes[name] for name in shipped}, excluded, licenses)
+    return Plan({name: everything[name] for name in shipped}, {name: includes[name] for name in shipped}, excluded, licenses, directions)
 
 
 def read_list(path):
@@ -454,8 +471,10 @@ def raw_groups(files, groups):
 def build_index(the_plan, groups, places, liblouis_version):
     """The index document of a pack, as JSON-ready data:
     {"v": 1, "liblouis": "3.39.0", "files": [...]}, each file {"n": name, "g": group, "o": offset, "l": length,
-    "h": the SHA-256 of its bytes in lowercase hexadecimal, "i": [included files] when it includes any, "m": {catalog fields} when it is a table, "t": [targets] when it only
-    includes others}. Files are in name order."""
+    "h": the SHA-256 of its bytes in lowercase hexadecimal, "i": [included files] when it includes any, "m": {catalog fields}
+    when it is a table, "t": [targets] when it only includes others}. Files are in name order. Beside "files" are "f", the names
+    of the release's literary tables that write braille only, and "w", the names of those that also read it back
+    (`release_directions`), which the Mac judges VoiceOver's older tables by."""
     entries = []
     for name in sorted(the_plan.files):
         group, offset, length = places[name]
@@ -469,7 +488,8 @@ def build_index(the_plan, groups, places, liblouis_version):
         if only:
             entry["t"] = only
         entries.append(entry)
-    return {"v": INDEX_VERSION, "liblouis": liblouis_version, "files": entries}
+    forward, two_way = the_plan.directions
+    return {"v": INDEX_VERSION, "liblouis": liblouis_version, "files": entries, "f": forward, "w": two_way}
 
 
 def index_bytes(index):
