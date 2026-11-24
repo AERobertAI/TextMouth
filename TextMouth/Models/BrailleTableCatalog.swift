@@ -549,19 +549,26 @@ enum BrailleTableCatalog {
 
     /// Every table `tables(in:source:)` offers and those that write braille only (`isPrintOnly`), which are offered for export
     /// alone. `release` is the newer release's directions for a folder of an older one (this Mac's).
+    /// - Parameter requiresIncludes: Leave out a table whose only rules are includes of a file the folder lacks, which could
+    ///   never load: Apple left out the LGPL 3 includes of VoiceOver's `is.tbl`, `pt.tbl`, and `sr.tbl`, so Icelandic,
+    ///   Portuguese, and Serbian fail to load. A table with rules of its own has its includes unread here (the listing reads
+    ///   no more than each file's header and, for a short file, its include lines), so only such wrappers can be found.
     static func allTables(
-        in folder: URL, source: BrailleTableSource = .bundled, release: BrailleTablePack.ReleaseDirections? = nil
+        in folder: URL, source: BrailleTableSource = .bundled, release: BrailleTablePack.ReleaseDirections? = nil,
+        requiresIncludes: Bool = false
     ) -> [BrailleTable] {
         let files = (try? FileManager.default.contentsOfDirectory(
             at: folder,
             includingPropertiesForKeys: [.isRegularFileKey],
             options: [.skipsHiddenFiles]
         )) ?? []
+        let present = Set(files.map(\.lastPathComponent))
         let found = files
             .filter { (try? $0.resourceValues(forKeys: [.isRegularFileKey]).isRegularFile) == true }
             .compactMap { file in
                 table(at: file, source: source, release: release).map { (table: $0, includeOnly: includeOnlyTargets(ofTableAt: file)) }
             }
+            .filter { !requiresIncludes || ($0.includeOnly ?? []).allSatisfy(present.contains) }
         return offered(from: found)
     }
 
@@ -659,14 +666,17 @@ enum BrailleTableCatalog {
     /// `propertyList` records; nil when there is no such folder, as on an
     /// older macOS or after Apple moves it.
     static func macTables(
-        in folder: URL, propertyList: URL, release: BrailleTablePack.ReleaseDirections? = BrailleTableUnpacker.app?.pack.releaseDirections
+        in folder: URL, propertyList: URL, release: BrailleTablePack.ReleaseDirections? = BrailleTableUnpacker.app?.pack.releaseDirections,
+        requiresIncludes: Bool = false
     ) -> MacTables? {
         var isFolder: ObjCBool = false
         guard FileManager.default.fileExists(atPath: folder.path, isDirectory: &isFolder), isFolder.boolValue else {
             return nil
         }
         let version = liblouisVersion(inPropertyList: propertyList)
-        let all = allTables(in: folder, source: .mac, release: releaseDirections(judgingMacVersion: version, of: release))
+        let all = allTables(
+            in: folder, source: .mac, release: releaseDirections(judgingMacVersion: version, of: release), requiresIncludes: requiresIncludes
+        )
         return MacTables(tables: all.filter { !$0.isPrintOnly }, liblouisVersion: version, printOnly: all.filter(\.isPrintOnly))
     }
 
@@ -719,7 +729,7 @@ enum BrailleTableCatalog {
     /// reading it there would offer tables the device never has (the iPhone's pack is what it offers).
     static let mac: MacTables? = {
         #if os(macOS)
-        return macTables(in: macTablesFolder, propertyList: macTablesPropertyList)
+        return macTables(in: macTablesFolder, propertyList: macTablesPropertyList, requiresIncludes: true)
         #else
         return nil
         #endif
