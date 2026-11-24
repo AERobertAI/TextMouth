@@ -390,10 +390,10 @@ enum BrailleTableCatalog {
     /// bundled tables are made by these same rules without opening a file.
     ///
     /// A table's direction is `both` (or none stated), and it is read for reading and writing, or `forward`, and it writes
-    /// braille only (`isPrintOnly`); any other direction is not offered. When `release` is given (this Mac's tables, which
-    /// are an older liblouis's), a table the newer release has under the same file name is judged as the release judges it,
-    /// since macOS's 3.34.0 copies of `zh_CHN.tbl`, `cs.tbl`, `lv.tbl`, and `sl.tbl` lack the `direction: forward` that 3.39.0
-    /// gives them (FR40).
+    /// braille only (`isPrintOnly`); any other direction is not offered. When `release` is given (this Mac's tables, when
+    /// they are an older liblouis's than the app's), a table the newer release marks print-only is print-only too, whatever
+    /// the file says, since macOS's 3.34.0 copies of `zh_CHN.tbl`, `cs.tbl`, `lv.tbl`, and `sl.tbl` lack the
+    /// `direction: forward` that 3.39.0 gives them; and a table the file marks is print-only whatever the release says (FR40).
     private static func table(
         fields: [String: String], fileName: String, source: BrailleTableSource, release: BrailleTablePack.ReleaseDirections? = nil
     ) -> BrailleTable? {
@@ -412,11 +412,12 @@ enum BrailleTableCatalog {
         } else {
             contraction = fields["grade"].flatMap(Contraction.init(grade:)) ?? .unstated
         }
+        // Print-only when either source marks it so: the release's list (a newer liblouis than the file's own), or the file's
+        // own `direction: forward`. The release never makes a table that its own header marks two-way read-only or the
+        // reverse: it only adds a mark an older copy lacks (`releaseDirections(judgingMacVersion:)`).
         let isPrintOnly: Bool
         if let release, release.printOnly.contains(fileName) {
             isPrintOnly = true
-        } else if let release, release.twoWay.contains(fileName) {
-            isPrintOnly = false
         } else {
             switch fields["direction"]?.lowercased() {
             case nil, "both": isPrintOnly = false
@@ -664,11 +665,19 @@ enum BrailleTableCatalog {
         guard FileManager.default.fileExists(atPath: folder.path, isDirectory: &isFolder), isFolder.boolValue else {
             return nil
         }
-        let all = allTables(in: folder, source: .mac, release: release)
-        return MacTables(
-            tables: all.filter { !$0.isPrintOnly }, liblouisVersion: liblouisVersion(inPropertyList: propertyList),
-            printOnly: all.filter(\.isPrintOnly)
-        )
+        let version = liblouisVersion(inPropertyList: propertyList)
+        let all = allTables(in: folder, source: .mac, release: releaseDirections(judgingMacVersion: version, of: release))
+        return MacTables(tables: all.filter { !$0.isPrintOnly }, liblouisVersion: version, printOnly: all.filter(\.isPrintOnly))
+    }
+
+    /// The release's directions to judge this Mac's tables by, given the liblouis version they are (`OpenSourceVersion`):
+    /// the newer liblouis decides, so when VoiceOver's is older than the app's, or unknown, the release's marks are added
+    /// to the files' own; when VoiceOver's is newer, VoiceOver's own headers decide and the release is not used (FR40).
+    static func releaseDirections(
+        judgingMacVersion version: String?, of release: BrailleTablePack.ReleaseDirections?
+    ) -> BrailleTablePack.ReleaseDirections? {
+        guard let version, version.compare(bundledLiblouisVersion, options: .numeric) == .orderedDescending else { return release }
+        return nil
     }
 
     /// The liblouis version the property list at `url` records
@@ -864,6 +873,7 @@ enum BrailleTableCatalog {
     static func storableValue(
         _ value: String,
         in folder: URL = macTablesFolder,
+        propertyList: URL = macTablesPropertyList,
         headerOf: (URL) -> [String: String] = { metadata(ofTableAt: $0) }
     ) -> String? {
         if BrailleTableSource.isMacValue(value) { return value }
@@ -872,7 +882,12 @@ enum BrailleTableCatalog {
         if BrailleTableSource.isMacValue(BrailleTableSource.mac.storedValue(ofFile: value)) {
             let file = folder.appendingPathComponent(value)
             if FileManager.default.fileExists(atPath: file.path),
-               table(fields: headerOf(file), fileName: value, source: .mac, release: BrailleTableUnpacker.app?.pack.releaseDirections) != nil {
+               table(
+                   fields: headerOf(file), fileName: value, source: .mac,
+                   release: releaseDirections(
+                       judgingMacVersion: liblouisVersion(inPropertyList: propertyList), of: BrailleTableUnpacker.app?.pack.releaseDirections
+                   )
+               ) != nil {
                 return value
             }
         }

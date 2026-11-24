@@ -93,7 +93,10 @@ final class BrailleTablePrintOnlyTests: XCTestCase {
     /// VoiceOver's older tables are judged as the newer release judges the file names it has: macOS's `zh_CHN.tbl`, `cs.tbl`,
     /// `lv.tbl`, and `sl.tbl` lack the `direction: forward` the release gives them; a wrapper that includes a print-only table of
     /// its language, `zh_TW.tbl` (macOS's own `zh-tw.ctb` says forward), writes braille only too; `zh_HK.tbl`, whose table
-    /// carries no mark in either, reads; a table the release says reads back reads, whatever an older header said.
+    /// carries no mark in either, reads. A table is print-only when either source marks it so: `changed.ctb`, which the
+    /// release marks and VoiceOver's copy does not, and `marked.ctb`, which VoiceOver's copy marks and the release calls
+    /// two-way. When VoiceOver's liblouis is newer than the app's, its own headers decide: the release is not used, so
+    /// `changed.ctb` reads and `marked.ctb` stays print-only.
     func testTheMacJudgesVoiceOversTablesByTheNewerRelease() throws {
         let files = [
             "cs.tbl": header(language: "cs", name: "Czech"), "cs-g1.ctb": "letter a 1\n",
@@ -104,28 +107,59 @@ final class BrailleTablePrintOnlyTests: XCTestCase {
             "zh_HK.tbl": header(language: "yue-HK", name: "Cantonese", locale: true) + "include zh-hk.ctb\ninclude braille-patterns.cti\n",
             "zh-hk.ctb": header(language: "yue", name: "Cantonese braille") + "letter a 1\n",
             "braille-patterns.cti": "letter b 12\n",
-            "changed.ctb": header(language: "xx", name: "Changed", direction: "forward") + "letter a 1\n",
+            "changed.ctb": header(language: "xx", name: "Changed") + "letter a 1\n",
+            "marked.ctb": header(language: "xx", name: "Marked", direction: "forward") + "letter a 1\n",
             "backwards.ctb": header(language: "xx", name: "Backwards", direction: "backward") + "letter a 1\n",
         ]
         let release = BrailleTablePack.ReleaseDirections(
-            printOnly: ["cs.tbl", "lv.tbl", "sl.tbl", "zh_CHN.tbl"], twoWay: ["changed.ctb", "zh-hk.ctb"]
+            printOnly: ["cs.tbl", "lv.tbl", "sl.tbl", "zh_CHN.tbl", "changed.ctb"], twoWay: ["marked.ctb", "zh-hk.ctb"]
         )
-        let mac = try XCTUnwrap(BrailleTableCatalog.macTables(
-            in: try folder(of: files), propertyList: URL(fileURLWithPath: "/nonexistent/none.plist"), release: release
-        ))
-        let writesOnly = Set(mac.printOnly.map(\.id))
-        XCTAssertEqual(writesOnly, ["mac:cs.tbl", "mac:lv.tbl", "mac:sl.tbl", "mac:zh_CHN.tbl", "mac:zh_TW.tbl", "mac:zh-tw.ctb"])
-        let reading = Set(mac.tables.map(\.id))
-        XCTAssertTrue(reading.isDisjoint(with: writesOnly))
-        XCTAssertTrue(reading.isSuperset(of: ["mac:zh_HK.tbl", "mac:zh-hk.ctb", "mac:changed.ctb"]), "\(reading)")
-        XCTAssertFalse(reading.contains("mac:backwards.ctb"))
-        XCTAssertFalse(writesOnly.contains("mac:backwards.ctb"))
+        let tables = try folder(of: files)
+        /// The Mac's tables judged with a property list that names `version` (none: no property list).
+        func judged(version: String?) throws -> BrailleTableCatalog.MacTables {
+            var list = URL(fileURLWithPath: "/nonexistent/none.plist")
+            if let version {
+                list = tables.deletingLastPathComponent().appendingPathComponent("tables-\(version).plist")
+                try PropertyListSerialization.data(fromPropertyList: ["OpenSourceVersion": version], format: .xml, options: 0).write(to: list)
+            }
+            return try XCTUnwrap(BrailleTableCatalog.macTables(in: tables, propertyList: list, release: release))
+        }
+        // VoiceOver's liblouis is older than the app's, or unknown: the release's marks are added to the files' own.
+        for version in [nil, "3.34.0", "3.39.0"] {
+            let mac = try judged(version: version)
+            let writesOnly = Set(mac.printOnly.map(\.id))
+            XCTAssertEqual(writesOnly, [
+                "mac:cs.tbl", "mac:lv.tbl", "mac:sl.tbl", "mac:zh_CHN.tbl", "mac:zh_TW.tbl", "mac:zh-tw.ctb", "mac:changed.ctb",
+                "mac:marked.ctb",
+            ], "VoiceOver \(version ?? "unknown")")
+            let reading = Set(mac.tables.map(\.id))
+            XCTAssertTrue(reading.isDisjoint(with: writesOnly))
+            XCTAssertTrue(reading.isSuperset(of: ["mac:zh_HK.tbl", "mac:zh-hk.ctb"]), "\(reading)")
+            XCTAssertFalse(reading.contains("mac:backwards.ctb"))
+            XCTAssertFalse(writesOnly.contains("mac:backwards.ctb"))
+        }
+        // VoiceOver's liblouis is newer: its own headers decide, and the release's marks are not used.
+        let newer = try judged(version: "3.40.0")
+        XCTAssertEqual(Set(newer.printOnly.map(\.id)), ["mac:zh_TW.tbl", "mac:zh-tw.ctb", "mac:marked.ctb"])
+        XCTAssertTrue(
+            Set(newer.tables.map(\.id)).isSuperset(of: ["mac:changed.ctb", "mac:cs.tbl", "mac:lv.tbl", "mac:sl.tbl", "mac:zh_CHN.tbl"])
+        )
+        XCTAssertNil(BrailleTableCatalog.releaseDirections(judgingMacVersion: "3.40.0", of: release))
+        XCTAssertEqual(BrailleTableCatalog.releaseDirections(judgingMacVersion: "3.34.0", of: release), release)
+        XCTAssertEqual(BrailleTableCatalog.releaseDirections(judgingMacVersion: nil, of: release), release)
     }
 
     /// VoiceOver's own folder, judged by the app's own release: the tables macOS's older copies leave unmarked are print-only,
     /// offered for export and never for reading, and the Mac's pack carries none of them.
     func testVoiceOversWrappersAreExportOnly() throws {
         try XCTSkipIf(BrailleTableCatalog.mac == nil, "This Mac has no VoiceOver braille tables")
+        // A macOS whose liblouis is newer than the app's is judged by its own headers, not by the app's release.
+        try XCTSkipIf(
+            BrailleTableCatalog.releaseDirections(
+                judgingMacVersion: BrailleTableCatalog.mac?.liblouisVersion, of: BrailleTablePack.ReleaseDirections(printOnly: [], twoWay: [])
+            ) == nil,
+            "VoiceOver's liblouis is newer than the app's"
+        )
         let wrappers = ["mac:cs.tbl", "mac:lv.tbl", "mac:sl.tbl", "mac:zh_CHN.tbl", "mac:zh_TW.tbl"]
         let present = wrappers.filter { BrailleTableCatalog.table(withID: $0) != nil }
         try XCTSkipIf(present.isEmpty, "This Mac's VoiceOver tables have none of the wrappers")

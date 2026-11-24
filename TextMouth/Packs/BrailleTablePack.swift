@@ -50,11 +50,13 @@ struct BrailleTablePack: Sendable {
 
     /// Which of the release's literary tables write braille from print only (`direction: forward`) and which read it back too,
     /// by file name, judged over the whole release though a pack carries some of its files: the Mac, which carries four, judges
-    /// VoiceOver's older copies of a table by it whenever the release has a table of that file name.
+    /// VoiceOver's older copies of a table by it whenever the release has a table of that file name: a table the release marks
+    /// print-only is print-only on the Mac, and a mark in VoiceOver's own file stands too (`BrailleTableCatalog`).
     struct ReleaseDirections: Sendable, Equatable {
         /// The names of the tables that write braille only.
         let printOnly: Set<String>
-        /// The names of the tables that also read braille back.
+        /// The names of the tables that also read braille back (the release's whole account; the Mac adds only the print-only
+        /// marks).
         let twoWay: Set<String>
     }
 
