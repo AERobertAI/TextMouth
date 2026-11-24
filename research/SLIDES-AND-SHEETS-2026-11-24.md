@@ -137,3 +137,50 @@ by position  : Title > Callout > Left column > Right column > Page footer
 - **Positions** (`a:off`, `a:ext` in EMUs, 914,400 to the inch) give the position order. **Placeholder types** (`title`, `ctrTitle`, `subTitle`, `body`, `dt`, `ftr`, `sldNum`, `pic`, `chart`, `tbl`) say what a shape is. **Z-order** is the author's order.
 - The layout and master supply what a slide's placeholder leaves out: position, and bullet and level styles. A slide shows a date, footer, or number only if it holds its own placeholder of that type (unchecked), so the layout's furniture never needs reading.
 - **Slide 3 of the probe** (a group, a table with a merged row, and five pictures) reads: the title; "Picture: A harbour wall at low tide, with weed on the steps."; the decorative picture skipped; a picture described only by "image1.png" skipped; "A bar chart of tide heights" with Office's "Description automatically generated with medium confidence" suffix removed; a picture with no description silent; "Step one", "Step two"; and the table as rows.
+
+## Question 4: Excel for listening
+
+### The form
+
+- **Not a pipe table.** `MarkdownParser.readTable` reads each row as a paragraph with cells "separated by one space" (observed), so "Alder Quay 4.2 0.6" cannot be split into cells by ear or by a braille display.
+- **Not literal CSV.** Quotes and doubled quotes are escapes for a program; a voice may read them, and a braille line would show them.
+- **Recommended:** a heading for each visible sheet, then one paragraph for each non-empty row with the cells joined by ", ", as the user approved for sheets and CSV in the October 17 questions (question 15, "yes for now").
+- **Why commas:** a voice pauses at one, a braille display shows an unambiguous cell border, and the Markdown stays readable if exported. A cell that holds a comma is the cost, and it is rare in numbers and short labels.
+- **Empty cells** inside a row stay as empty slots (`Ann, , 26%`), so a column keeps its place; trailing empties and fully empty rows are dropped.
+- **Header names, as an option:** "Date 2023-07-16, Name Ann, Share 26%", chosen when a book is read and changed in Book Information, like the text encoding pop-up (FMT16); the first row of the sheet, or an Excel table's `headerRowCount`, supplies the names.
+- **Merged cells** (`mergeCells`) speak once, from their top-left cell; the covered cells are skipped. A merged heading above the data reads as a one-cell row (observed).
+- One table builder serves CSV, sheets, and the slide tables of Question 3, so the three read alike.
+- **Pages:** a sheet is a heading, not a page; a slide is the only page unit proposed. (Question 9 asks if a sheet should also be a page, labelled by its name.)
+
+### The cells (probe on a made workbook)
+
+```
+date system: 1900                                   date system: 1904 (same cells)
+--- sheet "Log"  (merged A1:C1)                     Date 2027-07-17, Name Ann, Share 26%
+    Merged heading
+    Date,Name,Share
+    2023-07-16,Ann,26%      <- serial 45123, format 14
+    (hidden row 4 dropped)
+    1900-02-28,error #DIV/0!,#DIV/0!   <- serial 60
+--- sheet "Scratch" skipped (hidden)
+```
+- **Strings:** a cell is a shared string (`t="s"`, from `sharedStrings.xml`, its `<r><t>` runs joined and phonetic `rPh` text dropped; unchecked), an inline string (`t="inlineStr"`), a formula's string (`t="str"`), a boolean (`t="b"`, TRUE or FALSE), an error (`t="e"`, read as its text such as "#DIV/0!"), or a number.
+- **Formulas:** the cached `<v>` is read; the formula is never spoken. A formula with no cached value (a file a program wrote without calculating) is empty.
+- **Dates:** a number is a date when its style's number format is one of the built-in ids 14 to 22 or 45 to 47 ([ISO 29500 list](https://learn.microsoft.com/en-us/dotnet/api/documentformat.openxml.spreadsheet.numberingformat?view=openxml-3.0.1), verified), or a custom code (id 164 and up) with a date letter outside quotes, brackets, and escapes; the `[$-409]` locale prefix and `[h]` elapsed forms need care.
+- **Epochs:** `workbookPr date1904="1"` shifts every date by 1,462 days; the same 45123 is 2023-07-16 or 2027-07-17 (observed). Excel's 1900 system counts a 29 February 1900 that never existed, so serial 60 has no true date and serials below 60 are one day off if the usual formula is used (observed).
+- **Spoken form of a date:** a long date in the interface language ("July 16, 2023") reads better than ISO digits; this is Question 7.
+- **Numbers:** the file holds only the raw value, never Excel's display string, so "0%" on 0.255 needs a number-format engine: General, fixed decimals, thousands separators, percent, currency, and scientific cover most cells, and anything else falls back to General.
+- General shows at most 11 digits and then exponential form (ISO 29500, verified), so a raw `0.30000000000000004` must not be spoken. Rounding must be half away from zero, as Excel does; a binary `printf` can differ on 25.5 (unchecked).
+- **OpenDocument sheets** keep the display text in each cell's `text:p` beside `office:value` and `office:date-value`, so .ods needs no format engine (observed in the repository's sample; the cell and repeat rules are from the format, unchecked here).
+
+### Hidden things, size, and the rest
+
+- **Hidden sheets** (`state="hidden"` or `veryHidden`), **hidden rows and columns** (`hidden="1"`, which also covers filtered and collapsed rows) are skipped, by the rule the DOCX and ODT readers state: read what a person sees in the ordinary view. The probe dropped them.
+- A short line saying "3 hidden rows left out" is possible; the existing readers say nothing for hidden text, so the recommendation is silence (Question 8).
+- **Size:** parse each sheet as a stream with `XMLParser`, as DOCX does, never building a grid. Cells go in a sparse row, never an array sized by the column letters: a hostile `r="ZZZZZ1"` would allocate. Refuse column letters of more than three and rows past 1,048,576, the sheet limits.
+- **Limits already there:** 64 MB per XML part (`ArchiveEntryLimits`) and per document (`DocumentByteLimit`). The `<dimension>` is a claim, not a limit; and an ODS row repeated a million times must be capped, as the October 17 notes say.
+- **A proposed cap:** 100,000 rows read per sheet, then a closing sentence, "The sheet continues; this reading stops here", localized. A million-row sheet is not listenable, and the page and heading commands still reach every sheet.
+- **Charts and drawings** on a sheet are read after its rows as in Question 3 (alt text, title, series); a chart sheet (`xl/chartsheets`) is the same.
+- **Comments:** legacy notes (`xl/comments*.xml`) and threaded comments (whose fallback text is boilerplate, unchecked) are skipped, as Word's comments are.
+- **Encrypted workbooks** are compound files with an `EncryptedPackage` stream; they and sheet-protection passwords (which only hash a password and never encrypt) are the password report's matter, not this one. A protected sheet reads freely.
+- **Strict OOXML** uses other namespaces (`purl.oclc.org/ooxml`); a reader that takes only the transitional ones reads nothing from a Strict file (unchecked here; a fixture is cheap).
