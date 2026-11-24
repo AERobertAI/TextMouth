@@ -1097,6 +1097,7 @@ targets:
       - TextMouthProductionTests/OwnAudioImportTests.swift
       - TextMouthProductionTests/OwnAudioSampleSupport.swift
       - TextMouthProductionTests/PDFExtractionDiagnosticsTests.swift
+      - TextMouthProductionTests/PackContainerTests.swift
       - TextMouthProductionTests/PackageNavigationAuditTests.swift
       - TextMouthProductionTests/PageModelTests.swift
       - TextMouthProductionTests/ParserContentFidelityTests.swift
