@@ -199,6 +199,7 @@ The pieces below are what a measurement of the Release build showed at commit e0
   - For one build, give the Makefile an empty list: `make build SIZE_SETTINGS=`.
   - For good, delete its entry from `SETTINGS` or `FRONTEND_FLAGS` in `Scripts/size_settings.py`, and both apps follow; `Scripts/agents/tests/test_size_settings.py` checks the list.
   - `python3 -I -B Scripts/size_settings.py --list --without NAME[,NAME]` prints the list less settings (by name) or flags (by flag), as the golden tests' build asks it (see below).
+    A name it does not know, or any other argument, is refused with exit status 2, so a typo cannot leave a setting in; `--help` prints the usage.
 - **Measure.**
   `make check` prints the Mac app's size and, in its iPhone step, the iPhone app's; `make ios-size` measures the iPhone app alone.
 
