@@ -92,6 +92,14 @@ LICENSE_TITLES = {
     AMBIGUOUS: "The GNU Lesser General Public License 2.1 or later, and also the GNU General Public License, with no version",
     OTHER: "A license this builder does not know",
 }
+# Files that ship although their own head would leave them out, by a decision of the user, with the reason the license list
+# prints. countries.cti: an LGPL 2.1 or later notice, then a GPL sentence with no version that is an old leftover from BRLTTY;
+# macOS ships the same file in VoiceOver's own tables (November 23, 2026).
+ACCEPTED_BY_DECISION = {
+    "countries.cti": "its notice says the GNU Lesser General Public License, version 2.1 or later; the sentence under it, "
+                     "which names the GNU General Public License with no version, is an old leftover, and macOS ships "
+                     "the same file in VoiceOver's own tables",
+}
 # A note for a file whose license text mentions another license without being under it, which the license list prints.
 LICENSE_NOTES = {
     "IPA.utb": "its references cite the IPA chart, which is under Creative Commons Attribution-Sharealike 3.0; the file's own license is the LGPL's",
@@ -291,33 +299,22 @@ class Plan:
         self.licenses = licenses
 
 
-def plan(folder, profile="iphone", mac_list=None):
-    """The `Plan` of the tables in `folder` for `profile`.
-    Raises BuildError for a file that includes one the folder lacks, and, for the mac profile, for a listed file the folder
-    lacks or whose includes are not all listed."""
-    everything = read_folder(folder)
-    includes = {name: include_targets(data) for name, data in everything.items()}
-    for name, targets in includes.items():
-        for target in targets:
-            if target not in everything:
-                raise BuildError(f"{name} includes {target}, which the tables folder lacks")
-    licenses = {name: classify_license(data)[0] for name, data in everything.items()}
-    if profile == "mac":
-        listed = read_list(mac_list or MAC_LIST)
-        for name in listed:
-            if name not in everything:
-                raise BuildError(f"the Mac's list names {name}, which the tables folder lacks")
-            for target in includes[name]:
-                if target not in listed:
-                    raise BuildError(f"the Mac's list has {name}, which includes {target}, which the list lacks")
-        return Plan({name: everything[name] for name in sorted(listed)}, {name: includes[name] for name in sorted(listed)}, {}, licenses)
-    if profile != "iphone":
-        raise BuildError(f"there is no profile {profile}")
+def leave_out(includes, licenses, fields, protected):
+    """{name: reason} of the files the license rule leaves out, repeated until nothing changes:
+    - a file whose license is not LGPL 2.1 or later or the release's own (`SHIPPED_LICENSES`), unless the user accepted it
+      (`ACCEPTED_BY_DECISION`);
+    - a file that includes one that is left out;
+    - a file that is no literary table and not `protected` (a file of the Mac's list) and that only left-out files include:
+      nothing that ships uses it.
+    `includes` is {name: [names]} and `fields` {name: catalog fields} for every file read."""
     excluded = {}
     for name, kind in licenses.items():
-        if kind not in SHIPPED_LICENSES:
+        if kind not in SHIPPED_LICENSES and name not in ACCEPTED_BY_DECISION:
             excluded[name] = f"license: {kind}"
-    # A table that includes an excluded file goes too, and so does what it was the only includer of, as far as it goes.
+    includers = defaultdict(list)
+    for name, targets in includes.items():
+        for target in targets:
+            includers[target].append(name)
     changed = True
     while changed:
         changed = False
@@ -328,6 +325,43 @@ def plan(folder, profile="iphone", mac_list=None):
             if blocking:
                 excluded[name] = f"includes {blocking[0]}, which is left out"
                 changed = True
+        for name in includes:
+            if name in excluded or name in protected or fields.get(name, {}).get("type", "").lower() == "literary":
+                continue
+            users = includers.get(name, [])
+            if users and all(user in excluded for user in users):
+                excluded[name] = f"only {users[0]}{' and others' if len(users) > 1 else ''}, which {'is' if len(users) == 1 else 'are'} left out, include it"
+                changed = True
+    return excluded
+
+
+def plan(folder, profile="iphone", mac_list=None):
+    """The `Plan` of the tables in `folder` for `profile`.
+    Raises BuildError for a file that includes one the folder lacks, and, for the mac profile, for a listed file the folder
+    lacks, whose includes are not all listed, or that the license rule leaves out."""
+    everything = read_folder(folder)
+    includes = {name: include_targets(data) for name, data in everything.items()}
+    for name, targets in includes.items():
+        for target in targets:
+            if target not in everything:
+                raise BuildError(f"{name} includes {target}, which the tables folder lacks")
+    licenses = {name: classify_license(data)[0] for name, data in everything.items()}
+    listed = read_list(mac_list or MAC_LIST)
+    if profile == "mac":
+        for name in listed:
+            if name not in everything:
+                raise BuildError(f"the Mac's list names {name}, which the tables folder lacks")
+    excluded = leave_out(includes, licenses, {name: catalog_fields(data) for name, data in everything.items()}, set(listed))
+    if profile == "mac":
+        for name in listed:
+            if name in excluded:
+                raise BuildError(f"the Mac's list names {name}, which the license rule leaves out ({excluded[name]})")
+            for target in includes[name]:
+                if target not in listed:
+                    raise BuildError(f"the Mac's list has {name}, which includes {target}, which the list lacks")
+        return Plan({name: everything[name] for name in sorted(listed)}, {name: includes[name] for name in sorted(listed)}, {}, licenses)
+    if profile != "iphone":
+        raise BuildError(f"there is no profile {profile}")
     # A hyphenation dictionary ships only when a shipped file includes it.
     included_by_shipped = {target for name, targets in includes.items() if name not in excluded for target in targets}
     for name in everything:
@@ -419,12 +453,12 @@ def raw_groups(files, groups):
 def build_index(the_plan, groups, places, liblouis_version):
     """The index document of a pack, as JSON-ready data:
     {"v": 1, "liblouis": "3.39.0", "files": [...]}, each file {"n": name, "g": group, "o": offset, "l": length,
-    "i": [included files] when it includes any, "m": {catalog fields} when it is a table, "t": [targets] when it only
+    "h": the SHA-256 of its bytes in lowercase hexadecimal, "i": [included files] when it includes any, "m": {catalog fields} when it is a table, "t": [targets] when it only
     includes others}. Files are in name order."""
     entries = []
     for name in sorted(the_plan.files):
         group, offset, length = places[name]
-        entry = {"n": name, "g": group, "o": offset, "l": length}
+        entry = {"n": name, "g": group, "o": offset, "l": length, "h": hashlib.sha256(the_plan.files[name]).hexdigest()}
         if the_plan.includes[name]:
             entry["i"] = the_plan.includes[name]
         fields = catalog_fields(the_plan.files[name])
@@ -513,8 +547,8 @@ def license_list(the_plan, version):
         f"Each file of `tables/` in liblouis {version} (vendored here unchanged) by the license its own head states.",
         "This list is written by `Scripts/packs/braille_tables.py licenses --write`; a test keeps it equal to the files.",
         "TextMouth ships a table when its license is the GNU Lesser General Public License 2.1 or later (the release's own, "
-        "`COPYING.LESSER`), or the file states none, and then the release's holds; it leaves out the others and every table "
-        "that includes one.",
+        "`COPYING.LESSER`), or the file states none, and then the release's holds, or the user decided it ships; it leaves out "
+        "the others, every table that includes one, and every file that only left-out tables use.",
         "",
         "## Totals",
         "",
@@ -524,10 +558,11 @@ def license_list(the_plan, version):
     for kind in (LGPL_21, NO_LICENSE, LGPL_3, AMBIGUOUS, OTHER):
         lines.append(f"- {LICENSE_TITLES[kind]}: {len(by_license.get(kind, []))}.")
     shipped = sum(1 for name in names_all if name not in the_plan.excluded)
+    lines.append(f"- Shipped by the user's decision of November 23, 2026, although their own heads would leave them out: {len(ACCEPTED_BY_DECISION)}.")
     lines.append(f"- Shipped in the iPhone's pack: {shipped}. Left out: {len(the_plan.excluded)}.")
     lines.append("")
     for kind in (LGPL_21, NO_LICENSE, LGPL_3, AMBIGUOUS, OTHER):
-        names = sorted(by_license.get(kind, []))
+        names = sorted(name for name in by_license.get(kind, []) if name not in ACCEPTED_BY_DECISION)
         if not names:
             continue
         lines += [f"## {LICENSE_TITLES[kind]}", "", f"{len(names)} files.", ""]
@@ -537,10 +572,20 @@ def license_list(the_plan, version):
             note = f" ({LICENSE_NOTES[name]})" if name in LICENSE_NOTES else ""
             lines.append(f"- `{name}`{note}")
         lines.append("")
+    if ACCEPTED_BY_DECISION:
+        lines += ["## Shipped by the user's decision of November 23, 2026", ""]
+        for name in sorted(ACCEPTED_BY_DECISION):
+            lines.append(f"- `{name}`: {ACCEPTED_BY_DECISION[name]}.")
+        lines.append("")
     left_out = sorted(name for name in the_plan.excluded if the_plan.excluded[name].startswith("includes"))
     if left_out:
         lines += ["## Left out because they include a file that is left out", "", f"{len(left_out)} files.", ""]
         lines += [f"- `{name}`: {the_plan.excluded[name]}" for name in left_out]
+        lines.append("")
+    only_users = sorted(name for name in the_plan.excluded if the_plan.excluded[name].startswith("only "))
+    if only_users:
+        lines += ["## Left out because only left-out tables use them", "", f"{len(only_users)} files.", ""]
+        lines += [f"- `{name}`: {the_plan.excluded[name]}" for name in only_users]
         lines.append("")
     dictionaries = sorted(name for name in the_plan.excluded if the_plan.excluded[name].startswith("a dictionary"))
     if dictionaries:
@@ -561,11 +606,11 @@ def file_hash(path):
 
 
 def stamp_of(profile, tables_folder, mac_list=MAC_LIST):
-    """What decides the output: the profile, the hashes of this builder, the container's writer, the list, and the tables
-    (each file's name and bytes), and the formats' versions."""
+    """What decides the output: the profile, the hashes of this builder, the container's writer, the list, liblouis's config.h
+    (which gives the version the index states), and the tables (each file's name and bytes), and the formats' versions."""
     return {
         "formatVersion": FORMAT_VERSION, "profile": profile, "builder": file_hash(__file__), "container": file_hash(packfile.__file__),
-        "list": file_hash(mac_list) if profile == "mac" else None,
+        "list": file_hash(mac_list), "config": file_hash(CONFIG_H),
         "tables": hashlib.sha256(source_digest(read_folder_all(tables_folder))).hexdigest(),
     }
 

@@ -2,7 +2,7 @@
 
 Each file of `tables/` in liblouis 3.39.0 (vendored here unchanged) by the license its own head states.
 This list is written by `Scripts/packs/braille_tables.py licenses --write`; a test keeps it equal to the files.
-TextMouth ships a table when its license is the GNU Lesser General Public License 2.1 or later (the release's own, `COPYING.LESSER`), or the file states none, and then the release's holds; it leaves out the others and every table that includes one.
+TextMouth ships a table when its license is the GNU Lesser General Public License 2.1 or later (the release's own, `COPYING.LESSER`), or the file states none, and then the release's holds, or the user decided it ships; it leaves out the others, every table that includes one, and every file that only left-out tables use.
 
 ## Totals
 
@@ -12,7 +12,8 @@ TextMouth ships a table when its license is the GNU Lesser General Public Licens
 - GNU Lesser General Public License, version 3 or (at your option) any later version: 10.
 - The GNU Lesser General Public License 2.1 or later, and also the GNU General Public License, with no version: 1.
 - A license this builder does not know: 0.
-- Shipped in the iPhone's pack: 432. Left out: 46.
+- Shipped by the user's decision of November 23, 2026, although their own heads would leave them out: 1.
+- Shipped in the iPhone's pack: 449. Left out: 29.
 
 ## GNU Lesser General Public License, version 2.1 or (at your option) any later version
 
@@ -508,35 +509,17 @@ Every file of this license is shipped unless it includes one that is left out (b
 - `sr-g1.ctb`
 - `sr-latletters.cti`
 
-## The GNU Lesser General Public License 2.1 or later, and also the GNU General Public License, with no version
+## Shipped by the user's decision of November 23, 2026
 
-1 files.
-
-- `countries.cti`
+- `countries.cti`: its notice says the GNU Lesser General Public License, version 2.1 or later; the sentence under it, which names the GNU General Public License with no version, is an old leftover, and macOS ships the same file in VoiceOver's own tables.
 
 ## Left out because they include a file that is left out
 
-19 files.
+3 files.
 
-- `ar-ar-comp8.utb`: includes countries.cti, which is left out
-- `ckb-g1.ctb`: includes ckb-translation.cti, which is left out
-- `ckb-translation.cti`: includes countries.cti, which is left out
-- `ckb.tbl`: includes ckb-g1.ctb, which is left out
-- `cy-cy-g1.utb`: includes countries.cti, which is left out
-- `cy-cy-g2.ctb`: includes cy-cy-g1.utb, which is left out
-- `cy.tbl`: includes cy-cy-g2.ctb, which is left out
-- `de-g0-core.uti`: includes countries.cti, which is left out
-- `de-g0-detailed.utb`: includes de-g0-core.uti, which is left out
-- `de-g0.utb`: includes de-g0-core.uti, which is left out
-- `de-g1-detailed.ctb`: includes de-g0-detailed.utb, which is left out
-- `de-g1.ctb`: includes de-g0.utb, which is left out
-- `de-g2-detailed.ctb`: includes de-g1-detailed.ctb, which is left out
-- `de-g2.ctb`: includes de-g0.utb, which is left out
 - `grc-international-es.utb`: includes Es-Es-G0.utb, which is left out
 - `is.tbl`: includes is-chardefs6.cti, which is left out
 - `pt.tbl`: includes pt-pt-g2.ctb, which is left out
-- `sl-si-g1.utb`: includes countries.cti, which is left out
-- `sl.tbl`: includes sl-si-g1.utb, which is left out
 
 ## Left out because no table uses them
 

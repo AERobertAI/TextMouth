@@ -6,6 +6,7 @@ Run with: python3 -I -B -m unittest discover -s Scripts/packs/tests
 The first classes use small folders the tests make; `RealTablesTests` builds the packs of the vendored release once and checks
 what the apps' reader will rely on: every file in one group, the closures, the bytes, the license list, and the Mac's list.
 """
+import hashlib
 import json
 import re
 import struct
@@ -113,6 +114,55 @@ class PlanTests(unittest.TestCase):
         self.assertEqual({"bad.uti", "mid.ctb", "top.ctb"}, set(plan.excluded))
         self.assertIn("includes bad.uti", plan.excluded["mid.ctb"])
         self.assertIn("includes mid.ctb", plan.excluded["top.ctb"])
+
+    def test_a_file_the_user_accepted_ships_with_what_includes_it(self):
+        files = {"countries.cti": table(body=b"# GNU General Public License, version nothing\n"), "uses.ctb": table(body=b"include countries.cti\n")}
+        with folder_of(files) as folder:
+            self.assertEqual(bt.AMBIGUOUS, bt.plan(folder, "iphone").licenses["countries.cti"])
+            plan = bt.plan(folder, "iphone")
+        self.assertEqual(["countries.cti", "uses.ctb"], sorted(plan.files))
+        self.assertEqual({}, plan.excluded)
+
+    def test_a_file_only_left_out_tables_include_is_left_out_too_until_nothing_changes(self):
+        files = {
+            "bad.ctb": table(b"3", b"include helper.uti\n"),
+            "helper.uti": b"include deeper.uti\nletter a 1\n",
+            "deeper.uti": b"letter b 12\n",
+            "shared.uti": b"letter c 14\n",
+            "good.ctb": table(body=b"include shared.uti\n"),
+            "alsobad.ctb": table(b"3", b"include shared.uti\n"),
+            "loose.dis": b"display a 1\n",
+        }
+        with folder_of(files) as folder:
+            plan = bt.plan(folder, "iphone")
+        self.assertEqual(["good.ctb", "loose.dis", "shared.uti"], sorted(plan.files))
+        self.assertIn("only bad.ctb", plan.excluded["helper.uti"])
+        # deeper.uti is included by helper.uti alone, which goes in the same pass of the rule.
+        self.assertIn("only helper.uti", plan.excluded["deeper.uti"])
+        self.assertNotIn("shared.uti", plan.excluded, "a good table includes it too")
+        self.assertNotIn("loose.dis", plan.excluded, "no table includes it, so no left-out table is its only user")
+
+    def test_a_literary_table_and_a_file_of_the_macs_list_are_never_left_out_for_their_users(self):
+        files = {
+            "bad.ctb": table(b"3", b"include wrapped.ctb\ninclude listed.uti\n"),
+            "wrapped.ctb": table(body=b"letter a 1\n"),
+            "listed.uti": b"letter b 12\n",
+        }
+        with folder_of(files) as folder, tempfile.TemporaryDirectory() as lists:
+            listing = Path(lists, "list.txt")
+            listing.write_text("listed.uti\n", encoding="utf-8")
+            plan = bt.plan(folder, "iphone", listing)
+        self.assertEqual(["listed.uti", "wrapped.ctb"], sorted(plan.files))
+
+    def test_the_mac_profile_applies_the_license_rule_and_fails_for_a_listed_file_it_leaves_out(self):
+        files = {"a.ctb": table(), "b.ctb": table(b"3")}
+        with folder_of(files) as folder, tempfile.TemporaryDirectory() as lists:
+            listing = Path(lists, "list.txt")
+            listing.write_text("a.ctb\n", encoding="utf-8")
+            self.assertEqual(["a.ctb"], sorted(bt.plan(folder, "mac", listing).files))
+            listing.write_text("a.ctb\nb.ctb\n", encoding="utf-8")
+            with self.assertRaisesRegex(bt.BuildError, "b.ctb, which the license rule leaves out"):
+                bt.plan(folder, "mac", listing)
 
     def test_a_dictionary_ships_only_when_a_shipped_table_includes_it(self):
         files = {"used.dic": b"patterns\n", "unused.dic": b"patterns\n", "t.ctb": table(body=b"include used.dic\n")}
@@ -254,10 +304,32 @@ class RealTablesTests(unittest.TestCase):
 
     def test_every_shipped_file_has_a_license_that_ships(self):
         for name in self.phone_plan.files:
-            self.assertIn(self.phone_plan.licenses[name], bt.SHIPPED_LICENSES, name)
+            if name not in bt.ACCEPTED_BY_DECISION:
+                self.assertIn(self.phone_plan.licenses[name], bt.SHIPPED_LICENSES, name)
 
     def test_the_license_list_is_what_the_files_say(self):
         self.assertEqual(bt.LICENSES_FILE.read_text(encoding="utf-8"), bt.license_list(self.phone_plan, self.version))
+
+    def test_every_file_is_recorded_with_its_sha_256(self):
+        for pack in (self.phone, self.mac):
+            for entry in pack["index"]["files"]:
+                self.assertEqual(hashlib.sha256(pack["files"][entry["n"]]).hexdigest(), entry["h"], entry["n"])
+
+    def test_the_stamp_names_the_config_the_list_and_the_builder(self):
+        stamp = bt.stamp_of("mac", self.tables)
+        for key in ("config", "list", "builder", "container", "tables"):
+            self.assertIsNotNone(stamp[key], key)
+        self.assertEqual(bt.file_hash(bt.CONFIG_H), stamp["config"])
+
+    def test_countries_ships_by_the_users_decision_with_the_tables_that_include_it(self):
+        for name in ("countries.cti", "de-g1.ctb", "de-g2.ctb", "cy-cy-g1.utb", "sl-si-g1.utb", "ar-ar-comp8.utb", "ckb-g1.ctb"):
+            self.assertIn(name, self.phone_plan.files, name)
+        self.assertEqual(bt.AMBIGUOUS, self.phone_plan.licenses["countries.cti"])
+        self.assertIn("November 23, 2026", bt.license_list(self.phone_plan, self.version))
+
+    def test_what_the_lgpl_3_files_leave_out_stays_out(self):
+        for name in ("Es-Es-G0.utb", "et-g0.utb", "pt-pt-g2.ctb", "sr-g1.ctb", "is-chardefs6.cti", "grc-international-es.utb"):
+            self.assertIn(name, self.phone_plan.excluded, name)
 
     def test_the_same_files_give_the_same_pack(self):
         self.assertEqual(self.mac_bytes, bt.build_bytes(bt.plan(self.tables, "mac"), self.version))
@@ -281,7 +353,8 @@ class RealTablesTests(unittest.TestCase):
         self.assertEqual(bt.INDEX_VERSION, index["v"])
         for entry in index["files"]:
             self.assertTrue({"n", "g", "o", "l"} <= set(entry), entry)
-            self.assertTrue(set(entry) <= {"n", "g", "o", "l", "i", "m", "t"}, entry)
+            self.assertTrue(set(entry) <= {"n", "g", "o", "l", "h", "i", "m", "t"}, entry)
+            self.assertRegex(entry["h"], "^[0-9a-f]{64}$")
         json.dumps(index)
 
 
