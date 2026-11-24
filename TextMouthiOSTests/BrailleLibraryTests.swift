@@ -140,7 +140,8 @@ final class BrailleLibraryTests: XCTestCase {
     /// or the import table of a config.json made on one), and gives what the bare name gives; one the pack lacks stays
     /// refused by name.
     func testAMacsTableOfAFileNameThePackHasReadsWithThePacksOwn() throws {
-        XCTAssertEqual(BrailleTableCatalog.table(withID: "mac:fr-bfu-g2.ctb")?.id, "fr-bfu-g2.ctb")
+        // The table is the pack's, under the value it was asked for (see testAMacsValueKeepsItsValue...).
+        XCTAssertEqual(BrailleTableCatalog.table(withID: "mac:fr-bfu-g2.ctb")?.id, "mac:fr-bfu-g2.ctb")
         XCTAssertNil(BrailleTableCatalog.table(withID: "mac:no-such-table.ctb"))
         let print = "\u{E9}t\u{E9} bonjour"
         let own = try BrailleTranslator.translate([print], table: "fr-bfu-g2.ctb", direction: .printToBraille, workingIn: work)
