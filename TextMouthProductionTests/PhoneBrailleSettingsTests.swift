@@ -90,6 +90,33 @@ final class PhoneBrailleSettingsTests: XCTestCase {
         XCTAssertEqual(PhoneSettingsModel.brailleTableValue("nothing-like-it.ctb"), "nothing-like-it.ctb")
     }
 
+    /// A table a Mac shares as `mac:fr-bfu-g2.ctb` is the pack's `fr-bfu-g2.ctb` to the iPhone: its row is marked as the
+    /// chosen one, and says its language as the choice does. On the Mac the same Mac value is its own, listed as it is.
+    func testAMacValueMarksTheRowAndSaysItsLanguage() throws {
+        #if os(macOS)
+        try XCTSkipIf(BrailleTableCatalog.table(withID: "mac:fr-bfu-g2.ctb") == nil, "This Mac has no VoiceOver table fr-bfu-g2.ctb")
+        #endif
+        let stored = "mac:fr-bfu-g2.ctb"
+        let listed = BrailleTableCatalog.listedID(forStored: stored)
+        let rows = PhoneSettingsModel.brailleTableGroups().flatMap(\.choices)
+        XCTAssertTrue(rows.contains { $0.id == listed }, "no row is marked for \(stored): the list holds no \(listed)")
+        let french = try XCTUnwrap(Locale.current.localizedString(forIdentifier: "fr"))
+        XCTAssertTrue(PhoneSettingsModel.brailleTableValue(stored).hasSuffix(", in \(french)"), PhoneSettingsModel.brailleTableValue(stored))
+        XCTAssertEqual(PhoneSettingsModel.brailleTableValue(stored), PhoneSettingsModel.brailleTableValue(listed))
+        XCTAssertFalse(PhoneSettingsModel.brailleTableWritesOnly(stored))
+    }
+
+    /// A Mac's value for a table that only writes braille, `mac:cs.tbl`, is said to only write braille, so the row can say so
+    /// as the Mac's tab does; no table for reading is.
+    func testAPrintOnlyValueIsSaidToOnlyWriteBraille() throws {
+        #if os(macOS)
+        try XCTSkipIf(BrailleTableCatalog.table(withID: "mac:cs.tbl") == nil, "This Mac has no VoiceOver table cs.tbl")
+        #endif
+        XCTAssertTrue(PhoneSettingsModel.brailleTableWritesOnly("mac:cs.tbl"))
+        XCTAssertFalse(PhoneSettingsModel.brailleTableWritesOnly("en-ueb-g2.ctb"))
+        XCTAssertFalse(PhoneSettingsModel.brailleTableWritesOnly("nothing-like-it.ctb"))
+    }
+
     /// The braille file characters are the two seven-bit codes an import may be set to, by name.
     func testTheFileCharactersAreTheCodesAnImportChoosesFrom() {
         let choices = PhoneSettingsModel.brailleFileCodeChoices

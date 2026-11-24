@@ -235,6 +235,37 @@ final class BrailleTablePrintOnlyTests: XCTestCase {
         }
     }
 
+    /// A value stored as another platform spells it finds its table in the lists: the Mac reads an iPhone's bare
+    /// `fr-bfu-g2.ctb` with VoiceOver's file, which the lists spell `mac:fr-bfu-g2.ctb`, and the iPhone reads a Mac's
+    /// `mac:fr-bfu-g2.ctb` with its pack's table. The stored value stays as it was; the table, its words, and the Braille
+    /// tab's sentence are the list's.
+    func testAStoredValueSpelledOtherwiseFindsItsTable() throws {
+        #if os(macOS)
+        try XCTSkipIf(BrailleTableCatalog.table(withID: "mac:fr-bfu-g2.ctb") == nil, "This Mac has no VoiceOver table fr-bfu-g2.ctb")
+        let (stored, listed) = ("fr-bfu-g2.ctb", "mac:fr-bfu-g2.ctb")
+        #else
+        let (stored, listed) = ("mac:fr-bfu-g2.ctb", "fr-bfu-g2.ctb")
+        #endif
+        XCTAssertEqual(BrailleTableCatalog.listedID(forStored: stored), listed)
+        XCTAssertEqual(BrailleTableCatalog.listedID(forStored: listed), listed)
+        for value in ["en-ueb-g2.ctb", "mac:no-such-table.ctb", "no-such-table.ctb", ""] {
+            XCTAssertEqual(BrailleTableCatalog.listedID(forStored: value), value, "a value no list spells otherwise changed")
+        }
+        // The Braille tab's pop-ups and Export's find the table, and name it as the list does.
+        XCTAssertEqual(BrailleSettingsChoice.table(ofStored: stored, in: BrailleTableCatalog.offeredCodes)?.id, listed)
+        XCTAssertEqual(BrailleTableCatalog.description(ofTableID: stored), BrailleTableCatalog.description(ofTableID: listed))
+        let sentence = BrailleSettingsWording.source(
+            ofStored: stored, codes: BrailleTableCatalog.offeredCodes, macLiblouisVersion: "3.34.0"
+        )
+        #if os(macOS)
+        // The Mac's own tab: VoiceOver's table, with its language in its words, never "built into TextMouth".
+        XCTAssertTrue(sentence.contains("VoiceOver"), sentence)
+        XCTAssertTrue(BrailleTableCatalog.description(ofTableID: stored).contains(", in "), BrailleTableCatalog.description(ofTableID: stored))
+        #else
+        XCTAssertTrue(sentence.contains("built into TextMouth"), sentence)
+        #endif
+    }
+
     /// The Braille tab says that a setting naming a print-only table writes braille only, in its own sentence, and says what it
     /// said before for every other table.
     func testTheBrailleTabSaysASettingWritesOnly() {

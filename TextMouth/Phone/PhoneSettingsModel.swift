@@ -477,11 +477,20 @@ enum PhoneSettingsModel {
 
     /// What the Braille code row says as its value: the table in use in words (`BrailleTableCatalog.description(ofTableID:)`),
     /// and its language, as its choice does.
-    static func brailleTableValue(_ id: String) -> String {
-        guard let table = BrailleTableCatalog.table(withID: id) else { return id }
-        let language = BrailleTableCatalog.offeredCodes.first { $0.tables.contains { $0.id == id } }
+    /// `stored` is the value as stored, which the lists may spell otherwise (a Mac's `mac:fr-bfu-g2.ctb`:
+    /// `BrailleTableCatalog.listedID(forStored:)`), and a table that only writes braille is found among the export codes.
+    static func brailleTableValue(_ stored: String) -> String {
+        let id = BrailleTableCatalog.listedID(forStored: stored)
+        guard let table = BrailleTableCatalog.table(withID: id) else { return stored }
+        let language = BrailleTableCatalog.code(of: table)
             .map { BrailleTableCatalog.languageName($0.language, indexName: table.indexName, displayName: table.displayName) }
         return BrailleTableCatalog.description(of: table, language: language)
+    }
+
+    /// Whether the table `stored` names only writes braille (FR40), which the Braille row says under it: it keeps working,
+    /// and is not among the choices for reading.
+    static func brailleTableWritesOnly(_ stored: String) -> Bool {
+        BrailleTableCatalog.table(withID: BrailleTableCatalog.listedID(forStored: stored))?.isPrintOnly == true
     }
 
     /// The braille file characters row's choices: the codes an import may be set to, by name (`BrailleFileCode.importChoices`).

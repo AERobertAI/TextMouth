@@ -1006,9 +1006,11 @@ final class SettingsViewModel: ObservableObject {
     /// by its stored value, such as "en-ueb-g2.ctb", or "mac:fr-bfu-g2.ctb"
     /// for one of this Mac's tables. Imports read it (`BraillePreferences`),
     /// and config.json follows it through the observer below, which also
-    /// announces a change made anywhere else. A value no offered table has
-    /// changes nothing; the Braille tab's pop-ups set a Mac table only once
-    /// its check passes (`BrailleTablePickers`).
+    /// announces a change made anywhere else. A value no table has changes
+    /// nothing (one for a table that only writes braille is accepted, since a
+    /// setting may already name one, but the pop-ups never offer it); the
+    /// Braille tab's pop-ups set a Mac table only once its check passes
+    /// (`BrailleTablePickers`).
     var brailleTable: String {
         get { BraillePreferences.table.read(from: preferences) }
         set {

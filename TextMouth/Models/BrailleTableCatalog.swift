@@ -817,6 +817,25 @@ enum BrailleTableCatalog {
         return bundled.first { $0.fileName == fileName }?.id
     }
 
+    /// The id the lists of tables use for the table a stored value names, so a selection, the "offered" check, the source
+    /// sentence, and a value's words are all worked out from one spelling (FR40). A stored value stays as it is, and each
+    /// platform reads it correctly; the lists spell the same table differently:
+    /// - on the Mac, a bare value its own pack lacks that VoiceOver's folder has, such as the `fr-bfu-g2.ctb` an iPhone stores,
+    ///   is the list's `mac:fr-bfu-g2.ctb` (`readsFromMacFolder`);
+    /// - on the iPhone, a Mac's `mac:fr-bfu-g2.ctb` is the pack's bare `fr-bfu-g2.ctb` (`bundledID(forStored:)`);
+    /// - any other value is its own id.
+    /// Never changes what is stored: use it to compare with the lists' ids, never to write a setting or a book.
+    static func listedID(forStored value: String) -> String {
+        #if os(macOS)
+        let (source, fileName) = BrailleTableSource.parse(value)
+        if source == .bundled, readsFromMacFolder(value) { return BrailleTableSource.mac.storedValue(ofFile: fileName) }
+        return value
+        #else
+        guard BrailleTableSource.parse(value).source == .mac, let bundled = bundledID(forStored: value) else { return value }
+        return bundled
+        #endif
+    }
+
     /// The value the setting and config.json keep for `value`: a bundled
     /// table's file name when the bundle offers it, and a Mac table's value
     /// as it is when it names one by a bare file name
@@ -945,14 +964,11 @@ enum BrailleTableCatalog {
 
     /// The code `table` is listed in: among the bundled codes for a bundled
     /// table, so that naming one never reads this Mac's folder, and among
-    /// the offered codes for a Mac one.
+    /// the offered codes for a Mac one. A table that writes braille only is in no code offered for reading, so it is found
+    /// among the export codes.
     static func code(of table: BrailleTable) -> BrailleCode? {
-        (table.source == .bundled ? bundledCodes : offeredCodes).first { $0.tables.contains(table) }
-    }
-
-    /// The code `table` is listed in for exporting: among the export codes, where the tables that write braille only are too.
-    static func exportCode(of table: BrailleTable) -> BrailleCode? {
-        exportCodes.first { $0.tables.contains(table) }
+        let codes = table.isPrintOnly ? exportCodes : (table.source == .bundled ? bundledCodes : offeredCodes)
+        return codes.first { $0.tables.contains(table) }
     }
 
     /// A table's code name: a known system's own, else the table's display
@@ -1041,8 +1057,10 @@ enum BrailleTableCatalog {
     /// 2), in French". For a stored value no offered table has, such as a
     /// Mac table a macOS update removed, the value itself. Book Info and
     /// Speak Info use it.
-    static func description(ofTableID id: String) -> String {
-        guard let table = table(withID: id) else { return id }
+    static func description(ofTableID stored: String) -> String {
+        // A value the lists spell otherwise is worded as the list's table is, with its language on the Mac (`listedID`).
+        let id = listedID(forStored: stored)
+        guard let table = table(withID: id) else { return stored }
         let language = table.source == .mac
             ? code(of: table).map { languageName($0.language, indexName: table.indexName, displayName: table.displayName) }
             : nil

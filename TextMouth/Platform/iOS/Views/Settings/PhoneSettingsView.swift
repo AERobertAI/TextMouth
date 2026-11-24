@@ -208,6 +208,14 @@ struct PhoneSettingsView: View {
             Text(PhoneSettingsWording.brailleCaption)
                 .font(.caption)
                 .phoneSecondaryText()
+            // A chosen table that only writes braille is said so, in the words the Mac's Braille tab uses.
+            if PhoneSettingsModel.brailleTableWritesOnly(settings.brailleTable) {
+                Text(BrailleSettingsWording.source(
+                    ofTable: settings.brailleTable, isOffered: false, macLiblouisVersion: nil, writesOnly: true
+                ))
+                .font(.caption)
+                .phoneSecondaryText()
+            }
             choiceRow(.brailleFileCode, value: PhoneSettingsModel.brailleFileCodeName(settings.brailleFileCode))
             switchRow(.guessBrailleTable, isOn: noted($settings.guessesBrailleTable))
         case .removalBehavior:
@@ -437,7 +445,8 @@ struct PhoneSettingsView: View {
             PhoneChoiceSheet(
                 title: row.title,
                 groups: PhoneSettingsModel.brailleTableGroups(),
-                selected: settings.brailleTable
+                // Spelled as the list's rows are, so a Mac's `mac:fr-bfu-g2.ctb` marks the pack's `fr-bfu-g2.ctb` row.
+                selected: BrailleTableCatalog.listedID(forStored: settings.brailleTable)
             ) { id in
                 settings.brailleTable = id
                 noteChange()
