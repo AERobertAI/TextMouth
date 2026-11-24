@@ -43,7 +43,8 @@ The preferences store.
 - Export, through BookExportPreferences.showInReaderToolbar: whether reader toolbars show an Export button, under showExportInReaderToolbar.
   Playback settings change it through SettingsViewModel.showExportInReaderToolbar, as Storage settings change logLocation, and config.json mirrors it.
 - Braille, through BraillePreferences.table (Models/BrailleTableCatalog.swift): the braille table braille files are read and written with, by its stored value (BrailleTableSource: a bundled table's file name, or "mac:" and the file name of one of this Mac's tables), under brailleTable.
-  It reads as the stored value when that is a bundled table or names a Mac table by a bare file name (BrailleTableCatalog.storableValue(_:)).
+  It reads as the stored value when that is a table of the app's own pack, a "mac:" name, or, on the Mac, a bare file name that VoiceOver's folder lists a table of, such as the value an iPhone stores (BrailleTableCatalog.storableValue(_:)).
+  A table that only writes braille is kept too, and a platform never rewrites a value it reads (see [Braille table pack](braille-table-pack.md#stored-values-on-each-platform)).
   A Mac table is kept even when this Mac no longer has it, so that an import or an export refuses it by name.
   Otherwise it reads as BrailleTableCatalog.defaultTableID, "en-ueb-g2.ctb", Unified English Braille contracted.
   Reading it never reads the Mac's folder.

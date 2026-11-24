@@ -94,13 +94,14 @@ Book Information's Braille Code pop-up (FMT21): what the Book Info sheet of a br
 
 - Owner: LibraryBookInfoSheet keeps a BrailleCodeChoiceModel (ViewModels/BrailleCodeChoiceModel.swift, on the main actor) in @StateObject beside the other two models, drawn for a book with Book.offersBrailleTableChoice (a braille book that is not a feed's item, a PEF included).
   A feed's item keeps the plain row (bookInfoBrailleCodeRow).
-  It publishes storedTable (the book's Book.brailleTable, nil for the default), offered (BrailleTableCatalog.offeredTables), names, and isLoaded.
+  It publishes storedTable (the book's Book.brailleTable, nil for the default), offered (BrailleTableCatalog.offeredTables, the tables that read braille back, never one that only writes it), names, and isLoaded.
   It also holds a `RereadChoiceFlow<BrailleTable>`, whose pending, isWorking, failureMessage, and failureStamp it passes on and whose changes it forwards, so the views observing it redraw.
 - Who may write it: the model alone.
   Its load(), in the sheet's .task, lists the offered tables and the words each is named by (BrailleTableCatalog.description(ofTableID:), the words the book's row and Speak Info use) off the main actor, since reading this Mac's tables' headers is slow.
   Until then the pop-up is dimmed (isEnabled) and shows the book's own table.
   Its choose(_:) keeps a guessed table when the table already selected is chosen (keepGuessedTable(), which clears Book.brailleTableOrigin and announces it, with no re-read; the sheet's "Keep This Code" button does the same, under guessNote).
-  Otherwise it ignores the table already selected, one this Mac does not offer (an Item.unavailable, listed last only while it is the book's own), and a choice while the pop-up takes none, and otherwise it asks the flow, which refuses with the library's reason or sets pending.
+  Otherwise it ignores a choice of the table already selected, a choice while the pop-up takes none, and one this Mac does not offer for reading (an Item.unavailable, listed last only while it is the book's own, as a table that only writes braille is).
+  Any other choice it asks the flow, which refuses with the library's reason or sets pending.
   Its confirm(_:) awaits flow.confirm(choosing: .brailleTable(table)), through LibraryViewModel.readTextAgain (in [Text caches](text-caches-rereads-edits.md)), then reads the book's table again from the row.
   The words are BrailleCodeWording (Models/LibraryInfoWording.swift):
   - the label "Braille Code",
