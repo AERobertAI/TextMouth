@@ -94,7 +94,7 @@ The source folders:
 
 TextMouthBraille, a folder beside the TextMouth source folder rather than in it, is the C source of a second program built into the app: the helper that runs liblouis (Vendor/liblouis, which only it and the iPhone's braille library link) for braille.
 Its translation is a library, TextMouthBrailleLibrary.c, which main.c wraps and which the iPhone app calls in its own process.
-It uses the tables of the folder it is given: the app's own, or VoiceOver's for one of this Mac's tables.
+It uses the tables of the folder it is given: the app's own, unpacked from BrailleTables.pack at first use (see [Braille table pack](state/braille-table-pack.md)), or VoiceOver's for one of this Mac's tables.
 Its line protocol with the app, protocol 2, is defined once, in TextMouthBraille/include/TextMouthBrailleProtocol.h.
 The Mac app target copies it into Contents/MacOS, and only BrailleTranslator starts it, under WatchedProcess (see Braille files, in [Imports: braille tables and the translator](state/imports-braille-tables.md)).
 
