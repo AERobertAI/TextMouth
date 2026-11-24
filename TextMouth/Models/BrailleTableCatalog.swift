@@ -54,6 +54,12 @@ enum BrailleTableSource: Equatable, Hashable, Sendable {
         guard source == .mac, let first = fileName.first, first != "." else { return false }
         return !fileName.contains("/") && !fileName.contains(",")
     }
+
+    /// Whether `value` is a bare table file name, such as "en-nz-g2.ctb" (no prefix, and shaped as the helper's own check
+    /// requires, as `isMacValue(_:)` says): a value some platform's tables may have though this one's do not.
+    static func isBareTableName(_ value: String) -> Bool {
+        parse(value).source == .bundled && isMacValue(mac.storedValue(ofFile: value))
+    }
 }
 
 // MARK: - A Table

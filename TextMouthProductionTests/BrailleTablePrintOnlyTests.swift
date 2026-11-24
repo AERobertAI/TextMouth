@@ -154,7 +154,9 @@ final class BrailleTablePrintOnlyTests: XCTestCase {
         }
         XCTAssertEqual(try decoded(bare).brailleTable, bare, "a config.json made on an iPhone lost its braille table")
         XCTAssertEqual(try decoded("mac:\(bare)").brailleTable, "mac:\(bare)")
-        XCTAssertEqual(try decoded("no-such-table.ctb").brailleTable, "")
+        // A bare name this platform lacks is kept as the file has it, for the platform that has the table; never taken.
+        XCTAssertEqual(try decoded("no-such-table.ctb").brailleTable, "no-such-table.ctb")
+        XCTAssertEqual(try decoded("../fr-bfu-g2.ctb").brailleTable, "")
     }
     #endif
 

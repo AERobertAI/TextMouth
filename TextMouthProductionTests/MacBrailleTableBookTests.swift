@@ -392,6 +392,50 @@ final class MacBrailleTableBookTests: XCTestCase {
         XCTAssertEqual(BraillePreferences.table.read(from: defaults), spanish)
     }
 
+    /// An iPhone's choice this Mac lacks survives the Mac's launch save: a bare table name this Mac has no table of (an
+    /// iPhone's `en-nz-g2.ctb`, say) is not taken, the Mac keeps reading with its own table, and the save writes the file's
+    /// value back as it was, until the table is changed on this Mac, which writes the Mac's own. A file that then names a
+    /// table the Mac takes ends the hold.
+    @MainActor
+    func testAnIPhonesChoiceTheMacLacksSurvivesTheLaunchSave() throws {
+        let theirs = "table-only-the-iphone-has.ctb"
+        let url = try makeConfigFileURL()
+        try Data(#"{"brailleTable": "\#(theirs)"}"#.utf8).write(to: url)
+        let defaults = try isolatedDefaults()
+        let service = makeConfigService(fileURL: url)
+        let settings = SettingsViewModel(
+            notificationCenter: NotificationCenter(), initializeServices: false, userDefaults: defaults, configService: service
+        )
+        // The file's value is kept as it is, never repaired to empty; the setting refuses it and keeps the Mac's own.
+        XCTAssertEqual(service.config.brailleTable, theirs)
+        settings.applyConfigChanges(service.config)
+        XCTAssertEqual(settings.brailleTable, "en-ueb-g2.ctb")
+
+        // What the launch's save writes, and what every later save of another setting writes.
+        var written = service.config
+        settings.writePreferences(into: &written)
+        XCTAssertEqual(written.brailleTable, theirs, "the launch save handed the iPhone this Mac's table")
+        settings.wordsPerMinute = 200
+        settings.writePreferences(into: &written)
+        XCTAssertEqual(written.brailleTable, theirs)
+
+        // A change on this Mac replaces it, and stays replaced.
+        settings.brailleTable = "en-us-g1.ctb"
+        settings.writePreferences(into: &written)
+        XCTAssertEqual(written.brailleTable, "en-us-g1.ctb")
+        settings.writePreferences(into: &written)
+        XCTAssertEqual(written.brailleTable, "en-us-g1.ctb")
+
+        // The file naming a table this Mac takes ends the hold.
+        var edit = written
+        edit.brailleTable = theirs
+        settings.applyConfigChanges(edit)
+        edit.brailleTable = "en_US.tbl"
+        settings.applyConfigChanges(edit)
+        settings.writePreferences(into: &written)
+        XCTAssertEqual(written.brailleTable, "en_US.tbl")
+    }
+
     /// A table that says six dots but writes a character with eight, as the
     /// Mac's Swedish table writes «, fails the book's export naming the
     /// character, in a BRF and a PEF alike, rather than dropping the extra
