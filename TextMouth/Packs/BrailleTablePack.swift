@@ -15,8 +15,8 @@ struct BrailleTablePackFailure: Error, CustomStringConvertible, Equatable {
 /// The container is `PackContainer`'s (the magic `TMBT`, version 1, the header's count the number of files); the builder is
 /// `Scripts/packs/braille_tables.py`. The pack holds:
 /// - the blob `index`, one JSON document, `{"v": 1, "liblouis": "3.39.0", "files": [...]}`, whose entries, in name order,
-///   are each file's name (`n`), its group (`g`), its offset (`o`) and length (`l`) in the group's decoded bytes, the files
-///   it includes (`i`), the header fields the catalog reads when it is a table (`m`), and, when it only includes other
+///   are each file's name (`n`), its group (`g`), its offset (`o`) and length (`l`) in the group's decoded bytes, the SHA-256
+///   of its bytes (`h`), the files it includes (`i`), the header fields the catalog reads when it is a table (`m`), and, when it only includes other
 ///   tables, those (`t`);
 /// - the blobs `g000`, `g001`, ..., each one LZMA stream of its files' bytes one after another.
 ///
@@ -37,6 +37,8 @@ struct BrailleTablePack: Sendable {
         /// Where the file begins in its group's decoded bytes, and how many bytes it has.
         let offset: Int
         let length: Int
+        /// The SHA-256 of the file's bytes, in lowercase hexadecimal, which the unpacker checks a kept file against.
+        let sha256: String
         /// The files the file includes, in the order its `include` lines name them.
         let includes: [String]
         /// The header fields the catalog reads, by lowercase key, for a file that has a `type`; empty for any other.
@@ -126,6 +128,7 @@ struct BrailleTablePack: Sendable {
         let g: Int
         let o: Int
         let l: Int
+        let h: String
         let i: [String]?
         let m: [String: String]?
         let t: [String]?
@@ -185,6 +188,8 @@ struct BrailleTablePack: Sendable {
             guard entry.o >= 0, entry.l >= 0, entry.o <= blob.rawSize, entry.l <= blob.rawSize - entry.o else {
                 throw BrailleTablePackFailure("\(entry.n) lies outside its group")  // l10n: no (English text for the debug log, never shown)
             }
+            guard entry.h.utf8.count == 64, entry.h.utf8.allSatisfy({ ($0 >= UInt8(ascii: "0") && $0 <= UInt8(ascii: "9")) || ($0 >= UInt8(ascii: "a") && $0 <= UInt8(ascii: "f")) })
+            else { throw BrailleTablePackFailure("the index gives \(entry.n) no SHA-256") }  // l10n: no (English text for the debug log, never shown)
             let includes = entry.i ?? []
             let fields = entry.m ?? [:]
             guard includes.count <= largestIncludeCount, (entry.t?.count ?? 0) <= largestIncludeCount,
@@ -192,7 +197,7 @@ struct BrailleTablePack: Sendable {
             else { throw BrailleTablePackFailure("the index entry of \(entry.n) is too large") }  // l10n: no (English text for the debug log, never shown)
             perGroup[entry.g, default: 0] += 1
             files[entry.n] = File(
-                name: entry.n, group: entry.g, offset: entry.o, length: entry.l,
+                name: entry.n, group: entry.g, offset: entry.o, length: entry.l, sha256: entry.h,
                 includes: includes, fields: fields, includeOnly: entry.t
             )
         }
