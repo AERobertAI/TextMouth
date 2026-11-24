@@ -321,7 +321,7 @@ Part of [TextMouth's architecture](../../ARCHITECTURE.md).
     `refuseConversion` throws `FFmpegAudioConverter.Failure.copyProtected`, the Mac's own sentence, first for a copy-protected one, under the conversion's step, before it refuses another file for its kind.
     Ogg and the formats the Mac converts with afconvert are FMT55.
   - `.wordSixOrNinetyFive` for the format that needs textutil.
-  - `.macBrailleTable` for a braille book that needs one of a Mac's own tables, thrown by BrailleBookReader.markdown before anything is read.
-    The iPhone reads other braille books itself (see [The translator on the iPhone](state/imports-braille-tables.md#the-translator-on-the-iphone)).
+  - `.macBrailleTable` for a braille book that needs one of a Mac's own tables that the iPhone's pack has no table of the same file name for, thrown by BrailleBookReader.markdown before anything is read.
+    The iPhone reads other braille books itself, a Mac's `mac:<file>` with the pack's table of that name (see [The translator on the iPhone](state/imports-braille-tables.md#the-translator-on-the-iphone)).
 - A folder, ZIP, or playlist leaves out a file named like one only FFmpeg reads whose bytes are of none, with the Mac's notice (`FFmpegImportWording.tracksLeftOutNotice`), and refuses what is left that needs converting.
   The iPhone's converter is never missing, so it leaves out no file for that.

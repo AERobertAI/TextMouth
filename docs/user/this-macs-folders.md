@@ -112,6 +112,15 @@ Nothing about speech is kept here, so changing substitution rules or speech sett
 A book's file is removed a day after the book was last opened, at once when its text is extracted again or the book is deleted, and whenever its content.md or title changes or a new version of TextMouth is installed.
 Time Machine leaves it out of backups, and macOS may empty it when the disk runs low; the next open simply reads the book again.
 
+## Braille Tables cache
+<!-- id: braille-tables-cache; keys: braille tables, liblouis, unpacked tables, Caches, Time Machine; src: TextMouth/Packs/BrailleTableUnpacker.swift, TextMouth/Models/CloudStorageContract.swift -->
+
+~/Library/Caches/com.textmouth.TextMouth/BrailleTables: the braille tables TextMouth has used, one folder for each liblouis version, each table beside the files it includes.
+TextMouth carries its tables inside the app, packed, and writes the ones it needs here the first time a braille book is read or written with them.
+When a file is gone, because macOS emptied Caches, TextMouth writes it again when it is next needed, and a damaged file is written again.
+When TextMouth has a newer liblouis, it removes the folders of the older versions.
+Time Machine leaves it out of backups.
+
 ## memory-quit.json
 <!-- id: memory-quit-json; keys: memory guard, quit to protect, runaway memory; src: TextMouth/Services/PlaybackMemoryGuard.swift -->
 

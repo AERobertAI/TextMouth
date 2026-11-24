@@ -243,7 +243,7 @@ This Mac's own folders.
   - and, in ~/Library/Caches/com.textmouth.TextMouth:
     - Reading Text (MachineLocalPaths.readingTextCache),
     - Search Text (MachineLocalPaths.librarySearchText, Search Library's texts; see [Text caches](text-caches-rereads-edits.md)),
-    - Feeds (MachineLocalPaths.feedCaches),
+    - Feeds (MachineLocalPaths.feedCaches), and BrailleTables (MachineLocalPaths.brailleTables: the tables unpacked from the pack, see [Braille table pack](braille-table-pack.md#the-unpacker)),
     - Audio Edits (AudioEditScratch.root),
     - and Audio Editor Clips (AudioEditCaches.clipsRoot), which macOS may empty.
 
