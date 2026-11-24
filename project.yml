@@ -814,8 +814,11 @@ targets:
   # Public License, version 2.1, under which the library and its tables are
   # distributed ("or any later version"); README, AUTHORS, and NEWS; the
   # library's sources and headers in liblouis/, the ones its Makefile.am
-  # builds liblouis from (liblouis.h.in among them); and in tables/ the four
-  # English tables TextMouth offers, with every table they include:
+  # builds liblouis from (liblouis.h.in among them); and in tables/, since
+  # FR40, every file of the release's own tables/ folder (the apps ship the ones
+  # whose license allows it, packed: see PackBrailleTables). Before FR40 it held
+  # only the four English tables TextMouth offers, with every table they include,
+  # which are still the files the Mac's pack holds (Scripts/packs/braille_tables_mac.txt):
   # Unified English Braille uncontracted (en-ueb-g1.ctb) and contracted
   # (en-ueb-g2.ctb), and English Braille, American Edition, uncontracted
   # (en-us-g1.ctb) and contracted (en_US.tbl), 17 files; and three display
