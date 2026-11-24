@@ -699,7 +699,16 @@ enum BrailleTableCatalog {
     /// Export dialog's braille options, or a Mac table's stored value); nil
     /// when the Mac has no such folder, and TextMouth then offers only its
     /// own tables, with no error (decision 2).
-    static let mac: MacTables? = macTables(in: macTablesFolder, propertyList: macTablesPropertyList)
+    ///
+    /// The iPhone has no Mac tables, and so reads none: in a simulator the host Mac's folder is visible at its own path, and
+    /// reading it there would offer tables the device never has (the iPhone's pack is what it offers).
+    static let mac: MacTables? = {
+        #if os(macOS)
+        return macTables(in: macTablesFolder, propertyList: macTablesPropertyList)
+        #else
+        return nil
+        #endif
+    }()
 
     // MARK: The Offered Tables
 

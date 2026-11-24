@@ -172,6 +172,9 @@ final class BrailleTablePrintOnlyTests: XCTestCase {
         let ids = Set(BrailleTableCatalog.exportTables.filter(\.isPrintOnly).map(\.id))
         XCTAssertTrue(ids.isDisjoint(with: BrailleTableCatalog.offeredTables.map(\.id)))
         #if os(iOS)
+        // The iPhone reads no Mac tables, even in a simulator, where the host Mac's folder is visible at its own path.
+        XCTAssertNil(BrailleTableCatalog.mac)
+        XCTAssertFalse(BrailleTableCatalog.exportTables.contains { $0.source == .mac })
         let expected: Set = ["de-g1.ctb", "de-g2.ctb", "th-g2.ctb", "ko-g2.ctb", "vi-vn-g2.ctb", "he-IL.utb", "fa-ir-g1.utb", "cs.tbl", "zh_CHN.tbl"]
         XCTAssertTrue(expected.isSubset(of: ids), "missing from export: \(expected.subtracting(ids).sorted())")
         XCTAssertGreaterThan(ids.count, 30)
