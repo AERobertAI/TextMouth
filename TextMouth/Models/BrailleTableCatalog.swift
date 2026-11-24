@@ -4,7 +4,8 @@ import Foundation
 
 /// Where a braille table comes from (October 20, 2026).
 ///
-/// - **Built into TextMouth** (`bundled`): English, which is Unified English
+/// - **Built into TextMouth** (`bundled`, the tables of the app's own pack: the
+///   Mac's has the four English ones, the iPhone's every table it ships): English, which is Unified English
 ///   Braille and English Braille American Edition, each uncontracted and
 ///   contracted. It stays built in, and its contracted UEB table stays the
 ///   default (decision 1). A bundled table's stored value is its bare file
@@ -154,6 +155,15 @@ struct BrailleTable: Equatable, Hashable, Sendable, Identifiable {
         self.declaresSixDots = declaresSixDots
     }
 
+    /// This table under the stored value `id`: what a platform answers when asked for a value it reads with another source's
+    /// table of the same file name (FR40), so the value it was asked for is the value it keeps and stores.
+    func withID(_ id: String) -> BrailleTable {
+        BrailleTable(
+            id: id, displayName: displayName, indexName: indexName, language: language, system: system,
+            contraction: contraction, grade: grade, region: region, declaresSixDots: declaresSixDots
+        )
+    }
+
     /// Where the table comes from, as its stored value says.
     var source: BrailleTableSource { BrailleTableSource.parse(id).source }
 
@@ -230,8 +240,10 @@ struct BrailleLanguage: Equatable, Identifiable, Sendable {
 
 /// The braille tables TextMouth offers (FMT21), read from the tables' own
 /// metadata: the header comments liblouis reads in `analyzeTable`
-/// (`Vendor/liblouis/liblouis/metadata.c`). Adding a table is only adding a
-/// resource to the bundled tables folder.
+/// (`Vendor/liblouis/liblouis/metadata.c`). The bundled tables are listed from
+/// the index of the app's own pack (`BrailleTablePack`, FR40), whose builder
+/// reads the same headers; adding a table is adding its file to
+/// `Vendor/liblouis/tables`.
 ///
 /// Since October 20, 2026 the tables come from two sources
 /// (`BrailleTableSource`): the bundled English tables, built in and the
@@ -596,7 +608,7 @@ enum BrailleTableCatalog {
     /// review R2): the liblouis version of this Mac's tables for one of
     /// them, and nil for a bundled table, which changes only with TextMouth.
     static func versionToRecord(forTable table: String) -> String? {
-        BrailleTableSource.parse(table).source == .mac ? currentMacLiblouisVersion() : nil
+        liblouisVersionRead(forTable: table).version
     }
 
     /// This Mac's tables, read once, when first needed (the Braille tab, the
@@ -632,15 +644,56 @@ enum BrailleTableCatalog {
     /// reads this Mac's folder.
     static func table(withID id: String) -> BrailleTable? {
         switch BrailleTableSource.parse(id).source {
-        case .bundled: return bundled.first { $0.id == id }
+        case .bundled:
+            if let found = bundled.first(where: { $0.id == id }) { return found }
+            #if os(macOS)
+            // A bare value this Mac's pack lacks, such as a table the iPhone stored (FR32), reads with VoiceOver's file of that
+            // name when it has one, and keeps the value it was asked for.
+            return offeredTables.first { $0.id == BrailleTableSource.mac.storedValue(ofFile: id) }?.withID(id)
+            #else
+            return nil
+            #endif
         case .mac:
             #if os(iOS)
-            // The iPhone has no Mac tables: a Mac's value names the pack's table of the same file name, when it has one.
-            return bundledID(forStored: id).flatMap { bundledID in bundled.first { $0.id == bundledID } }
+            // The iPhone has no Mac tables: a Mac's value is read with the pack's table of the same file name, when it has
+            // one, and the value stays the Mac's (`mac:<file>`), which a copy or a re-read stores as it was.
+            return bundledID(forStored: id).flatMap { bundledID in bundled.first { $0.id == bundledID } }?.withID(id)
             #else
             return offeredTables.first { $0.id == id }
             #endif
         }
+    }
+
+    /// Whether this platform reads the table `stored` names with this Mac's own (VoiceOver's) file: a `mac:` value, and on
+    /// the Mac a bare value its own pack lacks and VoiceOver has. Never true on the iPhone, and never reads the Mac's folder
+    /// for a bare value the app's pack has.
+    static func readsFromMacFolder(_ stored: String) -> Bool {
+        #if os(macOS)
+        let (source, fileName) = BrailleTableSource.parse(stored)
+        if source == .mac { return true }
+        if bundled.contains(where: { $0.id == stored }) { return false }
+        return offeredTables.contains { $0.id == BrailleTableSource.mac.storedValue(ofFile: fileName) }
+        #else
+        return false
+        #endif
+    }
+
+    /// The tables both apps' packs hold, which liblouis reads the same on both platforms (TextMouth's own 3.39.0 files): a
+    /// book read with one keeps no liblouis version (`liblouisVersionRead(forTable:)`). A test keeps this the Mac's whole pack.
+    static let tablesOfEveryPack: Set<String> = ["en-ueb-g1.ctb", "en-ueb-g2.ctb", "en-us-g1.ctb", "en_US.tbl"]
+
+    /// The liblouis version this platform reads `table`, a stored value, with, when a book must keep it, and whether a book
+    /// does. `guarded` is false for a table of every pack (nothing to compare), and for a value this platform refuses. The
+    /// version is this Mac's (VoiceOver's, nil when it names none) for a table read from this Mac's folder, and TextMouth's
+    /// own for any other table the iPhone reads, `mac:` values included (FR40).
+    static func liblouisVersionRead(forTable table: String) -> (guarded: Bool, version: String?) {
+        if readsFromMacFolder(table) { return (true, currentMacLiblouisVersion()) }
+        #if os(iOS)
+        guard let bundledID = bundledID(forStored: table), !tablesOfEveryPack.contains(bundledID) else { return (false, nil) }
+        return (true, bundledLiblouisVersion)
+        #else
+        return (false, nil)
+        #endif
     }
 
     /// The bundled table a stored value names where a Mac's own tables do not

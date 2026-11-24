@@ -103,12 +103,18 @@ enum BrailleTranslator {
             case let .uncheckedTable(name, why):
                 // Translators: Why a braille translation was refused: one of this Mac's braille tables could not be checked. %1$@ is the table's name as macOS gives it and %2$@ the reason, which stays English.
                 return InterfaceText.line("failure.uncheckedTable", "TextMouth could not check this Mac's braille table \u{201C}\(name)\u{201D}: \(why). Try again.")
+            #if os(iOS)
+            case let .changedTable(name, then, now):
+                // Translators: Why a book is not read with its braille table again on an iPhone: the table's liblouis version is not the one the book was read with. %1$@ is the table's name, %2$@ the liblouis version on this iPhone, and %3$@ the version the book was read with.
+                return InterfaceText.line("failure.changedTable.phoneBraille", "The braille table \u{201C}\(name)\u{201D} on this iPhone is liblouis \(now ?? BrailleTableCatalog.bundledLiblouisVersion), not liblouis \(then) as when the book was read, so TextMouth keeps the book's text as it was.")
+            #else
             case let .changedTable(name, then, now?):
                 // Translators: Why a book is not read with its braille table again: the table changed. %1$@ is the table's name as macOS gives it, %2$@ the liblouis version the book was read with, and %3$@ the version now.
                 return InterfaceText.line("failure.changedTable.brailleLiblouisSince", "This Mac's braille table \u{201C}\(name)\u{201D} changed from liblouis \(then) to \(now) since the book was read, so TextMouth keeps the book's text as it was.")
             case let .changedTable(name, then, nil):
                 // Translators: Why a book is not read with its braille table again: the table may have changed. %1$@ is the table's name as macOS gives it and %2$@ the liblouis version the book was read with.
                 return InterfaceText.line("failure.changedTable.brailleSinceLiblouis", "This Mac's braille table \u{201C}\(name)\u{201D} may have changed since liblouis \(then) read the book, so TextMouth keeps the book's text as it was.")
+            #endif
             }
         }
     }
@@ -173,6 +179,11 @@ enum BrailleTranslator {
             let (source, fileName) = BrailleTableSource.parse(table)
             if source == .mac { return BrailleTableCatalog.macTablesFolder }
             guard let unpacker = BrailleTableUnpacker.app else { throw Failure.unknownTable(table) }
+            // A bare value the app's pack lacks is read with this Mac's own file of that name, when VoiceOver has one.
+            if unpacker.pack.files[fileName] == nil,
+               FileManager.default.fileExists(atPath: BrailleTableCatalog.macTablesFolder.appendingPathComponent(fileName).path) {
+                return BrailleTableCatalog.macTablesFolder
+            }
             do {
                 return try unpacker.unpackedFolder(for: fileName)
             } catch {
@@ -942,6 +953,32 @@ enum BrailleTranslator {
         maximumOutputBytes: Int64 = 0,
         timeAllowed: TimeInterval? = nil
     ) throws -> (output: Data, seconds: TimeInterval) {
+        do {
+            return try runLibraryOnce(
+                direction: direction, table: table, input: input, seconds: seconds,
+                maximumOutputBytes: maximumOutputBytes, timeAllowed: timeAllowed
+            )
+        } catch let failure as Failure where failure == .unknownTable(table) && BrailleTableSource.parse(table).source == .bundled
+            && ((try? BrailleTranslator.tool.tablesFolder(table)) ?? nil) != nil {
+            // iOS may clear the Caches folder between the unpacker's look at a table's files and liblouis's open of
+            // them: the table is unpacked again (asking the tool for its folder does it), once, before it is called
+            // unknown. A tool with no folder, a test's stand-in, is not asked twice.
+            return try runLibraryOnce(
+                direction: direction, table: table, input: input, seconds: seconds,
+                maximumOutputBytes: maximumOutputBytes, timeAllowed: timeAllowed
+            )
+        }
+    }
+
+    /// One try of `runLibrary`.
+    private static func runLibraryOnce(
+        direction: Direction?,
+        table: String,
+        input: Data,
+        seconds: TimeInterval,
+        maximumOutputBytes: Int64,
+        timeAllowed: TimeInterval?
+    ) throws -> (output: Data, seconds: TimeInterval) {
         let mode = direction?.rawValue ?? "check"
         // The engine, the tool, and the import's cancellation are read here,
         // on the caller's thread: the engine's thread inherits no
@@ -1049,6 +1086,33 @@ enum BrailleTranslator {
     /// - Throws: `Failure`, and `ImportCancelled` when the import's Cancel
     ///   killed the child.
     private static func runHelper(
+        mode: String,
+        table: String,
+        input: URL?,
+        output: URL?,
+        watching: URL,
+        inputBytes: Int64,
+        direction: Direction?,
+        measure: RunMeasure?
+    ) throws {
+        do {
+            try runHelperOnce(
+                mode: mode, table: table, input: input, output: output, watching: watching,
+                inputBytes: inputBytes, direction: direction, measure: measure
+            )
+        } catch let failure as Failure where failure == .unknownTable(table) && BrailleTableSource.parse(table).source == .bundled
+            && !BrailleTableCatalog.readsFromMacFolder(table) && ((try? BrailleTranslator.tool.tablesFolder(table)) ?? nil) != nil {
+            // A table file that vanished between the unpacker's look and the helper's open (the system may clear the
+            // Caches folder at any time) is unpacked again, once, before the table is called unknown.
+            try runHelperOnce(
+                mode: mode, table: table, input: input, output: output, watching: watching,
+                inputBytes: inputBytes, direction: direction, measure: measure
+            )
+        }
+    }
+
+    /// One try of `runHelper`.
+    private static func runHelperOnce(
         mode: String,
         table: String,
         input: URL?,

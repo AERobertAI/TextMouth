@@ -296,7 +296,7 @@ enum MacBrailleTableCheck {
     /// - Throws: only `ImportCancelled` or `CancellationError`, when an
     ///   import's Cancel or the task's own cancellation stops the helper.
     static func check(_ tableID: String, workingIn folder: URL) throws -> Verdict {
-        guard BrailleTableSource.parse(tableID).source == .mac else { return .usable(.none) }
+        guard BrailleTableCatalog.readsFromMacFolder(tableID) else { return .usable(.none) }
         let verdict: Verdict
         if let table = BrailleTableCatalog.table(withID: tableID) {
             let measure = BrailleTranslator.RunMeasure(memoryCeiling: memoryCeilingBytes, pollInterval: measuringPollInterval)
@@ -459,7 +459,7 @@ enum MacBrailleTableCheck {
     /// not kept, so the next import tries again (review R7).
     /// - Throws: also `ImportCancelled` or `CancellationError` from the check.
     static func requireUsable(_ tableID: String, workingIn folder: URL) throws {
-        guard BrailleTableSource.parse(tableID).source == .mac else { return }
+        guard BrailleTableCatalog.readsFromMacFolder(tableID) else { return }
         let verdict = try verdicts.verdict(for: tableID) { try check(tableID, workingIn: folder) }
         guard case let .refused(refusal) = verdict else { return }
         if case let .couldNotCheck(why) = refusal {
