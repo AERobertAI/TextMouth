@@ -349,7 +349,14 @@ enum BrailleTableCatalog {
     /// tables name none, such as its German and Spanish ones, and their
     /// codes are named from their display names (`codeName(of:)`).
     private static func table(at file: URL, source: BrailleTableSource) -> BrailleTable? {
-        let fields = metadata(ofTableAt: file)
+        table(fields: metadata(ofTableAt: file), fileName: file.lastPathComponent, source: source)
+    }
+
+    /// The table the file called `fileName` is, from the header `fields` it has
+    /// (the rules of `table(at:source:)`), or nil when it is not one TextMouth
+    /// offers. A pack's index holds the fields of each file (FR40), so the
+    /// bundled tables are made by these same rules without opening a file.
+    private static func table(fields: [String: String], fileName: String, source: BrailleTableSource) -> BrailleTable? {
         guard fields["type"]?.lowercased() == "literary",
               fields["dots"].map({ $0 == "6" }) ?? true,
               let displayName = fields["display-name"],
@@ -367,7 +374,7 @@ enum BrailleTableCatalog {
         }
         if let direction = fields["direction"], direction.lowercased() != "both" { return nil }
         return BrailleTable(
-            id: source.storedValue(ofFile: file.lastPathComponent),
+            id: source.storedValue(ofFile: fileName),
             displayName: displayName,
             indexName: fields["index-name"],
             language: language,
@@ -385,11 +392,11 @@ enum BrailleTableCatalog {
     /// The table each candidate twin among `found` includes, by file name: a
     /// table whose only rule is one include of a table found here in the
     /// same language (review F2).
-    private static func twinTargets(of found: [(file: URL, table: BrailleTable)]) -> [String: String] {
+    private static func twinTargets(of found: [(table: BrailleTable, includeOnly: [String]?)]) -> [String: String] {
         let languages = Dictionary(found.map { ($0.table.fileName, $0.table.language) }) { first, _ in first }
         var targets: [String: String] = [:]
         for entry in found {
-            guard let includes = includeOnlyTargets(ofTableAt: entry.file), includes.count == 1,
+            guard let includes = entry.includeOnly, includes.count == 1,
                   let target = includes.first, target != entry.table.fileName,
                   languages[target] == entry.table.language
             else { continue }
@@ -468,7 +475,32 @@ enum BrailleTableCatalog {
         )) ?? []
         let found = files
             .filter { (try? $0.resourceValues(forKeys: [.isRegularFileKey]).isRegularFile) == true }
-            .compactMap { file in table(at: file, source: source).map { (file: file, table: $0) } }
+            .compactMap { file in
+                table(at: file, source: source).map { (table: $0, includeOnly: includeOnlyTargets(ofTableAt: file)) }
+            }
+        return offered(from: found)
+    }
+
+    /// The tables TextMouth offers among the files of `pack` (FR40), read from
+    /// its index alone, by the rules `tables(in:source:)` applies to a folder
+    /// of the same files, and with the bundled source's stored values: a file's
+    /// header fields and its include-only targets come from the index, so
+    /// nothing is unpacked and no file is opened.
+    static func tables(in pack: BrailleTablePack) -> [BrailleTable] {
+        let found = pack.names.compactMap { name -> (table: BrailleTable, includeOnly: [String]?)? in
+            guard let file = pack.files[name],
+                  let table = table(fields: file.fields, fileName: name, source: .bundled)
+            else { return nil }
+            return (table, file.includeOnly)
+        }
+        return offered(from: found)
+    }
+
+    /// The tables of `found`, candidates with their files' include-only
+    /// targets, that are offered: a true twin is left out (review R6, F2), and
+    /// the rest are in the order language, system, contraction, then stored
+    /// value.
+    private static func offered(from found: [(table: BrailleTable, includeOnly: [String]?)]) -> [BrailleTable] {
         let twins = twinTargets(of: found)
         return found
             .filter { !isTrueTwin($0.table.fileName, twins: twins) }
@@ -480,11 +512,13 @@ enum BrailleTableCatalog {
             }
     }
 
-    /// The tables of the bundled tables folder, empty when the bundle has
-    /// none, read once.
+    /// The tables of the app's own pack (`BrailleTables.pack`, FR40), listed
+    /// from its index without unpacking anything, empty when the app has no
+    /// usable pack, read once: on the Mac the four English tables, on the
+    /// iPhone every table liblouis's release gives and TextMouth ships.
     static let bundled: [BrailleTable] = {
-        guard let folder = BrailleTranslator.Tool.helper.tablesFolder else { return [] }
-        return tables(in: folder)
+        guard let unpacker = BrailleTableUnpacker.app else { return [] }
+        return tables(in: unpacker.pack)
     }()
 
     /// The liblouis TextMouth's braille helper is built from
@@ -599,8 +633,25 @@ enum BrailleTableCatalog {
     static func table(withID id: String) -> BrailleTable? {
         switch BrailleTableSource.parse(id).source {
         case .bundled: return bundled.first { $0.id == id }
-        case .mac: return offeredTables.first { $0.id == id }
+        case .mac:
+            #if os(iOS)
+            // The iPhone has no Mac tables: a Mac's value names the pack's table of the same file name, when it has one.
+            return bundledID(forStored: id).flatMap { bundledID in bundled.first { $0.id == bundledID } }
+            #else
+            return offeredTables.first { $0.id == id }
+            #endif
         }
+    }
+
+    /// The bundled table a stored value names where a Mac's own tables do not
+    /// exist (the iPhone, FR40), by its stored value: a bundled value's own
+    /// when `bundled` lists it, and for a Mac's `mac:<file>`, such as one of a
+    /// library shared with a Mac, the bundled table with that file name; nil
+    /// when `bundled` has none. A table the pack lacks stays refused, in its
+    /// own words (`PhoneImportRefusal.macBrailleTable`).
+    static func bundledID(forStored value: String, among bundled: [BrailleTable] = BrailleTableCatalog.bundled) -> String? {
+        let fileName = BrailleTableSource.parse(value).fileName
+        return bundled.first { $0.fileName == fileName }?.id
     }
 
     /// The value the setting and config.json keep for `value`: a bundled

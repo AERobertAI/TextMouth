@@ -56,11 +56,14 @@ enum PhoneImportRefusal: LocalizedError, Equatable, Sendable {
     // MARK: - Braille
 
     /// Throws `.macBrailleTable` when `table`, a stored value
-    /// (`BrailleTableSource`), names one of a Mac's own tables; nothing for
-    /// a table TextMouth bundles.
+    /// (`BrailleTableSource`), names one of a Mac's own tables that the phone's
+    /// pack has no table of the same file name for; nothing for a table
+    /// TextMouth bundles, and nothing for a Mac's table whose file name the pack
+    /// has, which the phone reads with its own (FR40,
+    /// `BrailleTableCatalog.bundledID(forStored:)`).
     static func refuseMacBrailleTable(_ table: String) throws {
         let (source, fileName) = BrailleTableSource.parse(table)
-        guard source == .mac else { return }
+        guard source == .mac, BrailleTableCatalog.bundledID(forStored: table) == nil else { return }
         throw PhoneImportRefusal.macBrailleTable(fileName)
     }
 

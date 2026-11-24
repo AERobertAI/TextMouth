@@ -134,16 +134,24 @@ enum BrailleTranslator {
         /// (`BrailleTableSource`), reading `input` and writing `output` (both
         /// nil for "check"); nil when the helper or the table's folder is
         /// missing.
-        var command: @Sendable (_ mode: String, _ table: String, _ input: URL?, _ output: URL?)
+        /// - Throws: `Failure.unknownTable` for a bundled table that cannot be
+        ///   unpacked from the app's pack (`BrailleTableUnpacker`).
+        var command: @Sendable (_ mode: String, _ table: String, _ input: URL?, _ output: URL?) throws
             -> (executable: URL, arguments: [String])?
         /// What the watchdog allows a run in `direction` (nil for "check")
         /// on an input of the given size in bytes.
         var limits: @Sendable (Direction?, Int64) -> WatchedProcess.Limits
         /// How the watchdog reads the child's resident memory.
         var residentMemory: @Sendable (pid_t) -> Int64?
-        /// The folder of braille tables the helper reads, nil when the
-        /// bundle lacks it.
-        var tablesFolder: URL?
+        /// The folder of braille tables a run of `table`, a stored value
+        /// (`BrailleTableSource`), reads, with the table and every file it
+        /// includes in it, nil for a tool that has none. For a bundled table
+        /// the app unpacks the table and its includes from its pack into the
+        /// Caches folder first (`BrailleTableUnpacker`, FR40); for one of this
+        /// Mac's it is the Mac's own folder.
+        /// - Throws: `Failure.unknownTable` for a bundled table that cannot be
+        ///   unpacked from the app's pack.
+        var tablesFolder: @Sendable (_ table: String) throws -> URL?
         /// The clock a measured run and the library's own time are timed by,
         /// which never runs backwards, unless a test scripts its own (review
         /// F8): on the iPhone the app's, which counts only the time TextMouth
@@ -151,31 +159,42 @@ enum BrailleTranslator {
         /// spent none of its book's time (B18); on the Mac the system's uptime.
         var clock: RunningClock = BrailleTranslator.toolClock
 
+        /// The folder `table`, a stored value, is read from in the app: this
+        /// Mac's own folder for one of its tables, else the app's unpacked
+        /// folder with the table and everything it includes in it
+        /// (`BrailleTableUnpacker.app`, FR40). The stored value names the
+        /// table's folder (decision 6): a table is loaded from inside its
+        /// folder by its bare file name, and a run reads one folder, never
+        /// both, so a table's includes come from its own liblouis version.
+        /// - Throws: `Failure.unknownTable` when the bundled table cannot be
+        ///   unpacked: the app has no pack, or a blob of it is damaged (the
+        ///   unpacker has logged why, once).
+        private static func appTablesFolder(for table: String) throws -> URL? {
+            let (source, fileName) = BrailleTableSource.parse(table)
+            if source == .mac { return BrailleTableCatalog.macTablesFolder }
+            guard let unpacker = BrailleTableUnpacker.app else { throw Failure.unknownTable(table) }
+            do {
+                return try unpacker.unpackedFolder(for: fileName)
+            } catch {
+                throw Failure.unknownTable(table)
+            }
+        }
+
         /// The helper built into the app: `Contents/MacOS/TextMouthBraille`,
-        /// reading the bundled tables in `Contents/Resources/liblouis/tables`
-        /// and this Mac's in its own folder
-        /// (`BrailleTableCatalog.macTablesFolder`).
+        /// reading the bundled tables unpacked from the app's pack and this
+        /// Mac's in its own folder (`BrailleTableCatalog.macTablesFolder`).
         static let helper: Tool = {
             let executable = Bundle.main.url(forAuxiliaryExecutable: "TextMouthBraille")
-            let tables = Bundle.main.resourceURL?.appendingPathComponent("liblouis/tables", isDirectory: true)
             return Tool(
                 command: { mode, table, input, output in
-                    // The stored value names the table's folder (decision 6):
-                    // one of this Mac's tables is loaded from inside the
-                    // Mac's folder, by its bare file name, exactly as a
-                    // bundled one is from the bundle's. A run reads one
-                    // folder, never both, so a table's includes come from its
-                    // own liblouis version.
-                    let (source, fileName) = BrailleTableSource.parse(table)
-                    let folder: URL? = source == .mac ? BrailleTableCatalog.macTablesFolder : tables
-                    guard let executable, let folder else { return nil }
+                    guard let executable, let folder = try appTablesFolder(for: table) else { return nil }
                     // The helper's usage: `mode tables table [input output]`.
                     let files = [input, output].compactMap { $0?.path }
-                    return (executable, [mode, folder.path, fileName] + files)
+                    return (executable, [mode, folder.path, BrailleTableSource.parse(table).fileName] + files)
                 },
                 limits: { BrailleTranslator.limits(for: $0, bytes: $1) },
                 residentMemory: { WatchedProcess.residentMemory(of: $0) },
-                tablesFolder: tables
+                tablesFolder: { try appTablesFolder(for: $0) }
             )
         }()
     }
@@ -496,8 +515,8 @@ enum BrailleTranslator {
         #if os(iOS)
         // The library loads the table in this process and translates nothing,
         // within the tool's time for a check, as the Mac's helper does.
-        try requireBundledTable(table)
-        _ = try runLibrary(direction: nil, table: table, input: Data(), seconds: tool.limits(nil, 0).maximumSeconds)
+        let bundled = try requireBundledTable(table)
+        _ = try runLibrary(direction: nil, table: bundled, input: Data(), seconds: tool.limits(nil, 0).maximumSeconds)
         #else
         // The watchdog needs a file to watch; a check writes none, so an
         // empty one stands in.
@@ -774,11 +793,15 @@ enum BrailleTranslator {
     /// watchdog lets its helper hold.
     static let batchBytes = 262_144
 
-    /// Throws `Failure.unknownTable` unless `table` is one of the bundled
-    /// tables: the iPhone compiles no other, so nothing a person supplies is
-    /// ever read as a table, and the Mac's own tables stay the Mac's.
-    private static func requireBundledTable(_ table: String) throws {
-        guard BrailleTableSource.parse(table).source == .bundled else { throw Failure.unknownTable(table) }
+    /// The bundled table `table`, a stored value, names, by its bare file
+    /// name: its own for a bundled value, and for a Mac's `mac:<file>` the
+    /// pack's table of the same file name when the pack has one (FR40).
+    /// - Throws: `Failure.unknownTable` unless the pack has the table: the
+    ///   iPhone reads no other, so nothing a person supplies is ever read as
+    ///   a table, and a Mac's own tables the pack lacks stay the Mac's.
+    private static func requireBundledTable(_ table: String) throws -> String {
+        guard let bundled = BrailleTableCatalog.bundledID(forStored: table) else { throw Failure.unknownTable(table) }
+        return bundled
     }
 
     /// `translate(_:table:direction:workingIn:checksMacTable:measure:)` on
@@ -790,8 +813,8 @@ enum BrailleTranslator {
         table: String,
         direction: Direction
     ) throws -> [EmphasizedText] {
-        try requireBundledTable(table)
-        var batches = LibraryBatches(table: table, direction: direction)
+        let bundled = try requireBundledTable(table)
+        var batches = LibraryBatches(table: bundled, direction: direction)
         let layout = try layOut(texts, direction: direction) { try batches.append($0) }
         guard layout.pieceCount > 0 else { return texts.map { _ in EmphasizedText() } }
         return joined(try batches.finish(), layout: layout, direction: direction)
@@ -926,9 +949,9 @@ enum BrailleTranslator {
         let engine = BrailleTranslator.engine
         let tool = BrailleTranslator.tool
         let cancellation = ImportCancellation.current
-        // The tool's tables, read in place: the bundle's in the app
-        // (`Tool.helper`).
-        guard let folder = tool.tablesFolder?.path else {
+        // The tool's tables: in the app, the table and what it includes,
+        // unpacked from the app's pack (`Tool.helper`, FR40).
+        guard let folder = try tool.tablesFolder(table)?.path else {
             throw logged(.failed, mode, table, "the bundled tables are missing")
         }
         let libraryMode: UInt32
@@ -1040,7 +1063,7 @@ enum BrailleTranslator {
         // detached task below inherits no task-locals.
         let tool = BrailleTranslator.tool
         let cancellation = ImportCancellation.current
-        guard let command = tool.command(mode, table, input, output) else {
+        guard let command = try tool.command(mode, table, input, output) else {
             throw logged(.failed, mode, table, "the helper is missing")
         }
         let toolLimits = tool.limits(direction, inputBytes)
