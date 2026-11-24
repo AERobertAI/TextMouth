@@ -852,18 +852,29 @@ enum BrailleTableCatalog {
     /// A Mac table this Mac does not offer is kept so, and refused by name
     /// when it is used (decision 5).
     ///
-    /// On the Mac a bare value its own pack lacks, such as the `fr-bfu-g2.ctb` an iPhone stores (FR32), is kept too when it
-    /// names a table the catalog lists from VoiceOver's folder, for reading or for export: the same rule `table(withID:)`
-    /// follows. A file of that folder that is no table (an include such as `en-ueb-chardefs.uti`, or a chardefs file) is
-    /// refused, as it was before the iPhone's values were kept. Judging it needs the folder's tables, which the app reads
-    /// once at launch in the background (`loadInBackground`), so a value the pack holds, the common case, never waits on it.
-    static func storableValue(_ value: String) -> String? {
+    /// On the Mac a bare value its own pack lacks, such as the `fr-bfu-g2.ctb` an iPhone stores (FR32), is kept too when
+    /// VoiceOver's folder has a file of that name whose header makes a table TextMouth offers, for reading or for export
+    /// (`table(fields:fileName:source:release:)`, the rule the listing applies to each file). A file of that folder that is
+    /// no table, such as an include like `en-ueb-chardefs.uti`, is refused. Only that one file's header is read (a read of
+    /// 4 KB), never the folder's: decoding runs on the main thread at every launch (review R3). What the listing alone
+    /// judges, such as a table that only includes another, is left to `table(withID:)` when the value is used.
+    /// - Parameters:
+    ///   - folder: VoiceOver's folder, which a test replaces with its own.
+    ///   - headerOf: Reads the header fields of a table file; a test replaces it to count the reads.
+    static func storableValue(
+        _ value: String,
+        in folder: URL = macTablesFolder,
+        headerOf: (URL) -> [String: String] = { metadata(ofTableAt: $0) }
+    ) -> String? {
         if BrailleTableSource.isMacValue(value) { return value }
         if let found = bundledAll.first(where: { $0.id == value }) { return found.id }
         #if os(macOS)
-        let asMacValue = BrailleTableSource.mac.storedValue(ofFile: value)
-        if BrailleTableSource.isMacValue(asMacValue), macTablesOfEveryDirection.contains(where: { $0.id == asMacValue }) {
-            return value
+        if BrailleTableSource.isMacValue(BrailleTableSource.mac.storedValue(ofFile: value)) {
+            let file = folder.appendingPathComponent(value)
+            if FileManager.default.fileExists(atPath: file.path),
+               table(fields: headerOf(file), fileName: value, source: .mac, release: BrailleTableUnpacker.app?.pack.releaseDirections) != nil {
+                return value
+            }
         }
         #endif
         return nil

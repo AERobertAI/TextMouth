@@ -158,6 +158,41 @@ final class BrailleTablePrintOnlyTests: XCTestCase {
         XCTAssertEqual(try decoded("no-such-table.ctb").brailleTable, "no-such-table.ctb")
         XCTAssertEqual(try decoded("../fr-bfu-g2.ctb").brailleTable, "")
     }
+
+    /// A bare value the Mac's pack lacks is judged by its one file's header, never by the whole folder: decoding config.json
+    /// runs on the main thread at every launch (review R3), so a folder of about 485 files is not read for it. Only the file
+    /// named is read, once; a table of either direction is kept, an include or a file that is not there is refused, and a
+    /// value the pack holds, a `mac:` value, or a malformed one reads nothing.
+    func testABareValueIsJudgedByItsOwnFileAlone() throws {
+        let folder = try makeSandboxDirectory("StorableOneFile")
+        func write(_ name: String, _ text: String) throws {
+            try text.write(to: folder.appendingPathComponent(name), atomically: true, encoding: .utf8)
+        }
+        try write("fixture-two-way.ctb", "#+type:literary\n#+display-name:Fixture two-way braille\n#+language:fr\n")
+        try write("fixture-print-only.ctb", "#+type:literary\n#+display-name:Fixture print-only braille\n#+language:fr\n#+direction:forward\n")
+        try write("fixture-chardefs.uti", "# Characters only: no header of a table.\ndisplay 1 123456\n")
+        try write("fixture-other-a.ctb", "#+type:literary\n#+display-name:Fixture A\n#+language:de\n")
+        try write("fixture-other-b.ctb", "#+type:literary\n#+display-name:Fixture B\n#+language:de\n")
+
+        var reads: [String] = []
+        func storable(_ value: String) -> String? {
+            BrailleTableCatalog.storableValue(value, in: folder) { url in
+                reads.append(url.lastPathComponent)
+                return BrailleTableCatalog.metadata(ofTableAt: url)
+            }
+        }
+        XCTAssertEqual(storable("fixture-two-way.ctb"), "fixture-two-way.ctb")
+        XCTAssertEqual(storable("fixture-print-only.ctb"), "fixture-print-only.ctb", "a print-only table stays for export")
+        XCTAssertNil(storable("fixture-chardefs.uti"))
+        XCTAssertNil(storable("fixture-gone.ctb"))
+        XCTAssertEqual(reads, ["fixture-two-way.ctb", "fixture-print-only.ctb", "fixture-chardefs.uti"], "more than the named files were read")
+
+        reads = []
+        for value in ["en-ueb-g2.ctb", "mac:fixture-two-way.ctb", "../fixture-two-way.ctb", ".fixture.ctb", "", "a,b.ctb"] {
+            _ = storable(value)
+        }
+        XCTAssertEqual(reads, [], "a value that needs no file read one")
+    }
     #endif
 
     // MARK: - The app's own choices
