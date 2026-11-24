@@ -755,7 +755,9 @@ enum BrailleTableCatalog {
             // one, and the value stays the Mac's (`mac:<file>`), which a copy or a re-read stores as it was.
             return bundledID(forStored: id).flatMap { bundledID in bundledAll.first { $0.id == bundledID } }?.withID(id)
             #else
-            return macTablesOfEveryDirection.first { $0.id == id }
+            // Among the tables listed for reading or export, not every table of the folder: a Mac twin of a bundled table,
+            // such as `mac:en-ueb-g2.ctb`, is left out of that list (the bundled one wins) and so is not found by its Mac value.
+            return exportTables.first { $0.id == id }
             #endif
         }
     }
