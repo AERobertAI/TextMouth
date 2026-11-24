@@ -240,13 +240,15 @@ final class BrailleTablePackTests: XCTestCase {
 
 // MARK: - The unpacker
 
-final class BrailleTableUnpackerTests: XCTestCase {
-    /// What an unpacker did, counted through its test hooks: the groups it decoded and the files it hashed.
-    private final class Counts: Sendable {
-        let decoded = OSAllocatedUnfairLock<[Int]>(initialState: [])
-        let hashed = OSAllocatedUnfairLock<[String]>(initialState: [])
-    }
+/// What an unpacker did, counted through its test hooks: the groups it decoded and the files it hashed. At file scope, not
+/// nested in the test class: the tool that counts the iPhone's interface tests (`Scripts/agents/ios_ui_tests.py`) takes a
+/// nested type for a scope of its own, and the tests after it would count for no class.
+private final class Counts: Sendable {
+    let decoded = OSAllocatedUnfairLock<[Int]>(initialState: [])
+    let hashed = OSAllocatedUnfairLock<[String]>(initialState: [])
+}
 
+final class BrailleTableUnpackerTests: XCTestCase {
     /// An unpacker of `bytes` into a new folder of the test's own (or `folder`), with its work in `counts`.
     private func unpacker(_ bytes: BrailleTablePackBytes = .sample(), folder: URL? = nil, counts: Counts = Counts(), sweeps: Bool = false) throws -> BrailleTableUnpacker {
         BrailleTableUnpacker(
