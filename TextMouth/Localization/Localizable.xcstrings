@@ -200065,6 +200065,162 @@
         }
       }
     },
+    "failure.changedTable.phoneBraille" : {
+      "comment" : "Why a book is not read with its braille table again on an iPhone: the table's liblouis version is not the one the book was read with. %1$@ is the table's name, %2$@ the liblouis version on this iPhone, and %3$@ the version the book was read with.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "جدول برايل “%@” على هذا الـ iPhone هو liblouis %@، وليس liblouis %@ كما كان عند قراءة الكتاب، لذلك يحتفظ TextMouth بنص الكتاب كما كان."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই iPhone-এ ব্রেইল টেবিল “%@” হলো liblouis %@, বইটি পড়ার সময় যা ছিল সেই liblouis %@ নয়, তাই TextMouth বইয়ের লেখা আগের মতোই রেখে দেয়।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Die Braille-Tabelle „%@“ auf diesem iPhone ist liblouis %@, nicht liblouis %@ wie beim Lesen des Buchs; TextMouth behält daher den Text des Buchs, wie er war."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The braille table “%@” on this iPhone is liblouis %@, not liblouis %@ as when the book was read, so TextMouth keeps the book's text as it was."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La tabla braille “%@” de este iPhone es liblouis %@, no liblouis %@ como cuando se leyó el libro, así que TextMouth conserva el texto del libro tal como estaba."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "جدول بریل «%@» در این iPhone نسخهٔ %@ از liblouis است، نه نسخهٔ %@ از liblouis که هنگام خواندن کتاب بود؛ پس TextMouth متن کتاب را همان‌طور که بود نگه می‌دارد."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La table braille « %@ » de cet iPhone est liblouis %@, et non liblouis %@ comme à la lecture du livre ; TextMouth conserve donc le texte du livre tel qu’il était."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "טבלת הברייל “%@” ב-iPhone הזה היא liblouis %@ ולא liblouis %@ כפי שהייתה בעת קריאת הספר, ולכן TextMouth שומר את טקסט הספר כפי שהיה."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "इस iPhone पर ब्रेल तालिका “%@” liblouis %@ है, न कि liblouis %@, जो पुस्तक पढ़ते समय थी, इसलिए TextMouth पुस्तक का पाठ जैसा था वैसा ही रखता है।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tabel Braille “%@” di iPhone ini adalah liblouis %@, bukan liblouis %@ seperti saat buku dibaca, jadi TextMouth mempertahankan teks buku seperti semula."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La tabella braille “%@” su questo iPhone è liblouis %@, non liblouis %@ come quando il libro è stato letto, quindi TextMouth mantiene il testo del libro così com’era."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "このiPhoneの点字テーブル「%@」はliblouis %@で、ブックを読み取ったときのliblouis %@ではないため、TextMouthはブックのテキストをそのまま保持します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이 iPhone의 점자 테이블 “%@”은(는) liblouis %@이며, 책을 읽었을 때의 liblouis %@가 아니므로 TextMouth는 책의 텍스트를 그대로 유지합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "De brailletabel “%@” op deze iPhone is liblouis %@, niet liblouis %@ zoals toen het boek werd gelezen, dus TextMouth houdt de tekst van het boek zoals die was."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tabela Braille’a „%@” w tym urządzeniu iPhone to liblouis %@, a nie liblouis %@ jak podczas czytania książki, więc TextMouth zachowuje tekst książki bez zmian."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "A tabela braille “%@” neste iPhone é liblouis %@, e não liblouis %@ como quando o livro foi lido, então o TextMouth mantém o texto do livro como estava."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Таблица Брайля «%@» на этом iPhone — liblouis %@, а не liblouis %@, как при чтении книги, поэтому TextMouth сохраняет текст книги без изменений."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Punktskriftstabellen ”%@” på den här iPhone är liblouis %@, inte liblouis %@ som när boken lästes, så TextMouth behåller bokens text som den var."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ตารางอักษรเบรลล์ “%@” บน iPhone เครื่องนี้คือ liblouis %@ ไม่ใช่ liblouis %@ เหมือนตอนอ่านหนังสือ TextMouth จึงเก็บข้อความของหนังสือไว้ตามเดิม"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bu iPhone’daki “%@” Braille tablosu liblouis %@; kitap okunduğundaki liblouis %@ değil, bu yüzden TextMouth kitabın metnini olduğu gibi korur."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Таблиця Брайля «%@» на цьому iPhone — це liblouis %@, а не liblouis %@, як під час читання книги, тому TextMouth зберігає текст книги без змін."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اس iPhone پر بریل جدول “%@” liblouis %@ ہے، نہ کہ liblouis %@ جیسا کتاب پڑھتے وقت تھا، اس لیے TextMouth کتاب کا متن جوں کا توں رکھتا ہے۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bảng Braille “%@” trên iPhone này là liblouis %@, không phải liblouis %@ như lúc đọc sách, nên TextMouth giữ nguyên văn bản của sách."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "此 iPhone 上的盲文表“%@”是 liblouis %@，而不是读取图书时的 liblouis %@，因此 TextMouth 会保留图书原有的文本。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "此 iPhone 上的點字表「%@」是 liblouis %@，而不是讀取書籍時的 liblouis %@，因此 TextMouth 會保留書籍原有的文字。"
+          }
+        }
+      }
+    },
     "failure.checkFailed" : {
       "comment" : "Why a converted audio file was refused: it failed the check made after conversion. %1$@ is the source file's name and %2$@ the reason, a phrase with no full stop.",
       "extractionState" : "manual",
