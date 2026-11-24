@@ -1,7 +1,8 @@
 # Password-protected books: opening them, unprotecting them, and protecting the rest
 
 Research of November 24, 2026, on main at 5a67ff468 (version 0.5.11).
-It answers the user's request of the same day, quoted in the brief: support passwords for ZIP and other archives, PDF, and Word files; let a book without a password be given one; let the person choose a permanent or a temporary decryption; make the choice reversible; and waste no space on an extra copy.
+It answers the user's request of the same day, quoted in the brief: support passwords for ZIP and other archives, PDF, and Word files; let a book without a password be given one; let the person choose a permanent or a temporary decryption; make the choice reversible;
+and waste no space on an extra copy.
 DRM is out of scope: where a format's protection is DRM, this report says so and stops.
 Marks used below: **(probed)** means a program made on this Mac for this report showed it; **(read)** means the primary source was read in this session; **(recalled)** means it is from memory of the specification and was not rechecked; **(not checked)** means I could not check it.
 
@@ -16,9 +17,10 @@ Marks used below: **(probed)** means a program made on this Mac for this report 
 - **The user's "just hash the password" cannot work:** a hash can check a password but cannot decrypt.
   Remembering needs the password, or a key made from it, in the Keychain, never in a file of the library.
 - **Recommendation, in one line:** one "unlock seam" per format that turns a protected file into plain bytes in memory; temporary mode keeps only memory; permanent mode rewrites the package's own file without its password, so there is never a second copy.
-- **For books with no password:** the format's own scheme where one exists (PDF, ZIP, Word, OpenDocument), and one sealed container of TextMouth's own for every other format and for the derived text; Apple Archive with scrypt is the Apple-maintained choice, CryptoKit AES-GCM with PBKDF2 the one TextMouth controls.
+- **For books with no password:** the format's own scheme where one exists (PDF, ZIP, Word, OpenDocument), and one sealed container of TextMouth's own for every other format and for the derived text;
+  Apple Archive with scrypt is the Apple-maintained choice, CryptoKit AES-GCM with PBKDF2 the one TextMouth controls.
 - **Phases:** PDF and the prompt first, then ZIP, then Office Open XML and OpenDocument, then Word 97-2003, then sealed storage and protecting any book, then 7z, then RAR only if the user accepts its licence.
-- Seven questions for the user are at the end, each with the answer I recommend.
+- Eight questions for the user are at the end, each with the answer I recommend.
 
 ## What TextMouth does today
 <!-- Where the code already looks for passwords. -->
@@ -77,7 +79,8 @@ Pages of the schemes are in Sources.
 - **EncryptedPackage (read):** an 8-byte size, then the whole original ZIP encrypted; decrypting it gives an ordinary .docx.
 - **Standard encryption (read):** EncryptionInfo version major 2, 3, or 4 with minor 2; the header must be CryptoAPI and AES; AES-128, -192, or -256 with SHA-1.
   The key comes from SHA-1 over salt and password, iterated 50,000 times, and the data is AES in ECB mode (recalled).
-- **Agile encryption (read):** version 4.4, an XML descriptor; AES with CBC or CFB chaining; hashes SHA-1, SHA-256, -384, -512 (and legacy ones); a spin count of at most 10,000,000 (Office writes 100,000 with SHA-512 and AES-256, recalled); data in 4096-byte segments, each with its own IV (recalled); an HMAC over the data.
+- **Agile encryption (read):** version 4.4, an XML descriptor; AES with CBC or CFB chaining; hashes SHA-1, SHA-256, -384, -512 (and legacy ones); a spin count of at most 10,000,000 (Office writes 100,000 with SHA-512 and AES-256, recalled);
+  data in 4096-byte segments, each with its own IV (recalled); an HMAC over the data.
 - **Extensible encryption (version 3.3 or 4.3, an outside provider):** refuse.
 - **Not encryption, so already readable:** document protection hashes (`w:documentProtection`), read-only recommendations, and sheet protection are hashes that stop editing in Word and Excel, not reading.
   An Excel file marked "read-only recommended" is encrypted with a built-in password that Excel tries first (recalled; MS-OFFCRYPTO, not rechecked).
@@ -95,7 +98,8 @@ Pages of the schemes are in Sources.
 
 ### OpenDocument: .odt, .ott, and the spreadsheet and presentation kinds
 
-- **ODF 1.2 part 3 (read in snippets, not whole):** `META-INF/manifest.xml` gives each encrypted entry a `manifest:encryption-data` with a checksum (SHA-1 or SHA-256 of the first 1024 bytes), an algorithm (AES-256 in CBC; Blowfish in CFB in old files), a key derivation (PBKDF2, iteration count in the file), and a start-key hash (SHA-1 or SHA-256) (recalled).
+- **ODF 1.2 part 3 (read in snippets, not whole):** `META-INF/manifest.xml` gives each encrypted entry a `manifest:encryption-data` with a checksum (SHA-1 or SHA-256 of the first 1024 bytes), an algorithm (AES-256 in CBC;
+  Blowfish in CFB in old files), a key derivation (PBKDF2, iteration count in the file), and a start-key hash (SHA-1 or SHA-256) (recalled).
   Each entry is compressed, then encrypted; mimetype and the manifest are not.
 - **ODF 1.3:** a proposal adds Argon2id and AES-GCM (OASIS issue OFFICE-4153); a third-party tool lists LibreOffice's newest files as AES-256-GCM with Argon2id (search results only).
   Treat it as a likely future scheme; the ratified text was not checked.
@@ -143,7 +147,7 @@ Pages of the schemes are in Sources.
 - **AppleArchive** (macOS 11, iOS 14, password mode macOS 11.3 and iOS 14.5, read in the SDK headers): Apple Encrypted Archive with profile 5, `HKDF_SHA256_AESCTR_HMAC__SCRYPT__NONE`, and `AEAContextSetPassword`; random-access decryption exists.
   Apple's `aea` tool reads and writes it **(probed)**: a round trip matched, and a wrong password failed with "Failed to unlock container".
   Its fixed overhead is about 18.6 KB: a 103-byte file became 18,723 bytes, and 100,000 bytes became 118,620.
-  The scrypt cost is not settable through the header's fields, and the tool refuses a password under eight characters.
+  The scrypt cost is not settable through the header's fields, and the tool refused the six-character password "secret" as invalid (its minimum was not found).
 - **libarchive in the SDK:** the tbd lists `archive_read_add_passphrase`, `archive_read_support_format_7zip`, and `_rar5` for macOS and iOS, but the SDK has no `archive.h`.
   It is undocumented for apps, so I would not depend on it.
 
@@ -159,7 +163,8 @@ So WinZip AES needs no library on either platform.
   It has no writer, so re-protecting an Office Open XML or a Word 97 file needs one.
 - **Word 97 reader (`WordDocumentReader.swift`, `WordDocumentStructure.swift`):** reads `WordDocument` and the table stream as `Data` from the compound file.
   Decrypting those two streams in memory, just after the encrypted-bit guard, is the whole change for Word.
-- **ZIPFoundation 0.9.20 (MIT, read at tag 0.9.20):** `Entry.init?` returns nil when bit 0 is set ("We currently don't support encrypted archives"), the archive's iterator ends at the first nil, so `subscript(path:)` cannot see later entries, and `extract` throws `invalidCompressionMethod` for method 99.
+- **ZIPFoundation 0.9.20 (MIT, read at tag 0.9.20):** `Entry.init?` returns nil when bit 0 is set ("We currently don't support encrypted archives"), the archive's iterator ends at the first nil, so `subscript(path:)` cannot see later entries,
+  and `extract` throws `invalidCompressionMethod` for method 99.
   It has no password argument.
   It can write ZIPs, but not encrypted ones.
   `IndexedArchive` (`TextMouth/Parsers/ArchiveEntryReader.swift`) iterates with `for entry in archive`, so every ZIP-based reader inherits this.
@@ -213,7 +218,7 @@ So WinZip AES needs no library on either platform.
 Two ways to build it, both pure Apple frameworks, both on the Mac and the iPhone.
 
 - **Apple Archive with scrypt (AEA profile 5):** Apple maintains the cipher suite (HKDF-SHA256, AES-CTR, HMAC) and the memory-hard key derivation, the format has random-access decryption, and the `aea` tool opens it on any Mac (probed).
-  Against it: about 18.6 KB of overhead for every file (probed), a scrypt cost TextMouth cannot set, the password-mode API only from macOS 11.3 and iOS 14.5, and the password must be eight characters or more in the tool (the API's limit was not checked).
+  Against it: about 18.6 KB of overhead for every file (probed), a scrypt cost TextMouth cannot set, the password-mode API only from macOS 11.3 and iOS 14.5, and a minimum password length that the tool enforces (it refused a six-character one; the API's limit was not checked).
   Passwords cannot be changed without re-encrypting the whole file.
 - **TextMouth's own layout, CryptoKit AES-GCM and CommonCrypto PBKDF2:** a header (magic, version, KDF name, rounds, salt, the wrapped data key), then 64 KiB chunks, each sealed with AES-GCM under a random per-file data key.
   - The chunk's number is its nonce, and the header, the number, and a "last chunk" flag are authenticated data, so reordering and truncation fail.
@@ -427,3 +432,183 @@ Its record gets a `protection` entry with no secret in it: the kind (the file's 
   The Protect sheet should say so once, and not enforce a length.
 - **Other leaks:** Now Playing and the lock screen show a book's title and chapter names while it plays.
   A protected book could show "Protected book" there (question 6).
+
+## 8. The options compared
+<!-- Item 3 of the report order: whole designs, not single schemes. -->
+
+Four designs for what a protected book is on disk and in memory.
+
+| Design | What it does | Space | Opens elsewhere | Verdict |
+| --- | --- | --- | --- | --- |
+| A. Decrypt on every open | The file keeps its own scheme; text is read into memory each time; nothing derived is stored. | none | yes | Right for temporary mode; slow for scanned books and comics. |
+| B. A. plus a sealed text copy | As A, and the parsed text, headings, and places are kept encrypted, so the book opens fast. | about 1% of the book | yes | The default for protected books. |
+| C. Decrypt on import, always | The book is stored unprotected the moment its password is typed. | none | yes | It is the "permanent" choice, not a design: a library of such books has no privacy at all. |
+| D. Everything in TextMouth's container | Any book, protected or not, is sealed with TextMouth's own container. | about 0 | no | Needed for formats without a scheme; costs the other apps' access. |
+
+- A and B serve a book that arrived protected; C is what the checkbox does; D is what **Protect with Password…** does for a book with no scheme.
+- B and D share one container and one key hierarchy (a password, a key-encrypting key, a random data key), so building D later costs little once B exists.
+
+## 9. Recommendation
+<!-- Item 4 of the report order. -->
+
+- **Build one unlock seam per format** that turns a protected file into plain bytes (or a `PDFDocument`) in memory, and nothing else: PDF through PDFKit; ZIP, Office Open XML, and OpenDocument through TextMouth's own decryptors that emit a plain ZIP;
+  Word 97-2003 through stream decryption in the reader.
+  Every existing reader then works unchanged.
+- **Temporary is design A, and the default;** permanent is design C, written in place and atomically; "keep a sealed text copy" is design B and is on by default for books that need text recognition.
+- **A protected book writes no plain derived data,** anywhere a sync tool or another app can see: `content.md`, the index, the anchors, the notes, the search and reading caches, the place snapshots, and the logs (sections 4 and 7).
+- **Protect with Password…** uses TextMouth's own container (CryptoKit AES-GCM, a PBKDF2-HMAC-SHA256 key at 600,000 rounds or more, a wrapped random data key), not Apple Archive: the header can name a better KDF later, a password change re-wraps 60 bytes,
+  and the cost is 600 lines of TextMouth's own.
+  AEA is the fallback if the user prefers Apple's maintenance to the control.
+- **Remember** is the Keychain, this device only, tried before every prompt.
+  A hash is never stored.
+- **Do not touch DRM.**
+  Refuse it with a sentence, and detect it in EPUB (`encryption.xml`) and in PDF (a /Filter other than /Standard) so it is not mistaken for damage; both are small and separate from the password work.
+- **Keep reading owner-restricted PDFs as today.**
+- **7z yes, RAR no:** 7z with the public-domain LZMA SDK and CommonCrypto; RAR stays refused unless the user accepts the UnRAR licence.
+
+## 10. The plan in phases
+<!-- Item 5 of the report order: each phase with its Mac half, iPhone half, size, and tests. Sizes are my estimates in lines of Swift, not measured. -->
+
+Each phase merges alone and leaves the app working.
+The iPhone half is the same code in `TextMouth/` (shared by both targets) plus the sheet's presentation; nothing in phases 0 to 4 is Mac-only.
+
+### Phase 0: the seam, the prompt, the Keychain, and PDF
+
+- **Mac and iPhone:** `Secret`, `CredentialStore` with a Keychain version (this device only) and an in-memory one for tests; the `protection` entry in the record and `Book.isLocked`; the guard in every background pass; `UnlockBookSheet`; the Open and Import flows with Import Locked;
+  PDF unlock through PDFKit; DRM refusals for EPUB and PDF; temporary mode only.
+- **Size:** about 1,800 lines, and about 30 interface lines in 25 languages.
+- **Tests:** fake-store unit tests; PDF fixtures from Core Graphics (revisions 3 and 4, an owner-only file) and a revision 6 writer made from the probe; a wrong password, an accented password, and a PDF that stays locked; every maintenance pass leaves a locked book alone; a log scan for `Secret`;
+  a hosted check of the sheet's labels, order, and announcement; the iPhone interface test on GitHub.
+  A hand check of the secure field on the user's braille display.
+
+### Phase 1: ZIP, and everything in a ZIP
+
+- **Work:** `ZipDecryptor` (ZipCrypto, WinZip AE-1 and AE-2) that reads the central directory itself and writes the plain ZIP, so the ZIPFoundation stop at the first encrypted entry never matters; detection by flag at import; permanent mode for PDF and ZIP.
+- **Size:** about 700 lines.
+- **Tests:** a ZIP from `/usr/bin/zip -e`, one from Apple's `tar` with AES-256 and with AES-128; a ZIP whose first entry is plain and a later one encrypted; wrong and accented passwords; a CBZ; a decompression-bomb entry (the existing `ArchiveBudget` applies after decryption);
+  a ZIP of books with two passwords.
+
+### Phase 2: Office Open XML and OpenDocument
+
+- **Work:** Standard and Agile from `EncryptionInfo`, using `CompoundFile`; ODF's manifest and per-entry decryption; the .docx, .dotx, .docm, .dotm, and .odt, .ott reading; permanent mode (the decrypted bytes saved as the file).
+  The spreadsheet and presentation kinds reuse it when `officeresearch`'s readers land.
+- **Size:** about 900 lines.
+- **Tests:** a test-only encryptor (a compound-file writer, Standard and Agile, about 300 lines) checked against real files from Word and LibreOffice; an ODF fixture from a test-only writer and a LibreOffice-made one; an unsupported Extensible file;
+  a document-protection hash file that must still open.
+
+### Phase 3: Word 97-2003
+
+- **Work:** RC4, RC4 CryptoAPI, and XOR over the `WordDocument`, Table, and Data streams; permanent mode by writing the decrypted streams over their sectors (to be proven first).
+  Word 6 and 95 later, once their scheme is checked.
+- **Size:** about 500 lines.
+- **Tests:** test-only encryptors for the three schemes (short; RC4 is probed), real files from the Apache POI and LibreOffice collections that the repo already draws on, and a check that a rewritten file still opens in `WordDocumentReader`.
+
+### Phase 4: sealed storage, and protecting any book
+
+- **Work:** the container; `content.md.sealed` and the sealed notes; Protect, Change, and Remove commands; Search Library, Reading Text, place snapshots, and Edit Text rules; Export rules (a protected book exports as it is; Convert to… asks for the password);
+  the version bump that older TextMouths read as an unknown key.
+- **Size:** about 1,500 lines, and about 25 more interface lines.
+- **Tests:** round trip; a flipped byte, a reordered chunk, and a cut-off file each fail; a password change without re-encrypting; a crash between the temporary file and the rename; a scan of a library folder for a fixture's words after import, open, search, and close;
+  a downgrade reads the book as locked.
+
+### Phase 5: 7z, then RAR if allowed
+
+- **Work:** a 7z reader (the LZMA SDK, public domain, vendored for both platforms) before any password; then 7zAES (SHA-256 key loop, AES-256-CBC) and CB7.
+  RAR waits on question 6.
+- **Size:** about 600 lines plus the SDK's C files (an estimate of 100 to 200 KB compiled, not measured).
+- **Tests:** a test-only 7z writer (copy method with AES; no program that macOS ships makes 7z), and for RAR, if allowed, a test-only writer of a stored, encrypted RAR 5 file.
+
+### Later, if the user wants them
+
+- Sealed audiobooks, through Working Copies (an extra copy while playing) or a decrypting `AVAssetResourceLoader` (no copy, more work).
+- Remembered passwords synced by iCloud Keychain, once the Mac app is signed with a team.
+- Hide a protected book's title and author, and Now Playing's.
+- A search index for protected books, sealed under a Keychain key.
+
+## 11. Test fixtures
+<!-- Made with programs macOS ships, or code TextMouth would hold; nothing downloaded is run. -->
+
+- **ZipCrypto:** `/usr/bin/zip -e -P` (probed).
+- **WinZip AES-256, AE-1:** `/usr/bin/tar -cf x.zip --format zip --options zip:encryption=aes256 --passphrase …` (probed); `aes128` should work too (not run).
+  An AE-2 file needs a test-only writer; the tar wrote AE-1 for both a 103-byte and a 33-byte entry.
+- **PDF revisions 3 and 4, and an owner-only file:** Core Graphics' PDF context with `kCGPDFContextUserPassword` and `kCGPDFContextOwnerPassword` (probed); PDFKit's `write` with password options (probed).
+- **PDF revision 6:** a writer in the test target, about 130 lines, from the probe (ISO 32000-2 algorithm 2.B, AES-256-CBC); PDFKit opened its output (probed).
+- **Office Open XML, ODF, Word 97, 7z, RAR:** no program of macOS makes them.
+  Test-only writers for each scheme, checked against real files from other programs (Word, LibreOffice, Apache POI's test collection), which an agent downloads as data into its own empty folder and never runs.
+  The repo has no real encrypted file today: its refusal tests use made files (the MOBI one is marked synthetic in `TestData/format-samples/samples.tsv`).
+- **Apple Archive:** `/usr/bin/aea` (probed), if the container choice goes that way.
+- Probes made for this report, all in a scratch folder and none committed: a ZIP and AES reader, a PDF maker and inspector, a revision 6 writer, a PBKDF2 and AES-GCM timer.
+
+## 12. Risks
+<!-- Item 6 of the report order. -->
+
+- **Wrong-password false positives:** ZipCrypto's check is one byte, so one wrong password in 256 passes it and then fails at the CRC; the unlock step must verify a whole entry, not the check byte.
+  AES's two-byte check passes 1 in 65,536 wrong ones, and its HMAC settles it.
+- **Password encodings** (section 2): a correct password with an accent may fail.
+  Try the encodings before saying "wrong".
+- **PDF rewrite may lose structure:** page copy drops the outline and labels; carrying them over is work, and the fallback leaves the file marked encrypted.
+- **PDFKit on older systems:** revision 6 was probed only on macOS 26.3; macOS 14 and iOS 26.0 were not available to run.
+- **Memory and size:** a 64 MB document, decrypted and parsed, holds a few copies; comics and audio need temporary files, which are the one place a plain copy exists, and it is private, short, and swept.
+- **A forgotten password loses the book** if the user chose Delete After Import; the Protect sheet must say so, and a Keychain that is cleared loses remembered passwords.
+- **Keychain prompts in ad hoc builds,** and an unreliable Keychain in the GitHub runners: tests use the fake store, and the real one is checked by hand.
+- **Older TextMouths and a shared library:** a version older than 0.5.0 drops a record key it does not know when it saves (`docs/user/data-directory-files.md`); the book would then look unprotected with a file it cannot read, and the sealed notes would be lost.
+  Bump a format version so they refuse it.
+- **A cloud library with two devices** changing a book's protection at once: the local-first plan's fingerprinted, never-rewritten files help, and the protection entry follows the same merge rules as the rest of the record (`research/LOCAL-FIRST-LIBRARY-RESEARCH-2026-11-13.md`).
+- **Decompression bombs after decryption:** the decryptor's output is subject to `ArchiveBudget` and `ArchiveEntryLimits`, and a wrong key must fail before a large inflate starts.
+- **Plain text still reaches the person's speakers, braille display, and any Export:** that is the purpose; the report claims protection of files at rest, not of what TextMouth shows.
+- **Unchecked claims:** the list of what I could not check is at the end of the Sources.
+
+## 13. Questions for the user, each with my recommendation
+<!-- Item 7 of the report order. -->
+
+1. **Should "Keep this book unlocked" be off by default, so a book stays protected unless asked?**
+   Recommend: yes, off.
+2. **Should "Remember this password" be on by default?**
+   Recommend: yes, on: typing a password is slow with a screen reader, and the Keychain on this device is safe enough; the box stays visible so it can be turned off.
+3. **Which container protects a book that has no scheme: TextMouth's own, or Apple Archive?**
+   Recommend: TextMouth's own, so a password change is cheap and the key derivation can be raised; and PDF may use its own scheme as a later choice.
+4. **Should a protected book keep a sealed text copy by default?**
+   Recommend: yes, on, about 1% of the book's size, with a switch per book and one in Settings.
+5. **At import, ask for the password with an Import Locked button, and for a ZIP of many books ask once at the end?**
+   Recommend: yes.
+6. **7z and RAR:** build 7z with the public-domain LZMA SDK, and keep refusing RAR unless you accept the UnRAR licence (freeware, may not be used to re-create RAR compression, called non-free by Fedora)?
+   Recommend: 7z yes, RAR no for now.
+7. **Should a protected book hide its title and author in the library, and in Now Playing?**
+   Recommend: no in the first release (the list needs them); add an opt-in later.
+8. **Do you want protected audiobooks in the first release?**
+   Recommend: no.
+   Every audio format would need a decrypted working copy while it plays, which is the extra copy you do not want; leave "Protect with Password…" off audio for now and say so in its hint.
+
+## Sources
+<!-- Primary where I found them; "search" means the link came from a search result and the page was not read whole. -->
+
+- ZIPFoundation 0.9.20: [`Entry.swift`](https://raw.githubusercontent.com/weichsel/ZIPFoundation/0.9.20/Sources/ZIPFoundation/Entry.swift), [`Archive.swift`](https://raw.githubusercontent.com/weichsel/ZIPFoundation/0.9.20/Sources/ZIPFoundation/Archive.swift),
+  [`Archive+Reading.swift`](https://raw.githubusercontent.com/weichsel/ZIPFoundation/0.9.20/Sources/ZIPFoundation/Archive+Reading.swift), and its [README](https://github.com/weichsel/ZIPFoundation) (MIT).
+- ZIP: [APPNOTE.TXT 6.3.10](https://pkware.cachefly.net/webdocs/casestudies/APPNOTE.TXT) (the flag bits; sections 6.1 and 7 were beyond the part read); [WinZip's AES specification](https://www.winzip.com/en/support/aes-encryption/) (the counter's byte order is not on that page;
+  the probe settled it).
+- Office: [MS-OFFCRYPTO](https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-offcrypto/3c34d72a-1a61-4b52-a893-196f9157f083): [Agile EncryptionInfo](https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-offcrypto/87020a34-e73f-4139-99bc-bbdf6cf6fa55),
+  [Standard EncryptionInfo](https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-offcrypto/2895eba1-acb1-4624-9bde-2cdad3fea015), [EncryptedPackage](https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-offcrypto/b60c8b35-2db2-4409-8710-59d88a793f83).
+- Word and Excel 97-2003 (search only): [MS-DOC 2.2.6](https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-doc/37639397-6451-427b-9cf2-01d56e927f25), [2.2.6.2 RC4](https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-doc/3e9a4e92-bdfe-4379-8144-74d033892ede),
+  [MS-XLS 2.1.7.6](https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-xls/3ff73530-461c-4507-9b66-9e18aba3124e).
+- OpenDocument (search only): [ODF 1.2 part 3](https://docs.oasis-open.org/office/v1.2/OpenDocument-v1.2-part3.html), [OFFICE-4153](https://issues.oasis-open.org/browse/OFFICE-4153).
+- EPUB (search only): [the font mangling note](https://idpf.org/epub/20/spec/FontManglingSpec.html), [EPUB 3.3](https://www.w3.org/TR/epub-33/).
+- libarchive v3.7.4 sources, read in part: [7zip](https://raw.githubusercontent.com/libarchive/libarchive/v3.7.4/libarchive/archive_read_support_format_7zip.c), [RAR5](https://raw.githubusercontent.com/libarchive/libarchive/v3.7.4/libarchive/archive_read_support_format_rar5.c),
+  [RAR](https://raw.githubusercontent.com/libarchive/libarchive/v3.7.4/libarchive/archive_read_support_format_rar.c).
+- Libraries: [minizip-ng](https://github.com/zlib-ng/minizip-ng) (zlib licence), [the LZMA SDK](https://www.7-zip.org/sdk.html) (public domain), [the UnRAR licence](https://spdx.org/licenses/UnRAR.html) and [Fedora's view of it](https://fedoraproject.org/wiki/Licensing/Unrar) (search only).
+- [OWASP Password Storage Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html): PBKDF2-HMAC-SHA256 at 600,000, SHA-512 at 220,000, Argon2id at 19 MiB and 2 passes.
+- Apple, read in the Xcode SDK on this Mac: `CommonCrypto` headers, the `CryptoKit` Swift interface, the `AppleArchive` headers (`AEADefs.h`, `AEAContext.h`, `AEAStreams.h`), `Security`'s `SecItem.h`, and the `libarchive.tbd` of both SDKs.
+  Apple's developer web pages for PDFKit, the Keychain, and `kSecAttrSynchronizable` could not be read by the fetch tool.
+- The repository: `docs/user/formats-list.md`, `docs/user/book-packages.md`, `docs/user/data-directory-files.md`, `docs/user/this-macs-folders.md`, `docs/architecture/state/text-caches.md`, `research/FORMAT-LIBRARIES-RESEARCH-2026-11-04.md`, `research/TEXT-ANCHORS-RESEARCH-2026-10-10.md`,
+  `research/LOCAL-FIRST-LIBRARY-RESEARCH-2026-11-13.md`.
+
+### What I could not check
+
+- The ISO 32000 permission bit table and the revision numbers (recalled).
+- Whether PDFKit on macOS 14 and iOS 26.0 opens revision 6, and whether it works on the iPhone as on this Mac.
+- Real Keychain behavior, signing, and iCloud Keychain on the Mac (no Keychain call was made, by rule).
+- How a braille display shows a secure text field.
+- Word 6 and 95 passwords; PowerPoint's encryption record; DAISY and BARD protections.
+- Whether `~/.TextMouth` is skipped by Spotlight.
+- 7z's and RAR's formats beyond what libarchive's sources show.
+- Whether the LZMA SDK's 7z decoder decrypts, and minizip-ng's Apple crypto backend.
+- That the outline and page labels of a PDF can be carried over after a page copy.
