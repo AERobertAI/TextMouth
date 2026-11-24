@@ -346,6 +346,13 @@ targets:
           copyFiles:
             destination: resources
             subpath: Licenses/liblouis
+      # The licenses of liblouis's tables, which are not all the release's own (FR40): each file's
+      # license, and the tables TextMouth leaves out for theirs.
+      - path: Vendor/liblouis/TABLES-LICENSES.md
+        buildPhase:
+          copyFiles:
+            destination: resources
+            subpath: Licenses/liblouis
       - path: Vendor/lame/COPYING
         buildPhase:
           copyFiles:
@@ -638,6 +645,13 @@ targets:
             destination: resources
             subpath: Licenses/liblouis
       - path: Vendor/liblouis/README
+        buildPhase:
+          copyFiles:
+            destination: resources
+            subpath: Licenses/liblouis
+      # The licenses of liblouis's tables, which are not all the release's own (FR40): each file's
+      # license, and the tables TextMouth leaves out for theirs.
+      - path: Vendor/liblouis/TABLES-LICENSES.md
         buildPhase:
           copyFiles:
             destination: resources

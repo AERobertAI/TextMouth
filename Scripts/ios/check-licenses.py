@@ -49,7 +49,8 @@ LIBRARY_LICENCES = {
     "FFmpeg_iOS": ("FFmpeg", ["Vendor/package-licenses/FFmpeg/LICENSE.md", "Vendor/package-licenses/FFmpeg/COPYING.LGPLv2.1",
                               "Vendor/package-licenses/FFmpeg/README"]),
     # liblouis, the braille translator (DR34), under the GNU Lesser General Public License 2.1.
-    "liblouis_iOS": ("liblouis", ["Vendor/liblouis/COPYING.LESSER", "Vendor/liblouis/README"]),
+    # Its tables are under licenses of their own, which Vendor/liblouis/TABLES-LICENSES.md lists (FR40).
+    "liblouis_iOS": ("liblouis", ["Vendor/liblouis/COPYING.LESSER", "Vendor/liblouis/README", "Vendor/liblouis/TABLES-LICENSES.md"]),
 }
 
 # Targets that are TextMouth's own code, which need no third-party notice: the
