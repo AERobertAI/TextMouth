@@ -188,11 +188,49 @@ final class BrailleLibraryTests: XCTestCase {
         XCTAssertNoThrow(try BrailleBookReader.requireUnchangedTable("mac:fr-bfu-g2.ctb", recordedVersion: BrailleTableCatalog.bundledLiblouisVersion))
         XCTAssertNoThrow(try BrailleBookReader.requireUnchangedTable("mac:fr-bfu-g2.ctb", recordedVersion: nil))
         XCTAssertNoThrow(try BrailleBookReader.requireUnchangedTable("en-ueb-g2.ctb", recordedVersion: "3.34.0"))
+        // A Mac's value for a table both apps carry was read with a Mac's liblouis, so it is held to its version as every
+        // other `mac:` value is, and records the iPhone's own.
+        XCTAssertThrowsError(try BrailleBookReader.requireUnchangedTable("mac:en-ueb-g2.ctb", recordedVersion: "3.34.0"))
+        XCTAssertNoThrow(try BrailleBookReader.requireUnchangedTable("mac:en-ueb-g2.ctb", recordedVersion: BrailleTableCatalog.bundledLiblouisVersion))
+        XCTAssertEqual(BrailleTableCatalog.versionToRecord(forTable: "mac:en-ueb-g2.ctb"), BrailleTableCatalog.bundledLiblouisVersion)
         // A whole read of a book recorded under another version stops there, before anything is translated.
         let sample = try copyOfFormatSample("brf/grade2-short.brf")
         XCTAssertThrowsError(try BrailleBookReader.markdown(of: sample, table: "mac:fr-bfu-g2.ctb", recordedVersion: "3.34.0")) {
             XCTAssertEqual($0 as? BrailleTranslator.Failure, .changedTable("mac:fr-bfu-g2.ctb", then: "3.34.0", now: BrailleTableCatalog.bundledLiblouisVersion))
         }
+    }
+
+    /// A table whose files vanished between the check and the library's open (iOS may clear Caches whenever it likes) is
+    /// unpacked again, once, before it is called unknown: a tool that gives a folder with nothing in it the first time and the
+    /// unpacked one after succeeds, and one that always gives the empty folder is told the table is unknown, after one more try.
+    func testATableThatVanishedBetweenTheCheckAndTheOpenIsUnpackedAgainOnce() throws {
+        let good = try unpackedAppTables(for: grade1)
+        let empty = try makeSandboxDirectory("BrailleVanished")
+        func tool(calls: OSAllocatedUnfairLock<Int>, emptyFor count: Int) -> BrailleTranslator.Tool {
+            BrailleTranslator.Tool(
+                command: { _, _, _, _ in nil },
+                limits: { BrailleTranslator.limits(for: $0, bytes: $1) },
+                residentMemory: { _ in nil },
+                tablesFolder: { _ in
+                    let call = calls.withLock { total -> Int in total += 1; return total }
+                    return call <= count ? empty : good
+                }
+            )
+        }
+        let again = OSAllocatedUnfairLock<Int>(initialState: 0)
+        try BrailleTranslator.$tool.withValue(tool(calls: again, emptyFor: 1)) {
+            try BrailleTranslator.check(table: grade1, workingIn: work)
+        }
+        XCTAssertGreaterThanOrEqual(again.withLock { $0 }, 2, "the tool was not asked again")
+
+        let never = OSAllocatedUnfairLock<Int>(initialState: 0)
+        try BrailleTranslator.$tool.withValue(tool(calls: never, emptyFor: Int.max)) {
+            XCTAssertThrowsError(try BrailleTranslator.check(table: grade1, workingIn: work)) {
+                XCTAssertEqual($0 as? BrailleTranslator.Failure, .unknownTable(grade1))
+            }
+        }
+        XCTAssertGreaterThanOrEqual(never.withLock { $0 }, 2)
+        XCTAssertLessThanOrEqual(never.withLock { $0 }, 4, "it tried more than the once more")
     }
 
     /// Only a table of the pack is compiled on the iPhone: a Mac's own table the pack lacks, an include file, and a name that

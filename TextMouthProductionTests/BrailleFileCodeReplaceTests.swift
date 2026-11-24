@@ -187,6 +187,33 @@ final class BrailleFileCodeReplaceTests: CloudMaintenanceTestCase {
         XCTAssertEqual(logLineCount("BRAILLE_FILE_CODE_CHANGED: \(copy.title)"), 0, "a table was logged as a file code's")
     }
 
+    /// A Mac's `mac:<file>` value is kept as it is through Replace Existing, on the iPhone, which reads it with the pack's table of
+    /// that file name, and on the Mac (FR40): a copy is read again with the old copy's table, stored as the value it was chosen
+    /// under, in its row and its record, and the debug log names that value.
+    func testReplaceExistingKeepsAMacsTableValueAsItIs() async throws {
+        keepDeletionsOutOfTheTrash()
+        let value = "mac:fr-bfu-g2.ctb"
+        let chosen = try XCTUnwrap(BrailleTableCatalog.table(withID: value), "this platform offers no table for \(value)")
+        XCTAssertEqual(chosen.id, value, "the catalog answered another value than the one asked for")
+        let file = try copyOfFormatSample(Self.contractedSample)
+        let existing = try imported(file, settingCode: .northAmerican, title: "Atlas")
+        let model = makeModel(with: [existing])
+        let corrected = await model.readTextAgain(bookID: existing.id, choosing: .brailleTable(chosen))
+        XCTAssertTrue(corrected.succeeded, "the book was not read again: \(corrected)")
+        XCTAssertEqual(model.bookByID(existing.id)?.brailleTable, value)
+        let copy = try imported(file, settingCode: .northAmerican, title: "Second Atlas")
+        XCTAssertEqual(copy.md5Hash, existing.md5Hash, "the same file must have the same content hash, or this proves nothing")
+
+        XCTAssertFalse(model.addBookCheckingDuplicate(copy), "the copy was not asked about as a duplicate")
+        let outcome = model.answerCurrentImportDecision(.replaceExisting)
+
+        XCTAssertEqual(outcome, .success(nil))
+        let row = try XCTUnwrap(model.bookByID(existing.id))
+        XCTAssertEqual(row.brailleTable, value, "the value was stored as another")
+        XCTAssertEqual(try BookInfo.load(from: row.tmbDirectory).metadata.brailleTable, value)
+        XCTAssertEqual(logLineCount("BRAILLE_TABLE_CHANGED: \(copy.title): read again with \(value)"), 1)
+    }
+
     /// A book whose listener chose both its braille file characters and its
     /// braille code, each with its own pop-up, keeps both through Replace
     /// Existing, in one re-read of the copy: its row and record hold the

@@ -1040,6 +1040,7 @@ targets:
       - TextMouthProductionTests/BrailleLayoutTests.swift
       - TextMouthProductionTests/BraillePageAnalyzerTests.swift
       - TextMouthProductionTests/BrailleTablePackTests.swift
+      - TextMouthProductionTests/BrailleTablePrintOnlyTests.swift
       - TextMouthProductionTests/BrailleTranslatorTests.swift
       - TextMouthProductionTests/CloudStorageContractTests.swift
       - TextMouthProductionTests/CloudTestDoubles.swift
@@ -1151,6 +1152,7 @@ targets:
       - TextMouthProductionTests/PhoneBackgroundHoldTests.swift
       - TextMouthProductionTests/PhoneBookSearchTests.swift
       - TextMouthProductionTests/PhoneBookmarksModelTests.swift
+      - TextMouthProductionTests/PhoneBrailleSettingsTests.swift
       - TextMouthProductionTests/PhoneEscapePolicyTests.swift
       - TextMouthProductionTests/PhoneFocusRequestsTests.swift
       - TextMouthProductionTests/PhoneFolderVocabularyTests.swift

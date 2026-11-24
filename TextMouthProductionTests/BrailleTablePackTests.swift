@@ -438,6 +438,25 @@ final class BrailleTableUnpackerTests: XCTestCase {
         XCTAssertEqual(try names(in: unpacker.folder).filter { $0.hasSuffix(".tmp") }, [], "a temporary file was left")
     }
 
+    /// Two different tables failing the same way, a full disk or any one error, log one line between them: the logged-once set
+    /// is keyed by the error's domain and code, not by the table asked for.
+    func testTwoTablesFailingTheSameWayLogOneLine() throws {
+        let unpacker = try unpacker()
+        // Two files each taken by a folder, so writing either fails with the same error, for two different tables.
+        for name in ["digits.uti", "other.ctb"] {
+            try FileManager.default.createDirectory(at: unpacker.folder.appendingPathComponent(name), withIntermediateDirectories: true)
+        }
+        try TextMouthPaths.ensureDirectoryStructure()
+        func lines() -> Int {
+            debugLogLines(containing: "BRAILLE_TABLES_UNAVAILABLE: ").filter { $0.contains("NSPOSIXErrorDomain") }.count
+        }
+        let before = lines()
+        XCTAssertThrowsError(try unpacker.unpackedFolder(for: "plain.ctb"))
+        XCTAssertThrowsError(try unpacker.unpackedFolder(for: "other.ctb"))
+        XCTAssertThrowsError(try unpacker.unpackedFolder(for: "plain.ctb"))
+        XCTAssertEqual(lines() - before, 1, "one line for the one error, whichever table asked")
+    }
+
     /// The first unpacking of a launch removes the temporaries an earlier run left (the old ones, not one that may still be
     /// written) and, for the app's own unpacker, the folders of other liblouis versions beside its own.
     func testTheFirstUnpackingSweepsStrayTemporariesAndOtherVersions() throws {
