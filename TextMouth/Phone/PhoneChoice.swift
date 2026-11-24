@@ -25,3 +25,14 @@ struct PhoneChoice<ID: Hashable>: Identifiable {
         self.isEnabled = isEnabled
     }
 }
+
+/// A heading and the choices under it in a phone's list of choices that is grouped, such as the braille tables of one language
+/// (FR32). A plain value, like `PhoneChoice`, so the code that makes the groups is tested on the Mac.
+struct PhoneChoiceGroup<ID: Hashable>: Identifiable {
+    /// What names the group in the list; for a language, its code.
+    let id: String
+    /// The group's heading, read as a heading; nil for a list that has none.
+    let title: String?
+    /// The group's choices, in the order they are offered.
+    let choices: [PhoneChoice<ID>]
+}

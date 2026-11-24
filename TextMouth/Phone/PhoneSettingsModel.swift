@@ -24,6 +24,8 @@ enum PhoneSettingsSection: CaseIterable, Identifiable {
     case endOfBook
     case sleepTimer
     case reading
+    /// The braille code books are read with, and how braille files are read (FR32).
+    case braille
     case times
     case pages
     case removalBehavior
@@ -45,6 +47,7 @@ enum PhoneSettingsSection: CaseIterable, Identifiable {
         case .times: return ReaderTimeWording.settingSection
         case .pages: return ReaderPageWording.settingSection
         case .reading: return PhoneSettingsWording.readingSection
+        case .braille: return BrailleSettingsWording.sectionHeader
         case .removalBehavior: return Words.removalBehavior.title
         case .statistics: return PhoneSettingsWording.statisticsSection
         case .interfaceLanguage: return InterfaceLanguagePickerWording.title
@@ -68,6 +71,10 @@ enum PhoneSettingsRow: Hashable, Identifiable {
     case endOfBook
     case readingStatistics
     case interfaceLanguage
+    /// The braille code, a table of one language's, books are read with (FR32).
+    case brailleTable
+    /// The braille file characters a BRF or BRL file is read in (FR32).
+    case brailleFileCode
     /// Export Interface Text…, under Interface Language (FR39): the system's file exporter, which focus must come back from.
     case exportInterfaceText
     case shareLogs
@@ -85,6 +92,8 @@ enum PhoneSettingsRow: Hashable, Identifiable {
         case .endOfBook: return Words.whenBookEnds.title
         case .readingStatistics: return PhoneSettingsWording.readingStatistics
         case .interfaceLanguage: return InterfaceLanguagePickerWording.title
+        case .brailleTable: return BrailleSettingsWording.codeLabel
+        case .brailleFileCode: return BrailleSettingsWording.fileCodeLabel
         case .exportInterfaceText: return InterfaceTextOverridesWording.exportTitle
         case .shareLogs: return PhoneSettingsWording.shareLogs
         }
@@ -98,7 +107,9 @@ enum PhoneSettingsRow: Hashable, Identifiable {
         case .voice: return Words.selectVoice.title
         case .rewindTo: return Words.rewindOnResumeUnit.title
         case .endOfBook: return Words.endOfBookBehavior.title
-        case .textNavigationUnit, .audioNavigationUnit, .readingStatistics, .interfaceLanguage, .exportInterfaceText, .shareLogs: return title
+        case .textNavigationUnit, .audioNavigationUnit, .readingStatistics, .interfaceLanguage, .exportInterfaceText, .shareLogs,
+             .brailleTable, .brailleFileCode:
+            return title
         }
     }
 
@@ -111,6 +122,8 @@ enum PhoneSettingsRow: Hashable, Identifiable {
         case .endOfBook: return Words.endOfBookHint.title
         case .shareLogs: return PhoneSettingsWording.shareLogsHint
         case .interfaceLanguage: return InterfaceLanguagePickerWording.hint
+        case .brailleTable: return BrailleSettingsWording.codeHint
+        case .brailleFileCode: return BrailleSettingsWording.fileCodeHint
         case .exportInterfaceText: return InterfaceTextOverridesWording.exportHint
         case .language, .readingStatistics: return nil
         }
@@ -316,6 +329,15 @@ struct PhoneSettingsSwitch: Sendable {
         )
     }
 
+    /// Under Braille: whether a new braille book's code is guessed (the Mac's own words, FR32).
+    static var guessBrailleTable: PhoneSettingsSwitch {
+        PhoneSettingsSwitch(
+            title: BrailleSettingsWording.guessLabel,
+            hint: BrailleSettingsWording.guessHint,
+            showsHintAsCaption: true
+        )
+    }
+
     /// Under Removal Behavior. The Mac's hint for it isn't used: it offers
     /// keeping the files in the library folder, which a phone's removal
     /// doesn't (the spec, under "Removing a book"), and the spec gives none.
@@ -430,6 +452,46 @@ enum PhoneSettingsModel {
     /// Mac's pickers name them (a raw value is what is stored, never shown).
     private static func choices<Choice: Hashable>(of cases: [Choice], titled title: (Choice) -> String) -> [PhoneChoice<Choice>] {
         cases.map { PhoneChoice(id: $0, label: title($0)) }
+    }
+
+    // MARK: Braille
+
+    /// The braille tables a braille file may be read with, in groups, one for each language, as the Mac's Braille tab groups
+    /// its own (`BrailleTableCatalog.languages(of:)`: English first, then the others by their names in the interface
+    /// language): every table that reads braille back, never one that only writes it (FR40). Each table is one choice, whose
+    /// label is what VoiceOver reads for its row: the code, how far it contracts, and its language, such as "Unified English
+    /// Braille, contracted (Grade 2), in English". `codes` is the codes offered, which a test may give its own.
+    static func brailleTableGroups(
+        codes: [BrailleCode] = BrailleTableCatalog.offeredCodes
+    ) -> [PhoneChoiceGroup<String>] {
+        BrailleTableCatalog.languages(of: codes).map { language in
+            PhoneChoiceGroup(
+                id: language.id,
+                title: language.name,
+                choices: language.codes.flatMap(\.tables).map { table in
+                    PhoneChoice(id: table.id, label: BrailleTableCatalog.description(of: table, language: language.name))
+                }
+            )
+        }
+    }
+
+    /// What the Braille code row says as its value: the table in use in words (`BrailleTableCatalog.description(ofTableID:)`),
+    /// and its language, as its choice does.
+    static func brailleTableValue(_ id: String) -> String {
+        guard let table = BrailleTableCatalog.table(withID: id) else { return id }
+        let language = BrailleTableCatalog.offeredCodes.first { $0.tables.contains { $0.id == id } }
+            .map { BrailleTableCatalog.languageName($0.language, indexName: table.indexName, displayName: table.displayName) }
+        return BrailleTableCatalog.description(of: table, language: language)
+    }
+
+    /// The braille file characters row's choices: the codes an import may be set to, by name (`BrailleFileCode.importChoices`).
+    static var brailleFileCodeChoices: [PhoneChoice<String>] {
+        BrailleFileCode.importChoices.map { PhoneChoice(id: $0.id, label: $0.name) }
+    }
+
+    /// The name of the braille file characters `id` names, or `id` itself for a code this app does not know.
+    static func brailleFileCodeName(_ id: String) -> String {
+        BrailleFileCode.importChoice(withID: id)?.name ?? id
     }
 
     // MARK: What Applies Now

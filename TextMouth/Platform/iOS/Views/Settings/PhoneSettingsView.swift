@@ -200,6 +200,16 @@ struct PhoneSettingsView: View {
             switchRow(.sayPageInWhereAmI, isOn: noted($settings.saysPageInWhereAmI))
         case .reading:
             switchRow(.followInBraille, isOn: followsInBraille)
+        case .braille:
+            // The table braille files are read with from now on, a row opening the tables of every language, then the
+            // characters a BRF or BRL file is read in, and whether a new book's code is guessed (FR32).
+            choiceRow(.brailleTable, value: PhoneSettingsModel.brailleTableValue(settings.brailleTable))
+            // Left where VoiceOver and braille can read it, as the End of Book caption is.
+            Text(PhoneSettingsWording.brailleCaption)
+                .font(.caption)
+                .phoneSecondaryText()
+            choiceRow(.brailleFileCode, value: PhoneSettingsModel.brailleFileCodeName(settings.brailleFileCode))
+            switchRow(.guessBrailleTable, isOn: noted($settings.guessesBrailleTable))
         case .removalBehavior:
             switchRow(.confirmBeforeRemoving, isOn: confirmsBeforeRemoving)
         case .statistics:
@@ -422,6 +432,24 @@ struct PhoneSettingsView: View {
             ) { choice in
                 // Applied in `onDismiss`, once the sheet is gone.
                 pendingInterfaceLanguage = choice
+            }
+        case .brailleTable:
+            PhoneChoiceSheet(
+                title: row.title,
+                groups: PhoneSettingsModel.brailleTableGroups(),
+                selected: settings.brailleTable
+            ) { id in
+                settings.brailleTable = id
+                noteChange()
+            }
+        case .brailleFileCode:
+            PhoneChoiceSheet(
+                title: row.title,
+                choices: PhoneSettingsModel.brailleFileCodeChoices,
+                selected: settings.brailleFileCode
+            ) { id in
+                settings.brailleFileCode = id
+                noteChange()
             }
         case .shareLogs:
             if let logsFile {

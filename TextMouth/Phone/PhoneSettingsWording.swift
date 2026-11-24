@@ -38,6 +38,11 @@ enum PhoneSettingsWording {
         // Translators: Heading of the iPhone Settings section that holds Follow in Braille.
         InterfaceText.line("phoneSettings.readingSection", "Reading")
     }
+    /// The caption under the Braille code row (FR32): which books it applies to and what a book keeps.
+    static var brailleCaption: String {
+        // Translators: The caption under the Braille code row in the iPhone's Settings. A book keeps the braille code it was added with.
+        InterfaceText.line("phoneSettings.brailleCaption", "TextMouth reads braille files you add from now on with this code. A book keeps the code it was added with.")
+    }
     /// The switch that lets Book content follow the speech.
     static var followInBraille: String {
         // Translators: Switch in iPhone Settings: while a book plays, the book's text moves on with the speech, for a braille display.
