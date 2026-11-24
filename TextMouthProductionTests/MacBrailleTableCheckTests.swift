@@ -44,7 +44,7 @@ final class MacBrailleTableCheckTests: XCTestCase {
             },
             limits: { _, _ in limits },
             residentMemory: { _ in nil },
-            tablesFolder: nil
+            tablesFolder: { _ in nil }
         )
     }
 
@@ -270,7 +270,7 @@ final class MacBrailleTableCheckTests: XCTestCase {
             },
             limits: { _, _ in WatchedProcess.Limits(maximumSeconds: 5, maximumResidentBytes: 1 << 30, maximumStalledSeconds: 5) },
             residentMemory: { WatchedProcess.residentMemory(of: $0) },
-            tablesFolder: nil
+            tablesFolder: { _ in nil }
         )
         try XCTSkipUnless(FileManager.default.isExecutableFile(atPath: "/usr/bin/perl"), "This Mac has no /usr/bin/perl")
         try isolated(tool: hog) {
@@ -463,7 +463,7 @@ final class MacBrailleTableCheckTests: XCTestCase {
     /// name, and a bundled one from the bundle's, as before.
     func testTheRealToolRunsEachTableFromItsOwnFolder() throws {
         let tool = BrailleTranslator.Tool.helper
-        let bundled = try XCTUnwrap(tool.tablesFolder)
+        let bundled = try XCTUnwrap(try tool.tablesFolder("en-ueb-g2.ctb"))
         XCTAssertEqual(
             try XCTUnwrap(tool.command("check", "mac:fr-bfu-g2.ctb", nil, nil)).arguments,
             ["check", BrailleTableCatalog.macTablesFolder.path, "fr-bfu-g2.ctb"]
