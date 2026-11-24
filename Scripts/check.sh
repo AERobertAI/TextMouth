@@ -157,9 +157,10 @@ readonly INFO_PLIST_TABLE="InfoPlist.strings"
 # The interface-text pack's name, and the most bytes it may hold (1.5 MB of a million bytes; it is 1.28 MB today).
 readonly PACK_NAME="Strings.pack"
 readonly PACK_LIMIT_BYTES=1500000
-# The braille-table pack's name (FR40), and the most bytes each app's may hold: the iPhone's holds every table TextMouth ships
-# (1.86 MB of a million bytes today), the Mac's the four English tables with what they include (56 KB). No raw liblouis
-# table is in either app: the folder the apps once held, liblouis/tables, is looked for.
+# The braille-table pack's name (FR40), and the most bytes each app's may hold, each below: the iPhone's holds every table
+# TextMouth ships for it, the Mac's the four English tables with what they include. The gate enforces both limits, and that
+# no raw liblouis table is in either app: the folder the apps once held, liblouis/tables, is looked for. Each pack's size is
+# reported with every check, so growth shows long before a limit; no size is written here, where it would go stale.
 readonly BRAILLE_PACK_NAME="BrailleTables.pack"
 readonly BRAILLE_PACK_LIMIT_BYTES=2100000
 readonly MAC_BRAILLE_PACK_LIMIT_BYTES=100000
