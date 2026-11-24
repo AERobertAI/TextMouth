@@ -59,6 +59,8 @@ Xcode's own build setting passes `-Xfrontend -disable-reflection-names` and `-Xf
 Apple's engineers call it the heavy hammer, and no source measures SwiftUI under `none`.
 SwiftUI reads a view's stored properties (`@State`, `@Environment`, `@Binding`) through the runtime's field metadata to find them, so `none` could leave state unconnected without a compile error.
 I could not test this, since the app may not be launched here, so the recommendation is to reject until the user or an interface test run on GitHub shows the app working.
+The run on GitHub settled it (November 23, `experiment/reflection-none`, a full Mac suite with `none` in Debug and Release): no test ran, because the app trapped at launch with "SwiftUICore/EnvironmentObject.swift:93: Fatal error: No ObservableObject of type LibraryViewModel found".
+SwiftUI found no `@EnvironmentObject` in the view without the field metadata, so `none` is rejected for good while SwiftUI works this way.
 Sources: [SE-0379 opt-in reflection metadata](https://forums.swift.org/t/se-0379-opt-in-reflection-metadata/61714), [Apple Developer Forums on disabling the level](https://developer.apple.com/forums/thread/720932), [a report of a 2 MB saving](https://developer.apple.com/forums/thread/748600).
 
 ### Link-time optimization
