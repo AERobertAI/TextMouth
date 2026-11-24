@@ -68,3 +68,72 @@ The probes were short Python scripts in a scratch folder, run with a time limit 
 - **Against:** no copy of Office is available to write test files, so edge cases come from Apache POI's and LibreOffice's test files, which the repository already uses under their licences (observed).
 - **Against:** an Excel number-format engine and a PowerPoint layout resolver are real work; a bug is silent wrong speech, not a crash.
 - **Weighing:** for .pptx, .xlsx, .odp, .ods, and CSV the format core is XML or text, and an own reader is cheaper than adapting a library. For .xls, libxls would save about two weeks but not the date and number logic, and puts C in the process; the same argument as the other binary readers applies, so write it later, from MS-XLS, with libxls only as a map.
+
+## Question 3: PowerPoint for listening
+
+### Slides, pages, and headings
+
+- The slide order is `p:sldIdLst` resolved through `ppt/_rels/presentation.xml.rels`, never the file names (observed in the pandoc sample).
+- Each slide is a page, labelled with its position (plus `firstSlideNum` minus one when the presentation sets it; unchecked), through the `<!-- page: N -->` marker that every reader of pages writes.
+- A hidden slide (`<p:sld show="0">`) keeps its number, so skipping it leaves a gap in the labels (3, then 5) that tells the listener something was left out.
+- The slide's heading is its title placeholder (`type="title"` or `ctrTitle`); a slide with none is headed "Slide N" and never guessed from the biggest text.
+- Sections (`p14:sectionLst` in `presentation.xml`'s extension list, unchecked) would be level-1 headings above the slides' level-2 headings; without sections, slide headings are level 1.
+- Speaker notes sit in `ppt/notesSlides`; only the `body` placeholder is read, and `sldImg` and `sldNum` are skipped (observed in the pandoc sample, where slide 3 has notes).
+- Notes are read after the slide, led by a short localized word, and by a setting they can be left out.
+- Comments (legacy `ppt/comments/*.xml`; modern comments in per-slide parts with one authors part, per [Microsoft](https://support.microsoft.com/office/modern-comments-in-powerpoint-c0aa37bb-82cb-414c-872d-178946ff60ec) and the [Open XML SDK's p188 names](https://learn.microsoft.com/en-us/dotnet/api/documentformat.openxml.office2021.powerpoint.comment)) are skipped, as comments are in .odt.
+- A hyperlink keeps its text and never its address (the existing rule), and a jump to another slide is only its text.
+
+### The order PowerPoint speaks
+
+- **The standard:** the shape tree's lexical order is z-order, back to front, and it is also the navigation order, so the first shape is first ([ISO 29500-1 on `p:spTree`](https://learn.microsoft.com/en-us/dotnet/api/documentformat.openxml.presentation.shapetree?view=openxml-3.0.1), verified).
+- **Windows:** the Reading Order pane lists objects in the order a screen reader reads them, top to bottom ([Microsoft](https://support.microsoft.com/en-US/PowerPoint/make-slides-easier-to-read-by-using-the-reading-order-pane), verified).
+- **Selection pane:** it lists the same objects front to back, so a reader goes from its bottom to its top ([Section508.gov](https://www.section508.gov/blog/accessibility-bytes/presentation-reading-order/), verified). On a Mac, Microsoft says screen readers read "the reverse of the order they are listed in the Selection Pane" ([Microsoft](https://support.microsoft.com/en-us/office/make-your-powerpoint-presentations-accessible-to-people-with-disabilities-6f7772b2-2f33-4bd2-8ca7-dae3b2b3ef25), verified).
+- **So** file order is the author's reading order, and a screen reader on a deck nobody checked reads shapes in the order they were made.
+- **The checker:** Microsoft's Accessibility Checker flags a slide when the order "doesn't match one of the common ways objects are spatially ordered" (verified): the order and the page's positions are expected to agree.
+- **Decorative objects** have no number in the Reading Order pane and are skipped in a show (verified); hidden objects stay in the Selection pane and are still read (Section508.gov, verified).
+
+### Reading order for TextMouth: three rules
+
+1. **Collect the leaves in tree order.** A group is entered in place, its children in the group's own order; a table, a chart, a diagram, and a picture are each one leaf.
+2. **Put the title first and the furniture out.** The title placeholder is read first whatever its z-order. Date, footer, and slide-number placeholders are dropped, since they repeat on every slide.
+3. **Repair the order from the positions, but only when the author's order is out of step.** The positions come from the shape's `a:xfrm`; a placeholder without one takes it from the layout's placeholder with the same `idx` (or `type`), then the master's.
+   The order is the recursive XY-cut: split the shapes at the widest empty horizontal gap, else at the widest empty vertical gap, and recurse; columns go right to left when the slide's text is right to left.
+   The repair applies when the author's order matches neither row-major nor column-major order of the positions (the "common spatial orders"); a deck the author fixed by hand in the Reading Order pane normally matches one.
+   This test is a proposal: the probe printed both orders and chose none, so the threshold needs real decks.
+- A setting, "Order of slide contents", offers Smart (the default), As the author set it, and By position always; it is applied at import, so changing it reads the book again.
+- Failure modes of the position rule: overlapping shapes and diagrams with arrows have no clean gap, and the cut falls back to top-to-bottom, left-to-right; a callout the author deliberately read last is moved.
+
+### Worked examples (probe on made slides)
+
+Slide 1, title added last, footer note first, content placeholder with no position of its own:
+```
+author order : Footer note > Content > Title
+title first  : Title > Footer note > Content
+by position  : Title > Content > Footer note      (Content placed by the layout's idx 1)
+```
+Slide 2, right column made first, a callout, a title placeholder, and a footer placeholder:
+```
+author order : Right column > Left column > Callout > Title > Page footer
+by position  : Title > Callout > Left column > Right column > Page footer
+```
+- The author's order on slide 2 reads "what to pack" before "where to go", exactly what a PowerPoint screen reader would say; the repair reads the title, the callout above the columns, then left, then right.
+- The shapes of slide 1 had no `a:xfrm` of their own; without the layout lookup the content would have no position at all (observed: a probe that resolves `idx` through `slideLayout1.xml`).
+
+### Each kind of object
+
+- **Text boxes and WordArt:** a `p:sp` with a `txBody` is its paragraphs; WordArt is the same text under a `prstTxWarp` and is read as plain text.
+- **Bullets and levels:** a paragraph's `lvl` is its list level. In a body or object placeholder a paragraph is a list item unless `a:buNone` is in effect, which comes from the slide, then the layout placeholder's `lstStyle`, then the master's `bodyStyle` (unchecked: the exact cascade). A numbered level has `a:buAutoNum`. The pandoc sample writes `buNone` on every paragraph.
+- **Columns:** `numCol` on `a:bodyPr` lays one text body out in columns, but the XML order is already the reading order; no action.
+- **Tables:** `a:tbl` rows are read as paragraphs through the same table builder as sheets (see Question 4); the header row is `firstRow="1"`; a cell covered by a merge (`hMerge`, `vMerge`) is skipped and the covering cell speaks once (observed in the probe). A table's `descr` is read before it as its description.
+- **Charts:** a chart is a graphic frame whose data is in `ppt/charts/chartN.xml`. Read its alt text first; if there is none, its title, its axis titles, and each series' name with its cached categories and values, which are stored in the file (`c:cat`, `c:val` caches; unchecked in a sample, since none was made).
+- **SmartArt:** the diagram has a data model (`dgm:pt` nodes with text, `dgm:cxn` parent links) and a cached drawing of the laid-out shapes, named by the `dataModelExt` relationship id ([MS-ODRAWXML](https://learn.microsoft.com/en-us/openspecs/office_standards/ms-odrawxml/44da4385-43e1-4c9e-9061-71557d17155a), partly verified by search result). Read the data model as a nested list, the node depth being the level; use the cached drawing's text when the model is empty.
+- **Equations:** an equation is `a14:m` holding OMML inside `mc:AlternateContent`, with a picture as fallback. Read the choice, not the fallback, as the DOCX reader does for text boxes; the words need the shared OMML step noted in Question 1 (unchecked: the exact PowerPoint wrapping).
+- **Groups:** read in place; a group is also a unit for the position order, with the box of its extents (the probe maps child boxes through `chOff` and `chExt`).
+- **Text direction:** a paragraph's `rtl="1"` and a body's `vert` are display properties; the logical text order in the file is already the reading order, so the text is not reordered. Only the order between shapes changes (right to left when the slide is right to left, and for `eaVert` boxes, whose columns run right to left). The probe's Arabic title and vertical Japanese box read in logical order.
+- **Unreadable:** a video, audio, ink, or 3-D model is silent, except for its alt text, and an embedded OLE object is its alt text.
+
+### What the file says about layout
+
+- **Positions** (`a:off`, `a:ext` in EMUs, 914,400 to the inch) give the position order. **Placeholder types** (`title`, `ctrTitle`, `subTitle`, `body`, `dt`, `ftr`, `sldNum`, `pic`, `chart`, `tbl`) say what a shape is. **Z-order** is the author's order.
+- The layout and master supply what a slide's placeholder leaves out: position, and bullet and level styles. A slide shows a date, footer, or number only if it holds its own placeholder of that type (unchecked), so the layout's furniture never needs reading.
+- **Slide 3 of the probe** (a group, a table with a merged row, and five pictures) reads: the title; "Picture: A harbour wall at low tide, with weed on the steps."; the decorative picture skipped; a picture described only by "image1.png" skipped; "A bar chart of tide heights" with Office's "Description automatically generated with medium confidence" suffix removed; a picture with no description silent; "Step one", "Step two"; and the table as rows.
