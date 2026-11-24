@@ -13,6 +13,8 @@ Usage (Python 3 standard library only):
     python3 -I -B Scripts/size_settings.py          # the settings as shell-quoted words, for the Makefile
     python3 -I -B Scripts/size_settings.py --list   # one NAME=VALUE per line
     python3 -I -B Scripts/size_settings.py --without NAME[,NAME]   # leave settings out (the goldens' build)
+    python3 -I -B Scripts/size_settings.py --help   # the usage
+A name --without does not know, or any other argument, is refused with exit status 2.
 """
 import shlex
 import sys
@@ -65,14 +67,69 @@ def settings(without=()):
     return out
 
 
+USAGE = """usage: size_settings.py [--list] [--without NAME[,NAME...]]
+
+Prints the Release size settings, as shell-quoted words on one line (the Makefile's form), or one NAME=VALUE per
+line with --list. --without leaves out settings by name (SWIFT_LTO) and frontend flags by flag
+(-internalize-at-link), joined by commas; its value is the next argument, or follows an equals sign."""
+
+
+class UsageError(Exception):
+    """A command line this script does not understand: it is refused, never guessed at."""
+
+
+def known_names():
+    """Every name --without takes: each setting's name, each frontend flag, and OTHER_SWIFT_FLAGS, which holds
+    the flags."""
+    return {name for name, _ in SETTINGS} | set(FRONTEND_FLAGS) | {"OTHER_SWIFT_FLAGS"}
+
+
+def parse(argv):
+    """`(list_form, without)` from the command line. Raises UsageError for an argument it does not know, a
+    --without with no name, or a name that is neither a setting nor a flag, so that no typo can leave a setting
+    in without a word. A parser of options is not used because the flags begin with a dash, which it would read
+    as an option of its own: `--without -internalize-at-link` is the goldens' build's command line."""
+    list_form = False
+    without = []
+    index = 0
+    while index < len(argv):
+        argument = argv[index]
+        if argument == "--list":
+            list_form = True
+        elif argument == "--without" or argument.startswith("--without="):
+            if argument == "--without":
+                index += 1
+                if index == len(argv):
+                    raise UsageError("--without needs a name, or names joined by commas")
+                value = argv[index]
+            else:
+                value = argument[len("--without="):]
+            names = [name for name in value.split(",") if name]
+            if not names:
+                raise UsageError("--without needs a name, or names joined by commas")
+            unknown = [name for name in names if name not in known_names()]
+            if unknown:
+                raise UsageError("--without names no setting or flag: " + ", ".join(unknown))
+            without += names
+        else:
+            raise UsageError("unknown argument: " + argument)
+        index += 1
+    return list_form, tuple(without)
+
+
 def main(argv):
     """Prints the settings: shell-quoted on one line by default (what the Makefile's $(shell) takes), one per
-    line with --list. `--without A,B` leaves out the named settings. Returns the exit status."""
-    without = ()
-    if "--without" in argv:
-        index = argv.index("--without")
-        without = tuple(argv[index + 1].split(",")) if index + 1 < len(argv) else ()
-    if "--list" in argv:
+    line with --list, less those --without names; or the usage, for -h or --help. Returns the exit status: 0,
+    or 2 for a command line it refuses, with nothing on standard output."""
+    if "-h" in argv or "--help" in argv:
+        print(USAGE)
+        return 0
+    try:
+        list_form, without = parse(argv)
+    except UsageError as error:
+        print(f"size_settings.py: {error}\n\n{USAGE}", file=sys.stderr)
+        return 2
+    if list_form:
         print("\n".join(settings(without)))
     else:
         print(" ".join(shlex.quote(item) for item in settings(without)))

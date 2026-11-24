@@ -5,7 +5,9 @@ Run with: python3 -I -B -m unittest discover -s Scripts/agents/tests
 They pin what the study of November 23, 2026 recommended (and left out), the shell-quoted form the Makefile
 reads, the flag the goldens' build leaves out, and that the iPhone build and the Makefile both use this list.
 """
+import contextlib
 import importlib.util
+import io
 import shlex
 import unittest
 
@@ -24,6 +26,14 @@ def load(name, path):
 
 
 size_settings = load("size_settings", SCRIPTS / "size_settings.py")
+
+
+def run(argv):
+    """(exit status, standard output, standard error) of size_settings.main(argv)."""
+    out, err = io.StringIO(), io.StringIO()
+    with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+        status = size_settings.main(argv)
+    return status, out.getvalue(), err.getvalue()
 
 
 class SizeSettingsTests(unittest.TestCase):
@@ -57,6 +67,49 @@ class SizeSettingsTests(unittest.TestCase):
     def test_leaving_out_every_flag_leaves_no_other_swift_flags(self):
         found = size_settings.settings(without=size_settings.FRONTEND_FLAGS)
         self.assertFalse(any(item.startswith("OTHER_SWIFT_FLAGS") for item in found))
+
+    def test_no_argument_prints_the_makefile_form(self):
+        expected = " ".join(shlex.quote(item) for item in size_settings.settings()) + "\n"
+        self.assertEqual(run([]), (0, expected, ""))
+
+    def test_help_prints_the_usage_and_no_settings(self):
+        for argv in (["--help"], ["-h"], ["--list", "--help"]):
+            status, out, err = run(argv)
+            self.assertEqual((status, err), (0, ""), argv)
+            self.assertIn("usage: size_settings.py", out, argv)
+            self.assertNotIn("SWIFT_LTO=YES", out, argv)
+
+    def test_without_takes_its_value_after_a_space_or_an_equals_sign(self):
+        # The goldens' build passes the flag as the next argument; the equals form was ignored before.
+        expected = "\n".join(size_settings.settings(without=size_settings.LEFT_OUT_FOR_TESTS)) + "\n"
+        for argv in (
+            ["--list", "--without", "-internalize-at-link"],
+            ["--list", "--without=-internalize-at-link"],
+            ["--without=-internalize-at-link", "--list"],
+        ):
+            self.assertEqual(run(argv), (0, expected, ""), argv)
+        # Several names, in one value or in two.
+        both = "\n".join(size_settings.settings(without=("SWIFT_LTO", "-internalize-at-link"))) + "\n"
+        self.assertEqual(run(["--list", "--without", "SWIFT_LTO,-internalize-at-link"]), (0, both, ""))
+        self.assertEqual(run(["--list", "--without=SWIFT_LTO", "--without", "-internalize-at-link"]), (0, both, ""))
+
+    def test_a_command_line_it_does_not_know_is_refused(self):
+        # A misspelled name used to leave its setting in without a word: the goldens' build could then not link.
+        for argv in (
+            ["--without", "-internalise-at-link"],
+            ["--list", "--without=SWIFT_LTO,LTO"],
+            ["--without"],
+            ["--without="],
+            ["--without", ","],
+            ["--lst"],
+            ["extra"],
+        ):
+            status, out, err = run(argv)
+            self.assertEqual((status, out), (2, ""), argv)
+            self.assertIn("usage: size_settings.py", err, argv)
+        status, _, err = run(["--without", "-internalise-at-link,SWIFT_LTO"])
+        self.assertIn("names no setting or flag: -internalise-at-link", err)
+        self.assertNotIn("SWIFT_LTO\n", err.split("usage:")[0])
 
     def test_the_iphone_build_passes_the_same_settings(self):
         app_size = load("app_size", SCRIPTS / "ios" / "app-size.py")
