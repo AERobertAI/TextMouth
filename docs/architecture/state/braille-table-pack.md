@@ -1,8 +1,8 @@
-# Braille tables: the pack, the unpacker, and the lists
+# Braille tables: the catalog, the pack, and the unpacker
 <!-- id: braille-table-pack-page; keys: BrailleTables.pack, liblouis tables, unpacking, FR40, FR32, print-only tables, direction forward; src: -->
 
 Part of [TextMouth's architecture](../../../ARCHITECTURE.md).
-The catalog's other half, and the translator that uses the tables, are in [Braille tables and the translator](imports-braille-tables.md).
+The translator that uses the tables is in [Braille tables and the translator](imports-braille-tables.md).
 
 ## The pack
 <!-- id: braille-table-pack; keys: BrailleTables.pack, TMBT, PackContainer, packfile.py, LZMA, group blob, index blob, liblouis 3.39.0; src: TextMouth/Packs/BrailleTablePack.swift, TextMouth/Packs/PackContainer.swift, Scripts/packs/braille_tables.py, Scripts/packs/packfile.py, Vendor/liblouis/tables -->
@@ -106,6 +106,32 @@ liblouis and the Mac's helper read tables as files of one folder, each beside th
   The log gets `BRAILLE_TABLES_UNAVAILABLE`, an import event, with the first file to fail and the error's domain and code, never a path.
   The set of what was logged is keyed by the domain and code alone, so a full disk logs one line however many tables it fails.
 - `BrailleTableUnpackerTests` count group decodes and file hashes through hooks and prove the rename with a hard link and inodes.
+
+## The table catalog
+<!-- id: table-catalog; keys: liblouis tables, table list, VoiceOver tables, table metadata, language names, bundled resource; src: TextMouth/Models/BrailleTableCatalog.swift, TextMouth/Services/BrailleTranslator.swift, TextMouth/Platform/macOS/App/AppDelegate.swift, TextMouth/Models/LibraryInfoWording.swift, TextMouthProductionTests/MacBrailleTableCatalogTests.swift, TextMouthProductionTests/BrailleTableCatalogTests.swift -->
+
+The catalog: BrailleTableCatalog reads the tables' own metadata, from two sources (BrailleTableSource).
+Adding a bundled table is adding a resource to its folder.
+
+- The sources:
+  - the bundled tables folder (Contents/Resources/liblouis/tables, BrailleTranslator.Tool.helper.tablesFolder), and
+  - this Mac's, VoiceOver's own liblouis folder (macTablesFolder, in /System/Library/ScreenReader/BrailleTables/LiblouisBrailleTranslator.brailletable), read in place and never copied, changed, or downloaded.
+  BrailleTableCatalog.mac (macTables(in:propertyList:)) is nil without that folder, and then only the bundled tables are offered, with no error.
+  It holds the folder's liblouis version, read from the property list beside it.
+- Offered: a file whose header fields ("#+" or "#-" lines, as liblouis reads them) give type literary, a display-name, a language (or the older locale), dots of 6 or no dots line, and a direction of both or none.
+  It has a contraction of no, partial, or full, or none, in which case its grade implies it (Contraction(grade:)) or it is unstated.
+  A system is kept when it names one.
+  BrailleTableCatalog.tables(in:source:) sorts them by language, system, contraction, and name, and leaves out a true twin, a table whose only rule is one include of an offered table in the same language.
+  BrailleTableCatalog.merged(bundled:mac:) lists every bundled table, then every Mac table whose file name no bundled table has.
+- Reading: the headers of the Mac's tables (485 files on macOS 26.3) are read once, off the main thread.
+  AppDelegate starts BrailleTableCatalog.loadInBackground() at launch, and mac, offeredCodes, and offeredTables are static lets made once.
+  BrailleTableCatalog.storableValue(_:) validates the setting and config.json without reading them (BrailleTableSource.isMacValue), because both are read on the main thread at every launch.
+- Codes and languages: BrailleTableCatalog.codes(of:)
+  - groups tables into BrailleCode values by language and codeName (ueb is "Unified English Braille", ebae "English Braille, American Edition", any other the display name without its contraction words),
+  - lists a language by its region where two tables would be listed with the same words (languagesNeedingRegions), and
+  - keeps the first of tables with the same words.
+  BrailleTableCatalog.languages(of:) lists English first, then the others by their names in the user's language (languageName: Locale, else the first part of a table's index-name, else its display-name before "braille").
+- In words: description(ofTableID:) says a table for Book Information and Speak Info (Book.brailleCodeDescription), such as "Unified English Braille, contracted (Grade 2)", with ", in French" after a Mac table's, and the stored value itself when no offered table has it.
 
 ## The catalog's lists
 <!-- id: braille-table-lists; keys: bundled, bundledAll, offeredCodes, exportCodes, isPrintOnly, ReleaseDirections, direction forward, twin; src: TextMouth/Models/BrailleTableCatalog.swift, TextMouth/Packs/BrailleTablePack.swift, TextMouthProductionTests/BrailleTablePrintOnlyTests.swift, TextMouthProductionTests/BrailleTablePackTests.swift, TextMouthProductionTests/MacBrailleTableCatalogTests.swift -->

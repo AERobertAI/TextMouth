@@ -2,32 +2,7 @@
 <!-- id: imports-braille-tables-translator; keys: liblouis, TextMouthBraille, helper process, braille tables, back-translation, emphasis reading; src: -->
 
 Part of [TextMouth's architecture](../../../ARCHITECTURE.md).
-
-## The table catalog
-<!-- id: table-catalog; keys: liblouis tables, table list, VoiceOver tables, table metadata, language names, bundled resource; src: TextMouth/Models/BrailleTableCatalog.swift, TextMouth/Services/BrailleTranslator.swift, TextMouth/Platform/macOS/App/AppDelegate.swift, TextMouth/Models/LibraryInfoWording.swift, TextMouthProductionTests/MacBrailleTableCatalogTests.swift, TextMouthProductionTests/BrailleTableCatalogTests.swift -->
-
-The catalog: BrailleTableCatalog reads the tables' own metadata, from two sources (BrailleTableSource).
-Adding a bundled table is adding a resource to its folder.
-
-- The sources:
-  - the bundled tables folder (Contents/Resources/liblouis/tables, BrailleTranslator.Tool.helper.tablesFolder), and
-  - this Mac's, VoiceOver's own liblouis folder (macTablesFolder, in /System/Library/ScreenReader/BrailleTables/LiblouisBrailleTranslator.brailletable), read in place and never copied, changed, or downloaded.
-  BrailleTableCatalog.mac (macTables(in:propertyList:)) is nil without that folder, and then only the bundled tables are offered, with no error.
-  It holds the folder's liblouis version, read from the property list beside it.
-- Offered: a file whose header fields ("#+" or "#-" lines, as liblouis reads them) give type literary, a display-name, a language (or the older locale), dots of 6 or no dots line, and a direction of both or none.
-  It has a contraction of no, partial, or full, or none, in which case its grade implies it (Contraction(grade:)) or it is unstated.
-  A system is kept when it names one.
-  BrailleTableCatalog.tables(in:source:) sorts them by language, system, contraction, and name, and leaves out a true twin, a table whose only rule is one include of an offered table in the same language.
-  BrailleTableCatalog.merged(bundled:mac:) lists every bundled table, then every Mac table whose file name no bundled table has.
-- Reading: the headers of the Mac's tables (485 files on macOS 26.3) are read once, off the main thread.
-  AppDelegate starts BrailleTableCatalog.loadInBackground() at launch, and mac, offeredCodes, and offeredTables are static lets made once.
-  BrailleTableCatalog.storableValue(_:) validates the setting and config.json without reading them (BrailleTableSource.isMacValue), because both are read on the main thread at every launch.
-- Codes and languages: BrailleTableCatalog.codes(of:)
-  - groups tables into BrailleCode values by language and codeName (ueb is "Unified English Braille", ebae "English Braille, American Edition", any other the display name without its contraction words),
-  - lists a language by its region where two tables would be listed with the same words (languagesNeedingRegions), and
-  - keeps the first of tables with the same words.
-  BrailleTableCatalog.languages(of:) lists English first, then the others by their names in the user's language (languageName: Locale, else the first part of a table's index-name, else its display-name before "braille").
-- In words: description(ofTableID:) says a table for Book Information and Speak Info (Book.brailleCodeDescription), such as "Unified English Braille, contracted (Grade 2)", with ", in French" after a Mac table's, and the stored value itself when no offered table has it.
+The table catalog, the pack the bundled tables come from, and the lists of tables are in [Braille table pack](braille-table-pack.md).
 
 ## The translator and the helper
 <!-- id: translator-helper; keys: helper process, subprocess, timeout, memory limit, cancel import, piece cutting; src: TextMouth/Services/BrailleTranslator.swift, TextMouth/Services/MacBrailleTableCheck.swift, TextMouthBraille/main.c, TextMouth/Services/AsyncBridge.swift, TextMouth/Parsers/TextutilDocumentReader.swift, TextMouth/Platform/macOS/Services/WatchedProcess.swift, TextMouth/Parsers/BrailleEmphasis.swift, TextMouthProductionTests/BrailleTranslatorTests.swift, TextMouthProductionTests/BrailleHelperProtocolTests.swift -->
