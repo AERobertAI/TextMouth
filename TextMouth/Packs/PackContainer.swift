@@ -47,6 +47,23 @@ struct PackContainer: Sendable {
         let largestBlobCount: Int
         /// The largest raw size of any blob, which keeps a hostile size from asking for gigabytes.
         let largestRawSize: Int
+        /// What a pack adds to the checks of one directory record, in the order of the file: given the blob's name, the blob, and
+        /// the header's count, the sentence that says what is wrong with it, or nil. It runs after the record's bounds and raw
+        /// size are checked and before the next record is read, so a pack with two faults is refused for the first of them in
+        /// file order, with the sentence it always got.
+        let recordCheck: (@Sendable (_ name: String, _ blob: Blob, _ count: Int) -> String?)?
+
+        init(
+            magic: [UInt8], version: UInt16, largestCount: Int, largestBlobCount: Int, largestRawSize: Int,
+            recordCheck: (@Sendable (_ name: String, _ blob: Blob, _ count: Int) -> String?)? = nil
+        ) {
+            self.magic = magic
+            self.version = version
+            self.largestCount = largestCount
+            self.largestBlobCount = largestBlobCount
+            self.largestRawSize = largestRawSize
+            self.recordCheck = recordCheck
+        }
     }
 
     /// A blob's place and sizes, from the directory.
@@ -139,8 +156,10 @@ struct PackContainer: Sendable {
                 throw PackContainerFailure("the blob \(name) lies outside the pack")  // l10n: no (English text for the debug log, never shown)
             }
             guard rawSize <= format.largestRawSize else { throw PackContainerFailure("the blob \(name) claims \(rawSize) bytes") }  // l10n: no (English text for the debug log, never shown)
+            let blob = Blob(offset: offset, compressedSize: compressedSize, rawSize: rawSize, count: entryCount, method: method)
+            if let sentence = format.recordCheck?(name, blob, count) { throw PackContainerFailure(sentence) }
             guard blobs[name] == nil else { throw PackContainerFailure("the blob \(name) is listed twice") }  // l10n: no (English text for the debug log, never shown)
-            blobs[name] = Blob(offset: offset, compressedSize: compressedSize, rawSize: rawSize, count: entryCount, method: method)
+            blobs[name] = blob
         }
         return (count, Array(bytes[8..<40]), blobs)
     }

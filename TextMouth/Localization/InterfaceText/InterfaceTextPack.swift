@@ -29,7 +29,11 @@ struct InterfaceTextPack: InterfaceTextTables {
     /// the IDs number thousands, so a million is far above them; the biggest real blob is under 300 KB, so 16 MB keeps a
     /// hostile size from asking for gigabytes.
     private static let format = PackContainer.Format(
-        magic: Array("TMSP".utf8), version: 2, largestCount: 1_000_000, largestBlobCount: 256, largestRawSize: 16 * 1024 * 1024
+        magic: Array("TMSP".utf8), version: 2, largestCount: 1_000_000, largestBlobCount: 256, largestRawSize: 16 * 1024 * 1024,
+        // Every blob holds one entry for each ID, checked as its record is read, in the order of the file.
+        recordCheck: { name, blob, count in
+            blob.count == count ? nil : "the blob \(name) has \(blob.count) entries, not \(count)"  // l10n: no (English text for the debug log, never shown)
+        }
     )
 
     // MARK: - Opening
@@ -52,16 +56,13 @@ struct InterfaceTextPack: InterfaceTextTables {
         try self.init(opening: { try PackContainer(data: data, format: Self.format) })
     }
 
-    /// The pack that `open` makes a container of, checked as a `Strings.pack`: there is an `ids` blob, and every blob holds
-    /// one entry for each ID. The container's failures are given the engine's own failure type.
+    /// The pack that `open` makes a container of, checked as a `Strings.pack`: there is an `ids` blob (every blob's entry count
+    /// is checked as the container reads its record, `format`). The container's failures are given the engine's own failure type.
     private init(opening open: () throws -> PackContainer) throws {
         let opened: PackContainer
         do {
             opened = try open()
             guard opened.blobs["ids"] != nil else { throw PackContainerFailure("the pack has no ids blob") }  // l10n: no (English text for the debug log, never shown)
-            for (name, blob) in opened.blobs where blob.count != opened.count {
-                throw PackContainerFailure("the blob \(name) has \(blob.count) entries, not \(opened.count)")  // l10n: no (English text for the debug log, never shown)
-            }
         } catch let failure as PackContainerFailure {
             throw InterfaceTextFailure(failure.description)
         }
