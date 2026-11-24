@@ -187,13 +187,18 @@ final class BrailleFileCodeReplaceTests: CloudMaintenanceTestCase {
         XCTAssertEqual(logLineCount("BRAILLE_FILE_CODE_CHANGED: \(copy.title)"), 0, "a table was logged as a file code's")
     }
 
-    /// A Mac's `mac:<file>` value is kept as it is through Replace Existing, on the iPhone, which reads it with the pack's table of
-    /// that file name, and on the Mac (FR40): a copy is read again with the old copy's table, stored as the value it was chosen
-    /// under, in its row and its record, and the debug log names that value.
+    /// A Mac's `mac:<file>` value is kept as it is through Replace Existing (FR40): a copy is read again with the old copy's
+    /// table, stored as the value it was chosen under, in its row and its record, and the debug log names that value. This
+    /// runs on the Mac only, with VoiceOver's own French table (it skips on a macOS without it); the iPhone, which reads such a
+    /// value with the pack's table of that name, is covered by the catalog's tests of the lists' spellings
+    /// (`BrailleTablePrintOnlyTests`, `PhoneBrailleSettingsTests`), which run in its own bundle.
     func testReplaceExistingKeepsAMacsTableValueAsItIs() async throws {
+        try XCTSkipIf(BrailleTableCatalog.table(withID: "mac:fr-bfu-g2.ctb") == nil, "This Mac has no VoiceOver table fr-bfu-g2.ctb")
         keepDeletionsOutOfTheTrash()
         let value = "mac:fr-bfu-g2.ctb"
-        let chosen = try XCTUnwrap(BrailleTableCatalog.table(withID: value), "this platform offers no table for \(value)")
+        let chosen = try XCTUnwrap(
+            BrailleTableCatalog.table(withID: value), "this platform offers no table for \(value)"
+        )
         XCTAssertEqual(chosen.id, value, "the catalog answered another value than the one asked for")
         let file = try copyOfFormatSample(Self.contractedSample)
         let existing = try imported(file, settingCode: .northAmerican, title: "Atlas")

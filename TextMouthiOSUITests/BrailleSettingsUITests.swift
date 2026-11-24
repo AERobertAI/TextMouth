@@ -17,13 +17,18 @@ final class BrailleSettingsUITests: TextMouthUITestCase {
     /// Opens Settings from the library and scrolls to the Braille code row, which waits among the later sections.
     private func openSettingsAtTheBrailleRow() throws -> XCUIApplication {
         let app = try launch(sendingTheBook: false)
+        try scrollToTheBrailleRow(afterOpeningSettingsIn: app)
+        return app
+    }
+
+    /// Opens Settings from the library of `app`, and scrolls to the Braille code row.
+    private func scrollToTheBrailleRow(afterOpeningSettingsIn app: XCUIApplication) throws {
         tap(app.buttons["Settings"], until: app.navigationBars["Settings"], in: app, what: "Settings")
         let button = app.buttons[Self.row]
         for _ in 0..<10 where !(button.exists && button.isHittable) {
             app.swipeUp()
         }
         XCTAssertTrue(button.exists && button.isHittable, "No \"\(Self.row)\" row in Settings:\n\(app.debugDescription)")
-        return app
     }
 
     /// The section reads in order: its heading, the Braille code row with the table in use as its value, the caption, the braille
@@ -61,7 +66,10 @@ final class BrailleSettingsUITests: TextMouthUITestCase {
     }
 
     /// A choice sticks: a French table chosen from the list is the row's value, is marked selected the next time the list opens,
-    /// and the list of the next launch is not asked for here (the setting is the store's).
+    /// and is still the row's value when Settings is left and opened again, read from the setting's store afresh. A relaunch is
+    /// not asked for: an app a UI test launches runs in a sandbox that begins empty at every launch (`TextMouthRuntime`), so a
+    /// second launch would show the default; that the setting is kept across launches is the store's, and the unit tests'
+    /// (`PhoneBrailleSettingsTests.testAChoiceIsTheSettingAndSticks`).
     func testAChoiceSticks() throws {
         let app = try openSettingsAtTheBrailleRow()
         app.buttons[Self.row].tap()
@@ -89,5 +97,15 @@ final class BrailleSettingsUITests: TextMouthUITestCase {
         }
         XCTAssertTrue(marked.exists, "The chosen table is not in the list:\n\(app.debugDescription)")
         XCTAssertTrue(marked.isSelected, "The chosen table is not marked selected")
+
+        // Leave Settings and open them again: the screen is made afresh from the setting.
+        app.buttons["Cancel"].tap()
+        XCTAssertTrue(app.navigationBars[Self.row].waitForNonExistence(timeout: Self.patience), "Cancel left the list open")
+        let back = app.navigationBars["Settings"].buttons.element(boundBy: 0)
+        XCTAssertTrue(back.waitForExistence(timeout: Self.patience), "No Back button:\n\(app.debugDescription)")
+        back.tap()
+        XCTAssertTrue(app.navigationBars["Settings"].waitForNonExistence(timeout: Self.patience), "Settings stayed open")
+        try scrollToTheBrailleRow(afterOpeningSettingsIn: app)
+        XCTAssertEqual(app.buttons[Self.row].value as? String, label, "The choice did not outlast leaving Settings")
     }
 }

@@ -35,6 +35,26 @@ final class BrailleSettingsViewTests: XCTestCase {
         XCTAssertEqual(SettingsView.windowSize.width, 860)
     }
 
+    // MARK: - Export's Choices
+
+    /// Export's braille options offer the tables that only write braille as well as those that read it back (FR40): its codes,
+    /// by default, are the export codes, while the Braille tab's are the codes for reading. A print-only table is among the
+    /// export codes where this Mac has one, and in none of the tab's. A stored value a list spells otherwise still finds its
+    /// table there (`BrailleSettingsChoice.table(ofStored:in:)`).
+    func testExportsPopUpsOfferThePrintOnlyTablesTheTabDoesNot() throws {
+        let export = BrailleExportOptionsView(options: .constant(BrailleExportOptions(table: "en-ueb-g2.ctb")), choosesLineEnds: false)
+        XCTAssertEqual(export.codes.map(\.id), BrailleTableCatalog.exportCodes.map(\.id), "Export does not default to the export codes")
+        let exportTables = export.codes.flatMap(\.tables)
+        let tabTables = BrailleTableCatalog.offeredCodes.flatMap(\.tables)
+        XCTAssertFalse(tabTables.contains(where: \.isPrintOnly), "the tab offers a table that only writes braille")
+        try XCTSkipIf(BrailleTableCatalog.mac?.printOnly.isEmpty ?? true, "This Mac has no print-only VoiceOver table")
+        XCTAssertTrue(exportTables.contains(where: \.isPrintOnly), "Export offers no table that only writes braille")
+        XCTAssertTrue(exportTables.count > tabTables.count)
+        if BrailleTableCatalog.table(withID: "mac:fr-bfu-g2.ctb") != nil {
+            XCTAssertEqual(BrailleSettingsChoice.table(ofStored: "fr-bfu-g2.ctb", in: export.codes)?.id, "mac:fr-bfu-g2.ctb")
+        }
+    }
+
     // MARK: - The Pop-ups
 
     /// The four pop-ups are found by their labels, with their hints exactly,

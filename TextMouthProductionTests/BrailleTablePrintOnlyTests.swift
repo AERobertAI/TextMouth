@@ -383,4 +383,21 @@ final class BrailleTablePrintOnlyTests: XCTestCase {
             "The chosen table is built into TextMouth (liblouis \(BrailleTableCatalog.bundledLiblouisVersion))."
         )
     }
+
+    /// The tab's own wiring says it: what the tab asks for a stored value (`source(ofStored:codes:macLiblouisVersion:)`, which
+    /// the tab calls with the codes it lists) is the writes-only sentence for a print-only table, which no code listed for
+    /// reading holds, and the usual one for a table it lists.
+    func testTheBrailleTabAsksForWritesOnlyOfAPrintOnlyValue() throws {
+        #if os(iOS)
+        let printOnly = "de-g1.ctb"
+        #else
+        let printOnly = "mac:cs.tbl"
+        try XCTSkipIf(BrailleTableCatalog.table(withID: printOnly)?.isPrintOnly != true, "This Mac has no print-only VoiceOver table cs.tbl")
+        #endif
+        let codes = BrailleTableCatalog.offeredCodes
+        XCTAssertFalse(codes.contains { $0.tables.contains { $0.id == printOnly } })
+        let writesOnly = "The chosen table only writes braille, so it is not offered for reading braille files; choose another."
+        XCTAssertEqual(BrailleSettingsWording.source(ofStored: printOnly, codes: codes, macLiblouisVersion: nil), writesOnly)
+        XCTAssertNotEqual(BrailleSettingsWording.source(ofStored: "en-ueb-g2.ctb", codes: codes, macLiblouisVersion: nil), writesOnly)
+    }
 }

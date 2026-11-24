@@ -33,14 +33,17 @@ final class MacBrailleTableCheckTests: XCTestCase {
     }
 
     /// A stand-in helper that runs `/bin/sh -c script sh MODE OUTPUT INPUT`,
-    /// with limits that keep a test short: `seconds` for each run.
-    private func shell(_ script: String, seconds: TimeInterval = 5) -> BrailleTranslator.Tool {
+    /// with limits that keep a test short: `seconds` for each run. `modes`, when given, is told each run's mode.
+    private func shell(
+        _ script: String, seconds: TimeInterval = 5, modes: OSAllocatedUnfairLock<[String]>? = nil
+    ) -> BrailleTranslator.Tool {
         let limits = WatchedProcess.Limits(
             maximumSeconds: seconds, maximumResidentBytes: 1 << 30, maximumStalledSeconds: seconds, pollInterval: 0.1
         )
         return BrailleTranslator.Tool(
             command: { mode, _, input, output in
-                (URL(fileURLWithPath: "/bin/sh"), ["-c", script, "sh", mode, output?.path ?? "", input?.path ?? ""])
+                modes?.withLock { $0.append(mode) }
+                return (URL(fileURLWithPath: "/bin/sh"), ["-c", script, "sh", mode, output?.path ?? "", input?.path ?? ""])
             },
             limits: { _, _ in limits },
             residentMemory: { _ in nil },
@@ -53,9 +56,11 @@ final class MacBrailleTableCheckTests: XCTestCase {
     /// `before` (a shell command, such as a sleep). It writes the helper's
     /// protocol: the input's header line, then for each record the cells
     /// and an empty code line (`TextMouthBrailleProtocol.h`).
-    private func echoing(_ cells: String, before: String = ":", seconds: TimeInterval = 5) -> BrailleTranslator.Tool {
+    private func echoing(
+        _ cells: String, before: String = ":", seconds: TimeInterval = 5, modes: OSAllocatedUnfairLock<[String]>? = nil
+    ) -> BrailleTranslator.Tool {
         let records = #"NR == 1 { print; next } NR % 2 == 0 { print "\#(cells)"; next } { print "" }"#
-        return shell(#"[ "$1" = check ] && exit 0; "# + before + #"; awk '\#(records)' "$3" > "$2""#, seconds: seconds)
+        return shell(#"[ "$1" = check ] && exit 0; "# + before + #"; awk '\#(records)' "$3" > "$2""#, seconds: seconds, modes: modes)
     }
 
     /// Asserts that the working folder holds nothing, hidden files included.
@@ -209,6 +214,22 @@ final class MacBrailleTableCheckTests: XCTestCase {
                 }
             }
             assertWorkFolderEmpty()
+        }
+    }
+
+    /// The check runs a table that writes braille only twice, loading it and printing the sample, and never reads the braille
+    /// back (FR40): the way it is used, so a table that cannot read back is not refused for it. A table that reads runs a third
+    /// time, back to print.
+    func testTheCheckNeverReadsAPrintOnlyTableBack() throws {
+        let twoWay = try anyOfferedMacTable()
+        let printOnly = "mac:cs.tbl"
+        try XCTSkipIf(BrailleTableCatalog.table(withID: printOnly)?.isPrintOnly != true, "This Mac has no print-only VoiceOver table cs.tbl")
+        for (table, expected) in [(twoWay, ["check", "forward", "back"]), (printOnly, ["check", "forward"])] {
+            let modes = OSAllocatedUnfairLock<[String]>(initialState: [])
+            try isolated(tool: echoing("\u{2801}", modes: modes)) {
+                XCTAssertTrue(try MacBrailleTableCheck.check(table, workingIn: work).isUsable, table)
+            }
+            XCTAssertEqual(modes.withLock { $0 }, expected, table)
         }
     }
 
