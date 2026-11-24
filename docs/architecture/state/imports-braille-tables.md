@@ -69,6 +69,7 @@ Any other status (7 is an input without the protocol's header), a failure to sta
 Both are import events, and neither holds any book text.
 Failure.uncheckedTable is a Mac table whose check could not be made, not kept, so the next use checks again, and Failure.changedTable is in [The version](imports-braille.md); each has its sentence in errorDescription.
 A check that refuses a table logs BRAILLE_MAC_TABLE_REFUSED, an import event beside those, with the stored value and the reason.
+A bundled table that cannot be unpacked is Failure.unknownTable, and the unpacker logs BRAILLE_TABLES_UNAVAILABLE once for each cause (see [Braille table pack](braille-table-pack.md#the-unpacker)).
 
 ### The helper's three modes
 <!-- id: helper-three-modes; keys: check mode, forward translation, back-translation, typeform, emphasis classes, sandbox folder; src: TextMouthBraille/main.c, TextMouth/Services/BrailleTranslator.swift, TextMouth/Services/MacBrailleTableCheck.swift, TextMouthProductionTests/BrailleTranslatorTests.swift -->

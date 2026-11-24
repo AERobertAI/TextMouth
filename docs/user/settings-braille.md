@@ -162,7 +162,7 @@ This Mac's braille tables, in the Braille tab and in Export's braille options, a
 <!-- id: tables-only-write-braille; keys: print-only, direction forward, export only, Czech, Latvian, Slovenian, Chinese, liblouis 3.39.0; src: TextMouth/Models/BrailleTableCatalog.swift, TextMouth/Views/Settings/BrailleSettingsView.swift, TextMouth/Views/Export/BrailleExportOptionsView.swift, TextMouthProductionTests/BrailleTablePrintOnlyTests.swift -->
 
 Some of liblouis's tables write braille from print and cannot read a braille file back, which reading a braille book needs.
-They are marked "direction: forward" in the table; German, Czech, Latvian, Slovenian, Chinese, Japanese, Korean, Thai, Vietnamese, Hebrew, and Persian have such tables.
+They are marked "direction: forward" in the table; German, Czech, Latvian, Slovenian, Chinese, Korean, Thai, Vietnamese, Hebrew, and Persian have such tables.
 
 - Exporting braille offers them (see [Exporting braille files](exporting-braille.md)).
   Reading never does: not the Braille tab, not Book Information's Braille Code pop-up, not Replace Existing, and not an import.
