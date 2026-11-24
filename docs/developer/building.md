@@ -35,7 +35,8 @@ Run these from the repository root:
   So does the vendored SwiftSoup library, whose template in project.yml also sets it in Release (SWIFT_OPTIMIZATION_LEVEL: -Osize).
   The build asks for whole-module mode only for SwiftSoup; for the rest it would make the app 1.15 MB larger.
   The executable is linked without an export trie (`LD_EXPORT_SYMBOLS: NO`, Release only), because nothing links against the app.
-  A build made from Xcode's own window gives the packages no `-Osize`, as it drops no coverage either, since only the Makefile's command line does either.
+  The Makefile's command line also gives a Release build the size settings of `Scripts/size_settings.py` (see The Release size settings, below).
+  A build made from Xcode's own window gives the packages neither `-Osize` nor those, as it drops no coverage either, since only the Makefile's command line does any of the three.
   `make check` and `make install` build through `make build`, so both get it.
   The app includes LAME 3.100's MP3 encoder, which project.yml builds from Vendor/lame as a static library the app links, about 0.13 MB of it (see [Third-party code](third-party-code.md)).
   It includes the TextMouthBraille helper too, a command-line program of TextMouth's own, in TextMouthBraille/main.c, that links liblouis 3.39.0, which project.yml builds from Vendor/liblouis as a static library only the helper links.
@@ -173,6 +174,34 @@ The pieces below are what a measurement of the Release build showed at commit e0
     With `LD_GENERATE_MAP_FILE=YES` alone, Xcode writes one map for each target, in the build's `Intermediates.noindex` folder.
   - The measurement used `Scripts/agents/run_locked.py`, since a Release build is heavy work.
 
+## The Release size settings
+<!-- id: release-size-settings; keys: size_settings.py, SIZE_SETTINGS, SWIFT_LTO, LLVM_LTO, GCC_OPTIMIZATION_LEVEL, conditional-runtime-records, internalize-at-link, reflection names; src: Scripts/size_settings.py, Makefile, Scripts/ios/app-size.py, Scripts/agents/tests/test_size_settings.py, TextMouthProductionTests/ReflectionNamesTests.swift, research/SWIFT-SIZE-FLAGS-2026-11-23.md -->
+
+`Scripts/size_settings.py` holds the compiler and linker settings that make a Release build smaller, defined once.
+- **How a build takes them.**
+  - The Makefile's `SIZE_SETTINGS` runs the script for a Release build only, and `make build` gives its words to `xcodebuild` on the command line, as it does `SMALL_CODE`, so they reach every target and every Swift package, which project.yml cannot.
+  - `make check` and `make install` build through `make build`.
+  - `Scripts/ios/app-size.py build` takes the same list from `size_settings.settings()` for the iPhone app's device build, so `make ios-size` and `make check`'s iPhone step have them too.
+- **Debug does not take them.**
+  `make debug`, and the build the tests run on, keep Debug's own settings.
+- **What each saves,** as `research/SWIFT-SIZE-FLAGS-2026-11-23.md` measured them:
+  - `SWIFT_LTO=YES`: full link-time optimization of the Swift code, packages included, so the optimizer sees the whole program and drops what nothing reaches; the largest saving, for a longer link;
+  - `LLVM_LTO=YES`: the same for the C code (LAME, liblouis, the braille helper);
+  - `GCC_OPTIMIZATION_LEVEL=z`: `-Oz` for the C code, the smallest, a little slower;
+  - `-conditional-runtime-records`: leaves out a runtime record (a protocol conformance, a type) that nothing refers to;
+  - `-internalize-at-link`: makes public symbols internal at link time so the optimizer may drop them, which is safe because nothing links against the app's public symbols.
+  The two flags are one `OTHER_SWIFT_FLAGS` setting, each passed as `-Xfrontend FLAG`; the study measured them as a pair.
+- **Reflection names stay.**
+  The script sets no `SWIFT_REFLECTION_METADATA_LEVEL`, since `without-names` would make `"\(error)"` and `String(describing:)` show only a type's name, and debug-log lines and problem reports print errors and cases that way.
+  The three places that store or log a case's name write it out anyway (`PhoneImportQuestion.Choice.id`, `AudioEditError.caseName`, `RecordingCaptureError`'s description), and `ReflectionNamesTests` pins them.
+  The level `none` is rejected in the study: SwiftUI finds a view's dynamic properties through reflection.
+- **Turn one off.**
+  - For one build, give the Makefile an empty list: `make build SIZE_SETTINGS=`.
+  - For good, delete its entry from `SETTINGS` or `FRONTEND_FLAGS` in `Scripts/size_settings.py`, and both apps follow; `Scripts/agents/tests/test_size_settings.py` checks the list.
+  - `python3 -I -B Scripts/size_settings.py --list --without NAME[,NAME]` prints the list less settings (by name) or flags (by flag), as the golden tests' build asks it (see below).
+- **Measure.**
+  `make check` prints the Mac app's size and, in its iPhone step, the iPhone app's; `make ios-size` measures the iPhone app alone.
+
 ## The Release golden tests
 <!-- id: release-golden-tests; keys: release-goldens, Osize, optimizer miscompile, ENABLE_TESTABILITY, GOLDEN_ARGS, lsregister; src: Scripts/test/release-goldens.sh, Scripts/test/run-area.py, Scripts/agents/run_locked.py, Makefile, project.yml, TextMouthProductionTests/TextPipelineGoldenTests.swift, TextMouthProductionTests/DocumentGoldenTests.swift, TextMouthProductionTests/MarkupGuardTests.swift, TextMouthProductionTests/PortableXMLDifferentialTests.swift, TextMouthProductionTests/ParserContentFidelityTests.swift -->
 
@@ -181,9 +210,10 @@ The ordinary suite tests a Debug build, and the Release app is compiled with `-O
 Run it once before a release, and after any change to the build settings in project.yml or the Makefile's build rule.
 
 - **What it runs.**
-  Five classes, through `Scripts/test/run-area.py`: `TextPipelineGoldenTests`, `DocumentGoldenTests` (the 57 files of `TestData/golden`), `MarkupGuardTests`, `PortableXMLDifferentialTests`, and `ParserContentFidelityTests`.
+  Six classes, through `Scripts/test/run-area.py`: `TextPipelineGoldenTests`, `DocumentGoldenTests` (the 57 files of `TestData/golden`), `MarkupGuardTests`, `PortableXMLDifferentialTests`, `ParserContentFidelityTests`, and `ReflectionNamesTests`.
 - **What it builds.**
-  The shipped configuration, Release with `-Osize` for the app and the packages, with only what a test host needs changed:
+  The shipped configuration, Release with `-Osize` for the app and the packages and the size settings above, with only what a test host needs changed:
+  - the size settings but `-internalize-at-link`, which the test bundle cannot link against, since it links against the app's symbols (nothing tests that flag but the app itself);
   - `ENABLE_TESTABILITY=YES`;
   - `LD_EXPORT_SYMBOLS=YES` (the shipped app has no export trie, and the test bundle links against the app's exports);
   - and `DEAD_CODE_STRIPPING=NO`, `DEPLOYMENT_POSTPROCESSING=NO`, and `STRIP_INSTALLED_PRODUCT=NO` (so the symbols the tests call stay).
