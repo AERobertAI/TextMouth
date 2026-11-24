@@ -183,6 +183,28 @@ final class BrailleTablePrintOnlyTests: XCTestCase {
         }
     }
 
+    /// The numbers of tables each list offers on this platform, written to the test log for the report (it asserts only that the
+    /// lists are not empty): the tables for reading, for export, the print-only ones among the export tables, and the app's pack.
+    func testTheNumbersOfTablesOffered() {
+        let platform: String
+        #if os(iOS)
+        platform = "iPhone"
+        #else
+        platform = "Mac"
+        #endif
+        let reading = BrailleTableCatalog.offeredTables
+        let export = BrailleTableCatalog.exportTables
+        let readingLanguages = BrailleTableCatalog.languages(of: BrailleTableCatalog.offeredCodes).count
+        let exportLanguages = BrailleTableCatalog.languages(of: BrailleTableCatalog.exportCodes).count
+        print(
+            "BRAILLE_COUNTS \(platform): reading \(reading.count) tables in \(readingLanguages) languages; "
+                + "export \(export.count) tables in \(exportLanguages) languages, \(export.filter(\.isPrintOnly).count) of them print-only; "
+                + "the pack's \(BrailleTableCatalog.bundledAll.count) tables, \(BrailleTableCatalog.bundled.count) for reading"
+        )
+        XCTAssertFalse(reading.isEmpty)
+        XCTAssertGreaterThanOrEqual(export.count, reading.count)
+    }
+
     /// A book or a setting that already names a print-only table keeps working: the table is found, its value is stored as
     /// it is, a translation with it goes on, and a read of a book with it is never refused as an unknown table.
     func testATableAlreadyInUseKeepsWorking() throws {
