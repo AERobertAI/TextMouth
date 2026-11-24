@@ -61,7 +61,7 @@ Your question:
 ## Foundation Models
 
 - The on-device model on 26 is text only: its documentation calls it "the on-device text foundation model", and the 26.0 SDK on this Mac has no image attachment type ([SystemLanguageModel](https://developer.apple.com/documentation/foundationmodels/systemlanguagemodel)).
-- On 27, `Attachment` carries a `CGImage`, a `CIImage`, a pixel buffer, or an image file; `Attachment` and `ImageAttachmentContent` both say macOS and iOS 27.0.
+- On 27, `Attachment` carries a `CGImage` or an image file's URL, the two kinds of image its page names (checked against Apple's page on November 24); `Attachment` and `ImageAttachmentContent` both say macOS and iOS 27.0.
   Source: [Analyzing images with multimodal prompting](https://developer.apple.com/documentation/foundationmodels/analyzing-images-with-multimodal-prompting).
 - That page lists "Generating accessibility descriptions for images that you share on the web" as a use, and WWDC26 session 237 shows `Prompt { "Generate a caption for this image"; Attachment(image) }` ([session 237](https://developer.apple.com/videos/play/wwdc2026/237)).
 - The document says "All AFM models are capable of text and image understanding", and "Smaller AFM models run entirely on-device" ([Detecting available models](https://developer.apple.com/documentation/foundationmodels/detecting-available-apple-foundation-models)).
