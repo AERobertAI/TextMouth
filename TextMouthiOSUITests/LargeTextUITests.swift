@@ -53,10 +53,10 @@ final class LargeTextUITests: TextMouthUITestCase {
         try audit(app, screen: "Settings at the largest text, scrolled", types: Self.sizeFindings, accepting: [.navigationTitle("Settings"), .scrolledPastTheEdge, .unnamedUnsupported, .unnamedPartlyUnsupported])
     }
 
-    /// The sleep timer switch's label, in Settings at the largest text, is at least as tall as its words need at the frame's
+    /// The sleep timer switch's label, in Settings at the largest text, is taller than its words need at the frame's
     /// width (the audit named it as clipped in trains 1123-0905, 1124-0007, and 1124-0044 with a frame that passed in others).
     /// The words are measured in the body font at the largest size, wrapped at the frame's width: the frame must hold them
-    /// all, to within a point.
+    /// all with a point to spare.
     func testTheSleepTimerSwitchLabelIsNeverShorterThanItsWords() throws {
         let app = try launch(sendingTheBook: false, textSize: Self.largestText)
         tap(app.buttons["Settings"], until: app.navigationBars["Settings"], in: app, what: "Settings")
@@ -78,7 +78,9 @@ final class LargeTextUITests: TextMouthUITestCase {
             context: nil
         ).height
         print("SLEEP-LABEL frame \(frame), needs \(needed) points at that width")
-        XCTAssertGreaterThanOrEqual(frame.height + 1, needed, "The label's frame \(frame) is shorter than its words need, \(needed)")
+        // A whole point to spare: before the fix the frame was 249.33 for words measuring 249.25, a fit so exact that the audit
+        // read it as clipped in some runs.
+        XCTAssertGreaterThanOrEqual(frame.height, needed + 1, "The label's frame \(frame) leaves less than a point over its words, \(needed)")
     }
 
     /// The Add to Library sheet, at the largest size.
