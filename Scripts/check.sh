@@ -851,6 +851,9 @@ main() {
   # gate must never ask for the keychain: it once kept a password dialog on the
   # user's screen for hours, and then failed.
   run_step build yes make build SIGN_APP=: || step_failed build $?
+  # The sizes below are the profile's: a Mac's development build is light (no
+  # link-time optimization), so it is larger than the app make install ships.
+  detail "the size settings' profile: $(python3 -I -B Scripts/size_settings.py --which) (full on GitHub Actions and for make install and make release; light for a Mac's other builds)"
   require_no_swift_warnings "$RELEASE_BUILD_LOG"
   require_app_within_size_limit
   require_app_free_of_mac_paths

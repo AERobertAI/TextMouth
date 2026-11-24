@@ -21,6 +21,7 @@ Marks used below: **(probed)** means a program made on this Mac for this report 
   Apple Archive with scrypt is the Apple-maintained choice, CryptoKit AES-GCM with PBKDF2 the one TextMouth controls.
 - **Phases:** PDF and the prompt first, then ZIP, then Office Open XML and OpenDocument, then Word 97-2003, then sealed storage and protecting any book, then 7z, then RAR only if the user accepts its licence.
 - Eight questions for the user are at the end, each with the answer I recommend.
+- A follow-up of the same day, before the sources, prices writing 7z and RAR decrypting ourselves against a library, records two decisions, and lists every background job to skip; it changes the 7z and RAR advice above.
 
 ## What TextMouth does today
 <!-- Where the code already looks for passwords. -->
@@ -578,6 +579,236 @@ The iPhone half is the same code in `TextMouth/` (shared by both targets) plus t
 8. **Do you want protected audiobooks in the first release?**
    Recommend: no.
    Every audio format would need a decrypted working copy while it plays, which is the extra copy you do not want; leave "Protect with Password…" off audio for now and say so in its hint.
+
+## Follow-up, November 24
+<!-- The user's question about writing 7z and RAR decrypters, and two decisions. Where this section differs from sections 9 and 10, this section holds. -->
+
+This section answers one question and records two decisions the user made after reading the report.
+It changes the 7z and RAR recommendations above (section 9's last line, section 10's phase 5, and question 6), and nothing else.
+Marks are as before: **(probed)**, **(read)**, **(recalled)**, **(not checked)**; **(estimate)** marks a number I computed from a stated basis and did not build, since nothing downloaded may be built.
+
+### 1. What it costs to write our own 7z and RAR decrypters
+
+The user's question: how much size would it cost to build our own 7z and RAR decrypting algorithms, instead of including a whole library or having none.
+
+#### What the decryption alone costs
+
+- **7z:** a SHA-256 key loop over the salt, the password in UTF-16LE, and a round counter, then AES-256-CBC; about 120 lines with CommonCrypto (recalled; the exact loop needs a real file to prove it).
+- **RAR 5:** PBKDF2-HMAC-SHA256 at two to the power of the stored count, then AES-256-CBC, plus 16 and 32 more rounds for a hash key and a password check; about 120 lines.
+- **RAR 3 and 4:** a SHA-1 loop of 262,144 steps over password, salt, and a counter, then AES-128-CBC; about 100 lines (recalled).
+- **Size basis:** compiled Swift at 30 to 60 bytes a line (estimate; the repo's own TTA reader is 326 lines and 20,309 B as a whole tool, `research/AUDIO-DECODERS-RESEARCH-2026-11-15.md`), so each of these is 4 to 7 KB.
+- **The RAR gap:** the RAR 5 technote says of the key, the hash key, and the password check value only "Further details can be found in UnRAR source code", and says nothing of RAR 3 and 4's encryption (read).
+  The derivation is in the UnRAR source (`crypt3.cpp` 2.2 KB, `crypt5.cpp` 8.2 KB, `rijndael.cpp` 18.6 KB, from the listing) and in third-party reimplementations.
+  Whether the user is content that I read UnRAR's crypto files to write our own is a licence question (question 9); the 7z algorithm is in 7-Zip's own source, which is LGPL (recalled).
+
+#### What Apple's Compression framework decodes (probed)
+
+A Swift program called `compression_decode_buffer` with `COMPRESSION_LZMA` on files made by Apple's `tar`.
+
+| Input | Result |
+| --- | --- |
+| A full .xz file (LZMA2 inside, CRC64 check) | decoded, all 227,840 bytes |
+| The same LZMA2 stream, taken out and wrapped again in a minimal .xz with no check, as a 7z reader would wrap a folder's stream | decoded, the same bytes |
+| A raw .lzma file (LZMA1, "alone" format) | failed, 0 bytes |
+| Apple's own encoder | writes an .xz container (starts FD 37 7A 58 5A) |
+
+- So the user is right that the framework expects the xz container, and the container is cheap to supply: the wrapper is a stream header, a 12-byte block header naming LZMA2 and its dictionary byte, the 7z folder's LZMA2 bytes unchanged, an index, and a footer,
+  each with a CRC32 (the probe's script does it in about 40 lines of Python, so about 100 of Swift).
+- **LZMA2 is covered, LZMA1 is not.**
+  Current 7-Zip writes LZMA2 by default (recalled), and archives made by 7-Zip before about version 9.20 or by older p7zip use LZMA1.
+- **Not covered by Apple:** 7z's BCJ filters (the xz format has them, but I did not test whether Apple's decoder takes a filter chain), BCJ2, Delta, PPMd, and everything RAR.
+  Deflate is covered by `COMPRESSION_ZLIB` (raw deflate, recalled), and BZip2 by the system libbz2 that `Vendor/CBZip2` already links.
+- Memory: the call needs the output size, which 7z records for each file; a stream API also exists (not tried).
+
+#### 7z
+
+What TextMouth must write itself, and what it costs.
+Lines are my estimates; source bytes are from the file sizes listed by GitHub for the LZMA SDK (`ip7z/7zip`, directory `C`, read).
+
+| Part | Lines of Swift (estimate) | Compiled at 30 to 60 B a line (estimate) | Basis |
+| --- | --- | --- | --- |
+| Container reader: signature header, headers, folders, coders, substreams, names, encoded header | 600 | 18 to 36 KB | `7zArcIn.c` is 42,724 B and `7zDec.c` 17,521 B, which also handle many options a reader of books skips |
+| Copy, Deflate, BZip2, and LZMA2 through Apple's decoder with the xz wrapper | 180 | 5 to 11 KB, and Apple's decoder is in the OS | probed |
+| 7zAES, with password prompting | 120 | 4 to 7 KB | above |
+| **A 7z reader that opens most 7z files** | **about 900** | **27 to 54 KB** | |
+| LZMA1 decoder | 600 | 18 to 36 KB | `LzmaDec.c` 38,207 B; `Lzma2Dec.c` 12,879 B is not needed with Apple's decoder |
+| PPMd7 (also needed for RAR 3) | 750 | 22 to 45 KB | `Ppmd7.c` 28,909 B, `Ppmd7Dec.c` 7,206 B |
+| BCJ x86, ARM, ARM64, PowerPC, SPARC, IA64, and Delta | 250 | 8 to 15 KB | `Bra.c` 18,379 B, `Bra86.c` 4,885 B, `Delta.c` 2,884 B |
+| BCJ2 (four streams) | 250 | 8 to 15 KB | `Bcj2.c` 8,074 B |
+| **Everything, as the SDK decodes** | **about 2,500** | **75 to 150 KB** | |
+
+- **The library route:** the LZMA SDK's C decoder (public domain, stated in each file: "Igor Pavlov : Public domain").
+  The files a book reader needs are `7zArcIn.c`, `7zDec.c`, `7zStream.c`, `7zBuf.c`, `7zAlloc.c`, `LzmaDec.c`, `Lzma2Dec.c`, `Bra.c`, `Bra86.c`, `BraIA64.c`, `Delta.c`, `Bcj2.c`, `7zCrc.c`, `7zCrcOpt.c`, `CpuArch.c`, and `Alloc.c`: **211,799 bytes of source** (read), 247,914 with PPMd.
+  Compiled at 25 to 40 percent of source, about **55 to 85 KB**, or 60 to 100 KB with PPMd (estimate; the ratio is a rule of thumb).
+- **It does not decrypt, and PPMd is off as shipped:** `7zDec.c` knows Copy, LZMA, LZMA2, BCJ2, the branch filters, and Delta, rejects any other coder with `SZ_ERROR_UNSUPPORTED`, and has PPMd behind a commented-out `Z7_PPMD_SUPPORT` (read).
+  An AES coder in front of LZMA needs a patch of about 150 lines of C (or a pass in Swift that decrypts the packed streams first, which needs the header, which may itself be encrypted).
+- **Size verdict:** the library route is about the same size as writing everything ourselves, and 30 to 60 KB larger than the 900-line reader that leans on Apple.
+  Nothing here is large: 7z costs tens of KB either way.
+- **Recommendation for 7z: write it ourselves, in the 900-line form,** and not vendor the SDK.
+  Reasons: it adds no C to either app; Swift cannot corrupt memory on a hostile archive, which the project's "no test may trap" rule cares about; Apple's decoder is already on both platforms;
+  and the container reader, the xz wrapper, and the AES layer are the same code the SDK route would still need (the SDK has no AES and no password prompt).
+  An archive that needs LZMA1, PPMd, BCJ2, or a branch filter is refused with the sentence "This 7z file uses a method TextMouth can't read", until a real file asks for more.
+  The SDK stays the fallback if porting LZMA1 proves slower than expected.
+
+#### RAR
+
+RAR has no part in Apple's frameworks, and its compression is the bulk.
+What TextMouth would have to write for each generation:
+
+| Part | Lines of Swift (estimate) | Compiled (estimate) | Basis |
+| --- | --- | --- | --- |
+| RAR 5 headers, extra records, solid and multi-part handling, crypto, extraction | 450 | 14 to 27 KB | the technote (read) |
+| RAR 5 decompression: four Huffman tables, LZ with its large window, filters (delta, E8, E8E9, ARM) | 1,000 | 30 to 60 KB | `archive_read_support_format_rar5.c` is 129,571 B in total |
+| RAR 3 and 4 headers and crypto | 450 | 14 to 27 KB | recalled |
+| RAR 3 and 4 LZ decoder | 500 | 15 to 30 KB | recalled |
+| PPMd variant H with RAR's range coder (shared with 7z's PPMd) | 750 | 22 to 45 KB | `archive_ppmd7.c` 28,339 B |
+| RAR 3's filters: unrar's standard filters, or its small virtual machine | 450 | 14 to 27 KB | unrar's `rarvm.cpp` is 9,735 B (listing) |
+| **RAR 5 only** | **about 1,500** | **45 to 90 KB** | |
+| **RAR 3, 4, and 5** | **about 3,600** | **110 to 215 KB** | |
+| RAR 1.5 and 2.x (`unpack15.cpp` 11,105 B and a 2.0 one) | +700 | +21 to 42 KB | rarely met; skip |
+
+- **Which generations matter:** RAR 5 has been WinRAR's default since 2013, but the comic archives people hold are mostly older RAR 3 and 4 files, so RAR 5 alone would refuse many .cbr files.
+- **The unrar route:** it decrypts and decompresses every generation.
+  The listing shows 74 .cpp files of 653,742 B and 63 headers (770 KB of source, truncated, so more); a library-only subset would be a few hundred KB of source and I **estimate 200 to 350 KB compiled (not checked)**.
+  Its licence forbids using it to re-create the RAR compression algorithm; the Fedora project calls it non-free and GPL-incompatible (read in search results), and it is not on the brief's acceptable list.
+  Chromium ships it in `third_party`, so shipping is possible in an app, and the user must rule on it.
+
+#### Could libarchive's RAR readers (BSD-2) do the decompression behind TextMouth's own decryption?
+
+- **Licence (read):** both `archive_read_support_format_rar.c` and `archive_read_support_format_rar5.c` carry a two-clause BSD header, "Copyright (c) 2003-2007 Tim Kientzle" and "Copyright (c) 2011 Andres Mejia", and "Copyright (c) 2018 Grzegorz Antoniak".
+  I found no mention of unrar in the 93 percent of each file the fetch returned, and rar5.c names no other implementation as its basis.
+  I did not audit where the code came from, so I cannot say that the UnRAR licence never touches it; libarchive's own licence is the new BSD licence and the project distributes both files so.
+  The UnRAR licence limits what UnRAR's source may be used for; it does not bind a reader written separately, but the first claim is unchecked.
+- **What the readers do and do not do:**
+  - **RAR 5:** LZ with delta, E8/E8E9, and ARM filters; solid and multi-volume; "Encryption is not supported" for an encrypted-headers block, and encrypted file records are skipped (read).
+  - **RAR 3 and 4:** methods 0x30 to 0x35, LZSS, PPMd variant H, and a virtual machine for filters; "RAR encryption support unavailable"; a PPMd stream with a filter instruction fails with "Parsing filters is unsupported" (read, first 93 percent).
+  - **RAR 1.5 and 2.x:** I saw no code for them; they are not supported (not fully checked).
+- **Files and size (master branch, GitHub listing, read):** `rar.c` 111,394 B, `rar5.c` 129,571 B, `archive_ppmd7.c` 28,339 B and its two headers 6,571 B, `archive_blake2s_ref.c` and `archive_blake2sp_ref.c` 19,079 B.
+  The readers need libarchive's core: `archive_read.c` 51,659 B, `archive_entry.c` 59,151 B, `archive_string.c` 113,873 B, `archive_util.c` 14,873 B, `archive_virtual.c`, `archive_read_open_memory.c`, `archive_check_magic.c`, `archive_read_support_format_empty.c`, `archive_string_sprintf.c`,
+  and the files the listing did not show for the entry's ACL and extended attributes.
+  **About 620 KB of source in all** (557,632 B counted, plus about 60 KB I estimate for the files not shown), **about 150 to 250 KB compiled** (estimate, 25 to 40 percent), for both platforms.
+- **Does a decrypting layer in front work?** Yes in principle, and it is the same shape as the ZIP transcoder: libarchive refuses encrypted entries, so TextMouth would read the RAR's blocks itself and write a plain RAR for libarchive to read.
+  - **File data keeps its length** under AES-CBC (RAR 5's records are 16-byte aligned), so the packed bytes are replaced in place.
+  - **The headers must be rewritten:** clear the password flag (RAR 3's 0x04, and its 8-byte salt), remove the RAR 5 encryption extra record, and recompute each header's CRC (RAR 5's covers "from the Header size field up to and including the optional extra area", read).
+  - **A RAR 5 trap:** with the "tweaked checksums" flag (0x0002) the stored CRC32 and hashes are transformed with the key "so it cannot be used to guess file contents" (read), so after decryption they no longer match the data;
+    the transcoder drops the hash fields and the CRC flag, and libarchive then verifies nothing for that file.
+  - **Encrypted headers** (WinRAR's "encrypt file names", 7z has the same) are decrypted block by block, each with its own 16-byte IV (read), and written out plain.
+  - About 500 lines of Swift (estimate: RAR 5 about 300, RAR 3 and 4 about 200), 15 to 30 KB.
+- **The system libarchive** (probed in both SDKs' `libarchive.tbd`, which lists the RAR, RAR 5, and 7zip readers): adds 0 bytes, but it has no public header and no documentation for apps, its version differs by OS, and Apple may change it.
+  I would not depend on it.
+
+#### The routes side by side
+
+| Route | New Swift | C added | Compiled added to each app (estimate) | Licence | Covers |
+| --- | --- | --- | --- | --- | --- |
+| 7z: own reader, Apple's LZMA2 | about 900 lines | none | 27 to 54 KB | none to ask | most 7z files; LZMA1, PPMd, BCJ2 refused |
+| 7z: own, everything | about 2,500 lines | none | 75 to 150 KB | none | all methods |
+| 7z: LZMA SDK + AES patch | about 300 lines and a C patch | 212 KB source | 55 to 85 KB, plus about 10 KB of glue | public domain | all but BCJ2 as configured |
+| RAR: own, RAR 5 only | about 1,500 lines | none | 45 to 90 KB | crypto source question | RAR 5 |
+| RAR: own, RAR 3, 4, and 5 | about 3,600 lines | none | 110 to 215 KB | crypto source question | RAR 3, 4, 5 |
+| RAR: libarchive subset + our transcoder | about 500 lines | about 620 KB source | 165 to 280 KB | BSD-2; crypto source question; provenance unchecked | RAR 3, 4, 5 minus PPMd with filters |
+| RAR: unrar | about 300 lines of glue | a few hundred KB source | 200 to 350 KB | UnRAR licence, needs a ruling | every generation, with decryption |
+| None | 0 | 0 | 0 | none | the current refusal sentence |
+
+- **Recommendation for RAR: vendor the libarchive subset behind our own RAR transcoder,** and write neither the RAR decompression nor the unrar route.
+  Writing 3,600 lines of LZ, PPMd, and filter code is the largest single piece of work in this report for a format whose use here is mostly old comic archives, and a bug there would be a bug in untrusted-input parsing;
+  libarchive's readers are used in many products, which is evidence of testing, not a proof of it.
+  If the user wants no C added at all, own RAR 5 only is the smaller step (1,500 lines), with RAR 3 and 4 refused.
+- **Both depend on question 9,** because the RAR password key schedule is documented only in UnRAR's source.
+  Without it TextMouth could open RAR files that have no password and refuse the rest.
+
+#### The effort in phases
+
+These replace section 10's phase 5.
+Sizes follow `research/AUDIO-DECODERS-RESEARCH-2026-11-15.md` (S small, M medium, L large); each phase merges alone.
+
+- **Phase 5a, 7z reader (M):** container, Copy, Deflate, BZip2, LZMA2 through Apple's decoder, the xz wrapper, 7zAES, CB7 import, the refusal sentences, an iPhone half that is the same code.
+  Tests: a test-only 7z writer (Copy and LZMA2 in an xz-wrapped stream, optionally AES) since no program macOS ships makes 7z; a real 7-Zip file from outside to prove the key loop; a truncated file; a wrong password; header encryption.
+- **Phase 5b, the rest of 7z (M, only if real files need it):** LZMA1, Delta, branch filters; PPMd7 waits for 5d.
+- **Phase 5c, RAR without passwords (M):** vendor the libarchive subset as a target for both apps (as `liblouis` and `liblouis_iOS` are), the CBR and .rar import, the licence notices, a build with `make check`'s size measurement.
+  Tests: a stored (method 0x30) RAR 5 file and a RAR 3 file made by a test-only writer; real files from outside; a corrupt file; a file whose first block is oversized.
+- **Phase 5d, RAR passwords (M):** the transcoder for RAR 3, 4, and 5, with encrypted headers; PPMd7 in Swift only if libarchive's gap on PPMd with filters shows in real files.
+  Tests: a test-only writer of an encrypted stored RAR 5 file, and of one with encrypted headers; a wrong password caught by the check value; the tweaked-checksum case.
+- **If the user rules out unrar-derived knowledge (question 9):** phases 5c and 5d shrink to 5c, and a RAR with a password gets its own sentence, "TextMouth can't open a RAR file that has a password."
+
+### 2. The decision: removing the password completely
+
+The user decided that a book, once unlocked, can have its password removed entirely, after which TextMouth treats it as any other book.
+That is the permanent mode of section 5 (the checkbox "Keep this book unlocked", and the command Remove Password…); this records what "any other book" requires.
+
+- **The package's own file** is replaced by its unprotected form through a temporary file and `SavedFile.renameReplacing`, as section 5 says; the user's own original is never touched.
+- **The protection record goes:** the `protection` entry leaves `bookInfo.json` and the library row, so the next save writes exactly what an import of the unprotected file writes.
+- **Sealed notes are unsealed, not dropped.**
+  The sealed text anchors, bookmark notes, and skipped-heading labels (phase 4) are decrypted with the key just used and written back as ordinary fields, so a bookmark's note survives;
+  a test imports a protected fixture, adds a bookmark with a note, removes the password, and compares the record with one that never had a password.
+- **The sealed text copy** (`content.md.sealed`) becomes `content.md` by decrypting, or by reading the new file again, whichever is shorter; either way no sealed file remains.
+- **The Keychain item is deleted** (`SecItemDelete` for the book's account), so no stale password stays.
+  The deletion is best effort and its failure is not an error for the book.
+- **No trace of the lock remains in the library:** the row no longer shows "locked", the maintenance jobs read the book again, Edit Text, Search Library, and Export work as for any book, and the book can be protected again later with Protect with Password….
+- **A book that never had a password** is unaffected, and a book imported with a password and kept protected (the checkbox off) stays protected.
+- **The decision's cost:** none beyond section 5; it settles question 1 as "off by default, one command to remove" and removes the need for a "keep both" mode.
+
+### 3. The decision: every background job skips a locked book
+
+Until a protected book is opened and unlocked, every background job leaves it alone: no read of its file, no prompt, no error line, and no retry at each launch.
+The jobs, and where each lives (found with the doc-library skill and the code):
+
+- **The launch sequence that runs the others**
+  - Where: `LibraryViewModel.updateContentCachesAndStatistics` (`TextMouth/ViewModels/LibraryViewModel+Migration.swift`, line 613; `docs/architecture/launch.md`, "Background book maintenance").
+  - Change: nothing in the chain; each step below filters its own list.
+- **Launch re-read for pages (page reader bumps)**
+  - Where: `rebuildTextCaches` (line 886) with `pageUpgradeCheck(of:access:)` (line 1250), reached from the startup batch below; `PageReaderVersions.current(for:)` (`TextMouth/Models/PageReaderVersions.swift`); `docs/user/book-packages.md`, "How the launch that adds pages treats your text".
+  - Change: the batch's list leaves out locked books.
+- **Text cache rebuilds and missing caches**
+  - Where: `extractMissingContentCaches` (line 691), choosing books with `booksNeedingCacheUpdate` (line 735), run by `TextCacheUpdateQueue`; `docs/architecture/state/text-caches.md`.
+  - Change: add `!book.isLocked` to the filter in `booksNeedingCacheUpdate`.
+- **Redo Text Extraction for every book**
+  - Where: `redoAllTextExtraction` (line 816) and its `ReturningOutcome` form (line 836), called by `StorageSettingsView.redoTextExtraction()` (line 1149 of `TextMouth/Views/Settings/StorageSettingsView.swift`); it filters `library.books` by `!isAudio` and a package.
+  - Change: add `!book.isLocked`; its status line says how many it left, as it says how many were in the cloud.
+- **Metadata refresh**
+  - Where: `refreshOutdatedMetadata` (`TextMouth/ViewModels/LibraryViewModel+MetadataRefresh.swift`, line 106) with `needsMetadataRefresh` (line 54).
+  - Change: `needsMetadataRefresh` returns false for a locked book.
+- **Text anchors for places saved before anchors**
+  - Where: `captureMissingTextAnchors` (`LibraryViewModel+TextAnchors.swift`, line 94), whose candidates are `library.books.filter { ... placesWithoutAnchors > 0 }`.
+  - Change: add `!book.isLocked`; a locked book's places keep their numbers.
+- **Statistics (word counts, fingerprints)**
+  - Where: `calculateMissingBookStats` (line 494) with `needsContentAnalysis` (line 654) and `needsTextCacheFingerprint` (line 671).
+  - Change: locked books are never "needing analysis"; their counts stay as the unlock last wrote them.
+- **Leftover place moves, outside manifest edits, Ogg conversion, hand-edited titles in manifests**
+  - Where: `finishLeftoverPlaceMoves` (`LibraryViewModel+PlaceSnapshots.swift`, line 76), `takeOutsideManifestEdits` and `keepHandEditedTitlesInManifestsOnce` (`LibraryViewModel+ManifestEdits.swift`, lines 145 and 86), `convertOggBooksOnce` (`LibraryViewModel+OggConversion.swift`, line 110).
+  - Change: the place moves read text, so they skip locked books; the other three act on audiobooks, which section 4 leaves unprotected in the first release.
+- **Search indexing**
+  - Where: `LibrarySearchModel.searchableBooks(in:)` (`TextMouth/ViewModels/LibrarySearchModel.swift`, line 661) feeding `LibrarySearchPreparer.prepare` (`TextMouth/Services/TextSearch/LibrarySearchPreparer.swift`, line 275); started from `LibraryViewModel.swift` near line 560;
+    `docs/architecture/launch.md`, "Search Library preparation".
+  - Change: `searchableBooks` leaves locked books out, so the preparer and the engine both skip them, and the result line says how many were not searched.
+- **Re-reading a text in another encoding**
+  - Where: `LibraryViewModel.readTextAgain` (`LibraryViewModel+TextEncoding.swift`, line 222), from Book Information.
+  - Change: the pop-up is off for a locked book.
+- **Orphan adoption and repairs**
+  - Where: `adoptOrphanedPackages` (`LibraryViewModel+Duplicates.swift`, line 913), `FileImportService.adoptOrphanedTMBPackages` (line 3886), `repairLibrary` (`LibraryViewModel+Migration.swift`, line 40).
+  - Change: these read records, not text; they must keep a locked book's `protection` entry when they rebuild a row from a record.
+
+- **Two layers, as the cloud has two:** the cloud rule is a filter where each list is built, and a per-book gate in `MaintenanceFileAccess` (`fileInCloud(of:reading:)` and `requireOnThisMac(_:reading:)`, `TextMouth/Services/MaintenanceFileAccess.swift`), with a counting tally, `CloudSkips`,
+  that writes one `MAINTENANCE_SKIPPED_IN_CLOUD` line.
+  A locked book gets the same: the filter keeps it out of every list, a `requireUnlocked` check beside `requireOnThisMac` refuses it if a job reaches it anyway, and a `LockedSkips` tally writes one `MAINTENANCE_SKIPPED_LOCKED` line with a count (a count, never a title).
+- **`MaintenancePass`** (`MaintenanceFileAccess.swift`, line 322) names five passes: text cache update, Redo Text Extraction, statistics, startup repair, and metadata refresh; the new tally attaches to each.
+- **A test over all of them:** a locked fixture book in a library, a `MaintenanceFileAccess` that counts every read and fails the test on one for that book, and each pass run in turn;
+  plus a source scan, like `LogContentPolicyTests`, that fails when a function that lists `library.books` for a pass lacks the guard.
+- **When the book is opened and unlocked,** the jobs may run on it as for any book, once: the unlock itself reads the book's text, so it writes the stamps (page reader version, metadata version, counts) that the passes would have written,
+  under the rules of the sealed copy (phase 4) when the book stays protected.
+  A temporary unlock writes no stamp, so the jobs never need the password.
+- **Not a skipped job:** moving finished books to their ends (`moveFinishedBooksToTheirEnds`, line 2262) and the library's saves read numbers only, and keep working on locked books.
+
+### Questions added by this follow-up
+
+9. **May the RAR and 7z password key schedules be written from UnRAR's and 7-Zip's source, read for facts and not copied?**
+   The RAR 5 technote says its key derivation is only in UnRAR's source, and RAR 3 and 4's is not documented there at all; 7z's is in 7-Zip's source, which is LGPL.
+   The UnRAR licence allows use "to handle RAR archives" and forbids re-creating RAR compression (read in search results); I am not a lawyer and did not read its full text this session.
+   Recommend: yes for 7z; for RAR, yes only if you accept the UnRAR licence's terms, and otherwise open RAR files without passwords and refuse the rest with their own sentence.
+10. **Which route for RAR: libarchive's BSD readers behind our transcoder (about 165 to 280 KB in each app), our own RAR 5 reader (45 to 90 KB, RAR 3 and 4 refused), or none?**
+    Recommend: the libarchive route; if you would rather add no C, our own RAR 5 first.
+11. **Which route for 7z: our own reader leaning on Apple's decoder (27 to 54 KB, LZMA1 and PPMd archives refused at first), or the LZMA SDK (55 to 85 KB)?**
+    Recommend: our own reader.
 
 ## Sources
 <!-- Primary where I found them; "search" means the link came from a search result and the page was not read whole. -->

@@ -180,7 +180,8 @@ The user's limits are the same for both apps: 30 MB, and 40 MB a strict one (see
   The device build is only run when asked, and took about 7 to 11 minutes of the iPhone job.
   A device build that fails or runs late says `Size: not measured` and changes nothing else: the Simulator build's verdict stands.
   It checks the toolchain stamp as the Simulator build does, and any failure but the time limit runs once more from an empty device folder, on a runner only, since emptying the module caches alone left the build database claiming modules that were gone.
-- The device build takes `-Osize` and the settings of `Scripts/size_settings.py`, as the Mac's Release build does (see [The Release size settings](building.md#the-release-size-settings)): `app-size.py` passes `size_settings.settings()` to `xcodebuild`.
+- The device build takes `-Osize` and the settings of `Scripts/size_settings.py`'s profile `auto` (see [The Release size settings](building-release.md#the-release-size-settings)): `app-size.py` passes `size_settings.settings()` to `xcodebuild`.
+  That is every setting on GitHub Actions, where the trains measure the iPhone app, and the light ones on a Mac.
   A Simulator build, and the tests, do not.
   `make ios-size` measures the result.
 - `make check` builds the iPhone app for a device too and holds it to 30 MB (a warning) and 40 MB (a failure), even under `--without-tests` (see [Building TextMouth](building.md)).
