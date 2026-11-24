@@ -53,6 +53,36 @@ final class LargeTextUITests: TextMouthUITestCase {
         try audit(app, screen: "Settings at the largest text, scrolled", types: Self.sizeFindings, accepting: [.navigationTitle("Settings"), .scrolledPastTheEdge, .unnamedUnsupported, .unnamedPartlyUnsupported])
     }
 
+    /// The sleep timer switch's label, in Settings at the largest text, is taller than its words need at the frame's
+    /// width (the audit named it as clipped in trains 1123-0905, 1124-0007, and 1124-0044 with a frame that passed in others).
+    /// The words are measured in the body font at the largest size, wrapped at the frame's width: the frame must hold them
+    /// all with a point to spare.
+    func testTheSleepTimerSwitchLabelIsNeverShorterThanItsWords() throws {
+        let app = try launch(sendingTheBook: false, textSize: Self.largestText)
+        tap(app.buttons["Settings"], until: app.navigationBars["Settings"], in: app, what: "Settings")
+        let label = app.staticTexts["Close sleep timer sheet after setting a timer"]
+        // The row waits among the later ones: swipe until it is made, at most ten times, the screen still after each.
+        for _ in 0..<10 where !label.exists {
+            app.swipeUp()
+            try waitUntilStill(app)
+        }
+        XCTAssertTrue(label.exists, "No sleep timer switch label in Settings:\n\(app.debugDescription)")
+        try waitUntilStill(app)
+        let frame = label.frame
+        let traits = UITraitCollection(preferredContentSizeCategory: .accessibilityExtraExtraExtraLarge)
+        let font = UIFont.preferredFont(forTextStyle: .body, compatibleWith: traits)
+        let needed = ("Close sleep timer sheet after setting a timer" as NSString).boundingRect(
+            with: CGSize(width: frame.width, height: .greatestFiniteMagnitude),
+            options: [.usesLineFragmentOrigin, .usesFontLeading],
+            attributes: [.font: font],
+            context: nil
+        ).height
+        print("SLEEP-LABEL frame \(frame), needs \(needed) points at that width")
+        // A whole point to spare: before the fix the frame was 249.33 for words measuring 249.25, a fit so exact that the audit
+        // read it as clipped in some runs.
+        XCTAssertGreaterThanOrEqual(frame.height, needed + 1, "The label's frame \(frame) leaves less than a point over its words, \(needed)")
+    }
+
     /// The Add to Library sheet, at the largest size.
     func testAddToLibraryHoldsAtTheLargestText() throws {
         let app = try launch(sendingTheBook: false, textSize: Self.largestText)

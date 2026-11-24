@@ -269,8 +269,16 @@ struct PhoneSettingsView: View {
     /// A switch, with its hint below it for the eye where the Mac shows one.
     private func switchRow(_ item: PhoneSettingsSwitch, isOn: Binding<Bool>, isEnabled: Bool = true) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Toggle(item.title, isOn: isOn)
-                .accessibilityLabel(item.label)
+            // The label takes the height its words need at any text size, and a little more. At the largest size the
+            // sleep timer label's frame was 249.33 points for words measuring 249.25: an exact fit, which the accessibility
+            // audit read as clipped in some runs (trains 1123-0905, 1124-0007, 1124-0044) and not in others. Each line's
+            // extra point of spacing leaves the frame a few points taller than the words, so no rounding can cut them.
+            Toggle(isOn: isOn) {
+                Text(item.title)
+                    .lineSpacing(1)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .accessibilityLabel(item.label)
                 .accessibilityHint(item.hint ?? "")
             if item.showsHintAsCaption, let hint = item.hint {
                 caption(hint)
@@ -286,6 +294,8 @@ struct PhoneSettingsView: View {
         Text(words)
             .font(.caption)
             .phoneSecondaryText()
+            // Wraps to as many lines as the words need at any text size, never cut.
+            .fixedSize(horizontal: false, vertical: true)
             .accessibilityHidden(true)
     }
 
