@@ -18,11 +18,14 @@
 #   -configuration Release       Release's optimization (-Osize in project.yml)
 #   SWIFT_OPTIMIZATION_LEVEL     -Osize for the Swift packages too, as the
 #                                Makefile's build rule gives it (SMALL_CODE)
-#   the size settings            full LTO for Swift and C, -Oz for C, and
-#                                -conditional-runtime-
-#                                records: Scripts/size_settings.py's list, the
-#                                Makefile's SIZE_SETTINGS, so the optimizer's
-#                                output is what is tested. One flag is LEFT OUT:
+#   the size settings            Scripts/size_settings.py's list for the
+#                                profile "auto", as the Makefile's builds take
+#                                it: on GitHub Actions every setting (full LTO
+#                                for Swift and C, -Oz for C, and
+#                                -conditional-runtime-records), so the
+#                                optimizer's output is what is tested; on a Mac
+#                                only -Oz for C, since full LTO's link takes
+#                                several GB of memory. One flag is LEFT OUT:
 #                                -internalize-at-link makes public symbols
 #                                internal at link time, and the test bundle links
 #                                against the app's symbols (BUNDLE_LOADER), so it
