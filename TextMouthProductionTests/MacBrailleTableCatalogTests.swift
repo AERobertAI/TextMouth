@@ -472,9 +472,11 @@ final class MacBrailleTableCatalogTests: XCTestCase {
         }
     }
 
-    /// This Mac's Italian, Latvian, and Georgian tables, which state no
-    /// contraction, are offered; its lt-6dot.tbl, which only includes
-    /// lt-6dot.utb, is not, and lt-6dot.utb is. Tables this Mac lacks are
+    /// This Mac's Italian and Georgian tables, which state no contraction,
+    /// are offered for reading; its lt-6dot.tbl, which only includes
+    /// lt-6dot.utb, is not, and lt-6dot.utb is. Its Latvian table, `lv.tbl`,
+    /// is judged by liblouis 3.39.0, where it writes braille only: offered
+    /// for export and not for reading (FR40). Tables this Mac lacks are
     /// passed over.
     func testThisMacOffersTablesWithNoContractionLine() throws {
         _ = try requireThisMacsTables()
@@ -482,8 +484,12 @@ final class MacBrailleTableCatalogTests: XCTestCase {
             FileManager.default.fileExists(atPath: BrailleTableCatalog.macTablesFolder.appendingPathComponent(name).path)
         }
         let offered = Set(BrailleTableCatalog.offeredTables.map(\.id))
-        for name in ["it.tbl", "lv.tbl", "ka.utb", "lt-6dot.utb"] where has(name) {
+        for name in ["it.tbl", "ka.utb", "lt-6dot.utb"] where has(name) {
             XCTAssertTrue(offered.contains("mac:\(name)"), name)
+        }
+        if has("lv.tbl") {
+            XCTAssertFalse(offered.contains("mac:lv.tbl"), "lv.tbl is print-only in 3.39.0 and is offered for reading")
+            XCTAssertTrue(BrailleTableCatalog.exportTables.contains { $0.id == "mac:lv.tbl" }, "lv.tbl is not offered for export")
         }
         if has("lt-6dot.tbl") {
             XCTAssertFalse(offered.contains("mac:lt-6dot.tbl"))
