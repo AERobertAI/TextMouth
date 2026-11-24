@@ -284,3 +284,146 @@ Found with the doc-library skill and the code; every row but the last two is pla
   Its text anchor, which lets a place survive a re-extraction (T06), is sealed; without it a place may drift after an update that changes the text reader, as it did before T06 (`research/TEXT-ANCHORS-RESEARCH-2026-10-10.md`).
 - **Bookmarks:** the number and offset stay plain, the note and the anchor are sealed.
   The Bookmarks list, which shows notes, works once the book is unlocked and says "Locked" before.
+
+## 5. The user's flows
+<!-- Question 5: opening, temporary, permanent, reversing, remembering, hashing, importing. -->
+
+A book is in one of three states: **unprotected**, **locked** (protected, not open), and **unlocked for now** (in memory while a reader window holds it).
+Only the first two are saved.
+Its record gets a `protection` entry with no secret in it: the kind (the file's own scheme, or TextMouth's sealed container), the scheme's name, and the sealed notes (section 4).
+
+### Opening a protected book
+
+- The library row says "locked", and VoiceOver reads it after the title and author.
+- Open, Return, or a double-click shows the unlock prompt (section 6).
+  Before it appears, TextMouth tries every password it remembers, newest first: books from one source often share a password, and PBKDF2 at 600,000 rounds costs 0.1 s (probed), so ten tries cost a second.
+- On success the reader opens; on Cancel nothing opens and nothing changes.
+
+### Temporary: the checkbox is off
+
+- The book is read from memory only: PDFKit's `PDFDocument`, or the plain ZIP bytes the decryptor made, which `BookParser` reads (it needs a `Data` entry point beside its URL one).
+  The document readers already refuse more than 64 MB (`DocumentByteLimit`), so memory is bounded.
+  A comic book or other large archive goes through a private temporary file instead (section 7).
+- The reader window holds a reference; the last window to close drops the document and the keys.
+  Nothing was written, so there is nothing to remove.
+- `BookContentAnalysisService.load` already parses the file straight when there is no cache (`BookParser.parse(url:...)`); the unlocked path is that path with decrypted bytes.
+- The cost is a parse at every open: a second or two for a text book, and minutes for a scanned PDF or a comic book that needs text recognition (`docs/user/formats-list.md`).
+  That is the case for the sealed text copy, below.
+
+### Permanent: the checkbox is on, "Keep this book unlocked"
+
+- The package's own file is replaced by an unprotected version of itself, so the library never holds both.
+  The new file is written under a temporary name in the same package folder, then put in place with `SavedFile.renameReplacing` (one step on one volume).
+  A crash before the rename leaves the protected file and a temporary file that the next launch removes, as `.import-` leftovers are.
+  The extra space is one copy, for as long as the rewrite lasts.
+- The user's own original, outside the library, is never touched.
+- Per format:
+  - **PDF:** copy the pages into a new `PDFDocument` and write it (probed: no /Encrypt, text intact), then carry over the outline, page labels, and information, which a page copy drops.
+    If that proves unreliable, write with empty passwords (probed: opens without a prompt, structure kept, but still marked encrypted).
+  - **ZIP and every ZIP inside:** the plain ZIP the decryptor writes (section 2).
+  - **Office Open XML:** the decrypted `EncryptedPackage` bytes are the .docx; save them under the same name.
+  - **OpenDocument:** the plain ZIP with the manifest's encryption data removed.
+  - **Word 97-2003:** RC4, CryptoAPI, and XOR keep a stream's length, so the decrypted streams can be written over the sectors they came from, with the FIB's encrypted bit and `lKey` cleared, and no compound-file writer.
+    That is my analysis and was not tested; the Table stream's leftover header needs checking.
+- After the rewrite the book is analyzed and cached like any imported book, and its protection entry is removed.
+
+### Reversing: putting a password back
+
+- **Protect with Password…**, in the Book menu, the library's context menu, and the iPhone's book actions, takes a new password, its confirmation, Show password, and Remember.
+  It says first, "TextMouth cannot recover a forgotten password."
+- It seals the book's file in TextMouth's container (or, for a PDF, with PDFKit's own scheme if the user chooses that) and its derived text, then removes the plain `content.md` and the other copies in section 4.
+- **Change Password…** re-wraps the data key (60 bytes); **Remove Password…** is the permanent unlock.
+- Every state change is one of these three commands, each asking for the current password unless the Keychain has it.
+
+### Remembering, and "just hashing the password"
+
+- **What a hash does:** it is a one-way fingerprint.
+  Given the password, you can compute it and compare, so a hash can check a typed password.
+  Given the hash, you cannot get the password back, and you cannot decrypt anything with it, unless the hash is itself the key.
+- **So a stored hash cannot remember anything for decryption.**
+  If the stored value is only a check, TextMouth still needs the typed password.
+  If it is the key, whoever reads `library.json` (a cloud folder, a backup, another app) opens the book, which is the same as no password.
+  A check value is also unneeded: the GCM tag of the wrapped data key, PDFKit's unlock result, and the formats' own checks already say right or wrong.
+- **What remembering needs:** the password, or a key made from it, in the Keychain, on this device only, one item per book.
+  The item's account is the book's content fingerprint (`Book.md5Hash`), so a duplicate import shares it.
+  Never in `config.json`, `library.json`, or a record.
+- **iCloud Keychain** (`kSecAttrSynchronizable`) would carry it to the user's other devices; section 7 says what that needs on the Mac.
+- **"I don't want an extra copy":** temporary mode keeps no copy, permanent mode replaces the file, and neither needs a hash.
+  The only extra copy a protected book can have is the **sealed text copy**, which exists so a scanned book opens in a second.
+  It is about the size of the book's text (0.67 MB for a typical book, from T06's measurement), encrypted, and the user can turn it off per book or for all.
+
+### Importing a protected book
+
+- Detection is cheap and never prompts by itself: a PDF's `isLocked`; a ZIP whose central directory has bit 0 or method 99 on any entry; a compound file with `EncryptionInfo`; the Word FIB bit; the OpenDocument manifest.
+- Title, author, and any cover may be unreadable: a PDF's information and XMP are encrypted when /EncryptMetadata is true.
+  TextMouth has no cover store (a search of `TextMouth/Services` finds none), so only title and author are affected.
+- **Recommendation: ask at import, and allow Import Locked.**
+  The prompt is the same as Open's, plus a third button, Import Locked.
+  That builds the package with the file as it is, the file's name as the title, and the author Unknown.
+  Once the book is first unlocked, the metadata refresh fills in the title and author, as it fills an Unknown author now.
+- **A ZIP of many books** (the Library Export case) must not stop at every locked one: finish the others, then ask once for the locked ones, as a list.
+  "Use one password for all of them" is on, and remembered passwords are tried first.
+  The duplicate question (`.awaitingDuplicateAnswer`) is the precedent for a question that waits for an answer.
+- Title and author are stored in the row in plain: they are not text of the book, and the library list needs them.
+  Hiding them is a different feature (question 6).
+
+## 6. The prompt: VoiceOver, braille, keyboard, iPhone
+<!-- Question 6: the controls, their order, the announcements. -->
+
+- **One shared SwiftUI view** (`UnlockBookSheet`) for both platforms: a sheet over the library or reader window on the Mac, a sheet on the iPhone.
+  The only platform code is the announcement call, which `VoiceOverAnnouncer` (`TextMouth/Services/VoiceOverAnnouncer.swift`) already hides.
+- **Order, each control with a short accessibility label and a hint:**
+  1. Heading: "Unlock “Title”", with the line "This book is protected by a password."
+  2. **Password**, a `SecureField`, first responder.
+  3. **Show password**, a checkbox; on, the field becomes a plain text field with the same text, so a person who cannot see the dots can read back what was typed.
+  4. **Remember this password**, hint "Keeps it in this Mac's Keychain, so TextMouth does not ask again for this book."
+  5. **Keep this book unlocked**, hint "Removes the password from the copy in your library. You can protect it again later."
+  6. **Unlock** (Return, the default), **Cancel** (Escape), and in an import also **Import Locked**.
+- **Wrong password:** the field keeps focus with its text selected, a visible line says "Wrong password. Try again.", the same sentence is an accessibility element in the sheet, and `VoiceOverAnnouncer` speaks it.
+  Nothing relies on color.
+- **Other failures have their own sentence:** "This book uses an encryption TextMouth can't open." for strong encryption or an outside key provider, and the existing copy-protection sentence for DRM.
+- **Braille:** labels are short ("Password", "Show password", "Remember", "Keep unlocked") so they fit a display's cells with their roles.
+  How a braille display shows a secure field's content with Show password off was not checked (not checked).
+  The toggle exists for that reason, and a hand check with the user's display belongs in the first phase's tests.
+- **Keyboard on the Mac:** Tab and Shift-Tab through the controls (each marked focusable), Space toggles a checkbox, Return unlocks, Escape cancels; VoiceOver speaks every value.
+- **iPhone:** the same sheet, `.textContentType(.password)`, hardware-keyboard Return to submit, and the announcement through `UIAccessibility.post(.announcement)` in `VoiceOverAnnouncer`'s iOS half.
+  Face ID before a remembered password is used is an option, as a Keychain access control (section 7).
+- **Words:** about 30 new interface lines (the sheet, the menu items, the locked state, the refusals), each short, translated into all 25 languages before its branch merges.
+
+## 7. Security
+<!-- Question 7: logs, temporary files, memory, the Keychain, iCloud Keychain. -->
+
+- **Passwords are never logged.**
+  A `Secret` type wraps every password and key, with a redacted `description` and `debugDescription`, so an accidental interpolation prints "redacted".
+  `LogContentPolicyTests` (`TextMouthProductionTests/LogContentPolicyTests.swift`) gets a rule against a log call that interpolates a `Secret` or a variable named `password` or `passphrase`.
+  A failed unlock logs the scheme, a count, and the book's id, never the title: the existing policy allows titles in event lines, so a protected book needs an exception.
+  Text never reaches a log, which the existing policy already says.
+- **Temporary files, where:** only in this Mac's own folder (the Working Copies pattern, `MachineLocalPaths`), never in the library.
+  Not in the Import Staging or Archive Extraction folder either, when it sits on the library's drive because that is not the startup disk.
+- **Temporary files, who can read them:** the folder is made with mode 0700 and each file with `O_CREAT | O_EXCL` and mode 0600.
+  `ArchiveExtraction.createFile` creates files with 0644 today (`TextMouth/Services/ArchiveExtraction.swift`), so protected imports need their own variant.
+  The unsandboxed Mac app's folder is readable by any process of the same user and by root, and FileVault protects it at rest.
+  On the iPhone the sandbox isolates it, and the folder gets `NSFileProtectionComplete` (recalled).
+- **A file with no name:** create it, open it, and `unlink` it at once, so it exists only while the handle is open.
+  This works where the reader can take a file handle or `Data`, and not for `AVPlayer`, which needs a URL.
+- **When temporary files go:** at window close, at quit, and in a sweep at launch (the leftover sweeps in `ArchiveExtractionDirectory` and `ReaderWorkingCopy` are the pattern), each by an exact path and never a glob.
+- **Clearing memory:** keep passwords and keys in `[UInt8]` and `SymmetricKey`, zero the arrays with `memset_s` (a plain loop may be optimized away), and release `PDFDocument` and the decrypted bytes at window close.
+  A `String` from a `SecureField` cannot be wiped; keep it for the length of the sheet only.
+  `SymmetricKey` zeroizes on deinit (recalled, not checked).
+  Neither platform can promise the heap is clean: macOS encrypts its swap by default (recalled), and iOS has none.
+- **The Keychain on the Mac:** a generic-password item in the login keychain, service "TextMouth Book Password".
+  A legacy keychain item is tied to the app's code signature.
+  Builds signed with the stable "TextMouth Developer" identity keep access, but **ad hoc builds (make check, the TestBuild trains) change signature and make macOS ask the user for the keychain password**, as the codesign dialog did on November 22.
+  So no test may call `SecItem*`: a `CredentialStore` protocol with an in-memory fake serves tests, and the real one is exercised by hand once.
+  I made no Keychain call in this research.
+- **The Keychain on the iPhone:** the app's own access group, `kSecAttrAccessibleWhenUnlockedThisDeviceOnly` by default, and optionally `SecAccessControl` with `.userPresence` so Face ID or the passcode guards each use.
+- **iCloud Keychain:** `kSecAttrSynchronizable` carries the item to the user's other devices.
+  The SDK's header says such items cannot use a `ThisDeviceOnly` class, and that on macOS they come with the data-protection keychain (read).
+  I believe that needs a provisioning profile with a keychain access group, which the self-signed Mac builds do not have (recalled, not tested).
+  **So v1 keeps a remembered password on this device only, on both platforms, and the synced choice waits for the paid-team signing the project plans.**
+  A synced password lives in Apple's store, not the library, so the cloud-folder rule still holds.
+- **Brute force:** a stolen library file can be attacked offline.
+  PBKDF2 at 600,000 rounds slows it, and a short password still falls.
+  The Protect sheet should say so once, and not enforce a length.
+- **Other leaks:** Now Playing and the lock screen show a book's title and chapter names while it plays.
+  A protected book could show "Protected book" there (question 6).
