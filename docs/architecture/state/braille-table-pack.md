@@ -108,24 +108,26 @@ liblouis and the Mac's helper read tables as files of one folder, each beside th
 - `BrailleTableUnpackerTests` count group decodes and file hashes through hooks and prove the rename with a hard link and inodes.
 
 ## The table catalog
-<!-- id: table-catalog; keys: liblouis tables, table list, VoiceOver tables, table metadata, language names, bundled resource; src: TextMouth/Models/BrailleTableCatalog.swift, TextMouth/Services/BrailleTranslator.swift, TextMouth/Platform/macOS/App/AppDelegate.swift, TextMouth/Models/LibraryInfoWording.swift, TextMouthProductionTests/MacBrailleTableCatalogTests.swift, TextMouthProductionTests/BrailleTableCatalogTests.swift -->
+<!-- id: table-catalog; keys: liblouis tables, table list, VoiceOver tables, table metadata, language names, bundled resource; src: TextMouth/Models/BrailleTableCatalog.swift, TextMouth/Packs/BrailleTablePack.swift, TextMouth/Services/BrailleTranslator.swift, TextMouth/Platform/macOS/App/AppDelegate.swift, TextMouth/Models/LibraryInfoWording.swift, TextMouthProductionTests/MacBrailleTableCatalogTests.swift, TextMouthProductionTests/BrailleTableCatalogTests.swift -->
 
 The catalog: BrailleTableCatalog reads the tables' own metadata, from two sources (BrailleTableSource).
-Adding a bundled table is adding a resource to its folder.
+Adding a bundled table is adding its file to Vendor/liblouis/tables, which the pack's builder reads.
 
 - The sources:
-  - the bundled tables folder (Contents/Resources/liblouis/tables, BrailleTranslator.Tool.helper.tablesFolder), and
+  - the app's own pack (BrailleTableCatalog.bundledAll, bundled), listed from the pack's index with nothing unpacked, and
   - this Mac's, VoiceOver's own liblouis folder (macTablesFolder, in /System/Library/ScreenReader/BrailleTables/LiblouisBrailleTranslator.brailletable), read in place and never copied, changed, or downloaded.
   BrailleTableCatalog.mac (macTables(in:propertyList:)) is nil without that folder, and then only the bundled tables are offered, with no error.
   It holds the folder's liblouis version, read from the property list beside it.
 - Offered: a file whose header fields ("#+" or "#-" lines, as liblouis reads them) give type literary, a display-name, a language (or the older locale), dots of 6 or no dots line, and a direction of both or none.
+  A direction of forward is a table that only writes braille (isPrintOnly), which is offered for export alone (see The catalog's lists, below).
   It has a contraction of no, partial, or full, or none, in which case its grade implies it (Contraction(grade:)) or it is unstated.
   A system is kept when it names one.
   BrailleTableCatalog.tables(in:source:) sorts them by language, system, contraction, and name, and leaves out a true twin, a table whose only rule is one include of an offered table in the same language.
   BrailleTableCatalog.merged(bundled:mac:) lists every bundled table, then every Mac table whose file name no bundled table has.
 - Reading: the headers of the Mac's tables (485 files on macOS 26.3) are read once, off the main thread.
   AppDelegate starts BrailleTableCatalog.loadInBackground() at launch, and mac, offeredCodes, and offeredTables are static lets made once.
-  BrailleTableCatalog.storableValue(_:) validates the setting and config.json without reading them (BrailleTableSource.isMacValue), because both are read on the main thread at every launch.
+  BrailleTableCatalog.storableValue(_:) validates the setting and config.json without reading them for a value the pack holds and for a "mac:" value (BrailleTableSource.isMacValue), because both are read on the main thread at every launch.
+  A bare value the pack lacks is judged by the Mac's tables, which the first such value reads (see Stored values on each platform, below).
 - Codes and languages: BrailleTableCatalog.codes(of:)
   - groups tables into BrailleCode values by language and codeName (ueb is "Unified English Braille", ebae "English Braille, American Edition", any other the display name without its contraction words),
   - lists a language by its region where two tables would be listed with the same words (languagesNeedingRegions), and
