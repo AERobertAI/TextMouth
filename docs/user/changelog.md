@@ -18,6 +18,7 @@ Every version of TextMouth, newest first, and what changed for you in each.
 ### A smaller app
 - The Mac app is 18.2 MB, down from 22.4 MB, and the iPhone app 14.0 MB, down from 17.3 MB.
 - The compiler now optimizes the whole app at once for size, and the file that holds TextMouth's 25 languages is compressed better.
+- `make install` builds this smallest app. Its last step takes several gigabytes of memory for a few minutes, so on a Mac with 8 GB, quit other heavy apps before installing.
 
 ## 0.5.10 (November 23, 2026)
 
