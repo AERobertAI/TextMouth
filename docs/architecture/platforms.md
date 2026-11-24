@@ -43,16 +43,18 @@ The iPhone interface of research/IOS-INTERFACE-SPEC-2026-11-07.md has run in the
 <!-- id: ios-info-plist; keys: Info.plist, UIBackgroundModes, scene manifest, LSItemContentTypes, check-ios-plist, sync-info-plist; src: project.yml, Makefile, Scripts/ios/sync-info-plist.py, TextMouth/Platform/iOS/Info.plist, TextMouth/Resources/Info.plist, TextMouthProductionTests/IOSInfoPlistTests.swift -->
 
 - The iOS app has one Info.plist, an Info.plist of its own, `TextMouth/Platform/iOS/Info.plist`, which project.yml names in `INFOPLIST_FILE` and Xcode merges into the plist it generates (`GENERATE_INFOPLIST_FILE`).
-  Until 0.4.1 the iOS configurations used the Mac's plist, by accident: XcodeGen sets `INFOPLIST_FILE` to the first `Info.plist` among a target's sources, even one the target excludes.
+  XcodeGen would set `INFOPLIST_FILE` to the first `Info.plist` among a target's sources, even one the target excludes, so project.yml names the iOS file itself.
   `Scripts/ios/sync-info-plist.py` writes the iOS file from the Mac's, `TextMouth/Resources/Info.plist`, so the two cannot drift apart by hand, and `make check-ios-plist` (`--check`) exits 1 when the iOS file is stale:
   - It leaves out the document types iOS cannot import, with the declaration of any type nothing else names:
     - "Ogg Audio" and "Audio Converted at Import" (the import converts that audio with `afconvert`, which iOS cannot start);
-    - and "ALAC Audio" (its one type, `com.apple.coreaudio-format`, is the system's type for `.caf` files too, which are converted the same way, so `.alac` is not offered on iOS either).
-    The BRF, BRL, and PEF braille types stay, since the iPhone reads them in the app (DR34).
+    - "ALAC Audio" (its one type, `com.apple.coreaudio-format`, is the system's type for `.caf` files too, which are converted the same way, so `.alac` is not offered on iOS either);
+    - and "NLS BARD Braille Package" (`.bopf`, FMT56), since the iPhone copies only the file it is handed, and a package file alone would arrive without its BRF volumes.
+      A BARD ZIP, or a folder chosen with Import Folder…, imports there.
+      `FileImportService.supportedTypes` names the type only under `#if os(macOS)`; `IOSInfoPlistTests` pins both.
+    The BRF, BRL, and PEF types stay, since the iPhone reads them in the app (DR34).
     "Audio and Video Converted with ffmpeg" stays, since the app converts it (FMT54), and so does "Lossless Audio Read by TextMouth".
-  - It leaves out the keys `LSMinimumSystemVersion` and `NSAppleEventsUsageDescription`, which are macOS's, and, until 0.4.2, added `.azw3` to the Kindle MOBI type and its declaration.
-    From 0.4.2 the Mac's own list names `.azw3` (FMT48), so that addition is gone: `ADDED_EXTENSION` was removed from Scripts/ios/sync-info-plist.py in 0.4.3, and the iOS plist's Kindle type is the Mac's, unchanged.
-    `make check-ios-plist` still exits 0, with the file as it was.
+  - It leaves out the keys `LSMinimumSystemVersion` and `NSAppleEventsUsageDescription`, which are macOS's.
+    The Mac's own list names `.azw3` (FMT48), so the iOS plist's Kindle type is the Mac's, unchanged.
   - It adds the two keys that only iOS has (`IOS_ONLY_KEYS` in the script):
     - `UIBackgroundModes` with the one mode `audio`, without which every book stops as the screen locks;
     - and `UIApplicationSceneManifest` with `UIApplicationSupportsMultipleScenes` false, so the app has one scene at a time, an iPad included, since one reading session cannot serve two windows.
@@ -69,7 +71,7 @@ The iPhone interface of research/IOS-INTERFACE-SPEC-2026-11-07.md has run in the
     It checks that the iOS list is the Mac's less the named exceptions, and compares the Kindle MOBI type with the Mac's whole, like every other type, with its explicit extension list.
     It also checks that the background modes are `audio` alone, that the app allows one scene, that file sharing is off, that no plist key is also a build setting, and that each configuration of the project uses its own app's plist.
   - Nothing has run on a device: whether `Info.plist` is the place iOS reads `.azw3` from is unchecked.
-    The simulator build merges the file into Xcode's generated plist and installs, and `make check-ios-plist` passes at 1fefa2cf.
+    The simulator build merges the file into Xcode's generated plist and installs.
 
 ### The files directly in Platform
 <!-- id: platform-shared-files; keys: PlatformTypes, PlatformWindow, PlatformFont, PlatformView, PlatformApplication, PlatformControlStyles; src: TextMouth/Platform/PlatformTypes.swift, TextMouth/Platform/PlatformApplication.swift, TextMouth/Platform/PlatformControlStyles.swift -->
