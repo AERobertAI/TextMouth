@@ -258,8 +258,8 @@ targetTemplates:
   # bundled before the pack; the iPhone's (profile iphone) holds every table whose license
   # TextMouth may ship (Vendor/liblouis/TABLES-LICENSES.md). Each target says its profile in
   # BRAILLE_TABLES_PROFILE. A postBuildScript, as PackInterfaceText is, with its inputs and
-  # its output declared so that Xcode runs it only when one of them changes, and its own
-  # stamp (in DERIVED_FILE_DIR) so that it does nothing when the content is the same. No raw
+  # its output declared and its own stamp (in DERIVED_FILE_DIR), which makes it do nothing
+  # when the content is the same. No raw
   # table is in either app: `make check` fails an app that holds a liblouis tables folder.
   PackBrailleTables:
     postBuildScripts:
@@ -273,7 +273,9 @@ targetTemplates:
           - $(SRCROOT)/Vendor/liblouis/tables
         outputFiles:
           - $(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/BrailleTables.pack
-        basedOnDependencyAnalysis: true
+        # Run on every build, as "Pack interface text" does: the script's own stamp (the hashes of its inputs and of the
+        # output) is what skips the work, since Xcode's analysis cannot see a changed file inside the tables folder.
+        basedOnDependencyAnalysis: false
     settings:
       base:
         ENABLE_USER_SCRIPT_SANDBOXING: NO

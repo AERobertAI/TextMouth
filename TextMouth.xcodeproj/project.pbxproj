@@ -8856,6 +8856,7 @@
 		};
 		D1DCA5A2F8A0BB6C76FA2DC7 /* Pack braille tables */ = {
 			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
 			files = (
 			);
@@ -8912,6 +8913,7 @@
 		};
 		D839CE08A13319C206E4B9EE /* Pack braille tables */ = {
 			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
 			files = (
 			);
