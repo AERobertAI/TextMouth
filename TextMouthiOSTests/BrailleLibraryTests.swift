@@ -64,7 +64,8 @@ final class BrailleLibraryTests: XCTestCase {
         maxOutput: Int = 0,
         stops: Bool = false
     ) throws -> Outcome {
-        let folder = try XCTUnwrap(tables ?? (try BrailleTranslator.Tool.helper.tablesFolder(BrailleTableCatalog.bundled.contains(where: { $0.id == table }) ? table : grade1))?.path, "the app has no tables folder")
+        // The folder given, else a new one the test makes with the table in it (any name that is no offered table gets the default's).
+        let folder = try tables ?? unpackedAppTables(for: BrailleTableCatalog.bundled.contains(where: { $0.id == table }) ? table : grade1).path
         let rawMode = mode.rawValue
         return try engine.run(limit: 60) { _ in
             folder.withCString { folder in
@@ -150,6 +151,46 @@ final class BrailleLibraryTests: XCTestCase {
             try BrailleTranslator.translate(["\u{2801}"], table: "mac:no-such-table.ctb", direction: .brailleToPrint, workingIn: work)
         ) {
             XCTAssertEqual($0 as? BrailleTranslator.Failure, .unknownTable("mac:no-such-table.ctb"))
+        }
+    }
+
+    /// A value moves between devices as it was stored (FR40): asked for a Mac's `mac:<file>`, the catalog answers a table that
+    /// keeps that value, so a copy or a re-read stores `mac:<file>` again, and the version recorded is the one this iPhone reads
+    /// the table with, TextMouth's own (3.39.0), for a Mac's value and for a bare value of another language, and none for a
+    /// table both apps carry.
+    func testAMacsValueKeepsItsValueAndRecordsTheVersionTheIPhoneReadsWith() throws {
+        let table = try XCTUnwrap(BrailleTableCatalog.table(withID: "mac:fr-bfu-g2.ctb"))
+        XCTAssertEqual(table.id, "mac:fr-bfu-g2.ctb", "the value asked for is the value kept")
+        XCTAssertEqual(table.displayName, BrailleTableCatalog.table(withID: "fr-bfu-g2.ctb")?.displayName)
+        XCTAssertEqual(BrailleTableCatalog.table(withID: "fr-bfu-g2.ctb")?.id, "fr-bfu-g2.ctb")
+        XCTAssertEqual(BrailleTableCatalog.versionToRecord(forTable: "mac:fr-bfu-g2.ctb"), BrailleTableCatalog.bundledLiblouisVersion)
+        XCTAssertEqual(BrailleTableCatalog.versionToRecord(forTable: "fr-bfu-g2.ctb"), BrailleTableCatalog.bundledLiblouisVersion)
+        XCTAssertNil(BrailleTableCatalog.versionToRecord(forTable: "en-ueb-g2.ctb"), "both apps carry it")
+        XCTAssertNil(BrailleTableCatalog.table(withID: "mac:no-such-table.ctb"))
+    }
+
+    /// A re-read of a book a Mac read with one of its own tables, under liblouis 3.34.0, keeps the book's text on the iPhone,
+    /// in the iPhone's words (never "This Mac's braille table"); the iPhone's own version, no version, and a table both apps
+    /// carry pass.
+    func testAMacsBookReadUnderAnotherLiblouisKeepsItsTextInThePhonesWords() throws {
+        XCTAssertThrowsError(try BrailleBookReader.requireUnchangedTable("mac:fr-bfu-g2.ctb", recordedVersion: "3.34.0")) { error in
+            let changed = BrailleTranslator.Failure.changedTable("mac:fr-bfu-g2.ctb", then: "3.34.0", now: BrailleTableCatalog.bundledLiblouisVersion)
+            XCTAssertEqual(error as? BrailleTranslator.Failure, changed)
+            XCTAssertEqual(
+                (error as? LocalizedError)?.errorDescription,
+                "The braille table \u{201C}mac:fr-bfu-g2.ctb\u{201D} on this iPhone is liblouis \(BrailleTableCatalog.bundledLiblouisVersion), "
+                    + "not liblouis 3.34.0 as when the book was read, so TextMouth keeps the book's text as it was."
+            )
+            XCTAssertFalse((error as? LocalizedError)?.errorDescription?.contains("This Mac") ?? true)
+        }
+        XCTAssertThrowsError(try BrailleBookReader.requireUnchangedTable("fr-bfu-g2.ctb", recordedVersion: "3.34.0"))
+        XCTAssertNoThrow(try BrailleBookReader.requireUnchangedTable("mac:fr-bfu-g2.ctb", recordedVersion: BrailleTableCatalog.bundledLiblouisVersion))
+        XCTAssertNoThrow(try BrailleBookReader.requireUnchangedTable("mac:fr-bfu-g2.ctb", recordedVersion: nil))
+        XCTAssertNoThrow(try BrailleBookReader.requireUnchangedTable("en-ueb-g2.ctb", recordedVersion: "3.34.0"))
+        // A whole read of a book recorded under another version stops there, before anything is translated.
+        let sample = try copyOfFormatSample("brf/grade2-short.brf")
+        XCTAssertThrowsError(try BrailleBookReader.markdown(of: sample, table: "mac:fr-bfu-g2.ctb", recordedVersion: "3.34.0")) {
+            XCTAssertEqual($0 as? BrailleTranslator.Failure, .changedTable("mac:fr-bfu-g2.ctb", then: "3.34.0", now: BrailleTableCatalog.bundledLiblouisVersion))
         }
     }
 

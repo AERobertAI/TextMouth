@@ -289,8 +289,7 @@ final class BrailleTranslatorTests: XCTestCase {
     /// would leave a marker is never started.
     func testFilesOfTheTablesFolderThatTheCatalogLacksAreRefused() throws {
         // Unpacking en-ueb-g2.ctb and en-us-g1.ctb puts the three include files in the folder.
-        let tables = try XCTUnwrap(try BrailleTranslator.Tool.helper.tablesFolder("en-ueb-g2.ctb"))
-        _ = try BrailleTranslator.Tool.helper.tablesFolder("en-us-g1.ctb")
+        let tables = try unpackedAppTables(for: "en-ueb-g2.ctb", "en-us-g1.ctb")
         let marker = work.appendingPathComponent("marker")
         let spy = standIn("/usr/bin/touch", [marker.path])
         try with(spy) {
@@ -344,7 +343,7 @@ final class BrailleTranslatorTests: XCTestCase {
     /// its print, which also shows that translating still works once the
     /// helper has left the folder (liblouis keeps the loaded table by name).
     func testTheHelperWorksFromAFolderWhoseNameHoldsAComma() throws {
-        let bundled = try XCTUnwrap(try BrailleTranslator.Tool.helper.tablesFolder("en-ueb-g2.ctb"))
+        let bundled = try unpackedAppTables(for: "en-ueb-g2.ctb")
         let parent = try makeSandboxDirectory("BrailleComma").appendingPathComponent("Apps, old", isDirectory: true)
         try FileManager.default.createDirectory(at: parent, withIntermediateDirectories: true)
         let tables = parent.appendingPathComponent("tables", isDirectory: true)

@@ -165,6 +165,40 @@ final class MacBrailleTableBookTests: XCTestCase {
         }
     }
 
+    // MARK: - A Bare Value The Mac's Pack Lacks
+
+    /// A bare value the Mac's pack lacks, such as the `fr-bfu-g2.ctb` the iPhone stores (FR32), reads with VoiceOver's file of
+    /// that name, keeps the value it was asked for, records and is held to this Mac's liblouis version, and translates as the
+    /// `mac:` value of the same file does; one VoiceOver lacks too is refused as before.
+    func testABareValueThePackLacksReadsWithVoiceOversFile() throws {
+        try XCTSkipIf(BrailleTableCatalog.table(withID: french) == nil,
+                      "This Mac does not offer its French contracted table (\(BrailleTableCatalog.macTablesFolder.path))")
+        let bare = BrailleTableSource.parse(french).fileName
+        XCTAssertNil(BrailleTableCatalog.bundled.first { $0.id == bare }, "the Mac's pack has English alone")
+        let table = try XCTUnwrap(BrailleTableCatalog.table(withID: bare))
+        XCTAssertEqual(table.id, bare)
+        XCTAssertTrue(BrailleTableCatalog.readsFromMacFolder(bare))
+        XCTAssertFalse(BrailleTableCatalog.readsFromMacFolder("en-ueb-g2.ctb"))
+        let version = try XCTUnwrap(BrailleTableCatalog.currentMacLiblouisVersion(), "this Mac's tables name no version")
+        XCTAssertEqual(BrailleTableCatalog.versionToRecord(forTable: bare), version)
+        XCTAssertNoThrow(try BrailleBookReader.requireUnchangedTable(bare, recordedVersion: version))
+        XCTAssertThrowsError(try BrailleBookReader.requireUnchangedTable(bare, recordedVersion: "2.0.0")) {
+            XCTAssertEqual($0 as? BrailleTranslator.Failure, .changedTable(bare, then: "2.0.0", now: version))
+        }
+        XCTAssertNoThrow(try BrailleBookReader.requireUnchangedTable(bare, recordedVersion: nil))
+
+        let work = try makeSandboxDirectory("MacBrailleBare")
+        let print = "Le chat est sur la table."
+        let named = try BrailleTranslator.translate([print], table: bare, direction: .printToBraille, workingIn: work)
+        let mac = try BrailleTranslator.translate([print], table: french, direction: .printToBraille, workingIn: work)
+        XCTAssertEqual(named, mac)
+        XCTAssertFalse(named.joined().isEmpty)
+        XCTAssertNil(BrailleTableCatalog.table(withID: "no-such-table.ctb"))
+        XCTAssertThrowsError(try BrailleTranslator.translate([print], table: "no-such-table.ctb", direction: .printToBraille, workingIn: work)) {
+            XCTAssertEqual($0 as? BrailleTranslator.Failure, .unknownTable("no-such-table.ctb"))
+        }
+    }
+
     // MARK: - A Mac Table That Is Gone
 
     /// A book whose Mac table is gone keeps its text: a rebuild that needs

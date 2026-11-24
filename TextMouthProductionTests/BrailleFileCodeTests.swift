@@ -137,7 +137,7 @@ final class BrailleFileCodeTests: XCTestCase {
     /// `de-eurobrl6.dis`'s `display \s a`, the German tables' virtual-dot
     /// cell for the non-breaking space.
     private func displayCells(of name: String) throws -> [(character: UInt8, dots: UInt8)] {
-        let folder = try XCTUnwrap(try BrailleTranslator.Tool.helper.tablesFolder(name))
+        let folder = try unpackedAppTables(for: name)
         let text = try String(contentsOf: folder.appendingPathComponent(name), encoding: .utf8)
         var cells: [(character: UInt8, dots: UInt8)] = []
         for line in text.components(separatedBy: .newlines) {

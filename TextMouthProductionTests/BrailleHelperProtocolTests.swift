@@ -92,7 +92,7 @@ final class BrailleHelperProtocolTests: XCTestCase {
     /// it could not start) and the output it wrote, if any.
     private func runRealHelper(_ mode: String, _ table: String, input: Data) throws -> (status: Int32?, output: String?) {
         let executable = try XCTUnwrap(Bundle.main.url(forAuxiliaryExecutable: "TextMouthBraille"))
-        let tables = try XCTUnwrap(try BrailleTranslator.Tool.helper.tablesFolder(table))
+        let tables = try unpackedAppTables(for: table)
         let inputURL = work.appendingPathComponent("input.txt")
         let outputURL = work.appendingPathComponent("output.txt")
         try input.write(to: inputURL)

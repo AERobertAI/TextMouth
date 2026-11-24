@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 import XCTest
 import os
@@ -46,7 +47,10 @@ struct BrailleTablePackBytes {
             for name in names {
                 let text = try XCTUnwrap(files[name], name)
                 let bytes = Array(text.utf8)
-                var entry: [String: Any] = ["n": name, "g": number, "o": raw.count, "l": bytes.count]
+                var entry: [String: Any] = [
+                    "n": name, "g": number, "o": raw.count, "l": bytes.count,
+                    "h": SHA256.hash(data: Data(bytes)).map { String(format: "%02x", $0) }.joined(),
+                ]
                 let included = Self.includes(of: text)
                 if !included.isEmpty { entry["i"] = included }
                 let fields = BrailleTableCatalog.metadata(fromHeader: text)
@@ -98,6 +102,18 @@ struct BrailleTablePackBytes {
                 "other.ctb": "#+type:literary\n#+language:yy\n#-display-name: Other braille\n#+contraction:no\n\nletter a 1\n",
             ]
         )
+    }
+}
+
+extension XCTestCase {
+    /// The tables `files` of the app's own pack, each with every file it includes, unpacked into a new folder this test makes
+    /// (removed when the test ends), and that folder. The tests that read the unpacked tables use it, so none writes into the
+    /// app's own folder (`BrailleTableUnpacker.app`'s), which only the tests of the real tool name.
+    func unpackedAppTables(for files: String...) throws -> URL {
+        let app = try XCTUnwrap(BrailleTableUnpacker.app, "the app has no braille table pack")
+        let unpacker = BrailleTableUnpacker(pack: app.pack, folder: try makeSandboxDirectory("BrailleTables").appendingPathComponent("tables"))
+        for file in files { try unpacker.unpackedFolder(for: file) }
+        return unpacker.folder
     }
 }
 
@@ -158,6 +174,15 @@ final class BrailleTablePackTests: XCTestCase {
         }
     }
 
+    /// A change to the index document that sets `key` of its first file to `value`, which is how an index is made wrong.
+    private func damagingFirstFile(_ key: String, to value: Any) -> (inout [String: Any]) -> Void {
+        { document in
+            guard var files = document["files"] as? [[String: Any]], let index = files.indices.first else { return }
+            files[index][key] = value
+            document["files"] = files
+        }
+    }
+
     /// Each fault of the index or a group is a failure when the pack opens, and none traps.
     func testADamagedPackIsRefused() throws {
         func refused(_ label: String, _ change: (inout BrailleTablePackBytes) -> Void) throws {
@@ -173,31 +198,20 @@ final class BrailleTablePackTests: XCTestCase {
         try refused("a file listed twice") { $0.damageIndex = { document in
             if var files = document["files"] as? [[String: Any]], let first = files.first { files.append(first); document["files"] = files }
         } }
-        try refused("a name that is a path") { $0.damageIndex = { document in
-            if var files = document["files"] as? [[String: Any]] { files[0]["n"] = "../x.ctb"; document["files"] = files }
-        } }
-        try refused("a group the pack lacks") { $0.damageIndex = { document in
-            if var files = document["files"] as? [[String: Any]] { files[0]["g"] = 9; document["files"] = files }
-        } }
-        try refused("a negative group") { $0.damageIndex = { document in
-            if var files = document["files"] as? [[String: Any]] { files[0]["g"] = -1; document["files"] = files }
-        } }
-        try refused("an offset past the group") { $0.damageIndex = { document in
-            if var files = document["files"] as? [[String: Any]] { files[0]["o"] = 1_000_000; document["files"] = files }
-        } }
-        try refused("a length past the group") { $0.damageIndex = { document in
-            if var files = document["files"] as? [[String: Any]] { files[0]["l"] = 1_000_000; document["files"] = files }
-        } }
-        try refused("a negative length") { $0.damageIndex = { document in
-            if var files = document["files"] as? [[String: Any]] { files[0]["l"] = -1; document["files"] = files }
-        } }
+        try refused("a name that is a path") { $0.damageIndex = damagingFirstFile("n", to: "../x.ctb") }
+        try refused("a group the pack lacks") { $0.damageIndex = damagingFirstFile("g", to: 9) }
+        try refused("a negative group") { $0.damageIndex = damagingFirstFile("g", to: -1) }
+        try refused("an offset past the group") { $0.damageIndex = damagingFirstFile("o", to: 1_000_000) }
+        try refused("a length past the group") { $0.damageIndex = damagingFirstFile("l", to: 1_000_000) }
+        try refused("a negative length") { $0.damageIndex = damagingFirstFile("l", to: -1) }
         try refused("an offset and length that overflow") { $0.damageIndex = { document in
-            if var files = document["files"] as? [[String: Any]] { files[0]["o"] = Int.max; files[0]["l"] = 5; document["files"] = files }
+            damagingFirstFile("o", to: Int.max)(&document)
+            damagingFirstFile("l", to: 5)(&document)
         } }
         try refused("an include the pack lacks") { $0.files["chars.uti"] = "include gone.uti\n" }
         try refused("a group whose count is not its files'") { $0.groupCount = { _, count in count + 1 } }
         try refused("an index that lists fewer files than the header counts") { $0.damageIndex = { document in
-            if var files = document["files"] as? [[String: Any]] { files.removeLast(); document["files"] = files }
+            if var files = document["files"] as? [[String: Any]], !files.isEmpty { files.removeLast(); document["files"] = files }
         } }
         try refused("an index that is not an object") { $0.damageIndex = { document in document = ["v": "one"] } }
     }
@@ -227,14 +241,37 @@ final class BrailleTablePackTests: XCTestCase {
 // MARK: - The unpacker
 
 final class BrailleTableUnpackerTests: XCTestCase {
-    /// An unpacker of the sample pack into a new folder of the test's own.
-    private func unpacker(_ bytes: BrailleTablePackBytes = .sample()) throws -> BrailleTableUnpacker {
-        BrailleTableUnpacker(pack: try BrailleTablePack(data: bytes.data()), folder: try makeSandboxDirectory("BrailleUnpack").appendingPathComponent("tables"))
+    /// What an unpacker did, counted through its test hooks: the groups it decoded and the files it hashed.
+    private final class Counts: Sendable {
+        let decoded = OSAllocatedUnfairLock<[Int]>(initialState: [])
+        let hashed = OSAllocatedUnfairLock<[String]>(initialState: [])
+    }
+
+    /// An unpacker of `bytes` into a new folder of the test's own (or `folder`), with its work in `counts`.
+    private func unpacker(_ bytes: BrailleTablePackBytes = .sample(), folder: URL? = nil, counts: Counts = Counts(), sweeps: Bool = false) throws -> BrailleTableUnpacker {
+        BrailleTableUnpacker(
+            pack: try BrailleTablePack(data: bytes.data()),
+            folder: try folder ?? makeSandboxDirectory("BrailleUnpack").appendingPathComponent("tables"),
+            sweepsOtherVersions: sweeps,
+            groupDecoded: { number in counts.decoded.withLock { $0.append(number) } },
+            fileHashed: { name in counts.hashed.withLock { $0.append(name) } }
+        )
     }
 
     /// The names of the files in `folder`, hidden ones too, sorted.
     private func names(in folder: URL) throws -> [String] {
         try FileManager.default.contentsOfDirectory(atPath: folder.path).sorted()
+    }
+
+    /// The file number (inode) of `name` in `folder`: a file written again, or renamed into place, has another.
+    private func inode(_ name: String, in folder: URL) throws -> UInt {
+        let number = try FileManager.default.attributesOfItem(atPath: folder.appendingPathComponent(name).path)[.systemFileNumber] as? NSNumber
+        return try XCTUnwrap(number, name).uintValue
+    }
+
+    /// The text of `name` in `folder`.
+    private func text(_ name: String, in folder: URL) throws -> String {
+        try String(contentsOf: folder.appendingPathComponent(name), encoding: .utf8)
     }
 
     /// A table and every file its includes reach are written, whole, and no other file; the folder is the one returned.
@@ -245,43 +282,82 @@ final class BrailleTableUnpackerTests: XCTestCase {
         XCTAssertEqual(try names(in: folder), ["chars.uti", "digits.uti", "plain.ctb", "wrap.tbl"])
         let sample = BrailleTablePackBytes.sample()
         for name in try names(in: folder) {
-            XCTAssertEqual(try String(contentsOf: folder.appendingPathComponent(name), encoding: .utf8), sample.files[name], name)
+            XCTAssertEqual(try text(name, in: folder), sample.files[name], name)
         }
         // Another table adds its own files beside them.
         try unpacker.unpackedFolder(for: "other.ctb")
         XCTAssertEqual(try names(in: folder), ["chars.uti", "digits.uti", "other.ctb", "plain.ctb", "wrap.tbl"])
     }
 
-    /// A second unpacking of the same table changes nothing: the files are the same files, not written again.
+    /// A second unpacking of the same table changes nothing: every file is the same file (the same inode, which a write or a
+    /// rename would change), and no group is decoded again.
     func testASecondRunChangesNothing() throws {
-        let unpacker = try unpacker()
+        let counts = Counts()
+        let unpacker = try unpacker(counts: counts)
         let folder = try unpacker.unpackedFolder(for: "plain.ctb")
-        func stamps() throws -> [String: Date] {
-            Dictionary(uniqueKeysWithValues: try names(in: folder).map { name in
-                (name, (try? FileManager.default.attributesOfItem(atPath: folder.appendingPathComponent(name).path)[.modificationDate] as? Date) ?? .distantPast)
-            })
-        }
-        let before = try stamps()
-        Thread.sleep(forTimeInterval: 1.1)
+        let before = try names(in: folder).map { try inode($0, in: folder) }
+        let decodedBefore = counts.decoded.withLock { $0 }
         try unpacker.unpackedFolder(for: "plain.ctb")
-        XCTAssertEqual(try stamps(), before)
+        XCTAssertEqual(try names(in: folder).map { try inode($0, in: folder) }, before)
+        XCTAssertEqual(counts.decoded.withLock { $0 }, decodedBefore, "a group was decoded again")
+        XCTAssertEqual(decodedBefore.sorted(), [0, 1], "each group of the closure is decoded once")
     }
 
-    /// A file that is gone, or has the wrong length, is unpacked again; one with the right length is kept as it is.
-    func testAMissingOrWrongFileIsUnpackedAgainAndARightOneKept() throws {
+    /// A file that is gone, or has the wrong length, is unpacked again.
+    func testAMissingOrShortFileIsUnpackedAgain() throws {
         let unpacker = try unpacker()
         let folder = try unpacker.unpackedFolder(for: "plain.ctb")
         let sample = BrailleTablePackBytes.sample()
         try FileManager.default.removeItem(at: folder.appendingPathComponent("chars.uti"))
         try "short".write(to: folder.appendingPathComponent("digits.uti"), atomically: true, encoding: .utf8)
-        // A file of the right length is kept, whatever it holds.
-        let original = try XCTUnwrap(sample.files["plain.ctb"])
-        let sameLength = String(repeating: "x", count: original.utf8.count)
-        try sameLength.write(to: folder.appendingPathComponent("plain.ctb"), atomically: true, encoding: .utf8)
         try unpacker.unpackedFolder(for: "plain.ctb")
-        XCTAssertEqual(try String(contentsOf: folder.appendingPathComponent("chars.uti"), encoding: .utf8), sample.files["chars.uti"])
-        XCTAssertEqual(try String(contentsOf: folder.appendingPathComponent("digits.uti"), encoding: .utf8), sample.files["digits.uti"])
-        XCTAssertEqual(try String(contentsOf: folder.appendingPathComponent("plain.ctb"), encoding: .utf8), sameLength)
+        XCTAssertEqual(try text("chars.uti", in: folder), sample.files["chars.uti"])
+        XCTAssertEqual(try text("digits.uti", in: folder), sample.files["digits.uti"])
+    }
+
+    /// A file of the right length and the wrong bytes is not trusted: the first time a launch (a new unpacker) needs it, its
+    /// hash is checked and the file is unpacked again; and a launch hashes each kept file once, however often it is needed.
+    func testAFileOfTheRightLengthAndTheWrongBytesIsUnpackedAgainInANewLaunch() throws {
+        let first = try unpacker()
+        let folder = try first.unpackedFolder(for: "plain.ctb")
+        let sample = BrailleTablePackBytes.sample()
+        let original = try XCTUnwrap(sample.files["plain.ctb"])
+        try String(repeating: "x", count: original.utf8.count).write(to: folder.appendingPathComponent("plain.ctb"), atomically: true, encoding: .utf8)
+        try String(repeating: "y", count: try XCTUnwrap(sample.files["chars.uti"]).utf8.count).write(to: folder.appendingPathComponent("chars.uti"), atomically: true, encoding: .utf8)
+
+        let counts = Counts()
+        let second = try unpacker(folder: folder, counts: counts)
+        try second.unpackedFolder(for: "plain.ctb")
+        XCTAssertEqual(try text("plain.ctb", in: folder), original)
+        XCTAssertEqual(try text("chars.uti", in: folder), sample.files["chars.uti"])
+        // digits.uti was never damaged: kept, after its hash was checked.
+        XCTAssertEqual(try text("digits.uti", in: folder), sample.files["digits.uti"])
+        let hashedOnce = counts.hashed.withLock { $0.sorted() }
+        XCTAssertEqual(hashedOnce, ["chars.uti", "digits.uti", "plain.ctb"])
+        try second.unpackedFolder(for: "plain.ctb")
+        try second.unpackedFolder(for: "wrap.tbl")
+        XCTAssertEqual(counts.hashed.withLock { $0.filter { $0 != "wrap.tbl" }.sorted() }, hashedOnce, "a file checked in this launch is not hashed again")
+    }
+
+    /// A file is put in place by a rename, never written in place: a hard link to the old file keeps the old bytes, and the
+    /// name gets a new file (another inode) with the right ones.
+    func testAFileIsReplacedByARenameNotWrittenInPlace() throws {
+        let first = try unpacker()
+        let folder = try first.unpackedFolder(for: "plain.ctb")
+        let name = "chars.uti"
+        let correct = try XCTUnwrap(BrailleTablePackBytes.sample().files[name])
+        // Damage the file in place, and keep a second name for the damaged file.
+        let damaged = String(repeating: "z", count: correct.utf8.count)
+        try damaged.write(to: folder.appendingPathComponent(name), atomically: false, encoding: .utf8)
+        let link = folder.deletingLastPathComponent().appendingPathComponent("old-\(name)")
+        try FileManager.default.linkItem(at: folder.appendingPathComponent(name), to: link)
+        let inodeBefore = try inode(name, in: folder)
+        XCTAssertEqual(try inode("old-\(name)", in: link.deletingLastPathComponent()), inodeBefore)
+
+        try unpacker(folder: folder).unpackedFolder(for: "plain.ctb")
+        XCTAssertEqual(try text(name, in: folder), correct)
+        XCTAssertNotEqual(try inode(name, in: folder), inodeBefore, "the name was written in place, not renamed over")
+        XCTAssertEqual(try String(contentsOf: link, encoding: .utf8), damaged, "the old file kept its bytes")
     }
 
     /// Nothing is left behind but the files: no temporary file stays in the folder, and a name the pack lacks is refused.
@@ -295,37 +371,96 @@ final class BrailleTableUnpackerTests: XCTestCase {
         XCTAssertThrowsError(try unpacker.unpackedFolder(for: "../plain.ctb"))
     }
 
-    /// Two unpackings of the same table at once leave whole files and both return.
-    func testTwoUnpackingsAtOnceLeaveWholeFiles() throws {
-        let unpacker = try unpacker()
+    /// Eight unpackings of the same table started together leave whole files, all return, and the lock makes them one: each
+    /// group is decoded once, by the first, and the others find the files there.
+    func testEightUnpackingsHeldTogetherDecodeEachGroupOnce() throws {
+        let counts = Counts()
+        let unpacker = try unpacker(counts: counts)
+        let ready = DispatchSemaphore(value: 0), start = DispatchSemaphore(value: 0)
+        let finished = DispatchGroup()
         let failures = OSAllocatedUnfairLock<Int>(initialState: 0)
-        DispatchQueue.concurrentPerform(iterations: 8) { _ in
-            do { try unpacker.unpackedFolder(for: "wrap.tbl") } catch { failures.withLock { $0 += 1 } }
+        for _ in 0..<8 {
+            finished.enter()
+            DispatchQueue.global().async {
+                ready.signal()
+                _ = start.wait(timeout: .now() + 60)
+                do { try unpacker.unpackedFolder(for: "wrap.tbl") } catch { failures.withLock { $0 += 1 } }
+                finished.leave()
+            }
         }
+        for _ in 0..<8 { XCTAssertEqual(ready.wait(timeout: .now() + 60), .success, "a thread did not start") }
+        for _ in 0..<8 { start.signal() }
+        XCTAssertEqual(finished.wait(timeout: .now() + 60), .success, "an unpacking did not return")
         XCTAssertEqual(failures.withLock { $0 }, 0)
+        XCTAssertEqual(counts.decoded.withLock { $0.sorted() }, [0, 1], "a group was decoded more than once")
         let sample = BrailleTablePackBytes.sample()
         for name in ["chars.uti", "digits.uti", "plain.ctb", "wrap.tbl"] {
-            XCTAssertEqual(try String(contentsOf: unpacker.folder.appendingPathComponent(name), encoding: .utf8), sample.files[name], name)
+            XCTAssertEqual(try text(name, in: unpacker.folder), sample.files[name], name)
         }
         XCTAssertFalse(try names(in: unpacker.folder).contains { $0.hasSuffix(".tmp") })
     }
 
-    /// A damaged group makes the tables that need it unavailable, with one report however often they are asked for; the
-    /// tables of other groups still unpack; nothing traps.
+    /// A damaged group makes the tables that need it unavailable, with one report however often they are asked for, naming the
+    /// file and no path; the tables of other groups still unpack; nothing traps.
     func testADamagedGroupMakesItsTablesUnavailableAndIsLoggedOnce() throws {
-        // Group 1 (the include files) is no LZMA stream any more.
         let pack = try BrailleTablePack(data: try damagedGroupData())
         let unpacker = BrailleTableUnpacker(pack: pack, folder: try makeSandboxDirectory("BrailleDamaged").appendingPathComponent("tables"))
         try TextMouthPaths.ensureDirectoryStructure()
+        let tag = "BRAILLE_TABLES_UNAVAILABLE: chars.uti"
+        let before = debugLogLines(containing: tag).count
         for _ in 0..<3 {
             XCTAssertThrowsError(try unpacker.unpackedFolder(for: "plain.ctb")) { error in
                 guard case .unavailable = error as? BrailleTableUnpacker.Failure else { return XCTFail("\(error)") }
             }
         }
-        // The table of the other group is not harmed.
         XCTAssertNoThrow(try unpacker.unpackedFolder(for: "other.ctb"))
-        XCTAssertEqual(debugLogLines(containing: "BRAILLE_TABLES_UNAVAILABLE: plain.ctb").count, 1)
-        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: unpacker.folder.path).filter { $0.hasSuffix(".tmp") }, [])
+        let lines = debugLogLines(containing: tag)
+        XCTAssertEqual(lines.count - before, 1, "\(lines)")
+        XCTAssertFalse(lines.contains { $0.contains(unpacker.folder.path) }, "a path reached the log")
+        XCTAssertEqual(try names(in: unpacker.folder).filter { $0.hasSuffix(".tmp") }, [])
+    }
+
+    /// A write that fails (the name is taken by a folder, so the rename cannot put a file there) removes its temporary
+    /// file, and logs the file with the error's domain and code, once, whatever the number of tries and never a path.
+    func testAFailedWriteRemovesItsTemporaryFileAndLogsTheErrorsDomainAndCodeOnce() throws {
+        let unpacker = try unpacker()
+        try FileManager.default.createDirectory(at: unpacker.folder.appendingPathComponent("digits.uti"), withIntermediateDirectories: true)
+        try TextMouthPaths.ensureDirectoryStructure()
+        let tag = "BRAILLE_TABLES_UNAVAILABLE: digits.uti: "
+        let before = debugLogLines(containing: tag).count
+        for _ in 0..<3 {
+            XCTAssertThrowsError(try unpacker.unpackedFolder(for: "plain.ctb"))
+        }
+        let lines = debugLogLines(containing: tag)
+        XCTAssertEqual(lines.count - before, 1, "\(lines)")
+        XCTAssertTrue(lines.last?.contains("NSPOSIXErrorDomain") == true, "\(lines)")
+        XCTAssertFalse(lines.contains { $0.contains(unpacker.folder.path) }, "a path reached the log")
+        XCTAssertEqual(try names(in: unpacker.folder).filter { $0.hasSuffix(".tmp") }, [], "a temporary file was left")
+    }
+
+    /// The first unpacking of a launch removes the temporaries an earlier run left (the old ones, not one that may still be
+    /// written) and, for the app's own unpacker, the folders of other liblouis versions beside its own.
+    func testTheFirstUnpackingSweepsStrayTemporariesAndOtherVersions() throws {
+        let versions = try makeSandboxDirectory("BrailleVersions")
+        let mine = versions.appendingPathComponent("9.9.9", isDirectory: true)
+        let older = versions.appendingPathComponent("3.0.0", isDirectory: true)
+        try FileManager.default.createDirectory(at: mine, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: older, withIntermediateDirectories: true)
+        try "old".write(to: older.appendingPathComponent("en.ctb"), atomically: true, encoding: .utf8)
+        let stray = mine.appendingPathComponent(".chars.uti.1234.tmp"), fresh = mine.appendingPathComponent(".digits.uti.5678.tmp")
+        try "half".write(to: stray, atomically: true, encoding: .utf8)
+        try "half".write(to: fresh, atomically: true, encoding: .utf8)
+        try FileManager.default.setAttributes([.modificationDate: Date(timeIntervalSinceNow: -3_600)], ofItemAtPath: stray.path)
+
+        // An unpacker that does not sweep versions leaves the other folder, and still removes the old temporary file.
+        try unpacker(folder: mine).unpackedFolder(for: "other.ctb")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: stray.path), "the stray temporary file stayed")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: fresh.path), "a recent temporary file may be being written")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: older.path))
+        // The app's own does sweep the other versions, and keeps its own folder.
+        try unpacker(folder: mine, sweeps: true).unpackedFolder(for: "other.ctb")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: older.path), "an older version's folder stayed")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: mine.appendingPathComponent("other.ctb").path))
     }
 
     /// The sample pack with group 1's blob replaced by bytes that are no LZMA stream.
@@ -400,9 +535,10 @@ final class BrailleTablePackCatalogTests: XCTestCase {
         let ids = BrailleTableCatalog.bundled.map(\.id)
         #if os(macOS)
         XCTAssertEqual(ids, english)
+        XCTAssertEqual(Set(ids), BrailleTableCatalog.tablesOfEveryPack, "the tables of every pack are the Mac's whole pack")
         XCTAssertEqual(try XCTUnwrap(BrailleTableUnpacker.app).pack.names.count, 20)
         #else
-        XCTAssertTrue(Set(english).isSubset(of: ids), "\(ids)")
+        XCTAssertTrue(BrailleTableCatalog.tablesOfEveryPack.isSubset(of: ids), "\(ids)")
         XCTAssertGreaterThan(ids.count, 100)
         XCTAssertTrue(Set(BrailleTableCatalog.bundled.map(\.language)).isSuperset(of: ["en", "fr", "es", "it", "ar"]))
         #endif
@@ -423,6 +559,46 @@ final class BrailleTablePackCatalogTests: XCTestCase {
     }
 
     #if os(macOS)
+    /// A table whose file vanished between the unpacker's look and the helper's open is unpacked again, once, before it is
+    /// called unknown: the first run of a stand-in ends as the helper ends for a table it cannot load (status 2), the second
+    /// loads. A tool with no folder (a stand-in) is never asked twice, and a table that stays unloadable is unknown after two.
+    func testATableThatVanishedIsUnpackedAgainOnceBeforeItIsCalledUnknown() throws {
+        let limits = WatchedProcess.Limits(maximumSeconds: 10, maximumResidentBytes: 1 << 30, maximumStalledSeconds: 10, pollInterval: 0.1)
+        let work = try makeSandboxDirectory("BrailleVanished")
+        func tool(calls: OSAllocatedUnfairLock<Int>, statuses: [Int], withFolder: Bool) -> BrailleTranslator.Tool {
+            BrailleTranslator.Tool(
+                command: { _, _, _, _ in
+                    let call = calls.withLock { total -> Int in total += 1; return total }
+                    return (URL(fileURLWithPath: "/bin/sh"), ["-c", "exit \(statuses[min(call, statuses.count) - 1])"])
+                },
+                limits: { _, _ in limits },
+                residentMemory: { _ in nil },
+                tablesFolder: { _ in withFolder ? URL(fileURLWithPath: "/var/empty", isDirectory: true) : nil }
+            )
+        }
+        let again = OSAllocatedUnfairLock<Int>(initialState: 0)
+        try BrailleTranslator.$tool.withValue(tool(calls: again, statuses: [2, 0], withFolder: true)) {
+            try BrailleTranslator.check(table: "en-ueb-g1.ctb", workingIn: work)
+        }
+        XCTAssertEqual(again.withLock { $0 }, 2)
+
+        let alone = OSAllocatedUnfairLock<Int>(initialState: 0)
+        BrailleTranslator.$tool.withValue(tool(calls: alone, statuses: [2], withFolder: false)) {
+            XCTAssertThrowsError(try BrailleTranslator.check(table: "en-ueb-g1.ctb", workingIn: work)) {
+                XCTAssertEqual($0 as? BrailleTranslator.Failure, .unknownTable("en-ueb-g1.ctb"))
+            }
+        }
+        XCTAssertEqual(alone.withLock { $0 }, 1, "a tool with no folder was asked twice")
+
+        let never = OSAllocatedUnfairLock<Int>(initialState: 0)
+        BrailleTranslator.$tool.withValue(tool(calls: never, statuses: [2], withFolder: true)) {
+            XCTAssertThrowsError(try BrailleTranslator.check(table: "en-ueb-g1.ctb", workingIn: work)) {
+                XCTAssertEqual($0 as? BrailleTranslator.Failure, .unknownTable("en-ueb-g1.ctb"))
+            }
+        }
+        XCTAssertEqual(never.withLock { $0 }, 2)
+    }
+
     /// The Mac's real helper loads a table that is not English, and its includes, from the folder a pack was unpacked into,
     /// by its bare name, and translates with it: the sample pack's `plain.ctb`, which includes two files of another group.
     func testTheHelperReadsATableFromAnUnpackedFolder() throws {

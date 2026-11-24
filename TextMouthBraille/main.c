@@ -28,9 +28,10 @@
  *   TextMouthBrailleLibrary.c for what each does).
  *
  * The table is a bare file name, such as en-ueb-g2.ctb, of a table in the
- * tables folder: the app bundle's own (Contents/Resources/liblouis/tables),
- * or, for one of this Mac's VoiceOver tables (October 20, 2026), the Mac's
- * own liblouis folder, which the app names (BrailleTableCatalog
+ * tables folder: the one the app unpacks the table and every file it
+ * includes into (from BrailleTables.pack, into its Caches folder, at first
+ * use: FR40), or, for one of this Mac's VoiceOver tables (October 20, 2026),
+ * the Mac's own liblouis folder, which the app names (BrailleTableCatalog
  * .macTablesFolder) and reads in place. The folder, the input, and the
  * output are absolute paths. The helper changes into the folder, sets
  * LOUIS_TABLEPATH to "." and loads the table by its bare name, so liblouis

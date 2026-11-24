@@ -83,7 +83,7 @@ final class PackContainerTests: XCTestCase {
         for index in 0..<8 { crowded.blobs.append(InterfaceTextPackBytes.blob("b\(index)", entries: [])) }
         XCTAssertThrowsError(try container(crowded), "more blobs than the limit")
         var bomb = sample()
-        bomb.blobs[0].rawSize = 1_025
+        bomb.changeFirstBlob { $0.rawSize = 1_025 }
         XCTAssertThrowsError(try container(bomb), "a raw size past the limit")
     }
 
@@ -94,12 +94,12 @@ final class PackContainerTests: XCTestCase {
             change(&bytes)
             XCTAssertThrowsError(try container(bytes), label)
         }
-        refused("an unknown method") { $0.blobs[0].method = 2 }
-        refused("a blob listed twice") { $0.blobs.append($0.blobs[0]) }
-        refused("a blob past the end") { $0.blobs[0].offset = 1_000_000 }
-        refused("a blob inside the directory") { $0.blobs[0].offset = 10 }
-        refused("a name with a space") { $0.blobs[0].name = "a b" }
-        refused("an empty name") { $0.blobs[0].name = "" }
+        refused("an unknown method") { $0.changeFirstBlob { $0.method = 2 } }
+        refused("a blob listed twice") { if let first = $0.blobs.first { $0.blobs.append(first) } }
+        refused("a blob past the end") { $0.changeFirstBlob { $0.offset = 1_000_000 } }
+        refused("a blob inside the directory") { $0.changeFirstBlob { $0.offset = 10 } }
+        refused("a name with a space") { $0.changeFirstBlob { $0.name = "a b" } }
+        refused("an empty name") { $0.changeFirstBlob { $0.name = "" } }
         // Every proper prefix of a good pack is refused: the last blob ends the file.
         let whole = sample().data()
         for length in 0..<whole.count {
@@ -111,7 +111,7 @@ final class PackContainerTests: XCTestCase {
     func testDamagedBlobsFailWhenDecoded() throws {
         for (name, method) in [("lzma", InterfaceTextPackBytes.lzma), ("bzip2", InterfaceTextPackBytes.bzip2)] {
             let good = InterfaceTextPackBytes.blob(name, entries: ["one", "two", "three"], method: method)
-            var cut = good; cut.compressed.removeLast()
+            var cut = good; cut.compressed = Array(good.compressed.dropLast())
             var larger = good; larger.rawSize += 3
             var smaller = good; smaller.rawSize -= 3
             var garbage = good; garbage.compressed = Array(repeating: 0x5A, count: 64)
@@ -120,7 +120,7 @@ final class PackContainerTests: XCTestCase {
             for (label, blob) in [("cut", cut), ("raw size too large", larger), ("raw size too small", smaller), ("garbage", garbage), ("wrong method", swapped)] {
                 var bytes = sample()
                 bytes.blobs = [blob]
-                guard let opened = try? container(bytes) else { continue }
+                guard let opened = try? container(bytes) else { XCTFail("\(name), \(label): the pack did not open"); continue }
                 XCTAssertThrowsError(try opened.decodedBlob(named: name), "\(name), \(label)") { XCTAssertTrue($0 is PackContainerFailure) }
             }
         }
@@ -137,5 +137,13 @@ final class PackContainerTests: XCTestCase {
                 for name in opened.blobs.keys { _ = try? opened.decodedBlob(named: name) }
             }
         }
+    }
+}
+
+private extension InterfaceTextPackBytes {
+    /// Changes the first blob, which a test makes wrong; nothing when there is none.
+    mutating func changeFirstBlob(_ change: (inout Blob) -> Void) {
+        guard let index = blobs.indices.first else { return }
+        change(&blobs[index])
     }
 }
