@@ -81,7 +81,7 @@ Details: [DAISY and braille books](reads-daisy-and-braille.md).
 - BRF braille file (.brf): the text, translated back from braille by liblouis, in the braille code that TextMouth guesses or you choose, with pages; iPhone: yes, with the four English tables the app carries; Tested with made samples.
 - BRL braille file (.brl): the same, with no pages, since it has no page layout; iPhone: yes, as BRF; Basic, since its layout was inferred from a guide and not checked against real files.
 - PEF braille file (.pef): the same, with pages; iPhone: yes, as BRF; Tested with made samples.
-- BARD braille book (a .bopf package with its BRF volumes, its folder, or its ZIP): one braille book, a heading for each volume, its title, author, and braille code from the package; iPhone: yes for the ZIP or the folder, not for a lone .bopf; Tested with made samples.
+- BARD braille book (a .bopf package with its BRF volumes, its folder, or its ZIP): one braille book, a heading for each volume, its title, author, and braille code from the package; iPhone: yes for the ZIP or the folder, not for a lone .bopf; Tested with real files.
 - The iPhone reads braille books with the defaults of the Braille tab, and has no Braille settings or Braille Code pop-up yet, and a book that needs one of a Mac's own tables is refused there (see [DAISY and braille books](reads-daisy-and-braille.md)).
 
 ## Audiobooks and other sound

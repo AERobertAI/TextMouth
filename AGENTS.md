@@ -87,11 +87,11 @@ The agent:
 
 ## Where things stand
 
-- Main is version 0.5.10 (not yet tagged), and the user runs 0.5.9.
-- Interface text (FR39, `docs/developer/localization.md`): both apps look up their own words with their own engine, from `Strings.pack` (LZMA or bzip2), and ship no table of Apple's.
+- Main is version 0.5.11 (not yet tagged), and the user runs 0.5.9.
+- Interface text (FR39, `docs/developer/localization.md`): both apps look up their own words with their own engine, from `Strings.pack`, and ship no table of Apple's.
   The Interface Language picker and the person's own lines (`interface_text.json`) are in Settings.
 - Formats: a BARD braille book (`.bopf` plus BRF volumes, or their ZIP or folder) imports as one braille book (FMT56); the iPhone takes no lone `.bopf`.
 - Release builds take `Scripts/size_settings.py`'s size settings; `make check` measures the apps.
 - 25 languages (FR36-FR38), machine translated, each reviewed once (`Scripts/l10n/reviews/`); a native speaker's review and the user's questions 16 to 25 of `humanQuestions/2026-11-18.md` are open.
-- Waiting for the user: `humanQuestions/2026-11-15.md` and the hand checks there.
+- Waiting for the user: `humanQuestions/2026-11-15.md`, `2026-11-23.md`, and their hand checks.
 - Open: `issuelib list` (the files in `Issues/`), among them Ogg and Apple's converter's formats on the iPhone (FMT55) and braille's abandonment sentence (B20).
