@@ -25,7 +25,7 @@ Every format TextMouth reads, with how well each is tested, is in [the list of f
   - Any other XML is refused by name.
 
 ## Braille files
-<!-- id: braille-files-read; keys: BRF, BRL, PEF, liblouis, Braille tab, table changed, Book Information; src: TextMouth/Parsers/BrailleBookReader.swift, TextMouth/Parsers/BrailleFileReader.swift, TextMouth/Services/BrailleTranslator.swift, TextMouth/Models/BrailleTableCatalog.swift; status: incomplete; issues: FR32, FR33 -->
+<!-- id: braille-files-read; keys: BRF, BRL, PEF, liblouis, Braille tab, table changed, Book Information; src: TextMouth/Parsers/BrailleBookReader.swift, TextMouth/Parsers/BrailleFileReader.swift, TextMouth/Services/BrailleTranslator.swift, TextMouth/Models/BrailleTableCatalog.swift, TextMouth/Phone/PhoneImportRefusal.swift, TextMouth/Services/BrailleTranslator.swift; status: incomplete; issues: FR33 -->
 
 - TextMouth reads BRF files (.brf), BRL files (.brl), and PEF files (.pef), and BARD braille books of several BRF volumes (see BARD braille books, below).
 - It translates them to print with liblouis, using the braille code chosen in the Braille tab of Settings (see [Settings](settings-braille.md)), and the print becomes a text book like any other, so it reopens, searches, and keeps its place, bookmarks, and skipped headings.
@@ -34,10 +34,18 @@ Every format TextMouth reads, with how well each is tested, is in [the list of f
   "This Mac's braille table “mac:fr-bfu-g2.ctb” has changed since the book was read with it, from liblouis 3.34.0 to 3.35.0, so TextMouth keeps the book's text as it was."
 - When this Mac's tables name no version now, it says the table "may have changed since the book was read with liblouis 3.34.0" instead.
 - A book that recorded no version is never refused for this.
+- Each device keeps the version of the liblouis it read the book with, and is held to it.
+  A table both apps carry, the four English ones, keeps none.
+  A book read on an iPhone with another table keeps liblouis 3.39.0, the version inside the app.
+  When the iPhone reads such a book again and its recorded version is another, as one a Mac read with VoiceOver's 3.34.0 is, it keeps the book's text as it was.
+  It says "The braille table “mac:fr-bfu-g2.ctb” on this iPhone is liblouis 3.39.0, not liblouis 3.34.0 as when the book was read, so TextMouth keeps the book's text as it was."
+- A table's stored value goes between a Mac and an iPhone as it is, and each device reads it with its own table of that name (see Braille settings in [Editing settings in config.json](config-json.md)).
 - Book Info and Speak Info name the code, and Book Information's Braille Code pop-up reads one book again with another braille code (see [The Library window](book-information.md)).
 - The iPhone reads BRF, BRL, and PEF books too, with liblouis inside the app, since an iPhone app can start no helper program.
-  It reads with the four English tables the app carries, as the defaults of the Braille tab choose, and has no Braille tab and no Braille Code pop-up yet.
-  A book that needs one of this Mac's own tables, sent from a Mac, is refused with "“NAME” needs “fr-bfu-g2.ctb”, one of a Mac's own braille tables, which TextMouth on iPhone doesn't have.
+  It reads with the table chosen in the Braille section of its Settings (see The iPhone's Braille section, in [Settings](settings-braille.md)), which offers the tables the app carries for many languages.
+  It has no Braille Code pop-up in Book Information yet.
+  A book sent from a Mac, whose stored table is one of the Mac's own, is read with the iPhone's table of the same file name when the iPhone has one.
+  When it has none, the iPhone refuses the book with "“NAME” needs “fr-bfu-g2.ctb”, one of a Mac's own braille tables, which TextMouth on iPhone doesn't have.
   Add it on your Mac, then send the book here."
   The iPhone stops a translation by the same limits as the Mac, and one that runs 5 seconds past its limit is abandoned.
   Every later translation then says "TextMouth stopped the braille translation earlier because it took too long, and won't try again until TextMouth is closed and opened again."

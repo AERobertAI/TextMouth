@@ -72,17 +72,17 @@ Details: [What TextMouth reads: EPUB and word-processor documents](what-textmout
 - Flat OpenDocument (.fodt) and OpenOffice 1.x (.sxw) files are not read.
 
 ## DAISY and braille books
-<!-- id: formats-list-daisy-braille; keys: DAISY, DTBook, NIMAS, BRF, BRL, PEF, braille; src: TextMouth/Parsers/DAISYParser.swift, TextMouth/Parsers/XMLDocumentSniffer.swift, TextMouth/Parsers/BrailleBookReader.swift, TextMouth/Parsers/BrailleFileReader.swift; status: incomplete; issues: FR32, FR33 -->
+<!-- id: formats-list-daisy-braille; keys: DAISY, DTBook, NIMAS, BRF, BRL, PEF, braille; src: TextMouth/Parsers/DAISYParser.swift, TextMouth/Parsers/XMLDocumentSniffer.swift, TextMouth/Parsers/BrailleBookReader.swift, TextMouth/Parsers/BrailleFileReader.swift; status: incomplete; issues: FR33 -->
 
 Details: [DAISY and braille books](reads-daisy-and-braille.md).
 
 - DAISY 2.02 and 3 book (a folder, a ZIP, ncc.html, a .opf package file, or .daisy): text, headings, pages, and the narration where it has audio; iPhone: yes; Tested with real files.
 - DTBook on its own (.xml whose root element is dtbook) and a NIMAS package: text, headings, and pages, read as a DAISY book; iPhone: yes; Tested with made samples.
-- BRF braille file (.brf): the text, translated back from braille by liblouis, in the braille code that TextMouth guesses or you choose, with pages; iPhone: yes, with the four English tables the app carries; Tested with made samples.
+- BRF braille file (.brf): the text, translated back from braille by liblouis, in the braille code that TextMouth guesses or you choose, with pages; iPhone: yes, with the tables the app carries for many languages; Tested with made samples.
 - BRL braille file (.brl): the same, with no pages, since it has no page layout; iPhone: yes, as BRF; Basic, since its layout was inferred from a guide and not checked against real files.
 - PEF braille file (.pef): the same, with pages; iPhone: yes, as BRF; Tested with made samples.
 - BARD braille book (a .bopf package with its BRF volumes, its folder, or its ZIP): one braille book, a heading for each volume, its title, author, and braille code from the package; iPhone: yes for the ZIP or the folder, not for a lone .bopf; Tested with real files.
-- The iPhone reads braille books with the defaults of the Braille tab, and has no Braille settings or Braille Code pop-up yet, and a book that needs one of a Mac's own tables is refused there (see [DAISY and braille books](reads-daisy-and-braille.md)).
+- The iPhone reads braille books with the table chosen in the Braille section of its Settings, and has no Braille Code pop-up yet, and a book that needs one of a Mac's own tables the iPhone lacks is refused there (see [DAISY and braille books](reads-daisy-and-braille.md)).
 
 ## Audiobooks and other sound
 <!-- id: formats-list-audio; keys: MP3, M4B, M4A, WAV, FLAC, Ogg, MP4, converted audio; src: TextMouth/Parsers/AudioBookParser.swift, TextMouth/Services/ImportAudioConverter.swift, TextMouth/Parsers/AudioContentSniffer.swift, TextMouth/Parsers/NeroChapterReader.swift; status: incomplete; issues: FMT55, Q13 -->
