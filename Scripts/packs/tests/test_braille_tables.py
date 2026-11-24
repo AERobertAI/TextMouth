@@ -6,7 +6,9 @@ Run with: python3 -I -B -m unittest discover -s Scripts/packs/tests
 The first classes use small folders the tests make; `RealTablesTests` builds the packs of the vendored release once and checks
 what the apps' reader will rely on: every file in one group, the closures, the bytes, the license list, and the Mac's list.
 """
+import contextlib
 import hashlib
+import io
 import json
 import re
 import struct
@@ -14,6 +16,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
@@ -203,6 +206,49 @@ class PlanTests(unittest.TestCase):
             bt.closure(includes, "nothere")
         # A loop is walked once.
         self.assertEqual(["x", "y"], bt.closure({"x": ["y"], "y": ["x"]}, "x"))
+
+
+class OldTablesTests(unittest.TestCase):
+    """The raw tables folder an earlier build of the app copied is removed, and nothing else."""
+
+    def test_only_liblouis_tables_goes_and_liblouis_when_it_is_left_empty(self):
+        with tempfile.TemporaryDirectory() as resources:
+            root = Path(resources)
+            (root / "liblouis" / "tables").mkdir(parents=True)
+            (root / "liblouis" / "tables" / "en-ueb-g2.ctb").write_bytes(b"x")
+            (root / "Strings.pack").write_bytes(b"keep")
+            self.assertTrue(bt.remove_old_tables(root))
+            self.assertFalse((root / "liblouis").exists())
+            self.assertEqual(b"keep", (root / "Strings.pack").read_bytes())
+            self.assertFalse(bt.remove_old_tables(root), "nothing is left to remove")
+
+    def test_a_liblouis_folder_with_other_things_stays(self):
+        with tempfile.TemporaryDirectory() as resources:
+            root = Path(resources)
+            (root / "liblouis" / "tables").mkdir(parents=True)
+            (root / "liblouis" / "other").mkdir()
+            self.assertTrue(bt.remove_old_tables(root))
+            self.assertTrue((root / "liblouis" / "other").is_dir())
+            self.assertFalse((root / "liblouis" / "tables").exists())
+
+    def test_build_removes_them_when_asked_and_only_then(self):
+        with folder_of({"a.ctb": table()}) as folder, tempfile.TemporaryDirectory() as resources, tempfile.TemporaryDirectory() as lists:
+            root = Path(resources)
+            (root / "liblouis" / "tables").mkdir(parents=True)
+            listing = Path(lists, "list.txt")
+            listing.write_text("a.ctb\n", encoding="utf-8")
+            with mock.patch.object(bt, "MAC_LIST", listing), mock.patch.object(bt, "CONFIG_H", Path(folder, "config.h")):
+                Path(folder, "config.h").write_text('#define PACKAGE_VERSION "9.9.9"\n', encoding="utf-8")
+                out = root / "BrailleTables.pack"
+                args = bt.parser().parse_args(["build", "--profile", "mac", "--tables", folder, "--out", str(out), "--stamp", str(root / "stamp.json")])
+                with contextlib.redirect_stdout(io.StringIO()):
+                    self.assertEqual(0, bt.command_build(args))
+                self.assertTrue((root / "liblouis" / "tables").is_dir(), "removed without being asked")
+                args = bt.parser().parse_args(["build", "--profile", "mac", "--tables", folder, "--out", str(out), "--stamp", str(root / "stamp.json"), "--remove-old-tables"])
+                with contextlib.redirect_stdout(io.StringIO()):
+                    self.assertEqual(0, bt.command_build(args))
+                self.assertFalse((root / "liblouis").exists())
+                self.assertTrue(out.is_file())
 
 
 class GroupTests(unittest.TestCase):

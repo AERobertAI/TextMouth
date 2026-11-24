@@ -657,17 +657,17 @@ require_one_interface_pack() {
 
 # require_braille_pack <app folder> <resources folder> <app name> <limit>: the app holds exactly one BrailleTables.pack
 # (FR40, Scripts/packs/braille_tables.py) within <limit> bytes, and no raw liblouis tables: no folder named tables inside a
-# folder named liblouis, which the apps held before the pack.
+# folder named liblouis, which the apps held before the pack, and no table file (.ctb .cti .utb .uti .tbl .dis .dic) anywhere.
 require_braille_pack() {
   local app_folder=$1 resources=$2 app=$3 limit=$4 raw
   require_one_pack "$app_folder" "$resources" "$app" "$BRAILLE_PACK_NAME" "$limit" "Pack braille tables"
   if (( dry_run )); then
     return 0
   fi
-  raw=$(find "$app_folder" -type d -path '*/liblouis/tables')
+  raw=$(find "$app_folder" \( -type d -path '*/liblouis/tables' -o -type f \( -name '*.ctb' -o -name '*.cti' -o -name '*.utb' -o -name '*.uti' -o -name '*.tbl' -o -name '*.dis' -o -name '*.dic' \) \))
   if [[ -n $raw ]]; then
     detail_lines "| " "$raw"
-    fail "step $step_number of $STEP_COUNT ($step_title): $app holds raw liblouis tables (the tables are in $BRAILLE_PACK_NAME, which the app unpacks at first use)"
+    fail "step $step_number of $STEP_COUNT ($step_title): $app holds raw liblouis tables (the tables are in $BRAILLE_PACK_NAME, which the app unpacks at first use, and no other file of the app is one)"
   fi
   detail "$app holds no raw liblouis tables"
 }

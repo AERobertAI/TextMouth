@@ -8877,7 +8877,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "/usr/bin/python3 -I -B \"$SRCROOT/Scripts/packs/braille_tables.py\" build --profile \"$BRAILLE_TABLES_PROFILE\" --tables \"$SRCROOT/Vendor/liblouis/tables\" --out \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/BrailleTables.pack\" --stamp \"$DERIVED_FILE_DIR/BrailleTables.pack.stamp\"";
+			shellScript = "/usr/bin/python3 -I -B \"$SRCROOT/Scripts/packs/braille_tables.py\" build --profile \"$BRAILLE_TABLES_PROFILE\" --tables \"$SRCROOT/Vendor/liblouis/tables\" --out \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/BrailleTables.pack\" --stamp \"$DERIVED_FILE_DIR/BrailleTables.pack.stamp\" --remove-old-tables";
 		};
 		D4006D4DC2CA1958609F2B67 /* Copy Swift Objective-C Interface Header */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -8934,7 +8934,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "/usr/bin/python3 -I -B \"$SRCROOT/Scripts/packs/braille_tables.py\" build --profile \"$BRAILLE_TABLES_PROFILE\" --tables \"$SRCROOT/Vendor/liblouis/tables\" --out \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/BrailleTables.pack\" --stamp \"$DERIVED_FILE_DIR/BrailleTables.pack.stamp\"";
+			shellScript = "/usr/bin/python3 -I -B \"$SRCROOT/Scripts/packs/braille_tables.py\" build --profile \"$BRAILLE_TABLES_PROFILE\" --tables \"$SRCROOT/Vendor/liblouis/tables\" --out \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/BrailleTables.pack\" --stamp \"$DERIVED_FILE_DIR/BrailleTables.pack.stamp\" --remove-old-tables";
 		};
 /* End PBXShellScriptBuildPhase section */
 

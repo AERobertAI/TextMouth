@@ -264,7 +264,7 @@ targetTemplates:
   PackBrailleTables:
     postBuildScripts:
       - name: Pack braille tables
-        script: /usr/bin/python3 -I -B "$SRCROOT/Scripts/packs/braille_tables.py" build --profile "$BRAILLE_TABLES_PROFILE" --tables "$SRCROOT/Vendor/liblouis/tables" --out "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/BrailleTables.pack" --stamp "$DERIVED_FILE_DIR/BrailleTables.pack.stamp"
+        script: /usr/bin/python3 -I -B "$SRCROOT/Scripts/packs/braille_tables.py" build --profile "$BRAILLE_TABLES_PROFILE" --tables "$SRCROOT/Vendor/liblouis/tables" --out "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/BrailleTables.pack" --stamp "$DERIVED_FILE_DIR/BrailleTables.pack.stamp" --remove-old-tables
         inputFiles:
           - $(SRCROOT)/Scripts/packs/braille_tables.py
           - $(SRCROOT)/Scripts/packs/packfile.py

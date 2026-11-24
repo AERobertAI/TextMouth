@@ -6,7 +6,7 @@ VoiceOver folder to read, so each app carries its tables as one compressed pack 
 files they include, into its caches folder at first use (`BrailleTablePack.swift`, `BrailleTableUnpacker.swift`).
 Standard library only, and it runs under Xcode's /usr/bin/python3 (3.9).
 
-    braille_tables.py build    --profile iphone|mac --tables DIR --out PATH [--stamp PATH] [--force]
+    braille_tables.py build    --profile iphone|mac --tables DIR --out PATH [--stamp PATH] [--force] [--remove-old-tables]
     braille_tables.py licenses --tables DIR [--write FILE | --check FILE]
     braille_tables.py measure  --tables DIR          (sizes of the grouping choices, for the report)
 
@@ -41,6 +41,7 @@ import hashlib
 import json
 import os
 import re
+import shutil
 import sys
 import unicodedata
 from collections import defaultdict
@@ -630,10 +631,27 @@ def write_atomically(path, data):
     os.replace(temporary, path)
 
 
+def remove_old_tables(resources):
+    """Removes `liblouis/tables` of the resources folder `resources`, and `liblouis` when that leaves it empty: the folder the
+    apps copied the raw tables into before the pack, which Xcode never cleans from a product an earlier build made (as
+    pack.py's --remove-apple-tables removes the tables of Apple's). Returns whether it removed anything. Only that one path."""
+    old = Path(resources) / "liblouis" / "tables"
+    if not old.is_dir() or old.is_symlink():
+        return False
+    shutil.rmtree(old)
+    try:
+        old.parent.rmdir()
+    except OSError:
+        pass
+    return True
+
+
 def command_build(args):
     """`build`: writes the pack for the profile unless the stamp says it is up to date."""
     stamp = stamp_of(args.profile, args.tables)
     out = Path(args.out)
+    if args.remove_old_tables and remove_old_tables(out.parent):
+        print(f"removed {out.parent / 'liblouis' / 'tables'}, which an earlier build copied")
     stamp_file = Path(args.stamp) if args.stamp else Path(str(out) + ".stamp")
     if not args.force and out.is_file() and stamp_file.is_file():
         try:
@@ -692,6 +710,8 @@ def parser():
     build.add_argument("--out", required=True)
     build.add_argument("--stamp")
     build.add_argument("--force", action="store_true")
+    build.add_argument("--remove-old-tables", action="store_true",
+                       help="remove liblouis/tables beside the output, which an earlier build of the app copied")
     licenses = sub.add_parser("licenses", help="print, write, or check the license list")
     licenses.add_argument("--tables", default=str(DEFAULT_TABLES))
     group = licenses.add_mutually_exclusive_group()
