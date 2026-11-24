@@ -191,3 +191,96 @@ So WinZip AES needs no library on either platform.
 - Office Agile and Standard, and 7z, take UTF-16LE; OpenDocument takes UTF-8.
 - A password with an accent can therefore fail for a file that is fine.
   The unlock step should try the typed password in NFC and NFD, and in UTF-8, Latin-1, and CP437 where the scheme leaves it open, before saying "wrong password".
+
+## 3. Protecting a book that has no password
+<!-- Question 3: the format's own scheme against TextMouth's own wrapper. -->
+
+### The format's own scheme
+
+- **PDF:** Apple writes it **(probed)**: `PDFDocument.write(to:withOptions:)` with a user and an owner password gave V4/R4 AESV2 (AES-128), which opens in any PDF reader with the password.
+  PDFKit cannot write AES-256.
+- **ZIP:** not through ZIPFoundation.
+  TextMouth would need its own writer: ZipCrypto is weak enough that I would not write it, and WinZip AES (AE-2) is about 200 more lines on top of the reader.
+  Apple's `tar` can write both, but only as a command-line tool, which iOS has none of.
+- **Office Open XML:** a compound-file writer plus an Agile encryptor, perhaps 600 lines (estimate); Word, LibreOffice, and Pages-through-Word all open the result.
+- **OpenDocument:** rewrite the ZIP with encrypted entries and a manifest, perhaps 300 lines (estimate); LibreOffice and Apache OpenOffice open it.
+- **Word 97-2003:** it needs a compound-file writer that edits an existing file's streams and the FIB; I would not offer it (convert the book to a sealed container instead).
+- **EPUB, HTML, text, Markdown, braille, DAISY, Kindle, audio:** no scheme exists, or it is DRM.
+  So a format's own scheme can protect only PDF, ZIP, DOCX, and ODT at best.
+
+### TextMouth's own sealed container
+
+Two ways to build it, both pure Apple frameworks, both on the Mac and the iPhone.
+
+- **Apple Archive with scrypt (AEA profile 5):** Apple maintains the cipher suite (HKDF-SHA256, AES-CTR, HMAC) and the memory-hard key derivation, the format has random-access decryption, and the `aea` tool opens it on any Mac (probed).
+  Against it: about 18.6 KB of overhead for every file (probed), a scrypt cost TextMouth cannot set, the password-mode API only from macOS 11.3 and iOS 14.5, and the password must be eight characters or more in the tool (the API's limit was not checked).
+  Passwords cannot be changed without re-encrypting the whole file.
+- **TextMouth's own layout, CryptoKit AES-GCM and CommonCrypto PBKDF2:** a header (magic, version, KDF name, rounds, salt, the wrapped data key), then 64 KiB chunks, each sealed with AES-GCM under a random per-file data key.
+  - The chunk's number is its nonce, and the header, the number, and a "last chunk" flag are authenticated data, so reordering and truncation fail.
+  - The password makes a key-encrypting key by PBKDF2-HMAC-SHA256 at no fewer than 600,000 rounds (OWASP's figure, read); on this Mac (M3) 600,000 rounds took 0.10 s, and `CCCalibratePBKDF` suggested 3.8 million for 500 ms **(probed)**.
+    Store the rounds in the header so an iPhone and later releases can raise them.
+  - The data key is wrapped by that key, so changing the password re-wraps 60 bytes and never re-encrypts a 400 MB audiobook, and the wrap's tag is the password check.
+  - AES-GCM sealed 104 MB in 0.02 s here **(probed)**, so speed is not a cost, and a chunk can be read at random for audio seeking.
+  - OWASP lists Argon2id (19 MiB, 2 passes) as its first choice and PBKDF2 as acceptable (read); CryptoKit and CommonCrypto have no Argon2, so a later release could add one under a new KDF name (the reference implementation is CC0 or Apache, recalled).
+
+### Weighing them
+
+| Question | Format's own scheme | Apple Archive (AEA) | Own container |
+| --- | --- | --- | --- |
+| Covers every format | no: PDF, ZIP, DOCX, ODT at best | yes | yes |
+| Opens in other apps with the password | yes, in any reader of that format | only with Apple's `aea` tool | no, except through TextMouth's Export |
+| One code base for Mac and iPhone | PDFKit write, plus own ZIP, Office, and ODF writers | yes, public API on both | yes |
+| Strength | AES-128 for PDF and ZIP; Office AES-256 | scrypt, AES-CTR, HMAC | PBKDF2, AES-256-GCM |
+| Password change cost | rewrite the file | rewrite the file | re-wrap 60 bytes |
+| Large audio, seeking | not applicable | random-access stream | per-chunk reads |
+| Maintenance | per-format code | Apple's | TextMouth's, about 600 lines |
+
+- **Reading in other apps matters for what the user already has,** and for Export: a protected PDF exported by TextMouth should still be a PDF that Preview opens with the password.
+- **A shared library matters most for the derived text,** which is not a file any other app reads, so the own container (or AEA) is the only choice there.
+- **My choice:** the own container for derived text and for any format that has no scheme; the format's own scheme where TextMouth already writes it or must read it, which is PDF, and where the user gains by it (a ZIP or an Office file the user wants to open in Word).
+  The container uses the same header for both, so a later release can switch the cipher by KDF and cipher names.
+
+## 4. What TextMouth keeps of a book, and what a protected book must not
+<!-- Question 4: every plain copy of a book's text, where it lives, who can read it. -->
+
+Found with the doc-library skill and the code; every row but the last two is plain today.
+
+| Kept item | Where | Synced? | For a protected book |
+| --- | --- | --- | --- |
+| The book's own file | its package in the library | yes | stays as it is (format scheme) or sealed |
+| `content.md`, the text cache | the package | yes | not written; or `content.md.sealed` |
+| `contentIndex.json`: heading and chapter titles, offsets, word counts | the package | yes | not written; the open derives it in memory |
+| `bookInfo.json` and the library row: title, author, publisher, position anchors (64 UTF-16 units of text each side), bookmark notes and anchors, skipped-heading labels | the package and `library.json` | yes | numbers stay plain; text-bearing fields go into one sealed blob |
+| `transcript.json`, `transcript.json.before-cleanup` | the package | yes | sealed (audiobooks, phase 5) |
+| `content.md.edited-…` copies from Edit Text | the package | yes | Edit Text is off while a book is protected |
+| Search Text cache (about as large as the library's text) | this Mac's Caches | no | left out of Search Library, or sealed |
+| Reading Text cache (books of 1 MB or more) | this Mac's Caches | no | not written |
+| Place snapshots: old text during a rebuild | this Mac's own folder | no | not made (a rebuild reads it from the sealed copy) |
+| Working Copies (audiobooks in a cloud library) | this Mac's Application Support | no | the only way to play a sealed audiobook; private, removed at window close |
+| Archive Extraction and Import Staging | this Mac's own folder, or the library's drive when that is not the startup disk | the drive | always this Mac's own folder for a protected import, mode 0700 |
+| Logs | the data directory or this Mac | yes | book id, never the title or any word of text |
+| `reading_stats.json`: title of each finished book | the data directory | yes | store the id only |
+| Export, Speak Import Progress, Spotlight, Quick Look | the user's choice, or the system | varies | see below |
+
+- **The cloud rule, stated as a test:** with the library in a folder watched by a sync tool, a protected book may put in that folder only ciphertext and numbers.
+  A test can make the folder, import and open a protected fixture, and scan every file for the fixture's words.
+- **Spotlight and Quick Look:** a library folder that is not hidden is indexed, and a PDF's or DOCX's text can reach Spotlight and Quick Look's caches.
+  A protected file is opaque to both, but a decrypted-in-place book is as readable as any file, as it should be.
+  I did not check whether `~/.TextMouth` (a dot folder) is skipped by Spotlight (not checked).
+- **Background maintenance:** the metadata refresh, the text cache batch, the pages re-read, the search preparer, Redo Text Extraction, orphan adoption, and the statistics pass all read every book's file (`docs/architecture/launch.md`).
+  Each must skip a locked book silently: no prompt, no error line, no retry at every launch.
+  One shared predicate, `Book.isLocked`, is the guard.
+- **Duplicates:** the MD5 fingerprint of a protected book is of its ciphertext, so the same book unprotected is not seen as a duplicate.
+  That is acceptable and should be documented.
+
+### How speech, braille, search, places, and bookmarks work then
+
+- **Speech and braille** read the `DocumentContent` the reader holds in memory, as they do now; nothing about them touches the disk, except the braille helper's temporary files, which a braille book (a file, not a protected document) uses.
+  Spoken-audio export writes audio, a file the user asks for.
+- **Search in Book** works on memory.
+  **Search Library** skips locked books, and its result line says "3 protected books were not searched".
+  Phase 4 can seal a per-book search text under a key held in the Keychain.
+- **Places:** a position is a chapter number and an offset, both plain.
+  Its text anchor, which lets a place survive a re-extraction (T06), is sealed; without it a place may drift after an update that changes the text reader, as it did before T06 (`research/TEXT-ANCHORS-RESEARCH-2026-10-10.md`).
+- **Bookmarks:** the number and offset stay plain, the note and the anchor are sealed.
+  The Bookmarks list, which shows notes, works once the book is unlocked and says "Locked" before.
