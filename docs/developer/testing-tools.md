@@ -92,10 +92,10 @@ If that test fails again, rerun its class: `python3 -I Scripts/agents/build-trai
 If it fails again, run the same class on main, to show that the failure predates the change; any other test failing beside it is not this.
 
 ## Golden tests against a Release build
-<!-- id: golden-tests-against-release-build; keys: release-goldens, Release, Osize, optimizer, miscompile, goldens, testability; src: Scripts/test/release-goldens.sh, Makefile, TextMouthProductionTests/TextPipelineGoldenTests.swift, TextMouthProductionTests/DocumentGoldenTests.swift, TextMouthProductionTests/MarkupGuardTests.swift, TextMouthProductionTests/PortableXMLDifferentialTests.swift, TextMouthProductionTests/ParserContentFidelityTests.swift -->
+<!-- id: golden-tests-against-release-build; keys: release-goldens, Release, Osize, optimizer, miscompile, goldens, testability; src: Scripts/test/release-goldens.sh, Makefile, TextMouthProductionTests/TextPipelineGoldenTests.swift, TextMouthProductionTests/DocumentGoldenTests.swift, TextMouthProductionTests/MarkupGuardTests.swift, TextMouthProductionTests/PortableXMLDifferentialTests.swift, TextMouthProductionTests/ParserContentFidelityTests.swift, TextMouthProductionTests/ReflectionNamesTests.swift, Scripts/size_settings.py -->
 
 Run the golden tests against a Release build with `make release-goldens` (`Scripts/test/release-goldens.sh`), once before a release, so that an optimizer miscompile cannot hide behind the Debug suite, which is the only build the ordinary suite tests.
-[The Release golden tests](building.md#the-release-golden-tests) says which five classes it runs, how it builds them, and what it costs.
+[The Release golden tests](building.md#the-release-golden-tests) says which six classes it runs, how it builds them (with the size settings of `Scripts/size_settings.py` but `-internalize-at-link`, which no test bundle can link against), and what it costs.
 
 ## Run only some tests
 <!-- id: run-only-some-tests; keys: test-area, AREAS, AREA_ARGS, areas.conf, run-area, --changed, --repeat, flaky test; src: Scripts/test/run-area.py, Scripts/test/areas.conf, Scripts/test/testkit.py, Makefile -->

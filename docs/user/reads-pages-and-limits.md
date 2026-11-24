@@ -105,6 +105,7 @@ Every format TextMouth reads, with how well each is tested, is in [the list of f
 - A BRF without form feeds, which TextMouth cuts every 25 lines only to read its layout, has pages only when braille page numbers end most of those 25-line pieces.
 - A form feed only at a file's start or end counts as none.
 - A BRL file has no pages.
+- In a BARD braille book, each volume's heading follows the marker of the volume's first page, so going to that page lands on the heading (see [DAISY and braille books](reads-daisy-and-braille.md)).
 
 ### Pages in plain text
 <!-- id: pages-plain-text; keys: form feed, FF, blank page, page limit; src: TextMouth/Parsers/MarkdownPageMarker.swift, TextMouth/Parsers/PlainTextParser.swift -->

@@ -42,6 +42,7 @@ The duplicate question, Replace Existing, and the questions that wait their turn
   - SSML files,
   - Kindle books (.mobi, .prc, .azw, and .azw3, and .kfx, .kfx-zip, .azw8, and .kpf),
   - BRF, BRL, and PEF braille files,
+  - BARD braille packages (.bopf),
   - M3U, M3U8, PLS, and XSPF playlists,
   - pictures of pages (.png, .jpg, .jpeg, .heic, .heif, .tif, .tiff) and comic book archives (.cbz), whose words are found by text recognition,
   - MPEG-4, M4V, and QuickTime video files (.mp4, .m4v, and .mov, whose sound alone it plays),
@@ -96,6 +97,7 @@ The duplicate question, Replace Existing, and the questions that wait their turn
 <!-- id: import-folder; keys: Import DAISY Folder, importDAISYFolder, folder of tracks, symbolic link, ORIGINAL_KEPT, Shift-Command-O; src: TextMouth/Services/FileImportService.swift, TextMouth/ViewModels/LibraryViewModel+Import.swift -->
 
 - Library menu, Import Folder… (Shift-Command-O, in a Library window) imports a DAISY book kept as loose files, by its folder, one folder per book, or a folder of audio tracks as one audiobook, as a ZIP of the same tracks imports.
+- A BARD braille book kept as a folder, its volumes and its .bopf package file, imports the same way, as one braille book (see [DAISY and braille books](reads-daisy-and-braille.md)).
 - A key you gave it when it was called Import DAISY Folder… keeps working.
 - Opening such a folder from Finder imports it the same way.
 - The folder's tracks, and its manifest, at its top level or inside its one folder, are copied into the book's package, and the folder is left as it was.

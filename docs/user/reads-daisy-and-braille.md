@@ -27,7 +27,7 @@ Every format TextMouth reads, with how well each is tested, is in [the list of f
 ## Braille files
 <!-- id: braille-files-read; keys: BRF, BRL, PEF, liblouis, Braille tab, table changed, Book Information; src: TextMouth/Parsers/BrailleBookReader.swift, TextMouth/Parsers/BrailleFileReader.swift, TextMouth/Services/BrailleTranslator.swift, TextMouth/Models/BrailleTableCatalog.swift; status: incomplete; issues: FR32, FR33 -->
 
-- TextMouth reads BRF files (.brf), BRL files (.brl), and PEF files (.pef).
+- TextMouth reads BRF files (.brf), BRL files (.brl), and PEF files (.pef), and BARD braille books of several BRF volumes (see BARD braille books, below).
 - It translates them to print with liblouis, using the braille code chosen in the Braille tab of Settings (see [Settings](settings-braille.md)), and the print becomes a text book like any other, so it reopens, searches, and keeps its place, bookmarks, and skipped headings.
 - A book keeps the code it was imported with, through Remove from Library Only and adding it back too, so changing the setting never changes what an imported book says.
 - A book read with one of this Mac's tables (see [Settings](settings-braille.md)) also keeps the liblouis version of this Mac's tables, and if a macOS update changes them, TextMouth refuses to rebuild that book's text and keeps the text as it was, with this sentence.
@@ -95,6 +95,8 @@ Every format TextMouth reads, with how well each is tested, is in [the list of f
 <!-- id: braille-layout; keys: BANA Braille Formats, centered, cell 5, cell 7, indent, running head, print page; src: TextMouth/Parsers/BraillePageAnalyzer.swift, TextMouth/Parsers/BrailleBookReader.swift, TextMouth/Parsers/BrailleBookReader+Pages.swift; status: incomplete; issues: DR08 -->
 
 - Headings, paragraphs, and list items are found from the layout, as BANA's Braille Formats (2016) lays it out.
+- The width of a page is measured from the book's own pages: from the page numbers at the right margin where the pages have them, else from the longest lines.
+  A few stray long lines, on up to one page in twenty, are left out of that measure, so they no longer widen the page and leave centered headings and page numbers out of their place.
 - A centered line, or a centered run of lines, is a level-1 heading.
 - A line at cell 5 is a level-2 heading, and a line at cell 7 is level 3.
 - Paragraphs and list items are found from their indents, and each list item is read as a paragraph.
@@ -176,6 +178,32 @@ Every format TextMouth reads, with how well each is tested, is in [the list of f
     For a book added before TextMouth kept a record of your edits, the launch fills in only an author that says Unknown, and leaves the title alone.
 - Every braille book is read again once for this, at the first launch after the update that added it (0.4.8), so a BRF added before it gets its title and author, and its text loses its running heads and change lines.
   Every braille book is read again once more at the first launch of 0.4.9 (braille page reader 1.1.1), for the running heads that differ only by a number.
+
+### BARD braille books
+<!-- id: bard-braille-books; keys: BARD, .bopf, braille package, volumes, NLS BARD Braille Package, Volume 1, spine, Import Folder; src: TextMouth/Parsers/BardBraillePackage.swift, TextMouth/Parsers/BrailleBookReader+Pages.swift, TextMouth/Parsers/BrailleFileReader.swift, TextMouth/Models/Book.swift, TextMouth/Services/FileImportService.swift -->
+
+- A BARD braille book is a braille book in volumes, as the BARD service gives it: one BRF file for each volume, and one package file ending in .bopf that names the volumes, puts them in order, and describes the book.
+  Finder calls a .bopf file an "NLS BARD Braille Package".
+- TextMouth imports the volumes and their package as one braille book, whichever you give it:
+  - the ZIP of the download, with Open Book…;
+  - the folder it unpacks to, with Import Folder…;
+  - or, on the Mac, the .bopf file itself, with Open Book…, in which case TextMouth keeps the volumes the package lists, from beside it, and nothing else of the folder.
+- The iPhone takes the ZIP, or the folder with Import Folder… in the Add to Library sheet, and offers no lone .bopf, since it copies only the file you choose, and a package file alone would arrive without its volumes.
+- The volumes are read in the order the package gives, and each begins with a level-1 heading, "Volume 1", "Volume 2", and so on, in English whatever the book's language.
+  The book's own headings sit one level below, so its level-1 headings are level 2, and none is deeper than level 6.
+- Its title and author come from the package, not from a title page, and its publisher, date, language, and identifier are kept with the book, as an EPUB's are.
+- Its braille code comes from the package, whatever the Braille tab says, and is never said to be guessed.
+  - English Braille, American Edition, contracted (Grade 2) or uncontracted (Grade 1).
+  - Unified English Braille, contracted (Grade 2) or uncontracted (Grade 1).
+  - For any other code, or none, the book is read as any BRF is, with the Braille tab's code or the guess described above.
+- The width of a page is measured from the volumes' own pages (see Braille layout, above), and never taken from the package, whose line length need not be the width the braille was laid out in.
+- A ZIP and its folder are one book: whichever you add second is found a duplicate of the first (see [Duplicate books](duplicate-books.md)).
+- A volume that the package lists and the book lacks, an empty volume, or one that is not braille in the book's code is refused by name, as in "The file “NAME.brf” in this book is damaged or incomplete: the book's package lists it, but it is not there.
+  Get a fresh copy of the book, then import it again."
+- A ZIP with two package files side by side is refused, since no one book is meant: "The file “NAME.bopf” in this book is damaged or incomplete: it is one of 2 package files at the same level, so no one book is meant.
+  Get a fresh copy of the book, then import it again."
+  NAME is one of the two; the number is how many stand at that level.
+- The volumes together are held to the 32 MB limit of a braille file (see Braille file limits, below).
 
 ### Braille file limits
 <!-- id: braille-file-limits; keys: 32 MB, page limit, row limit, refusal; src: TextMouth/Parsers/BrailleFileReader.swift, TextMouth/Parsers/BrailleBookReader.swift -->

@@ -166,7 +166,7 @@ A script that puts its own folder on `sys.path` sets `sys.dont_write_bytecode = 
 `Scripts/agents/tests/test_bytecode_policy.py` fails for any script under `Scripts/` outside a `tests` folder that does not.
 
 ### The iPhone app's size
-<!-- id: iphone-app-size; keys: ios-size, app-size.py, ios_size, Size:, IPA, App Store download, device build, TL05; src: Scripts/ios/app-size.py, Scripts/agents/run-ios-build.py, Scripts/agents/build-train.py, Scripts/agents/run_suite.py, Scripts/agents/merge_ios_shards.py, Makefile, Scripts/check.sh -->
+<!-- id: iphone-app-size; keys: ios-size, app-size.py, ios_size, Size:, IPA, App Store download, device build, TL05; src: Scripts/ios/app-size.py, Scripts/size_settings.py, Scripts/agents/run-ios-build.py, Scripts/agents/build-train.py, Scripts/agents/run_suite.py, Scripts/agents/merge_ios_shards.py, Makefile, Scripts/check.sh -->
 
 The user's limits are the same for both apps: 30 MB, and 40 MB a strict one (see [Building TextMouth](building.md)).
 
@@ -180,7 +180,9 @@ The user's limits are the same for both apps: 30 MB, and 40 MB a strict one (see
   The device build is only run when asked, and took about 7 to 11 minutes of the iPhone job.
   A device build that fails or runs late says `Size: not measured` and changes nothing else: the Simulator build's verdict stands.
   It checks the toolchain stamp as the Simulator build does, and any failure but the time limit runs once more from an empty device folder, on a runner only, since emptying the module caches alone left the build database claiming modules that were gone.
-- With FFmpeg inside it (FMT54), the iPhone app is 16.1 MB (16,078,689 bytes), where it was 13.7 MB, and the Mac app 21.0 MB.
+- The device build takes `-Osize` and the settings of `Scripts/size_settings.py`, as the Mac's Release build does (see [The Release size settings](building.md#the-release-size-settings)): `app-size.py` passes `size_settings.settings()` to `xcodebuild`.
+  A Simulator build, and the tests, do not.
+  `make ios-size` measures the result.
 - `make check` builds the iPhone app for a device too and holds it to 30 MB (a warning) and 40 MB (a failure), even under `--without-tests` (see [Building TextMouth](building.md)).
   `app-size.py` reads the limits from `Scripts/check.sh`, and its default derived-data folder, `build/ios-size-DerivedData`, is absolute.
   Only a GitHub runner skips the step, with a line saying so.

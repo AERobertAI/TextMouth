@@ -13,7 +13,8 @@ Exports writes braille too (see [Exports](exports.md)); the Braille setting is u
 <!-- id: format; keys: UTType, UTI, document types, file extensions, XML root; src: TextMouth/Models/Book.swift, TextMouth/Parsers/XMLDocumentSniffer.swift, TextMouth/Services/FileImportService.swift, TextMouth/Resources/Info.plist, TextMouthProductionTests/DocumentTypeDeclarationTests.swift -->
 
 The format: BookFormat.braille (raw value "braille", displayName "Braille", extensions brf, brl, and pef) is written into library.json and bookInfo.json and never changed, and a build from before it cannot decode the index (Index-write suspension, in [The library index](library-index.md)).
-BookFormat.detect(from:) names a .brf, .brl, or .pef by its extension, and a loose .xml by XMLDocumentSniffer, whose pef root gives braille.
+BookFormat.detect(from:) names a .brf, .brl, .pef, or .bopf by its extension, and a loose .xml by XMLDocumentSniffer, whose pef root gives braille.
+Its extensions also name bopf, a BARD braille book's package file, and a folder or ZIP of such a book is braille too (BARD braille books, below).
 Info.plist makes BRF, BRL, and PEF document types at Alternate rank and imports the types com.textmouth.brf and com.textmouth.brl (conforming to public.plain-text) and org.daisy.pef (public.xml).
 FileImportService.supportedTypes offers them in Open Book with whatever type the system gives a .pef, which macOS takes for a Pentax raw photo, and the reading tells the two apart.
 
@@ -46,7 +47,7 @@ The three rebuild paths of MarkdownCacheService and BookContentAnalysisService u
 
 3. BraillePageAnalyzer.structure(of:), pure and bounded, finds the blocks.
    A BRL is unformatted: each row that is not blank is a paragraph.
-   Otherwise it takes the line width from a PEF's cols, else from the rows that end in page numbers, else from the centered headings.
+   Otherwise it takes the line width from a PEF's cols, else from the rows that end in page numbers, else from the longest line, which leaves out the longest lines of up to one page in twenty (`longestLine(ofPages:)`), or the centered headings.
    It takes each page's braille page number, print page number, and print-page change lines out of its rows (BraillePageNumbers, with where the page begins: its first block, and the cell of that block's braille its first row begins at, firstCellOffset, PG12).
    BraillePageNumbers.braillePageLabel reads the braille page number as print through BraillePageAnalyzer.printLabel(of:), cell by cell.
    The cells are letters, then the number sign with its digits (a to j for 1 to 9 and 0), then letters, a capital sign or a letter sign standing where one is needed, as "⠼⠁⠃" reads 12 and "⠏⠼⠁" reads p1.
@@ -185,3 +186,34 @@ Its words are two sentences: "This braille looks like English Braille, American 
 The suggestion changes nothing by itself, and load() announces the sentence once as it appears (announceSuggestionOnce(), through VoiceOverAnnouncer, guarded by hasAnnouncedSuggestion so a second load() says nothing), since the sheet shows it late.
 VoiceOver also reads it as the item after the pop-up.
 The detector also runs at import, by a stricter rule ([The guess of English Braille, American Edition](imports-braille-tables.md)).
+
+### BARD braille books
+<!-- id: bard-braille-books-reader; keys: BARD, .bopf, braille package, volumes, spine, brl:brailleCode, volume heading, FMT56; src: TextMouth/Parsers/BardBraillePackage.swift, TextMouth/Parsers/DAISYParser+OPFParser.swift, TextMouth/Parsers/DAISYParser+PackageInventory.swift, TextMouth/Parsers/BrailleFileReader.swift, TextMouth/Parsers/BraillePageAnalyzer.swift, TextMouth/Parsers/BrailleBookReader+Pages.swift, TextMouth/Services/FileImportService.swift, TextMouth/Models/Book.swift, Scripts/ios/sync-info-plist.py, TextMouthProductionTests/BardBrailleTests.swift -->
+
+BardBraillePackage reads a BARD braille book (FMT56): a `.bopf` package, an Open eBook package of the form of DAISY 3's OPF, and the BRF volumes it lists.
+The package file is parsed by DAISYOPFParser, which also keeps the Dublin Core description, publisher, date, language, identifier, and subjects, and every `meta` by its lowercase name (`metas`).
+The files are reached through the DAISY file providers (ZIP, folder, or a package file with its folder), which answer `byteCount(of:)`, so a volume's size is known before it is read.
+- Finding one: `isPackage(at:)` is true for a `.bopf` file, a folder whose package files are all `.bopf`, and a ZIP that `holdsPackage(inArchivePaths:)`.
+  - That is: no TextMouth package in it, and every package or navigation file in it a `.bopf` (so a DAISY book, which has its own, is not one), standing in one folder or at the top level, as `DAISYParser.isDAISYZip` asks of a DAISY book's.
+  - BookFormat.detect(from:) tests it before the DAISY checks and gives `.braille`, and BookFormat.braille's extensions name bopf.
+- Opening: `open(at:)` takes the package file chosen, else the shallowest in the folder or ZIP, ignoring hidden paths (`isHiddenPackagePath`: a part that begins with a dot, or `__MACOSX`).
+  Two at the shallowest depth throw `DAISYParserError.malformedXML` naming one, "it is one of N package files at the same level, so no one book is meant", which PackageDamage words as a damaged book.
+- The volumes are the manifest items of a BRF or BRL media type or name, in the spine's order, or, when the spine names none, the manifest's.
+  Each path is found as the package spells it, else in any letter case, and listed once; a package that lists none is refused, "it lists no braille volume".
+- `readPages(code:)` reads every volume as a BRF in North American Braille ASCII (`brailleFileCode(ofImported:)` says so for a package), through `BrailleFileReader.pages(fromText:kind:code:)`.
+  - A listed volume that is missing, an empty one, and one that is not braille in the code are each refused by name, as above.
+  - The sizes are added from `byteCount(of:)` and held to `BrailleBookReader.maximumFileBytes` before any volume is read, and the bytes read are held to it again.
+  - `BrailleFilePages.append(volume:number:)` joins the volumes, recording `volumeStarts` and `volumeNumbers`, the place in the spine; the line width is the first volume's, and the pages are marked only if every volume's are.
+- The width is measured, never taken from the package:
+  - `BraillePageAnalyzer.structure(of:)` lays each volume out alone, at `commonWidth(ofVolumesIn:)`, the width most volumes measure, the longer on a tie, and returns each volume with text as a `BrailleVolumeStart`.
+  - `brl:lineLength`, and the page count `brl:pages` (which leaves out each volume's empty last page), are only compared with what was read, and a difference is logged (BARD_BRAILLE_WIDTH, BARD_BRAILLE_PAGES).
+  - For every BRF, `longestLine(ofPages:)` leaves out the longest line on each of the longest 1 in 20 pages (`count / 20`) when it takes the longest line, the width of a book with no numbered last rows, so a stray long line cannot widen the page.
+- `PagedTranslation` writes `# Volume N` (`volumeHeading(number:)`, English and never translated) after the marker of the volume's first page, so Go to Page lands on it, and writes every other heading at `min(level + 1, 6)`.
+- The table comes from `brl:brailleCode` and `brl:contractionLevel` (`tableID(brailleCode:contractionLevel:)`): EBAE at level 2 is `BrailleTableGuess.ebaeTableID` (en_US.tbl), EBAE at 1 en-us-g1.ctb, UEB at 2 en-ueb-g2.ctb, UEB at 1 en-ueb-g1.ctb.
+  `FileImportService.brailleReading(ofImported:)` stamps it with no origin, so it is never a guess; for any other code, or a table the catalog lacks, the book is read as a plain BRF is.
+- The title and author are the package's (the first creator; "Unknown" is none), and its publisher, date, language ("und" is none), and identifier become the row's EPUB metadata.
+- `contentHash()` is made by `DAISYPackageInventory.contentHash(entryDigest:files:)`, so a ZIP and its folder have one checksum and the second added is a duplicate.
+- The iPhone offers no lone `.bopf`, since its picker copies only the file chosen, which would arrive without its volumes.
+  `Scripts/ios/sync-info-plist.py` lists "NLS BARD Braille Package" in `REFUSED`, which leaves the type and its declaration out of the iOS plist ([The iOS Info.plist](../platforms.md#the-ios-infoplist)), and `FileImportService.supportedTypes` names the type under `#if os(macOS)`.
+  A BARD ZIP, and a folder chosen with Import Folder…, import there as on the Mac.
+- Tests: BardBrailleTests, in the import and braille areas, builds a package of TextMouth's own text, and a private test reads a sample kept out of the repository, skipped where there is none.
