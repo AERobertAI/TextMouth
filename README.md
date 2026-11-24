@@ -14,7 +14,7 @@ ARCHITECTURE.md, in the same folder, is the index of the pages explaining how th
 - [What TextMouth reads](docs/user/what-textmouth-reads.md): the formats it imports and plays.
   - [Formats list](docs/user/formats-list.md): each format, and how well it is tested.
   - [Kindle books](docs/user/reads-kindle-books.md): MOBI, KF8, KFX, PalmDOC, and Kindle Create.
-  - [DAISY and braille books](docs/user/reads-daisy-and-braille.md): DAISY, XML, BRF, BRL, and PEF.
+  - [DAISY and braille books](docs/user/reads-daisy-and-braille.md): DAISY, XML, BRF, BRL, PEF, and BARD braille.
   - [Text, HTML, and PDF files](docs/user/reads-text-files.md): encodings, web archives, and SSML.
   - [Pages, tables, and limits](docs/user/reads-pages-and-limits.md): page numbering, and the 64 MB limit.
   - [Audiobooks](docs/user/reads-audiobooks.md): audio formats, conversion, playlists, and ZIPs of tracks.
