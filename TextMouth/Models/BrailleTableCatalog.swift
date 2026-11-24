@@ -760,7 +760,7 @@ enum BrailleTableCatalog {
             #if os(macOS)
             // A bare value this Mac's pack lacks, such as a table the iPhone stored (FR32), reads with VoiceOver's file of that
             // name when it has one, and keeps the value it was asked for.
-            return macTablesOfEveryDirection.first { $0.id == BrailleTableSource.mac.storedValue(ofFile: id) }?.withID(id)
+            return exportTables.first { $0.id == BrailleTableSource.mac.storedValue(ofFile: id) }?.withID(id)
             #else
             return nil
             #endif

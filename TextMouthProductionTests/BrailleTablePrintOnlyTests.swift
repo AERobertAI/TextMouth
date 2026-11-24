@@ -159,6 +159,25 @@ final class BrailleTablePrintOnlyTests: XCTestCase {
         XCTAssertEqual(try decoded("../fr-bfu-g2.ctb").brailleTable, "")
     }
 
+    /// A table is a table, or none, under both spellings of its value: the Mac looks a bare value the pack lacks up as it
+    /// looks a `mac:` value up, among the tables listed for reading or export. `ga.tbl`, `no.tbl`, `zh_HK.tbl`,
+    /// `da-dk-g26l-lit.ctb`, and the three `da-dk-*_1993.ctb` tables were a table under one spelling and none under the other.
+    func testBothSpellingsOfAValueFindTheSameTableOrNone() throws {
+        try XCTSkipIf(BrailleTableCatalog.mac == nil, "This Mac has no VoiceOver braille tables")
+        let listed = (BrailleTableCatalog.mac?.tables ?? []) + (BrailleTableCatalog.mac?.printOnly ?? [])
+        let odd = ["ga.tbl", "no.tbl", "zh_HK.tbl", "da-dk-g26l-lit.ctb", "da-dk-g16_1993.ctb", "da-dk-g26_1993.ctb", "da-dk-g26l_1993.ctb"]
+        let names = Set(listed.map(\.fileName)).union(odd.filter {
+            FileManager.default.fileExists(atPath: BrailleTableCatalog.macTablesFolder.appendingPathComponent($0).path)
+        })
+        for name in names where BrailleTableCatalog.bundledAll.allSatisfy({ $0.id != name }) {
+            let bare = BrailleTableCatalog.table(withID: name)
+            let prefixed = BrailleTableCatalog.table(withID: "mac:\(name)")
+            XCTAssertEqual(bare == nil, prefixed == nil, "\(name) is a table under one spelling only")
+            XCTAssertEqual(bare?.displayName, prefixed?.displayName, name)
+            XCTAssertEqual(bare?.isPrintOnly, prefixed?.isPrintOnly, name)
+        }
+    }
+
     /// A bare value the Mac's pack lacks is judged by its one file's header, never by the whole folder: decoding config.json
     /// runs on the main thread at every launch (review R3), so a folder of about 485 files is not read for it. Only the file
     /// named is read, once; a table of either direction is kept, an include or a file that is not there is refused, and a
