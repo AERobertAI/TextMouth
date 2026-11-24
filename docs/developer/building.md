@@ -207,7 +207,7 @@ The pieces below are what a measurement of the Release build showed at commit e0
 
 The ordinary suite tests a Debug build, and the Release app is compiled with `-Osize`, so an optimizer miscompile could change what a reader makes of a book without any test noticing.
 `make release-goldens` (`Scripts/test/release-goldens.sh`) closes that gap.
-Run it once before a release, and after any change to the build settings in project.yml or the Makefile's build rule.
+Run it once before a release, and after any change to the build settings in project.yml, the Makefile's build rule, or `Scripts/size_settings.py`.
 
 - **What it runs.**
   Six classes, through `Scripts/test/run-area.py`: `TextPipelineGoldenTests`, `DocumentGoldenTests` (the 57 files of `TestData/golden`), `MarkupGuardTests`, `PortableXMLDifferentialTests`, `ParserContentFidelityTests`, and `ReflectionNamesTests`.
