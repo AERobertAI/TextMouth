@@ -122,7 +122,7 @@ enum PhoneSettingsRow: Hashable, Identifiable {
         case .endOfBook: return Words.endOfBookHint.title
         case .shareLogs: return PhoneSettingsWording.shareLogsHint
         case .interfaceLanguage: return InterfaceLanguagePickerWording.hint
-        case .brailleTable: return BrailleSettingsWording.codeHint
+        case .brailleTable: return PhoneSettingsWording.brailleCodeHint
         case .brailleFileCode: return BrailleSettingsWording.fileCodeHint
         case .exportInterfaceText: return InterfaceTextOverridesWording.exportHint
         case .language, .readingStatistics: return nil

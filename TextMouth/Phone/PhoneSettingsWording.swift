@@ -38,6 +38,12 @@ enum PhoneSettingsWording {
         // Translators: Heading of the iPhone Settings section that holds Follow in Braille.
         InterfaceText.line("phoneSettings.readingSection", "Reading")
     }
+    /// What the Braille code row does, spoken after its label and value: the iPhone only reads braille files, so unlike the
+    /// Mac's pop-up it says nothing of writing.
+    static var brailleCodeHint: String {
+        // Translators: The hint of the Braille code row in the iPhone's Settings, which opens the list of braille codes used to read braille files.
+        InterfaceText.line("phoneSettings.brailleCodeHint", "The braille code for reading braille files.")
+    }
     /// The caption under the Braille code row (FR32): which books it applies to and what a book keeps.
     static var brailleCaption: String {
         // Translators: The caption under the Braille code row in the iPhone's Settings. A book keeps the braille code it was added with.

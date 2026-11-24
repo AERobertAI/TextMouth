@@ -545689,6 +545689,162 @@
         }
       }
     },
+    "phoneSettings.brailleCodeHint" : {
+      "comment" : "The hint of the Braille code row in the iPhone's Settings, which opens the list of braille codes used to read braille files.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "رمز برايل لقراءة ملفات برايل."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ব্রেইল ফাইল পড়ার ব্রেইল কোড।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Der Braille-Code zum Lesen von Braille-Dateien."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The braille code for reading braille files."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El código braille para leer archivos braille."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "کد بریل برای خواندن پرونده‌های بریل."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Le code braille pour lire les fichiers braille."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "קוד הברייל לקריאת קובצי ברייל."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ब्रेल फ़ाइलें पढ़ने के लिए ब्रेल कोड।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kode braille untuk membaca berkas braille."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Il codice braille per leggere i file braille."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "点字ファイルの読み取りに使う点字コードです。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "점자 파일을 읽는 데 사용하는 점자 코드입니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "De braillecode voor het lezen van braillebestanden."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tabela Braille’a do czytania plików Braille’a."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "O código braille para ler arquivos braille."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Код Брайля для чтения файлов Брайля."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Punktskriftskoden för att läsa punktskriftsfiler."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "รหัสอักษรเบรลล์สำหรับอ่านไฟล์อักษรเบรลล์"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Braille dosyalarını okumak için braille kodu."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Брайлівський код для читання файлів Брайля."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "بریل فائلیں پڑھنے کا بریل کوڈ۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mã braille để đọc các tệp braille."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "用于读取盲文文件的盲文码。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "用於讀取點字檔案的點字碼。"
+          }
+        }
+      }
+    },
     "phoneSettings.followInBraille" : {
       "comment" : "Switch in iPhone Settings: while a book plays, the book's text moves on with the speech, for a braille display.",
       "extractionState" : "manual",

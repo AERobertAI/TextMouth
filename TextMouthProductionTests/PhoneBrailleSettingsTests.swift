@@ -134,6 +134,9 @@ final class PhoneBrailleSettingsTests: XCTestCase {
     func testTheSectionsWordsAreTheMacsAndTheCaptionIsTheIPhones() {
         XCTAssertEqual(PhoneSettingsSection.braille.title, "Braille")
         XCTAssertEqual(PhoneSettingsRow.brailleTable.title, BrailleSettingsWording.codeLabel)
+        // The row's hint says only reading: the iPhone writes no braille, unlike the Mac's pop-up (which reads and writes).
+        XCTAssertEqual(PhoneSettingsRow.brailleTable.hint, "The braille code for reading braille files.")
+        XCTAssertNotEqual(PhoneSettingsRow.brailleTable.hint, BrailleSettingsWording.codeHint)
         XCTAssertEqual(PhoneSettingsRow.brailleFileCode.hint, BrailleSettingsWording.fileCodeHint)
         let guess = PhoneSettingsSwitch.guessBrailleTable
         XCTAssertEqual(guess.title, "Guess the braille code of new books")
