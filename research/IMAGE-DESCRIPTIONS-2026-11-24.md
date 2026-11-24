@@ -116,3 +116,84 @@ Your question:
 - A caption straight from the picture (27) can say what labels cannot (who is doing what), and can also be wrong; so it is marked as the computer's, and the reader keeps the choice.
 - Unchecked: how often the 27 caption errs on photographs, and its speed; both need a Mac or iPhone on 27 with the SDK, which this one does not have.
 
+## The options compared
+
+| Option | Needs | Gives | Cost | Verdict |
+|---|---|---|---|---|
+| Vision facts (kind, text, tables, codes) | Mac 14, iPhone 26 | Facts, not sentences | Code only; 6 to 2,000 ms a picture | Do first |
+| Vision labels in a template | Mac 14, iPhone 26 | "Picture of: bicycle" | 60 lines to translate | Only above a confidence |
+| Language model writes from Vision facts | OS 26, Apple Intelligence | Fluent sentence, 23 languages | Seconds a picture; unmeasured | Second |
+| Language model captions the picture | OS 27, Apple Intelligence | A real caption | Needs the 27 SDK; unmeasured | Third, when the SDK exists |
+| Core ML captioner (SmolVLM, Florence-2) | Any, plus a model | A caption, English | 0.5 GB or more; conversion work | Not now |
+| Cloud service | A network | Better captions | Sends the user's books away | Never |
+| VoiceOver's description | Nothing public | None | Not available | Impossible |
+
+## The open models, for the record
+
+- SmolVLM-256M-Instruct: Apache 2.0, about 0.3 billion parameters, `model.safetensors` 513 MB, English only, captions and questions ([model card](https://huggingface.co/HuggingFaceTB/SmolVLM-256M-Instruct)).
+- Florence-2-base: MIT, about 0.23 billion parameters, tasks `<CAPTION>`, `<DETAILED_CAPTION>`, `<MORE_DETAILED_CAPTION>`, and OCR ([model card](https://huggingface.co/microsoft/Florence-2-base)).
+- BLIP base captioning: BSD-3-Clause, and its card says "for research purposes only" ([model card](https://huggingface.co/Salesforce/blip-image-captioning-base)).
+- Apple's FastVLM: its model license limits use to "non-commercial scientific research", so it is out ([LICENSE_MODEL](https://github.com/apple/ml-fastvlm/blob/main/LICENSE_MODEL)).
+- Each would add about 0.25 to 0.5 GB to an app that is 22 MB, need a Core ML conversion of a generative model, and caption in English only; their accuracy was not tested, and none was downloaded.
+- They are the only way to a caption on a Mac 14 or 15, or with Apple Intelligence off, so the question stays open (question 4).
+
+## Where TextMouth would use it: the formats
+
+- What is read today: HTML, EPUB, DAISY, Kindle, and ODT pictures are read as their alt text or description when there is one, and as nothing when the author gave none (`HTMLToMarkdownConverter`, `KFXWalk`, `ODTContentReader`; a DOCX picture's description likewise).
+- PDF: text drawn in a picture is read by Vision on the regions where the page draws images (`PDFPageImageScanner`, `PDFRecognitionPlan`, `VisionTextRecognition`); a picture with no text gives nothing, and a tagged PDF's own figure alt text is not read.
+  The structure tree's `/Alt` on a figure is a free first source, readable through Core Graphics' PDF dictionaries; unchecked, and a spike should confirm it.
+- EPUB, HTML in archives, DAISY, DOCX, ODT, Kindle: a picture with empty or missing alt is a candidate; its bytes are in the package (EPUB `src`, DOCX `r:embed`, ODT `draw:image`), and the parser knows where it stands in the text.
+- Slides and spreadsheets: a PowerPoint picture's `descr` and its image are the Office reader's matter (`officeresearch`); the picture code below would serve them unchanged.
+- Pictures of pages and comic archives (FMT34): already read with Vision (`PageImageReader`); a picture whose text is empty is where a description would help, and a classification of "document" or "printed_page" says to read it instead.
+- Comics: panels and balloons are a different task; a caption of the whole page says little, so comics stay as they are for now (question 8).
+
+## How descriptions would be kept
+
+- Like a transcript: transcript.json is a record in the package that the user's edits and a cleanup change, and content.md with its index is the cache built from it ([Transcripts](../docs/architecture/state/package-records-places-and-files.md)).
+- A new record, `descriptions.json`, in the package, holding for each picture:
+  - where it is (the chapter and the picture's order, and a digest of its bytes so a re-read finds it again);
+  - the text, and its source: `author` (the book's own alt), `machine`, or `edited`;
+  - the tier and engine that made it, the OS version, the language, and when;
+  - for a machine one, the evidence it came from (kind, labels with confidence, text), so a later better engine can say what changed.
+- The description reaches the reading text through the same path as a transcript's text: the converter writes it at the picture's place in content.md, marked by an inert comment like the page markers (`MarkdownMarker`), so search, speech, braille, export, and places all see it.
+- Machine descriptions are never mixed with the author's: the author's alt wins, and is never overwritten.
+- Editable: Edit Text changes it as it changes a transcript (`TranscriptStore.takeEdit` is the model); an edit turns `machine` into `edited`, and an edited one is not replaced without asking.
+- Made again on request: a "Describe Pictures Again…" command like Retranscribe Audio…, naming what exists, with Delete Descriptions…, and the previous file kept for an undo, as a transcript's cleanup keeps `transcript.json.before-cleanup`.
+- A re-read of the book keeps descriptions whose digest still matches and drops the rest.
+- On the iPhone the same files and commands; the record is the shared package format, so a book described on a Mac shows its descriptions on the phone, and the reverse.
+
+## Language, time, battery, privacy
+
+- **Language:** Tier 1's kind words ("chart", "table", "picture") and the template are in TextMouth's 25 interface languages, a short fixed set; Vision's 1,303 labels are English only, so labels are spoken only in English, marked with their language.
+- The language model writes in any of its 23 languages by instruction; for the other languages of TextMouth's 25 the description is English and carries `language: en`, so speech may use an English voice for it (whether the speech code can switch voices for one passage is unchecked, question 5).
+- **Time, measured:** first Vision call about 1.6 s; classification 6 to 120 ms; text on a page 0.4 s; a table through `RecognizeDocumentsRequest` 2.1 s; saliency under 30 ms.
+  A book of 200 pictures costs under a minute of Vision on this M3 (estimate).
+- The language model's time is unmeasured; plan on seconds a picture and show progress, which is why it runs on request with Cancel, as transcription does, and never silently at import.
+- **Battery on the iPhone:** run only in the foreground with progress, pause on Low Power Mode and on serious thermal state (`ProcessInfo.isLowPowerModeEnabled`, `thermalState`), and offer "only while charging" for a long book; estimate, not measured.
+- **Privacy:** Vision, VisionKit, and the on-device Foundation Models model run on the device; nothing is sent, nothing needs a network, and the language model's files are managed by the system.
+- A test guard fails the build if code names `PrivateCloudComputeLanguageModel` or a network type in the description code; the entitlement the cloud model needs is not in TextMouth's.
+- An image's pixels and descriptions are not written to the log; the log says only counts and tiers, as `TranscriptionLog` does.
+
+## Both platforms, and what a Mac on 14 or 15 gets
+
+- Mac 14.0 (the target): Vision's older requests, the whole of Tier 1 (kind, text, codes, saliency); Swift-API classification only from 15; `ImageAnalyzer` from 13; table recognition and the language model do not exist.
+- Mac 15: the same, plus the Swift classification API and the aesthetics score.
+- Mac 26: adds `RecognizeDocumentsRequest` (tables) and the text-only language model, which needs Apple Intelligence on and a Mac with M1 or later.
+- Mac 27: adds the image caption; the Core Advanced model needs M3 or later.
+- iPhone 26.0 (the target): everything Mac 26 has, on an iPhone 15 Pro or later for the model; an iPhone without Apple Intelligence gets Tier 1.
+- iPhone 27: the image caption, and the Core Advanced model on an iPhone Air or 17 Pro.
+- Every call is behind `#available` and a run-time check (`SystemLanguageModel.default.availability`); code for 27 needs an Xcode with the 27 SDK, and until then is written but not compiled, which is a risk below.
+- Both apps share one `PictureDescriber` in the shared sources, as `VisionTextRecognition` is shared today; only the settings pages and the sheets differ.
+
+## How a description is read
+
+- Speech: the picture's place in the text says one line, as a page marker says a page: "Image, described by the computer: a bar chart titled Quarterly sales. Text in the image: ...".
+- The author's own alt reads as "Image: ..." with no mention of a machine; an edited one reads as the author's, since the user vouched for it.
+- A picture with nothing to say reads "Image, no description", so a listener knows something is there; a setting can turn that line off.
+- Settings (a pop-up, every value spoken): Pictures read: "Author's descriptions only" (the default for books never described), "Descriptions, including the computer's", or "Not at all"; a switch "Say that the computer wrote it", on.
+- Braille display: the same words, with the machine mark short ("img, computer:"); a transcriber's-note frame (`.<` and `.>` in ASCII braille) is the print-braille convention for text a reader did not write, and fits an exported BRF; whether it fits a live display is a question for the user.
+  Source: [BANA Formats 2016, section 3](https://www.brailleauthority.org/formats/2016manual-web/section03.html); a search result quoting that manual gives the ASCII symbols; the dot numbers are unchecked.
+- Navigation: a picture is a stop for next and previous heading-like jumps only if the user turns it on; the first version adds none, so no new key is needed.
+- Every text of this is a line in an `InterfaceText.line` wording enum, translated into all 24 languages before the merge, as the translation rule requires.
+- Nothing is told only by sight: no badge without a spoken label, the sheet's focus and announcements follow the Transcribe Audio sheet.
+
