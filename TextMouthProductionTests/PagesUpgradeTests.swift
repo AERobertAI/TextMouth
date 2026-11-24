@@ -39,7 +39,7 @@ final class PagesUpgradeTests: XCTestCase {
     /// since) and Word 2003 XML (.wordml, read by its own reader since FMT53,
     /// with hidden row marks and symbols by font since) at 1.3.0, OpenDocument
     /// text (.odt) at 1.1.0, Kindle books (.mobi, .azw3) at 1.1.0 (soft hyphens left out of MOBI 6
-    /// books too, and the KF8 chapter rule), DAISY at 1.0.1 (empty pages numbered through all of a book's files), braille at 1.1.1 (running heads, also those differing by a part number, Roman change lines, and Chapter rows that run into text), and the rest at 1.0.0.
+    /// books too, and the KF8 chapter rule), DAISY at 1.0.1 (empty pages numbered through all of a book's files), braille at 1.1.2 (running heads, also those differing by a part number, Roman change lines, Chapter rows that run into text, and stray long lines that no longer widen a page), and the rest at 1.0.0.
     private static func expectedVersion(of format: BookFormat) -> String {
         switch format {
         case .epub: return "1.0.3"
@@ -48,7 +48,7 @@ final class PagesUpgradeTests: XCTestCase {
         case .rtf, .rtfd: return "1.2.0"
         case .doc, .docx, .wordml: return "1.3.0"
         case .odt, .mobi: return "1.1.0"
-        case .braille: return "1.1.1"
+        case .braille: return "1.1.2"
         case .daisy: return "1.0.1"
         default: return "1.0.0"
         }
@@ -98,6 +98,16 @@ final class PagesUpgradeTests: XCTestCase {
             var book = epub
             book.pageReaderVersion = stored
             XCTAssertEqual(PageReaderVersions.isOutdated(book), outdated, "stored \"\(stored)\" of an EPUB")
+        }
+        // Braille's is 1.1.2, for the stray long lines a width leaves out
+        // (FMT56), so a book stamped by 1.1.1, which 0.4.9 to 0.5.10 wrote,
+        // is behind it and is read again once more.
+        let braille = Book(title: "Outdated", format: .braille, filePath: "/tmp/outdated.brf", md5Hash: "m", folderPath: "")
+        XCTAssertTrue(PageReaderVersions.isOutdated(braille), "no page reader recorded")
+        for (stored, outdated) in [("1.0.0", true), ("1.1.0", true), ("1.1.1", true), ("1.1.2", false), ("1.2.0", false)] {
+            var book = braille
+            book.pageReaderVersion = stored
+            XCTAssertEqual(PageReaderVersions.isOutdated(book), outdated, "stored \"\(stored)\" of a braille book")
         }
         let notes = Book(title: "Notes", format: .markdown, filePath: "/tmp/notes.md", md5Hash: "m", folderPath: "")
         XCTAssertFalse(PageReaderVersions.isOutdated(notes))

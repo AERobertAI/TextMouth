@@ -146,7 +146,7 @@ The page reader's version (PG09): which page reader wrote a book's content.md.
   EPUB is at "1.0.3" and HTML at "1.0.4".
   HTML was split from EPUB at 1.0.4: the text decoder then began to read unmarked UTF-16 and UTF-32 in every script, and an HTML file that declares ISO-2022-JP, unless the book recorded its encoding (TextFileDecoder.unmarkedUnicode(in:latinOnly:) and Evidence).
   That changes the text of HTML books and of no EPUB.
-  DOCX, DOC, and WordML are at "1.3.0", RTF and RTFD at "1.2.0", ODT and MOBI at "1.1.0", DAISY and plain text at "1.0.1", braille at "1.1.1", and PDF and KFX at "1.0.0".
+  DOCX, DOC, and WordML are at "1.3.0", RTF and RTFD at "1.2.0", ODT and MOBI at "1.1.0", DAISY and plain text at "1.0.1", braille at "1.1.2", and PDF and KFX at "1.0.0".
   A PDF's changed labels leave its reading text alone, so a PDF already in the library keeps its old labels until Redo Text Extraction.
   Markdown has no page reader and no version, so its books read the new way whenever their text is built again.
   A format without pages has nil, and its books are never read again for them.

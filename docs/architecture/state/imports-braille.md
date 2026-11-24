@@ -151,8 +151,9 @@ The refresh (refreshedValues(of:from:)) replaces, as for every format, any unedi
 ### The reader version
 <!-- id: reader-version; keys: page reader version, launch re-read, version bump, re-read once, stamp; src: TextMouth/Models/PageReaderVersions.swift, TextMouthProductionTests/PagesUpgradeTests.swift, TextMouthProductionTests/OnDiskContractTests.swift -->
 
-The reader version: PageReaderVersions.current(for:) names "1.1.1" for braille ("1.1.0", which shipped in 0.4.8, and "1.0.0" before).
+The reader version: PageReaderVersions.current(for:) names "1.1.2" for braille ("1.1.1", which shipped in 0.4.9, "1.1.0", which shipped in 0.4.8, and "1.0.0" before).
 The running heads, the Roman change lines, and the chapter rows change what a braille book's pages and text are, so every braille book is read again once at the launch re-read, and once more for 1.1.1 (the heads keyed without their numbers, below).
+1.1.2 reads every braille book once more, for the stray long lines a width leaves out (FMT56).
 A book with none of those reads byte for byte as before (PagesUpgradeTests, OnDiskContractTests.testThePageReaderVersions).
 The braille helper's EBAE fixes ([The EBAE fix pass](imports-braille-tables.md)) ride on this bump and raise no version of their own.
 

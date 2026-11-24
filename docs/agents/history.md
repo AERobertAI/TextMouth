@@ -915,7 +915,7 @@ The dates, run numbers, and measurements behind the rules in `docs/developer/tes
 
 - **Markdown refused for nesting:** The section on Markdown parsed from content.md and Markdown refused for nesting (November 13, 2026): MarkdownCacheService has two parses of a cached Markdown file, with the nesting refusal and the MARKDOWN_NESTING_KEPT_RAW line.
 - **The DAISY page reader version:** "1.0.1" for DAISY since November 13, 2026 ("1.0.0" shared with PDF before).
-- **The braille page reader version:** Braille's page reader was at "1.0.0" until November 13, 2026, "1.1.0" from then, and "1.1.1" since November 14, 2026.
+- **The braille page reader version:** Braille's page reader was at "1.0.0" until November 13, 2026, "1.1.0" from then, "1.1.1" from November 14, 2026, and "1.1.2" since November 23, 2026.
 - **The launch re-read's review:** The October 21, 2026 review that kept the re-read off until PG16 is restated in the comment on launchRereadIsOn.
 - **The text pipeline goldens:** TextPipelineGoldenTests hold the digests of what the text pipeline produced on main before the performance work of October 3.
 
@@ -988,7 +988,7 @@ The dates, run numbers, and measurements behind the rules in `docs/developer/tes
 
 - The three rules of layout (running heads, print-page change lines, chapter rows) came on November 13, 2026, with the user's Life of Pi BRF, a 2003 Australian EBAE transcription.
 - BrailleTitlePage (a BRF's title and author from its title page) came on November 13, 2026.
-- The braille page reader's version "1.1.0" dates from November 13, 2026 and shipped in 0.4.8; "1.1.1" dates from November 14, 2026.
+- The braille page reader's version "1.1.0" dates from November 13, 2026 and shipped in 0.4.8; "1.1.1" dates from November 14, 2026 and shipped in 0.4.9; "1.1.2" dates from November 23, 2026.
 
 ## From Imports: DAISY 3 books
 

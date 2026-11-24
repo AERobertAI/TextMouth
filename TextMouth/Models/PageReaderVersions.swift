@@ -153,8 +153,17 @@ enum PageReaderVersions {
             // head that differs only by a part or volume number from the
             // repeating one is left out too ("life of pi. part2" among
             // "part1" pages); 1.1.0 shipped in 0.4.8, so books stamped
-            // 1.1.0 are read again once more.
-            return "1.1.1"
+            // 1.1.0 are read again once more. At "1.1.2" the longest line a
+            // book's width can be measured from leaves out the longest line
+            // of each of the longest twentieth of its pages
+            // (`BraillePageAnalyzer`'s `longestLine(ofPages:)`, FMT56), so a
+            // stray long line no longer widens the page and keeps its
+            // centered headings and page numbers from being found; 1.1.1
+            // shipped in 0.4.9, so every braille book is read again once
+            // more. A book of fewer than 20 pages, or one whose longest line
+            // is on more of its pages than that, reads byte for byte as
+            // before.
+            return "1.1.2"
         case .txt:
             // Plain text's form feeds begin pages (PG13), and its own case
             // reads again only plain text books (V07). Most hold no form
