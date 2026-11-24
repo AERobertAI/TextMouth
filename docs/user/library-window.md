@@ -232,6 +232,7 @@ A braille book's sheet, under the heading Book Information, has the same fields 
 VoiceOver reads it as "Braille Code, Unified English Braille, contracted (Grade 2)".
 A book read with one of this Mac's tables (see [Settings](settings.md)) has its language after the code, as in "French braille, contracted (Grade 2), in French", or, for a table that states no contraction, "Italian braille, in Italian"; Speak Full Info says the same words after "Braille code: ".
 When this Mac no longer has the table, the row gives the table's stored name instead, as in "mac:fr-bfu-g2.ctb".
+A book read with a table that only writes braille (see Tables that only write braille, in [Settings](settings-braille.md)) is named the same way and keeps working.
 
 ### The Text Encoding row
 <!-- id: text-encoding-row; keys: character encoding, charset, bookInfoLabel; src: TextMouth/Models/LibraryInfoWording.swift, TextMouth/Views/Library/LibrarySheetViews.swift, TextMouth/ViewModels/TextEncodingChoiceModel.swift -->
