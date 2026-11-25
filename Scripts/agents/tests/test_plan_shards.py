@@ -8,6 +8,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from remote_case import RemoteTestCase  # noqa: F401  (puts the scripts' folder on the path)
 import ios_ui_tests  # noqa: E402
@@ -92,7 +93,9 @@ class PlanShardsTests(unittest.TestCase):
 
     def test_a_request_may_say_how_many_iphone_jobs_within_the_most(self):
         self.assertEqual(self.output({"ios_shards": 2})["ios_shards"], "2")
-        self.assertEqual(self.output({"ios_shards": 99})["ios_shards"], str(ios_ui_tests.MAX_SHARDS))
+        # With one Mac shard there is room for a fourth; with more Mac shards the most is 3.
+        self.assertEqual(self.output({"ios_shards": 99})["ios_shards"], str(ios_ui_tests.MAX_SHARDS_WITH_ROOM))
+        self.assertEqual(self.output({"ios_shards": 99, "shards": 2})["ios_shards"], str(ios_ui_tests.MAX_SHARDS))
         self.assertEqual(self.output({"ios_shards": 0})["ios_shards"], "1")
         for odd in (True, "2", None, 1.5):
             with self.subTest(odd=odd):
@@ -102,7 +105,8 @@ class PlanShardsTests(unittest.TestCase):
     def test_the_mac_shards_and_the_iphone_jobs_never_exceed_the_five_macos_jobs_a_free_account_runs_at_once(self):
         # A job past the limit waits for a free one and ends last, so the Mac shards take what the iPhone jobs leave.
         for request in ({"areas": ["all"], "full": True, "shards": 4}, {"full": True, "shards": 4, "ios_shards": 3},
-                        {"shards": 4}, {"shards": 4, "ios": False}, {"full": True, "shards": 99, "ios_shards": 99}):
+                        {"shards": 4}, {"shards": 4, "ios": False}, {"full": True, "shards": 99, "ios_shards": 99},
+                        {"shards": 1, "ios_shards": 99}, {"shards": 2, "ios_shards": 99}):
             with self.subTest(request=request):
                 out = self.output(request)
                 ios_jobs = int(out["ios_shards"]) if out["ios"] == "true" else 0
@@ -116,6 +120,32 @@ class PlanShardsTests(unittest.TestCase):
     def test_a_train_without_iphone_tests_keeps_all_the_mac_shards_beside_its_one_iphone_build(self):
         out = self.output({"classes": ["ChatterTests"], "shards": 4})
         self.assertEqual((out["shards"], out["ios_shards"]), ("4", "1"))
+
+    def planned_ios_jobs(self, request, seconds_each):
+        """The ios_shards the plan gives `request` when every iPhone class it asks for is counted as `seconds_each` seconds."""
+        counted = lambda classes, *args, **kwargs: {name: seconds_each for name in classes}  # noqa: E731
+        with mock.patch.object(ios_ui_tests, "estimated_seconds", counted):
+            return int(self.output(request)["ios_shards"])
+
+    def test_one_mac_shard_leaves_room_for_four_iphone_jobs(self):
+        # With 214 classes at 20 seconds, the tests are 4,280 seconds: 6 jobs at the plain target, so the most decides.
+        full = {"full": True, "shards": 1}
+        self.assertEqual(self.planned_ios_jobs(full, 20.0), ios_ui_tests.MAX_SHARDS_WITH_ROOM)
+        self.assertEqual(self.planned_ios_jobs({**full, "shards": 2}, 20.0), ios_ui_tests.MAX_SHARDS, "two Mac shards leave 3")
+        out = self.output({**full, "ios_shards": 99})
+        self.assertEqual((out["shards"], out["ios_shards"]), ("1", "4"))
+
+    def test_with_room_the_tests_are_split_finer_than_without(self):
+        # 214 classes at 4 seconds are 856 seconds: 2 jobs at either target (ceil 1.07 and 1.43).
+        full = {"full": True, "shards": 1}
+        self.assertEqual(self.planned_ios_jobs(full, 4.0), 2)
+        self.assertEqual(self.planned_ios_jobs({**full, "shards": 2}, 4.0), 2)
+        # 1,300 seconds: 2 jobs at the plain target (1.63), 3 at the finer one (2.17).
+        self.assertEqual(self.planned_ios_jobs({**full, "shards": 2}, 1300 / 214), 2)
+        self.assertEqual(self.planned_ios_jobs(full, 1300 / 214), 3)
+
+    def test_a_request_with_no_iphone_tests_is_one_job_whatever_the_room(self):
+        self.assertEqual(self.output({"classes": ["ChatterTests"], "shards": 1})["ios_shards"], "1")
 
     def test_the_most_shards_is_what_the_workflow_runs_at_once(self):
         # A free account runs a few macOS jobs at once; more shards would only queue.

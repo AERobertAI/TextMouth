@@ -767,65 +767,18 @@ class SettingUpTheSimulatorTests(unittest.TestCase):
                 answer = failure
         return answer, calls, log.getvalue()
 
-    def test_an_existing_iphone_17_is_booted_and_the_keyboard_settings_are_written(self):
+    def test_an_existing_iphone_17_is_booted_and_no_keyboard_setting_is_written(self):
         (udid, sentence), calls, _ = self.run_setup()
         self.assertEqual(udid, "OLDUDID")
         self.assertIn("iPhone 17, iOS 26.0.1 (OLDUDID)", sentence)
         self.assertNotIn("create", [call[0] for call in calls])
         self.assertIn(("bootstatus", "OLDUDID", "-b"), calls)
-        written = [call for call in calls if call[:3] == ("spawn", "OLDUDID", "defaults")]
-        # The writes go out together, so their order of arrival is not fixed; the log keeps the settings' order (below).
-        self.assertEqual(sorted(call[5] for call in written), sorted(key for key, _ in uitests.KEYBOARD_SETTINGS))
-        self.assertIn(("spawn", "OLDUDID", "defaults", "write", "com.apple.keyboard.preferences",
-                       "DidShowContinuousPathIntroduction", "-bool", "true"), calls)
-
-    def test_the_keyboard_settings_are_written_all_at_once_and_noted_in_order(self):
-        """Four writes took 90 seconds one after another on the runner. A barrier that only opens when all four are waiting
-        at once would stop a sequential loop (it times out), so passing proves they overlap."""
-        import threading
-        barrier = threading.Barrier(len(uitests.KEYBOARD_SETTINGS), timeout=10)
-        arrived = []
-
-        def fake_simctl(*args, timeout=0, tolerate_timeout=False):
-            """Holds each write until every write has started; answers it with its own key."""
-            barrier.wait()
-            arrived.append(args[5])
-            return mock.Mock(stdout="", stderr="", returncode=0)
-
-        log = io.StringIO()
-        with mock.patch.object(uitests, "simctl", fake_simctl):
-            uitests.write_keyboard_settings("UDID", log)
-        self.assertEqual(sorted(arrived), sorted(key for key, _ in uitests.KEYBOARD_SETTINGS))
-        noted = [line.split()[4] for line in log.getvalue().splitlines()]
-        self.assertEqual(noted, [key for key, _ in uitests.KEYBOARD_SETTINGS])
+        self.assertNotIn("spawn", [call[0] for call in calls], "no `defaults write` goes into the simulator")
 
     def test_with_no_iphone_17_one_is_made_on_the_runtime(self):
         (udid, _), calls, _ = self.run_setup(devices={})
         self.assertEqual(udid, "NEWUDID")
         self.assertIn(("create", "TextMouth iPhone 17", uitests.DEVICE_TYPE, self.RUNTIME["identifier"]), calls)
-
-    def test_a_keyboard_setting_that_cannot_be_written_in_time_is_noted_and_the_set_up_goes_on(self):
-        # Run 43018768161: `simctl spawn ... defaults write` did not finish in 60 seconds and the whole step failed.
-        import subprocess
-
-        def fake_simctl(*args, timeout=0, tolerate_timeout=False):
-            """Every call succeeds but the writes of settings, which run out their time."""
-            if args[0] == "spawn":
-                self.assertTrue(tolerate_timeout, "a setting is written with the timeout tolerated")
-                return subprocess.CompletedProcess(args, 124, "", "simctl spawn did not finish in 60 seconds; it had printed nothing")
-            return mock.Mock(stdout="", stderr="", returncode=0)
-
-        def fake_json(*args):
-            """One runtime, one device."""
-            if args[0] == "runtimes":
-                return {"runtimes": [self.RUNTIME]}
-            return {"devices": {self.RUNTIME["identifier"]: [{"name": "iPhone 17", "udid": "OLDUDID", "isAvailable": True}]}}
-
-        log = io.StringIO()
-        with mock.patch.object(uitests, "simctl", fake_simctl), mock.patch.object(uitests, "simctl_json", fake_json):
-            udid, _ = uitests.ready_simulator(log)
-        self.assertEqual(udid, "OLDUDID")
-        self.assertEqual(log.getvalue().count("did not finish in 60 seconds"), len(uitests.KEYBOARD_SETTINGS))
 
     def test_a_tolerated_timeout_is_answered_as_a_failed_call_and_an_untolerated_one_is_a_failure(self):
         import subprocess
@@ -869,7 +822,7 @@ class SettingUpTheSimulatorTests(unittest.TestCase):
         self.assertEqual(names[names.index("bootstatus"):names.index("bootstatus") + 4], ["bootstatus", "shutdown", "create", "bootstatus"])
         self.assertEqual([timeout for name, timeout in calls if name == "bootstatus"], [uitests.FIRST_BOOT_SECONDS, uitests.BOOT_SECONDS])
         self.assertIn("Waiting on BackBoard", log.getvalue())
-        self.assertEqual(sum(name == "spawn" for name in names), len(uitests.KEYBOARD_SETTINGS), "the settings go on the new device")
+        self.assertNotIn("spawn", names, "no keyboard setting is written to the new device either")
 
     def test_a_second_boot_that_hangs_too_is_a_failure(self):
         def fake_simctl(*args, timeout=0, tolerate_timeout=False):
