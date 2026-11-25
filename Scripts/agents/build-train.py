@@ -889,7 +889,23 @@ def remote_line(train_dir):
         # The run is an earlier train's of the same tree: no push was made, and the minutes are only this train's wait.
         return (f"- Run on GitHub: {run['url']} (collected: the results are those of an earlier train's run of the same "
                 f"tree and request; this train waited {run['minutes']} minutes for it)")
-    return f"- Run on GitHub: {run['url']} ({run['minutes']} minutes from the push to its end)"
+    line = f"- Run on GitHub: {run['url']} ({run['minutes']} minutes from the push to its end)"
+    return line + rerun_note(run.get("rerun"))
+
+
+def rerun_note(rerun):
+    """What the summary adds when GitHub gave some jobs no runner and the run was re-run once (github_run.rerun_lost_jobs):
+    which jobs were lost, which others were re-run with them, and whether a job was lost again. "" when nothing was re-run."""
+    if not rerun:
+        return ""
+    if rerun.get("refused"):
+        return f"\n- Jobs lost to GitHub's runner shortage, not re-run (GitHub refused: {rerun['refused']}): {'; '.join(rerun['lost'])}"
+    note = f"\n- Jobs lost to GitHub's runner shortage and re-run once: {'; '.join(rerun['lost'])}"
+    if rerun.get("rerun"):
+        note += f" (also re-run, as they had failed: {'; '.join(rerun['rerun'])})"
+    if rerun.get("lost_again"):
+        note += f"; lost again, not re-run a second time: {'; '.join(rerun['lost_again'])}"
+    return note
 
 
 def result_post(train_id, verdict, yours, ios_note, result_path, executed):
