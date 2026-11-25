@@ -29,9 +29,10 @@ struct PhoneExportMemoryCheck: Sendable {
     static let peakBytesPerTextByte: UInt64 = 16
 
     /// The same for the braille writers, BRF and PEF, which translate the text and
-    /// keep its print blocks and its cells beside it: 19.0 to 22.6 for a text of
-    /// 3 MB warm, and up to 28.8 for one of 1 MB, where the engine's tables are
-    /// most of the peak. 32 leaves a margin over the most measured.
+    /// keep its print blocks and its cells beside it: about 26 for each byte of a text
+    /// of 1 MB once the engine's own 3 MB is taken out, and 19.0 to 22.6 for a text of
+    /// 3 MB with the engine warm (train 1125-0601). 32 leaves a margin over the most
+    /// measured.
     static let braillePeakBytesPerTextByte: UInt64 = 32
 
     /// The ids of the writers whose figure is the braille one.

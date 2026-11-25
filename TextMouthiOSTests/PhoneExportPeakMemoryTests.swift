@@ -26,14 +26,16 @@ import XCTest
 /// after it until the app is closed.
 ///
 /// The braille engine also holds a cost that no text size changes: its tables,
-/// compiled when it first translates (train 1125-0501 measured 28.78 bytes for
-/// each byte of a 1 MB text, most of it that cost). So one tiny braille export
-/// comes first, to warm the engine: its peak is the engine's fixed cost, which
-/// is logged (`writer=engine`) and held under 64 MB, inside the 512 MB floor
-/// the check always leaves the app (`PhoneExportMemoryCheck.floorBytes`). The
-/// writers are then measured warm, braille too, and held to the estimate with
-/// no allowance, so a braille writer that costs more for each byte than the
-/// check says fails here, and the check, not this test, is what is raised.
+/// compiled when it first translates (about 3 MB in train 1125-0601, a small part
+/// of the peak of a 1 MB text, which was 28.78 bytes for each byte in train
+/// 1125-0501). So one tiny braille export comes first, to warm the engine: its
+/// peak is the engine's fixed cost, which is logged (`writer=engine`) and held
+/// under 64 MB, inside the 512 MB floor the check always leaves the app
+/// (`PhoneExportMemoryCheck.floorBytes`). The writers are then measured warm,
+/// braille too, and each is held to its own figure with no allowance (braille's
+/// is larger, as its memory grows with the text), so a writer that costs more
+/// for each byte than the check says fails here, and the check, not this test,
+/// is what is raised.
 ///
 /// Nothing here plays, types, or speaks; the files go to a sandbox folder.
 final class PhoneExportPeakMemoryTests: XCTestCase {
