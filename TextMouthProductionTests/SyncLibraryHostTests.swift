@@ -155,6 +155,25 @@ final class SyncLibraryHostTests: XCTestCase {
         XCTAssertEqual(model.library.books.count, 1)
     }
 
+    /// A sync may change the library only once recovery has ended, and not
+    /// while an operation holds the storage work (FR43): so a library
+    /// emptied by recovery is never recorded as every book removed.
+    func testMaySyncNowFollowsRecoveryAndHeldStorageWork() throws {
+        let model = LibraryViewModel(initializeServices: false)
+        XCTAssertTrue(model.maySyncNow)
+        model.indexRecovery = LibraryIndexRecovery(failure: LibraryIndexReadFailure(
+            indexURL: TextMouthPaths.libraryIndexFile, quarantineURL: nil,
+            error: CocoaError(.fileReadCorruptFile), byteCount: 0
+        ))
+        XCTAssertFalse(model.maySyncNow, "recovery under way")
+        model.indexRecovery = nil
+        XCTAssertTrue(model.maySyncNow, "recovery over")
+        let hold = try StorageBoundary.shared.holdWork(for: .movingBooksBetweenFolders)
+        XCTAssertFalse(model.maySyncNow, "storage work held")
+        hold.release()
+        XCTAssertTrue(model.maySyncNow, "storage work released")
+    }
+
     /// A new book joins as a placeholder in the library, its keys applied.
     func testApplyAddsAPlaceholderBook() async throws {
         let model = LibraryViewModel(initializeServices: false)
