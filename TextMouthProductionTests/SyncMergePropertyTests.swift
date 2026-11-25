@@ -17,7 +17,7 @@ final class SyncMergePropertyTests: XCTestCase {
     }
 
     /// A random entry of one of `devices`, over the keys of `world`.
-    private func randomEntry(_ world: World, devices: [String], using generator: inout SeededGenerator) -> SyncEntry {
+    private func randomEntry(_ world: World, devices: [String], using generator: inout SyncSeededGenerator) -> SyncEntry {
         let book = world.books.randomElement(using: &generator) ?? UUID()
         let folder = world.folders.randomElement(using: &generator) ?? UUID()
         let wall = Int64.random(in: 1...8, using: &generator)
@@ -41,7 +41,7 @@ final class SyncMergePropertyTests: XCTestCase {
     }
 
     /// Random entries split into batches, each batch delivered in a random order, some of them twice.
-    private func deliveries(of entries: [SyncEntry], using generator: inout SeededGenerator) -> [SyncEntry] {
+    private func deliveries(of entries: [SyncEntry], using generator: inout SyncSeededGenerator) -> [SyncEntry] {
         var delivered = entries.shuffled(using: &generator)
         for entry in entries where Int.random(in: 0..<4, using: &generator) == 0 { delivered.insert(entry, at: Int.random(in: 0...delivered.count, using: &generator)) }
         return delivered
@@ -50,7 +50,7 @@ final class SyncMergePropertyTests: XCTestCase {
     /// Any order of delivery, with repeats, gives the same registers, and each key holds its highest entry.
     func testOrderOfDeliveryDoesNotMatter() {
         for seed in 0..<UInt64(Self.caseCount) {
-            var generator = SeededGenerator(seed: seed)
+            var generator = SyncSeededGenerator(seed: seed)
             let world = World()
             let entries = (0..<Int.random(in: 1...30, using: &generator)).map { _ in randomEntry(world, devices: ["a", "b", "c"], using: &generator) }
             var reference = SyncRegisters()
@@ -80,7 +80,7 @@ final class SyncMergePropertyTests: XCTestCase {
     /// Merging again changes nothing, and reports no key.
     func testMergingAgainChangesNothing() {
         for seed in 0..<UInt64(Self.caseCount) {
-            var generator = SeededGenerator(seed: seed)
+            var generator = SyncSeededGenerator(seed: seed)
             let world = World()
             let entries = (0..<Int.random(in: 1...30, using: &generator)).map { _ in randomEntry(world, devices: ["a", "b"], using: &generator) }
             var registers = SyncRegisters()
@@ -94,7 +94,7 @@ final class SyncMergePropertyTests: XCTestCase {
     /// Applying the registers is the same however they were delivered, applying again to the result changes nothing more, and no removal takes a change it had not seen.
     func testApplyIsSteadyAndRemovalsRespectLaterChanges() {
         for seed in 0..<UInt64(Self.caseCount) {
-            var generator = SeededGenerator(seed: seed)
+            var generator = SyncSeededGenerator(seed: seed)
             let world = World()
             let entries = (0..<Int.random(in: 1...30, using: &generator)).map { _ in randomEntry(world, devices: ["a", "b", "c"], using: &generator) }
             let library = Fixtures.library(books: world.books.map { Fixtures.book(id: $0) })

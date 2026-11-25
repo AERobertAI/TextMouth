@@ -95,7 +95,7 @@ final class SyncOrderKeyTests: XCTestCase {
 
     /// Whatever the list, assigning leaves every book a key and the list in order.
     func testAssignAlwaysEndsInOrder() {
-        var generator = SeededGenerator(seed: 7)
+        var generator = SyncSeededGenerator(seed: 7)
         for _ in 0..<100 {
             let ids = (0..<Int.random(in: 1...12, using: &generator)).map { _ in UUID() }
             // Some books have keys, all different and in no relation to the list's order.
@@ -113,7 +113,7 @@ final class SyncOrderKeyTests: XCTestCase {
 
 /// A random number generator that gives the same numbers for the same seed,
 /// so a failing case can be run again.
-struct SeededGenerator: RandomNumberGenerator {
+struct SyncSeededGenerator: RandomNumberGenerator {
     private var state: UInt64
 
     /// A generator that starts from `seed`.
