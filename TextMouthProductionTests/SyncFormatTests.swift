@@ -24,7 +24,7 @@ final class SyncFormatTests: XCTestCase {
     /// A change file with one entry reads back equal.
     func testChangeFileRoundTrips() throws {
         let entry = SyncEntry(
-            key: .book(UUID(uuidString: "11111111-1111-1111-1111-111111111111")!, .title),
+            key: .book(try XCTUnwrap(UUID(uuidString: "11111111-1111-1111-1111-111111111111")), .title),
             value: .string("A Title"),
             stamp: SyncStamp(wall: 1_000, counter: 2, device: "dev"),
             byHand: true
