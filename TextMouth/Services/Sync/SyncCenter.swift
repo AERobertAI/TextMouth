@@ -20,17 +20,19 @@ struct SyncCenterEnvironment: Sendable {
     /// Where a folder lives.
     var locate: @Sendable (URL) -> StorageLocation
     /// Makes a bookmark of the folder.
-    var makeBookmark: @Sendable (URL) -> Data?
+    var makeBookmark: @Sendable @MainActor (URL) -> Data?
     /// Whether the network is there, and how it reports.
     var reachability: NetworkReachability
     /// The time.
     var now: @Sendable () -> Date
-    /// Waits this many seconds, so a test doesn't.
+    /// Waits this many seconds before the timers fire, so a test doesn't.
     var sleep: @Sendable (TimeInterval) async throws -> Void
     /// Says words aloud (`VoiceOverAnnouncer.announce`).
     var announce: @Sendable @MainActor (String) -> Void
     /// Free bytes on the device's disk, for the backup's budget.
     var freeSpace: @Sendable (URL) -> Int64
+    /// The pause between looks when Join waits for store.json to arrive; a test answers at once.
+    var pauseWhileJoining: @Sendable (Duration) async throws -> Void = { try await Task.sleep(for: $0) }
 
     /// The name this device gives itself in the store: its host name without ".local", or "Mac" or "iPhone".
     static func deviceName(isPhone: Bool) -> String {
@@ -54,7 +56,7 @@ struct SyncCenterEnvironment: Sendable {
             isPhone: phone,
             makeAccess: { SyncFolderAccessFactory.make($0) },
             locate: { provider.location(of: $0) },
-            makeBookmark: { DataDirectoryPreferences.makeBookmark(of: $0) },
+            makeBookmark: { SyncFolderAccessFactory.makeBookmark($0) },
             reachability: .system,
             now: { Date() },
             sleep: { try await Task.sleep(for: .seconds($0)) },
@@ -184,8 +186,9 @@ struct SyncCenterEnvironment: Sendable {
         try requireICloudDrive(folder)
         guard let bookmark = environment.makeBookmark(folder) else { throw SyncProblem.folderMissing }
         let newAccess = environment.makeAccess(bookmark)
+        let pause = environment.pauseWhileJoining
         let store = try await newAccess.withFolder { root in
-            try await SyncFolder(root: root, access: newAccess).waitForStore()
+            try await SyncFolder(root: root, access: newAccess).waitForStore(sleep: pause)
         }
         stop()
         SyncPreferences.bookmark.write(bookmark, to: environment.preferences)

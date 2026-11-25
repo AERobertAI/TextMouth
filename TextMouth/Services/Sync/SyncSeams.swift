@@ -69,6 +69,8 @@ struct SyncStatus: Equatable, Sendable {
 /// Makes the folder access for a bookmark; the iPhone sets its own.
 enum SyncFolderAccessFactory {
     @MainActor static var make: (_ bookmark: Data) -> any SyncFolderAccess = { PlainSyncFolderAccess(bookmark: $0) }
+    /// Makes the bookmark of the folder a person chose; the iPhone sets its own (a folder picked in Files).
+    @MainActor static var makeBookmark: (_ folder: URL) -> Data? = { DataDirectoryPreferences.makeBookmark(of: $0) }
 }
 
 // MARK: - The library's side, and the app's one sync
