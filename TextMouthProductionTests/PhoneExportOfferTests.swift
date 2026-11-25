@@ -120,12 +120,9 @@ final class PhoneExportOfferTests: XCTestCase {
             "CR LF suits most braille displays and embossers.",
             BrailleExportWording.fileCodeHint
         ])
-        XCTAssertTrue(rows[0].value?.hasPrefix("Unified English Braille") == true, "The code says \(String(describing: rows[0].value))")
-        XCTAssertEqual(rows[1].value, "32 cells")
-        XCTAssertEqual(rows[2].value, "20 lines")
-        XCTAssertNil(rows[3].value, "A switch says its own value")
-        XCTAssertEqual(rows[4].value, "LF")
-        XCTAssertEqual(rows[5].value, "North American Braille ASCII")
+        XCTAssertTrue(rows.first?.value?.hasPrefix("Unified English Braille") == true, "The code says \(String(describing: rows.first?.value))")
+        // After the code: the cells, the lines, nothing for the switch (which says its own value), the line end, the file characters.
+        XCTAssertEqual(rows.dropFirst().map(\.value), ["32 cells", "20 lines", nil, "LF", "North American Braille ASCII"])
         XCTAssertTrue(rows.allSatisfy { !$0.hint.isEmpty }, "A braille row has no hint")
     }
 
@@ -134,8 +131,7 @@ final class PhoneExportOfferTests: XCTestCase {
         let rows = PhoneExportOffer.brailleRows(BrailleExportOptions(), choosesLineEnds: false)
 
         XCTAssertEqual(rows.map(\.label), ["Braille code", "Cells per line", "Lines per page", "Braille page numbers"])
-        XCTAssertEqual(rows[1].value, "40 cells")
-        XCTAssertEqual(rows[2].value, "25 lines")
+        XCTAssertEqual(rows.dropFirst().map(\.value), ["40 cells", "25 lines", nil])
     }
 
     /// The braille file characters row says the code chosen, and a choice sheet is asked for by each of the three choice rows.

@@ -376,9 +376,11 @@ final class PhoneExportModelTests: XCTestCase {
 
         // The kinds, in the dialog's order, each named and hinted.
         let labels = model.choices.map { model.label(for: $0) }
-        XCTAssertTrue(labels[0].hasPrefix("Original file"), "\(labels)")
-        XCTAssertTrue(labels[1].hasPrefix("Text as Markdown"), "\(labels)")
-        XCTAssertTrue(labels[2].hasPrefix("Text as plain text"), "\(labels)")
+        let starts = ["Original file", "Text as Markdown", "Text as plain text"]
+        XCTAssertEqual(labels.count, starts.count, "\(labels)")
+        for (label, start) in zip(labels, starts) {
+            XCTAssertTrue(label.hasPrefix(start), "\(label) does not begin \(start)")
+        }
         for choice in model.choices {
             XCTAssertFalse(model.hint(for: choice.kind).isEmpty, "\(choice.kind) has no hint")
         }
