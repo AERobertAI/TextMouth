@@ -67,13 +67,6 @@ final class SyncFormatTests: XCTestCase {
         XCTAssertTrue(SyncMerge.changes(from: .of(library, contents: [:]), to: .of(library, contents: [:]), atLaunch: true).isEmpty)
     }
 
-    /// The stub folder access lists nothing and reports no upload state.
-    func testPlainFolderAccessStubIsInert() throws {
-        let access = PlainSyncFolderAccess(bookmark: Data())
-        XCTAssertTrue(try access.list(URL(fileURLWithPath: "/Users/reader/none")).isEmpty)
-        XCTAssertEqual(access.uploadState(of: URL(fileURLWithPath: "/Users/reader/none")), .notReported)
-    }
-
     /// The status of a library that never set up sync is off and empty.
     @MainActor
     func testStatusStartsOff() {

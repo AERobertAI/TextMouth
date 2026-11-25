@@ -79,6 +79,12 @@ actor SyncEngine {
         if device == nil || device?.installID != identity.installID {
             // A new library, or one restored onto another install: a new ID, and the old outbox is not ours.
             device = SyncDeviceState(deviceID: UUID().uuidString.lowercased(), incarnation: UUID(), installID: identity.installID, lastSeq: 0)
+            // The old identity's outbox is set aside, not adopted: its files carry another device's ID.
+            if let old = local.loadDevice() {
+                let aside = local.root.appendingPathComponent("Outbox.\(old.deviceID)", isDirectory: true)
+                try? FileManager.default.moveItem(at: local.outboxFolder, to: aside)
+            }
+            try local.prepare()
             try local.saveDevice(device!)
             try local.write(SyncOutboxIndex(), to: local.outboxIndexURL)
             try local.saveRegisters(SyncRegisters())

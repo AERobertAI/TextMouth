@@ -185,8 +185,8 @@ final class SyncCenterTests: XCTestCase {
         world.spoken.lines = []
         world.center.syncNow()
         XCTAssertEqual(world.spoken.lines.first, SyncWording.announceSyncing)
-        try await waitUntil { world.spoken.lines.count == 2 }
-        XCTAssertEqual(world.spoken.lines.last, SyncWording.announceNothingNew)
+        try await waitUntil { world.spoken.lines.count >= 2 }
+        XCTAssertEqual(world.spoken.lines, [SyncWording.announceSyncing, SyncWording.announceNothingNew])
     }
 
     /// While the host may not sync, a run does nothing and Sync Now says the state.
@@ -199,7 +199,7 @@ final class SyncCenterTests: XCTestCase {
         world.spoken.lines = []
         let before = world.host.appliedCount
         world.center.syncNow()
-        try await waitUntil { world.spoken.lines.count == 2 }
+        try await waitUntil { world.spoken.lines.count >= 2 }
         XCTAssertEqual(world.host.appliedCount, before)
     }
 

@@ -169,13 +169,15 @@ final class SyncFolderTests: XCTestCase {
     func testALaterSnapshotCoversAFileThatNeverReads() async throws {
         let (folder, drive) = try makeFolder()
         try put(changeFile(device: "dev-b", seq: 1), in: folder)
+        let first = try await reader(folder).read(after: SyncCursors())
+        XCTAssertEqual(first.cursors.merged["dev-b"], 1)
         drive.setNotDownloaded(SyncNames.changeFile(seq: 2, kind: .changes))
         try put(changeFile(device: "dev-b", seq: 2), in: folder)
         try put(changeFile(device: "dev-b", seq: 3, kind: .snapshot), in: folder)
         try put(changeFile(device: "dev-b", seq: 4), in: folder)
-        let result = try await reader(folder).read(after: SyncCursors())
+        let result = try await reader(folder).read(after: first.cursors)
         XCTAssertEqual(result.cursors.merged["dev-b"], 4)
-        XCTAssertEqual(result.entries.map(\.stamp.wall), [1, 3, 4])
+        XCTAssertEqual(result.entries.map(\.stamp.wall), [3, 4])
         XCTAssertTrue(result.notArrived.isEmpty)
     }
 

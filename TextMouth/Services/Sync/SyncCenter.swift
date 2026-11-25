@@ -198,7 +198,7 @@ struct SyncCenterEnvironment {
         SyncPreferences.bookmark.write(bookmark, to: environment.preferences)
         SyncPreferences.storeID.write(store.storeID, to: environment.preferences)
         guard activate(bookmark: bookmark, storeID: store.storeID) else { throw SyncProblem.folderMissing }
-        requestRun(.syncNow)
+        requestRun(.launch)
     }
 
     /// Forgets the folder; deletes nothing, on this device or in the cloud.
@@ -316,6 +316,11 @@ struct SyncCenterEnvironment {
 
     /// One sync: record, open the folder, copy and read, merge, apply, and let the backup go on.
     private func run(_ reason: SyncReason) async {
+        // Two requests made before either began meet here: the later waits for the earlier.
+        if isRunning {
+            pendingReason = reason
+            return
+        }
         guard let engine, let access, let storeID, let host else { return }
         guard host.maySyncNow else {
             if reason == .syncNow { environment.announce(SyncStatusLine.text(for: status, isPhone: environment.isPhone, time: Self.timeOfDay)) }
