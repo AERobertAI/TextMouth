@@ -71,7 +71,7 @@ enum SyncOrderKey {
     }
 
     /// Two entries' places in the list, as the merge sorts them: by key, then by ID.
-    struct SortKey: Comparable, Sendable {
+    struct SortKey: Comparable, Hashable, Sendable {
         var key: String
         var id: String
         static func < (lhs: SortKey, rhs: SortKey) -> Bool { (lhs.key, lhs.id) < (rhs.key, rhs.id) }
