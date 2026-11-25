@@ -121,15 +121,28 @@ struct PhoneBrailleExportRows: View {
         .accessibilityFocused($focus, equals: which)
     }
 
-    /// A stepper that says its label, its value with its unit, and its hint, and shows both beside each other.
+    /// A stepper that says its label, its value with its unit, and its hint, and shows the first two beside each other.
+    ///
+    /// Like the Settings steppers, it is one adjustable element (swipe up or down to change it), not the
+    /// stepper's own text and two buttons: SwiftUI keeps its own words and drops a value set from outside.
     private func stepperRow(label: String, hint: String, value: String, number: Binding<Int>, range: ClosedRange<Int>) -> some View {
         Stepper(value: number, in: range) {
             PhoneValueRow(name: label, value: value)
         }
         .disabled(isExporting)
+        .accessibilityElement(children: .ignore)
         .accessibilityLabel(label)
         .accessibilityValue(value)
         .accessibilityHint(hint)
+        .accessibilityAdjustableAction { direction in
+            // A dimmed row does nothing, even by this action.
+            guard !isExporting else { return }
+            switch direction {
+            case .increment: number.wrappedValue = min(range.upperBound, number.wrappedValue + 1)
+            case .decrement: number.wrappedValue = max(range.lowerBound, number.wrappedValue - 1)
+            @unknown default: break
+            }
+        }
     }
 
     // MARK: - The Choices

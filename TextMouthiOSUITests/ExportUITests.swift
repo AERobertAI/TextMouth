@@ -127,7 +127,9 @@ final class ExportUITests: TextMouthUITestCase {
         let rows = try elementsInOrder(of: app)
         // The first element of the label that has a value: a stepper's words, shown beside it, have none.
         func value(of label: String) -> String? { rows.first { $0.label == label && $0.value != nil }?.value }
-        XCTAssertEqual(value(of: "Cells per line"), "40 cells")
+        // The rows are named when a value is missing, so the failure shows what the sheet did say.
+        let seen = rows.map { "\($0.label)=\($0.value ?? "nil")" }.joined(separator: " | ")
+        XCTAssertEqual(value(of: "Cells per line"), "40 cells", "The sheet's elements: \(seen)")
         XCTAssertEqual(value(of: "Lines per page"), "25 lines")
         XCTAssertEqual(value(of: "Line ends"), "CR LF")
         XCTAssertEqual(value(of: "Braille file characters"), "North American Braille ASCII")
