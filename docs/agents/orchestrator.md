@@ -214,7 +214,8 @@ A push to `TestBuild` also refuses a tree whose `.github/workflows/` or `.github
 Origin's main has held it since 0.4.10 (a1214dc0): **the guard is on**, so a workflow or action change runs on `TestBuild` only after it is on GitHub's main.
 A push waits, up to 125 minutes, while another run is queued or going on `TestBuild` (a newer push cancels the older run), and fails, pushing nothing, if the branch stays busy; so a train, a remote suite, and a hand-sent run take turns, and a train leaves 5 minutes after a request.
 The jobs are in `.github/workflows/tests.yml`, which `test-build.yml` (a push to `TestBuild`) and `check.yml` (main and pull requests) both call, and each run also builds the iPhone app and its UI-test bundle for the iOS Simulator (`Scripts/agents/run-ios-build.py`).
-A train's result and `run_suite.py --remote` list its errors by file, and they never change the tests' verdict.
+A train's result and `run_suite.py --remote` list its errors by file, and the iPhone build's errors never change the tests' verdict.
+The train's verdict does count the iPhone tests ("FAILED (iPhone tests)"), and the board post counts the agent's Mac and iPhone failures apart.
 A test that fails on the runner with a timing, and passes here, is flaky there, not a reason to raise its limit or add it to the list.
 Testing TextMouth (Tests on GitHub Actions) has how to read a run, what differs from the Mac, and the flaky tests.
 

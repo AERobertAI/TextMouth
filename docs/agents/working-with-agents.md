@@ -156,6 +156,9 @@ What differs is the result.
 Its file in `build/orchestrator/train/results/` carries a line "Run on GitHub" with the run's link, and the log is in the train's folder as `run.log` (the whole `xcodebuild` output) beside `run-summary.txt` (what `summarize` reads).
 The train does not run the iOS census on this Mac: the run builds the iPhone app and its UI tests for the iOS Simulator on GitHub instead.
 Your result lists "iOS errors in files your branch changes" from that build, with the errors themselves (a failed iPhone build is information; it does not change the train's verdict on the tests).
+The train's "Verdict" counts the iPhone tests too, when the run was asked for them: it is PASSED only when the Mac suite and the iPhone tests both passed, and otherwise it begins with FAILED and names the part, as "FAILED (iPhone tests)" or "FAILED (Mac suite and iPhone tests)".
+The Mac suite's own verdict has its own line, "Mac suite verdict", beside the Executed line.
+The board post says "yours: 0 Mac failures, 1 iPhone failure, 0 compile errors" for a run with iPhone tests, counting the iPhone failures in the classes you asked for.
 A train leaves 5 minutes after the first waiting request, and a push waits for any run already on `TestBuild`, so a train's run is never cut off by another sender's.
 If the push or the run fails, the board says "the run on GitHub failed, so your request waits for the next train": the request is already back in the queue, so the agent does not ask again.
 A remote train's tests skip the 14 entries of `Scripts/agents/runner-skips.conf` (the audio engine's and the Ogg decoders' tests among them; the other audio tests run), and your result has a "Not run on GitHub, no verdict: X (reason)" line for each one you asked for.

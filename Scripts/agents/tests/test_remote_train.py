@@ -410,9 +410,10 @@ class InterfaceTestsTests(RemoteTrainCase):
         summary = (next(train.TRAINS.iterdir()) / "summary.md").read_text()
         self.assertIn("## iPhone test failures", summary)
         self.assertIn("- FAILED ReaderUITests.testB at TextMouthiOSUITests/ReaderUITests.swift:3: wrong", summary)
-        self.assertIn("Verdict: PASSED", summary, "failed interface tests never change the Mac tests' verdict")
+        self.assertIn("- Verdict: FAILED (iPhone tests)", summary, "failed interface tests fail the whole train (TL23)")
+        self.assertIn("- Mac suite verdict: PASSED", summary, "the Mac suite's own verdict stays visible")
 
-    def test_a_failed_unit_test_is_told_to_the_agent_that_asked_for_its_class_with_both_counts_and_never_changes_the_verdict(self):
+    def test_a_failed_unit_test_is_told_to_the_agent_that_asked_for_its_class_with_both_counts_and_fails_the_whole_train(self):
         unit = ("iOS UI tests: FAILED\nExecuted 52 tests, with 0 tests skipped and 1 failures (0 unexpected) in 9.0 (9.0) seconds\n"
                 "Unit tests (TextMouthiOSTests): 19 ran, 0 skipped, 1 failed\n"
                 "Interface tests (TextMouthiOSUITests): 33 ran, 0 skipped, 0 failed\n"
@@ -430,7 +431,7 @@ class InterfaceTestsTests(RemoteTrainCase):
         self.assertIn("unit tests (TextMouthiOSTests): 19 ran, 0 skipped, 1 failed", alpha)
         self.assertIn("interface tests (TextMouthiOSUITests): 33 ran", alpha)
         self.assertIn("Failures in the iPhone test classes you asked for: 1", alpha)
-        self.assertIn("Verdict: PASSED", (next(train.TRAINS.iterdir()) / "summary.md").read_text())
+        self.assertIn("- Verdict: FAILED (iPhone tests)", (next(train.TRAINS.iterdir()) / "summary.md").read_text())
 
     def test_a_class_the_two_bundles_share_runs_on_the_mac_and_on_the_iphone(self):
         # A Mac test file that project.yml lists for the iPhone's unit bundle: its class is in both bundles. Before
@@ -482,6 +483,96 @@ class InterfaceTestsTests(RemoteTrainCase):
         self.assertEqual(reasons, ["2 test(s) failed"])
         self.assertIsNone(train.remote_ios_ui_result(self.folder / "no-such-folder"))
         self.assertEqual(train.ios_ui_line(None), "")
+
+
+class WholeTrainVerdictTests(RemoteTrainCase):
+    """A train's verdict counts the iPhone tests as well as the Mac suite (TL23), in summary.md, the agent's result, and
+    the board post. All results here are made up."""
+
+    FILES = {"TextMouthiOSUITests/SearchUITests.swift": "final class SearchUITests: TextMouthUITestCase {}\n"}
+
+    def setUp(self):
+        super().setUp()
+        self.patch(train, known_names=lambda cwd: ({"all", "stats"}, {"FooTests", "SearchUITests"}))
+
+    def run_with(self, mac, mac_log, ui, view=DONE):
+        """Runs one train for `alpha` (asking for a Mac class and an iPhone class) whose run made the Mac result and
+        the iPhone summary `ui` (None: no iPhone summary at all). Returns (summary.md, alpha's result, alpha's post)."""
+        self.branch("alpha", self.FILES, areas=["stats"], classes=["FooTests", "SearchUITests"])
+        download = results(mac, mac_log)
+        self.gh_runs(with_interface_tests(download, ui) if ui is not None else download, view=view)
+        self.assertEqual(self.run_train(), "ran")
+        summary = (next(train.TRAINS.iterdir()) / "summary.md").read_text()
+        return summary, self.result_of("alpha"), self.posts_to("alpha")[-1]
+
+    def test_the_mac_passed_and_the_iphone_tests_failed(self):
+        summary, result, post = self.run_with(PASSING_SUMMARY, PASSING_LOG, UI_FAILED, DONE_FAILED)
+        self.assertIn("- Verdict: FAILED (iPhone tests)", summary)
+        self.assertIn("- Mac suite verdict: PASSED", summary)
+        self.assertIn("- Verdict of the whole train: FAILED (iPhone tests)", result)
+        self.assertIn("- Mac suite verdict: PASSED", result)
+        self.assertRegex(post, r"^train \S+: FAILED \(iPhone tests\); yours: 0 Mac failures, 1 iPhone failure, 0 compile errors")
+
+    def test_both_passed(self):
+        summary, result, post = self.run_with(PASSING_SUMMARY, PASSING_LOG, UI_PASSED)
+        self.assertIn("- Verdict: PASSED", summary)
+        self.assertIn("- Verdict of the whole train: PASSED", result)
+        self.assertRegex(post, r"^train \S+: PASSED; yours: 0 Mac failures, 0 iPhone failures, 0 compile errors")
+
+    def test_the_mac_failed_and_the_iphone_tests_passed(self):
+        summary, result, post = self.run_with(FAILING_SUMMARY, FAILING_LOG, UI_PASSED, DONE_FAILED)
+        self.assertIn("- Verdict: FAILED (Mac suite)", summary)
+        self.assertIn("- Mac suite verdict: FAILED", summary)
+        self.assertIn("- Verdict of the whole train: FAILED (Mac suite)", result)
+        self.assertRegex(post, r"^train \S+: FAILED \(Mac suite\); yours: 1 Mac failure, 0 iPhone failures")
+
+    def test_both_failed(self):
+        summary, result, post = self.run_with(FAILING_SUMMARY, FAILING_LOG, UI_FAILED, DONE_FAILED)
+        self.assertIn("- Verdict: FAILED (Mac suite and iPhone tests)", summary)
+        self.assertIn("- Verdict of the whole train: FAILED (Mac suite and iPhone tests)", result)
+        self.assertRegex(post, r"^train \S+: FAILED \(Mac suite and iPhone tests\); yours: 1 Mac failure, 1 iPhone failure")
+
+    def test_no_iphone_summary_leaves_the_macs_verdict_and_the_plain_count(self):
+        summary, result, post = self.run_with(PASSING_SUMMARY, PASSING_LOG, None)
+        self.assertIn("- Verdict: PASSED", summary)
+        self.assertIn("- Verdict of the whole train: PASSED", result)
+        self.assertRegex(post, r"^train \S+: PASSED; yours: 0 failures, 0 compile errors")
+
+    def test_iphone_tests_not_asked_for_leave_the_macs_verdict(self):
+        summary, _, post = self.run_with(FAILING_SUMMARY, FAILING_LOG, UI_NOT_ASKED, DONE_FAILED)
+        self.assertIn("- Verdict: FAILED\n", summary, "a Mac failure is a plain FAILED when the iPhone tests were not asked for")
+        self.assertRegex(post, r"^train \S+: FAILED; yours: 1 failure, 0 compile errors")
+
+    def test_a_failure_outside_the_asked_for_iphone_classes_is_not_the_agents(self):
+        # UI_FAILED fails SearchUITests (asked) and ReaderUITests (not asked); asking only for a Mac class leaves 0.
+        self.branch("alpha", {"a.txt": "a"}, areas=["stats"], classes=["FooTests"])
+        self.gh_runs(with_interface_tests(results(PASSING_SUMMARY, PASSING_LOG), UI_FAILED), view=DONE_FAILED)
+        self.assertEqual(self.run_train(), "ran")
+        self.assertRegex(self.posts_to("alpha")[-1], r"FAILED \(iPhone tests\); yours: 0 Mac failures, 0 iPhone failures")
+
+    def test_the_post_stays_within_the_boards_limit_and_keeps_the_verdict_and_counts(self):
+        # A realistic Executed line and result path: the cut falls on the Executed line, which is last.
+        executed = ("Executed 9323 tests, with 75 tests skipped and 12 failures (0 unexpected) in 1234.567 (1240.000) seconds")
+        post = train.result_post("1125-0148", "FAILED (Mac suite and iPhone tests)",
+                                 train.yours_words(12, 3, 0), "; iOS errors in your files: 0",
+                                 "build/orchestrator/train/results/trainverdict.md", executed)
+        self.assertLessEqual(len(post), train.TOPIC_LIMIT)
+        self.assertIn("FAILED (Mac suite and iPhone tests); yours: 12 Mac failures, 3 iPhone failures, 0 compile errors", post)
+        self.assertIn("see build/orchestrator/train/results/trainverdict.md", post)
+
+    def test_the_verdict_function_on_every_pair(self):
+        passed, failed = ("PASSED", "", [], []), ("FAILED", "", [], [])
+        for mac, interface, expected in [
+                ("PASSED", None, "PASSED"), ("FAILED", None, "FAILED"),
+                ("PASSED", (train.IOS_UI_NOT_ASKED, "", [], []), "PASSED"),
+                ("FAILED", (train.IOS_UI_NOT_ASKED, "", [], []), "FAILED"),
+                ("PASSED", passed, "PASSED"), ("PASSED", failed, "FAILED (iPhone tests)"),
+                ("PASSED", ("NOT RUN", "", [], []), "FAILED (iPhone tests)"),
+                ("FAILED", passed, "FAILED (Mac suite)"), ("FAILED", failed, "FAILED (Mac suite and iPhone tests)"),
+                ("NOT RUN", failed, "NOT RUN"), ("NOT RUN", None, "NOT RUN")]:
+            verdict = train.train_verdict(mac, interface)
+            self.assertEqual(verdict, expected, (mac, interface))
+            self.assertTrue(verdict.startswith("PASSED") or verdict.startswith("FAILED") or verdict == "NOT RUN")
 
 
 class NotRunOnGitHubTests(RemoteTrainCase):
