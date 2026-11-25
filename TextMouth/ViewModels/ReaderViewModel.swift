@@ -972,6 +972,16 @@ final class ReaderViewModel: ObservableObject {
             .store(in: &cancellables)
     }
 
+    /// Listens for a sync merge giving this book another reading state, and
+    /// weighs it (`takeSyncedReadingState(_:)`, FR43).
+    private func observeSyncedReadingStates() {
+        let bookID = book.id
+        libraryViewModel.syncedReadingStates
+            .filter { $0.bookID == bookID }
+            .sink { [weak self] synced in self?.takeSyncedReadingState(synced) }
+            .store(in: &cancellables)
+    }
+
     /// Listens for the Search Library window asking this reader to move to a
     /// match while it is open already, as the book's window comes forward
     /// for it, and claims the request at once (`claimLibrarySearchJump()`);

@@ -136,16 +136,6 @@ extension ReaderViewModel {
 
     // MARK: A Later Place From Another Device (FR43)
 
-    /// Listens for a sync merge giving this book another reading state, and
-    /// weighs it (`takeSyncedReadingState(_:)`).
-    func observeSyncedReadingStates() {
-        let bookID = book.id
-        libraryViewModel.syncedReadingStates
-            .filter { $0.bookID == bookID }
-            .sink { [weak self] synced in self?.takeSyncedReadingState(synced) }
-            .store(in: &cancellables)
-    }
-
     /// Takes the reading state a sync merge gave this book, when the reader
     /// is at rest: it moves to the place, as a later place in the record
     /// does (`takeNewerRecordedState(_:)`), and says so. A playing reader
