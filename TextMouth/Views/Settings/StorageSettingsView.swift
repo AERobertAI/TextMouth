@@ -712,6 +712,11 @@ struct StorageSettingsView: View {
                 Text(StorageSettingsWording.libraryMaintenanceHeader)
             }
 
+            // Syncing the library with the iPhone through iCloud Drive (FR43).
+            #if os(macOS)
+            SyncSettingsSection()
+            #endif
+
             // What happens to the original audio of recordings and edited
             // audiobooks (FR04).
             AudioEditingSettingsSection()
