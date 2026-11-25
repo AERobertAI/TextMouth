@@ -993,6 +993,7 @@ targets:
       - TextMouthProductionTests/BrailleEbaeFixesTests.swift
       - TextMouthProductionTests/BrailleEmphasisReadingTests.swift
       - TextMouthProductionTests/BrailleEmphasisRoundTripTests.swift
+      - TextMouthProductionTests/BrailleExportWriterTests.swift
       - TextMouthProductionTests/BrailleFileCodeRecordTests.swift
       - TextMouthProductionTests/BrailleFileCodeTests.swift
       - TextMouthProductionTests/BrailleFileReaderTests.swift

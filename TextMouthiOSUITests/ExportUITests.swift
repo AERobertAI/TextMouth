@@ -54,6 +54,25 @@ final class ExportUITests: TextMouthUITestCase {
         keepScreenshot(of: app, named: "Export")
     }
 
+    /// The Library's row has Export… in its context menu, after Move to Folder...,
+    /// and it opens the same sheet: held down, the row offers its commands, and
+    /// Export… is one of them.
+    func testTheLibraryRowsExportCommandOpensTheSheet() throws {
+        let app = try launchIntoTheReader()
+        tap(app.navigationBars.buttons.element(boundBy: 0), until: app.navigationBars["Library"], in: app, what: "Back")
+        let rowStart = "\(Self.bookTitle), by \(Self.bookAuthor)"
+        let row = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", rowStart)).firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: Self.patience), "No row for the book:\n\(app.debugDescription)")
+
+        row.press(forDuration: 1.5)
+
+        let command = app.buttons["Export…"]
+        XCTAssertTrue(command.waitForExistence(timeout: Self.patience), "The row's menu has no Export…:\n\(app.debugDescription)")
+        command.tap()
+        XCTAssertTrue(app.navigationBars[Self.sheetTitle].waitForExistence(timeout: Self.patience), "The sheet did not open:\n\(app.debugDescription)")
+        XCTAssertTrue(app.buttons["Cancel"].exists)
+    }
+
     /// The sheet passes Apple's audit, with the book listed and nothing pressed.
     func testTheSheetPassesTheAudit() throws {
         let app = try launchIntoTheReader()

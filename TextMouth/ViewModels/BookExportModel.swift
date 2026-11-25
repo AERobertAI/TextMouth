@@ -833,7 +833,7 @@ final class BookExportModel: ObservableObject, Identifiable {
         presentingFrom dialog: PlatformWindow? = nil
     ) async -> BookExportOutcome? {
         guard canExport else { return nil }
-        let earlier = (phase: phase, summary: summaryWording)
+        let earlier = (phase: phase, summary: summaryWording, finished: finishedWording)
         let cancellation = BookExportCancellation()
         self.cancellation = cancellation
         summaryWording = nil
@@ -848,7 +848,7 @@ final class BookExportModel: ObservableObject, Identifiable {
         await BrailleTableChoiceChecks.shared.finished(unless: cancellation)
         guard !cancellation.isCancelled else {
             self.cancellation = nil
-            (phase, summaryWording) = earlier
+            (phase, summaryWording, finishedWording) = earlier
             return nil
         }
         let kinds = checked

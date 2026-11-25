@@ -315,10 +315,11 @@ struct PhoneExportSheet: View {
     }
 
     /// What the last export did, in the Mac's sentence, until the next
-    /// begins.
+    /// begins; or why Export refused the folder, which the Mac's dialog keeps
+    /// in the same place.
     @ViewBuilder
     private var finishedSection: some View {
-        if let words = model.finishedWords {
+        if let words = model.finishedWords ?? model.summary {
             Section {
                 Text(words)
             }
