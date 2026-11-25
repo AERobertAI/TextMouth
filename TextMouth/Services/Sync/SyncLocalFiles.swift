@@ -14,6 +14,11 @@ struct SyncDeviceState: Codable, Equatable, Sendable {
     var installID: String
     /// The `seq` of the last change file or snapshot this device numbered.
     var lastSeq: Int
+    /// The `seq` of this device's newest snapshot, and when it was made: a snapshot is due after 100 files, or a day.
+    var lastSnapshotSeq: Int?
+    var lastSnapshotAt: Date?
+    /// Whether this device has recorded its library into the store (its first record is a joining one).
+    var hasRecordedLibrary: Bool?
 }
 
 /// Each other device's last `seq` this device has merged (`cursors.json`).

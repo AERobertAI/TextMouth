@@ -14,6 +14,18 @@ struct SyncExchangeResult: Equatable, Sendable {
     var uploadProblem: SyncProblem?
     /// How many outbox files were copied into the folder.
     var filesCopied = 0
+    /// Whether this device found its own folder holding another incarnation's files (a restored or copied
+    /// library) and so took a new identity.
+    var tookNewIdentity = false
+}
+
+/// What recording the library did.
+struct SyncRecordResult: Equatable, Sendable {
+    /// How many keys were recorded.
+    var recorded = 0
+    /// How many book removals were held back, not sent: a library emptied at once (index recovery, a
+    /// wrong folder) is not a person's removal of every book.
+    var heldRemovals = 0
 }
 
 /// What names this device in the store.
@@ -58,45 +70,37 @@ actor SyncEngine {
     private var cursors: SyncCursors
     /// Whether this device must publish a snapshot at its next exchange: it is new, or restored.
     private var snapshotDue: Bool
-    /// How many change files this device wrote since its last snapshot.
-    private var filesSinceSnapshot = 0
-    /// How many change files make a snapshot due, so old files can leave the outbox.
+    /// How many change files make a snapshot due, so old files can leave the outbox and a joining device reads little.
     private let snapshotEvery = 100
+    /// How long a snapshot may go without being renewed, in seconds.
+    private let snapshotInterval: TimeInterval = 86_400
+    /// The most book removals one record may send: more, or most of the library at once, is held back.
+    static let massRemovalLimit = 20
 
     /// This device's ID.
-    nonisolated let deviceID: String
+    var deviceID: String { outbox.device.deviceID }
 
     /// Opens the device's files, making them when the device is new or its
     /// library was restored onto another install (a new ID, then a
     /// snapshot), and puts back into the registers any outbox file past
     /// `throughSeq` that a crash kept out (section 4, step 6).
+    ///
+    /// It reads megabytes of JSON for a large library: call it off the main actor (`SyncEngine.open`).
     init(local: SyncLocalFiles, identity: SyncDeviceIdentity, now: @escaping @Sendable () -> Date = { Date() }) throws {
         self.local = local
         self.identity = identity
         self.now = now
         try local.prepare()
 
-        var device = local.loadDevice()
+        var state = local.loadDevice()
         var fresh = false
-        if device == nil || device?.installID != identity.installID {
+        if state == nil || state?.installID != identity.installID {
             // A new library, or one restored onto another install: a new ID, and the old outbox is not ours.
-            device = SyncDeviceState(deviceID: UUID().uuidString.lowercased(), incarnation: UUID(), installID: identity.installID, lastSeq: 0)
-            // The old identity's outbox is set aside, not adopted: its files carry another device's ID.
-            if let old = local.loadDevice() {
-                let aside = local.root.appendingPathComponent("Outbox.\(old.deviceID)", isDirectory: true)
-                try? FileManager.default.moveItem(at: local.outboxFolder, to: aside)
-            }
-            try local.prepare()
-            try local.saveDevice(device!)
-            try local.write(SyncOutboxIndex(), to: local.outboxIndexURL)
-            try local.saveRegisters(SyncRegisters())
-            try local.saveCursors(SyncCursors())
-            try local.saveBaseline(SyncProjection())
+            state = try Self.startNewIdentity(local: local, identity: identity, replacing: state)
             fresh = true
         }
-        let state = device!
-        deviceID = state.deviceID
-        var outbox = SyncOutbox(local: local, device: state)
+        let device = state!
+        var outbox = SyncOutbox(local: local, device: device)
         try outbox.adoptUnindexedFiles()
         var registers = local.loadRegisters()
         // Files past `throughSeq` never reached the registers.
@@ -107,24 +111,72 @@ actor SyncEngine {
         }
         self.outbox = outbox
         self.registers = registers
-        clock = local.loadClock(device: state.deviceID)
+        clock = local.loadClock(device: device.deviceID)
         baseline = local.loadBaseline()
         cursors = local.loadCursors()
         snapshotDue = fresh
+        // Whatever an earlier run left half made in Staging is not wanted: nothing is fetching now.
+        if let leftovers = try? FileManager.default.contentsOfDirectory(at: local.stagingFolder, includingPropertiesForKeys: nil) {
+            for leftover in leftovers { try? FileManager.default.removeItem(at: leftover) }
+        }
+    }
+
+    /// Opens the engine off the main actor: its files are read there.
+    static func open(local: SyncLocalFiles, identity: SyncDeviceIdentity, now: @escaping @Sendable () -> Date = { Date() }) async throws -> SyncEngine {
+        try await Task.detached(priority: .utility) {
+            try SyncEngine(local: local, identity: identity, now: now)
+        }.value
+    }
+
+    /// Makes a new identity for this library: a new device ID and incarnation, the old outbox set aside
+    /// (never adopted, and never deleted), and empty registers, cursors, baseline, and clock, so the library is
+    /// recorded afresh as a joining one. Returns the new state.
+    private static func startNewIdentity(local: SyncLocalFiles, identity: SyncDeviceIdentity, replacing old: SyncDeviceState?) throws -> SyncDeviceState {
+        let fileManager = FileManager.default
+        if fileManager.fileExists(atPath: local.outboxFolder.path) {
+            // Even when device.json is damaged, so no old file is adopted under the new ID.
+            let name = "Outbox." + (old?.deviceID ?? "unknown") + "." + UUID().uuidString.lowercased()
+            try fileManager.moveItem(at: local.outboxFolder, to: local.root.appendingPathComponent(name, isDirectory: true))
+        }
+        try local.prepare()
+        let state = SyncDeviceState(deviceID: UUID().uuidString.lowercased(), incarnation: UUID(), installID: identity.installID, lastSeq: 0)
+        try local.saveDevice(state)
+        try local.write(SyncOutboxIndex(), to: local.outboxIndexURL)
+        try local.saveRegisters(SyncRegisters())
+        try local.saveCursors(SyncCursors())
+        try local.saveBaseline(SyncProjection())
+        try local.saveClock(SyncClock(device: state.deviceID))
+        return state
+    }
+
+    /// Takes a new identity while running: this library's files were restored or copied from an older state
+    /// (the folder holds its device's files past what this device wrote, or of another incarnation).
+    private func takeNewIdentity() throws {
+        let state = try Self.startNewIdentity(local: local, identity: identity, replacing: outbox.device)
+        outbox = SyncOutbox(local: local, device: state)
+        clock = SyncClock(device: state.deviceID)
+        registers = SyncRegisters()
+        cursors = SyncCursors()
+        baseline = SyncProjection()
+        launchHold = SyncLaunchHold()
+        snapshotDue = true
     }
 
     // MARK: Recording
 
     /// Stamps `changes`, writes them as the next outbox file, and puts them in the registers. The
-    /// clock, registers, and (when asked) baseline are saved after the file, so a crash in between
-    /// is found at the next start.
+    /// outbox file is written first, then the clock, registers, and (when asked) baseline, so a crash in
+    /// between is found at the next start.
     @discardableResult
     private func append(_ pairs: [PendingChange], updatingBaseline: Bool, joining: Bool = false) throws -> Int {
         guard !pairs.isEmpty else { return 0 }
+        let deviceID = outbox.device.deviceID
         // A device's first record in a store is a joining, restored, or copied library: its old places and
         // undated values are stamped as old as they are, so they lose to what the store holds already.
         let stamped = pairs.map { pair -> SyncEntry in
-            let stamp = joining ? SyncMerge.joiningStamp(for: pair.key, value: pair.value, device: deviceID) : clock.next(at: now())
+            let stamp = joining
+                ? SyncMerge.joiningStamp(for: pair.key, value: pair.value, device: deviceID, now: now())
+                : clock.next(at: now())
             return SyncEntry(key: pair.key, value: pair.value, stamp: stamp, byHand: pair.byHand)
         }
         let seq = try outbox.append(stamped)
@@ -132,7 +184,6 @@ actor SyncEngine {
         registers.merge(stamped)
         registers.throughSeq = seq
         try local.saveRegisters(registers)
-        filesSinceSnapshot += 1
         if updatingBaseline {
             // Only `absorb` writes the baseline: it forgets removals, notes hand edits, and keeps list orders.
             baseline.absorb(stamped)
@@ -142,20 +193,39 @@ actor SyncEngine {
     }
 
     /// Compares `library`'s projection with the baseline and records each changed key
-    /// (section 6, the recorder); returns how many. The projection is made here, off the
-    /// main thread. The first record after launch learns which books and folders the library
-    /// lacks (`SyncLaunchHold`), and none of those is reported removed until `settleLaunch` (R7).
+    /// (section 6, the recorder). The projection is made here, off the main thread. The first
+    /// record after launch learns which books and folders the library lacks (`SyncLaunchHold`),
+    /// and none of those is reported removed until `settleLaunch` (R7). A record that would remove
+    /// a great many books at once is held back and reported, not sent.
     @discardableResult
-    func record(library: Library) throws -> Int {
+    func record(library: Library) throws -> SyncRecordResult {
         let projection = SyncProjection.of(library, contents: contents())
         launchHold.observeLaunch(baseline: baseline, now: projection)
-        let changes = SyncMerge.changes(from: baseline, to: projection, hold: launchHold)
+        var changes = SyncMerge.changes(from: baseline, to: projection, hold: launchHold)
+
+        // A mass removal is not a person's: index recovery or a wrong folder empties the library at once.
+        let removals = changes.filter { key, value in
+            if case .book(_, .presence) = key { return value == .null }
+            return false
+        }.keys
+        let known = baseline.values.keys.filter { if case .book(_, .presence) = $0 { return true } else { return false } }.count
+        var held = 0
+        if removals.count > Self.massRemovalLimit || (known >= 4 && removals.count * 2 > known) {
+            for key in removals { changes[key] = nil }
+            held = removals.count
+            DiagnosticLog.event(.storage, "SYNC_RUN: \(held) book removals were held back, not sent, as they are most of the library or too many at once") // l10n: no (debug log text)
+        }
+
         let ordered = changes.sorted { "\($0.key)" < "\($1.key)" }
-        let joining = outbox.device.lastSeq == 0
-        return try append(
+        let joining = outbox.device.hasRecordedLibrary != true
+        let recorded = try append(
             ordered.map { PendingChange(key: $0.key, value: $0.value, byHand: projection.byHand.contains($0.key)) },
             updatingBaseline: true, joining: joining
         )
+        if joining && recorded > 0 {
+            try outbox.updateDevice { $0.hasRecordedLibrary = true }
+        }
+        return SyncRecordResult(recorded: recorded, heldRemovals: held)
     }
 
     /// Ends the launch hold, once the first apply after launch has had its chance to put books back:
@@ -171,9 +241,10 @@ actor SyncEngine {
         try append(bookIDs.map { PendingChange(key: .book($0, .keep), value: .bool(keep), byHand: true) }, updatingBaseline: false)
     }
 
-    /// Records a book's content, once the backup has it uploaded (section 8).
+    /// Records a book's content, once the backup has it uploaded (section 8). The projection holds a
+    /// book's content, so the baseline takes it too, or the next record would stamp it again.
     func recordContent(_ content: SyncContent, for bookID: UUID) throws {
-        try append([PendingChange(key: .book(bookID, .content), value: SyncValueCoding.json(content), byHand: false)], updatingBaseline: false)
+        try append([PendingChange(key: .book(bookID, .content), value: SyncValueCoding.json(content), byHand: false)], updatingBaseline: true)
     }
 
     /// The contents of every book in the registers, for `SyncProjection.of`.
@@ -198,24 +269,51 @@ actor SyncEngine {
 
     // MARK: Exchanging
 
+    /// Whether a snapshot is due: this device is new, 100 files went by since its last, or a day did.
+    private func isSnapshotDue() -> Bool {
+        if snapshotDue { return true }
+        let device = outbox.device
+        if device.lastSeq - (device.lastSnapshotSeq ?? 0) >= snapshotEvery { return true }
+        guard let last = device.lastSnapshotAt else { return device.lastSeq > 0 }
+        return now().timeIntervalSince(last) >= snapshotInterval && device.lastSeq > (device.lastSnapshotSeq ?? 0)
+    }
+
+    /// Looks at this device's own folder in the store: files past what this device wrote, or of another
+    /// incarnation, mean its library was restored or copied from an older state, so it takes a new identity (section 3).
+    private func checkOwnFolder(_ folder: SyncFolder) async throws -> Bool {
+        let own = folder.deviceFolder(outbox.device.deviceID)
+        guard let listing = try? folder.access.list(own) else { return false }
+        let files = listing.compactMap { item in SyncNames.parseChangeFile(item.name).map { (seq: $0.seq, name: item.name) } }
+        guard let newest = files.max(by: { $0.seq < $1.seq }) else { return false }
+        if newest.seq > outbox.device.lastSeq { return true }
+        // Another incarnation in the newest file, where it can be read.
+        guard let data = try? await folder.access.read(own.appendingPathComponent(newest.name), within: .seconds(10)),
+              let file = try? SyncFormats.decodeChangeFile(data, named: newest.name) else { return false }
+        return file.incarnation != outbox.device.incarnation
+    }
+
     /// Publishes this device, copies the outbox in, reads the upload states, reads other
     /// devices' new files, and merges them into the registers. Reads are bounded (R2). A
     /// folder problem is thrown after what could be done locally is saved.
     func exchange(in folder: SyncFolder, readsOthers: Bool = true, limits: SyncReadLimits = SyncReadLimits()) async throws -> SyncExchangeResult {
         var result = SyncExchangeResult()
-        try publishDevice(in: folder)
-        if snapshotDue || filesSinceSnapshot >= snapshotEvery {
-            try outbox.append(registers.entries.values.sorted { $0.stamp < $1.stamp }, kind: .snapshot)
-            registers.throughSeq = outbox.device.lastSeq
-            try local.saveRegisters(registers)
-            snapshotDue = false
-            filesSinceSnapshot = 0
+        if readsOthers, try await checkOwnFolder(folder) {
+            try takeNewIdentity()
+            result.tookNewIdentity = true
         }
-        let deviceFolder = folder.deviceFolder(deviceID)
+        try publishDevice(in: folder)
+        if isSnapshotDue() {
+            let seq = try outbox.append(registers.entries.values.sorted { $0.stamp < $1.stamp }, kind: .snapshot)
+            registers.throughSeq = seq
+            try local.saveRegisters(registers)
+            try outbox.updateDevice { $0.lastSnapshotSeq = seq; $0.lastSnapshotAt = now() }
+            snapshotDue = false
+        }
+        let deviceFolder = folder.deviceFolder(outbox.device.deviceID)
         do {
-            result.filesCopied = try outbox.copy(into: deviceFolder, using: folder.access)
+            result.filesCopied = try outbox.copy(into: deviceFolder, using: folder.access, now: now())
             result.uploadProblem = try outbox.refreshUploads(in: deviceFolder, using: folder.access)
-            try outbox.retireUploaded()
+            try outbox.retireUploaded(now: now())
         } catch {
             result.pendingChanges = outbox.pendingChanges
             throw error
@@ -224,28 +322,29 @@ actor SyncEngine {
         // The iPhone going to the background and the Mac quitting only send (section 7).
         guard readsOthers else { return result }
 
-        let reader = SyncReader(folder: folder, ownDeviceID: deviceID, limits: limits)
+        let reader = SyncReader(folder: folder, ownDeviceID: outbox.device.deviceID, limits: limits)
         let read = try await reader.read(after: cursors)
         result.read = read
-        if read.laterVersionFrom != nil { throw SyncProblem.laterVersion }
         var refused = 0
         for entry in read.entries where !clock.observe(entry.stamp, at: now()) { refused += 1 }
         if refused > 0 {
             // One device's clock far ahead must not freeze every device's time: its stamps are merged, but the clock doesn't follow.
             DiagnosticLog.event(.storage, "SYNC_RUN: \(refused) stamps from other devices were more than a day ahead of this clock, which did not follow them") // l10n: no (debug log text)
         }
+        // What was read is merged even when a later TextMouth's file was left alone. The registers and the
+        // clock are saved before the cursors, so a crash between them re-reads files, never loses their entries.
         result.changedKeys = registers.merge(read.entries)
-        cursors = read.cursors
-        try local.saveCursors(cursors)
         try local.saveRegisters(registers)
         try local.saveClock(clock)
+        cursors = read.cursors
+        try local.saveCursors(cursors)
         return result
     }
 
     /// Writes this device's `device.json`: its name, platform, version, last `seq`, and the time.
     private func publishDevice(in folder: SyncFolder) throws {
         try folder.publishDevice(SyncDeviceFile(
-            formatVersion: SyncFormats.currentVersion, deviceID: deviceID, name: identity.name,
+            formatVersion: SyncFormats.currentVersion, deviceID: outbox.device.deviceID, name: identity.name,
             platform: identity.platform, appVersion: identity.appVersion, lastSeq: outbox.device.lastSeq, updated: now()
         ))
     }
