@@ -89,8 +89,11 @@ enum SyncFolderAccessFactory {
     var library: Library { get }
     /// False while storage work is held, or the library is unavailable or recovering.
     var maySyncNow: Bool { get }
-    /// Applies a merge; returns the keys applied.
-    func applySync(_ application: SyncApplication) async -> Set<SyncKey>
+    /// Applies a merge, which was computed from `start`: the library as the center read it, recorded exactly as it
+    /// was. The host applies field by field onto its library as it is now, keeping any field changed since `start`;
+    /// returns the keys that landed. A key it left alone (a row it didn't touch, an open book's removal) is
+    /// applied again at the next sync.
+    func applySync(_ application: SyncApplication, from start: Library) async -> Set<SyncKey>
     /// Called after each run with the books kept on all devices; `mayDownload` is true on a satisfied
     /// path that is neither expensive nor constrained (section 16).
     func syncDidApply(keptBookIDs: Set<UUID>, mayDownload: Bool)

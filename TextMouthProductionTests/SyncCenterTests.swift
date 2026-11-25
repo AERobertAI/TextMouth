@@ -1,31 +1,30 @@
 import XCTest
 @testable import TextMouth
 
+/// A library host that holds an empty library and applies nothing.
+@MainActor private final class StubHost: SyncLibraryHost {
+    var library = Library()
+    var maySyncNow = true
+    var appliedCount = 0
+    var lastKept: Set<UUID>?
+    /// How often the center asked for the device's voices, and which it has.
+    var voiceReads = 0
+    var availableVoiceIDs: Set<String>? {
+        voiceReads += 1
+        return ["voice-1"]
+    }
+    func applySync(_ application: SyncApplication, from start: Library) async -> Set<SyncKey> {
+        appliedCount += 1
+        return application.appliedKeys
+    }
+    func syncDidApply(keptBookIDs: Set<UUID>, mayDownload: Bool) { lastKept = keptBookIDs }
+}
+
 /// The app's one sync (FR43): inert until a folder is chosen (R1), refusals
 /// that name their reason (R6), set up, join, stop (which deletes nothing),
 /// and what Sync Now says. Every folder is in the test's sandbox; the
 /// location of a folder is a test's answer, so no iCloud Drive is touched.
-@MainActor
-final class SyncCenterTests: XCTestCase {
-    /// A library host that holds an empty library and applies nothing.
-    private final class StubHost: SyncLibraryHost {
-        var library = Library()
-        var maySyncNow = true
-        var appliedCount = 0
-        var lastKept: Set<UUID>?
-        /// How often the center asked for the device's voices, and which it has.
-        var voiceReads = 0
-        var availableVoiceIDs: Set<String>? {
-            voiceReads += 1
-            return ["voice-1"]
-        }
-        func applySync(_ application: SyncApplication) async -> Set<SyncKey> {
-            appliedCount += 1
-            return application.appliedKeys
-        }
-        func syncDidApply(keptBookIDs: Set<UUID>, mayDownload: Bool) { lastKept = keptBookIDs }
-    }
-
+@MainActor final class SyncCenterTests: XCTestCase {
     /// Collects what the center says aloud.
     private final class Spoken: @unchecked Sendable {
         // `@unchecked Sendable`: `lines` is read and changed only on the main actor, where every test and the center run.

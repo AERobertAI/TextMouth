@@ -52,7 +52,7 @@ final class StoreFetchTests: XCTestCase {
     func testFetchBringsTheBookAndKeepsTheRecord() async throws {
         let world = try makeWorld()
         let reported = ProgressLog()
-        let contentPath = try await world.fetch.fetch(package: world.placeholder) { files, bytes in reported.add(files, bytes) }
+        let contentPath = try await world.fetch.fetch(package: world.placeholder) { files, bytes, _, _ in reported.add(files, bytes) }
         XCTAssertEqual(contentPath, "book.txt", "the content file keeps the name it had where it was backed up")
         XCTAssertEqual(try Data(contentsOf: world.placeholder.appendingPathComponent("book.txt")), try Data(contentsOf: world.original.appendingPathComponent("book.txt")))
         XCTAssertEqual(try String(contentsOf: world.placeholder.appendingPathComponent("bookInfo.json"), encoding: .utf8), "{\"title\":\"Mine\"}", "the device's own record")
@@ -142,6 +142,40 @@ final class StoreFetchTests: XCTestCase {
         XCTAssertFalse(StoreFetch.isSafe(file("book.epub", blob: "../" + digest + ".epub")))
         XCTAssertFalse(StoreFetch.isSafe(file("book.epub", blob: "other.epub")))
         XCTAssertFalse(StoreFetch.isSafe(file("book.epub", sha: "short")))
+    }
+
+    /// A placeholder made from a row alone, with an empty file list, is missing files: Download Now through
+    /// the book storage fetches them, with the manifest's totals, and the book is whole afterwards.
+    func testAnEmptyPointerIsMissingAndDownloadNowFetchesIt() async throws {
+        let world = try makeWorld()
+        var pointer = try XCTUnwrap(StoreFetch.pointer(in: world.placeholder))
+        pointer.files = []
+        try StoreFetch.write(pointer, in: world.placeholder)
+        XCTAssertTrue(StoreFetch.isMissingFiles(world.placeholder), "an empty list is not complete")
+        XCTAssertNil(StoreFetch.bytesToFetch(world.placeholder), "the manifest knows the size, the pointer does not")
+
+        let fetch = world.fetch
+        let storage = StoreBookStorage(wrapping: LocalBookStorage()) { package in
+            AsyncThrowingStream { continuation in
+                let task = Task {
+                    do {
+                        try await fetch.fetch(package: package.url) { files, bytes, totalFiles, totalBytes in
+                            continuation.yield(BookDownloadProgress(completedFiles: files, totalFiles: totalFiles, completedBytes: bytes, totalBytes: totalBytes))
+                        }
+                        continuation.finish()
+                    } catch { continuation.finish(throwing: error) }
+                }
+                continuation.onTermination = { _ in task.cancel() }
+            }
+        }
+        let package = BookPackage(bookID: bookID, url: world.placeholder, isPackage: true, isAudio: false)
+        XCTAssertEqual(storage.state(of: package), .inCloud)
+        var last: BookDownloadProgress?
+        for try await progress in storage.download(package) { last = progress }
+        XCTAssertEqual(last?.totalFiles, world.backup.manifest.files.count, "totals come from the manifest")
+        XCTAssertEqual(last?.percent, 100)
+        XCTAssertFalse(StoreFetch.isMissingFiles(world.placeholder))
+        XCTAssertEqual(storage.state(of: package), .local)
     }
 
     /// A pointer of another store is not fetched.

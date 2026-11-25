@@ -41,14 +41,18 @@ struct StoreFetch: Sendable {
         try SyncFormats.encode(pointer).write(to: package.appendingPathComponent(StorePointer.fileName), options: .atomic)
     }
 
-    /// Whether the package at `package` is a placeholder or partly one: some file of its pointer isn't here.
+    /// Whether the package at `package` is a placeholder or partly one: its pointer lists no files yet (a
+    /// placeholder made from a row alone, whose files the manifest names), or some file of it isn't here.
     static func isMissingFiles(_ package: URL) -> Bool {
-        pointer(in: package)?.files.contains { !$0.onThisDevice } ?? false
+        guard let pointer = pointer(in: package) else { return false }
+        return pointer.files.isEmpty || pointer.files.contains { !$0.onThisDevice }
     }
 
-    /// The bytes of the files not on this device, from the pointer's sizes: what a fetch needs room for.
+    /// The bytes of the files not on this device, from the pointer's sizes: what a fetch needs room for. Nil
+    /// when the pointer lists no files yet, since only the manifest knows them.
     static func bytesToFetch(_ package: URL) -> Int64? {
-        pointer(in: package).map { $0.files.filter { !$0.onThisDevice }.reduce(Int64(0)) { $0 + $1.size } }
+        guard let pointer = pointer(in: package), !pointer.files.isEmpty else { return nil }
+        return pointer.files.filter { !$0.onThisDevice }.reduce(Int64(0)) { $0 + $1.size }
     }
 
     /// Whether a manifest's file may be fetched: a relative path of plain names (no `..`, no empty name, not
@@ -65,7 +69,8 @@ struct StoreFetch: Sendable {
 
     /// Fetches the files of the package at `package` that aren't here yet.
     ///
-    /// `progress` is told, after each file, how many bytes and files are here. Throws a
+    /// `progress` is told, after each file, how many files and bytes are here, and the totals, which the
+    /// manifest gives even for a placeholder whose pointer lists no files. Throws a
     /// `SyncProblem`: `.offline`, `.notDownloaded` at the limit, `.damaged` for a blob that doesn't
     /// match its name (it stays in staging, never in the package), `.anotherStore` for a
     /// pointer of another store. A cancelled task stops between files; what was moved in stays, and
@@ -75,7 +80,10 @@ struct StoreFetch: Sendable {
     /// backed up. Returns that content file's path (the first `content` file of the manifest, by path), which
     /// the host sets as the row's `filePath` (`SyncLibraryHost.syncDidFetch`).
     @discardableResult
-    func fetch(package: URL, progress: @Sendable (_ completedFiles: Int, _ completedBytes: Int64) -> Void = { _, _ in }) async throws -> String? {
+    func fetch(
+        package: URL,
+        progress: @Sendable (_ completedFiles: Int, _ completedBytes: Int64, _ totalFiles: Int, _ totalBytes: Int64) -> Void = { _, _, _, _ in }
+    ) async throws -> String? {
         guard var pointer = Self.pointer(in: package) else { throw SyncProblem.notASyncFolder }
         if pointer.storeID != storeID { throw SyncProblem.anotherStore }
         let bookFolder = folder.bookFolder(pointer.bookID)
@@ -90,7 +98,8 @@ struct StoreFetch: Sendable {
         if let unsafe = manifest.files.first(where: { !Self.isSafe($0) }) { throw SyncProblem.damaged(file: unsafe.path) }
         try FileManager.default.createDirectory(at: staging, withIntermediateDirectories: true)
 
-        var completedFiles = manifest.files.count - pointer.files.filter { !$0.onThisDevice }.count
+        let totalBytes = manifest.files.reduce(Int64(0)) { $0 + $1.size }
+        var completedFiles = pointer.files.filter(\.onThisDevice).count
         var completedBytes = pointer.files.filter(\.onThisDevice).reduce(Int64(0)) { $0 + $1.size }
         for file in manifest.files {
             try Task.checkCancellation()
@@ -114,7 +123,7 @@ struct StoreFetch: Sendable {
             try Self.write(pointer, in: package)
             completedFiles += 1
             completedBytes += file.size
-            progress(completedFiles, completedBytes)
+            progress(completedFiles, completedBytes, manifest.files.count, totalBytes)
         }
         Self.excludeFromBackup(package)
         return manifest.files.filter { $0.role == "content" }.map(\.path).min()
