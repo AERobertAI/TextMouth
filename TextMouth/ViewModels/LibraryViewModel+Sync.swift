@@ -199,6 +199,13 @@ extension LibraryViewModel: SyncLibraryHost {
         await applySync(application, from: library)
     }
 
+    /// The identifiers of the voices installed on this Mac, once they are
+    /// listed, so a merge applies no voice this Mac lacks; nil before that,
+    /// which offers every voice.
+    var availableVoiceIDs: Set<String>? {
+        VoiceCatalog.shared.isLoaded ? Set(VoiceCatalog.shared.voices.map(\.identifier)) : nil
+    }
+
     /// Whether the book `id` is busy now, so a removal waits: open in a
     /// reader (the synchronous truth, not the published set that follows a
     /// turn later), its audio being edited, being edited with Edit Text, in

@@ -15,6 +15,12 @@ struct SyncSettingsSection: View {
     @State private var confirmingStop = false
     /// Whether a command is running, which holds the others back.
     @State private var isWorking = false
+    /// Whether Set Up or Join has just worked and its first run's outcome is
+    /// still to be said.
+    @State private var awaitingFirstRun = false
+    /// VoiceOver's focus in the section: on the status line when the controls
+    /// change under it, so the button just pressed leaving does not lose it.
+    @AccessibilityFocusState private var statusIsFocused: Bool
 
     var body: some View {
         Section {
@@ -33,6 +39,7 @@ struct SyncSettingsSection: View {
             }
             .fixedSize(horizontal: false, vertical: true)
             .accessibilityElement(children: .combine)
+            .accessibilityFocused($statusIsFocused)
 
             if let message = model.message {
                 // The words say what went wrong, so the color is never the only sign.
@@ -64,8 +71,18 @@ struct SyncSettingsSection: View {
             Text(SyncWording.sectionTitle)
         }
         .alert(SyncWording.stopQuestion, isPresented: $confirmingStop) {
-            Button(Self.withoutEllipsis(SyncWording.stopTitle)) { model.stop() }
+            // Cancel is first, so Return presses the safe choice.
             Button(StorageSettingsWording.cancelTitle, role: .cancel) {}
+            Button(Self.withoutEllipsis(SyncWording.stopTitle), role: .destructive) { model.stop() }
+        }
+        // The controls change when sync turns on or off; focus goes to the
+        // status line, not to nothing.
+        .onChange(of: center.status.isOn) { _, _ in statusIsFocused = true }
+        // The first run's outcome, after Set Up or Join, is said when it ends.
+        .onChange(of: center.status.isSyncing) { _, syncing in
+            guard !syncing, awaitingFirstRun, center.status.isOn else { return }
+            awaitingFirstRun = false
+            VoiceOverAnnouncer.announce(statusSentence)
         }
     }
 
@@ -118,7 +135,10 @@ struct SyncSettingsSection: View {
             Task { @MainActor in
                 let worked = joining ? await model.join(folder) : await model.setUp(in: folder)
                 isWorking = false
-                if worked { VoiceOverAnnouncer.announce(SyncWording.statusSyncing) }
+                if worked {
+                    awaitingFirstRun = true
+                    VoiceOverAnnouncer.announce(SyncWording.statusSyncing)
+                }
             }
         }
         if let window = NSApp.keyWindow {

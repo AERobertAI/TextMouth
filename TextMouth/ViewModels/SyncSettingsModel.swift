@@ -23,6 +23,8 @@ final class SyncSettingsModel: ObservableObject {
     private let locationOf: (URL) -> StorageLocation
     /// Whether anything is at a path: Set Up Sync's check for a folder already made.
     private let exists: (URL) -> Bool
+    /// The names in a folder, listed without downloading anything.
+    private let listFolder: (URL) -> [String]
     /// The command Set Up Sync gives the sync.
     private let setUpSync: (URL) async throws -> Void
     /// The command Join Sync Folder gives the sync.
@@ -34,12 +36,16 @@ final class SyncSettingsModel: ObservableObject {
 
     /// The name of the folder Set Up Sync makes in the folder chosen.
     static let folderName = "TextMouth Sync" // l10n: no (the folder's name; the words say it is not translated)
+    /// The file that names a sync folder's store, and iCloud Drive's stand-in for it before it has downloaded.
+    static let storeFileName = "store.json" // l10n: no (a file name)
+    static let storeStandInName = ".store.json.icloud" // l10n: no (a file name)
 
     /// A model over the app's sync and library, or over stand-ins in tests.
     init(
         libraryLocation: @escaping () -> StorageLocation = { CloudServices.itemStatus.location(of: TextMouthPaths.root) },
         locationOf: @escaping (URL) -> StorageLocation = { CloudServices.itemStatus.location(of: $0) },
         exists: @escaping (URL) -> Bool = { FileManager.default.fileExists(atPath: $0.path) },
+        listFolder: @escaping (URL) -> [String] = { (try? FileManager.default.contentsOfDirectory(atPath: $0.path)) ?? [] },
         setUp: @escaping (URL) async throws -> Void = { try await SyncCenter.shared.setUp(in: $0) },
         join: @escaping (URL) async throws -> Void = { try await SyncCenter.shared.join($0) },
         stop: @escaping () -> Void = { SyncCenter.shared.stop() },
@@ -48,6 +54,7 @@ final class SyncSettingsModel: ObservableObject {
         self.libraryLocation = libraryLocation
         self.locationOf = locationOf
         self.exists = exists
+        self.listFolder = listFolder
         self.setUpSync = setUp
         self.joinSync = join
         self.stopSync = stop
@@ -88,6 +95,16 @@ final class SyncSettingsModel: ObservableObject {
     @discardableResult
     func join(_ folder: URL) async -> Bool {
         if let refusal = refusal(forChosen: folder) { return refuse(refusal) }
+        // A folder that is no sync folder is refused at once, not after the
+        // minute joining waits for `store.json`: it is named TextMouth Sync,
+        // or holds `store.json` (or iCloud Drive's stand-in for it).
+        let names = listFolder(folder)
+        let hasStore = names.contains(Self.storeFileName)
+        guard hasStore || names.contains(Self.storeStandInName) || folder.lastPathComponent == Self.folderName else {
+            return refuse(SyncWording.notASyncFolder)
+        }
+        // The wait for a `store.json` that has not arrived is said as it begins.
+        if !hasStore { say(SyncWording.waitingForFiles) }
         return await run { try await self.joinSync(folder) }
     }
 
@@ -96,6 +113,7 @@ final class SyncSettingsModel: ObservableObject {
     func stop() {
         message = nil
         stopSync()
+        VoiceOverAnnouncer.announce(SyncWording.statusOff)
     }
 
     /// Sync Now; the sync announces "Syncing." and what came of it.
@@ -106,19 +124,26 @@ final class SyncSettingsModel: ObservableObject {
 
     // MARK: Helpers
 
-    /// Says `sentence` as the section's message, announced, and returns false.
-    private func refuse(_ sentence: String) -> Bool {
+    /// Says `sentence` as the section's message, announced.
+    private func say(_ sentence: String) {
         message = sentence
         VoiceOverAnnouncer.announce(sentence)
+    }
+
+    /// Says `sentence`, and returns false.
+    private func refuse(_ sentence: String) -> Bool {
+        say(sentence)
         return false
     }
 
     /// Runs a command of the sync, clearing the message first, and turns
     /// what it throws into one of `SyncWording`'s sentences.
     private func run(_ command: () async throws -> Void) async -> Bool {
-        message = nil
+        let waiting = message == SyncWording.waitingForFiles ? message : nil
+        message = waiting
         do {
             try await command()
+            message = nil
             return true
         } catch let problem as SyncProblem {
             return refuse(Self.sentence(for: problem, isPhone: false))

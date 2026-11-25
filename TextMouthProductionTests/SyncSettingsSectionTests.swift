@@ -16,6 +16,10 @@ final class SyncSettingsSectionTests: XCTestCase {
         var stops = 0
         var syncNows = 0
         var existing: Set<String> = []
+        /// The names the chosen folder holds.
+        var listing: [String] = ["store.json"]
+        /// What the model said while joining: the sync's call sees it.
+        var messageWhileJoining: String?
         var error: Error?
     }
 
@@ -27,6 +31,7 @@ final class SyncSettingsSectionTests: XCTestCase {
             libraryLocation: { library },
             locationOf: { _ in chosen },
             exists: { calls.existing.contains($0.lastPathComponent) },
+            listFolder: { _ in calls.listing },
             setUp: { calls.setUps.append($0); if let error = calls.error { throw error } },
             join: { calls.joins.append($0); if let error = calls.error { throw error } },
             stop: { calls.stops += 1 },
@@ -105,7 +110,43 @@ final class SyncSettingsSectionTests: XCTestCase {
         }
     }
 
-    /// Stop Syncing and Sync Now go to the sync, and clear what was said.
+    /// A folder that is no sync folder is refused at once, before the sync is
+    /// asked to wait a minute for a `store.json` that will never come.
+    func testAFolderThatIsNoSyncFolderIsRefusedAtOnce() async {
+        let calls = Calls()
+        calls.listing = ["Holiday.pdf"]
+        let model = makeModel(calls: calls)
+        let worked = await model.join(folder)
+        XCTAssertFalse(worked)
+        XCTAssertEqual(model.message, SyncWording.notASyncFolder)
+        XCTAssertTrue(calls.joins.isEmpty)
+    }
+
+    /// A TextMouth Sync folder whose store.json has not downloaded yet is
+    /// joined, and the wait is said as it begins, not after it.
+    func testTheWaitForStoreJsonIsSaidAsItBegins() async {
+        let calls = Calls()
+        calls.listing = []
+        let model = makeModel(calls: calls)
+        let named = URL(fileURLWithPath: "/Users/reader/iCloud/\(SyncSettingsModel.folderName)")
+        let recorder = await recordingAnnouncementsWhileAwaiting {
+            _ = await model.join(named)
+        }
+        XCTAssertEqual(calls.joins, [named])
+        XCTAssertEqual(recorder.announcements.map(\.message), [SyncWording.waitingForFiles])
+        XCTAssertNil(model.message, "the wait is over")
+    }
+
+    /// iCloud Drive's stand-in for store.json also counts as a sync folder.
+    func testTheStandInForStoreJsonCountsAsASyncFolder() async {
+        let calls = Calls()
+        calls.listing = [".store.json.icloud"]
+        let model = makeModel(calls: calls)
+        let worked = await model.join(folder)
+        XCTAssertTrue(worked)
+    }
+
+    /// Stop Syncing says sync is off, and Sync Now goes to the sync, and clear what was said.
     func testStopAndSyncNowGoToTheSync() async {
         let calls = Calls()
         let model = makeModel(chosen: .local, calls: calls)

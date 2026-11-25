@@ -558,11 +558,10 @@ final class LibraryViewModel: ObservableObject {
         // In a cloud library, a conflict copy a sync service set aside of
         // the index or a record is reported, once (Phase 0, compare0).
         reportConflictCopiesInBackground()
-        // With a sync folder set up, the library syncs now (FR43); with none,
-        // both calls do nothing.
+        // With a sync folder set up, the library syncs now, as install begins
+        // the launch's sync itself (FR43); with none, it does nothing.
         SyncCenter.shared.install(host: self, dataDirectory: TextMouthPaths.root)
         observeSyncStatus()
-        SyncCenter.shared.moment(.launch)
     }
 
     /// What follows the startup maintenance, once every pass that rebuilds

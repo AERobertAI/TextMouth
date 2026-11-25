@@ -1841,6 +1841,10 @@ extension LibraryViewModel {
             if let progress {
                 dataDirectoryMove = nil
                 progress.end()
+                // The library is in another folder: the sync is installed
+                // again for it, which checks it afresh (FR43, R6) and joins
+                // only a folder whose Sync/ holds this store's files.
+                SyncCenter.shared.install(host: self, dataDirectory: TextMouthPaths.root)
             }
         }
         var waited = false
