@@ -41,19 +41,19 @@ struct BrailleExportOptions: TextExportOptions {
     static func standard() -> BrailleExportOptions {
         let setting = BraillePreferences.importTable()
         let fileCode = BrailleFileCode.code(withID: BraillePreferences.importFileCode()) ?? .northAmerican
-        guard isUnusableMacTable(setting) else { return BrailleExportOptions(table: setting, fileCode: fileCode) }
+        guard exportCannotStart(from: setting) else { return BrailleExportOptions(table: setting, fileCode: fileCode) }
         return BrailleExportOptions(table: BrailleTableCatalog.defaultTableID, fileCode: fileCode, replacedTable: setting)
     }
 
-    /// Whether `table`, the Braille setting's, is one an export cannot start from. On the Mac, one of this Mac's tables that
-    /// it does not offer, or that a check refused for the session. On the iPhone, which has no folder of the Mac's tables,
-    /// one no export list has: the lookup the Braille code row makes (`BrailleTableCatalog.listedID(forStored:)` among the
-    /// tables of `exportCodes`), so a `mac:` value of a table the pack has is kept, as FR40 reads it with the pack's table
-    /// of that name, and one the pack lacks is replaced, which the options say (`replacedTable`).
-    static func isUnusableMacTable(_ table: String) -> Bool {
+    /// Whether an export cannot start from `table`, the Braille setting's. On the Mac, when it is one of this Mac's tables
+    /// that it does not offer, or that a check refused for the session. On the iPhone, which has no folder of the Mac's
+    /// tables and judges any Settings table, when the translator would refuse it: the pack has no table of its file name
+    /// (`BrailleTableCatalog.bundledID(forStored:)`, which the translator asks and which finds a usable table hidden
+    /// behind a twin in the lists). So a `mac:` value of a table the pack has is kept, as FR40 reads it with the pack's
+    /// table of that name, and one the pack lacks is replaced, which the options say (`replacedTable`).
+    static func exportCannotStart(from table: String) -> Bool {
         #if os(iOS)
-        let listed = BrailleTableCatalog.listedID(forStored: table)
-        return !BrailleTableCatalog.exportCodes.contains { code in code.tables.contains { $0.id == listed } }
+        return BrailleTableCatalog.bundledID(forStored: table) == nil
         #else
         guard BrailleTableCatalog.readsFromMacFolder(table) else { return false }
         guard BrailleTableCatalog.table(withID: table) != nil else { return true }
