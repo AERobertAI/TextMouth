@@ -16,6 +16,12 @@ enum SyncTestFixtures {
         )
     }
 
+    /// The ID `number` makes: the same ID every run, so a printed seed or a failure replays.
+    static func id(_ number: Int) -> UUID {
+        UUID(uuidString: String(format: "00000000-0000-0000-0000-%012llX", UInt64(abs(number % 1_000_000_000))))
+            ?? UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1))
+    }
+
     /// An entry for `key` stamped at `wall` milliseconds by `device`.
     static func entry(
         _ key: SyncKey, _ value: JSONValue, wall: Int64, counter: UInt32 = 0, device: String = "a", byHand: Bool = false

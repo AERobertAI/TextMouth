@@ -87,9 +87,10 @@ private struct SyncApplier {
     private func isRemoved(_ id: UUID) -> Bool {
         guard let mark = entries[.book(id, .presence)], mark.value == .null else { return false }
         let later = (entriesOfBook[id] ?? [:]).values.contains { entry in
-            if case .book(_, let field) = entry.key, field == .presence || field == .keep { return false }
-            // A bookmark or list place that was only removed is no sign the book lives.
-            if entry.value == .null, entry.key.nullIsRemoval { return false }
+            if case .book(_, .presence) = entry.key { return false }
+            // A bookmark or list place that was only removed is no sign the book lives. A Keep on
+            // All Devices that came later is one: a person wanted the book.
+            if entry.key.marksRemoval(entry.value) { return false }
             return entry.stamp > mark.stamp
         }
         return !later
@@ -126,7 +127,7 @@ private struct SyncApplier {
         for field in SyncBookValues.rowFields {
             guard let entry = entries[.book(id, field)] else { continue }
             if field == .voice, let voice = entry.value.stringValue, let voices, !voices.contains(voice) { continue }
-            if SyncBookValues.value(of: field, in: book) != entry.value {
+            if let local = SyncBookValues.value(of: field, in: book), !SyncValueCoding.isSame(local, entry.value, for: entry.key) {
                 guard SyncBookValues.set(field, to: entry.value, in: &book) else { continue }
             }
             if entry.byHand, let edited = SyncBookValues.metadataField(of: field), book.handEdits?.contains(edited) != true {
@@ -136,7 +137,12 @@ private struct SyncApplier {
         }
         applyFolder(to: &book, folderID: folderID)
         applyBookmarks(to: &book)
-        appliedKeys.insert(.book(id, .presence))
+        if let mark = entries[.book(id, .presence)], mark.key.marksRemoval(mark.value) {
+            // A later change brought the book back: say so, so that the removal does not stand.
+            entriesToRecord[.book(id, .presence)] = .bool(true)
+        } else {
+            appliedKeys.insert(.book(id, .presence))
+        }
         return book
     }
 
@@ -156,10 +162,6 @@ private struct SyncApplier {
         } else if target == nil {
             return
         }
-        // A book put in a folder that was folded is recorded in the folder it went to.
-        if let named = target, let keeper = plan.redirect[named] {
-            entriesToRecord[.book(book.id, .folder)] = SyncValueCoding.id(plan.landing(keeper))
-        }
         let path = plan.path(landingOf: target)
         if book.folderPath != path {
             book.folderPath = path
@@ -171,12 +173,16 @@ private struct SyncApplier {
     /// Adds, changes, and removes the bookmarks of `book` as the winners say.
     private mutating func applyBookmarks(to book: inout Book) {
         var changed = false
+        var removedIDs = Set<UUID>()
+        // Where each bookmark of the row is, found once for all the entries.
+        var positions: [UUID: Int] = [:]
+        for (place, bookmark) in book.bookmarks.enumerated() { positions[bookmark.id] = place }
         for (key, entry) in entriesOfBook[book.id] ?? [:] {
             guard case .bookmark(_, let bookmarkID) = key else { continue }
             appliedKeys.insert(key)
-            let position = book.bookmarks.firstIndex { $0.id == bookmarkID }
+            let position = positions[bookmarkID]
             if entry.value == .null {
-                if let position { book.bookmarks.remove(at: position); changed = true }
+                if position != nil { removedIDs.insert(bookmarkID); changed = true }
                 continue
             }
             guard let value = SyncValueCoding.decode(SyncBookmarkValue.self, from: entry.value) else {
@@ -185,7 +191,7 @@ private struct SyncApplier {
             }
             if let position {
                 // Only a bookmark that differs is replaced, keeping the keys it holds that this version does not know.
-                if SyncValueCoding.json(SyncBookmarkValue(book.bookmarks[position])) != entry.value {
+                if !SyncValueCoding.isSame(SyncValueCoding.json(SyncBookmarkValue(book.bookmarks[position])), entry.value, for: key) {
                     var bookmark = book.bookmarks[position]
                     bookmark.chapterIndex = value.chapterIndex
                     bookmark.characterOffset = value.characterOffset
@@ -201,6 +207,7 @@ private struct SyncApplier {
             }
         }
         guard changed else { return }
+        book.bookmarks.removeAll { removedIDs.contains($0.id) }
         // Numbered by date, then ID, so every device numbers them alike.
         book.bookmarks.sort { ($0.dateCreated, $0.id.uuidString) < ($1.dateCreated, $1.id.uuidString) }
         for number in book.bookmarks.indices { book.bookmarks[number].number = number + 1 }
@@ -227,8 +234,12 @@ private struct SyncApplier {
             appliedKeys.formUnion([.book(id, .content), .book(id, .presence)])
             candidates.append(SyncNewBook(book: book, content: content))
         }
-        // Oldest first, so every device adds them in one order.
-        booksToAdd = candidates.sorted { ($0.content.dateAdded, $0.book.id.uuidString) < ($1.content.dateAdded, $1.book.id.uuidString) }
+        // Oldest first, so every device adds them in one order; of two that are one book (the same
+        // file, imported on two devices) the older is offered and the other is left out.
+        var seenHashes = Set<String>()
+        booksToAdd = candidates
+            .sorted { ($0.content.dateAdded, $0.book.id.uuidString) < ($1.content.dateAdded, $1.book.id.uuidString) }
+            .filter { new in new.content.md5Hash.isEmpty || seenHashes.insert(new.content.md5Hash).inserted }
         if !booksToAdd.isEmpty { movesPackages = true }
     }
 

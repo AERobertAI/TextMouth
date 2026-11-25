@@ -31,7 +31,7 @@ enum SyncBookValues {
     }
 
     /// The value of `field` in `book`, or nil for a field the row alone does not give.
-    static func value(of field: SyncBookField, in book: Book) -> JSONValue? {
+    static func value(of field: SyncBookField, in book: Book, using encoder: JSONEncoder? = nil) -> JSONValue? {
         switch field {
         case .title: return .string(book.title)
         case .author: return .string(book.author)
@@ -46,9 +46,9 @@ enum SyncBookValues {
         case .skipForward: return SyncValueCoding.string(book.localSkipForwardUnit)
         case .skipBackward: return SyncValueCoding.string(book.localSkipBackwardUnit)
         case .endOfBook: return SyncValueCoding.string(book.localEndOfBookBehavior)
-        case .position: return book.readingPosition.map { SyncValueCoding.json($0) } ?? .null
-        case .skippedHeadings: return SyncValueCoding.json(SyncSkippedHeadingsValue(book))
-        case .lastOpened: return SyncValueCoding.json(date: book.lastOpened)
+        case .position: return book.readingPosition.map { SyncValueCoding.json($0, using: encoder) } ?? .null
+        case .skippedHeadings: return SyncValueCoding.json(SyncSkippedHeadingsValue(book), using: encoder)
+        case .lastOpened: return SyncValueCoding.json(date: book.lastOpened, using: encoder)
         case .presence, .content, .folder, .keep: return nil
         }
     }
@@ -145,15 +145,15 @@ extension SyncKey {
         return nil
     }
 
-    /// Whether a `.null` entry under this key is a removal mark (of a book, a
-    /// folder, a bookmark, or a place on the reading list) and not a value
-    /// that is none (a detail cleared, say).
-    var nullIsRemoval: Bool {
+    /// Whether `value`, under this key, is a removal mark: of a book or a
+    /// bookmark or a place on the reading list (`.null`), or of a folder
+    /// (`.null`, or the ID of the folder it was folded into). Any other
+    /// `.null` is a value that is none (a detail cleared, say).
+    func marksRemoval(_ value: JSONValue) -> Bool {
         switch self {
-        case .book(_, let field): return field == .presence
-        case .folder(_, let field): return field == .presence
-        case .bookmark, .readingList: return true
-        case .readingListOption: return false
+        case .book(_, .presence), .bookmark, .readingList: return value == .null
+        case .folder(_, .presence): return value == .null || value.stringValue != nil
+        default: return false
         }
     }
 }
@@ -175,6 +175,110 @@ struct SyncFolderIndex: Sendable {
     func id(atPath path: String) -> UUID? { idByPath[path] }
 }
 
+/// The library's syncing values, key by key: the projection of a library
+/// (`of(_:contents:)`), and the baseline, the projection as last recorded or
+/// applied, which the changes are measured from.
+///
+/// A baseline is kept only through `absorb(_:)` (what this device recorded)
+/// and `absorbApplied(_:from:)` (what an apply took from the winners):
+/// removals are forgotten, hand edits noted, and each book's place on the
+/// reading list kept as its order key. The values cannot be set from outside,
+/// so a caller cannot keep one wrongly. A baseline is saved and read as
+/// itself (`Codable`).
+struct SyncProjection: Equatable, Sendable {
+    /// Each key's value. A book's place on the reading list is its order, a
+    /// whole number, in the projection of a library, and its order key, a
+    /// string, in a baseline; `SyncMerge.changes` knows both.
+    private(set) var values: [SyncKey: JSONValue]
+    /// The keys a person edited by hand (`HandEdits`).
+    private(set) var byHand: Set<SyncKey>
+
+    /// A projection holding nothing: the baseline of a library never recorded.
+    init() {
+        values = [:]
+        byHand = []
+    }
+
+    /// A projection of `values`, for `of(_:contents:)` and for tests.
+    fileprivate init(values: [SyncKey: JSONValue], byHand: Set<SyncKey>) {
+        self.values = values
+        self.byHand = byHand
+    }
+
+    // MARK: Keeping a baseline
+
+    /// Takes `entries`, which this device just stamped and recorded, into the
+    /// baseline: each key's value, whether a person made it, and, for a
+    /// removal mark, the removal. A removed book or folder takes all its
+    /// keys with it.
+    mutating func absorb(_ entries: [SyncEntry]) {
+        for entry in entries { absorb(entry) }
+    }
+
+    /// Takes the winning entries of `keys` from `winners`, which an apply
+    /// has just put in the library (`SyncApplication.appliedKeys`, or what
+    /// the host's `applySync` returned). A key with no winner is left alone.
+    mutating func absorbApplied(_ keys: Set<SyncKey>, from winners: SyncRegisters) {
+        for key in keys.sorted(by: { $0.text < $1.text }) {
+            if let entry = winners.entries[key] { absorb(entry) }
+        }
+    }
+
+    /// Takes one entry, as `absorb(_:)` does.
+    private mutating func absorb(_ entry: SyncEntry) {
+        if entry.byHand { byHand.insert(entry.key) } else { byHand.remove(entry.key) }
+        if entry.key.marksRemoval(entry.value) {
+            forget(entry.key)
+        } else {
+            values[entry.key] = entry.value
+        }
+    }
+
+    /// Forgets the key a removal mark is for, and, for a book or a folder, all its keys.
+    fileprivate mutating func forget(_ key: SyncKey) {
+        switch key {
+        case .book(let id, .presence):
+            for gone in values.keys.filter({ $0.bookID == id }) { values[gone] = nil; byHand.remove(gone) }
+        case .folder(let id, .presence):
+            for gone in values.keys.filter({ $0.folderID == id }) { values[gone] = nil; byHand.remove(gone) }
+        default:
+            values[key] = nil
+            byHand.remove(key)
+        }
+    }
+
+    // MARK: Saving a baseline
+
+    /// How a baseline is written: its values and hand-edited keys as sorted lists, so the same
+    /// baseline is always the same bytes, and a key a later TextMouth added is left out.
+    private struct Stored: Codable {
+        struct Pair: Codable {
+            var key: SyncKey
+            var value: JSONValue
+        }
+        var values: [Pair]
+        var byHand: [SyncKey]
+    }
+}
+
+extension SyncProjection: Codable {
+    /// Reads a baseline written by `encode(to:)`.
+    init(from decoder: Decoder) throws {
+        let stored = try Stored(from: decoder)
+        values = Dictionary(stored.values.map { ($0.key, $0.value) }, uniquingKeysWith: { _, last in last })
+        byHand = Set(stored.byHand)
+    }
+
+    /// Writes the baseline in a fixed order.
+    func encode(to encoder: Encoder) throws {
+        let stored = Stored(
+            values: values.sorted { $0.key.text < $1.key.text }.map { Stored.Pair(key: $0.key, value: $0.value) },
+            byHand: byHand.sorted { $0.text < $1.text }
+        )
+        try stored.encode(to: encoder)
+    }
+}
+
 extension SyncProjection {
     /// The projection of `library`: a key for each value the sync keeps.
     /// - Parameter contents: the uploaded content of the books that have any; a book
@@ -182,82 +286,129 @@ extension SyncProjection {
     /// - Note: A book's place on the reading list is its order, a whole number.
     ///   Feed items are left out, and so is `keep`, which no row holds.
     static func of(_ library: Library, contents: [UUID: SyncContent]) -> SyncProjection {
-        var projection = SyncProjection()
+        var values: [SyncKey: JSONValue] = [:]
+        var byHand = Set<SyncKey>()
         let index = SyncFolderIndex(library.folders)
+        // One encoder for the whole library: making one for each value is the cost of a projection.
+        let encoder = SyncValueCoding.makeEncoder()
 
         // Folders: that they exist, their names, and their parents.
         for folder in library.folders {
-            projection.values[.folder(folder.id, .presence)] = .bool(true)
-            projection.values[.folder(folder.id, .name)] = .string(folder.name)
-            projection.values[.folder(folder.id, .parent)] = SyncValueCoding.id(index.id(atPath: folder.parentPath))
+            values[.folder(folder.id, .presence)] = .bool(true)
+            values[.folder(folder.id, .name)] = .string(folder.name)
+            values[.folder(folder.id, .parent)] = SyncValueCoding.id(index.id(atPath: folder.parentPath))
         }
 
         // Books, their fields, and their bookmarks. A feed item is no book of the library's own.
         var bookIDs = Set<UUID>()
         for book in library.books where !book.isFeedItem {
             bookIDs.insert(book.id)
-            projection.values[.book(book.id, .presence)] = .bool(true)
+            values[.book(book.id, .presence)] = .bool(true)
             if let content = contents[book.id] {
-                projection.values[.book(book.id, .content)] = SyncBookValues.value(of: content)
+                values[.book(book.id, .content)] = SyncValueCoding.json(content, using: encoder)
             }
-            projection.values[.book(book.id, .folder)] = SyncValueCoding.id(index.id(atPath: book.folderPath))
+            values[.book(book.id, .folder)] = SyncValueCoding.id(index.id(atPath: book.folderPath))
             for field in SyncBookValues.rowFields {
-                projection.values[.book(book.id, field)] = SyncBookValues.value(of: field, in: book)
-            }
-            // The details a person edited by hand outrank any other change to them.
-            for field in SyncBookValues.rowFields {
+                values[.book(book.id, field)] = SyncBookValues.value(of: field, in: book, using: encoder)
+                // The details a person edited by hand outrank any other change to them.
                 if let edited = SyncBookValues.metadataField(of: field), book.handEdits?.contains(edited) == true {
-                    projection.byHand.insert(.book(book.id, field))
+                    byHand.insert(.book(book.id, field))
                 }
             }
             for bookmark in book.bookmarks {
-                projection.values[.bookmark(book: book.id, id: bookmark.id)] = SyncValueCoding.json(SyncBookmarkValue(bookmark))
+                values[.bookmark(book: book.id, id: bookmark.id)] = SyncValueCoding.json(SyncBookmarkValue(bookmark), using: encoder)
             }
         }
 
         // The reading list: each book's order, and the list's options.
         for (order, id) in library.readingList.bookIDs.enumerated() where bookIDs.contains(id) {
-            projection.values[.readingList(book: id)] = .integer(Int64(order))
+            values[.readingList(book: id)] = .integer(Int64(order))
         }
-        projection.values[.readingListOption(.continuation)] = .string(library.readingList.continuation.rawValue)
-        projection.values[.readingListOption(.skipsFinished)] = .bool(library.readingList.skipsFinished)
-        projection.values[.readingListOption(.removesFinished)] = .bool(library.readingList.removesFinished)
-        return projection
+        values[.readingListOption(.continuation)] = .string(library.readingList.continuation.rawValue)
+        values[.readingListOption(.skipsFinished)] = .bool(library.readingList.skipsFinished)
+        values[.readingListOption(.removesFinished)] = .bool(library.readingList.removesFinished)
+        return SyncProjection(values: values, byHand: byHand)
     }
+}
 
-    /// Takes `entries` into this projection, as a baseline takes what was
-    /// just recorded or applied: each key's value, whether a person made it,
-    /// and, for a removal mark, the removal. A removed book or folder takes
-    /// all its keys with it.
-    mutating func absorb(_ entries: [SyncEntry]) {
-        for entry in entries {
-            if entry.byHand { byHand.insert(entry.key) } else { byHand.remove(entry.key) }
-            absorb(key: entry.key, value: entry.value)
-        }
-    }
+// MARK: - Comparing values
 
-    /// Takes the value of one key, as `absorb(_:)` does.
-    mutating func absorb(key: SyncKey, value: JSONValue) {
-        guard !(value == .null && key.nullIsRemoval) else {
-            removeKeys(of: key)
-            return
-        }
-        values[key] = value
-    }
-
-    /// Forgets the key a removal mark is for, and, for a book or a folder, all its keys.
-    private mutating func removeKeys(of key: SyncKey) {
+extension SyncValueCoding {
+    /// `value` as `changes` and the applier compare it: without what TextMouth
+    /// rewrites without the person moving anything. A place is its chapter, offset,
+    /// and date; a bookmark and a skipped heading are without their anchors (the words
+    /// around them, which a reader gives a place it opens and a launch gives every
+    /// place); and a place's heading index and global offset are left out.
+    static func comparable(_ value: JSONValue, for key: SyncKey) -> JSONValue {
         switch key {
-        case .book(let id, .presence):
-            let doomed = values.keys.filter { $0.bookID == id }
-            for gone in doomed { values[gone] = nil; byHand.remove(gone) }
-        case .folder(let id, .presence):
-            let doomed = values.keys.filter { $0.folderID == id }
-            for gone in doomed { values[gone] = nil; byHand.remove(gone) }
+        case .book(_, .position):
+            guard case .object(let members) = value else { return value }
+            return .object(members.filter { ["chapterIndex", "characterOffset", "lastUpdated"].contains($0.key) })
+        case .bookmark:
+            guard case .object(var members) = value else { return value }
+            members["anchor"] = nil
+            return .object(members)
+        case .book(_, .skippedHeadings):
+            guard case .object(var members) = value else { return value }
+            for list in ["skipped", "waiting"] {
+                guard case .array(let items)? = members[list] else { continue }
+                members[list] = .array(items.map { item in
+                    guard case .object(var skip) = item else { return item }
+                    skip["anchor"] = nil
+                    return .object(skip)
+                })
+            }
+            return .object(members)
         default:
-            values[key] = nil
-            byHand.remove(key)
+            return value
         }
+    }
+
+    /// Whether `left` and `right` are one value of `key`, as `comparable(_:for:)` reads them.
+    static func isSame(_ left: JSONValue, _ right: JSONValue, for key: SyncKey) -> Bool {
+        left == right || comparable(left, for: key) == comparable(right, for: key)
+    }
+}
+
+// MARK: - What was missing at launch
+
+/// The books and folders that were missing when TextMouth started, which the
+/// sync puts back and never reports as removed (rule R7: a removal crosses
+/// only when a person made it in a running TextMouth).
+///
+/// One value for each run of the app, not saved. At the first record after
+/// launch it learns which book and folder keys the baseline holds that the
+/// library lacks; those stay held, however many records are made, until the
+/// first apply after launch has had its chance to put them back (the books
+/// whose content is in the store come back). Then `settle` forgets the ones
+/// still missing, silently. A book a person removes in the running app is
+/// not held: it was in the library when the app started.
+struct SyncLaunchHold: Sendable {
+    /// The keys held back: presence keys of books and folders missing at launch.
+    private(set) var held: Set<SyncKey> = []
+    /// Whether the launch has been looked at.
+    private var hasObserved = false
+
+    init() {}
+
+    /// Looks at the library as it stands at launch: the first call holds what the
+    /// baseline has and `now` lacks. Later calls do nothing.
+    mutating func observeLaunch(baseline: SyncProjection, now: SyncProjection) {
+        guard !hasObserved else { return }
+        hasObserved = true
+        held = Set(baseline.values.keys.filter { key in
+            switch key {
+            case .book(_, .presence), .folder(_, .presence): return now.values[key] == nil
+            default: return false
+            }
+        })
+    }
+
+    /// Ends the hold after the first apply after launch: a held key that is still missing from
+    /// `now` is dropped from `baseline`, so it is neither put back nor reported as removed.
+    mutating func settle(baseline: inout SyncProjection, now: SyncProjection) {
+        for key in held where now.values[key] == nil { baseline.forget(key) }
+        held = []
     }
 }
 
@@ -270,30 +421,47 @@ extension SyncMerge {
     /// presence, and so is a bookmark or a place on the reading list; the
     /// other keys of a vanished book are not reported.
     ///
-    /// - Parameter atLaunch: true for the first look after launch. A book or
-    ///   folder that is missing then is not reported as removed (rule R7: a
-    ///   removal crosses only when a person made it in a running TextMouth),
-    ///   so the sync puts it back.
+    /// - Parameter atLaunch: true to report no removal of a book or folder at all, for a caller that
+    ///   has only this one call to make (rule R7). A running app uses `changes(from:to:hold:)`.
     /// - Note: The reading list is compared by order: `baseline` holds each
     ///   book's order key, `now` its place in the list, and only a book that
-    ///   was moved or added is given a key (`SyncOrderKey.assign`).
+    ///   was moved or added is given a key (`SyncOrderKey.assign`). A place
+    ///   or bookmark that differs only in its anchor is no change.
     static func changes(from baseline: SyncProjection, to now: SyncProjection, atLaunch: Bool) -> [SyncKey: JSONValue] {
+        changes(from: baseline, to: now, reportsRemovalOfBooksAndFolders: !atLaunch, holding: [])
+    }
+
+    /// The changes as `changes(from:to:atLaunch:)` finds them, except that the keys `hold` holds
+    /// are not reported as removed, whatever record this is.
+    static func changes(from baseline: SyncProjection, to now: SyncProjection, hold: SyncLaunchHold) -> [SyncKey: JSONValue] {
+        changes(from: baseline, to: now, reportsRemovalOfBooksAndFolders: true, holding: hold.held)
+    }
+
+    /// The one implementation of both forms.
+    private static func changes(
+        from baseline: SyncProjection, to now: SyncProjection,
+        reportsRemovalOfBooksAndFolders reportsRemoval: Bool, holding held: Set<SyncKey>
+    ) -> [SyncKey: JSONValue] {
         var changes: [SyncKey: JSONValue] = [:]
 
         // Values that are new or different, and details a person has newly edited by hand.
         for (key, value) in now.values {
             if case .readingList = key { continue }
-            if baseline.values[key] != value || (now.byHand.contains(key) && !baseline.byHand.contains(key)) {
+            let known = baseline.values[key]
+            let differs = known.map { !SyncValueCoding.isSame($0, value, for: key) } ?? true
+            if differs || (now.byHand.contains(key) && !baseline.byHand.contains(key)) {
                 changes[key] = value
             }
         }
 
         // What was in the baseline and is gone.
-        for key in baseline.values.keys where now.values[key] == nil {
+        for (key, stored) in baseline.values where now.values[key] == nil {
+            // A removal already in the baseline is not reported again.
+            if stored == .null, key.marksRemoval(.null) { continue }
             switch key {
             case .book(_, .presence), .folder(_, .presence):
                 // A book or folder missing at launch is put back, not removed.
-                if !atLaunch { changes[key] = .null }
+                if reportsRemoval && !held.contains(key) { changes[key] = .null }
             case .bookmark(let book, _):
                 // A vanished book takes its bookmarks with it.
                 if now.values[.book(book, .presence)] != nil { changes[key] = .null }
@@ -333,5 +501,24 @@ extension SyncMerge {
             changes[.readingList(book: book)] = .null
         }
         return changes
+    }
+
+    // MARK: The stamp of a joining device
+
+    /// The stamp for an entry of a device's first record in a store (a library that joins, or is
+    /// restored or copied, already holding books): the value's own date where it has one, a
+    /// place's `lastUpdated`, a bookmark's date, or when a book was last opened; otherwise the
+    /// lowest stamp. So what the device brings never outranks what is already in the store,
+    /// and still wins where nothing competes.
+    static func joiningStamp(for key: SyncKey, value: JSONValue, device: String) -> SyncStamp {
+        let dated: JSONValue?
+        switch key {
+        case .book(_, .position): dated = value["lastUpdated"]
+        case .bookmark: dated = value["dateCreated"]
+        case .book(_, .lastOpened): dated = value
+        default: dated = nil
+        }
+        let milliseconds = dated.flatMap { SyncValueCoding.date(from: $0) }.map { SyncClock.milliseconds(of: $0) } ?? 0
+        return SyncStamp(wall: max(0, milliseconds), counter: 0, device: device)
     }
 }

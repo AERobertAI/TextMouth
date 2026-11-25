@@ -55,15 +55,31 @@ struct SyncClock: Codable, Sendable {
         return last
     }
 
+    /// How far ahead of the clock a remote stamp may be and still be taken, a day in milliseconds.
+    /// One device whose clock is years ahead must not freeze every other device's time.
+    static let maximumAhead: Int64 = 24 * 60 * 60 * 1000
+
     /// Moves the clock past `remote`, a stamp merged from another device, so
     /// that this device's next change is dated after it. A stamp the clock
     /// is already past changes nothing.
-    mutating func observe(_ remote: SyncStamp, at now: Date) {
+    /// - Returns: false, with the clock unchanged, for a stamp more than `maximumAhead`
+    ///   ahead of `now`, which the caller logs; true otherwise.
+    @discardableResult
+    mutating func observe(_ remote: SyncStamp, at now: Date) -> Bool {
+        let milliseconds = Self.milliseconds(of: now)
+        guard remote.wall <= milliseconds + Self.maximumAhead else { return false }
         // Only the wall time and counter count here: the device ID is this clock's own.
-        guard (remote.wall, remote.counter) >= (last.wall, last.counter) else { return }
-        let milliseconds = max(remote.wall, Self.milliseconds(of: now))
-        let counter: UInt32 = milliseconds == remote.wall ? remote.counter &+ 1 : 0
-        last = SyncStamp(wall: milliseconds, counter: counter, device: last.device)
+        guard (remote.wall, remote.counter) >= (last.wall, last.counter) else { return true }
+        let wall = max(remote.wall, milliseconds)
+        if wall != remote.wall {
+            last = SyncStamp(wall: wall, counter: 0, device: last.device)
+        } else if remote.counter == UInt32.max {
+            // The remote counter is spent: the next millisecond takes over, as `next(at:)` does.
+            last = SyncStamp(wall: wall + 1, counter: 0, device: last.device)
+        } else {
+            last = SyncStamp(wall: wall, counter: remote.counter + 1, device: last.device)
+        }
+        return true
     }
 
     /// `date` in whole milliseconds since 1970.
@@ -230,23 +246,6 @@ struct SyncContent: Codable, Equatable, Sendable {
     var md5Hash: String
     var totalWordCount: Int?
     var audioDuration: TimeInterval?
-}
-
-/// The library's syncing values, key by key.
-struct SyncProjection: Equatable, Sendable {
-    /// Each key's value. A book's place on the reading list is its order, a
-    /// whole number, in the projection of a library, and its order key, a
-    /// string, in a baseline; `SyncMerge.changes` knows both.
-    var values: [SyncKey: JSONValue]
-    /// The keys a person edited by hand (`HandEdits`).
-    var byHand: Set<SyncKey>
-
-    /// A projection of `values`, none by default. `SyncProjection.of(_:contents:)`,
-    /// in SyncProjection.swift, makes one from a library.
-    init(values: [SyncKey: JSONValue] = [:], byHand: Set<SyncKey> = []) {
-        self.values = values
-        self.byHand = byHand
-    }
 }
 
 /// A book another device added, with what its row is made from.

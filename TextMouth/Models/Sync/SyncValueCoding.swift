@@ -21,9 +21,10 @@ enum SyncValueCoding {
     }
 
     /// The value of `thing`, or `.null` when it cannot be encoded (which a
-    /// value of the library's own types never fails to be).
-    static func json<Thing: Encodable>(_ thing: Thing) -> JSONValue {
-        guard let data = try? makeEncoder().encode(thing),
+    /// value of the library's own types never fails to be). A caller that makes
+    /// many values passes one `encoder` for all.
+    static func json<Thing: Encodable>(_ thing: Thing, using encoder: JSONEncoder? = nil) -> JSONValue {
+        guard let data = try? (encoder ?? makeEncoder()).encode(thing),
               let value = try? JSONDecoder().decode(JSONValue.self, from: data) else { return .null }
         return value
     }
@@ -35,8 +36,8 @@ enum SyncValueCoding {
     }
 
     /// A date as the text a value holds it in, to the second.
-    static func json(date: Date?) -> JSONValue {
-        date.map { json($0) } ?? .null
+    static func json(date: Date?, using encoder: JSONEncoder? = nil) -> JSONValue {
+        date.map { json($0, using: encoder) } ?? .null
     }
 
     /// The date a value holds, or nil for `.null` or text that is no date.
