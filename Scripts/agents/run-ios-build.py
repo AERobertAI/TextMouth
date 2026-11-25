@@ -58,7 +58,8 @@ from pathlib import Path
 # Importing this module must leave no __pycache__ folder in the repository.
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-import runner_module_cache  # noqa: E402  (the path above must be set first)
+import merge_ios_shards  # noqa: E402  (the path above must be set first)
+import runner_module_cache  # noqa: E402
 
 # The repository's root, where the build runs.
 ROOT = Path(__file__).resolve().parents[2]
@@ -79,8 +80,8 @@ DEFAULT_SIZE_LIMIT_MINUTES = 15
 # The device build's limit in the size job (`--size-only`), which has no Simulator build before it: the time both limits
 # gave together, since a build that is stopped measures nothing.
 SIZE_ONLY_LIMIT_MINUTES = DEFAULT_LIMIT_MINUTES + DEFAULT_SIZE_LIMIT_MINUTES
-# The file the size job writes its lines to, and the one that the join reads them from.
-SIZE_SUMMARY_FILE = "ios-size-summary.txt"
+# The file the size job writes its lines to: the one the join reads them from.
+SIZE_SUMMARY_FILE = merge_ios_shards.SIZE_SUMMARY_FILE
 # The folder of the device build, inside the derived-data folder, and how much of its log goes into ios.log.
 DEVICE_FOLDER = "device"
 SIZE_LOG_LINES_KEPT = 200

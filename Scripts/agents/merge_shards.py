@@ -14,9 +14,10 @@ build-train.py and run_suite.py, never needs to know there were shards.
   verdict and TEST SUCCEEDED or TEST FAILED, so the reading of a log's tail (run_suite.py,
   tests_all_passed) judges the whole run and not only the last shard.
 
-Usage: python3 -I -B Scripts/agents/merge_shards.py SHARDS_DIR OUT_DIR EXPECTED [IOS_DIR [IOS_EXPECTED]]
+Usage: python3 -I -B Scripts/agents/merge_shards.py SHARDS_DIR OUT_DIR EXPECTED [IOS_DIR [IOS_EXPECTED [SIZE_DIR]]]
   SHARDS_DIR holds one folder per shard; OUT_DIR is where the four files go; EXPECTED is the number of shards.
   IOS_DIR holds the iPhone job's five files, or one folder ios-results-N for each of IOS_EXPECTED iPhone jobs (merge_ios_shards.py).
+  SIZE_DIR, when the workflow ran the device build in a job of its own, holds that job's ios-size-summary.txt and ios.log (merge_ios_shards.join_size).
 Python 3 standard library only.
 """
 import json
@@ -155,9 +156,9 @@ def merge_ios_ui(ios_dir, out_dir):
             f"- iOS UI test failures: {len(failures)}", *[f"  - {line}" for line in failures[:IOS_UI_FAILURES_NAMED]]]
 
 
-def merge(shards_dir, out_dir, expected, ios_dir=None, ios_expected=1):
-    """Writes the merged four files into `out_dir` (and, with `ios_dir`, the iPhone build's too, see merge_ios);
-    returns True when the whole run passed.
+def merge(shards_dir, out_dir, expected, ios_dir=None, ios_expected=1, size_dir=None):
+    """Writes the merged four files into `out_dir` (and, with `ios_dir`, the iPhone build's too, see merge_ios; with
+    `size_dir` also the size job's lines, see merge_ios_shards.join_size); returns True when the whole run passed.
 
     The shards' folders are `shard-results-N` inside `shards_dir`. When only one shard's artifact matched
     the download, actions/download-artifact puts its files straight into `shards_dir` with no folder of its own
@@ -224,6 +225,8 @@ def merge(shards_dir, out_dir, expected, ios_dir=None, ios_expected=1):
         merge_ios_shards.join(ios_dir, joined, ios_expected)
         ios_dir = joined
     ios_line = [merge_ios(ios_dir, out_dir), *merge_ios_ui(ios_dir, out_dir)] if ios_dir is not None else []
+    if size_dir is not None and ios_dir is not None:
+        merge_ios_shards.join_size(size_dir, out_dir)
     (out_dir / "summary.md").write_text(
         "\n".join(["# Test build", "", f"- Verdict: {'PASSED' if passed else 'FAILED'}", f"- {executed}",
                    f"- Shards: {expected}", f"- Left out on the runner: {left_out} tests or classes (Scripts/agents/runner-skips.conf)",
@@ -235,10 +238,11 @@ def merge(shards_dir, out_dir, expected, ios_dir=None, ios_expected=1):
 
 def main(argv):
     """Merges and says the verdict; exits 0 when the whole run passed."""
-    if len(argv) not in (3, 4, 5):
-        print("usage: merge_shards.py SHARDS_DIR OUT_DIR EXPECTED [IOS_DIR [IOS_EXPECTED]]", file=sys.stderr)
+    if len(argv) not in (3, 4, 5, 6):
+        print("usage: merge_shards.py SHARDS_DIR OUT_DIR EXPECTED [IOS_DIR [IOS_EXPECTED [SIZE_DIR]]]", file=sys.stderr)
         return 2
-    passed = merge(argv[0], argv[1], int(argv[2]), argv[3] if len(argv) > 3 else None, int(argv[4]) if len(argv) == 5 else 1)
+    passed = merge(argv[0], argv[1], int(argv[2]), argv[3] if len(argv) > 3 else None, int(argv[4]) if len(argv) > 4 else 1,
+                   argv[5] if len(argv) == 6 else None)
     print("PASSED" if passed else "FAILED")
     return 0 if passed else 1
 
