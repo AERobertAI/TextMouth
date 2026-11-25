@@ -298,8 +298,8 @@ class Plan:
         self.includes = includes
         self.excluded = excluded
         self.licenses = licenses
-        # (names of the release's literary tables that write braille only, names of those that read it back too).
-        self.directions = directions or ([], [])
+        # The names of the release's literary tables that write braille only.
+        self.directions = directions or []
 
 
 def leave_out(includes, licenses, fields, protected):
@@ -339,17 +339,18 @@ def leave_out(includes, licenses, fields, protected):
 
 
 def release_directions(everything):
-    """(forward, two_way): the sorted names of the release's literary tables whose `direction` is `forward` (they write braille
-    from print and cannot read it back, which TextMouth's reading needs), and of those that are not (`both`, or no mark). Every
-    file of the release is judged, shipped or not: the Mac, which carries only four tables, judges VoiceOver's older copies of a
-    table by the release's direction whenever the release has a table of that file name (`BrailleTableCatalog`)."""
-    forward, two_way = [], []
+    """The sorted names of the release's literary tables whose `direction` is `forward`: they write braille from print and
+    cannot read it back, which TextMouth's reading needs. Every file of the release is judged, shipped or not: the Mac, which
+    carries only four tables, judges VoiceOver's older copies of a table by the release's mark whenever the release has a table
+    of that file name (`BrailleTableCatalog`). The tables that are not marked need no list: nothing reads one."""
+    forward = []
     for name, data in everything.items():
         fields = catalog_fields(data)
         if fields.get("type", "").lower() != "literary":
             continue
-        (forward if fields.get("direction", "both").lower() == "forward" else two_way).append(name)
-    return sorted(forward), sorted(two_way)
+        if fields.get("direction", "both").lower() == "forward":
+            forward.append(name)
+    return sorted(forward)
 
 
 def plan(folder, profile="iphone", mac_list=None):
@@ -472,9 +473,9 @@ def build_index(the_plan, groups, places, liblouis_version):
     """The index document of a pack, as JSON-ready data:
     {"v": 1, "liblouis": "3.39.0", "files": [...]}, each file {"n": name, "g": group, "o": offset, "l": length,
     "h": the SHA-256 of its bytes in lowercase hexadecimal, "i": [included files] when it includes any, "m": {catalog fields}
-    when it is a table, "t": [targets] when it only includes others}. Files are in name order. Beside "files" are "f", the names
-    of the release's literary tables that write braille only, and "w", the names of those that also read it back
-    (`release_directions`), which the Mac judges VoiceOver's older tables by."""
+    when it is a table, "t": [targets] when it only includes others}. Files are in name order. Beside "files" is "f", the names
+    of the release's literary tables that write braille only (`release_directions`), which the Mac judges VoiceOver's older
+    tables by."""
     entries = []
     for name in sorted(the_plan.files):
         group, offset, length = places[name]
@@ -488,8 +489,7 @@ def build_index(the_plan, groups, places, liblouis_version):
         if only:
             entry["t"] = only
         entries.append(entry)
-    forward, two_way = the_plan.directions
-    return {"v": INDEX_VERSION, "liblouis": liblouis_version, "files": entries, "f": forward, "w": two_way}
+    return {"v": INDEX_VERSION, "liblouis": liblouis_version, "files": entries, "f": the_plan.directions}
 
 
 def index_bytes(index):

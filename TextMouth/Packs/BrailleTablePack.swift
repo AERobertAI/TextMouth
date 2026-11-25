@@ -48,16 +48,12 @@ struct BrailleTablePack: Sendable {
         let includeOnly: [String]?
     }
 
-    /// Which of the release's literary tables write braille from print only (`direction: forward`) and which read it back too,
-    /// by file name, judged over the whole release though a pack carries some of its files: the Mac, which carries four, judges
+    /// Which of the release's literary tables write braille from print only (`direction: forward`), by file name, judged over the whole release though a pack carries some of its files: the Mac, which carries four, judges
     /// VoiceOver's older copies of a table by it whenever the release has a table of that file name: a table the release marks
     /// print-only is print-only on the Mac, and a mark in VoiceOver's own file stands too (`BrailleTableCatalog`).
     struct ReleaseDirections: Sendable, Equatable {
-        /// The names of the tables that write braille only.
+        /// The names of the tables that write braille only. The tables that are not marked need no list: nothing reads one.
         let printOnly: Set<String>
-        /// The names of the tables that also read braille back (the release's whole account; the Mac adds only the print-only
-        /// marks).
-        let twoWay: Set<String>
     }
 
     /// The file's name inside an app's resources.
@@ -135,9 +131,8 @@ struct BrailleTablePack: Sendable {
         let v: Int
         let liblouis: String
         let files: [IndexFile]
-        /// The release's tables that write braille only, and those that also read it back (`ReleaseDirections`).
+        /// The release's tables that write braille only (`ReleaseDirections`).
         let f: [String]?
-        let w: [String]?
     }
 
     /// One file's entry of the index.
@@ -182,11 +177,11 @@ struct BrailleTablePack: Sendable {
 
     /// The release's directions in `document`, every name plain and no list absurdly long.
     private static func checkedDirections(of document: IndexDocument) throws -> ReleaseDirections {
-        let printOnly = document.f ?? [], twoWay = document.w ?? []
-        guard printOnly.count <= 10_000, twoWay.count <= 10_000, printOnly.allSatisfy(isPlainName), twoWay.allSatisfy(isPlainName) else {
+        let printOnly = document.f ?? []
+        guard printOnly.count <= 10_000, printOnly.allSatisfy(isPlainName) else {
             throw BrailleTablePackFailure("the index's directions are not file names")  // l10n: no (English text for the debug log, never shown)
         }
-        return ReleaseDirections(printOnly: Set(printOnly), twoWay: Set(twoWay))
+        return ReleaseDirections(printOnly: Set(printOnly))
     }
 
     /// The name of the blob that holds group `number`.

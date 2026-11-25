@@ -30,7 +30,7 @@ final class BrailleTablePrintOnlyTests: XCTestCase {
                 "common.cti": "letter b 12\n",
             ]
         )
-        bytes.damageIndex = { $0["f"] = ["print.ctb"]; $0["w"] = ["two.ctb"] }
+        bytes.damageIndex = { $0["f"] = ["print.ctb"] }
         return try BrailleTablePack(data: bytes.data())
     }
 
@@ -48,7 +48,6 @@ final class BrailleTablePrintOnlyTests: XCTestCase {
     func testAPackKnowsEveryTableAndReadingTakesTheTwoWayOnes() throws {
         let pack = try directionsPack()
         XCTAssertEqual(pack.releaseDirections.printOnly, ["print.ctb"])
-        XCTAssertEqual(pack.releaseDirections.twoWay, ["two.ctb"])
         let all = BrailleTableCatalog.allTables(in: pack)
         XCTAssertEqual(all.map(\.id).sorted(), ["print.ctb", "two.ctb", "wrapper.tbl"])
         XCTAssertEqual(all.filter(\.isPrintOnly).map(\.id).sorted(), ["print.ctb", "wrapper.tbl"])
@@ -112,7 +111,7 @@ final class BrailleTablePrintOnlyTests: XCTestCase {
             "backwards.ctb": header(language: "xx", name: "Backwards", direction: "backward") + "letter a 1\n",
         ]
         let release = BrailleTablePack.ReleaseDirections(
-            printOnly: ["cs.tbl", "lv.tbl", "sl.tbl", "zh_CHN.tbl", "changed.ctb"], twoWay: ["marked.ctb", "zh-hk.ctb"]
+            printOnly: ["cs.tbl", "lv.tbl", "sl.tbl", "zh_CHN.tbl", "changed.ctb"]
         )
         let tables = try folder(of: files)
         /// The Mac's tables judged with a property list that names `version` (none: no property list).
@@ -156,7 +155,7 @@ final class BrailleTablePrintOnlyTests: XCTestCase {
         // A macOS whose liblouis is newer than the app's is judged by its own headers, not by the app's release.
         try XCTSkipIf(
             BrailleTableCatalog.releaseDirections(
-                judgingMacVersion: BrailleTableCatalog.mac?.liblouisVersion, of: BrailleTablePack.ReleaseDirections(printOnly: [], twoWay: [])
+                judgingMacVersion: BrailleTableCatalog.mac?.liblouisVersion, of: BrailleTablePack.ReleaseDirections(printOnly: [])
             ) == nil,
             "VoiceOver's liblouis is newer than the app's"
         )
