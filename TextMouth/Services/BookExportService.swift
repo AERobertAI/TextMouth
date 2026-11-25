@@ -403,11 +403,12 @@ enum BookExportConversion: Sendable, Equatable {
 // MARK: - Listing and Exporting
 
 /// What an export asks before it converts a book's text (FR31): whether the
-/// memory left holds a conversion of that many bytes of text. It throws, with
+/// memory left holds a conversion of that many bytes of text by the writer whose
+/// `id` it is given (a braille writer holds more than a web page's). It throws, with
 /// a sentence naming why (a `TextExportError`), to refuse: that book's file
 /// then fails alone and the export goes on. The iPhone's is
 /// `PhoneExportMemoryCheck`; the Mac asks nothing.
-typealias BookExportMemoryGuard = @Sendable (_ textBytes: Int64) throws -> Void
+typealias BookExportMemoryGuard = @Sendable (_ writerID: String, _ textBytes: Int64) throws -> Void
 
 /// Lists what a book can export and copies the chosen items to a folder
 /// (FR05): an audiobook's audio, a recording's original take, the original
@@ -1454,7 +1455,7 @@ enum BookExportService {
     /// A text conversion's walk takes `deepChapters` (FR24): what to do with a
     /// chapter nested too deeply, which is to refuse it when nil. `delivery`
     /// is how the scratch file is put in place (`BookExportDelivery`).
-    /// `memoryGuard` is asked, with `textBytes`, the size of the text the
+    /// `memoryGuard` is asked, with the conversion's writer and `textBytes`, the size of the text the
     /// source holds, before a text conversion reads the source at all.
     /// - Throws: `CancellationError` when stopped, or when `deepChapters` says
     ///   to cancel the export; the walk's or the
@@ -1491,8 +1492,8 @@ enum BookExportService {
         }
         // A text conversion holds the whole text, its document, and the file
         // it makes in memory at once: asked before any of it is read.
-        if case .text = conversion {
-            try memoryGuard?(textBytes)
+        if case .text(let text) = conversion {
+            try memoryGuard?(text.writerID, textBytes)
         }
         let bytes = try access.read(source) { try Data(contentsOf: source) }
         try cancellation.checkCancelled()

@@ -19,27 +19,42 @@ struct PhoneExportMemoryCheck: Sendable {
     /// rest of TextMouth to say what happened.
     static let floorBytes: UInt64 = 512 << 20
 
-    /// How many bytes of memory a conversion holds at its peak for each byte
-    /// of the book's text (content.md), by the writer that holds the most.
-    /// `PhoneExportPeakMemoryTests` measures each writer on GitHub and fails
-    /// if any holds more than this for the largest fixture, so the figure
-    /// can only be raised by its evidence, never left behind by a writer
-    /// that grew.
+    /// How many bytes of memory a conversion by a writer of text holds at its
+    /// peak for each byte of the book's text (content.md): Markdown, HTML, RTF,
+    /// and EPUB, which held 5.4 to 10.6 in four runs on GitHub's simulator.
+    /// `PhoneExportPeakMemoryTests` measures each writer there and fails if
+    /// any holds more than its figure for the largest fixture, so a figure
+    /// can only be raised by its evidence, never left behind by a writer that
+    /// grew.
     static let peakBytesPerTextByte: UInt64 = 16
 
-    /// The most memory converting `textBytes` bytes of text is estimated to
-    /// hold at once.
-    static func estimatedPeak(textBytes: Int64) -> UInt64 {
-        UInt64(max(0, textBytes)).multipliedReportingOverflow(by: peakBytesPerTextByte).partialValue
+    /// The same for the braille writers, BRF and PEF, which translate the text and
+    /// keep its print blocks and its cells beside it: 19.0 to 22.6 for a text of
+    /// 3 MB warm, and up to 28.8 for one of 1 MB, where the engine's tables are
+    /// most of the peak. 32 leaves a margin over the most measured.
+    static let braillePeakBytesPerTextByte: UInt64 = 32
+
+    /// The ids of the writers whose figure is the braille one.
+    private static let brailleWriterIDs: Set<String> = [BRFExportWriter().id, PEFExportWriter().id]
+
+    /// How many bytes for each byte of text the writer whose `id` is `writerID` is estimated to hold.
+    static func peakBytesPerTextByte(forWriter writerID: String) -> UInt64 {
+        brailleWriterIDs.contains(writerID) ? braillePeakBytesPerTextByte : peakBytesPerTextByte
     }
 
-    /// Whether a conversion of `textBytes` bytes of text may begin with
+    /// The most memory converting `textBytes` bytes of text by the writer `writerID` is
+    /// estimated to hold at once.
+    static func estimatedPeak(textBytes: Int64, writerID: String) -> UInt64 {
+        UInt64(max(0, textBytes)).multipliedReportingOverflow(by: peakBytesPerTextByte(forWriter: writerID)).partialValue
+    }
+
+    /// Whether a conversion of `textBytes` bytes of text by `writerID` may begin with
     /// `availableBytes` of memory left to the app: when its estimated peak
     /// leaves the floor. Nil `availableBytes` is a system that sets the app
     /// no limit (the simulator), which allows every conversion.
-    static func allows(textBytes: Int64, availableBytes: UInt64?) -> Bool {
+    static func allows(writerID: String, textBytes: Int64, availableBytes: UInt64?) -> Bool {
         guard let availableBytes else { return true }
-        let needed = estimatedPeak(textBytes: textBytes).addingReportingOverflow(floorBytes)
+        let needed = estimatedPeak(textBytes: textBytes, writerID: writerID).addingReportingOverflow(floorBytes)
         return !needed.overflow && availableBytes >= needed.partialValue
     }
 
@@ -48,8 +63,8 @@ struct PhoneExportMemoryCheck: Sendable {
     /// - Throws: a `TextExportError` saying so
     ///   (`PhoneExportWording.tooLittleMemory`), which the export names with
     ///   the file as a failure.
-    static func check(textBytes: Int64, availableBytes: UInt64?) throws {
-        guard allows(textBytes: textBytes, availableBytes: availableBytes) else {
+    static func check(writerID: String, textBytes: Int64, availableBytes: UInt64?) throws {
+        guard allows(writerID: writerID, textBytes: textBytes, availableBytes: availableBytes) else {
             throw TextExportError(PhoneExportWording.tooLittleMemory)
         }
     }

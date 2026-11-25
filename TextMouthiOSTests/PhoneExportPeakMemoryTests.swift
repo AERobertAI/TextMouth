@@ -5,7 +5,7 @@ import XCTest
 
 /// How much memory each text writer holds at its peak, for each byte of the
 /// book's text (FR31): the evidence the iPhone's memory check stands on
-/// (`PhoneExportMemoryCheck.peakBytesPerTextByte`).
+/// (`PhoneExportMemoryCheck.peakBytesPerTextByte` and the braille writers' own).
 ///
 /// An export of a large book on the iPhone could ask for a gigabyte, and iOS
 /// ends an app past a limit it does not publish, so a book that would leave the
@@ -43,6 +43,8 @@ final class PhoneExportPeakMemoryTests: XCTestCase {
         let name: String
         let conversion: BookExportConversion
         let textBytes: Int
+        /// The writer's `id`, which the check's estimate is made by.
+        let writerID: String
     }
 
     /// The most the braille engine may hold for its tables, once, besides the text: well inside the
@@ -61,12 +63,12 @@ final class PhoneExportPeakMemoryTests: XCTestCase {
     /// when no other is chosen.
     private var cases: [Measured] {
         [
-            Measured(name: "markdown", conversion: .markdown, textBytes: largestText),
-            Measured(name: "html", conversion: Self.text(HTMLExportWriter()), textBytes: largestText),
-            Measured(name: "rtf", conversion: Self.text(RTFExportWriter()), textBytes: largestText),
-            Measured(name: "epub", conversion: Self.text(EPUBExportWriter()), textBytes: largestText),
-            Measured(name: "brf", conversion: .text(TextExportConversion(BRFExportWriter(), options: BrailleExportOptions())), textBytes: brailleText),
-            Measured(name: "pef", conversion: .text(TextExportConversion(PEFExportWriter(), options: BrailleExportOptions())), textBytes: brailleText),
+            Measured(name: "markdown", conversion: .markdown, textBytes: largestText, writerID: TextExportWriters.markdownID),
+            Measured(name: "html", conversion: Self.text(HTMLExportWriter()), textBytes: largestText, writerID: HTMLExportWriter().id),
+            Measured(name: "rtf", conversion: Self.text(RTFExportWriter()), textBytes: largestText, writerID: RTFExportWriter().id),
+            Measured(name: "epub", conversion: Self.text(EPUBExportWriter()), textBytes: largestText, writerID: EPUBExportWriter().id),
+            Measured(name: "brf", conversion: .text(TextExportConversion(BRFExportWriter(), options: BrailleExportOptions())), textBytes: brailleText, writerID: BRFExportWriter().id),
+            Measured(name: "pef", conversion: .text(TextExportConversion(PEFExportWriter(), options: BrailleExportOptions())), textBytes: brailleText, writerID: PEFExportWriter().id),
         ]
     }
 
@@ -89,7 +91,8 @@ final class PhoneExportPeakMemoryTests: XCTestCase {
         let warmUp = Measured(
             name: "engine",
             conversion: .text(TextExportConversion(BRFExportWriter(), options: BrailleExportOptions())),
-            textBytes: warmUpText
+            textBytes: warmUpText,
+            writerID: BRFExportWriter().id
         )
         let engineCost = try measurePeak(of: warmUp)
         let engineLine = "PHONE_EXPORT_PEAK writer=engine fixed=\(engineCost)"
@@ -106,13 +109,13 @@ final class PhoneExportPeakMemoryTests: XCTestCase {
             lines.append(line)
             // Into the test's log, where a train's run keeps it.
             NSLog("%@", line)
-            if peak > PhoneExportMemoryCheck.estimatedPeak(textBytes: Int64(measured.textBytes)) {
+            if peak > PhoneExportMemoryCheck.estimatedPeak(textBytes: Int64(measured.textBytes), writerID: measured.writerID) {
                 over.append(line)
             }
         }
         XCTAssertEqual(
             over, [],
-            "A writer holds more than \(PhoneExportMemoryCheck.peakBytesPerTextByte) bytes for each byte of text, the check's estimate. All: \(lines.joined(separator: "; "))"
+            "A writer holds more than the check estimates for it (\(PhoneExportMemoryCheck.peakBytesPerTextByte) bytes for each byte of text, braille's \(PhoneExportMemoryCheck.braillePeakBytesPerTextByte)). All: \(lines.joined(separator: "; "))"
         )
     }
 

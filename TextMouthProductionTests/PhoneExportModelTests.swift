@@ -236,7 +236,7 @@ final class PhoneExportModelTests: XCTestCase {
             library: world.library,
             destination: folder,
             offering: PhoneExportOffer.kinds,
-            memoryGuard: { _ in throw TextExportError("There is no room.") }
+            memoryGuard: { _, _ in throw TextExportError("There is no room.") }
         )
         await model.load()
         model.setChecked(true, for: .markdown)
