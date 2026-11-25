@@ -166,10 +166,8 @@ struct PhoneLibraryView: View {
                     // style with a vertical fixed size "partially
                     // unsupported", so it's the subheadline style, free to
                     // grow.
-                    Text(summary)
-                        .font(.subheadline)
-                        .phoneSecondaryText()
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                    // With a Sync Now action for VoiceOver once sync is on (FR43).
+                    PhoneLibrarySummaryText(summary: summary)
                 }
             }
             .onAppear {
