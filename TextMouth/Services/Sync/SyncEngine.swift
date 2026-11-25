@@ -77,6 +77,14 @@ actor SyncEngine {
     /// The most book removals one record may send: more, or most of the library at once, is held back.
     static let massRemovalLimit = 20
 
+    /// A stop a test injects between the registers' save and the cursors', to prove their order.
+    private var betweenSaves: (@Sendable () throws -> Void)?
+
+    /// Sets the stop between the saves (tests only).
+    func setStopBetweenSaves(_ stop: (@Sendable () throws -> Void)?) {
+        betweenSaves = stop
+    }
+
     /// This device's ID.
     var deviceID: String { outbox.device.deviceID }
 
@@ -198,7 +206,7 @@ actor SyncEngine {
     /// and none of those is reported removed until `settleLaunch` (R7). A record that would remove
     /// a great many books at once is held back and reported, not sent.
     @discardableResult
-    func record(library: Library) throws -> SyncRecordResult {
+    func record(library: Library, allowMassRemoval: Bool = false) throws -> SyncRecordResult {
         let projection = SyncProjection.of(library, contents: contents())
         launchHold.observeLaunch(baseline: baseline, now: projection)
         var changes = SyncMerge.changes(from: baseline, to: projection, hold: launchHold)
@@ -210,7 +218,8 @@ actor SyncEngine {
         }.keys
         let known = baseline.values.keys.filter { if case .book(_, .presence) = $0 { return true } else { return false } }.count
         var held = 0
-        if removals.count > Self.massRemovalLimit || (known >= 4 && removals.count * 2 > known) {
+        // `allowMassRemoval` is the person's word, given with Sync Now, that the removals are meant.
+        if !allowMassRemoval, removals.count > Self.massRemovalLimit || (known >= 4 && removals.count * 2 > known) {
             for key in removals { changes[key] = nil }
             held = removals.count
             DiagnosticLog.event(.storage, "SYNC_RUN: \(held) book removals were held back, not sent, as they are most of the library or too many at once") // l10n: no (debug log text)
@@ -280,7 +289,7 @@ actor SyncEngine {
 
     /// Looks at this device's own folder in the store: files past what this device wrote, or of another
     /// incarnation, mean its library was restored or copied from an older state, so it takes a new identity (section 3).
-    private func checkOwnFolder(_ folder: SyncFolder) async throws -> Bool {
+    private func checkOwnFolder(_ folder: SyncFolder) async -> Bool {
         let own = folder.deviceFolder(outbox.device.deviceID)
         guard let listing = try? folder.access.list(own) else { return false }
         let files = listing.compactMap { item in SyncNames.parseChangeFile(item.name).map { (seq: $0.seq, name: item.name) } }
@@ -292,26 +301,44 @@ actor SyncEngine {
         return file.incarnation != outbox.device.incarnation
     }
 
+    /// Writes a snapshot of every value this device knows into the outbox when one is due.
+    private func appendSnapshotIfDue() throws {
+        guard isSnapshotDue() else { return }
+        let seq = try outbox.append(registers.entries.values.sorted { $0.stamp < $1.stamp }, kind: .snapshot)
+        registers.throughSeq = seq
+        try local.saveRegisters(registers)
+        try outbox.updateDevice { $0.lastSnapshotSeq = seq; $0.lastSnapshotAt = now() }
+        snapshotDue = false
+    }
+
     /// Publishes this device, copies the outbox in, reads the upload states, reads other
     /// devices' new files, and merges them into the registers. Reads are bounded (R2). A
     /// folder problem is thrown after what could be done locally is saved.
     func exchange(in folder: SyncFolder, readsOthers: Bool = true, limits: SyncReadLimits = SyncReadLimits()) async throws -> SyncExchangeResult {
         var result = SyncExchangeResult()
-        if readsOthers, try await checkOwnFolder(folder) {
+        // Whether or not this run reads: a restored library must not send under an identity another writer holds.
+        if await checkOwnFolder(folder) {
             try takeNewIdentity()
             result.tookNewIdentity = true
         }
         try publishDevice(in: folder)
-        if isSnapshotDue() {
-            let seq = try outbox.append(registers.entries.values.sorted { $0.stamp < $1.stamp }, kind: .snapshot)
-            registers.throughSeq = seq
-            try local.saveRegisters(registers)
-            try outbox.updateDevice { $0.lastSnapshotSeq = seq; $0.lastSnapshotAt = now() }
-            snapshotDue = false
-        }
-        let deviceFolder = folder.deviceFolder(outbox.device.deviceID)
+        // Half-made files a crash left beside this device's own are cleared.
+        folder.access.sweepPartialFiles(in: folder.deviceFolder(outbox.device.deviceID), olderThan: 3_600)
+        try appendSnapshotIfDue()
+        var deviceFolder = folder.deviceFolder(outbox.device.deviceID)
         do {
-            result.filesCopied = try outbox.copy(into: deviceFolder, using: folder.access, now: now())
+            do {
+                result.filesCopied = try await outbox.copy(into: deviceFolder, using: folder.access, now: now())
+            } catch is SyncOutboxConflict {
+                // A file of a seq this device wrote is in the folder with other bytes: another writer holds this
+                // identity. This library takes a new one, sets the old outbox aside, and sends a snapshot.
+                try takeNewIdentity()
+                result.tookNewIdentity = true
+                try publishDevice(in: folder)
+                try appendSnapshotIfDue()
+                deviceFolder = folder.deviceFolder(outbox.device.deviceID)
+                result.filesCopied = try await outbox.copy(into: deviceFolder, using: folder.access, now: now())
+            }
             result.uploadProblem = try outbox.refreshUploads(in: deviceFolder, using: folder.access)
             try outbox.retireUploaded(now: now())
         } catch {
@@ -335,6 +362,7 @@ actor SyncEngine {
         // clock are saved before the cursors, so a crash between them re-reads files, never loses their entries.
         result.changedKeys = registers.merge(read.entries)
         try local.saveRegisters(registers)
+        try betweenSaves?()
         try local.saveClock(clock)
         cursors = read.cursors
         try local.saveCursors(cursors)
@@ -364,6 +392,13 @@ actor SyncEngine {
         try local.saveBaseline(baseline)
         let folded = application.entriesToRecord.sorted { "\($0.key)" < "\($1.key)" }
         try append(folded.map { PendingChange(key: $0.key, value: $0.value, byHand: false) }, updatingBaseline: true)
+    }
+
+    /// The device ID that wrote the winning entry of each of `keys`.
+    func writers(of keys: Set<SyncKey>) -> [SyncKey: String] {
+        var found: [SyncKey: String] = [:]
+        for key in keys { if let entry = registers.entries[key] { found[key] = entry.stamp.device } }
+        return found
     }
 
     // MARK: Counts

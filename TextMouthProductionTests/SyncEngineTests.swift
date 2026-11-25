@@ -241,6 +241,67 @@ final class SyncEngineTests: XCTestCase {
         XCTAssertNotNil(phoneFiles.loadRegisters().entries[.book(book, .keep)])
     }
 
+    /// A restore on the same install and the same incarnation, whose new records reach seqs the folder holds
+    /// already with other bytes, is told from a copy of itself: it takes a new identity, and its changes are sent.
+    func testARestoreThatRecordsPastTheFoldersNewestSeqIsHeard() async throws {
+        let sandbox = try makeSandboxDirectory("sync-engine-restore-same-incarnation")
+        let (_, folder) = makeDrive(sandbox)
+        let originalFiles = local(sandbox, "a")
+        let original = try SyncEngine(local: originalFiles, identity: identity())
+        for _ in 1...3 { try await original.recordKeep(true, for: [UUID()]) }
+        _ = try await original.exchange(in: folder)
+        let originalID = await original.deviceID
+        let incarnation = try XCTUnwrap(originalFiles.loadDevice()?.incarnation)
+
+        // The library as it was after two files: the same ID and incarnation, an older outbox.
+        let restoredFiles = local(try makeSandboxDirectory("sync-engine-restore-older"), "a")
+        try restoredFiles.prepare()
+        try restoredFiles.saveDevice(SyncDeviceState(deviceID: originalID, incarnation: incarnation, installID: "install-1", lastSeq: 2))
+        let restored = try SyncEngine(local: restoredFiles, identity: identity())
+        let mine = UUID()
+        try await restored.recordKeep(true, for: [mine])
+        try await restored.recordKeep(true, for: [UUID()])
+        try await restored.recordKeep(true, for: [UUID()])
+        // It now sits at seq 5; the folder holds 1 to 4 of the original, whose 3 and 4 are not its own.
+        let result = try await restored.exchange(in: folder, readsOthers: false)
+        XCTAssertTrue(result.tookNewIdentity)
+        let newID = await restored.deviceID
+        XCTAssertNotEqual(newID, originalID)
+        let published = try FileManager.default.contentsOfDirectory(atPath: folder.deviceFolder(newID).path)
+        XCTAssertTrue(published.contains(where: { $0.hasSuffix(".snapshot.json") }), "its state is sent, as a snapshot")
+        let ownFolder = try FileManager.default.contentsOfDirectory(atPath: folder.deviceFolder(originalID).path)
+        XCTAssertEqual(ownFolder.filter { $0.hasSuffix(".changes.json") }.count, 3, "the original's files were not touched")
+    }
+
+    /// The cursors are saved after the registers: a stop between the two saves leaves the merged entries on disk
+    /// and the cursors where they were, so the next exchange reads again and loses nothing.
+    func testAStopBetweenTheSavesLosesNothing() async throws {
+        let sandbox = try makeSandboxDirectory("sync-engine-between-saves")
+        let (_, folder) = makeDrive(sandbox)
+        let mac = try SyncEngine(local: local(sandbox, "mac"), identity: identity("Mac", install: "m"))
+        let phoneFiles = local(sandbox, "phone")
+        let phone = try SyncEngine(local: phoneFiles, identity: identity("iPhone", install: "p"))
+        let book = UUID()
+        try await mac.recordKeep(true, for: [book])
+        _ = try await mac.exchange(in: folder)
+
+        struct Stop: Error {}
+        await phone.setStopBetweenSaves { throw Stop() }
+        do {
+            _ = try await phone.exchange(in: folder)
+            XCTFail("the stop was not reached")
+        } catch is Stop {}
+        XCTAssertTrue(phoneFiles.loadCursors().merged.isEmpty, "the cursors were not saved before the registers")
+        XCTAssertNotNil(phoneFiles.loadRegisters().entries[.book(book, .keep)], "the registers already hold what was read")
+
+        // Started afresh, the next exchange reads again and ends with the same state.
+        let restarted = try SyncEngine(local: phoneFiles, identity: identity("iPhone", install: "p"))
+        _ = try await restarted.exchange(in: folder)
+        let kept = await restarted.keptBookIDs()
+        XCTAssertEqual(kept, [book])
+        XCTAssertFalse(phoneFiles.loadCursors().merged.isEmpty)
+    }
+
     // MARK: - Two devices (these need sync-core's merge)
 
     /// Keep on All Devices set on one device is kept on the other after both exchange.

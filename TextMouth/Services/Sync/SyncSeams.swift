@@ -1,4 +1,5 @@
 import Foundation
+import os
 
 // SyncSeams.swift: the engine's seams, the library's side, and the app's one
 // sync (FR43): the last two parts of section 9 of
@@ -23,6 +24,9 @@ protocol SyncFolderAccess: Sendable {
     func uploadState(of file: URL) -> SyncUploadState
     /// Evicts the local copy; a refusal is a wait.
     func evictLocalCopy(of file: URL) throws
+    /// Removes the hidden half-made files a crash left in `folder` (one level), older than `age` seconds.
+    /// A default does nothing.
+    func sweepPartialFiles(in folder: URL, olderThan age: TimeInterval)
     /// Copies `file` out of the sync folder to the local `destination`, waiting for it to download,
     /// within `limit`: `.offline` at once, `.notDownloaded` at the limit. Unlike `read`, a large
     /// blob never sits in memory whole. A default does it through `read` and `write`.
@@ -30,6 +34,9 @@ protocol SyncFolderAccess: Sendable {
 }
 
 extension SyncFolderAccess {
+    /// An access that stages nothing has nothing to sweep.
+    func sweepPartialFiles(in folder: URL, olderThan age: TimeInterval) {}
+
     /// The default fetch: reads the file whole, then writes it. An access that can copy by streaming overrides this.
     func fetch(_ file: URL, to destination: URL, within limit: Duration) async throws {
         let data = try await read(file, within: limit)
@@ -76,13 +83,23 @@ enum SyncFolderAccessFactory {
     /// A fresh bookmark for `bookmark` when the system found it stale (the folder moved or was renamed, and the
     /// bookmark still found it), nil when it is current; the center keeps the fresh one in `SyncPreferences`.
     /// The iPhone sets its own, which opens the folder's scope to make it.
-    @MainActor static var renewedBookmark: (_ bookmark: Data) -> Data? = { bookmark in
+    @MainActor static var renewedBookmark: @Sendable (_ bookmark: Data) -> Data? = { bookmark in
         guard let resolved = PlainSyncFolderAccess.resolve(bookmark), resolved.isStale else { return nil }
         return DataDirectoryPreferences.makeBookmark(of: resolved.url)
     }
 }
 
 // MARK: - The library's side, and the app's one sync
+
+/// Whether sync is on, readable from any thread: the book storage answers for a placeholder only while it is
+/// (R1: a library that never set sync up never has its packages' pointers read).
+enum SyncActivity {
+    private static let flag = OSAllocatedUnfairLock(initialState: false)
+    /// Whether sync is on now.
+    static var isOn: Bool { flag.withLock { $0 } }
+    /// Set by `SyncCenter` when it turns sync on or off.
+    static func set(_ on: Bool) { flag.withLock { $0 = on } }
+}
 
 /// What the library offers the sync; `LibraryViewModel` conforms (sync-mac).
 @MainActor protocol SyncLibraryHost: AnyObject {

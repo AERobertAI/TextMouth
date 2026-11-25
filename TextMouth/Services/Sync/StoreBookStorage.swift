@@ -23,15 +23,19 @@ final class StoreBookStorage: BookCloudStorage {
     private let live: any BookCloudStorage
     /// Starts a fetch of a placeholder; the center's by default.
     private let fetcher: @Sendable (BookPackage) -> AsyncThrowingStream<BookDownloadProgress, Error>
+    /// Whether sync is on: no pointer is read while it is not (R1, R2).
+    private let isSyncOn: @Sendable () -> Bool
     /// The fetches in progress or failed, by book ID.
     private let phases = OSAllocatedUnfairLock(initialState: [UUID: Phase]())
 
     /// Wraps the live storage; fetches go through `SyncCenter`, or through `fetcher` in a test.
     init(
         wrapping live: any BookCloudStorage,
+        isSyncOn: @escaping @Sendable () -> Bool = { SyncActivity.isOn },
         fetcher: @escaping @Sendable (BookPackage) -> AsyncThrowingStream<BookDownloadProgress, Error> = { SyncCenter.fetch($0) }
     ) {
         self.live = live
+        self.isSyncOn = isSyncOn
         self.fetcher = fetcher
     }
 
@@ -49,6 +53,7 @@ final class StoreBookStorage: BookCloudStorage {
 
     /// The state of a book with files away, or nil for a book that is whole here.
     private func placeholderState(of package: BookPackage) -> BookCloudState? {
+        guard isSyncOn() else { return nil }
         switch phases.withLock({ $0[package.bookID] }) {
         case .fetching(let progress): return .downloading(progress)
         case .failed(let message): return .downloadFailed(message)
@@ -58,7 +63,8 @@ final class StoreBookStorage: BookCloudStorage {
     }
 
     func bytesToDownload(of package: BookPackage) -> Int64? {
-        StoreFetch.isMissingFiles(package.url) ? StoreFetch.bytesToFetch(package.url) : live.bytesToDownload(of: package)
+        guard isSyncOn() else { return live.bytesToDownload(of: package) }
+        return StoreFetch.isMissingFiles(package.url) ? StoreFetch.bytesToFetch(package.url) : live.bytesToDownload(of: package)
     }
 
     func removeDownload(of package: BookPackage) throws {
@@ -68,7 +74,7 @@ final class StoreBookStorage: BookCloudStorage {
     // MARK: Downloading
 
     func download(_ package: BookPackage) -> AsyncThrowingStream<BookDownloadProgress, Error> {
-        guard StoreFetch.isMissingFiles(package.url) else { return live.download(package) }
+        guard isSyncOn(), StoreFetch.isMissingFiles(package.url) else { return live.download(package) }
         let fetches = fetcher(package)
         return AsyncThrowingStream { continuation in
             let task = Task {

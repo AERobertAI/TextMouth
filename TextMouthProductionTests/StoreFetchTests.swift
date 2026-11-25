@@ -155,7 +155,7 @@ final class StoreFetchTests: XCTestCase {
         XCTAssertNil(StoreFetch.bytesToFetch(world.placeholder), "the manifest knows the size, the pointer does not")
 
         let fetch = world.fetch
-        let storage = StoreBookStorage(wrapping: LocalBookStorage()) { package in
+        let storage = StoreBookStorage(wrapping: LocalBookStorage(), isSyncOn: { true }) { package in
             AsyncThrowingStream { continuation in
                 let task = Task {
                     do {
@@ -176,6 +176,17 @@ final class StoreFetchTests: XCTestCase {
         XCTAssertEqual(last?.percent, 100)
         XCTAssertFalse(StoreFetch.isMissingFiles(world.placeholder))
         XCTAssertEqual(storage.state(of: package), .local)
+    }
+
+    /// While sync is off the book storage reads no pointer: a placeholder's package is answered as the live storage does.
+    func testNoPointerIsReadWhileSyncIsOff() throws {
+        let world = try makeWorld()
+        let storage = StoreBookStorage(wrapping: LocalBookStorage(), isSyncOn: { false })
+        let package = BookPackage(bookID: bookID, url: world.placeholder, isPackage: true, isAudio: false)
+        XCTAssertEqual(storage.state(of: package), .local)
+        XCTAssertNil(storage.bytesToDownload(of: package))
+        let on = StoreBookStorage(wrapping: LocalBookStorage(), isSyncOn: { true })
+        XCTAssertEqual(on.state(of: package), .inCloud)
     }
 
     /// A pointer of another store is not fetched.

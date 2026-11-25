@@ -173,6 +173,17 @@ struct PlainSyncFolderAccess: SyncFolderAccess {
         try items.removeLocalCopy(of: file)
     }
 
+    func sweepPartialFiles(in folder: URL, olderThan age: TimeInterval) {
+        let fileManager = FileManager.default
+        guard let names = try? fileManager.contentsOfDirectory(atPath: folder.path) else { return }
+        for name in names where name.hasPrefix(".partial-") {
+            let url = folder.appendingPathComponent(name)
+            let modified = (try? url.resourceValues(forKeys: [.contentModificationDateKey]))?.contentModificationDate ?? Date()
+            // A file still being written is not a leftover.
+            if Date().timeIntervalSince(modified) >= age { try? fileManager.removeItem(at: url) }
+        }
+    }
+
     // MARK: Coordination
 
     /// How long one coordinated call may take before it is cancelled, in seconds (R2).

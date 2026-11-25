@@ -29,6 +29,12 @@ struct SyncOutboxIndex: Codable, Equatable, Sendable {
     var items: [Item] = []
 }
 
+/// What the outbox found that it can't mend: a file of a seq it wrote is in the folder with other bytes.
+enum SyncOutboxConflict: Error, Equatable {
+    /// Another writer holds this device's seq: the library was restored or copied from an older state.
+    case anotherWriter(seq: Int)
+}
+
 /// A change leaves its device only through here: every batch of stamped
 /// entries goes first into `Outbox/<seq>.changes.json` on the device's own
 /// disk (rule R3), is copied into the device's folder in the sync folder at
@@ -121,7 +127,7 @@ struct SyncOutbox: Sendable {
     /// many it copied. A problem stops the copying and is thrown after the
     /// files copied so far are recorded.
     @discardableResult
-    mutating func copy(into deviceFolder: URL, using access: any SyncFolderAccess, now: Date = Date()) throws -> Int {
+    mutating func copy(into deviceFolder: URL, using access: any SyncFolderAccess, now: Date = Date()) async throws -> Int {
         // A device folder not made yet lists as empty: `copyIn` makes it.
         let present = Set(((try? access.list(deviceFolder)) ?? []).map(\.name))
         var copied = 0
@@ -131,7 +137,16 @@ struct SyncOutbox: Sendable {
             let name = SyncNames.changeFile(seq: item.seq, kind: item.kind)
             if item.state == .copied, present.contains(name) { continue }
             do {
-                if !present.contains(name) {
+                if present.contains(name) {
+                    // A file of this name is there already. It is the same file, sent before, only if its bytes
+                    // are the outbox's: any other is another writer's (a library restored on the same install
+                    // writes seqs the folder holds already), and nothing is sent over it. A file that can't be
+                    // read yet is not known to be ours, so it stays unsent.
+                    guard let remote = try? await access.read(deviceFolder.appendingPathComponent(name), within: .seconds(10)) else { continue }
+                    guard let mine = try? Data(contentsOf: fileURL(item.seq, item.kind)), mine == remote else {
+                        throw SyncOutboxConflict.anotherWriter(seq: item.seq)
+                    }
+                } else {
                     try access.copyIn(fileURL(item.seq, item.kind), to: deviceFolder.appendingPathComponent(name))
                     copied += 1
                 }
