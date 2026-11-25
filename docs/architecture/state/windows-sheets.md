@@ -97,6 +97,7 @@ Book Information's Braille Code pop-up (FMT21): what the Book Info sheet of a br
   It publishes storedTable (the book's Book.brailleTable, nil for the default), offered (BrailleTableCatalog.offeredTables, the tables that read braille back, never one that only writes it), names, and isLoaded.
   It also holds a `RereadChoiceFlow<BrailleTable>`, whose pending, isWorking, failureMessage, and failureStamp it passes on and whose changes it forwards, so the views observing it redraw.
 - Who may write it: the model alone.
+  Its currentTableID is the book's table in the lists' spelling (BrailleTableCatalog.listedID(forStored:)), so an iPhone's bare fr-bfu-g2.ctb finds its item on a Mac; the book keeps what it stored.
   Its load(), in the sheet's .task, lists the offered tables and the words each is named by (BrailleTableCatalog.description(ofTableID:), the words the book's row and Speak Info use) off the main actor, since reading this Mac's tables' headers is slow.
   Until then the pop-up is dimmed (isEnabled) and shows the book's own table.
   Its choose(_:) keeps a guessed table when the table already selected is chosen (keepGuessedTable(), which clears Book.brailleTableOrigin and announces it, with no re-read; the sheet's "Keep This Code" button does the same, under guessNote).

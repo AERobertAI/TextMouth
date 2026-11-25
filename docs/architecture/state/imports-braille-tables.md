@@ -8,7 +8,7 @@ The table catalog, the pack the bundled tables come from, and the lists of table
 <!-- id: translator-helper; keys: helper process, subprocess, timeout, memory limit, cancel import, piece cutting; src: TextMouth/Services/BrailleTranslator.swift, TextMouth/Services/MacBrailleTableCheck.swift, TextMouthBraille/main.c, TextMouth/Services/AsyncBridge.swift, TextMouth/Parsers/TextutilDocumentReader.swift, TextMouth/Platform/macOS/Services/WatchedProcess.swift, TextMouth/Parsers/BrailleEmphasis.swift, TextMouthProductionTests/BrailleTranslatorTests.swift, TextMouthProductionTests/BrailleHelperProtocolTests.swift -->
 
 The translator and the helper: BrailleTranslator.translate(_:table:direction:workingIn:) is the only caller of TextMouthBraille (TextMouthBraille/main.c, a C program that links liblouis, which only it links).
-The folder is the Mac's own for a "mac:" table, else the one BrailleTableUnpacker unpacks the table into (Tool.helper.command; see [Braille table pack](braille-table-pack.md#the-unpacker)).
+The folder is VoiceOver's for a table the Mac reads from it (BrailleTableCatalog.readsFromMacFolder, on a Mac only), else the one BrailleTableUnpacker unpacks the table into (Tool.helper.command; see [Braille table pack](braille-table-pack.md#the-unpacker)).
 It
 - refuses a table the catalog lacks, of any direction (requireOfferedTable, Failure.unknownTable), before anything starts,
 - checks one of this Mac's tables before its first use in the session unless the call is the check's own (MacBrailleTableCheck.requireUsable, checksMacTable),

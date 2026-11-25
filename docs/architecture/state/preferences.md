@@ -43,7 +43,7 @@ The preferences store.
 - Export, through BookExportPreferences.showInReaderToolbar: whether reader toolbars show an Export button, under showExportInReaderToolbar.
   Playback settings change it through SettingsViewModel.showExportInReaderToolbar, as Storage settings change logLocation, and config.json mirrors it.
 - Braille, through BraillePreferences.table (Models/BrailleTableCatalog.swift): the braille table braille files are read and written with, by its stored value (BrailleTableSource: a bundled table's file name, or "mac:" and the file name of one of this Mac's tables), under brailleTable.
-  It reads as the stored value when that is a table of the app's own pack, a "mac:" name, or, on the Mac, a bare file name that VoiceOver's folder lists a table of, such as the value an iPhone stores (BrailleTableCatalog.storableValue(_:)).
+  It reads as the stored value when that is a table of the app's own pack, a "mac:" name, or, on the Mac, a bare file name of a VoiceOver file whose header makes a table, such as the value an iPhone stores (BrailleTableCatalog.storableValue(_:), which reads that one header and never the folder).
   A table that only writes braille is kept too, and a platform never rewrites a value it reads (see [Braille table pack](braille-table-pack.md#stored-values-on-each-platform)).
   A Mac table is kept even when this Mac no longer has it, so that an import or an export refuses it by name.
   Otherwise it reads as BrailleTableCatalog.defaultTableID, "en-ueb-g2.ctb", Unified English Braille contracted.
@@ -52,6 +52,7 @@ The preferences store.
   The pop-ups set a Mac table only once its check passes.
   Imports and braille exports read it through BraillePreferences.importTable(), which a hosted test overrides with the task-local tableForImports (see Braille files, in [Imports](imports-braille.md)).
   The file config.json mirrors it as brailleTable, an empty or invalid name there leaving the table as it is, and a "mac:" name taken as it is.
+  A bare name this platform lacks, such as an iPhone's, leaves the table as it is too, and the file keeps the name until the table is changed on this device (SettingsViewModel.brailleTableHeldFromFile; see [Braille table pack](braille-table-pack.md#stored-values-on-each-platform)).
   BraillePreferences.fileCode, under brailleFileCode, is the braille file characters an import reads a BRF or BRL file with, by the code's id.
   It reads as the stored id when that is one of BrailleFileCode.importChoices (ascii-na or ascii-eurobraille) and as ascii-na otherwise.
   So a stored unicode or unknown id falls back to North American Braille ASCII, since Unicode braille patterns are recognized by a file's bytes and never taken from the setting.
