@@ -26,7 +26,7 @@ enum PhoneSyncLifeCycle {
         isOn: @escaping @MainActor () -> Bool = { SyncCenter.shared.status.isOn },
         moment: @escaping @MainActor (SyncReason) -> Void = { SyncCenter.shared.moment($0) },
         hold: Duration = backgroundHold,
-        wait: @escaping @Sendable (Duration) async -> Void = { try? await Task.sleep(for: $0) }
+        wait: @escaping @MainActor (Duration) async -> Void = { try? await Task.sleep(for: $0) }
     ) {
         lifeCycle.onDidBecomeActive {
             guard isOn() else { return }
