@@ -51,4 +51,15 @@ final class SyncWordingTests: XCTestCase {
         XCTAssertEqual(SyncWording.announceNothingNew, "Synced. Nothing new.")
         XCTAssertEqual(SyncWording.announceMovedToPlace(from: "iPhone"), "Moved to the place saved on iPhone.")
     }
+
+    /// Keep on All Devices (section 16 of the plan).
+    func testKeepOnAllDevices() {
+        XCTAssertEqual(SyncWording.keepTitle, "Keep on All Devices")
+        XCTAssertEqual(SyncWording.stopKeepingTitle, "Stop Keeping on All Devices")
+        XCTAssertEqual(SyncWording.keepTitle(count: 3), "Keep 3 Books on All Devices")
+        XCTAssertEqual(SyncWording.stopKeepingTitle(count: 3), "Stop Keeping 3 Books on All Devices")
+        XCTAssertEqual(SyncWording.keptState, "Kept on all devices")
+        XCTAssertEqual(SyncWording.keepHint, "Every device that syncs keeps this book's files, and downloads them when it can.")
+        XCTAssertEqual(SyncWording.announceKeeping(title: "Moby-Dick"), "Keeping Moby-Dick on all devices.")
+    }
 }

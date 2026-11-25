@@ -720253,6 +720253,18 @@
         }
       }
     },
+    "sync.announce.keeping" : {
+      "comment" : "Said aloud after the person chooses Keep on All Devices. %@ is the book's title.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keeping %@ on all devices."
+          }
+        }
+      }
+    },
     "sync.announce.movedToPlace" : {
       "comment" : "Said aloud when the open book moves to the place saved on another device. %@ names that device, such as \"iPhone\".",
       "extractionState" : "manual",
@@ -720417,6 +720429,66 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Join Sync Folder…"
+          }
+        }
+      }
+    },
+    "sync.keepCountTitle" : {
+      "comment" : "Title of the command that keeps several selected books on every device that syncs. A plural line, title case. %lld is the number of books.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Keep %lld Book on All Devices"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Keep %lld Books on All Devices"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "sync.keepHint" : {
+      "comment" : "VoiceOver hint of the Kept on all devices checkbox in Book Information.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Every device that syncs keeps this book's files, and downloads them when it can."
+          }
+        }
+      }
+    },
+    "sync.keepTitle" : {
+      "comment" : "Title of the command and button that keeps a book's files on every device that syncs. Title case.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keep on All Devices"
+          }
+        }
+      }
+    },
+    "sync.keptState" : {
+      "comment" : "Label of the Book Information checkbox, and the state a book's row speaks when its files are kept on every device that syncs.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kept on all devices"
           }
         }
       }
@@ -720645,6 +720717,42 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "sync.stopKeepingCountTitle" : {
+      "comment" : "Title of the command that ends keeping several selected books on every device that syncs. A plural line, title case. %lld is the number of books.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Stop Keeping %lld Book on All Devices"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Stop Keeping %lld Books on All Devices"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "sync.stopKeepingTitle" : {
+      "comment" : "Title of the command and button that ends keeping a book's files on every device that syncs. Title case.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stop Keeping on All Devices"
           }
         }
       }
