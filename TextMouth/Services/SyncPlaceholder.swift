@@ -46,7 +46,7 @@ enum SyncPlaceholder {
 
         // The content file's name is the row's if it has one; the fetch puts
         // the manifest's file there.
-        let contentName = URL(fileURLWithPath: book.filePath).lastPathComponent
+        let contentName = book.filePath.isEmpty ? "" : URL(fileURLWithPath: book.filePath).lastPathComponent
         let package = packageDirectory(of: book, in: libraryDirectory)
         book.filePath = package.appendingPathComponent(contentName.isEmpty ? defaultContentName : contentName).path
         book.format = content.format
