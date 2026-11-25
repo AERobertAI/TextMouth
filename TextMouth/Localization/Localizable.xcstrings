@@ -720262,6 +720262,12 @@
             "state" : "translated",
             "value" : "Keeping %@ on all devices."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Se mantiene %@ en todos los dispositivos."
+          }
         }
       }
     },
@@ -720274,6 +720280,12 @@
             "state" : "translated",
             "value" : "Moved to the place saved on %@."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Se pasó al punto guardado en %@."
+          }
         }
       }
     },
@@ -720285,6 +720297,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Synced. Nothing new."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sincronizado. Nada nuevo."
           }
         }
       }
@@ -720310,6 +720328,30 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Sincronizado. %lld de cambios desde %@."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Sincronizado. %lld cambio desde %@."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Sincronizado. %lld cambios desde %@."
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -720321,6 +720363,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Syncing."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sincronizando."
           }
         }
       }
@@ -720334,6 +720382,12 @@
             "state" : "translated",
             "value" : "The sync folder now holds another library's sync. Choose Join Sync Folder again."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La carpeta de sincronización ahora contiene la sincronización de otra biblioteca. Elige Unirse a la carpeta de sincronización otra vez."
+          }
         }
       }
     },
@@ -720345,6 +720399,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Backing up books: %lld of %lld."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Copiando libros: %lld de %lld."
           }
         }
       }
@@ -720366,6 +720426,30 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "%lld books"
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld de libros"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld libro"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld libros"
                 }
               }
             }
@@ -720394,6 +720478,30 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld de cambios"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld cambio"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld cambios"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -720405,6 +720513,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "A folder named TextMouth Sync is already there. To use it, choose Join Sync Folder."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ya hay una carpeta llamada TextMouth Sync. Para usarla, elige Unirse a la carpeta de sincronización."
           }
         }
       }
@@ -720418,6 +720532,12 @@
             "state" : "translated",
             "value" : "Chooses the TextMouth Sync folder that another device set up."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Elige la carpeta TextMouth Sync que configuró otro dispositivo."
+          }
         }
       }
     },
@@ -720429,6 +720549,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Join Sync Folder…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Unirse a la carpeta de sincronización…"
           }
         }
       }
@@ -720454,6 +720580,30 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Mantener %lld de libros en todos los dispositivos"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Mantener %lld libro en todos los dispositivos"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Mantener %lld libros en todos los dispositivos"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -720465,6 +720615,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Every device that syncs keeps this book's files, and downloads them when it can."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Todos los dispositivos que sincronizan mantienen los archivos de este libro y los descargan cuando pueden."
           }
         }
       }
@@ -720478,6 +720634,12 @@
             "state" : "translated",
             "value" : "Keep on All Devices"
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mantener en todos los dispositivos"
+          }
         }
       }
     },
@@ -720489,6 +720651,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Kept on all devices"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mantenido en todos los dispositivos"
           }
         }
       }
@@ -720502,6 +720670,12 @@
             "state" : "translated",
             "value" : "Last heard from %@ at %@."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Última comunicación con %@ a las %@."
+          }
         }
       }
     },
@@ -720513,6 +720687,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sync is for a library kept on this Mac. Move this one here with Change Location first."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La sincronización es para una biblioteca guardada en esta Mac. Primero mueve esta aquí con Cambiar ubicación."
           }
         }
       }
@@ -720526,6 +720706,12 @@
             "state" : "translated",
             "value" : "That isn't a TextMouth Sync folder, or its files haven't arrived from iCloud Drive yet."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Esa no es una carpeta de TextMouth Sync, o sus archivos aún no han llegado desde iCloud Drive."
+          }
         }
       }
     },
@@ -720537,6 +720723,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "That folder isn't in iCloud Drive. Choose a folder in iCloud Drive."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Esa carpeta no está en iCloud Drive. Elige una carpeta de iCloud Drive."
           }
         }
       }
@@ -720550,6 +720742,12 @@
             "state" : "translated",
             "value" : "Keeps your books, places, and bookmarks the same on your Mac and iPhone, through iCloud Drive."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mantiene tus libros, posiciones de lectura y marcadores iguales en tu Mac y tu iPhone, mediante iCloud Drive."
+          }
         }
       }
     },
@@ -720561,6 +720759,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sync"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sincronización"
           }
         }
       }
@@ -720574,6 +720778,12 @@
             "state" : "translated",
             "value" : "Makes a folder named TextMouth Sync in the iCloud Drive folder you choose, and copies your books into it."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Crea una carpeta llamada TextMouth Sync en la carpeta de iCloud Drive que elijas y copia tus libros en ella."
+          }
         }
       }
     },
@@ -720585,6 +720795,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Set Up Sync…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Configurar la sincronización…"
           }
         }
       }
@@ -720598,6 +720814,12 @@
             "state" : "translated",
             "value" : "TextMouth can't find the TextMouth Sync folder in iCloud Drive. It may have been moved or deleted, or iCloud Drive signed out. Your library on %@ is as it was."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth no encuentra la carpeta TextMouth Sync en iCloud Drive. Puede que se haya movido o eliminado, o que se haya cerrado la sesión de iCloud Drive. Tu biblioteca en %@ sigue como estaba."
+          }
         }
       }
     },
@@ -720609,6 +720831,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "A later TextMouth made this sync folder. Update TextMouth to use it."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Una versión más reciente de TextMouth creó esta carpeta de sincronización. Actualiza TextMouth para usarla."
           }
         }
       }
@@ -720622,6 +720850,12 @@
             "state" : "translated",
             "value" : "Some changes from iPhone haven't downloaded yet. TextMouth will try again."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Algunos cambios del iPhone aún no se han descargado. TextMouth lo intentará de nuevo."
+          }
         }
       }
     },
@@ -720633,6 +720867,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sync is off."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La sincronización está desactivada."
           }
         }
       }
@@ -720658,6 +720898,30 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Sin conexión. %lld de cambios esperan en %@ y se enviarán cuando vuelva la red."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Sin conexión. %lld cambio espera en %@ y se enviará cuando vuelva la red."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Sin conexión. %lld cambios esperan en %@ y se enviarán cuando vuelva la red."
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -720669,6 +720933,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "iCloud Drive is full, so %@ and %@ aren't uploaded. Your library on %@ is as it was."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive está lleno, así que no se suben %@ ni %@. Tu biblioteca en %@ sigue como estaba."
           }
         }
       }
@@ -720682,6 +720952,12 @@
             "state" : "translated",
             "value" : "Syncing…"
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sincronizando…"
+          }
         }
       }
     },
@@ -720693,6 +720969,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Up to date. Last synced at %@."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Todo al día. Última sincronización a las %@."
           }
         }
       }
@@ -720714,6 +720996,30 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "%lld changes are waiting for iCloud Drive to upload them."
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld de cambios esperan a que iCloud Drive los suba."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld cambio espera a que iCloud Drive lo suba."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld cambios esperan a que iCloud Drive los suba."
                 }
               }
             }
@@ -720742,6 +721048,30 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Dejar de mantener %lld de libros en todos los dispositivos"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Dejar de mantener %lld libro en todos los dispositivos"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Dejar de mantener %lld libros en todos los dispositivos"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -720753,6 +721083,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Stop Keeping on All Devices"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Dejar de mantener en todos los dispositivos"
           }
         }
       }
@@ -720766,6 +721102,12 @@
             "state" : "translated",
             "value" : "Stop syncing this library? Nothing is deleted, on this Mac or in iCloud Drive."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "¿Dejar de sincronizar esta biblioteca? No se elimina nada, ni en esta Mac ni en iCloud Drive."
+          }
         }
       }
     },
@@ -720777,6 +721119,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Stop Syncing…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Dejar de sincronizar…"
           }
         }
       }
@@ -720790,6 +721138,12 @@
             "state" : "translated",
             "value" : "Sync Now"
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sincronizar ahora"
+          }
         }
       }
     },
@@ -720801,6 +721155,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "this iPhone"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "este iPhone"
           }
         }
       }
@@ -720814,6 +721174,12 @@
             "state" : "translated",
             "value" : "this Mac"
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "esta Mac"
+          }
         }
       }
     },
@@ -720825,6 +721191,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Waiting for the sync folder's files to arrive from iCloud Drive."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Esperando a que lleguen los archivos de la carpeta de sincronización desde iCloud Drive."
           }
         }
       }
