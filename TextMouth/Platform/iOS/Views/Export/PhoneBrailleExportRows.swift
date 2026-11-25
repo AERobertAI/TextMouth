@@ -1,9 +1,9 @@
-import Combine
 import SwiftUI
 
 /// The braille rows of the iPhone's Export sheet (FR31), shown after the Convert to row while BRF or PEF is the choice, in
 /// the Mac's order and its words (`BrailleExportOptionsView`): the braille code, the cells in a line, the lines on a page,
-/// whether pages are numbered, and, for a BRF only, the line ends and the braille file characters.
+/// whether pages are numbered, and, for a BRF only, the line ends and the braille file characters. What each row says,
+/// its label, its value, and its hint, is decided by `PhoneExportOffer.brailleRows`, which the Mac's test host reads.
 ///
 /// The braille code is one choice row. It opens the Braille setting's list of every table, under a heading for each
 /// language, with the tables that only write braille among them (`BrailleTableCatalog.exportCodes`), since an export only
@@ -13,36 +13,31 @@ import SwiftUI
 ///
 /// The rows start from the Braille setting, as the Mac's options do (`BrailleExportOptions.standard()`), and stay until the
 /// sheet closes. They read and set the writer's options through the typed accessor of its state
-/// (`TextExportOptionsEditing.brailleOptions`), are drawn again as those change, and are dimmed while an export runs.
+/// (`TextExportOptionsEditing.brailleOptions`) and are dimmed while an export runs.
+///
+/// The rows only ask for a choice sheet (`open`); the Export sheet presents it, and hears the options change
+/// (`BookExportModel.optionsChanged`), from its list and not from any row. A List makes its rows as they scroll
+/// into view, so a presenter on one row has gone when that row has scrolled away: a tap on another row would open
+/// nothing, and a row made again could close a sheet that is open.
 struct PhoneBrailleExportRows: View {
+    /// The kind whose writer's options these are, which says where focus returns to.
+    let kind: BookExportKind
     /// The options of the writer chosen, a BRF's or a PEF's.
     let state: any TextExportOptionsEditing
     /// Whether the line ends and the braille file characters are chosen here: a BRF's are, a PEF's are not.
     let choosesLineEnds: Bool
     /// Whether an export is running, which dims every row.
     let isExporting: Bool
+    /// How many times the options have changed, which draws the rows again when it does.
+    let revision: Int
+    /// Where VoiceOver's focus is asked to go, which is the Export sheet's.
+    let focus: AccessibilityFocusState<PhoneExportSheet.Focus?>.Binding
+    /// Asks the Export sheet to show a choice sheet.
+    let open: (PhoneExportOffer.BrailleChoice) -> Void
 
-    /// The choice sheet on show, if any.
-    @State private var sheet: ChoiceSheet?
-    /// The row whose sheet was opened last, which focus returns to.
-    @State private var lastOpener: ChoiceSheet?
-    /// Counts the changes the state announces, which is what makes the rows draw again.
-    @State private var changes = 0
-    /// Where VoiceOver's focus is asked to go once a choice sheet has closed.
-    @AccessibilityFocusState private var focus: ChoiceSheet?
-
-    /// The choices that open a sheet, each a row.
-    private enum ChoiceSheet: String, Identifiable {
-        case code
-        case lineEnds
-        case fileCode
-
-        var id: String { rawValue }
-    }
-
-    /// The options as they stand now. `changes` is read so that a change draws the rows again.
+    /// The options as they stand now. `revision` is read so that a change draws the rows again.
     private var options: BrailleExportOptions {
-        _ = changes
+        _ = revision
         return state.brailleOptions ?? BrailleExportOptions()
     }
 
@@ -53,87 +48,64 @@ struct PhoneBrailleExportRows: View {
 
     var body: some View {
         Group {
-            codeRow
-            if let replaced = options.replacedTable {
-                // The Braille setting's table could not be used: say so, until another is chosen.
-                Text(BrailleExportWording.startsFromDefault(replacing: replaced))
-            }
-            stepperRow(
-                label: BrailleExportWording.cellsLabel,
-                hint: BrailleExportWording.cellsHint,
-                value: BrailleExportWording.cellsValue(options.page.cellsPerLine),
-                number: binding.page.cellsPerLine,
-                range: BraillePageFormat.cellsPerLineRange
-            )
-            stepperRow(
-                label: BrailleExportWording.linesLabel,
-                hint: BrailleExportWording.linesHint,
-                value: BrailleExportWording.linesValue(options.page.linesPerPage),
-                number: binding.page.linesPerPage,
-                range: BraillePageFormat.linesPerPageRange
-            )
-            Toggle(BrailleExportWording.numbersLabel, isOn: binding.page.numbersPages)
-                .disabled(isExporting)
-                .accessibilityHint(BrailleExportWording.numbersHint)
-            // A BRF's own two choices come last, the file characters after the line ends, as on the Mac.
-            if choosesLineEnds {
-                lineEndsRow
-                fileCodeRow
+            ForEach(PhoneExportOffer.brailleRows(options, choosesLineEnds: choosesLineEnds), id: \.label) { row in
+                draw(row)
+                // The Braille setting's table could not be used: say so, under the braille code, until another is chosen.
+                if row.control == .choice(.code), let replaced = options.replacedTable {
+                    Text(BrailleExportWording.startsFromDefault(replacing: replaced))
+                }
             }
         }
     }
 
     // MARK: - The Rows
 
-    /// The braille code: a button valued with the table in words and its language, which opens the tables. The one
-    /// view of the rows that presents the choice sheets and hears the options change: a modifier on the group would
-    /// be applied to each of its six or seven rows, seven presenters of one sheet.
-    private var codeRow: some View {
-        choiceRow(.code, label: BrailleSettingsWording.codeLabel, value: PhoneSettingsModel.brailleTableValue(options.table), hint: BrailleExportWording.codeHint)
-            .onReceive(state.changes) { _ in changes &+= 1 }
-            .sheet(item: $sheet, onDismiss: sheetClosed) { shown in
-                choices(for: shown)
-            }
-    }
-
-    /// The line end, CR LF or LF.
-    private var lineEndsRow: some View {
-        choiceRow(.lineEnds, label: BrailleExportWording.lineEndsLabel, value: BrailleExportWording.name(of: options.lineEnd), hint: BrailleExportWording.lineEndsHint)
-    }
-
-    /// The braille file characters a BRF is written in.
-    private var fileCodeRow: some View {
-        choiceRow(.fileCode, label: BrailleSettingsWording.fileCodeLabel, value: options.fileCode.name, hint: BrailleExportWording.fileCodeHint)
+    /// The row `row` decides, drawn as its control.
+    @ViewBuilder
+    private func draw(_ row: PhoneExportOffer.BrailleRow) -> some View {
+        switch row.control {
+        case .choice(let which):
+            choiceRow(which, row)
+        case .cellsPerLine:
+            stepperRow(row, number: binding.page.cellsPerLine, range: BraillePageFormat.cellsPerLineRange)
+        case .linesPerPage:
+            stepperRow(row, number: binding.page.linesPerPage, range: BraillePageFormat.linesPerPageRange)
+        case .pageNumbers:
+            Toggle(row.label, isOn: binding.page.numbersPages)
+                .disabled(isExporting)
+                .accessibilityHint(row.hint)
+        }
     }
 
     /// A row that shows a choice and opens its sheet: its label, valued with the choice, hinted.
-    private func choiceRow(_ which: ChoiceSheet, label: String, value: String, hint: String) -> some View {
-        Button {
-            lastOpener = which
-            sheet = which
+    private func choiceRow(_ which: PhoneExportOffer.BrailleChoice, _ row: PhoneExportOffer.BrailleRow) -> some View {
+        let value = row.value ?? ""
+        return Button {
+            open(which)
         } label: {
-            PhoneValueRow(name: label, value: value)
+            PhoneValueRow(name: row.label, value: value)
         }
         .disabled(isExporting)
-        .accessibilityLabel(label)
+        .accessibilityLabel(row.label)
         .accessibilityValue(value)
-        .accessibilityHint(hint)
-        .accessibilityFocused($focus, equals: which)
+        .accessibilityHint(row.hint)
+        .accessibilityFocused(focus, equals: .braille(kind, which))
     }
 
     /// A stepper that says its label, its value with its unit, and its hint, and shows the first two beside each other.
     ///
     /// Like the Settings steppers, it is one adjustable element (swipe up or down to change it), not the
     /// stepper's own text and two buttons: SwiftUI keeps its own words and drops a value set from outside.
-    private func stepperRow(label: String, hint: String, value: String, number: Binding<Int>, range: ClosedRange<Int>) -> some View {
-        Stepper(value: number, in: range) {
-            PhoneValueRow(name: label, value: value)
+    private func stepperRow(_ row: PhoneExportOffer.BrailleRow, number: Binding<Int>, range: ClosedRange<Int>) -> some View {
+        let value = row.value ?? ""
+        return Stepper(value: number, in: range) {
+            PhoneValueRow(name: row.label, value: value)
         }
         .disabled(isExporting)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(label)
+        .accessibilityLabel(row.label)
         .accessibilityValue(value)
-        .accessibilityHint(hint)
+        .accessibilityHint(row.hint)
         .accessibilityAdjustableAction { direction in
             // A dimmed row does nothing, even by this action.
             guard !isExporting else { return }
@@ -144,33 +116,51 @@ struct PhoneBrailleExportRows: View {
             }
         }
     }
+}
 
-    // MARK: - The Choices
+// MARK: - The Choices
 
-    /// The sheet of `shown`'s choices.
-    @ViewBuilder
-    private func choices(for shown: ChoiceSheet) -> some View {
-        switch shown {
+/// A request for one choice sheet of one kind's braille rows, which the Export sheet presents.
+struct PhoneBrailleExportRequest: Identifiable {
+    /// The kind whose writer's options the choice sets.
+    let kind: BookExportKind
+    /// The choice to make.
+    let choice: PhoneExportOffer.BrailleChoice
+
+    var id: String { "\(kind.rawValue).\(choice.rawValue)" }
+}
+
+/// The sheet of one braille choice, over the options of the writer `state` holds.
+struct PhoneBrailleExportChoices: View {
+    /// The options of the writer chosen.
+    let state: any TextExportOptionsEditing
+    /// The choice to make.
+    let choice: PhoneExportOffer.BrailleChoice
+
+    /// The options as they stand now.
+    private var options: BrailleExportOptions { state.brailleOptions ?? BrailleExportOptions() }
+
+    /// Sets the options through the state, from the ones that stand now.
+    private func change(_ edit: (inout BrailleExportOptions) -> Void) {
+        var next = options
+        edit(&next)
+        state.brailleOptions = next
+    }
+
+    var body: some View {
+        switch choice {
         case .code:
             PhoneChoiceSheet(
                 title: BrailleSettingsWording.codeLabel,
                 groups: PhoneSettingsModel.brailleTableGroups(codes: BrailleTableCatalog.exportCodes),
                 selected: PhoneSettingsModel.brailleTableSelection(options.table)
-            ) { id in
-                var next = options
-                next.table = id
-                binding.wrappedValue = next
-            }
+            ) { id in change { $0.table = id } }
         case .lineEnds:
             PhoneChoiceSheet(
                 title: BrailleExportWording.lineEndsLabel,
                 choices: [BrailleLineEnd.crlf, .lf].map { PhoneChoice(id: $0, label: BrailleExportWording.name(of: $0)) },
                 selected: options.lineEnd
-            ) { lineEnd in
-                var next = options
-                next.lineEnd = lineEnd
-                binding.wrappedValue = next
-            }
+            ) { lineEnd in change { $0.lineEnd = lineEnd } }
         case .fileCode:
             PhoneChoiceSheet(
                 title: BrailleSettingsWording.fileCodeLabel,
@@ -178,22 +168,8 @@ struct PhoneBrailleExportRows: View {
                 selected: options.fileCode.id
             ) { id in
                 guard let code = BrailleFileCode.all.first(where: { $0.id == id }) else { return }
-                var next = options
-                next.fileCode = code
-                binding.wrappedValue = next
+                change { $0.fileCode = code }
             }
-        }
-    }
-
-    /// A choice sheet closed: focus returns to the row that opened it, 0.35 seconds later.
-    private func sheetClosed() {
-        // The sheet is nil by now; the row to return to is the last one opened.
-        guard let opener = lastOpener else { return }
-        Task { @MainActor in
-            try? await Task.sleep(for: .seconds(PhoneFocusPolicy.screenChangedDelay))
-            focus = nil
-            await Task.yield()
-            focus = opener
         }
     }
 }

@@ -136,4 +136,73 @@ enum PhoneExportOffer {
             hint: BookExportWording.chooseFolderHint
         )
     }
+
+    // MARK: - The Braille Rows
+
+    /// The choice sheets the braille rows open: the braille code, and a BRF's line ends and file characters.
+    enum BrailleChoice: String, Identifiable, Sendable {
+        case code
+        case lineEnds
+        case fileCode
+
+        var id: String { rawValue }
+    }
+
+    /// One braille row of the sheet: what it is, and the words VoiceOver reads from it.
+    struct BrailleRow: Equatable, Sendable {
+        /// What the row is, which says how the sheet draws it.
+        enum Control: Equatable, Sendable {
+            /// A button that opens a choice sheet.
+            case choice(BrailleChoice)
+            /// The cells in a line, a stepper.
+            case cellsPerLine
+            /// The lines on a page, a stepper.
+            case linesPerPage
+            /// Whether pages are numbered, a switch.
+            case pageNumbers
+        }
+
+        /// What the row is.
+        let control: Control
+        /// The row's label.
+        let label: String
+        /// The row's value, with its unit; nil for a switch, which says its own.
+        let value: String?
+        /// What VoiceOver says of what the row does.
+        let hint: String
+    }
+
+    /// The braille rows for `options`, in the Mac's order: the braille code, the cells in a line, the lines on a page,
+    /// whether pages are numbered, and, for a BRF (`choosesLineEnds`), the line ends and the braille file characters.
+    static func brailleRows(_ options: BrailleExportOptions, choosesLineEnds: Bool) -> [BrailleRow] {
+        var rows = [
+            BrailleRow(
+                control: .choice(.code), label: BrailleSettingsWording.codeLabel,
+                value: PhoneSettingsModel.brailleTableValue(options.table), hint: BrailleExportWording.codeHint
+            ),
+            BrailleRow(
+                control: .cellsPerLine, label: BrailleExportWording.cellsLabel,
+                value: BrailleExportWording.cellsValue(options.page.cellsPerLine), hint: BrailleExportWording.cellsHint
+            ),
+            BrailleRow(
+                control: .linesPerPage, label: BrailleExportWording.linesLabel,
+                value: BrailleExportWording.linesValue(options.page.linesPerPage), hint: BrailleExportWording.linesHint
+            ),
+            BrailleRow(
+                control: .pageNumbers, label: BrailleExportWording.numbersLabel,
+                value: nil, hint: BrailleExportWording.numbersHint
+            )
+        ]
+        if choosesLineEnds {
+            rows.append(BrailleRow(
+                control: .choice(.lineEnds), label: BrailleExportWording.lineEndsLabel,
+                value: BrailleExportWording.name(of: options.lineEnd), hint: BrailleExportWording.lineEndsHint
+            ))
+            rows.append(BrailleRow(
+                control: .choice(.fileCode), label: BrailleSettingsWording.fileCodeLabel,
+                value: options.fileCode.name, hint: BrailleExportWording.fileCodeHint
+            ))
+        }
+        return rows
+    }
 }

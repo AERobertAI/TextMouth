@@ -27,13 +27,15 @@ import UniformTypeIdentifiers
 /// hand-check list.
 struct PhoneExportSheet: View {
     /// What VoiceOver's focus can be asked to go to.
-    private enum Focus: Hashable {
+    enum Focus: Hashable {
         /// The switch of a kind.
         case kind(BookExportKind)
         /// The Convert to row of a kind.
         case format(BookExportKind)
         /// The folder row.
         case folder
+        /// A braille row of a kind that opens a choice sheet.
+        case braille(BookExportKind, PhoneExportOffer.BrailleChoice)
     }
 
     /// A kind's Convert to choices, shown in a sheet of their own.
@@ -59,6 +61,12 @@ struct PhoneExportSheet: View {
     /// The kind whose Convert to choices were last opened, which focus returns
     /// to when they close.
     @State private var formatOpener: BookExportKind?
+    /// The braille choice on show, if any. Presented from the list, not from a braille row (`PhoneBrailleExportRows`).
+    @State private var brailleRequest: PhoneBrailleExportRequest?
+    /// Counts the changes the braille options announce, which is what draws the braille rows again.
+    @State private var brailleChanges = 0
+    /// The braille row whose choices were last opened, which focus returns to when they close.
+    @State private var brailleOpener: Focus?
 
     /// A sheet exporting `books`, as `library` holds them when Export is
     /// pressed. `beginHold` is what keeps the app running while an export
@@ -145,6 +153,14 @@ struct PhoneExportSheet: View {
             .sheet(item: $formatSheet, onDismiss: formatSheetClosed) { shown in
                 formatChoices(for: shown.kind)
             }
+            // The braille choices are presented, and the options heard, here and not on a braille row: a row can
+            // scroll away, and take its presenter with it, at a large text size or on a small phone.
+            .sheet(item: $brailleRequest, onDismiss: brailleChoicesClosed) { request in
+                if let state = model.optionsState(for: request.kind) {
+                    PhoneBrailleExportChoices(state: state, choice: request.choice)
+                }
+            }
+            .onReceive(model.optionsChanged) { _ in brailleChanges &+= 1 }
             .fileImporter(
                 isPresented: $isPickingFolder,
                 allowedContentTypes: [.folder],
@@ -254,9 +270,16 @@ struct PhoneExportSheet: View {
     private func optionRows(for kind: BookExportKind) -> some View {
         if let state = model.optionsState(for: kind), state.brailleOptions != nil {
             PhoneBrailleExportRows(
+                kind: kind,
                 state: state,
                 choosesLineEnds: state.writerID == BRFExportWriter().id,
-                isExporting: model.isExporting
+                isExporting: model.isExporting,
+                revision: brailleChanges,
+                focus: $focus,
+                open: { choice in
+                    brailleOpener = .braille(kind, choice)
+                    brailleRequest = PhoneBrailleExportRequest(kind: kind, choice: choice)
+                }
             )
         }
     }
@@ -269,6 +292,13 @@ struct PhoneExportSheet: View {
             selected: model.conversionID(for: kind),
             onChoose: { model.setConversionID($0, for: kind) }
         )
+    }
+
+    /// A braille choice closed: focus returns to the row that opened it.
+    private func brailleChoicesClosed() {
+        guard let opener = brailleOpener else { return }
+        brailleOpener = nil
+        returnFocus(to: opener)
     }
 
     /// The choices closed: focus returns to the row that opened them.

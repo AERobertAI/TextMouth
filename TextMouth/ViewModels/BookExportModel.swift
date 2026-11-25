@@ -221,6 +221,12 @@ final class BookExportModel: ObservableObject, Identifiable {
     /// dialog's life so that choosing another writer and coming back finds
     /// them as they were.
     private var optionsStates: [String: any TextExportOptionsEditing] = [:]
+    /// Says, once for each change of any writer's options, that they changed: the one place a view that shows options
+    /// beside a list's rows hears them (the iPhone's braille rows, which no row may listen for, since a row
+    /// can scroll away and take the listener with it).
+    let optionsChanged = PassthroughSubject<Void, Never>()
+    /// What forwards each writer's changes to `optionsChanged`.
+    private var optionsSubscriptions: [AnyCancellable] = []
     /// What a speech export reaches: the synthesizer, the voices, the power
     /// assertion, the disks, and the folder its chapters are kept in.
     private let speechEnvironment: SpeechExportEnvironment
@@ -652,7 +658,9 @@ final class BookExportModel: ObservableObject, Identifiable {
         guard conversionChoices(for: kind).contains(where: { $0.id == id }) else { return }
         conversionIDs[kind] = id
         if let writer = writer(id: id), optionsStates[id] == nil {
-            optionsStates[id] = TextExportWriters.optionsState(for: writer)
+            let state = TextExportWriters.optionsState(for: writer)
+            optionsStates[id] = state
+            optionsSubscriptions.append(state.changes.sink { [optionsChanged] in optionsChanged.send() })
         }
     }
 

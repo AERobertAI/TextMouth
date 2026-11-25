@@ -6,6 +6,10 @@ import XCTest
 /// Convert to choices and an export into a folder named at launch; and the
 /// sheet at the largest text size.
 ///
+/// The tests read each element's label and value, in order. XCUITest cannot read an accessibility hint, so the
+/// hints are pinned where the sheet's words are decided, by plain-type tests the Mac's host runs
+/// (`PhoneExportOfferTests`, `PhoneExportModelTests`).
+///
 /// The app runs in a sandbox of its own (TEXTMOUTH_UI_TEST), with the book
 /// sent to it. Nothing here makes sound, and nothing is typed. The system's
 /// folder picker cannot be driven by a test, so the one export that writes a
@@ -200,5 +204,56 @@ final class ExportUITests: TextMouthUITestCase {
             informing: .dynamicType,
             accepting: [.navigationTitle(Self.sheetTitle), .barItem("Cancel"), .barItem("Export"), .scrolledPastTheEdge]
         )
+
+        try openTheBrailleChoicesWithTheCodeRowScrolledAway(in: app)
+    }
+
+    /// Scrolled to the bottom of the sheet at the largest text, the Braille code row is out of the list, and Line ends
+    /// and Braille file characters still open their sheets, each closing with Cancel; scrolled back up, so does Braille
+    /// code. The sheets are presented from the list and not from a row, so a row that has scrolled away takes none with it.
+    private func openTheBrailleChoicesWithTheCodeRowScrolledAway(in app: XCUIApplication) throws {
+        kindSwitch("Text as Markdown", in: app).coordinate(withNormalizedOffset: CGVector(dx: 0.88, dy: 0.5)).tap()
+        let convert = app.buttons["Convert to"]
+        try scrollTo(convert, in: app)
+        tap(convert, until: app.navigationBars["Convert to"], in: app, what: "the Convert to row")
+        app.buttons["BRF"].tap()
+        XCTAssertTrue(app.navigationBars["Convert to"].waitForNonExistence(timeout: Self.patience), "The Convert to sheet stayed open after a choice")
+
+        // Scroll down until the last braille row shows and the first has left the list.
+        let fileCode = app.buttons["Braille file characters"]
+        let code = app.buttons["Braille code"]
+        for _ in 0..<12 where !(onScreen(fileCode) && !onScreen(code)) {
+            app.swipeUp()
+        }
+        XCTAssertTrue(onScreen(fileCode), "Braille file characters is not on screen:\n\(app.debugDescription)")
+        XCTAssertFalse(onScreen(code), "The Braille code row is still on screen, so the test proves nothing")
+
+        for title in ["Braille file characters", "Line ends"] {
+            let row = app.buttons[title]
+            if !onScreen(row) { app.swipeUp() }
+            tap(row, until: app.navigationBars[title], in: app, what: "the \(title) row, with the Braille code row scrolled away")
+            app.navigationBars[title].buttons["Cancel"].tap()
+            XCTAssertTrue(app.navigationBars[title].waitForNonExistence(timeout: Self.patience), "\(title)'s sheet stayed open after Cancel")
+        }
+
+        for _ in 0..<12 where !onScreen(code) {
+            app.swipeDown()
+        }
+        tap(code, until: app.navigationBars["Braille code"], in: app, what: "the Braille code row")
+        app.navigationBars["Braille code"].buttons["Cancel"].tap()
+        XCTAssertTrue(app.navigationBars["Braille code"].waitForNonExistence(timeout: Self.patience), "Braille code's sheet stayed open after Cancel")
+    }
+
+    /// Whether `element` is in the list and can be tapped: a row that has scrolled out of a list is not there at all.
+    private func onScreen(_ element: XCUIElement) -> Bool {
+        element.exists && element.isHittable
+    }
+
+    /// Scrolls the sheet up until `element` is on screen.
+    private func scrollTo(_ element: XCUIElement, in app: XCUIApplication) throws {
+        for _ in 0..<12 where !onScreen(element) {
+            app.swipeUp()
+        }
+        XCTAssertTrue(onScreen(element), "\(element) never came on screen:\n\(app.debugDescription)")
     }
 }
