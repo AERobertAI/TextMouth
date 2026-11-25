@@ -8,20 +8,6 @@ import Foundation
 // a person removed elsewhere, and moves packages through
 // `performLibraryTransition`. It shares the iPhone, which makes the same model.
 
-// MARK: - Which Book a Key Belongs To
-
-extension SyncKey {
-    /// The book this key changes, or nil for a folder's or the reading list's option.
-    var bookID: UUID? {
-        switch self {
-        case .book(let id, _): return id
-        case .bookmark(let book, _): return book
-        case .readingList(let book): return book
-        case .folder, .readingListOption: return nil
-        }
-    }
-}
-
 // MARK: - What a Merge Tells the Readers
 
 /// The reading state a sync merge gave a book, which its open readers weigh
@@ -169,7 +155,7 @@ extension LibraryViewModel: SyncLibraryHost {
         // 1. The placeholders of new books, off the main thread. A book a
         // device lacks and cannot be made a package for stays out, its keys
         // unapplied.
-        let storeID = Self.placeholderStoreID
+        let storeID = SyncCenter.shared.storeID ?? Self.placeholderStoreID
         var failed: Set<UUID> = []
         var added: [Book] = []
         let known = Set(start.books.map(\.id))
@@ -264,9 +250,8 @@ extension LibraryViewModel: SyncLibraryHost {
         return heard.max { $0.value < $1.value }?.key ?? "iPhone" // l10n: no (a product name)
     }
 
-    /// The store the placeholders' pointers name. sync-store's `SyncCenter`
-    /// does not publish the store's ID, so a placeholder names the nil UUID;
-    /// the fetch reads the manifest the pointer names, not the store's ID.
+    /// The store a placeholder's pointer names when the sync has none (only
+    /// in tests): the nil UUID. The fetch reads the manifest the pointer names.
     private static let placeholderStoreID = UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
 
     /// Called after each sync run with the books kept on all devices (section

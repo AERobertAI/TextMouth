@@ -1,68 +1,9 @@
 import Foundation
 
 // SyncSettingsModel.swift: what the Sync section of the settings says and
-// does (FR43, sections 1, 7, and 10 of the build plan). The status line, the
-// refusals of a folder chosen to sync through, and the commands are here,
+// does (FR43, sections 1, 7, and 10 of the build plan). The refusals of a folder chosen to sync through, and the commands are here,
 // away from the view, so tests pin each word; the Mac's section
 // (`SyncSettingsSection`) and the iPhone's settings both show them.
-
-// MARK: - The Status Line
-
-/// The sentence the Sync section's status line speaks: the first state that
-/// holds, from section 7 of the plan, then the lines that follow it.
-enum SyncStatusLine {
-    /// The status line's sentence for `status`.
-    /// - Parameters:
-    ///   - status: What the sync reports.
-    ///   - isPhone: Whether this device is an iPhone, which says "this iPhone".
-    ///   - time: How a date is written as a time of day, the system's by default.
-    static func sentence(
-        for status: SyncStatus,
-        isPhone: Bool,
-        time: (Date) -> String = SyncStatusLine.systemTime
-    ) -> String {
-        let device = SyncWording.thisDevice(isPhone: isPhone)
-        guard status.isOn else { return SyncWording.statusOff }
-        if status.isSyncing { return SyncWording.statusSyncing }
-        if status.isOffline {
-            return SyncWording.statusOffline(changes: status.pendingChanges, device: device)
-        }
-        switch status.problem {
-        case .folderMissing?:
-            return SyncWording.statusFolderMissing(device: device)
-        case .outOfSpace?:
-            return SyncWording.statusOutOfSpace(
-                changes: status.pendingChanges,
-                books: max((status.booksToBackUp ?? 0) - (status.booksBackedUp ?? 0), 0),
-                device: device
-            )
-        case .laterVersion?:
-            return SyncWording.statusLaterVersion
-        default:
-            break
-        }
-        if status.pendingChanges > 0 { return SyncWording.statusUploading(changes: status.pendingChanges) }
-        if case .notDownloaded? = status.problem { return SyncWording.statusNotDownloaded }
-        return status.lastSynced.map { SyncWording.statusUpToDate(at: time($0)) } ?? SyncWording.statusSyncing
-    }
-
-    /// The lines after the sentence: when each other device was last heard
-    /// from, newest first, then how far the backup of books has got.
-    static func details(for status: SyncStatus, time: (Date) -> String = SyncStatusLine.systemTime) -> [String] {
-        var lines = status.lastHeard
-            .sorted { ($0.value, $1.key) > ($1.value, $0.key) }
-            .map { SyncWording.lastHeard(from: $0.key, at: time($0.value)) }
-        if let done = status.booksBackedUp, let total = status.booksToBackUp, done < total {
-            lines.append(SyncWording.backingUp(done: done, total: total))
-        }
-        return lines
-    }
-
-    /// A date as a time of day, as the system writes one: "9:41 AM".
-    static func systemTime(_ date: Date) -> String {
-        date.formatted(date: .omitted, time: .shortened)
-    }
-}
 
 // MARK: - The Model
 
@@ -194,6 +135,8 @@ final class SyncSettingsModel: ObservableObject {
         case .laterVersion: return SyncWording.statusLaterVersion
         case .notDownloaded: return SyncWording.waitingForFiles
         case .folderMissing, .offline: return SyncWording.statusFolderMissing(device: SyncWording.thisDevice(isPhone: isPhone))
+        case .notInICloudDrive: return SyncWording.notInICloudDrive
+        case .libraryNotLocal: return SyncWording.libraryNotLocal
         case .notASyncFolder, .damaged, .outOfSpace: return SyncWording.notASyncFolder
         }
     }

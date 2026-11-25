@@ -71,12 +71,12 @@ struct SyncSettingsSection: View {
 
     /// The status line's sentence now.
     private var statusSentence: String {
-        SyncStatusLine.sentence(for: center.status, isPhone: false)
+        SyncStatusLine.text(for: center.status, isPhone: false, time: Self.timeOfDay)
     }
 
     /// The lines after it.
     private var details: [String] {
-        SyncStatusLine.details(for: center.status)
+        SyncStatusLine.detailLines(for: center.status, time: Self.timeOfDay)
     }
 
     // MARK: - Choosing a Folder
@@ -96,6 +96,11 @@ struct SyncSettingsSection: View {
             prompt: title,
             directoryURL: nil
         )
+    }
+
+    /// A date as a time of day, as the system writes one: "9:41 AM".
+    static func timeOfDay(_ date: Date) -> String {
+        date.formatted(date: .omitted, time: .shortened)
     }
 
     /// A command's title without the ellipsis that says a window follows.
