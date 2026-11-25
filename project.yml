@@ -983,6 +983,7 @@ targets:
       - TextMouthProductionTests/BardBrailleTests.swift
       - TextMouthProductionTests/BookAuthorPlaceholderTests.swift
       - TextMouthProductionTests/BookContentIndexTests.swift
+      - TextMouthProductionTests/BookExportDeliveryTests.swift
       - TextMouthProductionTests/BookMetadataUpdateTests.swift
       - TextMouthProductionTests/BookSearchModelTests.swift
       - TextMouthProductionTests/BookTextEncodingTests.swift
