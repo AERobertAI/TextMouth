@@ -14,9 +14,23 @@ final class SyncLibraryHostTests: XCTestCase {
         sandbox = try LibraryIndexSandbox.capture()
     }
 
+    /// What a test made in the hosted library: packages and folders, removed after it.
+    private var made: [URL] = []
+
     override func tearDownWithError() throws {
         // Optional: tear-down also runs when capturing failed in set-up.
         sandbox?.restore()
+        for url in made { try? FileManager.default.removeItem(at: url) }
+        made = []
+    }
+
+    /// Makes a placeholder package in the hosted library, removed after the test.
+    private func makePlaceholder(_ title: String, folderPath: String = "") throws -> Book {
+        var newBook = makeNewBook(title)
+        newBook.book.folderPath = folderPath
+        let book = try SyncPlaceholder.makePackage(for: newBook, storeID: UUID())
+        made.append(book.tmbDirectory)
+        return book
     }
 
     // MARK: - Fixtures
@@ -116,14 +130,67 @@ final class SyncLibraryHostTests: XCTestCase {
         XCTAssertEqual(merge.appliedKeys(of: application, failed: []), [.readingListOption(.continuation)])
     }
 
-    /// A row now in another library folder is a book whose package moves.
-    func testBooksMovedAreThoseInAnotherFolder() {
-        let mover = makeBook("Mover"), stayer = makeBook("Stayer")
-        let start = Library(books: [mover, stayer])
+    /// A row left alone in one field still follows the rename that moved the
+    /// merged row: the folder is a field of its own (review item 5).
+    func testARowChangedMeanwhileStillFollowsAFolderRename() {
+        let book = makeBook("Renamed Away", folderPath: "Old")
+        let start = Library(books: [book])
         var merged = start
-        merged.books[0].folderPath = "Elsewhere"
-        let merge = SyncRowMerge.make(applying: makeApplication(library: merged), start: start, current: start, added: [])
-        XCTAssertEqual(merge.booksMoved(from: start), [mover.id])
+        merged.books[0].folderPath = "New"
+        merged.books[0].localWPM = 111
+        var current = start
+        current.books[0].localWPM = 222
+        let application = makeApplication(
+            library: merged, keys: [.book(book.id, .folder), .book(book.id, .rate)]
+        )
+        let merge = SyncRowMerge.make(applying: application, start: start, current: current, added: [])
+        XCTAssertEqual(merge.library.books[0].folderPath, "New")
+        XCTAssertEqual(merge.library.books[0].localWPM, 222)
+        XCTAssertEqual(merge.staleBookIDs, [book.id])
+    }
+
+    /// Fields are independent: a field the person changed meanwhile stands,
+    /// and another the merge changed still lands (review item 2).
+    func testAFieldChangedMeanwhileDoesNotHoldBackTheOthers() {
+        let book = makeBook("Two Fields")
+        let start = Library(books: [book])
+        var merged = start
+        merged.books[0].localWPM = 111
+        merged.books[0].localPitch = 1.5
+        var current = start
+        current.books[0].localWPM = 222
+        let merge = SyncRowMerge.make(applying: makeApplication(library: merged), start: start, current: current, added: [])
+        XCTAssertEqual(merge.library.books[0].localWPM, 222)
+        XCTAssertEqual(merge.library.books[0].localPitch, 1.5)
+        XCTAssertEqual(merge.changedBookIDs, [book.id])
+    }
+
+    /// A bookmark the person added meanwhile stays, beside the merge's.
+    func testABookmarkAddedMeanwhileStaysBesideTheMerges() {
+        let book = makeBook("Marks")
+        let start = Library(books: [book])
+        var merged = start
+        merged.books[0].bookmarks = [Bookmark(number: 1, chapterIndex: 0, characterOffset: 10, label: "theirs")]
+        var current = start
+        current.books[0].bookmarks = [Bookmark(number: 1, chapterIndex: 0, characterOffset: 20, label: "mine")]
+        let merge = SyncRowMerge.make(applying: makeApplication(library: merged), start: start, current: current, added: [])
+        XCTAssertEqual(Set(merge.library.books[0].bookmarks.map(\.label)), ["theirs", "mine"])
+    }
+
+    /// A merge made from an older library does not undo what was changed
+    /// since: the row keeps the change, and its key is not reported applied.
+    func testApplyAgainstAnOlderSourceKeepsTheChangeSince() async throws {
+        let model = LibraryViewModel(initializeServices: false)
+        let book = try makePlaceholder("Edited Since")
+        let source = Library(books: [book])
+        model.library = source
+        model.updateBook(id: book.id) { $0.localWPM = 222 }
+        var merged = source
+        merged.books[0].localWPM = 111
+        let key = SyncKey.book(book.id, .rate)
+        let applied = await model.applySync(makeApplication(library: merged, keys: [key]), from: source)
+        XCTAssertEqual(model.bookByID(book.id)?.localWPM, 222)
+        XCTAssertFalse(applied.contains(key))
     }
 
     /// Each kind of key names the book it changes, and a folder's or the
@@ -183,6 +250,7 @@ final class SyncLibraryHostTests: XCTestCase {
         let applied = await model.applySync(makeApplication(library: Library(), add: [newBook], keys: [key]))
         XCTAssertEqual(applied, [key])
         let added = try XCTUnwrap(model.bookByID(newBook.book.id))
+        made.append(added.tmbDirectory)
         XCTAssertEqual(added.md5Hash, newBook.content.md5Hash)
         let package = SyncPlaceholder.packageDirectory(of: added, in: TextMouthPaths.libraryDir)
         XCTAssertTrue(SyncPlaceholder.isPlaceholder(package: package, contentFile: added.bookFileURL))
@@ -193,7 +261,7 @@ final class SyncLibraryHostTests: XCTestCase {
     /// content path, and a book that is gone change nothing.
     func testAFetchSetsTheRowsFilePathToTheContentPath() throws {
         let model = LibraryViewModel(initializeServices: false)
-        let book = try SyncPlaceholder.makePackage(for: makeNewBook("Fetched"), storeID: UUID())
+        let book = try makePlaceholder("Fetched")
         model.library = Library(books: [book])
         model.syncDidFetch(bookID: book.id, contentPath: "Original Name.txt")
         let row = try XCTUnwrap(model.bookByID(book.id))
@@ -203,14 +271,29 @@ final class SyncLibraryHostTests: XCTestCase {
         XCTAssertEqual(model.bookByID(book.id)?.filePath, row.filePath)
     }
 
+    /// A book busy in the synchronous sense (a reader open now, its audio
+    /// being edited) is not removed, though the published set lags (review item 8).
+    func testABusyBookIsNotRemoved() async throws {
+        keepDeletionsOutOfTheTrash()
+        let model = LibraryViewModel(initializeServices: false)
+        let editing = try makePlaceholder("Editing")
+        model.library = Library(books: [editing])
+        model.audioEditActivity.setOpenInReaders([editing.id])
+        let key = SyncKey.book(editing.id, .presence)
+        let applied = await model.applySync(makeApplication(library: Library(), remove: [editing.id], keys: [key]))
+        XCTAssertNotNil(model.bookByID(editing.id))
+        XCTAssertFalse(applied.contains(key))
+    }
+
     /// A merge that puts a book in a new folder moves its package there,
     /// through the library transition, and the keys are applied.
     func testApplyMovesAPackageIntoANewFolder() async throws {
         let model = LibraryViewModel(initializeServices: false)
-        let book = try SyncPlaceholder.makePackage(for: makeNewBook("Mover"), storeID: UUID())
+        let book = try makePlaceholder("Mover")
         model.library = Library(books: [book])
         var merged = model.library
         let folder = BookFolder(name: "Synced Shelf \(UUID().uuidString.prefix(6))")
+        made.append(TextMouthPaths.libraryDir.appendingPathComponent(folder.fullPath, isDirectory: true))
         merged.folders = [folder]
         merged.books[0].folderPath = folder.fullPath
         let key = SyncKey.book(book.id, .folder)
@@ -225,9 +308,10 @@ final class SyncLibraryHostTests: XCTestCase {
     /// A book a person removed elsewhere is removed here, package and row;
     /// one open in a reader waits for the next sync and its key is not applied.
     func testApplyRemovesABookButNotAnOpenOne() async throws {
+        keepDeletionsOutOfTheTrash()
         let model = LibraryViewModel(initializeServices: false)
-        let gone = try SyncPlaceholder.makePackage(for: makeNewBook("Gone"), storeID: UUID())
-        let open = try SyncPlaceholder.makePackage(for: makeNewBook("Open"), storeID: UUID())
+        let gone = try makePlaceholder("Gone")
+        let open = try makePlaceholder("Open")
         model.library = Library(books: [gone, open])
         model.openBookIDs = [open.id]
         let keys: Set<SyncKey> = [.book(gone.id, .presence), .book(open.id, .presence)]
@@ -244,7 +328,7 @@ final class SyncLibraryHostTests: XCTestCase {
     /// when the record held a later place.
     func testAMergedRecordKeepsTheMergedPlace() async throws {
         let model = LibraryViewModel(initializeServices: false)
-        var book = try SyncPlaceholder.makePackage(for: makeNewBook("Place"), storeID: UUID())
+        var book = try makePlaceholder("Place")
         var later = ReadingPosition(chapterIndex: 0, characterOffset: 900)
         later.lastUpdated = Date(timeIntervalSince1970: 1_790_000_900)
         book.readingPosition = later

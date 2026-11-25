@@ -146,6 +146,17 @@ extension ReaderViewModel {
         let placeBefore = book.readingPosition
         takeNewerRecordedState(synced.state)
         guard book.readingPosition != placeBefore else { return }
+        // The place is within the text this reader shows, as a move of the
+        // cursor keeps it.
+        if let chapters = content?.chapters, !chapters.isEmpty {
+            currentChapterIndex = min(max(currentChapterIndex, 0), chapters.count - 1)
+            currentCharacterOffset = min(max(currentCharacterOffset, 0), chapters[currentChapterIndex].text.count)
+        }
+        // The place was saved elsewhere, at its own date: closing the book or
+        // quitting finds the cursor where it was saved and keeps that date,
+        // so it never outranks later reading on the other device (as opening
+        // a book notes its place, `noteOpenedPlace()`).
+        noteOpenedPlace()
         VoiceOverAnnouncer.announce(SyncWording.announceMovedToPlace(from: synced.device))
     }
 

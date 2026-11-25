@@ -7,6 +7,19 @@ import XCTest
 /// nothing. The readers are made from memory, so nothing plays or is read.
 @MainActor
 final class SyncReaderPlaceTests: XCTestCase {
+    /// The hosted test root's library index, put back after each test: a
+    /// reader's save writes it.
+    private var sandbox: LibraryIndexSandbox!
+
+    override func setUpWithError() throws {
+        sandbox = try LibraryIndexSandbox.capture()
+    }
+
+    override func tearDownWithError() throws {
+        // Optional: tear-down also runs when capturing failed in set-up.
+        sandbox?.restore()
+    }
+
     /// A reader at rest, at the start of a book of two chapters, with its
     /// library; the book's row is in the library.
     private func makeReader() -> (reader: ReaderViewModel, library: LibraryViewModel, book: Book) {
@@ -51,6 +64,18 @@ final class SyncReaderPlaceTests: XCTestCase {
         XCTAssertEqual(reader.currentChapterIndex, 1)
         XCTAssertEqual(reader.currentCharacterOffset, 200)
         XCTAssertEqual(recorder.announcements.map(\.message), [SyncWording.announceMovedToPlace(from: "iPhone")])
+    }
+
+    /// Closing the reader after a sync moved it keeps the merged place's own
+    /// date, so it never outranks later reading on the other device.
+    func testClosingAfterASyncKeepsTheMergedPlacesDate() {
+        let (reader, library, book) = makeReader()
+        let merged = state(of: book, offset: 200, savedAfter: 60)
+        library.syncedReadingStates.send(SyncedReadingState(bookID: book.id, state: merged, device: "iPhone"))
+        reader.savePositionIfMoved()
+        let saved = library.bookByID(book.id)?.readingPosition
+        XCTAssertEqual(saved?.characterOffset, 200)
+        XCTAssertEqual(saved?.lastUpdated, merged.readingPosition?.lastUpdated)
     }
 
     /// A playing reader plays on: its place and its words stay as they were.

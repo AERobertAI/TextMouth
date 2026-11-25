@@ -1619,9 +1619,14 @@ final class ReaderViewModel: ObservableObject {
         let package = BookPackage(bookCopy)
         // Only the opening load weighs the book's record (risk 2).
         let opening = !hasOpened
+        // While sync is on, a book another device has may not be fetched yet
+        // (FR43): its files are missing, which takes the download path
+        // whatever the library's location, as a cloud book's do. Only then
+        // is a pointer looked for, so a library without sync reads nothing.
+        let syncIsOn = cloudServices.states.syncIsOn
         loadQueue.async { [weak self] in
             let location = storage.libraryLocation()
-            if location.isCloud {
+            if location.isCloud || (syncIsOn && package.isPackage && StoreFetch.isMissingFiles(package.url)) {
                 let state = storage.state(of: package)
                 DispatchQueue.main.async { [weak self] in
                     self?.continueOpening(in: location, found: state, at: bookCopy.filePath)
@@ -2447,7 +2452,7 @@ final class ReaderViewModel: ObservableObject {
     /// writes it, with the words and the offset in the whole book it can
     /// now take, under that date, and so do a close and a quit that find
     /// the cursor where it was.
-    private func noteOpenedPlace() {
+    func noteOpenedPlace() {
         lastSavedPlace = TextPlace(chapter: currentChapterIndex, offset: currentCharacterOffset)
         lastSavedPlaceDate = book.readingPosition?.lastUpdated
         hasPlayedSinceSave = false

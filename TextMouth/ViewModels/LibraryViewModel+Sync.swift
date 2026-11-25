@@ -23,27 +23,31 @@ struct SyncedReadingState {
 
 // MARK: - The Merge of Rows
 
-/// What a merge does to the library's rows, worked out from the library as it
-/// was when the merge was made (`start`) and as it is now (`current`), which
-/// can differ: a reader saves its place, a person edits a book, while the
-/// placeholders of new books are written off the main thread. A row, the
-/// folders, or the reading list changed meanwhile is left as the person made
-/// it and its keys are not reported applied, so the next sync merges it again.
+/// What a merge does to the library's rows, worked out field by field from the
+/// library as it was when the merge was made (`start`), the merge's own
+/// (`application.library`), and the library now (`current`), which can differ:
+/// a reader saves its place, a person edits a book, a rename lands, while the
+/// placeholders of new books are written off the main thread.
+///
+/// A field the merge changed is set in the row only when the row's is still
+/// what it was at `start`, or is already the merge's; a field the person
+/// changed meanwhile keeps their value. A row with any such field is `stale`:
+/// its keys are not reported applied, and the next sync offers them again.
+/// Fields are independent, so a row left alone in one field still follows a
+/// folder's rename or a place saved elsewhere.
 struct SyncRowMerge: Equatable {
-    /// The library with the merge's rows, folders, list, and new books in.
+    /// The library with the merge's fields, folders, list, and new books in.
     var library: Library
-    /// The books whose rows the merge replaced.
+    /// The books whose rows the merge changed.
     var changedBookIDs: Set<UUID> = []
-    /// The books whose rows changed meanwhile, so the merge left them alone.
+    /// The books with a field changed meanwhile, which the merge left alone.
     var staleBookIDs: Set<UUID> = []
     /// The new books that joined the library.
     var addedBookIDs: Set<UUID> = []
     /// The new books the library refused, for a hash a book of this device has.
     var refusedBookIDs: Set<UUID> = []
-    /// Whether the merge's folders replaced the library's.
+    /// Whether the merge's folders are in the library.
     var foldersApplied = false
-    /// Whether the merge's reading list replaced the library's.
-    var readingListApplied = false
     /// Whether the folders or the reading list changed meanwhile, leaving them alone.
     var foldersAreStale = false
     var readingListIsStale = false
@@ -51,7 +55,7 @@ struct SyncRowMerge: Equatable {
     /// Works the merge out, purely: no file is touched.
     /// - Parameters:
     ///   - application: The merge, made from `start`.
-    ///   - start: The library when the merge was made.
+    ///   - start: The library the merge was made from.
     ///   - current: The library now.
     ///   - added: The new books, with their placeholders made.
     static func make(
@@ -64,18 +68,22 @@ struct SyncRowMerge: Equatable {
             currentIndexes[book.id] = index
         }
         for merged in application.library.books {
-            guard let startRow = startRows[merged.id], merged != startRow else { continue }
-            guard let index = currentIndexes[merged.id] else { continue }
-            if current.books[index] == startRow {
-                result.library.books[index] = merged
+            guard let startRow = startRows[merged.id], let index = currentIndexes[merged.id], merged != startRow else { continue }
+            var row = current.books[index]
+            let outcome = mergeFields(from: startRow, merged: merged, into: &row)
+            if outcome.changed {
+                result.library.books[index] = row
                 result.changedBookIDs.insert(merged.id)
-            } else {
-                result.staleBookIDs.insert(merged.id)
             }
+            if outcome.stale { result.staleBookIDs.insert(merged.id) }
         }
+        // The folders and the list: the merge's when the library's are as they
+        // were, or already the merge's; a person's change meanwhile stands.
         if application.library.folders != start.folders {
             if current.folders == start.folders {
                 result.library.folders = application.library.folders
+                result.foldersApplied = true
+            } else if current.folders == application.library.folders {
                 result.foldersApplied = true
             } else {
                 result.foldersAreStale = true
@@ -84,8 +92,7 @@ struct SyncRowMerge: Equatable {
         if application.library.readingList != start.readingList {
             if current.readingList == start.readingList {
                 result.library.readingList = application.library.readingList
-                result.readingListApplied = true
-            } else {
+            } else if current.readingList != application.library.readingList {
                 result.readingListIsStale = true
             }
         }
@@ -101,17 +108,66 @@ struct SyncRowMerge: Equatable {
         return result
     }
 
-    /// The books whose package moves: a row now in another library folder
-    /// than the library's was.
-    func booksMoved(from current: Library) -> Set<UUID> {
-        let before = Dictionary(current.books.map { ($0.id, $0.folderPath) }, uniquingKeysWith: { first, _ in first })
-        return Set(library.books.filter { book in before[book.id].map { $0 != book.folderPath } ?? false }.map(\.id))
+    /// Sets into `row` each field `merged` changed from `start`, when `row`'s
+    /// is still `start`'s (or already the merge's). Returns whether any field
+    /// was set, and whether any was left alone because it changed meanwhile.
+    private static func mergeFields(from start: Book, merged: Book, into row: inout Book) -> (changed: Bool, stale: Bool) {
+        var changed = false, stale = false
+        for field in SyncBookValues.rowFields {
+            guard let before = SyncBookValues.value(of: field, in: start),
+                  let after = SyncBookValues.value(of: field, in: merged), after != before else { continue }
+            let now = SyncBookValues.value(of: field, in: row)
+            if now == after { continue }
+            if now == before, SyncBookValues.set(field, to: after, in: &row) {
+                changed = true
+                if let detail = SyncBookValues.metadataField(of: field), merged.handEdits?.contains(detail) == true {
+                    row.markEditedByHand([detail])
+                }
+            } else {
+                stale = true
+            }
+        }
+        // The folder, so a rename that moved the merged row still moves this one.
+        if merged.folderPath != start.folderPath, row.folderPath != merged.folderPath {
+            if row.folderPath == start.folderPath {
+                row.folderPath = merged.folderPath
+                changed = true
+            } else {
+                stale = true
+            }
+        }
+        // The bookmarks, one by one: the merge's additions, removals, and
+        // changes, each only where this row's bookmark is as it was.
+        if merged.bookmarks != start.bookmarks {
+            var bookmarks = row.bookmarks
+            let startByID = Dictionary(start.bookmarks.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+            let mergedByID = Dictionary(merged.bookmarks.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+            for (id, mark) in mergedByID where startByID[id] != mark {
+                if let place = bookmarks.firstIndex(where: { $0.id == id }) {
+                    if bookmarks[place] == startByID[id] { bookmarks[place] = mark } else if bookmarks[place] != mark { stale = true }
+                } else if startByID[id] == nil {
+                    bookmarks.append(mark)
+                }
+            }
+            for (id, mark) in startByID where mergedByID[id] == nil {
+                if let place = bookmarks.firstIndex(where: { $0.id == id }) {
+                    if bookmarks[place] == mark { bookmarks.remove(at: place) } else { stale = true }
+                }
+            }
+            if bookmarks != row.bookmarks {
+                bookmarks.sort { ($0.dateCreated, $0.id.uuidString) < ($1.dateCreated, $1.id.uuidString) }
+                for number in bookmarks.indices { bookmarks[number].number = number + 1 }
+                row.bookmarks = bookmarks
+                changed = true
+            }
+        }
+        return (changed, stale)
     }
 
     /// The keys of `application` still worth reporting applied: those of
-    /// rows and lists left alone meanwhile, and of books the library refused,
-    /// are taken out; `failed` are the books whose placeholders or removals
-    /// did not work.
+    /// rows left alone, of folders or the list changed meanwhile, and of
+    /// books the library refused are taken out; `failed` are the books whose
+    /// placeholders or removals did not happen.
     func appliedKeys(of application: SyncApplication, failed: Set<UUID>) -> Set<SyncKey> {
         let skipped = staleBookIDs.union(refusedBookIDs).union(failed)
         return application.appliedKeys.filter { key in
@@ -138,19 +194,38 @@ extension LibraryViewModel: SyncLibraryHost {
             && dataDirectoryMove == nil
     }
 
-    /// Applies a merge to the library, on the main actor (plan, section 6):
+    /// Applies a merge made from the library as it is now.
+    func applySync(_ application: SyncApplication) async -> Set<SyncKey> {
+        await applySync(application, from: library)
+    }
+
+    /// Whether the book `id` is busy now, so a removal waits: open in a
+    /// reader (the synchronous truth, not the published set that follows a
+    /// turn later), its audio being edited, being edited with Edit Text, in
+    /// use by a feed rule, being exported or transcribed, or being fetched.
+    func isBookBusyForSync(_ id: UUID) -> Bool {
+        if isBookOpenNow(id) || audioEditActivity.isInUse(id) || feedBooksInUse.contains(id) { return true }
+        if case .downloading? = BookCloudStates.shared.state(of: id) { return true }
+        return false
+    }
+
+    /// Applies a merge to the library, on the main actor (plan, section 6),
+    /// against `source`, the library the merge was made from:
     /// 1. makes a placeholder package for each new book, off the main thread;
-    /// 2. replaces the rows, folders, and reading list the merge changed, but
-    ///    only those not changed meanwhile (`SyncRowMerge`);
-    /// 3. moves packages through `performLibraryTransition` when folders or
-    ///    rows moved, or publishes the rows in place, and saves;
+    /// 2. changes the folders and moves packages first, through
+    ///    `performLibraryTransition`, which keeps what the library changes
+    ///    meanwhile but rebuilds the rest from the library as it then is;
+    /// 3. then sets each field the merge changed, field by field, onto the
+    ///    library the move published, only where the person has not changed
+    ///    it since `source` (`SyncRowMerge`), and adds the new books;
     /// 4. writes the merged records, which keep the merged place;
     /// 5. removes the books a person removed elsewhere, by the delete path
-    ///    with this device's Trash setting, unasked (R7: only these).
-    /// - Returns: The keys applied: those not left alone, refused, or failed.
-    func applySync(_ application: SyncApplication) async -> Set<SyncKey> {
+    ///    with this device's Trash setting, unasked (R7: only these), but not
+    ///    a book that is busy or has changed since `source`.
+    /// - Returns: Only the keys that landed.
+    func applySync(_ application: SyncApplication, from source: Library) async -> Set<SyncKey> {
         guard maySyncNow else { return [] }
-        let start = library
+        let start = source
 
         // 1. The placeholders of new books, off the main thread. A book a
         // device lacks and cannot be made a package for stays out, its keys
@@ -158,7 +233,7 @@ extension LibraryViewModel: SyncLibraryHost {
         let storeID = SyncCenter.shared.storeID ?? Self.placeholderStoreID
         var failed: Set<UUID> = []
         var added: [Book] = []
-        let known = Set(start.books.map(\.id))
+        let known = Set(library.books.map(\.id))
         for newBook in application.booksToAdd where !known.contains(newBook.book.id) {
             do {
                 added.append(try await OffMainWork.runThrowing {
@@ -171,25 +246,13 @@ extension LibraryViewModel: SyncLibraryHost {
         }
         guard maySyncNow else { return [] }
 
-        // 2. The rows, as the library is now.
-        let merge = SyncRowMerge.make(applying: application, start: start, current: library, added: added)
-        let moved = merge.booksMoved(from: library)
+        // 2. The folders and the moves, as the library is now.
+        guard await applyFolderChanges(of: application, start: start) else { return [] }
+        guard maySyncNow else { return [] }
 
-        // 3. Moves go through the transition, which keeps changes made
-        // meanwhile; everything else is published in place.
-        // A change of folders goes through it as well, which makes the
-        // directories of new folders, though no package moves.
-        if application.movesPackages || !moved.isEmpty || merge.foldersApplied {
-            do {
-                try await performLibraryTransition(merge.library, affectedBookIDs: moved)
-            } catch {
-                // Nothing moved: the rows stay as they were, to be merged again.
-                DiagnosticLog.event(.storage, "SYNC_MERGE: the merge's moves were refused (\(type(of: error)))") // l10n: no (debug log, English)
-                return []
-            }
-        } else {
-            library = merge.library
-        }
+        // 3. The fields, onto the library as the move left it.
+        let merge = SyncRowMerge.make(applying: application, start: start, current: library, added: added)
+        if merge.library != library { library = merge.library }
         save()
 
         // 4. The records of the rows the merge changed or added carry the
@@ -203,16 +266,17 @@ extension LibraryViewModel: SyncLibraryHost {
         // The readers of the books whose place changed hear of it, after the
         // records are queued, so a reader at rest moves to it.
         let startRows = Dictionary(start.books.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-        for id in merge.changedBookIDs where openBookIDs.contains(id) {
+        for id in merge.changedBookIDs where isBookOpenNow(id) {
             guard let row = bookByID(id), let before = startRows[id],
                   row.readingState != before.readingState else { continue }
             syncedReadingStates.send(SyncedReadingState(bookID: id, state: row.readingState, device: Self.otherDeviceName()))
         }
 
-        // 5. Removals: a book open in a reader waits for the next sync.
+        // 5. Removals: a busy book, or one changed since the merge was made,
+        // waits for a later sync.
         for id in application.booksToRemove {
             guard let book = bookByID(id) else { continue }
-            guard !openBookIDs.contains(id) else { failed.insert(id); continue }
+            guard !isBookBusyForSync(id), startRows[id].map({ $0 == book }) ?? true else { failed.insert(id); continue }
             do {
                 try FileImportService.deleteBookPackage(book)
                 removeDeletedBook(book)
@@ -224,6 +288,34 @@ extension LibraryViewModel: SyncLibraryHost {
         if !application.booksToRemove.isEmpty { save() }
 
         return merge.appliedKeys(of: application, failed: failed)
+    }
+
+    /// Changes the folders and moves the packages the merge says, through
+    /// the library transition: the merge's folders when the library's are
+    /// still `start`'s, and each book whose row is still where `start` had it
+    /// moved to where the merge puts it. Returns false, changing nothing,
+    /// when the transition refuses, so the whole merge waits.
+    private func applyFolderChanges(of application: SyncApplication, start: Library) async -> Bool {
+        var proposed = library
+        if library.folders == start.folders { proposed.folders = application.library.folders }
+        let startRows = Dictionary(start.books.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        var moved: Set<UUID> = []
+        for merged in application.library.books {
+            guard let before = startRows[merged.id], merged.folderPath != before.folderPath,
+                  let index = proposed.books.firstIndex(where: { $0.id == merged.id }),
+                  proposed.books[index].folderPath == before.folderPath else { continue }
+            proposed.books[index].folderPath = merged.folderPath
+            moved.insert(merged.id)
+        }
+        guard proposed != library else { return true }
+        do {
+            try await performLibraryTransition(proposed, affectedBookIDs: moved)
+            return true
+        } catch {
+            // Nothing moved: the rows stay as they were, to be merged again.
+            DiagnosticLog.event(.storage, "SYNC_MERGE: the merge's moves were refused (\(type(of: error)))") // l10n: no (debug log, English)
+            return false
+        }
     }
 
     /// Tells the cloud notes whether sync is on, now and whenever the sync's
