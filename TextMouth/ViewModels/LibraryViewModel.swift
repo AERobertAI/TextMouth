@@ -137,6 +137,10 @@ final class LibraryViewModel: ObservableObject {
         didSet {
             listCache.libraryDidChange(from: oldValue, to: library)
             bookUpdates.libraryDidChange(library)
+            // The sync's recorder compares the library with what it last
+            // recorded, a moment after the last change; inert until a sync
+            // folder is set up (FR43).
+            SyncCenter.shared.libraryDidChange()
         }
     }
     /// The lists Library windows show, each derived once and kept until a
@@ -545,6 +549,10 @@ final class LibraryViewModel: ObservableObject {
         // In a cloud library, a conflict copy a sync service set aside of
         // the index or a record is reported, once (Phase 0, compare0).
         reportConflictCopiesInBackground()
+        // With a sync folder set up, the library syncs now (FR43); with none,
+        // both calls do nothing.
+        SyncCenter.shared.install(host: self, dataDirectory: TextMouthPaths.root)
+        SyncCenter.shared.moment(.launch)
     }
 
     /// What follows the startup maintenance, once every pass that rebuilds
