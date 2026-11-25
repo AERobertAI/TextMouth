@@ -396,6 +396,24 @@ final class PhoneExportModelTests: XCTestCase {
         XCTAssertNotEqual(brf.hint, choice.hint)
     }
 
+    /// The folder's name has one fallback, for the sheet's row and for the end of an export: the name read under the
+    /// folder's scope when there is one, else the name its path gives.
+    func testTheFolderHasOneNameForTheRowAndTheEnd() async throws {
+        let world = try makeIntegrationWorld("Phone Export Shown Name")
+        let book = try world.importBook(from: writeSource(named: "Harbour Pilots.md"))
+        let folder = try makeSandboxDirectory("Phone Export Shown Folder")
+        let model = BookExportModel(books: [book], destination: folder, offering: PhoneExportOffer.kinds)
+        await model.load()
+
+        XCTAssertEqual(model.shownFolderName, BookExportWording.folderName(of: folder), "No name was read: the path's name")
+        model.chooseDestination(folder, named: "Reading Folder")
+        XCTAssertEqual(model.shownFolderName, "Reading Folder")
+
+        // The end of the export says the same name the row does.
+        await model.export()
+        XCTAssertTrue(model.finishedWords?.contains("Reading Folder") == true, "\\(String(describing: model.finishedWords))")
+    }
+
     /// What an export held and let go, in order.
     private final class HoldRecord {
         private(set) var events: [String] = []

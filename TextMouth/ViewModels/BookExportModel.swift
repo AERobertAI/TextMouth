@@ -165,6 +165,11 @@ final class BookExportModel: ObservableObject, Identifiable {
     /// The chosen folder's name as the person is told it, when the caller read it under the folder's scope (the
     /// iPhone's `PhoneExportFolder`); nil on the Mac, whose export names the folder as Finder shows it.
     @Published private(set) var destinationName: String?
+    /// The folder's name as the sheet's row and the end of an export say it: the name read under its scope when there is one,
+    /// else the name its path gives (`BookExportWording.folderName(of:)`). The one fallback for both.
+    var shownFolderName: String {
+        destinationName ?? BookExportWording.folderName(of: destination)
+    }
     /// How the last export's summary is worded, kept so that `summary` is made in the interface language in use when the
     /// dialog shows it, and follows a switch of language (FR39).
     @Published private var summaryWording: (() -> String)?
@@ -869,8 +874,8 @@ final class BookExportModel: ObservableObject, Identifiable {
             speechFormat = nil
         }
         let folder = destination
-        // The name read under the folder's scope, before the run's hold lets go of it.
-        let knownFolderName = destinationName
+        // The name as the row shows it, taken before the run's hold lets go of the folder's scope.
+        let knownFolderName = shownFolderName
         guard !Self.isInsideDataDirectory(folder) else {
             self.cancellation = nil
             phase = earlier.phase
@@ -964,7 +969,7 @@ final class BookExportModel: ObservableObject, Identifiable {
         let format = speechFormat
         let folderName = knownFolderName
         let words: () -> String = {
-            Self.finishedWords(outcome, folderName: folderName ?? BookExportWording.folderName(of: folder), latest: latest, speechFormat: format)
+            Self.finishedWords(outcome, folderName: folderName, latest: latest, speechFormat: format)
         }
         summaryWording = Self.didEverything(outcome) ? nil : words
         finishedWording = words

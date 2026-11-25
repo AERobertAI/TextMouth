@@ -314,7 +314,7 @@ struct PhoneExportSheet: View {
     /// "Export to:" and its name; it opens the system's folder picker.
     private var folderSection: some View {
         let row = PhoneExportOffer.folderRow(
-            folderName: model.isDestinationChosen ? (model.destinationName ?? model.destination.lastPathComponent) : nil
+            folderName: model.isDestinationChosen ? model.shownFolderName : nil
         )
         return Section {
             Button {
