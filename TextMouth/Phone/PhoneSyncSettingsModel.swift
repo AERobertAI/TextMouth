@@ -213,15 +213,15 @@ final class PhoneSyncSettingsController: ObservableObject {
         /// Joins the sync folder (`SyncCenter.join(_:)`).
         var join: (URL) async throws -> Void
         /// Syncs now (`SyncCenter.syncNow()`).
-        var syncNow: () -> Void
+        var syncNow: @MainActor () -> Void
         /// Stops syncing (`SyncCenter.stop()`).
-        var stop: () -> Void
+        var stop: @MainActor () -> Void
         /// Whether a folder is in iCloud Drive.
         var isInICloudDrive: (URL) -> Bool
         /// Opens the security scope of a URL from the picker and returns what closes it.
         var openScope: (URL) -> () -> Void
         /// Speaks a line to VoiceOver.
-        var announce: (String) -> Void
+        var announce: @MainActor (String) -> Void
 
         /// The app's own: `SyncCenter`, the path check, and VoiceOver.
         static var app: Services {
