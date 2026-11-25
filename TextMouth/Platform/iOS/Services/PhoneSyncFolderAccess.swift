@@ -49,14 +49,6 @@ struct PhoneSyncFolderAccess: SyncFolderAccess {
         return try body()
     }
 
-    /// Whether the folder at `folder` is in iCloud Drive: by its path, or by a
-    /// sync service managing it. A folder elsewhere on the phone is refused
-    /// (`SyncWording.notInICloudDrive`).
-    static func isInICloudDrive(_ folder: URL) -> Bool {
-        if UbiquitousItemStatusProvider.provider(forPath: folder) == .iCloudDrive { return true }
-        return (try? folder.resourceValues(forKeys: [.isUbiquitousItemKey]).isUbiquitousItem) == true
-    }
-
     /// The folder the bookmark names, and whether the system found it stale.
     /// A bookmark that no longer finds a folder is `.folderMissing`.
     static func resolve(_ bookmark: Data) throws -> (url: URL, isStale: Bool) {
