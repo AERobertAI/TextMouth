@@ -105,7 +105,8 @@ final class ExportUITests: TextMouthUITestCase {
         assertOrder(["Export to: \(folder.lastPathComponent)"], in: elements)
         XCTAssertTrue(app.buttons["Export"].isEnabled, "Export is dimmed with a folder chosen")
 
-        kindSwitch("Text as Markdown", in: app).tap()
+        // The row is one element whose middle is its words; the switch itself is at its trailing edge.
+        kindSwitch("Text as Markdown", in: app).coordinate(withNormalizedOffset: CGVector(dx: 0.88, dy: 0.5)).tap()
         let row = app.buttons["Convert to"]
         XCTAssertTrue(row.appears(within: Self.patience), "No Convert to row:\n\(app.debugDescription)")
         XCTAssertEqual(row.value as? String, "Markdown")

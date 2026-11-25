@@ -90,7 +90,7 @@ final class PhoneLibraryRowsTests: XCTestCase {
 
         let row = try XCTUnwrap(rows.sections.flatMap(\.rows).first)
         XCTAssertFalse(row.label.contains(ReadingListWording.inReadingListNote), row.label)
-        XCTAssertEqual(row.commands.map(\.action), [.bookInfo, .removeFromReadingList, .moveToFolder, .remove])
+        XCTAssertEqual(row.commands.map(\.action), [.bookInfo, .removeFromReadingList, .moveToFolder, .export, .remove])
     }
 
     // MARK: - What Republishes
@@ -350,8 +350,8 @@ final class PhoneLibraryRowsTests: XCTestCase {
 
         let listed = rows.sections.flatMap(\.rows)
         XCTAssertEqual(listed.map(\.title), ["Kiln Atlas", "Granary"])
-        XCTAssertEqual(listed.first?.commands.map(\.action), [.bookInfo, .addToReadingList, .moveToFolder, .moveDown, .remove])
-        XCTAssertEqual(listed.last?.commands.map(\.action), [.bookInfo, .addToReadingList, .moveToFolder, .moveUp, .remove])
+        XCTAssertEqual(listed.first?.commands.map(\.action), [.bookInfo, .addToReadingList, .moveToFolder, .export, .moveDown, .remove])
+        XCTAssertEqual(listed.last?.commands.map(\.action), [.bookInfo, .addToReadingList, .moveToFolder, .export, .moveUp, .remove])
     }
 
     /// Once a row leaves, focus goes to the row after it, or the one before

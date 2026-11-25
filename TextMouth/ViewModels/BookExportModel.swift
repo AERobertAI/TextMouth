@@ -250,10 +250,15 @@ final class BookExportModel: ObservableObject, Identifiable {
     /// the person; nil where nobody can be asked, when such a chapter fails
     /// its book's file as it did before the question.
     private let deepChapterPrompt: DeepChapterPrompt?
+    #if os(macOS)
+    // The Mac's alert is its own (`ExportDeepChapterAlert`), so it has no prompt here.
+    #else
     /// On the iPhone, the question about a chapter nested too deeply that the
     /// export waits on, which the sheet shows as an alert while it is
-    /// pending; nil on the Mac, whose alert is its own (`ExportDeepChapterAlert`).
-    let questionPrompt: PhoneExportQuestionPrompt?
+    /// pending; nil for any way of asking but the standard one. Named only in
+    /// the iPhone's branch, since the Mac never reaches the iPhone's types.
+    private(set) var questionPrompt: PhoneExportQuestionPrompt?
+    #endif
 
     /// How the question about a chapter nested too deeply is put to the
     /// person: shown over the dialog's window, and taken down by Stop. Both
@@ -281,7 +286,7 @@ final class BookExportModel: ObservableObject, Identifiable {
     /// Who puts the question about a chapter nested too deeply.
     enum DeepChapterPrompting {
         /// The app's way: an alert over the dialog on the Mac, and on the
-        /// iPhone an alert of the sheet's own (`PhoneExportQuestionPrompt`).
+        /// iPhone an alert of the sheet's own.
         case standard
         /// Nobody can be asked: such a chapter fails its book's file.
         case unavailable
@@ -353,8 +358,6 @@ final class BookExportModel: ObservableObject, Identifiable {
         memoryGuard: BookExportMemoryGuard? = nil,
         holdWhileExporting: @escaping @MainActor (URL) -> (@MainActor () -> Void) = { _ in {} }
     ) {
-        let questions = Self.makeQuestionPrompt(for: deepChapterPrompting)
-        questionPrompt = questions
         switch deepChapterPrompting {
         case .standard:
             #if os(macOS)
@@ -367,10 +370,11 @@ final class BookExportModel: ObservableObject, Identifiable {
             #else
             // The sheet shows the question as an alert of its own, which Stop
             // takes down as a Cancel Export (`questionPrompt`).
-            let prompt = questions
+            let prompt = PhoneExportQuestionPrompt()
+            questionPrompt = prompt
             deepChapterPrompt = DeepChapterPrompt(
-                ask: { question, _ in await prompt?.ask(question) ?? .cancelExport },
-                dismiss: { prompt?.dismiss() }
+                ask: { question, _ in await prompt.ask(question) },
+                dismiss: { prompt.dismiss() }
             )
             #endif
         case .unavailable:
@@ -394,18 +398,6 @@ final class BookExportModel: ObservableObject, Identifiable {
         currentBooks = { [weak library] chosen in
             chosen.map { library?.bookByID($0.id) ?? $0 }
         }
-    }
-
-    /// The iPhone's prompt for the question about a chapter nested too deeply,
-    /// when the dialog asks the standard way; nil on the Mac, whose alert is
-    /// its own, and for any other way of asking.
-    private static func makeQuestionPrompt(for prompting: DeepChapterPrompting) -> PhoneExportQuestionPrompt? {
-        #if os(macOS)
-        return nil
-        #else
-        if case .standard = prompting { return PhoneExportQuestionPrompt() }
-        return nil
-        #endif
     }
 
     // MARK: Listing
