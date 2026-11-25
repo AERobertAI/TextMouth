@@ -311,12 +311,7 @@ struct PhoneSettingsView: View {
     /// from VoiceOver, which hears them once, as the control's hint (the Mac's
     /// rule).
     private func caption(_ words: String) -> some View {
-        Text(words)
-            .font(.caption)
-            .phoneSecondaryText()
-            // Wraps to as many lines as the words need at any text size, never cut.
-            .fixedSize(horizontal: false, vertical: true)
-            .accessibilityHidden(true)
+        readableCaption(words).accessibilityHidden(true)
     }
 
     /// Pushes the Mac's statistics, which have no title of their own, since on
