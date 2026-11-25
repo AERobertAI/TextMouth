@@ -35,6 +35,7 @@ final class MenuKeyShortcutTests: XCTestCase {
             (.importDAISYFolder, "Import Folder…", "Library", KeyBinding(key: "o", command: true, shift: true)),
             (.addFeed, "Add Feed…", "Library", KeyBinding(key: "f", command: true, shift: true)),
             (.searchLibrary, "Search Library…", "Library", KeyBinding(key: "f", command: true, option: true)),
+            (.syncNow, "Sync Now", "Library", KeyBinding(key: "s", command: true, option: true)),
             (.openBook, "Open Book…", "File", commandO),
             (.newFromText, "New from Text…", "File", shiftCommandT),
             (.newRecording, "New Recording…", "File", KeyBinding(key: "n", command: true, option: true)),
@@ -57,7 +58,7 @@ final class MenuKeyShortcutTests: XCTestCase {
         XCTAssertEqual(ShortcutAction.allCases.filter { $0.category == "Playback" }.suffix(2), [.copyReadingPosition, .searchInBook])
         // Search Library… is Edit's, but the Shortcuts tab lists it whole with
         // the Library group, last of it (`testEveryActionIsListedWithItsGroup`).
-        XCTAssertEqual(ShortcutAction.allCases.filter { $0.category == "Library" }.suffix(3), [.importDAISYFolder, .addFeed, .searchLibrary])
+        XCTAssertEqual(ShortcutAction.allCases.filter { $0.category == "Library" }.suffix(4), [.importDAISYFolder, .addFeed, .searchLibrary, .syncNow])
     }
 
     /// The manager never posts a key equivalent's action: its notification
@@ -68,6 +69,7 @@ final class MenuKeyShortcutTests: XCTestCase {
             .copyReadingPosition: .copyReadingPosition,
             .searchInBook: .searchInBook,
             .searchLibrary: .searchLibrary,
+            .syncNow: .actsWithoutNotification,
             .importDAISYFolder: .importDAISYFolder,
             .addFeed: .addFeed,
             .openBook: .openBookFile,

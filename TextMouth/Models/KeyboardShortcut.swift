@@ -145,6 +145,11 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
     /// Shortcuts tab lists whole and in `allCases` order (#1528), though its
     /// menu is Edit's.
     case searchLibrary = "Search Library…" // l10n: no (stored id: config.json and the record of edits keep it; `title` is shown)
+    /// Library > Sync Now (FR43), a menu command whose key is its menu item's
+    /// key equivalent, Option-Command-S. The item is in the menu only while
+    /// sync is on, and syncs at once, saying "Syncing." and what came of it.
+    /// It is listed last of the Library group.
+    case syncNow = "Sync Now" // l10n: no (stored id: config.json and the record of edits keep it; `title` is shown)
 
     // The File menu's commands (FR12's branch D): a group named as their
     // menu is, each a key equivalent of its menu item.
@@ -353,6 +358,7 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
         case .addFeed: return InterfaceText.line("shortcutAction.title.addFeed", "Add Feed…")
         // Translators: Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Opens the window that searches the text of every book. Also the title of the menu command of the same name.
         case .searchLibrary: return InterfaceText.line("shortcutAction.title.searchLibrary", "Search Library…")
+        case .syncNow: return SyncWording.syncNowTitle
         // Translators: Name of a keyboard shortcut action, listed in Settings in the File group and read by VoiceOver. Opens a book file to import it. Also the title of the menu command of the same name.
         case .openBook: return InterfaceText.line("shortcutAction.title.openBook", "Open Book…")
         // Translators: Name of a keyboard shortcut action, listed in Settings in the File group and read by VoiceOver. Makes a new book from text the listener types or pastes. Also the title of the menu command of the same name.
@@ -598,7 +604,7 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
         case .newFromText: return .newFromText
         // File > New Recording… opens the Record window itself, and the
         // window's buttons call its model: no notification is theirs.
-        case .newRecording, .recordingRecord, .recordingPauseOrResume, .recordingStop:
+        case .newRecording, .recordingRecord, .recordingPauseOrResume, .recordingStop, .syncNow:
             return .actsWithoutNotification
         // The audio editor's actions all post one name, carrying the action
         // in their user info, and its window performs them.
@@ -636,7 +642,7 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
         case .openSelectedBook, .showBookInfo, .removeFromLibrary, .newFolder, .moveToFolder, .moveToLibrary, .selectAll, .toggleEditMode,
              .moveBookUp, .moveBookDown, .addToReadingList, .removeFromReadingList, .folderOrFeedSettings,
              .goToView1, .goToView2, .goToView3, .goToView4, .goToView5, .goToView6, .goToView7, .goToView8, .goToView9,
-             .importDAISYFolder, .addFeed, .searchLibrary:
+             .importDAISYFolder, .addFeed, .searchLibrary, .syncNow:
             return "Library" // l10n: no (group id: `title(ofCategory:)` is shown)
         case .openBook, .newFromText, .newRecording:
             return Self.fileCategory
@@ -924,7 +930,7 @@ extension ShortcutAction {
     /// it; the shortcut manager never takes it. A command added later joins
     /// them here.
     static let keyEquivalentActions: Set<ShortcutAction> = [
-        .copyReadingPosition, .searchInBook, .searchLibrary, .importDAISYFolder, .addFeed,
+        .copyReadingPosition, .searchInBook, .searchLibrary, .syncNow, .importDAISYFolder, .addFeed,
         .openBook, .newFromText, .newRecording,
         .recordingRecord, .recordingPauseOrResume, .recordingStop,
     ]
@@ -2187,6 +2193,8 @@ extension ShortcutAction {
             // may be no window's other action, and Command-F is Search in
             // Book's in a reader.
             .searchLibrary: [KeyBinding(key: "f", command: true, option: true)],
+            // Sync Now (FR43): Option-Command-S, which no other action has.
+            .syncNow: [KeyBinding(key: "s", command: true, option: true)],
             .goToLibrary: [
                 KeyBinding(key: "l", command: true)
             ],

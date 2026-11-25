@@ -457,6 +457,8 @@ struct LibraryCommands: Commands {
     /// The window in front, observed so those items act only where their
     /// commands work (FR12's branch E).
     @ObservedObject private var front = FrontWindowKind.shared
+    /// Whether sync is on, observed so Sync Now is in the menu only then (FR43, R1).
+    @ObservedObject private var sync = SyncCenter.shared
 
     /// The Library menu, its keys in force those of `shortcuts`.
     init(shortcuts: KeyboardShortcutManager) {
@@ -568,6 +570,15 @@ struct LibraryCommands: Commands {
                 NotificationCenter.default.post(name: .moveToFolder, object: nil)
             }
             // Cmd+Shift+M handled by KeyboardShortcutManager for window targeting
+
+            // Syncs the library with the iPhone now, and says what came of
+            // it (FR43). Not in the menu until a sync folder is set up.
+            if sync.status.isOn {
+                Button(ShortcutAction.syncNow.title) {
+                    SyncCenter.shared.syncNow()
+                }
+                .menuCommandKey(.syncNow, shortcuts: shortcuts, frontKind: front.kind)
+            }
 
             Divider()
 
