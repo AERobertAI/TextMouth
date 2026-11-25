@@ -169,6 +169,21 @@ final class SyncLibraryHostTests: XCTestCase {
         XCTAssertTrue(SyncPlaceholder.isPlaceholder(package: package, contentFile: added.bookFileURL))
     }
 
+    /// After a fetch the row's file path is the content file as the store
+    /// names it, in the book's package; a path already right, a missing
+    /// content path, and a book that is gone change nothing.
+    func testAFetchSetsTheRowsFilePathToTheContentPath() throws {
+        let model = LibraryViewModel(initializeServices: false)
+        let book = try SyncPlaceholder.makePackage(for: makeNewBook("Fetched"), storeID: UUID())
+        model.library = Library(books: [book])
+        model.syncDidFetch(bookID: book.id, contentPath: "Original Name.txt")
+        let row = try XCTUnwrap(model.bookByID(book.id))
+        XCTAssertEqual(row.filePath, book.tmbDirectory.appendingPathComponent("Original Name.txt").path)
+        model.syncDidFetch(bookID: book.id, contentPath: nil)
+        model.syncDidFetch(bookID: UUID(), contentPath: "Other.txt")
+        XCTAssertEqual(model.bookByID(book.id)?.filePath, row.filePath)
+    }
+
     /// A merge that puts a book in a new folder moves its package there,
     /// through the library transition, and the keys are applied.
     func testApplyMovesAPackageIntoANewFolder() async throws {

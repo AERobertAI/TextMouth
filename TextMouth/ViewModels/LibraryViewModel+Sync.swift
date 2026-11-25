@@ -280,6 +280,18 @@ extension LibraryViewModel: SyncLibraryHost {
         }
     }
 
+    /// Called after a placeholder's files were fetched: the content keeps the
+    /// name it had where it was backed up, so the row's file path is set to
+    /// it in the book's package when that differs, and the row is saved.
+    /// Nothing changes for a book that is gone, a manifest naming no content
+    /// file, or a path already right.
+    func syncDidFetch(bookID: UUID, contentPath: String?) {
+        guard let contentPath, let book = bookByID(bookID) else { return }
+        let path = book.tmbDirectory.appendingPathComponent(contentPath).path
+        guard book.filePath != path else { return }
+        updateBook(id: bookID) { $0.filePath = path }
+    }
+
     /// Records the books `ids`, placeholders, as In Cloud in the shared
     /// states, but never over a download under way, which owns its book's state.
     static func recordInCloud(_ ids: [UUID], in states: BookCloudStates = .shared) {

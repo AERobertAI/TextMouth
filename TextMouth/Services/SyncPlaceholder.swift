@@ -60,7 +60,7 @@ enum SyncPlaceholder {
         let pointer = StorePointer(
             formatVersion: 1, storeID: storeID, bookID: book.id, manifest: content.manifest, uploaded: nil, files: []
         )
-        try write(pointer, in: package)
+        try StoreFetch.write(pointer, in: package)
         return book
     }
 
@@ -75,24 +75,10 @@ enum SyncPlaceholder {
         return folder.appendingPathComponent(book.tmbDirectoryName, isDirectory: true)
     }
 
-    /// The pointer in `package`, or nil when there is none or it cannot be read.
-    static func pointer(in package: URL) -> StorePointer? {
-        guard let data = try? Data(contentsOf: package.appendingPathComponent(StorePointer.fileName)) else { return nil }
-        return try? JSONDecoder().decode(StorePointer.self, from: data)
-    }
-
-    /// Writes `pointer` into `package`, replacing the one there: the pointer
-    /// is this device's own file, so it is never in the cloud folder.
-    static func write(_ pointer: StorePointer, in package: URL) throws {
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.sortedKeys]
-        try encoder.encode(pointer).write(to: package.appendingPathComponent(StorePointer.fileName), options: .atomic)
-    }
-
     /// Whether the package at `package` is a placeholder: it holds a pointer
     /// and the book's file is not on this device. A package with a pointer
     /// and its file is a fetched book, which keeps the pointer.
     static func isPlaceholder(package: URL, contentFile: URL) -> Bool {
-        pointer(in: package) != nil && !FileManager.default.fileExists(atPath: contentFile.path)
+        StoreFetch.pointer(in: package) != nil && !FileManager.default.fileExists(atPath: contentFile.path)
     }
 }

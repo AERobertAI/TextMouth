@@ -52,7 +52,7 @@ final class SyncPlaceholderTests: XCTestCase {
         XCTAssertTrue(book.tmbDirectoryName.hasSuffix(".tmb"))
         XCTAssertEqual(URL(fileURLWithPath: book.filePath).deletingLastPathComponent().lastPathComponent, book.tmbDirectoryName)
 
-        let pointer = try XCTUnwrap(SyncPlaceholder.pointer(in: package))
+        let pointer = try XCTUnwrap(StoreFetch.pointer(in: package))
         XCTAssertEqual(pointer.storeID, storeID)
         XCTAssertEqual(pointer.bookID, book.id)
         XCTAssertEqual(pointer.manifest, "0123abcd.manifest.json")
@@ -83,7 +83,7 @@ final class SyncPlaceholderTests: XCTestCase {
         XCTAssertEqual(first.tmbDirectoryName, second.tmbDirectoryName)
         let package = SyncPlaceholder.packageDirectory(of: second, in: library)
         XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: package.path).count, 2)
-        XCTAssertEqual(SyncPlaceholder.pointer(in: package)?.manifest, "0123abcd.manifest.json")
+        XCTAssertEqual(StoreFetch.pointer(in: package)?.manifest, "0123abcd.manifest.json")
     }
 
     /// Orphan adoption keeps a placeholder as a book, its file named as its

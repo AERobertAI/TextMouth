@@ -4089,7 +4089,7 @@ enum FileImportService {
         // placeholder, its file named as its record names it.
         let isPlaceholder = bookFileName == nil
             && isPackageContentName(recordedName)
-            && SyncPlaceholder.pointer(in: url) != nil
+            && StoreFetch.pointer(in: url) != nil
         guard let fileName = bookFileName ?? (isPlaceholder ? recordedName : nil) else { return nil }
         let bookFile = url.appendingPathComponent(fileName)
         switch access.presence(of: bookFile) {
