@@ -45,7 +45,7 @@ final class StoreBackupTests: XCTestCase {
             XCTAssertTrue(SyncNames.isDigest(file.sha256))
             XCTAssertTrue(file.blob.hasPrefix(file.sha256))
         }
-        let digest = try StoreBackup.sha256(of: package.appendingPathComponent("book.epub"))
+        let digest = try FileDigest.sha256(of: package.appendingPathComponent("book.epub"))
         XCTAssertEqual(result.manifest.files[0].sha256, digest)
         XCTAssertEqual(result.manifest.files[0].blob, digest + ".epub")
         let stored = try names(drive, backup.folder.bookFolder(bookID))

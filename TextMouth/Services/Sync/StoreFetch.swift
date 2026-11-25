@@ -87,7 +87,7 @@ struct StoreFetch: Sendable {
                 let staged = staging.appendingPathComponent(UUID().uuidString.lowercased())
                 try await folder.access.fetch(bookFolder.appendingPathComponent(file.blob), to: staged, within: perFile)
                 let size = (try staged.resourceValues(forKeys: [.fileSizeKey]).fileSize).map(Int64.init) ?? -1
-                guard size == file.size, try StoreBackup.sha256(of: staged) == file.sha256 else {
+                guard size == file.size, try FileDigest.sha256(of: staged) == file.sha256 else {
                     throw SyncProblem.damaged(file: file.blob)
                 }
                 try FileManager.default.createDirectory(at: destination.deletingLastPathComponent(), withIntermediateDirectories: true)

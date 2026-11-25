@@ -70,8 +70,10 @@ final class SyncFormatTests: XCTestCase {
     /// The status of a library that never set up sync is off and empty.
     @MainActor
     func testStatusStartsOff() {
-        XCTAssertEqual(SyncCenter.shared.status, SyncStatus())
-        XCTAssertFalse(SyncCenter.shared.status.isOn)
+        // Its own center, so no other test's set-up is seen.
+        let center = SyncCenter()
+        XCTAssertEqual(center.status, SyncStatus())
+        XCTAssertFalse(center.status.isOn)
     }
 
     // MARK: - Reading the files

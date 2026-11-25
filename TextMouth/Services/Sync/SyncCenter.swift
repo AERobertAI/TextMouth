@@ -109,9 +109,12 @@ struct SyncCenterEnvironment {
     /// The run going now, and the moment that came during it.
     private var isRunning = false
     private var pendingReason: SyncReason?
+    private var runTask: Task<Void, Never>?
     private var wakeTask: Task<Void, Never>?
     private var backupTask: Task<Void, Never>?
-    private var didRecordSinceLaunch = false
+    /// True from launch until the first apply has finished: every record in that time is told so, so a book
+    /// missing at launch (an offline launch, a change made while the launch sync reads) is put back, not removed (R7).
+    private var launchPending = true
     private var observingNetwork = false
     private var lastPath: NetworkPathReport?
     /// Books whose copy is made and whose upload is awaited, with what they hold.
@@ -158,7 +161,7 @@ struct SyncCenterEnvironment {
         self.recorder = recorder
         status.isOn = true
         status.lastSynced = nil
-        didRecordSinceLaunch = false
+        launchPending = true
         observeNetwork()
         rearm()
         return true
@@ -303,14 +306,22 @@ struct SyncCenterEnvironment {
             pendingReason = reason
             return
         }
-        Task { await run(reason) }
+        runTask = Task { await run(reason) }
+    }
+
+    /// Waits until no run is going or waiting, including the one a moment made during another. A test
+    /// uses it instead of guessing a time.
+    func waitUntilIdle() async {
+        while let task = runTask {
+            await task.value
+            if runTask == task { runTask = nil }
+        }
     }
 
     /// Records this device's changes now.
     private func recordNow() async {
         guard let engine, let host else { return }
-        _ = try? await engine.record(library: host.library, atLaunch: !didRecordSinceLaunch)
-        didRecordSinceLaunch = true
+        _ = try? await engine.record(library: host.library, atLaunch: launchPending)
         status.pendingChanges = await engine.pendingChanges()
     }
 
@@ -368,13 +379,15 @@ struct SyncCenterEnvironment {
         status.pendingChanges = result.pendingChanges
         for (id, date) in result.read.lastHeard { status.lastHeard[result.read.names[id] ?? id] = date }
 
-        // Apply what other devices wrote; at launch even when nothing changed, as an older TextMouth left rows unstamped.
-        if !result.changedKeys.isEmpty || reason == .launch {
-            let application = await engine.application(for: host.library, voices: nil)
+        // Apply what other devices wrote; until the first apply after launch even when nothing changed, as an older
+        // TextMouth left rows unstamped and a book missing at launch is put back by it.
+        if !result.changedKeys.isEmpty || launchPending {
+            let application = await engine.application(for: host.library, voices: host.availableVoiceIDs)
             recorder?.isApplying = true
             let applied = await host.applySync(application)
             recorder?.isApplying = false
-            try await engine.didApply(application, keys: applied, library: host.library)
+            try await engine.didApply(application, keys: applied)
+            launchPending = false
         }
         keptBookIDs = await engine.keptBookIDs()
         host.syncDidApply(keptBookIDs: keptBookIDs, mayDownload: lastPath?.allowsBackgroundDownloads ?? true)

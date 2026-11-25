@@ -13,6 +13,12 @@ final class SyncCenterTests: XCTestCase {
         var maySyncNow = true
         var appliedCount = 0
         var lastKept: Set<UUID>?
+        /// How often the center asked for the device's voices, and which it has.
+        var voiceReads = 0
+        var availableVoiceIDs: Set<String>? {
+            voiceReads += 1
+            return ["voice-1"]
+        }
         func applySync(_ application: SyncApplication) async -> Set<SyncKey> {
             appliedCount += 1
             return application.appliedKeys
@@ -212,6 +218,49 @@ final class SyncCenterTests: XCTestCase {
         let book = UUID()
         world.center.setKeep(true, for: [book])
         try await waitUntil { world.center.keptBookIDs == [book] }
+    }
+
+    /// An offline launch (the folder lost), and more moments after it, never record a book missing at launch as removed (R7).
+    func testAnOfflineLaunchNeverRemovesWhatWasMissing() async throws {
+        let world = try makeWorld()
+        let book = SyncTestFixtures.book()
+        world.host.library = SyncTestFixtures.library(books: [book])
+        world.center.install(host: world.host, dataDirectory: world.dataDirectory)
+        try await world.center.setUp(in: world.parent)
+        await world.center.waitUntilIdle()
+
+        // The next launch, with the folder lost and the book gone from the library.
+        let storeID = try XCTUnwrap(world.center.storeID)
+        let lost = SyncTestDrive(root: world.parent.appendingPathComponent("TextMouth Sync", isDirectory: true))
+        lost.setFolderLost(true)
+        let second = SyncCenter(environment: SyncCenterEnvironment(
+            preferences: world.preferences, deviceName: "Test Mac", platform: "macos", appVersion: "0.6.0", isPhone: false,
+            makeAccess: { _ in lost }, locate: { _ in .local }, makeBookmark: { _ in nil }, reachability: .online,
+            now: { Date() }, sleep: { _ in try await Task.sleep(for: .seconds(3600)) }, announce: { _ in },
+            freeSpace: { _ in 100_000_000_000 }, pauseWhileJoining: { _ in }
+        ))
+        let emptyHost = StubHost()
+        second.install(host: emptyHost, dataDirectory: world.dataDirectory)
+        await second.waitUntilIdle()
+        second.moment(.active)
+        await second.waitUntilIdle()
+        second.moment(.hourly)
+        await second.waitUntilIdle()
+        XCTAssertEqual(second.status.problem, .folderMissing)
+
+        let files = SyncLocalFiles(syncFolder: world.dataDirectory.appendingPathComponent("Sync", isDirectory: true), storeID: storeID)
+        let presence = files.loadRegisters().entries[.book(book.id, .presence)]
+        XCTAssertEqual(presence?.value, .bool(true), "the book is not marked removed")
+        withExtendedLifetime(emptyHost) {}
+    }
+
+    /// The host's voices are asked for when a merge is applied.
+    func testTheHostsVoicesAreAskedFor() async throws {
+        let world = try makeWorld()
+        world.center.install(host: world.host, dataDirectory: world.dataDirectory)
+        try await world.center.setUp(in: world.parent)
+        await world.center.waitUntilIdle()
+        XCTAssertGreaterThan(world.host.voiceReads, 0)
     }
 
     // MARK: - Helpers

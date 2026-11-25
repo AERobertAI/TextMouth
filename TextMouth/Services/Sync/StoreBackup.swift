@@ -77,20 +77,6 @@ struct StoreBackup: Sendable {
         }
     }
 
-    // MARK: Hashing
-
-    /// The SHA-256 of the file at `url`, lower-case hex, streamed so a large
-    /// file is never in memory whole.
-    static func sha256(of url: URL) throws -> String {
-        let handle = try FileHandle(forReadingFrom: url)
-        defer { try? handle.close() }
-        var hasher = SHA256()
-        while let chunk = try handle.read(upToCount: 1 << 20), !chunk.isEmpty {
-            hasher.update(data: chunk)
-        }
-        return hasher.finalize().map { String(format: "%02x", $0) }.joined()
-    }
-
     // MARK: Listing a package
 
     /// One file of a package: its path from the package, and its URL.
@@ -147,7 +133,7 @@ struct StoreBackup: Sendable {
         for file in files {
             let copy = staging.appendingPathComponent(UUID().uuidString.lowercased())
             try FileManager.default.copyItem(at: file.url, to: copy)
-            let digest = try Self.sha256(of: copy)
+            let digest = try FileDigest.sha256(of: copy)
             let size = (try copy.resourceValues(forKeys: [.fileSizeKey]).fileSize).map(Int64.init) ?? 0
             let blob = SyncNames.blobName(sha256: digest, pathExtension: (file.path as NSString).pathExtension)
             entries.append(StoreManifest.File(path: file.path, sha256: digest, blob: blob, role: Self.role(of: file.path), size: size))

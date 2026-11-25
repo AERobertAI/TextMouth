@@ -127,7 +127,8 @@ actor SyncEngine {
         try local.saveRegisters(registers)
         filesSinceSnapshot += 1
         if updatingBaseline {
-            for pair in pairs { baseline.values[pair.key] = pair.value }
+            // Only `absorb` writes the baseline: it forgets removals, notes hand edits, and keeps list orders.
+            baseline.absorb(stamped)
             try local.saveBaseline(SyncBaselineFile(baseline))
         }
         return pairs.count
@@ -233,11 +234,9 @@ actor SyncEngine {
 
     /// Takes the values applied to the library into the baseline, key by key, so a change made
     /// meanwhile is still found; and records the entries applying made (same-named folders folded).
-    func didApply(_ application: SyncApplication, keys: Set<SyncKey>, library: Library) throws {
-        let projection = SyncProjection.of(library, contents: contents())
-        for key in keys {
-            if let value = projection.values[key] { baseline.values[key] = value } else { baseline.values.removeValue(forKey: key) }
-        }
+    func didApply(_ application: SyncApplication, keys: Set<SyncKey>) throws {
+        // The baseline takes the winning entry of each applied key, through `absorb` alone.
+        baseline.absorb(keys.sorted { "\($0)" < "\($1)" }.compactMap { registers.entries[$0] })
         try local.saveBaseline(SyncBaselineFile(baseline))
         let folded = application.entriesToRecord.sorted { "\($0.key)" < "\($1.key)" }
         try append(folded.map { PendingChange(key: $0.key, value: $0.value, byHand: false) }, updatingBaseline: true)

@@ -89,9 +89,14 @@ enum SyncFolderAccessFactory {
     /// as the store names it (the name it had where it was backed up), which the host sets as the row's
     /// `filePath` if that differs. Nil when the manifest names no content file.
     func syncDidFetch(bookID: UUID, contentPath: String?)
+    /// The IDs of the voices this device has, or nil for all: a voice a device lacks isn't applied to a row.
+    var availableVoiceIDs: Set<String>? { get }
 }
 
 extension SyncLibraryHost {
+    /// A host that doesn't say has every voice.
+    var availableVoiceIDs: Set<String>? { nil }
+
     /// A host that keeps the row's file name as it made it has nothing to do.
     func syncDidFetch(bookID: UUID, contentPath: String?) {}
 }
