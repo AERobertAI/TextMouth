@@ -181,12 +181,12 @@ class TextMouthUITestCase: XCTestCase {
     }
 
     /// Presses Continue on the keyboard's one-time page about sliding a finger
-    /// across the letters, if it covers the keyboard: the runner's script turns
-    /// it off, and a fresh simulator that still shows it would otherwise keep
-    /// every key from the field. It is looked for once, with `exists`: a wait
-    /// for a page that is not there always ran out its 2 seconds (2.8 with the
-    /// debug capture, about 25 seconds a run), and the script's preference keeps
-    /// the page from appearing at all, so a late page is not waited for.
+    /// across the letters, if it covers the keyboard: a fresh simulator shows
+    /// it, and it would otherwise keep every key from the field. The runner's
+    /// script writes no preference to turn it off, so this is what dismisses it.
+    /// It is looked for once, with `exists`: a wait for a page that is not
+    /// there always ran out its 2 seconds (2.8 with the debug capture, about 25
+    /// seconds a run), and a late page is not waited for.
     func dismissKeyboardIntroduction(in app: XCUIApplication) {
         let page = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Speed up your typing")).firstMatch
         if page.exists {

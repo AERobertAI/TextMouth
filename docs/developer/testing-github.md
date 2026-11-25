@@ -214,7 +214,7 @@ The runs are listed in the report of the `cisuite` branch (`ci/suite-clean`); th
   - **Building once and sharing the products** would not help: a build is now 2 to 3 minutes, and uploading and downloading the products would cost as much.
 - **The iPhone job** (beside the shards): the platform download takes 3.4 to 4.9 minutes, the build 3.5 (7.3 before the file-time fix), and the simulator's set-up 5.8 (its first boot about 5.7), so it is on the longest path whenever it runs the interface tests.
   - **Three cuts** after run 43716590818, whose two jobs spent 11.6 and 8.2 minutes building and 3.6 and 3.4 setting up the simulator.
-    The build names one architecture, since 1,086 files had been compiled twice; the four keyboard settings are written by `simctl spawn` calls made together (set-up 3.5 to 2.3 minutes).
+    The build names one architecture, since 1,086 files had been compiled twice; the keyboard settings are no longer written (the typing tests dismiss its first-use page).
     `Scripts/agents/ios-class-times.json` holds the interface classes' measured times (873 seconds, not 673), with `TARGET_SHARD_SECONDS` at 600, so the full suite stays two iPhone jobs (a third comes past 1,200 seconds of tests).
     The next full run took 26.2 minutes in all (34.1 before), its iPhone jobs 25.1 and 26.7.
   - **The interface tests add the most.**

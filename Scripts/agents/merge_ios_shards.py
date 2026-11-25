@@ -11,7 +11,8 @@ there were several:
   The errors are every job's, once each (ios-errors.txt), counted again; the minutes are the longest job's; each job's reasons
   are kept, with the job named. A job that reported nothing is named, and fails the join.
   The size lines (run-ios-build.py writes them when the request asks for the app's size, "ios_size") are the first job's
-  that has any: every job builds the same app, so they are the same measurement.
+  that has any: every job builds the same app, so they are the same measurement. When the workflow runs the device build in
+  a job of its own (run-ios-build.py --size-only), the jobs have none, and join_size adds the size job's to the joined summary.
 - ios-ui-summary.txt: the verdict is FAILED if any job's was (or a job reported nothing), else NOT RUN if any was, else PASSED
   if any job ran tests, else NOT ASKED. The Executed line and each bundle's count are the jobs' added up (a bundle no job
   was asked for stays "not asked"); each FAILED, Skipped and Reason line is kept, in job order, with the job named in a Reason.
@@ -45,6 +46,41 @@ def size_lines(lines):
     """The size lines of a summary's `lines`, in their order: the headlines and the details. Empty when the run was not
     asked for the size (or its device build could not measure it, which a "Size: not measured" line says)."""
     return [line for line in lines or [] if line.startswith((SIZE_PREFIX, SIZE_DETAIL_PREFIX))]
+
+
+# The file the size job uploads its lines in (run-ios-build.py --size-only writes it), and the log tail beside it.
+SIZE_SUMMARY_FILE = "ios-size-summary.txt"
+SIZE_LOG_FILE = "ios.log"
+
+
+def size_not_measured(why):
+    """The one line a train reads as "no size", with the reason `why`."""
+    return f"{SIZE_PREFIX}not measured: {why}."
+
+
+def join_size(size_dir, out_dir):
+    """Adds the size job's result to the joined files in `out_dir`: its size lines at the end of ios-summary.txt, and the
+    last lines of its device build's log at the end of ios.log under a heading. A job that uploaded no summary (it failed
+    before the build, or was cancelled) gives one "Size: not measured" line saying so, as the train reads a failed
+    measurement; a summary with no line in it (the request did not ask for the size) adds nothing. Returns the lines added."""
+    size_dir, out_dir = Path(size_dir), Path(out_dir)
+    found = read_lines(size_dir / SIZE_SUMMARY_FILE)
+    if found is None:
+        lines = [size_not_measured("the size job reported nothing (it failed before the device build, or was cancelled)")]
+    else:
+        lines = size_lines(found)
+    if not lines:
+        return []
+    # An iPhone build that reported nothing has its NOT RUN summary written by the caller; the lines go after whatever it holds.
+    summary = out_dir / "ios-summary.txt"
+    before = summary.read_text(encoding="utf-8") if summary.exists() else ""
+    before += "" if before.endswith("\n") or not before else "\n"
+    summary.write_text(before + "".join(line + "\n" for line in lines), encoding="utf-8")
+    log = size_dir / SIZE_LOG_FILE
+    if log.exists():
+        with open(out_dir / "ios.log", "a", encoding="utf-8") as joined:
+            joined.write(f"\n===== size job: device build =====\n{log.read_text(encoding='utf-8', errors='replace')}\n")
+    return lines
 
 
 def shard_number(folder):
