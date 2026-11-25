@@ -6,7 +6,7 @@ import XCTest
 /// device's own record kept, a stop resumed, and a damaged blob never in the package.
 final class StoreFetchTests: XCTestCase {
     /// A made-up book.
-    private let bookID = UUID(uuidString: "55555555-5555-5555-5555-555555555555")!
+    private let bookID = UUID(uuidString: "55555555-5555-5555-5555-555555555555") ?? UUID()
 
     /// A world: one device backed a book up, another holds a placeholder for it.
     private struct World {
@@ -88,7 +88,7 @@ final class StoreFetchTests: XCTestCase {
         // Files before the stop stay; the pointer says which.
         let partial = try XCTUnwrap(StoreFetch.pointer(in: world.placeholder))
         XCTAssertTrue(StoreFetch.isMissingFiles(world.placeholder))
-        XCTAssertFalse(partial.files.first { $0.path == "book.txt" }!.onThisDevice)
+        XCTAssertEqual(partial.files.first { $0.path == "book.txt" }?.onThisDevice, false)
 
         world.drive.setNotDownloaded(text.blob, false)
         world.drive.setOffline(false)

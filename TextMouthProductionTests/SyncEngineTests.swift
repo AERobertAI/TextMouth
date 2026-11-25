@@ -7,7 +7,7 @@ import XCTest
 /// (`SyncRegisters.merge`) are marked, and pass once sync-core's branch is in.
 final class SyncEngineTests: XCTestCase {
     /// A made-up book.
-    private let book = UUID(uuidString: "66666666-6666-6666-6666-666666666666")!
+    private let book = UUID(uuidString: "66666666-6666-6666-6666-666666666666") ?? UUID()
 
     /// The identity of a device on install `install`.
     private func identity(_ name: String = "Mac", install: String = "install-1") -> SyncDeviceIdentity {

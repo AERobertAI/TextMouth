@@ -6,7 +6,7 @@ import XCTest
 /// bounded time, and a file not here yet holds a cursor, never the library.
 final class SyncFolderTests: XCTestCase {
     /// A made-up book.
-    private let book = UUID(uuidString: "33333333-3333-3333-3333-333333333333")!
+    private let book = UUID(uuidString: "33333333-3333-3333-3333-333333333333") ?? UUID()
 
     /// A folder over a fresh sandbox drive.
     private func makeFolder() throws -> (folder: SyncFolder, drive: SyncTestDrive) {
