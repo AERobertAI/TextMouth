@@ -1018,10 +1018,17 @@ targets:
       - TextMouthProductionTests/DataDirectoryCreationTests.swift
       - TextMouthProductionTests/DataDirectoryServicesTests.swift
       - TextMouthProductionTests/DocumentByteLimitTests.swift
+      - TextMouthProductionTests/EPUBExportRoundTripTests.swift
+      - TextMouthProductionTests/EPUBExportWriterNavigationTests.swift
+      - TextMouthProductionTests/EPUBExportWriterTests.swift
       - TextMouthProductionTests/EPUBLinkAddressTests.swift
       - TextMouthProductionTests/EPUBStructureFailureTests.swift
       - TextMouthProductionTests/EndOfBookRuleTests.swift
       - TextMouthProductionTests/ExportContentsListTests.swift
+      - TextMouthProductionTests/ExportDeepChapterWalkerTests.swift
+      - TextMouthProductionTests/ExportDocumentWalkerNestingTests.swift
+      - TextMouthProductionTests/ExportDocumentWalkerStructureTests.swift
+      - TextMouthProductionTests/ExportDocumentWalkerTests.swift
       - TextMouthProductionTests/ExtractionReportTests.swift
       - TextMouthProductionTests/FFmpegHelperHostileFileTests.swift
       - TextMouthProductionTests/FFmpegHelperProtocolTests.swift
@@ -1037,6 +1044,7 @@ targets:
       - TextMouthProductionTests/FolderPathEquivalenceTests.swift
       - TextMouthProductionTests/FolderSafetyTests.swift
       - TextMouthProductionTests/FormatSampleFixtures.swift
+      - TextMouthProductionTests/HTMLExportWriterTests.swift
       - TextMouthProductionTests/HostedTestIsolationSupport.swift
       - TextMouthProductionTests/IOSInfoPlistTests.swift
       - TextMouthProductionTests/ImportConcurrencyTests.swift
@@ -1088,6 +1096,7 @@ targets:
       - TextMouthProductionTests/MOBIBookStructureTests.swift
       - TextMouthProductionTests/MOBIFixture.swift
       - TextMouthProductionTests/MarkdownEmphasisTests.swift
+      - TextMouthProductionTests/MarkdownExportWriterTests.swift
       - TextMouthProductionTests/MarkdownNestingTests.swift
       - TextMouthProductionTests/MarkdownPageMarkerTests.swift
       - TextMouthProductionTests/MarkupFuzzGenerator.swift
@@ -1149,6 +1158,7 @@ targets:
       - TextMouthProductionTests/PlaybackFuzzOperations.swift
       - TextMouthProductionTests/PlaybackFuzzOperationsTests.swift
       - TextMouthProductionTests/PreferenceStoreTests.swift
+      - TextMouthProductionTests/RTFExportWriterTests.swift
       - TextMouthProductionTests/ReadingStatsDayAttributionTests.swift
       - TextMouthProductionTests/ReadingTextCacheTests.swift
       - TextMouthProductionTests/RemovalWordingTests.swift
