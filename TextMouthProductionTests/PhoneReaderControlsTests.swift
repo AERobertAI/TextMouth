@@ -43,8 +43,8 @@ final class PhoneReaderControlsTests: XCTestCase {
         }
         XCTAssertEqual(PhoneReaderControl.gridRows.last, [.skipBackward, .skipForward], "The skips aren't the last row")
         // Voice, Book Info, and Export this book are the fifth row, the third of it the Export control (FR31).
-        XCTAssertEqual(PhoneReaderControl.gridRows[4], [.voice, .bookInfo, .export])
         XCTAssertEqual(PhoneReaderControl.gridRows.count, 6, "The grid changed its shape")
+        XCTAssertEqual(PhoneReaderControl.gridRows.dropFirst(4).first, [.voice, .bookInfo, .export])
     }
 
     /// Every control has a focus kind of its own, and every kind belongs to
