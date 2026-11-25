@@ -60,6 +60,17 @@ readonly APP_SIZE_WARNING_MB APP_SIZE_LIMIT_MB
 readonly APP_SIZE_WARNING_BYTES=$(( APP_SIZE_WARNING_MB * 1000000 ))
 readonly APP_SIZE_LIMIT_BYTES=$(( APP_SIZE_LIMIT_MB * 1000000 ))
 
+# The braille-table packs' limits in bytes, read from check.sh, which defines each once (FR40), so the cases that plant a
+# pack a byte over a limit follow it when it changes: the iPhone's pack holds every table TextMouth ships for it, the Mac's
+# its four English ones.
+BRAILLE_PACK_LIMIT_BYTES=$(sed -n -E 's/^readonly BRAILLE_PACK_LIMIT_BYTES=([0-9]+)$/\1/p' "$ROOT/Scripts/check.sh")
+MAC_BRAILLE_PACK_LIMIT_BYTES=$(sed -n -E 's/^readonly MAC_BRAILLE_PACK_LIMIT_BYTES=([0-9]+)$/\1/p' "$ROOT/Scripts/check.sh")
+if [[ ! $BRAILLE_PACK_LIMIT_BYTES =~ ^[1-9][0-9]{0,8}$ || ! $MAC_BRAILLE_PACK_LIMIT_BYTES =~ ^[1-9][0-9]{0,8}$ ]]; then
+  echo "check-selftest: Scripts/check.sh must set BRAILLE_PACK_LIMIT_BYTES and MAC_BRAILLE_PACK_LIMIT_BYTES to whole numbers of bytes" >&2
+  exit 1
+fi
+readonly BRAILLE_PACK_LIMIT_BYTES MAC_BRAILLE_PACK_LIMIT_BYTES
+
 # How many installs keep their dSYMs, read from the Makefile, which defines it
 # once, so the install cases follow it when it changes.
 INSTALLED_DSYMS_KEPT=$(sed -n -E 's/^INSTALLED_DSYMS_KEPT = ([0-9]+)$/\1/p' "$ROOT/Makefile")
@@ -127,6 +138,11 @@ write_stubs() {
 #                               app's): ok (the default, 8 bytes), none, twice (a second copy in a
 #                               Frameworks folder), misplaced (not in the resources folder), or big
 #                               (1,500,001 bytes, written sparse)
+#   STUB_BRAILLE_PACK=<form>    the braille-table pack build packages (and, as STUB_IOS_BRAILLE_PACK, the
+#                               iPhone app's): ok (the default, 8 bytes), none, twice, misplaced, big (a
+#                               byte over STUB_BRAILLE_PACK_LIMIT, the Mac's limit, written sparse),
+#                               raw-folder (an empty liblouis/tables folder beside it), or raw-file (a
+#                               table file beside it)
 #   STUB_LPROJ=<form>           the language folder build packages in the app, in
 #                               Contents/Resources/es.lproj: ok (the default: an
 #                               InfoPlist.strings and nothing else), apple-strings
@@ -157,6 +173,28 @@ plant_pack() {
   esac
   printf 'TMSP0000' > "$1/Strings.pack"
   case $2 in twice) mkdir -p "$1/../Frameworks"; printf 'TMSP0000' > "$1/../Frameworks/Strings.pack" ;; esac
+}
+
+# plant_braille_pack <resources folder> <form>: writes the braille-table pack there as the build phase does (8 bytes here),
+# or not at all (none), or twice (a copy in a sibling Frameworks folder), or in the wrong place (misplaced: in a subfolder),
+# or a byte over the Mac's limit (big, sparse), or with a raw liblouis table beside it: the liblouis/tables folder the apps
+# held before the pack, empty (raw-folder), or a table file (raw-file).
+plant_braille_pack() {
+  mkdir -p "$1"
+  case $2 in
+    none) return 0 ;;
+    misplaced) mkdir -p "$1/Elsewhere"; printf 'TMSP0000' > "$1/Elsewhere/BrailleTables.pack"; return 0 ;;
+    big)
+      dd if=/dev/zero of="$1/BrailleTables.pack" bs=1 count=0 \
+        seek=$(( ${STUB_BRAILLE_PACK_LIMIT:?the big form needs STUB_BRAILLE_PACK_LIMIT} + 1 )) 2>/dev/null
+      return 0 ;;
+  esac
+  printf 'TMSP0000' > "$1/BrailleTables.pack"
+  case $2 in
+    twice) mkdir -p "$1/../Frameworks"; printf 'TMSP0000' > "$1/../Frameworks/BrailleTables.pack" ;;
+    raw-folder) mkdir -p "$1/liblouis/tables" ;;
+    raw-file) printf 'include x' > "$1/en-ueb-g2.ctb" ;;
+  esac
 }
 
 # plant_language_files <resources folder> <form>: writes es.lproj there as the
@@ -205,11 +243,13 @@ case $target in
       rm -rf build/TextMouth.app
       mkdir -p build/TextMouth.app/Contents/MacOS
       head -c 600 /dev/zero > build/TextMouth.app/Contents/Info.plist
-      # The language files count toward the size, so the executable is sized to leave the total at STUB_APP_BYTES.
+      # The language files and the packs count toward the size, so the executable is sized to leave the total at
+      # STUB_APP_BYTES: every file planted in the resources and frameworks folders is counted.
       plant_language_files build/TextMouth.app/Contents/Resources "${STUB_LPROJ:-ok}" "${STUB_PACK:-ok}"
-      language_bytes=$(cat build/TextMouth.app/Contents/Resources/es.lproj/* build/TextMouth.app/Contents/Resources/Strings.pack build/TextMouth.app/Contents/Frameworks/Strings.pack build/TextMouth.app/Contents/Resources/Elsewhere/Strings.pack 2>/dev/null | wc -c)
+      plant_braille_pack build/TextMouth.app/Contents/Resources "${STUB_BRAILLE_PACK:-ok}"
+      planted_bytes=$(find build/TextMouth.app/Contents/Resources build/TextMouth.app/Contents/Frameworks -type f -exec cat {} + 2>/dev/null | wc -c)
       dd if=/dev/zero of=build/TextMouth.app/Contents/MacOS/TextMouth bs=1 count=0 \
-        seek=$(( STUB_APP_BYTES - 600 - language_bytes )) 2>/dev/null
+        seek=$(( STUB_APP_BYTES - 600 - planted_bytes )) 2>/dev/null
       if [ -n "${STUB_APP_TEXT:-}" ]; then
         mkdir -p build/TextMouth.app/Contents/Resources
         printf '%s' "$STUB_APP_TEXT" | sed "s#@ROOT@#$(pwd -P)#g" > build/TextMouth.app/Contents/Resources/planted.txt
@@ -310,6 +350,28 @@ elif pack != "none":
         os.makedirs(app + "/Frameworks", exist_ok=True)
         with open(app + "/Frameworks/Strings.pack", "wb") as out:
             out.write(b"TMSP0000")
+# The braille-table pack STUB_IOS_BRAILLE_PACK names, in the forms of the Mac stub's STUB_BRAILLE_PACK: ok (the default),
+# none, twice, misplaced, big (a byte over STUB_IOS_BRAILLE_PACK_LIMIT, the iPhone's limit, sparse), raw-folder, or raw-file.
+braille = os.environ.get("STUB_IOS_BRAILLE_PACK", "ok")
+if braille == "misplaced":
+    os.makedirs(app + "/Elsewhere", exist_ok=True)
+    with open(app + "/Elsewhere/BrailleTables.pack", "wb") as out:
+        out.write(b"TMSP0000")
+elif braille != "none":
+    with open(app + "/BrailleTables.pack", "wb") as out:
+        if braille == "big":
+            out.truncate(int(os.environ["STUB_IOS_BRAILLE_PACK_LIMIT"]) + 1)
+        else:
+            out.write(b"TMSP0000")
+    if braille == "twice":
+        os.makedirs(app + "/Frameworks", exist_ok=True)
+        with open(app + "/Frameworks/BrailleTables.pack", "wb") as out:
+            out.write(b"TMSP0000")
+    elif braille == "raw-folder":
+        os.makedirs(app + "/liblouis/tables", exist_ok=True)
+    elif braille == "raw-file":
+        with open(app + "/en-ueb-g2.ctb", "wb") as out:
+            out.write(b"include x")
 if form != "none":
     folder = app + "/es.lproj"
     os.makedirs(folder, exist_ok=True)
@@ -520,6 +582,7 @@ run_gate() {
       PATH="$STUBS:$PATH" STUB_LOG="$stub_log" STUB_RESOLVED="$RESOLVED" \
       STUB_BUILD_LOG="$FIXTURES/build-clean.log" STUB_TEST_OUTPUT="$FIXTURES/tests-pass.log" \
       STUB_APP_BYTES="$DEFAULT_APP_BYTES" STUB_IOS_SIZE_OUTPUT="$FIXTURES/ios-size-ok.txt" \
+      STUB_BRAILLE_PACK_LIMIT="$MAC_BRAILLE_PACK_LIMIT_BYTES" STUB_IOS_BRAILLE_PACK_LIMIT="$BRAILLE_PACK_LIMIT_BYTES" \
       ${settings[@]+"${settings[@]}"} "${command[@]}" "$@" 2>&1)
   status=$?
 }
@@ -1080,13 +1143,94 @@ real_run_cases() {
   expect_verdict "check: FAILED: step 3 of 4 (build the Release app): the iPhone app's Strings.pack is 1500001 bytes, over the 1500000-byte limit"
   end_case
 
-  begin_case "a dry run says it would require no table of Apple's and an InfoPlist.strings in each language folder"
+  # The braille-table pack (FR40): the same rules as the interface-text pack's, each app with its own limit, and no raw
+  # liblouis table anywhere in either app.
+  local braille_missing="(the build phase \"Pack braille tables\", Scripts/packs/braille_tables.py, writes exactly one into its resources)"
+  local braille_raw="raw liblouis tables (the tables are in BrailleTables.pack, which the app unpacks at first use, and no other file of the app is one)"
+
+  begin_case "a Release app and an iPhone app with one small BrailleTables.pack and no raw table pass, and the gate reports each pack's size (FR40)"
+  run_gate
+  expect_status 0
+  expect_report "build/TextMouth.app's BrailleTables.pack is 8 bytes (the limit is $MAC_BRAILLE_PACK_LIMIT_BYTES)"
+  expect_report "build/TextMouth.app holds no raw liblouis tables"
+  expect_report "the iPhone app's BrailleTables.pack is 8 bytes (the limit is $BRAILLE_PACK_LIMIT_BYTES)"
+  expect_report "the iPhone app holds no raw liblouis tables"
+  expect_verdict "check: PASSED"
+  end_case
+
+  begin_case "a Mac app with no BrailleTables.pack fails the gate, naming the build phase and its script"
+  run_gate STUB_BRAILLE_PACK=none
+  expect_status 1
+  expect_verdict "check: FAILED: step 3 of 4 (build the Release app): build/TextMouth.app holds 0 files named BrailleTables.pack, not one $braille_missing"
+  end_case
+
+  begin_case "a Mac app with a second BrailleTables.pack fails the gate"
+  run_gate STUB_BRAILLE_PACK=twice
+  expect_status 1
+  expect_verdict "check: FAILED: step 3 of 4 (build the Release app): build/TextMouth.app holds 2 files named BrailleTables.pack, not one $braille_missing"
+  end_case
+
+  begin_case "a Mac app whose BrailleTables.pack is not in its resources folder fails the gate"
+  run_gate STUB_BRAILLE_PACK=misplaced
+  expect_status 1
+  expect_verdict "check: FAILED: step 3 of 4 (build the Release app): build/TextMouth.app holds its BrailleTables.pack at Contents/Resources/Elsewhere/BrailleTables.pack, not in its resources folder"
+  end_case
+
+  begin_case "a Mac app whose BrailleTables.pack is a byte over the Mac's limit fails the gate"
+  run_gate STUB_BRAILLE_PACK=big
+  expect_status 1
+  expect_report "build/TextMouth.app's BrailleTables.pack is $(( MAC_BRAILLE_PACK_LIMIT_BYTES + 1 )) bytes (the limit is $MAC_BRAILLE_PACK_LIMIT_BYTES)"
+  expect_verdict "check: FAILED: step 3 of 4 (build the Release app): build/TextMouth.app's BrailleTables.pack is $(( MAC_BRAILLE_PACK_LIMIT_BYTES + 1 )) bytes, over the $MAC_BRAILLE_PACK_LIMIT_BYTES-byte limit"
+  end_case
+
+  begin_case "a Mac app with a liblouis/tables folder fails the gate, even an empty one"
+  run_gate STUB_BRAILLE_PACK=raw-folder
+  expect_status 1
+  expect_report "| build/TextMouth.app/Contents/Resources/liblouis/tables"
+  expect_verdict "check: FAILED: step 3 of 4 (build the Release app): build/TextMouth.app holds $braille_raw"
+  end_case
+
+  begin_case "a Mac app with a table file beside its BrailleTables.pack fails the gate"
+  run_gate STUB_BRAILLE_PACK=raw-file
+  expect_status 1
+  expect_report "| build/TextMouth.app/Contents/Resources/en-ueb-g2.ctb"
+  expect_verdict "check: FAILED: step 3 of 4 (build the Release app): build/TextMouth.app holds $braille_raw"
+  end_case
+
+  begin_case "an iPhone app with no BrailleTables.pack fails the gate, naming the build phase and its script"
+  run_gate STUB_IOS_BRAILLE_PACK=none
+  expect_status 1
+  expect_verdict "check: FAILED: step 3 of 4 (build the Release app): the iPhone app holds 0 files named BrailleTables.pack, not one $braille_missing"
+  end_case
+
+  begin_case "an iPhone app with a second BrailleTables.pack fails the gate"
+  run_gate STUB_IOS_BRAILLE_PACK=twice
+  expect_status 1
+  expect_verdict "check: FAILED: step 3 of 4 (build the Release app): the iPhone app holds 2 files named BrailleTables.pack, not one $braille_missing"
+  end_case
+
+  begin_case "an iPhone app whose BrailleTables.pack is a byte over the iPhone's limit fails the gate"
+  run_gate STUB_IOS_BRAILLE_PACK=big
+  expect_status 1
+  expect_verdict "check: FAILED: step 3 of 4 (build the Release app): the iPhone app's BrailleTables.pack is $(( BRAILLE_PACK_LIMIT_BYTES + 1 )) bytes, over the $BRAILLE_PACK_LIMIT_BYTES-byte limit"
+  end_case
+
+  begin_case "an iPhone app with a table file beside its BrailleTables.pack fails the gate"
+  run_gate STUB_IOS_BRAILLE_PACK=raw-file
+  expect_status 1
+  expect_report "TextMouth.app/en-ueb-g2.ctb"
+  expect_verdict "check: FAILED: step 3 of 4 (build the Release app): the iPhone app holds $braille_raw"
+  end_case
+
+  begin_case "a dry run says it would require no table of Apple's, an InfoPlist.strings in each language folder, and one of each pack"
   run_gate -- --dry-run
   expect_status 0
   expect_report "would require build/TextMouth.app to hold no table of Apple's, and an InfoPlist.strings in each .lproj folder"
   expect_report "would require the iPhone app to hold no table of Apple's, and an InfoPlist.strings in each .lproj folder"
   expect_report "would require build/TextMouth.app to hold exactly one Strings.pack of at most 1500000 bytes"
   expect_report "would require the iPhone app to hold exactly one Strings.pack of at most 1500000 bytes"
+  expect_report "would require build/TextMouth.app to hold exactly one BrailleTables.pack of at most $MAC_BRAILLE_PACK_LIMIT_BYTES bytes"
+  expect_report "would require the iPhone app to hold exactly one BrailleTables.pack of at most $BRAILLE_PACK_LIMIT_BYTES bytes"
   end_case
 
   begin_case "a Release app of exactly the warning size passes with no warning"

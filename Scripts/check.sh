@@ -624,12 +624,13 @@ require_language_layout() {
   detail "$app holds $count .lproj folders, each with an $INFO_PLIST_TABLE, and no table of Apple's"
 }
 
-# require_one_pack <app folder> <resources folder> <app name> <pack name> <limit> <phase>: the app holds exactly one file named
-# <pack name>, in its resources folder, no larger than <limit> bytes. A missing pack means the build phase <phase> did not
-# run (every line would show English, or no braille table could be unpacked); a second one is a stray copy that would ship
-# twice; a pack over the limit means the budget is spent (FR39, FR40). Reports the pack's size.
+# require_one_pack <app folder> <resources folder> <app name> <pack name> <limit> <phase> <writer>: the app holds exactly one
+# file named <pack name>, in its resources folder, no larger than <limit> bytes. A missing pack means the build phase <phase>,
+# which runs the script <writer>, did not run (every line would show English, or no braille table could be unpacked); a
+# second one is a stray copy that would ship twice; a pack over the limit means the budget is spent (FR39, FR40). Reports
+# the pack's size.
 require_one_pack() {
-  local app_folder=$1 resources=$2 app=$3 pack_name=$4 limit=$5 phase=$6 found count size
+  local app_folder=$1 resources=$2 app=$3 pack_name=$4 limit=$5 phase=$6 writer=$7 found count size
   if (( dry_run )); then
     detail "would require $app to hold exactly one $pack_name of at most $limit bytes"
     return 0
@@ -638,7 +639,7 @@ require_one_pack() {
   count=$(grep -c . <<<"$found" || true)
   if (( count != 1 )); then
     detail_lines "| " "$found"
-    fail "step $step_number of $STEP_COUNT ($step_title): $app holds $count files named $pack_name, not one (the build phase \"$phase\" writes exactly one into its resources)"
+    fail "step $step_number of $STEP_COUNT ($step_title): $app holds $count files named $pack_name, not one (the build phase \"$phase\", $writer, writes exactly one into its resources)"
   fi
   if [[ $found != "$resources/$pack_name" ]]; then
     fail "step $step_number of $STEP_COUNT ($step_title): $app holds its $pack_name at ${found#"$app_folder"/}, not in its resources folder"
@@ -653,7 +654,7 @@ require_one_pack() {
 # require_one_interface_pack <app folder> <resources folder> <app name>: the app holds exactly one Strings.pack (FR39,
 # Scripts/l10n/pack.py), within PACK_LIMIT_BYTES.
 require_one_interface_pack() {
-  require_one_pack "$1" "$2" "$3" "$PACK_NAME" "$PACK_LIMIT_BYTES" "Pack interface text"
+  require_one_pack "$1" "$2" "$3" "$PACK_NAME" "$PACK_LIMIT_BYTES" "Pack interface text" "Scripts/l10n/pack.py"
 }
 
 # require_braille_pack <app folder> <resources folder> <app name> <limit>: the app holds exactly one BrailleTables.pack
@@ -661,7 +662,8 @@ require_one_interface_pack() {
 # folder named liblouis, which the apps held before the pack, and no table file (.ctb .cti .utb .uti .tbl .dis .dic) anywhere.
 require_braille_pack() {
   local app_folder=$1 resources=$2 app=$3 limit=$4 raw
-  require_one_pack "$app_folder" "$resources" "$app" "$BRAILLE_PACK_NAME" "$limit" "Pack braille tables"
+  require_one_pack "$app_folder" "$resources" "$app" "$BRAILLE_PACK_NAME" "$limit" "Pack braille tables" \
+    "Scripts/packs/braille_tables.py"
   if (( dry_run )); then
     return 0
   fi

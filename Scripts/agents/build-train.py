@@ -140,10 +140,16 @@ def git(*args, cwd=None, check=True):
     return subprocess.run(["git", *args], cwd=cwd or ROOT, capture_output=True, text=True, check=check)
 
 
+def fit_topic(topic):
+    """`topic` cut to the board's limit, ending in an ellipsis when it was cut."""
+    if len(topic) > TOPIC_LIMIT:
+        return topic[:TOPIC_LIMIT - 1] + "…"
+    return topic
+
+
 def post(to, topic, tag="build"):
     """Posts `topic` to `to` on the message board as the orchestrator, cut to the board's limit."""
-    if len(topic) > TOPIC_LIMIT:
-        topic = topic[:TOPIC_LIMIT - 1] + "…"
+    topic = fit_topic(topic)
     subprocess.run(["python3", "-I", str(BBS), "post", "orchestrator", "--to", to, "--tag", tag, "--topic", topic],
                    cwd=ROOT, capture_output=True, text=True)
 
@@ -808,6 +814,40 @@ def ios_label_and_file(census, train_dir):
     return IOS_CENSUS_LABEL, train_dir / "ios-census.txt"
 
 
+def train_verdict(mac_verdict, interface):
+    """The verdict of the whole train, for every place one is written (summary.md, each agent's result, the board post).
+    `mac_verdict` is the Mac suite's ("PASSED", "FAILED", or "NOT RUN" for a train that ran nothing) and `interface` is
+    remote_ios_ui_result's answer. The iPhone tests count only when the run reported them: an answer that is neither None
+    nor IOS_UI_NOT_ASKED. The train is then PASSED only when both parts passed (the iPhone tests pass only with their own
+    verdict PASSED, so a job that reported nothing does not pass them). Otherwise the verdict begins with FAILED, which
+    readers match with startswith, and names the part that failed in brackets. A train with no iPhone tests keeps the Mac
+    suite's own verdict, plain."""
+    asked = bool(interface) and interface[0] != IOS_UI_NOT_ASKED
+    if mac_verdict == "NOT RUN" or not asked:
+        # Nothing ran, or the run had no iPhone tests: the Mac suite's verdict is the train's, as it always was.
+        return mac_verdict
+    failed = []
+    if mac_verdict != "PASSED":
+        failed.append("Mac suite")
+    if interface[0] != "PASSED":
+        failed.append("iPhone tests")
+    return f"FAILED ({' and '.join(failed)})" if failed else "PASSED"
+
+
+def counted(count, noun):
+    """"1 failure", "0 failures": `count` with `noun` in the right number."""
+    return f"{count} {noun}" + ("" if count == 1 else "s")
+
+
+def yours_words(mac_failures, iphone_failures, compile_errors):
+    """The board post's "yours:" count. `iphone_failures` is None when the run had no iPhone tests, and the words are then
+    the plain "N failures" they were; otherwise the Mac's and the iPhone's failures are counted apart."""
+    if iphone_failures is None:
+        return f"{counted(mac_failures, 'failure')}, {counted(compile_errors, 'compile error')}"
+    return (f"{counted(mac_failures, 'Mac failure')}, {counted(iphone_failures, 'iPhone failure')}, "
+            f"{counted(compile_errors, 'compile error')}")
+
+
 def summarize(output):
     """The run's verdict, its Executed line, its failures, and its compile errors."""
     lines = output.splitlines()
@@ -852,25 +892,33 @@ def remote_line(train_dir):
     return f"- Run on GitHub: {run['url']} ({run['minutes']} minutes from the push to its end)"
 
 
+def result_post(train_id, verdict, yours, ios_note, result_path, executed):
+    """The board post that tells an agent its train's result: the whole train's verdict and what is the agent's own, then
+    the result file, then the Executed line, which goes last because the board's limit cuts the end off."""
+    return fit_topic(f"train {train_id}: {verdict}; yours: {yours}{ios_note}; see {result_path}; {executed}")
+
+
 def report(train_id, base, merged, conflicts, output, train_dir, census=None, broken=(), taken_back=()):
     """Writes each agent's result and posts it to them on the board. `broken`
     holds the branches without_broken_branches left out, each as (request,
     the compile errors in its files), and `taken_back` the requests it merged
     after all, having left them out for a conflict with a branch that broke
     the build."""
-    verdict, executed, failures, errors, crashed = summarize(output) if merged else ("NOT RUN", "", [], [], False)
+    mac_verdict, executed, failures, errors, crashed = summarize(output) if merged else ("NOT RUN", "", [], [], False)
+    remote = remote_line(train_dir)
+    interface = remote_ios_ui_result(train_dir) if remote else None
+    # The whole train's verdict counts the iPhone tests too (TL23); the Mac suite's own stays on its own line.
+    verdict = train_verdict(mac_verdict, interface)
     RESULTS.mkdir(parents=True, exist_ok=True)
     summary = [f"# Train {train_id}", "", f"- Base: {base}",
                f"- Merged: {', '.join(r['branch'] + ' (' + r['agent'] + ')' for r in merged) or 'none'}",
-               f"- Verdict: {verdict}", f"- {executed}", f"- Crash: {'yes' if crashed else 'no'}",
+               f"- Verdict: {verdict}", f"- Mac suite verdict: {mac_verdict}", f"- {executed}", f"- Crash: {'yes' if crashed else 'no'}",
                f"- Log: {train_dir / 'run.log'}"]
-    remote = remote_line(train_dir)
     if remote:
         summary += [remote]
     if census:
         ios_label, ios_file = ios_label_and_file(census, train_dir)
         summary += [f"- {ios_label}: {census[0]} ({ios_file})"]
-    interface = remote_ios_ui_result(train_dir) if remote else None
     interface_line = ios_ui_line(interface)
     if interface_line:
         summary += [interface_line]
@@ -904,7 +952,7 @@ def report(train_id, base, merged, conflicts, output, train_dir, census=None, br
         touched = changed_files(base, request["head"])
         my_errors = errors_in_branch(errors, base, request["head"])
         lines = [f"# {agent}: train {train_id}", "", f"- Your branch: {request['branch']} at {request['head'][:8]}",
-                 f"- Verdict of the whole train: {verdict}", f"- {executed}",
+                 f"- Verdict of the whole train: {verdict}", f"- Mac suite verdict: {mac_verdict}", f"- {executed}",
                  f"- Failures in the classes you asked for: {len(mine)}", *[f"  - {f}" for f in mine],
                  f"- Compile errors in files your branch changes: {len(my_errors)}", *[f"  - {e}" for e in my_errors]]
         # Tests of the train that passed only on a later try: shown, so that one that fails now and then is seen.
@@ -915,11 +963,11 @@ def report(train_id, base, merged, conflicts, output, train_dir, census=None, br
         if remote:
             lines += [remote]
         asked_ui = request.get("ios_ui_classes", [])
+        # The failures in the iPhone test classes this agent asked for, named as the Mac's failures are.
+        mine_ui = [f for f in interface[2] if failed_in(f, asked_ui)] if interface_line else []
         if interface_line:
             lines += [interface_line]
             if asked_ui:
-                # The failures in the iPhone test classes this agent asked for, named as the Mac's failures are.
-                mine_ui = [f for f in interface[2] if failed_in(f, asked_ui)]
                 lines += [f"- Failures in the iPhone test classes you asked for: {len(mine_ui)}",
                           *[f"  - {f}" for f in mine_ui]]
         elif asked_ui:
@@ -949,8 +997,9 @@ def report(train_id, base, merged, conflicts, output, train_dir, census=None, br
         (RESULTS / f"{agent}.md").write_text("\n".join(lines))
         if request.get("not_run"):
             ios_note += f"; {len(request['not_run'])} of what you asked for NOT RUN on GitHub (see your result)"
-        post(agent, f"train {train_id}: {verdict}; yours: {len(mine)} failures, {len(my_errors)} compile errors"
-                    f"{ios_note}; see {short_path(RESULTS / (agent + '.md'))}; {executed}")
+        post(agent, result_post(train_id, verdict, yours_words(len(mine), len(mine_ui) if interface_line else None,
+                                                               len(my_errors)),
+                                ios_note, short_path(RESULTS / (agent + ".md")), executed))
     for agent, (request, files) in conflicts.items():
         (RESULTS / f"{agent}.md").write_text(
             f"# {agent}: train {train_id}\n\n- {request['branch']} was left out: it conflicts with the base "

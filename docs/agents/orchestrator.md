@@ -139,6 +139,7 @@ The Mac has 8 GB of memory and froze under the agents' own builds, so agents do 
 While agents work, the orchestrator runs two background tasks.
 `Scripts/agents/hold-build-slots.sh <release flag>` holds every build slot, so no agent builds on its own.
 `python3 -I Scripts/agents/build-train.py loop --hours <N>` runs a train every hour, on the hour; with `--remote` the trains build and test on GitHub Actions instead of this Mac (see **Builds on GitHub** below), and `--remote --soon <minutes>` sends one that many minutes after a request comes.
+Run it with `--base main`, so each train tests a branch merged onto main's tip, as its merge will be: the default base, `train/base`, can be an old commit, which tests each branch without main's newer commits.
 Every heavy job takes the heavy-work lock (`Scripts/agents/heavy_lock.py`), so one runs at a time: the trains, the type-checks, `run_suite.py`, and anything run through `run_locked.py`, simulator runs included.
 The jobs that wait go first come, first served: a waiting job takes a ticket in `heavy-lock-line/` beside the lock, and takes the lock only when no live older ticket remains; the train's first-in-line mark still goes ahead of every ticket.
 
@@ -214,7 +215,8 @@ A push to `TestBuild` also refuses a tree whose `.github/workflows/` or `.github
 Origin's main has held it since 0.4.10 (a1214dc0): **the guard is on**, so a workflow or action change runs on `TestBuild` only after it is on GitHub's main.
 A push waits, up to 125 minutes, while another run is queued or going on `TestBuild` (a newer push cancels the older run), and fails, pushing nothing, if the branch stays busy; so a train, a remote suite, and a hand-sent run take turns, and a train leaves 5 minutes after a request.
 The jobs are in `.github/workflows/tests.yml`, which `test-build.yml` (a push to `TestBuild`) and `check.yml` (main and pull requests) both call, and each run also builds the iPhone app and its UI-test bundle for the iOS Simulator (`Scripts/agents/run-ios-build.py`).
-A train's result and `run_suite.py --remote` list its errors by file, and they never change the tests' verdict.
+A train's result and `run_suite.py --remote` list its errors by file, and the iPhone build's errors never change the tests' verdict.
+The train's verdict does count the iPhone tests ("FAILED (iPhone tests)"), and the board post counts the agent's Mac and iPhone failures apart.
 A test that fails on the runner with a timing, and passes here, is flaky there, not a reason to raise its limit or add it to the list.
 Testing TextMouth (Tests on GitHub Actions) has how to read a run, what differs from the Mac, and the flaky tests.
 
