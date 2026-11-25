@@ -10,3 +10,8 @@
 # l10n-merge-driver` defines once in the repository's config). Where it is not defined, git merges them
 # as text, and two branches that add neighbouring strings conflict.
 *.xcstrings merge=xcstrings
+
+# The test areas list merges as a union: two branches that add classes to the same area keep both sides'
+# lines instead of conflicting, so a train can merge them together (the sync branches of November 25, 2026
+# were left out of shared trains for it). A class removed on one side and kept on the other merges as text.
+/Scripts/test/areas.conf merge=union
