@@ -83,6 +83,63 @@ final class PhoneSyncFolderAccessTests: XCTestCase {
         }
     }
 
+    // MARK: - The Folder Moved Away
+
+    /// The case the plan cares about: the folder was picked, so its bookmark was made while it was there, and later it was moved.
+    /// (Nothing is deleted: a move leaves the old place empty as a deletion does, and the bookmark follows the folder.) The old
+    /// place is a missing folder for a listing and for a read, never a system error, and the bookmark still finds the folder at
+    /// its new place, renewed when the system calls it stale.
+    func testAMovedFolderIsMissingWhereItWasAndFoundWhereItWent() async throws {
+        let parent = try makeFolder()
+        let original = parent.appendingPathComponent("TextMouth Sync", isDirectory: true)
+        try FileManager.default.createDirectory(at: original, withIntermediateDirectories: true)
+        let file = original.appendingPathComponent("store.json")
+        try Data("x".utf8).write(to: file)
+        // As the picker would: the bookmark is made while the folder is there.
+        let access = try makeAccess(for: original)
+
+        let moved = parent.appendingPathComponent("Moved Away", isDirectory: true)
+        try FileManager.default.moveItem(at: original, to: moved)
+
+        // Where the folder was: a missing folder for a listing and for a read.
+        XCTAssertThrowsError(try access.list(original)) {
+            XCTAssertEqual($0 as? SyncProblem, .folderMissing)
+        }
+        do {
+            _ = try await access.read(file, within: .seconds(5))
+            XCTFail("a file of a moved folder was read where it was")
+        } catch {
+            XCTAssertEqual(error as? SyncProblem, .folderMissing)
+        }
+
+        // Where it went: the bookmark follows it.
+        let found = try await access.withFolder { $0.standardizedFileURL.resolvingSymlinksInPath().path }
+        XCTAssertEqual(found, moved.standardizedFileURL.resolvingSymlinksInPath().path)
+        // A stale bookmark is renewed, and the new one is current and names the same place; a current one needs no renewal.
+        if let renewed = try PhoneSyncFolderAccess.renewedBookmark(for: access.bookmark) {
+            let again = try PhoneSyncFolderAccess.resolve(renewed)
+            XCTAssertFalse(again.isStale)
+            XCTAssertEqual(
+                again.url.standardizedFileURL.resolvingSymlinksInPath().path,
+                moved.standardizedFileURL.resolvingSymlinksInPath().path
+            )
+        }
+    }
+
+    /// A bookmark that now names something that is not a folder is a missing folder, not a trap or a system error.
+    func testABookmarkOfAFileIsNotAFolder() async throws {
+        let parent = try makeFolder()
+        let file = parent.appendingPathComponent("not-a-folder.txt")
+        try Data("x".utf8).write(to: file)
+        let access = PhoneSyncFolderAccess(bookmark: try PhoneSyncFolderAccess.makeBookmark(of: file))
+        do {
+            _ = try await access.withFolder { _ in 0 }
+            XCTFail("a file was opened as the sync folder")
+        } catch {
+            XCTAssertEqual(error as? SyncProblem, .folderMissing)
+        }
+    }
+
     // MARK: - Writing and Reading
 
     /// A write is read back whole; a second write without `replacing` is `.exists` and leaves the file as it was.

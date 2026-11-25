@@ -61,6 +61,14 @@ struct PhoneSyncFolderAccess: SyncFolderAccess {
         }
     }
 
+    /// A fresh bookmark of the folder `bookmark` names, when the system found it stale (the folder was moved or renamed, and
+    /// the bookmark still finds it); nil when the bookmark is current. The caller keeps the new one in place of the old.
+    static func renewedBookmark(for bookmark: Data) throws -> Data? {
+        let (folder, isStale) = try resolve(bookmark)
+        guard isStale else { return nil }
+        return try withScope(of: folder) { try makeBookmark(of: folder) }
+    }
+
     /// Opens the folder's scope, hands its URL to `body`, and closes the scope
     /// afterwards. The folder missing, or not a folder, is `.folderMissing`.
     func withFolder<T: Sendable>(_ body: @Sendable (URL) async throws -> T) async throws -> T {
@@ -131,8 +139,11 @@ struct PhoneSyncFolderAccess: SyncFolderAccess {
                     }
                     continuation.resume(returning: data)
                 } catch {
-                    // A cancelled coordination, or a file that isn't there, is a wait, not a loss.
-                    continuation.resume(throwing: Self.problem(for: error, whenMissing: .notDownloaded(device: device), whenCancelled: .notDownloaded(device: device)))
+                    // A cancelled coordination, or a file that isn't there, is a wait, not a loss; but a file whose whole
+                    // folder is gone is the sync folder missing (moved, deleted, or iCloud Drive signed out).
+                    let folderIsThere = FileManager.default.fileExists(atPath: file.deletingLastPathComponent().path)
+                    let missing: SyncProblem = folderIsThere ? .notDownloaded(device: device) : .folderMissing
+                    continuation.resume(throwing: Self.problem(for: error, whenMissing: missing, whenCancelled: .notDownloaded(device: device)))
                 }
             }
         }
