@@ -1208,11 +1208,13 @@ targets:
       - TextMouthProductionTests/StorageGenerationWorkTests.swift
       - TextMouthProductionTests/SubstitutionCompositionTests.swift
       - TextMouthProductionTests/SyncApplyTests.swift
+      - TextMouthProductionTests/SyncBaselineTests.swift
       - TextMouthProductionTests/SyncFormatTests.swift
       - TextMouthProductionTests/SyncMergePropertyTests.swift
       - TextMouthProductionTests/SyncOrderKeyTests.swift
       - TextMouthProductionTests/SyncProjectionTests.swift
       - TextMouthProductionTests/SyncRegistersTests.swift
+      - TextMouthProductionTests/SyncReviewFixTests.swift
       - TextMouthProductionTests/SyncStampTests.swift
       - TextMouthProductionTests/SyncTestFixtures.swift
       - TextMouthProductionTests/SyncWordingTests.swift

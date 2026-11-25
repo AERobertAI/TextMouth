@@ -47,7 +47,9 @@ enum SyncOrderKey {
         let keyed: [(position: Int, key: String, id: String)] = order.enumerated().compactMap { position, id in
             existing[id].map { (position, $0, id.uuidString) }
         }
-        let staying = Set(longestIncreasingRun(of: keyed.map { SortKey(key: $0.key, id: $0.id) }).map { keyed[$0].position })
+        // Strictly increasing by key alone: two books that share a key (two devices each added one to the end)
+        // cannot both stay, since a book moved between them has no key between theirs. One stays, the other is re-keyed.
+        let staying = Set(longestIncreasingRun(of: keyed.map { $0.key }).map { keyed[$0].position })
 
         var result: [UUID: String] = [:]
         var index = 0
@@ -115,7 +117,7 @@ enum SyncOrderKey {
     // MARK: - The longest increasing run
 
     /// The indices of a longest strictly increasing run of `items` (patience
-    /// sorting), earliest on a tie, so the same books stay on every device.
+    /// sorting), the same one for the same items, so the same books stay on every device.
     private static func longestIncreasingRun<Item: Comparable>(of items: [Item]) -> [Int] {
         // tails[length - 1] is the index of the smallest item that ends a run of that length.
         var tails: [Int] = []

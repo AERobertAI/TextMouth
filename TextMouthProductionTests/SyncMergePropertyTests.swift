@@ -12,18 +12,19 @@ final class SyncMergePropertyTests: XCTestCase {
 
     /// A small world of IDs, so that random entries often meet on one key.
     private struct World {
-        let books = (0..<3).map { _ in UUID() }
-        let folders = (0..<3).map { _ in UUID() }
+        // Fixed IDs, so a printed seed replays its case.
+        let books = (1...3).map { SyncTestFixtures.id($0) }
+        let folders = (11...13).map { SyncTestFixtures.id($0) }
     }
 
     /// A random entry of one of `devices`, over the keys of `world`.
     private func randomEntry(_ world: World, devices: [String], using generator: inout SyncSeededGenerator) -> SyncEntry {
-        let book = world.books.randomElement(using: &generator) ?? UUID()
-        let folder = world.folders.randomElement(using: &generator) ?? UUID()
+        let book = world.books.randomElement(using: &generator) ?? SyncTestFixtures.id(1)
+        let folder = world.folders.randomElement(using: &generator) ?? SyncTestFixtures.id(11)
         let wall = Int64.random(in: 1...8, using: &generator)
         let device = devices.randomElement(using: &generator) ?? "a"
         let byHand = Int.random(in: 0..<6, using: &generator) == 0
-        let bookmark = UUID(uuidString: "00000000-0000-0000-0000-00000000000\(Int.random(in: 1...3, using: &generator))") ?? UUID()
+        let bookmark = SyncTestFixtures.id(Int.random(in: 21...23, using: &generator))
         let pick = Int.random(in: 0..<10, using: &generator)
         let key: SyncKey, value: JSONValue
         switch pick {
@@ -118,7 +119,7 @@ final class SyncMergePropertyTests: XCTestCase {
                 let mark = one.entries[.book(id, .presence)]
                 XCTAssertEqual(mark?.value, .null, "seed \(seed)")
                 for (key, entry) in one.entries where key.bookID == id && key != .book(id, .presence) {
-                    if entry.value == .null && key.nullIsRemoval { continue }
+                    if key.marksRemoval(entry.value) { continue }
                     XCTAssertLessThanOrEqual(entry.stamp, mark?.stamp ?? entry.stamp, "seed \(seed)")
                 }
             }

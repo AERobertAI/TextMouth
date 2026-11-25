@@ -1092,6 +1092,7 @@
 		53F9085F027C846169DE0B48 /* OPMLImportSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = B919A7DA15C276911FBD5D3A /* OPMLImportSheet.swift */; };
 		53FEBA16335BD6CAF6F7C523 /* SpeechExportServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBE3921F3B8AEEB13D53154C /* SpeechExportServiceTests.swift */; };
 		540C3EF114F0C90E7684FD56 /* ListeningOptionsWording.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90F7FE9233712D7C34FD4E60 /* ListeningOptionsWording.swift */; };
+		54861CE6A47DF7A2D37866B6 /* SyncReviewFixTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CE0B58C61C2E3EEF2014494 /* SyncReviewFixTests.swift */; };
 		549507F83779D5353731688C /* LibraryViewModel+LibraryFetch.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4D5D7CA6B82157A5E734B92 /* LibraryViewModel+LibraryFetch.swift */; };
 		54B3BE3FE29FB2D634F8078C /* ExportDeepChapterAlert.swift in Sources */ = {isa = PBXBuildFile; fileRef = C57742F0DE3960205EDBF0CB /* ExportDeepChapterAlert.swift */; };
 		54BEF1B49EE7EC16BFAA3201 /* TextSubstitutionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C6B9C07025815378361DC3 /* TextSubstitutionService.swift */; };
@@ -1193,6 +1194,7 @@
 		5C5F2AC2DFF0209833173D9B /* CloudMaintenanceTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9D725CED4DA99E9AC359DF2 /* CloudMaintenanceTestSupport.swift */; };
 		5C73ADEB01E2BA46998E7F61 /* PhoneGoToSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FCE35A7FA1912B4C3A0C90A /* PhoneGoToSheet.swift */; };
 		5C7616BDEC15809056EEF27A /* EPUBMetadataTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF5737DE80C0D1C09DC603F5 /* EPUBMetadataTests.swift */; };
+		5C7C526A6DD673837C259068 /* SyncBaselineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87D700D613D4CE925ABCDDC0 /* SyncBaselineTests.swift */; };
 		5C84F19FA1D09289A602C885 /* TitleTyping.swift in Sources */ = {isa = PBXBuildFile; fileRef = 978C7613E65744037BD9D424 /* TitleTyping.swift */; };
 		5C854AB988E43B0F3BAE6C2C /* PhoneSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 988114F0CCB8B93D799A6124 /* PhoneSession.swift */; };
 		5C959D5AAEEEA9D34DD57E7B /* KFXIonTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 364364ACCDC253E8B79FB72B /* KFXIonTests.swift */; };
@@ -1600,6 +1602,7 @@
 		7D7840FD055F4D87BA2E8855 /* TranscriptCleanupWording.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AA76F941DB6005B2ACE9A7B /* TranscriptCleanupWording.swift */; };
 		7D798AF9F661F52A36F95135 /* Cleaner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2FC61431CECC102B30E88D /* Cleaner.swift */; };
 		7D7A612F89DABBE97D094FE3 /* libObjCExceptionCatcher.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 4D7A8C1B85C2574767A69992 /* libObjCExceptionCatcher.a */; };
+		7D9108BF63AC0482E138C811 /* SyncReviewFixTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CE0B58C61C2E3EEF2014494 /* SyncReviewFixTests.swift */; };
 		7D9FBC30455C0559F4567CCB /* RemovalOutcomeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA06431B0CA64C77B3A3E7EC /* RemovalOutcomeTests.swift */; };
 		7DB4F323B5C23C4B75E68F0D /* ArchiveBudgetTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C9F1A04EC305A46F3412F64 /* ArchiveBudgetTests.swift */; };
 		7DC30B2EBA446669B3B26262 /* CueSheetArrangement.swift in Sources */ = {isa = PBXBuildFile; fileRef = B928D26791E7367459B255A0 /* CueSheetArrangement.swift */; };
@@ -2721,6 +2724,7 @@
 		D742AEB51DB3E5D4B86B5562 /* PDFShortEmbeddedTextTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2BA814A43ED56631AB67591 /* PDFShortEmbeddedTextTests.swift */; };
 		D74B5AF6C30CF26A70885A1B /* PodcastTranscriptReaderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64AE60C5671929814EA806C8 /* PodcastTranscriptReaderTests.swift */; };
 		D74C666556F413AC1C3EA824 /* PhoneMoveFeedback.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B733CAF65C8D9534BDE0FCF /* PhoneMoveFeedback.swift */; };
+		D762FEFF06C8307AE728BD05 /* SyncBaselineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87D700D613D4CE925ABCDDC0 /* SyncBaselineTests.swift */; };
 		D76B14B5FE9FAF0A0FDD891D /* OffsetMapTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9ACC1F97DF34D1D8FC94C9F /* OffsetMapTests.swift */; };
 		D791782CCCB99E239E955133 /* SyncRegistersTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55908F423E956BA6688D6DE1 /* SyncRegistersTests.swift */; };
 		D7B4506B0AAEE8A481D286A8 /* ViewsAndWindowsLibraryListTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3AE47363266B15A9D0558E8 /* ViewsAndWindowsLibraryListTests.swift */; };
@@ -3382,56 +3386,14 @@
 		1110009E1C26377EA9791632 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = Licenses/liblouis;
+			dstPath = "Licenses/foliate-js";
 			dstSubfolderSpec = 7;
 			files = (
-				0AD845456256B3A16D7C8818 /* COPYING.LESSER in CopyFiles */,
-				41F911ECAF492222AF723C10 /* README in CopyFiles */,
-				3B9E63254B4DF94B16995796 /* TABLES-LICENSES.md in CopyFiles */,
+				90056498A62AF125B0A40193 /* LICENSE in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		1C95A964EBB5395E1F896244 /* CopyFiles */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "Licenses/swift-cmark";
-			dstSubfolderSpec = 7;
-			files = (
-				484B3DE040DF28FFE1FF2B1A /* COPYING in CopyFiles */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		22F87EE1CD8EE45ABFA905DA /* CopyFiles */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = Licenses/ZIPFoundation;
-			dstSubfolderSpec = 7;
-			files = (
-				B53CF54032772DDA4A07FE3E /* LICENSE in CopyFiles */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		38646AF7EBDB1D27AC1D1A34 /* CopyFiles */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "Licenses/swift-cmark";
-			dstSubfolderSpec = 7;
-			files = (
-				7F45AD2B57BD2C0A720765D2 /* COPYING in CopyFiles */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		43D860587E3D34D99DBE20EE /* CopyFiles */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "Licenses/foliate-js";
-			dstSubfolderSpec = 7;
-			files = (
-				58D60DB0C519A04521146FE2 /* LICENSE in CopyFiles */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		6B0B86279E79DE3F37623761 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = Licenses/FFmpeg;
@@ -3443,39 +3405,27 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		722FBEEA65BD1330BA160782 /* CopyFiles */ = {
+		22F87EE1CD8EE45ABFA905DA /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = Licenses/LAME;
+			dstPath = Licenses/MonkeysAudio;
 			dstSubfolderSpec = 7;
 			files = (
-				71E909A75CB244D9B2F34D62 /* COPYING in CopyFiles */,
-				73E1650B261DC0EF550E5219 /* LICENSE in CopyFiles */,
+				ACDB2675941A5C0E4C7BBD53 /* License.txt in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		9084BB8B81525DF351B483C8 /* CopyFiles */ = {
+		38646AF7EBDB1D27AC1D1A34 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = Licenses/TrueAudio;
+			dstPath = Licenses/MonkeysAudio;
 			dstSubfolderSpec = 7;
 			files = (
-				F670EE7321BFD5392BFC3FE0 /* COPYRIGHT in CopyFiles */,
-				B64321B34FC2B5BA08402448 /* README in CopyFiles */,
+				63226C27B2F3926F3C2FDEC5 /* License.txt in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		9279BF2ABA7F3526AB66874A /* CopyFiles */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "Licenses/foliate-js";
-			dstSubfolderSpec = 7;
-			files = (
-				90056498A62AF125B0A40193 /* LICENSE in CopyFiles */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		A39FC5304C4E02A9AD636B71 /* CopyFiles */ = {
+		43D860587E3D34D99DBE20EE /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = Licenses/liblouis;
@@ -3487,17 +3437,17 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		A8EA7A5970473F9D2BA7FBC3 /* CopyFiles */ = {
+		6B0B86279E79DE3F37623761 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = Licenses/MonkeysAudio;
+			dstPath = Licenses/SwiftSoup;
 			dstSubfolderSpec = 7;
 			files = (
-				63226C27B2F3926F3C2FDEC5 /* License.txt in CopyFiles */,
+				8060835D3173CF79D3AAC057 /* LICENSE in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		AEEC52048DCF4B83D3509FCE /* CopyFiles */ = {
+		722FBEEA65BD1330BA160782 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = Licenses/TrueAudio;
@@ -3508,14 +3458,65 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		9084BB8B81525DF351B483C8 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = Licenses/SwiftSoup;
+			dstSubfolderSpec = 7;
+			files = (
+				8DC4D0E2FA5CA1FD85E21A03 /* LICENSE in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9279BF2ABA7F3526AB66874A /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = Licenses/FFmpeg;
+			dstSubfolderSpec = 7;
+			files = (
+				0CB57D63797A2CB23667DA51 /* COPYING.LGPLv2.1 in CopyFiles */,
+				8AD9A5F1823B2868D241DD63 /* LICENSE.md in CopyFiles */,
+				AE61909BFC965F3A9F5A3772 /* README in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A39FC5304C4E02A9AD636B71 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = Licenses/WavPack;
+			dstSubfolderSpec = 7;
+			files = (
+				97915D3B357764DFC5D554AB /* COPYING in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A8EA7A5970473F9D2BA7FBC3 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "Licenses/swift-cmark";
+			dstSubfolderSpec = 7;
+			files = (
+				7F45AD2B57BD2C0A720765D2 /* COPYING in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AEEC52048DCF4B83D3509FCE /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "Licenses/swift-cmark";
+			dstSubfolderSpec = 7;
+			files = (
+				484B3DE040DF28FFE1FF2B1A /* COPYING in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		BF489798E33F1F27D1434BD7 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = Licenses/LAME;
+			dstPath = Licenses/WavPack;
 			dstSubfolderSpec = 7;
 			files = (
-				7FB7320636AAD01C531190FE /* COPYING in CopyFiles */,
-				943853340D2809882740233D /* LICENSE in CopyFiles */,
+				A403CDD4AF53BA525D9A8BA5 /* COPYING in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3534,62 +3535,65 @@
 		C4DD7093AEE01EB21DD71ECD /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = Licenses/SwiftSoup;
+			dstPath = Licenses/LAME;
 			dstSubfolderSpec = 7;
 			files = (
-				8DC4D0E2FA5CA1FD85E21A03 /* LICENSE in CopyFiles */,
+				7FB7320636AAD01C531190FE /* COPYING in CopyFiles */,
+				943853340D2809882740233D /* LICENSE in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		C5522D8A663C635367E6426B /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = Licenses/WavPack;
+			dstPath = Licenses/LAME;
 			dstSubfolderSpec = 7;
 			files = (
-				97915D3B357764DFC5D554AB /* COPYING in CopyFiles */,
+				71E909A75CB244D9B2F34D62 /* COPYING in CopyFiles */,
+				73E1650B261DC0EF550E5219 /* LICENSE in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		C91BEB2BE96CF7A4E3259148 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = Licenses/WavPack;
+			dstPath = Licenses/liblouis;
 			dstSubfolderSpec = 7;
 			files = (
-				A403CDD4AF53BA525D9A8BA5 /* COPYING in CopyFiles */,
+				0AD845456256B3A16D7C8818 /* COPYING.LESSER in CopyFiles */,
+				41F911ECAF492222AF723C10 /* README in CopyFiles */,
+				3B9E63254B4DF94B16995796 /* TABLES-LICENSES.md in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		CC116469FE973F113685AE31 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = Licenses/FFmpeg;
+			dstPath = Licenses/TrueAudio;
 			dstSubfolderSpec = 7;
 			files = (
-				0CB57D63797A2CB23667DA51 /* COPYING.LGPLv2.1 in CopyFiles */,
-				8AD9A5F1823B2868D241DD63 /* LICENSE.md in CopyFiles */,
-				AE61909BFC965F3A9F5A3772 /* README in CopyFiles */,
+				F670EE7321BFD5392BFC3FE0 /* COPYRIGHT in CopyFiles */,
+				B64321B34FC2B5BA08402448 /* README in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		D926A4A859020D8D1509B2F2 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = Licenses/SwiftSoup;
+			dstPath = "Licenses/foliate-js";
 			dstSubfolderSpec = 7;
 			files = (
-				8060835D3173CF79D3AAC057 /* LICENSE in CopyFiles */,
+				58D60DB0C519A04521146FE2 /* LICENSE in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		E59FEE7CCC021127BD65AEAA /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = Licenses/MonkeysAudio;
+			dstPath = Licenses/ZIPFoundation;
 			dstSubfolderSpec = 7;
 			files = (
-				ACDB2675941A5C0E4C7BBD53 /* License.txt in CopyFiles */,
+				B53CF54032772DDA4A07FE3E /* LICENSE in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4394,6 +4398,7 @@
 		5C6D0795C90D1C7A21C9DCA2 /* OwnAudioMemoryWatchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OwnAudioMemoryWatchTests.swift; sourceTree = "<group>"; };
 		5C85D306C64772F64D0FE1E1 /* DAISYParser+OPFParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DAISYParser+OPFParser.swift"; sourceTree = "<group>"; };
 		5CA860A1FCCD80831478C7AF /* PlainTextParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlainTextParser.swift; sourceTree = "<group>"; };
+		5CE0B58C61C2E3EEF2014494 /* SyncReviewFixTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncReviewFixTests.swift; sourceTree = "<group>"; };
 		5D5185C0E74645C91FDCAFC4 /* InterfaceTextWording.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InterfaceTextWording.swift; sourceTree = "<group>"; };
 		5D663F25AB34E43BDD962370 /* FFmpegInAppTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FFmpegInAppTests.swift; sourceTree = "<group>"; };
 		5D94C80F2648CA1147EBD0B7 /* AudioPlaybackFailureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlaybackFailureTests.swift; sourceTree = "<group>"; };
@@ -4706,6 +4711,7 @@
 		877E8C4F4FF6101E4F1B9009 /* PlaybackFuzzTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaybackFuzzTests.swift; sourceTree = "<group>"; };
 		878D1CE90A47FC79D675C8E9 /* BookExportSheetTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookExportSheetTests.swift; sourceTree = "<group>"; };
 		87D36D271CEF23FFE5E2C89C /* ListeningDayKeyMigrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListeningDayKeyMigrationTests.swift; sourceTree = "<group>"; };
+		87D700D613D4CE925ABCDDC0 /* SyncBaselineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncBaselineTests.swift; sourceTree = "<group>"; };
 		87F81F8E8F7A35F6F9AEEFB7 /* maketable.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = maketable.c; sourceTree = "<group>"; };
 		87FB46DD1CB062950ECD6600 /* TimedTextReaderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimedTextReaderTests.swift; sourceTree = "<group>"; };
 		8800AE89D014D00B786FDE60 /* FakeSpeechBufferSynthesizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FakeSpeechBufferSynthesizer.swift; sourceTree = "<group>"; };
@@ -7944,6 +7950,7 @@
 				BE3D89FA3658651474B2E07F /* SwiftSoupCorpusKit.swift */,
 				92EAA2A184222096B697B315 /* SwiftSoupCorpusTests.swift */,
 				ADA46CB4051EBE564665E0FA /* SyncApplyTests.swift */,
+				87D700D613D4CE925ABCDDC0 /* SyncBaselineTests.swift */,
 				2C32498DC2ED439469C59284 /* SyncCenterTests.swift */,
 				BFC99B0FC72B28090BF9EF2F /* SyncEngineTests.swift */,
 				3BC9E0A693C4313BBBFCA2B1 /* SyncFolderTests.swift */,
@@ -7958,6 +7965,7 @@
 				0EFE573C15D14C239DF881DB /* SyncReaderPlaceTests.swift */,
 				5D9938CDF4984F9EB97078FF /* SyncRealDriveTests.swift */,
 				55908F423E956BA6688D6DE1 /* SyncRegistersTests.swift */,
+				5CE0B58C61C2E3EEF2014494 /* SyncReviewFixTests.swift */,
 				7724510E01D3A11D66944AA2 /* SyncSchedulerTests.swift */,
 				0B3D56ABB22DE4533768AC65 /* SyncSettingsSectionTests.swift */,
 				CD5C35E866D3D13539A8014C /* SyncStampTests.swift */,
@@ -9378,11 +9386,13 @@
 				0B24CA02B96A71CD67817574 /* StorageGenerationWorkTests.swift in Sources */,
 				2F04992E922ADAE87A0CA832 /* SubstitutionCompositionTests.swift in Sources */,
 				2B1A53F6E1ACDBF13E8AC7A7 /* SyncApplyTests.swift in Sources */,
+				5C7C526A6DD673837C259068 /* SyncBaselineTests.swift in Sources */,
 				3EFD3755882B67A3E80D9D53 /* SyncFormatTests.swift in Sources */,
 				0A4CDB6C13BFB391FEAC2398 /* SyncMergePropertyTests.swift in Sources */,
 				ADCDD882E167BDEC72A294E6 /* SyncOrderKeyTests.swift in Sources */,
 				38DEAE8DD7FE9D4A2CD87E01 /* SyncProjectionTests.swift in Sources */,
 				F2E5F57E7C6D896F409118DD /* SyncRegistersTests.swift in Sources */,
+				7D9108BF63AC0482E138C811 /* SyncReviewFixTests.swift in Sources */,
 				C9BE0A5A6EB0F9B7C4E89E8D /* SyncStampTests.swift in Sources */,
 				A1E7798B6F5AA3B53C8C7FA6 /* SyncTestFixtures.swift in Sources */,
 				05BEA2AE374D25332EC711E3 /* SyncWordingTests.swift in Sources */,
@@ -10228,6 +10238,7 @@
 				8AEA79C0EDC9834386F3B6AE /* SwiftSoupCorpusKit.swift in Sources */,
 				8B2E1959D3055F7540FE4031 /* SwiftSoupCorpusTests.swift in Sources */,
 				D05B364FA7503AA23069ED3E /* SyncApplyTests.swift in Sources */,
+				D762FEFF06C8307AE728BD05 /* SyncBaselineTests.swift in Sources */,
 				405962DAB5182C49DF8194B9 /* SyncCenterTests.swift in Sources */,
 				86EDEF385598D3CBA564A78E /* SyncEngineTests.swift in Sources */,
 				7338F02AF3CE41610035B490 /* SyncFolderTests.swift in Sources */,
@@ -10242,6 +10253,7 @@
 				2863A6B31D6C3D53C3A1DA3C /* SyncReaderPlaceTests.swift in Sources */,
 				A59D1168531F86A093FD34CF /* SyncRealDriveTests.swift in Sources */,
 				D791782CCCB99E239E955133 /* SyncRegistersTests.swift in Sources */,
+				54861CE6A47DF7A2D37866B6 /* SyncReviewFixTests.swift in Sources */,
 				7AE195B85B66B92368F15AD6 /* SyncSchedulerTests.swift in Sources */,
 				19CAF69166AB9A5BEC9AB4AF /* SyncSettingsSectionTests.swift in Sources */,
 				D1A2369BCE1F051566FB17A3 /* SyncStampTests.swift in Sources */,
