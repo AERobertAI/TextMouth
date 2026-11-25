@@ -44,8 +44,8 @@ Every format TextMouth reads, with how well each is tested, is in [the list of f
 - The iPhone reads BRF, BRL, and PEF books too, with liblouis inside the app, since an iPhone app can start no helper program.
   It reads with the table chosen in the Braille section of its Settings (see The iPhone's Braille section, in [Settings](settings-braille.md)), which offers the tables the app carries for many languages.
   It has no Braille Code pop-up in Book Information yet.
-  A book sent from a Mac, whose stored table is one of the Mac's own, is read with the iPhone's table of the same file name when the iPhone has one.
-  When it has none, the iPhone refuses the book with "“NAME” needs “fr-bfu-g2.ctb”, one of a Mac's own braille tables, which TextMouth on iPhone doesn't have.
+  A book from a Mac, sent in a TextMouth package or in a shared library, whose stored table is one of the Mac's own, is read with the iPhone's table of the same file name when the iPhone has one.
+  When it has none, the iPhone refuses the book with "“NAME” needs “ru.tbl”, one of a Mac's own braille tables, which TextMouth on iPhone doesn't have.
   Add it on your Mac, then send the book here."
   The iPhone stops a translation by the same limits as the Mac, and one that runs 5 seconds past its limit is abandoned.
   Every later translation then says "TextMouth stopped the braille translation earlier because it took too long, and won't try again until TextMouth is closed and opened again."

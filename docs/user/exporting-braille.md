@@ -51,11 +51,12 @@ The three pop-ups are the Braille tab's own, so they offer this Mac's tables too
 They offer more than the Braille tab does: the tables that only write braille.
 An export only ever writes braille, so it can use them, and they are one more choice in the Export dialog alone.
 
-- Which tables: the Mac app's own four English tables, VoiceOver's tables on this Mac, and the tables of VoiceOver's that only write braille, which the Mac judges by the newer liblouis, 3.39.0 (see Tables that only write braille, in [Settings](settings-braille.md)).
+- Which tables: the Mac app's own four English tables, VoiceOver's tables on this Mac, and the tables of VoiceOver's that only write braille, which the Mac judges by the newer liblouis (see Tables that only write braille, in [Settings](settings-braille.md)).
   When one of them would be listed with the same words as a table that reads back, only the one that reads back is listed.
 - Their names say nothing of direction: a table that only writes braille is named as the others are, by its code, its contraction, and its language.
 - The options start from the Braille tab's choice.
   When that choice is one of these tables, the pop-ups show it, and an export writes with it.
+  A table an iPhone chose, whose name has no "mac:" in front, such as fr-bfu-g2.ctb, shows as this Mac's table of that name, and the export writes with it.
 - The iPhone has no Export dialog yet.
   Its pack carries print-only tables, German, Chinese, Korean, Czech, Thai, Vietnamese, Hebrew, and Persian among them, which an export there would offer.
 

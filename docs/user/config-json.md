@@ -103,9 +103,12 @@ Braille: brailleTable, the table braille files are read and written with, by its
 
 TextMouth writes the table in use, "en-ueb-g2.ctb" until one is chosen.
 A missing, empty, or other value leaves the current table as it is.
-Other values are a bare name of no table of this Mac's (a file that only a table includes, such as "en-ueb-chardefs.uti", is none), and "mac:" and a name with a slash, a comma, or a leading dot.
+Other values are "mac:" and a name with a slash, a comma, or a leading dot, and a bare name of a file that is no table, such as "en-ueb-chardefs.uti", which a table only includes.
 A "mac:" name is taken as it is, without reading this Mac's tables: TextMouth checks the table before its first use, and an import or an export that needs a table this Mac lacks or refuses fails by name (see [Adding books](settings-braille.md)).
-A bare name that is none of the four is kept when this Mac's tables list a table of that name, and read with this Mac's file of that name.
+A bare name that is none of the four is kept when this Mac has a VoiceOver file of that name that is a table TextMouth offers, and read with that file.
+TextMouth judges it from that one file's head and never reads the folder of tables at launch.
+A bare name this Mac has no table of, such as an iPhone's "en-nz-g2.ctb", leaves this Mac reading with its own table, and TextMouth writes the name back into config.json as it was, so that the iPhone keeps its choice.
+It does so until you change the table on this Mac, which then replaces the name.
 A table that only writes braille (see Tables that only write braille, in [Settings](settings-braille.md)) is kept too, and an export may use it; reading never offers it, but a setting that already names one keeps working.
 It chooses the table for books imported and braille exported from then on.
 A book already in the library keeps the table it was imported with.

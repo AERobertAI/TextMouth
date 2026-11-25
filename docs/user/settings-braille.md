@@ -35,6 +35,8 @@ The iPhone has a Braille section in its Settings instead (see The iPhone's Brail
   For a table built into TextMouth it is "The chosen table is built into TextMouth (liblouis 3.39.0)."
   For one of this Mac's tables it is "The chosen table is one of this Mac's VoiceOver braille tables (liblouis 3.34.0).", with the version of this Mac's tables; when they name none, it says "The chosen table is one of this Mac's VoiceOver braille tables." alone.
   When this Mac no longer has the table chosen, as after a macOS update that removed it, it is "This Mac no longer has the chosen table, “mac:fr-bfu-g2.ctb”; choose another."
+- A table chosen on an iPhone, whose name has no "mac:" in front, such as fr-bfu-g2.ctb, is read by this Mac with VoiceOver's table of that name.
+  The pop-ups show it as that table, with its language, and the sentence says it is one of this Mac's VoiceOver braille tables; it is never shown as English, or as built in.
 - The caption under that sentence reads "TextMouth reads braille files (BRF, BRL, and PEF) with this code and exports with it unless the Export dialog chooses another.
   A book keeps the code it was imported with."
   A change applies to the books imported from then on; a book already in the library keeps its code.
@@ -81,7 +83,8 @@ The iPhone has a Braille section in its Settings instead (see The iPhone's Brail
   In place of the pop-ups, the tab says "TextMouth found no braille tables in its bundle." when TextMouth finds no table at all, in its bundle or on this Mac.
 - config.json holds the choice as brailleTable (see [Editing settings in config.json](config-json.md)).
 - A table's stored value is its bare file name, such as "en-ueb-g2.ctb", and the value of one of this Mac's tables is "mac:" and its file name.
-  A Mac and an iPhone share a library, so each reads the other's value and neither rewrites it: see Braille settings in [Editing settings in config.json](config-json.md).
+  A library shared by a Mac and an iPhone, and a book sent from one to the other in a TextMouth package, carry such values across.
+  Each device reads the other's value with its own table of that file name and neither rewrites it: see Braille settings in [Editing settings in config.json](config-json.md).
 
 ### The iPhone's Braille section
 <!-- id: iphone-braille-section; keys: iPhone Settings, Braille code row, braille tables, FR32, FR40, language headings, VoiceOver list; src: TextMouth/Phone/PhoneSettingsModel.swift, TextMouth/Phone/PhoneSettingsWording.swift, TextMouth/Phone/PhoneChoice.swift, TextMouth/Platform/iOS/Views/Settings/PhoneSettingsView.swift, TextMouth/Platform/iOS/Views/PhoneChoiceSheet.swift, TextMouth/Models/BrailleTableCatalog.swift, TextMouthiOSUITests/BrailleSettingsUITests.swift -->
@@ -90,15 +93,19 @@ The iPhone's Settings has a section headed "Braille", after Reading and before T
 It holds, in order:
 
 - "Braille code", a button whose value is the table in use in words, such as "Unified English Braille, contracted (Grade 2), in English".
-  Its hint is "The braille code for reading and writing braille."
+  Its hint is "The braille code for reading braille files."
 - A caption: "TextMouth reads braille files you add from now on with this code.
   A book keeps the code it was added with."
+- A second caption, only when the table in use only writes braille: "The chosen table only writes braille, so it is not offered for reading braille files; choose another."
 - "Braille file characters", a button whose value is the characters in use, such as "North American Braille ASCII".
   Its hint is "How a BRF or BRL file writes each braille cell.
   Most files use North American Braille ASCII."
 - The switch "Guess the braille code of new books".
   Its hint, "When on, a braille file read as contracted Unified English Braille that is clearly English Braille, American Edition is read as that instead.", is also written under it as a caption.
   It does what the Mac's switch does (see Guess the braille code of new books, above).
+
+### The iPhone's list of braille codes
+<!-- id: iphone-braille-list; keys: Braille code list, language headings, selected row, Cancel, VoiceOver headings rotor; src: TextMouth/Phone/PhoneSettingsModel.swift, TextMouth/Phone/PhoneChoice.swift, TextMouth/Platform/iOS/Views/PhoneChoiceSheet.swift, TextMouth/Platform/iOS/Views/Settings/PhoneSettingsView.swift, TextMouth/Models/BrailleTableCatalog.swift, TextMouthiOSUITests/BrailleSettingsUITests.swift -->
 
 "Braille code" opens a list under the title "Braille code", with a Cancel button.
 One list holds every table the iPhone reads braille files with, where the Mac has the Language, Braille code, and Contraction pop-ups:
@@ -107,6 +114,7 @@ One list holds every table the iPhone reads braille files with, where the Mac ha
   English comes first, and the other languages follow by their names in your language.
 - Each table is one row, read as its code, how far it contracts, and its language, such as "French braille, contracted (Grade 2), in French".
   The table in use is announced as selected, and the list opens with VoiceOver on it.
+  This holds for a table a Mac chose too: a value such as "mac:fr-bfu-g2.ctb" marks the iPhone's French row, and the Braille code row's value says its language.
 - A table that only writes braille is not in the list (see Tables that only write braille, below).
 - Choosing a table sets it at once and closes the list.
   Cancel closes the list and leaves the choice as it was.
@@ -119,10 +127,11 @@ One list holds every table the iPhone reads braille files with, where the Mac ha
 The Mac's tab has more, and the iPhone's section leaves it out:
 
 - the Language and Contraction pop-ups, which the one list replaces;
-- the sentence under the pop-ups that says where the table comes from, and the captions the Mac's tab puts under the file characters pop-up and the guess switch;
+- the sentence under the pop-ups that says where the table comes from, except the one for a table that only writes braille, and the captions the Mac's tab puts under the file characters pop-up and the guess switch;
 - this Mac's VoiceOver tables, their check, and their refusals, since an iPhone has no such tables.
 
 A table the iPhone's pack lacks is not on the iPhone at all: a book that needs one of a Mac's own tables is refused (see [What TextMouth reads](reads-daisy-and-braille.md)).
+The captions of the Braille section wrap onto as many lines as their words need at any text size.
 
 ## This Mac's braille tables
 <!-- id: this-mac-braille-tables; keys: VoiceOver braille tables, mac: tables, BrailleTables folder, LiblouisBrailleTranslator, 26.3, eight-dot; src: TextMouth/Models/BrailleTableCatalog.swift, TextMouth/Models/BrailleTableOrigin.swift, TextMouth/Services/MacBrailleTableCheck.swift, TextMouth/Services/BrailleTranslator.swift, TextMouthProductionTests/BrailleTablePrintOnlyTests.swift -->
@@ -138,7 +147,9 @@ This Mac's braille tables, in the Braille tab and in Export's braille options, a
   Never one that states it is eight-dot (one that states nothing is offered, and its check, below, decides), never a table that only includes another table offered in the same language, and never a table that only writes braille (see Tables that only write braille, below).
   Where this Mac has a file named like one of TextMouth's four, only TextMouth's is listed.
   The test log line that begins BRAILLE_COUNTS says how many tables and languages this Mac offers for reading and for export.
-- Listed, but refused when chosen: on macOS 26.3 the tables of Greek, Hungarian, Icelandic, Serbian, and Cantonese.
+- Left out: a VoiceOver table that does nothing but include files its folder lacks, since it could never load.
+  Apple left out some of the files that a few tables include, so on macOS 26.3 Icelandic (is.tbl), Portuguese (pt.tbl), and Serbian (sr.tbl) are not listed.
+- Listed, but refused when chosen: on macOS 26.3 the tables of Greek, Hungarian, and Cantonese.
 - The check: TextMouth checks a Mac table the first time it is chosen in a session, off the main thread, so nothing waits; the pop-ups show the table chosen until the check ends.
   TextMouth's braille helper loads the table, translates a sample of letters, digits, and typographic punctuation to braille and back, and measures its memory and speed.
   A table is refused when it does not load, when it needs more than 64 MB of memory, or when it translates more slowly than 50 KB a second (20 seconds for each MB), and a table that does not state that it is six-dot is refused when its braille for the sample holds eight-dot cells.
@@ -167,9 +178,11 @@ They are marked "direction: forward" in the table; German, Czech, Latvian, Slove
 - Exporting braille offers them (see [Exporting braille files](exporting-braille.md)).
   Reading never does: not the Braille tab, not Book Information's Braille Code pop-up, not Replace Existing, and not an import.
   The iPhone has no Export dialog yet, so its list offers them nowhere; its pack carries them.
-- The Mac judges each of VoiceOver's tables by the newer liblouis, 3.39.0, whenever 3.39.0 has a table of that file name.
+- The Mac judges each of VoiceOver's tables by the newer liblouis.
+  When VoiceOver's liblouis is older than TextMouth's, 3.39.0, or names no version, a table is print-only when either marks it so.
   VoiceOver's older copies of cs.tbl, lv.tbl, sl.tbl, and zh_CHN.tbl lack the mark that 3.39.0 gives them, and so does a table that only includes one, such as zh_TW.tbl.
-  The Mac offers them for export and not for reading.
+  When VoiceOver's liblouis is newer, VoiceOver's own tables decide.
+  The Mac offers a print-only table for export and not for reading.
 - Nothing in use breaks.
   A book already read with such a table keeps its text and its stored value, and so does a setting that names one.
   They are only left out of the choices you make from now on.

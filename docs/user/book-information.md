@@ -159,6 +159,7 @@ Which books have it: any braille book, whatever its file (BRF, BRL, or PEF), exc
 Its items are the braille codes this TextMouth and this Mac offer, each named as the book's row and Speak Info name it, such as "Unified English Braille, contracted (Grade 2)" or "French braille, contracted (Grade 2), in French", with the book's own selected.
 A book that records no code shows the default one.
 A code this Mac no longer offers, as one of VoiceOver's tables a macOS update removed, shows as the last item, selected, by the name it was recorded under; choosing it changes nothing.
+A book whose table is stored as the other kind of device spells it, such as an iPhone's fr-bfu-g2.ctb on a Mac, has its own item selected, and keeps the value it was stored with.
 The items never include a table that only writes braille (see Tables that only write braille, in [Settings](settings-braille.md)).
 A book already read with one keeps its text and its table, and the pop-up shows it as that last item, selected, by its name; choosing it changes nothing.
 Reading this Mac's tables takes a moment, so the pop-up is dimmed until they are listed, showing the book's own code meanwhile.
