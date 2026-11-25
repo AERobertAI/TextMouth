@@ -22,36 +22,6 @@ struct SyncCursors: Codable, Equatable, Sendable {
     var merged: [String: Int] = [:]
 }
 
-/// The library's syncing values as last recorded or applied
-/// (`baseline.json`), as a list because a key with a payload can't be a JSON
-/// object key.
-struct SyncBaselineFile: Codable, Equatable, Sendable {
-    /// One recorded value.
-    struct Item: Codable, Equatable, Sendable {
-        var key: SyncKey
-        var value: JSONValue
-    }
-    var items: [Item] = []
-    /// Keys a person changed by hand, as last recorded.
-    var byHand: [SyncKey] = []
-
-    /// The baseline of `projection`, in a fixed order so the same values write the same bytes.
-    init(_ projection: SyncProjection) {
-        items = projection.values.map { Item(key: $0.key, value: $0.value) }
-            .sorted { "\($0.key)" < "\($1.key)" }
-        byHand = projection.byHand.sorted { "\($0)" < "\($1)" }
-    }
-
-    /// An empty baseline.
-    init() {}
-
-    /// This baseline as a projection.
-    var projection: SyncProjection {
-        SyncProjection(values: Dictionary(items.map { ($0.key, $0.value) }, uniquingKeysWith: { _, last in last }),
-                       byHand: Set(byHand))
-    }
-}
-
 /// The files a device keeps for itself in `Sync/<store id>/` of its data
 /// directory, on its own disk (section 3): `device.json`, `clock.json`,
 /// `cursors.json`, `registers.json`, `baseline.json`, and the outbox's
@@ -102,13 +72,13 @@ struct SyncLocalFiles: Sendable {
     /// The value of `type` in the file at `url`, or nil when the file is missing or doesn't decode.
     func read<T: Decodable>(_ type: T.Type, at url: URL) -> T? {
         guard let data = try? Data(contentsOf: url) else { return nil }
-        return SyncFileCoding.decode(type, from: data)
+        return try? SyncValueCoding.makeDecoder().decode(type, from: data)
     }
 
     /// Writes `value` atomically at `url`, making the folder first.
     func write<T: Encodable>(_ value: T, to url: URL) throws {
         try prepare()
-        try SyncFileCoding.encode(value).write(to: url, options: .atomic)
+        try SyncFormats.encode(value).write(to: url, options: .atomic)
     }
 
     /// The device's state, or nil before it joined.
@@ -132,7 +102,7 @@ struct SyncLocalFiles: Sendable {
     func saveRegisters(_ registers: SyncRegisters) throws { try write(registers, to: registersURL) }
 
     /// The baseline, empty before the first record.
-    func loadBaseline() -> SyncBaselineFile { read(SyncBaselineFile.self, at: baselineURL) ?? SyncBaselineFile() }
+    func loadBaseline() -> SyncProjection { read(SyncProjection.self, at: baselineURL) ?? SyncProjection() }
     /// Saves the baseline.
-    func saveBaseline(_ baseline: SyncBaselineFile) throws { try write(baseline, to: baselineURL) }
+    func saveBaseline(_ baseline: SyncProjection) throws { try write(baseline, to: baselineURL) }
 }

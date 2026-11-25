@@ -53,6 +53,8 @@ actor SyncEngine {
     private var clock: SyncClock
     private var registers: SyncRegisters
     private var baseline: SyncProjection
+    /// The book and folder keys the baseline holds that the library lacked at launch, held until the first apply (R7).
+    private var launchHold = SyncLaunchHold()
     private var cursors: SyncCursors
     /// Whether this device must publish a snapshot at its next exchange: it is new, or restored.
     private var snapshotDue: Bool
@@ -89,7 +91,7 @@ actor SyncEngine {
             try local.write(SyncOutboxIndex(), to: local.outboxIndexURL)
             try local.saveRegisters(SyncRegisters())
             try local.saveCursors(SyncCursors())
-            try local.saveBaseline(SyncBaselineFile())
+            try local.saveBaseline(SyncProjection())
             fresh = true
         }
         let state = device!
@@ -106,7 +108,7 @@ actor SyncEngine {
         self.outbox = outbox
         self.registers = registers
         clock = local.loadClock(device: state.deviceID)
-        baseline = local.loadBaseline().projection
+        baseline = local.loadBaseline()
         cursors = local.loadCursors()
         snapshotDue = fresh
     }
@@ -117,9 +119,14 @@ actor SyncEngine {
     /// clock, registers, and (when asked) baseline are saved after the file, so a crash in between
     /// is found at the next start.
     @discardableResult
-    private func append(_ pairs: [PendingChange], updatingBaseline: Bool) throws -> Int {
+    private func append(_ pairs: [PendingChange], updatingBaseline: Bool, joining: Bool = false) throws -> Int {
         guard !pairs.isEmpty else { return 0 }
-        let stamped = pairs.map { SyncEntry(key: $0.key, value: $0.value, stamp: clock.next(at: now()), byHand: $0.byHand) }
+        // A device's first record in a store is a joining, restored, or copied library: its old places and
+        // undated values are stamped as old as they are, so they lose to what the store holds already.
+        let stamped = pairs.map { pair -> SyncEntry in
+            let stamp = joining ? SyncMerge.joiningStamp(for: pair.key, value: pair.value, device: deviceID) : clock.next(at: now())
+            return SyncEntry(key: pair.key, value: pair.value, stamp: stamp, byHand: pair.byHand)
+        }
         let seq = try outbox.append(stamped)
         try local.saveClock(clock)
         registers.merge(stamped)
@@ -129,21 +136,34 @@ actor SyncEngine {
         if updatingBaseline {
             // Only `absorb` writes the baseline: it forgets removals, notes hand edits, and keeps list orders.
             baseline.absorb(stamped)
-            try local.saveBaseline(SyncBaselineFile(baseline))
+            try local.saveBaseline(baseline)
         }
         return pairs.count
     }
 
     /// Compares `library`'s projection with the baseline and records each changed key
     /// (section 6, the recorder); returns how many. The projection is made here, off the
-    /// main thread. `atLaunch` is the first run after launch, which stamps what an older
-    /// TextMouth left.
+    /// main thread. The first record after launch learns which books and folders the library
+    /// lacks (`SyncLaunchHold`), and none of those is reported removed until `settleLaunch` (R7).
     @discardableResult
-    func record(library: Library, atLaunch: Bool) throws -> Int {
+    func record(library: Library) throws -> Int {
         let projection = SyncProjection.of(library, contents: contents())
-        let changes = SyncMerge.changes(from: baseline, to: projection, atLaunch: atLaunch)
+        launchHold.observeLaunch(baseline: baseline, now: projection)
+        let changes = SyncMerge.changes(from: baseline, to: projection, hold: launchHold)
         let ordered = changes.sorted { "\($0.key)" < "\($1.key)" }
-        return try append(ordered.map { PendingChange(key: $0.key, value: $0.value, byHand: projection.byHand.contains($0.key)) }, updatingBaseline: true)
+        let joining = outbox.device.lastSeq == 0
+        return try append(
+            ordered.map { PendingChange(key: $0.key, value: $0.value, byHand: projection.byHand.contains($0.key)) },
+            updatingBaseline: true, joining: joining
+        )
+    }
+
+    /// Ends the launch hold, once the first apply after launch has had its chance to put books back:
+    /// a book or folder still missing is forgotten by the baseline, so it is neither put back nor
+    /// reported as removed (R7).
+    func settleLaunch(library: Library) throws {
+        launchHold.settle(baseline: &baseline, now: SyncProjection.of(library, contents: contents()))
+        try local.saveBaseline(baseline)
     }
 
     /// Records Keep on All Devices on or off, as a person chose (section 16): never projected from the library.
@@ -153,14 +173,14 @@ actor SyncEngine {
 
     /// Records a book's content, once the backup has it uploaded (section 8).
     func recordContent(_ content: SyncContent, for bookID: UUID) throws {
-        try append([PendingChange(key: .book(bookID, .content), value: try SyncFileCoding.jsonValue(of: content), byHand: false)], updatingBaseline: false)
+        try append([PendingChange(key: .book(bookID, .content), value: SyncValueCoding.json(content), byHand: false)], updatingBaseline: false)
     }
 
     /// The contents of every book in the registers, for `SyncProjection.of`.
     func contents() -> [UUID: SyncContent] {
         var found: [UUID: SyncContent] = [:]
         for (key, entry) in registers.entries {
-            if case .book(let id, .content) = key, let content = SyncFileCoding.value(entry.value, as: SyncContent.self) {
+            if case .book(let id, .content) = key, let content = SyncValueCoding.decode(SyncContent.self, from: entry.value) {
                 found[id] = content
             }
         }
@@ -208,7 +228,12 @@ actor SyncEngine {
         let read = try await reader.read(after: cursors)
         result.read = read
         if read.laterVersionFrom != nil { throw SyncProblem.laterVersion }
-        for entry in read.entries { clock.observe(entry.stamp, at: now()) }
+        var refused = 0
+        for entry in read.entries where !clock.observe(entry.stamp, at: now()) { refused += 1 }
+        if refused > 0 {
+            // One device's clock far ahead must not freeze every device's time: its stamps are merged, but the clock doesn't follow.
+            DiagnosticLog.event(.storage, "SYNC_RUN: \(refused) stamps from other devices were more than a day ahead of this clock, which did not follow them") // l10n: no (debug log text)
+        }
         result.changedKeys = registers.merge(read.entries)
         cursors = read.cursors
         try local.saveCursors(cursors)
@@ -220,7 +245,7 @@ actor SyncEngine {
     /// Writes this device's `device.json`: its name, platform, version, last `seq`, and the time.
     private func publishDevice(in folder: SyncFolder) throws {
         try folder.publishDevice(SyncDeviceFile(
-            formatVersion: SyncFileCoding.supportedFormatVersion, deviceID: deviceID, name: identity.name,
+            formatVersion: SyncFormats.currentVersion, deviceID: deviceID, name: identity.name,
             platform: identity.platform, appVersion: identity.appVersion, lastSeq: outbox.device.lastSeq, updated: now()
         ))
     }
@@ -235,9 +260,9 @@ actor SyncEngine {
     /// Takes the values applied to the library into the baseline, key by key, so a change made
     /// meanwhile is still found; and records the entries applying made (same-named folders folded).
     func didApply(_ application: SyncApplication, keys: Set<SyncKey>) throws {
-        // The baseline takes the winning entry of each applied key, through `absorb` alone.
-        baseline.absorb(keys.sorted { "\($0)" < "\($1)" }.compactMap { registers.entries[$0] })
-        try local.saveBaseline(SyncBaselineFile(baseline))
+        // The baseline takes the winning entry of each applied key, through `absorbApplied` alone.
+        baseline.absorbApplied(keys, from: registers)
+        try local.saveBaseline(baseline)
         let folded = application.entriesToRecord.sorted { "\($0.key)" < "\($1.key)" }
         try append(folded.map { PendingChange(key: $0.key, value: $0.value, byHand: false) }, updatingBaseline: true)
     }

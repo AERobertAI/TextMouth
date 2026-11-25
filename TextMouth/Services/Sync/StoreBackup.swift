@@ -155,8 +155,8 @@ struct StoreBackup: Sendable {
             try? FileManager.default.removeItem(at: item.url)
         }
 
-        let manifest = StoreManifest(formatVersion: SyncFileCoding.supportedFormatVersion, bookID: bookID, files: entries)
-        let manifestData = try SyncFileCoding.encode(manifest)
+        let manifest = StoreManifest(formatVersion: SyncFormats.currentVersion, bookID: bookID, files: entries)
+        let manifestData = try SyncFormats.encode(manifest)
         let manifestName = SyncNames.manifestName(sha256: SHA256.hash(data: manifestData).map { String(format: "%02x", $0) }.joined())
         if !present.contains(manifestName) {
             do { try folder.access.write(manifestData, to: bookFolder.appendingPathComponent(manifestName), replacing: false) } catch SyncProblem.exists {}
@@ -193,13 +193,13 @@ struct StoreBackup: Sendable {
             modified[file.path] = date.map { Int64($0.timeIntervalSince1970 * 1000) } ?? 0
         }
         let pointer = StorePointer(
-            formatVersion: SyncFileCoding.supportedFormatVersion, storeID: storeID, bookID: bookID,
+            formatVersion: SyncFormats.currentVersion, storeID: storeID, bookID: bookID,
             manifest: manifest, uploaded: uploaded,
             files: entries.map {
                 StorePointer.File(path: $0.path, sha256: $0.sha256, size: $0.size, modified: modified[$0.path] ?? 0, onThisDevice: true)
             }
         )
-        try SyncFileCoding.encode(pointer).write(to: package.appendingPathComponent(StorePointer.fileName), options: .atomic)
+        try SyncFormats.encode(pointer).write(to: package.appendingPathComponent(StorePointer.fileName), options: .atomic)
     }
 
     // MARK: Uploads and eviction

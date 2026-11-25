@@ -79,7 +79,7 @@ final class SyncEngineTests: XCTestCase {
         XCTAssertTrue(names.contains(SyncNames.changeFile(seq: 2, kind: .snapshot)), "a new device publishes a snapshot")
         // The device file says who this is.
         let data = try Data(contentsOf: folder.deviceFolder(engine.deviceID).appendingPathComponent(SyncNames.deviceFile))
-        XCTAssertEqual(SyncFileCoding.decode(SyncDeviceFile.self, from: data)?.name, "Mac")
+        XCTAssertEqual((try? SyncFormats.decodeDeviceFile(data))?.name, "Mac")
     }
 
     /// Once uploaded, nothing waits.
@@ -117,28 +117,38 @@ final class SyncEngineTests: XCTestCase {
     // MARK: - A book missing at launch (R7)
 
     /// A book missing at launch is not recorded as removed, however many times the library is recorded
-    /// before the first apply; once that is over, a removal a person makes in the running app is.
-    func testAMissingBookIsNotRemovedUntilTheFirstApplyIsOver() async throws {
+    /// and even after the first apply (it is forgotten, not removed); a removal a person makes in the
+    /// running app is recorded.
+    func testAMissingBookIsNeverRemovedByTheLaunchButAPersonsRemovalIs() async throws {
         let sandbox = try makeSandboxDirectory("sync-engine-launch")
         let files = local(sandbox, "a")
         let kept = SyncTestFixtures.book()
         let engine = try SyncEngine(local: files, identity: identity())
-        let recorded = try await engine.record(library: SyncTestFixtures.library(books: [kept]), atLaunch: false)
+        let recorded = try await engine.record(library: SyncTestFixtures.library(books: [kept]))
         XCTAssertGreaterThan(recorded, 0)
 
         // The next launch: the book is missing, and stays so across several records.
         let relaunched = try SyncEngine(local: files, identity: identity())
         let empty = SyncTestFixtures.library()
-        let first = try await relaunched.record(library: empty, atLaunch: true)
-        let second = try await relaunched.record(library: empty, atLaunch: true)
+        let first = try await relaunched.record(library: empty)
+        let second = try await relaunched.record(library: empty)
         XCTAssertEqual([first, second], [0, 0])
         let presence = await relaunched.entry(for: .book(kept.id, .presence))
         XCTAssertEqual(presence?.value, .bool(true), "the book is still there in the registers")
 
-        // After the first apply, a removal is a person's.
-        let removed = try await relaunched.record(library: empty, atLaunch: false)
-        XCTAssertEqual(removed, 1)
-        let mark = await relaunched.entry(for: .book(kept.id, .presence))
+        // The first apply could not put it back: it is forgotten, and no later record reports it removed.
+        try await relaunched.settleLaunch(library: empty)
+        let afterSettling = try await relaunched.record(library: empty)
+        XCTAssertEqual(afterSettling, 0)
+
+        // A book a person removes in the running app is a removal.
+        let other = SyncTestFixtures.book()
+        let withOther = SyncTestFixtures.library(books: [other])
+        let added = try await relaunched.record(library: withOther)
+        XCTAssertGreaterThan(added, 0)
+        let removedCount = try await relaunched.record(library: empty)
+        XCTAssertEqual(removedCount, 1)
+        let mark = await relaunched.entry(for: .book(other.id, .presence))
         XCTAssertEqual(mark?.value, .null)
     }
 

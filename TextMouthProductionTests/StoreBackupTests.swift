@@ -60,7 +60,7 @@ final class StoreBackupTests: XCTestCase {
         let package = try makePackage(in: sandbox)
         let (backup, _) = makeBackup(sandbox)
         let result = try backup.back(up: package, bookID: bookID)
-        let pointer = try SyncFileCoding.decoder().decode(StorePointer.self, from: Data(contentsOf: package.appendingPathComponent(StorePointer.fileName)))
+        let pointer = try SyncValueCoding.makeDecoder().decode(StorePointer.self, from: Data(contentsOf: package.appendingPathComponent(StorePointer.fileName)))
         XCTAssertEqual(pointer.manifest, result.manifestName)
         XCTAssertNil(pointer.uploaded)
         XCTAssertTrue(pointer.files.allSatisfy(\.onThisDevice))
@@ -186,7 +186,7 @@ final class StoreBackupTests: XCTestCase {
         XCTAssertEqual(backup.uploadState(of: result, bookID: bookID), .notReported)
 
         try backup.markUploaded(package: package, bookID: bookID, result: result)
-        let pointer = try SyncFileCoding.decoder().decode(StorePointer.self, from: Data(contentsOf: package.appendingPathComponent(StorePointer.fileName)))
+        let pointer = try SyncValueCoding.makeDecoder().decode(StorePointer.self, from: Data(contentsOf: package.appendingPathComponent(StorePointer.fileName)))
         XCTAssertEqual(pointer.uploaded, result.manifestName)
         XCTAssertEqual(backup.evictBlobs(of: result, bookID: bookID), result.uploadNames.count)
     }

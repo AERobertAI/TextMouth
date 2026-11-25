@@ -1,53 +1,6 @@
 import Foundation
 
-// MARK: - How Sync Files Are Written (FR43)
-
-/// The one JSON form of every file sync writes: sorted keys, so the same
-/// value writes the same bytes, and dates to the second as ISO 8601, so a
-/// date reads back equal on every device.
-enum SyncFileCoding {
-    /// The encoder every sync file is written with.
-    static func encoder() -> JSONEncoder {
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.sortedKeys]
-        encoder.dateEncodingStrategy = .iso8601
-        return encoder
-    }
-
-    /// The decoder every sync file is read with.
-    static func decoder() -> JSONDecoder {
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-        return decoder
-    }
-
-    /// `value` as bytes in the sync form.
-    static func encode<T: Encodable>(_ value: T) throws -> Data {
-        try encoder().encode(value)
-    }
-
-    /// A value of `type` read from `data`, or nil when it doesn't decode.
-    static func decode<T: Decodable>(_ type: T.Type, from data: Data) -> T? {
-        try? decoder().decode(type, from: data)
-    }
-
-    /// `value` as a `JSONValue`, the form a register holds it in.
-    static func jsonValue<T: Encodable>(of value: T) throws -> JSONValue {
-        let data = try encode(value)
-        guard let json = decode(JSONValue.self, from: data) else { throw SyncProblem.damaged(file: "value") }
-        return json
-    }
-
-    /// The `T` a register's `JSONValue` holds, or nil when it holds another shape.
-    static func value<T: Decodable>(_ json: JSONValue, as type: T.Type) -> T? {
-        guard let data = try? encode(json) else { return nil }
-        return decode(type, from: data)
-    }
-
-    /// The highest `formatVersion` this TextMouth reads; a file with a
-    /// higher one is left alone, and "a later TextMouth" is said.
-    static let supportedFormatVersion = 1
-}
+// MARK: - The Names in a Sync Folder (FR43)
 
 /// The names of the files and folders of a sync folder, pinned by
 /// `OnDiskContractTests` (section 3): lower-case UUIDs and digests, 12-digit

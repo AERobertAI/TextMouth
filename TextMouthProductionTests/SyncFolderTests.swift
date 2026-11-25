@@ -23,7 +23,7 @@ final class SyncFolderTests: XCTestCase {
 
     /// Puts a change file into a device's folder, as another device's upload would.
     private func put(_ file: SyncChangeFile, in folder: SyncFolder) throws {
-        try folder.access.write(SyncFileCoding.encode(file),
+        try folder.access.write(SyncFormats.encode(file),
                                 to: folder.deviceFolder(file.deviceID).appendingPathComponent(SyncNames.changeFile(seq: file.seq, kind: file.kind)),
                                 replacing: false)
     }
@@ -45,7 +45,7 @@ final class SyncFolderTests: XCTestCase {
     func testReadStore() async throws {
         let (folder, drive) = try makeFolder()
         let store = SyncStoreFile(formatVersion: 1, storeID: UUID(), created: Date(timeIntervalSince1970: 100), createdBy: "Mac", createdByVersion: "0.6.0")
-        try drive.write(SyncFileCoding.encode(store), to: folder.storeURL, replacing: false)
+        try drive.write(SyncFormats.encode(store), to: folder.storeURL, replacing: false)
         let read = try await folder.readStore(expecting: store.storeID, within: .seconds(1))
         XCTAssertEqual(read, store)
         do {
@@ -87,7 +87,7 @@ final class SyncFolderTests: XCTestCase {
 
         // It arrives while waiting.
         let store = SyncStoreFile(formatVersion: 1, storeID: UUID(), created: Date(timeIntervalSince1970: 1), createdBy: "Mac", createdByVersion: "0.6.0")
-        let data = try SyncFileCoding.encode(store)
+        let data = try SyncFormats.encode(store)
         let arrived = try await folder.waitForStore(timeout: .seconds(60), interval: .seconds(2)) { _ in
             try drive.write(data, to: folder.storeURL, replacing: true)
         }
@@ -98,7 +98,7 @@ final class SyncFolderTests: XCTestCase {
     func testJoinWaitsForAStoreNotDownloaded() async throws {
         let (folder, drive) = try makeFolder()
         let store = SyncStoreFile(formatVersion: 1, storeID: UUID(), created: Date(timeIntervalSince1970: 1), createdBy: "Mac", createdByVersion: "0.6.0")
-        try drive.write(SyncFileCoding.encode(store), to: folder.storeURL, replacing: false)
+        try drive.write(SyncFormats.encode(store), to: folder.storeURL, replacing: false)
         drive.setNotDownloaded(SyncNames.storeFile)
         let arrived = try await folder.waitForStore(timeout: .seconds(60), interval: .seconds(2)) { _ in
             drive.setNotDownloaded(SyncNames.storeFile, false)

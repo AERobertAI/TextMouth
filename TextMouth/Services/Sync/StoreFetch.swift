@@ -24,7 +24,7 @@ struct StoreFetch: Sendable {
     /// placeholder holds, with every file `onThisDevice: false`.
     static func placeholderPointer(storeID: UUID, manifestName: String, manifest: StoreManifest) -> StorePointer {
         StorePointer(
-            formatVersion: SyncFileCoding.supportedFormatVersion, storeID: storeID, bookID: manifest.bookID,
+            formatVersion: SyncFormats.currentVersion, storeID: storeID, bookID: manifest.bookID,
             manifest: manifestName, uploaded: manifestName,
             files: manifest.files.map { StorePointer.File(path: $0.path, sha256: $0.sha256, size: $0.size, modified: 0, onThisDevice: false) }
         )
@@ -33,12 +33,12 @@ struct StoreFetch: Sendable {
     /// The pointer in the package at `package`, or nil for a book that has none.
     static func pointer(in package: URL) -> StorePointer? {
         guard let data = try? Data(contentsOf: package.appendingPathComponent(StorePointer.fileName)) else { return nil }
-        return SyncFileCoding.decode(StorePointer.self, from: data)
+        return try? SyncFormats.decodePointer(data)
     }
 
     /// Writes `pointer` atomically in the package at `package`.
     static func write(_ pointer: StorePointer, in package: URL) throws {
-        try SyncFileCoding.encode(pointer).write(to: package.appendingPathComponent(StorePointer.fileName), options: .atomic)
+        try SyncFormats.encode(pointer).write(to: package.appendingPathComponent(StorePointer.fileName), options: .atomic)
     }
 
     /// Whether the package at `package` is a placeholder or partly one: some file of its pointer isn't here.
@@ -70,7 +70,7 @@ struct StoreFetch: Sendable {
         if pointer.storeID != storeID { throw SyncProblem.anotherStore }
         let bookFolder = folder.bookFolder(pointer.bookID)
         let manifestData = try await folder.access.read(bookFolder.appendingPathComponent(pointer.manifest), within: perFile)
-        guard let manifest = SyncFileCoding.decode(StoreManifest.self, from: manifestData), manifest.bookID == pointer.bookID else {
+        guard let manifest = try? SyncFormats.decodeManifest(manifestData, named: pointer.manifest), manifest.bookID == pointer.bookID else {
             throw SyncProblem.damaged(file: pointer.manifest)
         }
         try FileManager.default.createDirectory(at: staging, withIntermediateDirectories: true)
