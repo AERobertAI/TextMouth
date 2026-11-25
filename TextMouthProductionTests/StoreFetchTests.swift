@@ -112,7 +112,7 @@ final class StoreFetchTests: XCTestCase {
         let task = Task { try await world.fetch.fetch(package: world.placeholder) }
         task.cancel()
         do {
-            try await task.value
+            _ = try await task.value
         } catch is CancellationError {
         } catch { XCTFail("\(error)") }
         // Whatever the pointer claims is here, is here.
