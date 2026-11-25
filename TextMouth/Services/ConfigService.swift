@@ -782,6 +782,7 @@ final class ConfigService: ObservableObject {
                 + [LibrarySessionLease.macIDPreference.key, "sleepTimer.lastUsedDuration", "NSQuitAlwaysKeepsWindows"]
                 + [BookTextEditor.explainedPreference.key, BookManifestEditor.explainedPreference.key]
                 + [LibraryViewModel.finishedBooksAtEndKey]
+                + SyncPreferences.keys
 
             /// Pairs each key with the config.json field of the same name.
             private static func sameNames(_ keys: [String]) -> [(storeKey: String, field: String)] {

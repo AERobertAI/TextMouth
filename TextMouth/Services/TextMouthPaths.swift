@@ -148,6 +148,17 @@ enum TextMouthPaths {
         root.appendingPathComponent(libraryFolderName, isDirectory: true)
     }
 
+    /// The name of the folder inside the data directory that holds this
+    /// device's own sync files (FR43): its device file, clock, registers,
+    /// baseline, and outbox, in a folder per store.
+    static let syncFolderName = "Sync" // l10n: no (a folder's name on disk)
+
+    /// The folder of this device's own sync files, in the data directory;
+    /// nothing is made there until a sync folder is chosen (rule R1).
+    static var syncDir: URL {
+        root.appendingPathComponent(syncFolderName, isDirectory: true)
+    }
+
     /// The name of the folder of logs inside the data directory.
     static let logsFolderName = "Logs" // l10n: no (a folder's name on disk)
 
