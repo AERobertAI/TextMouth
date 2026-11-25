@@ -720287,10 +720287,40 @@
             "value" : "Mantenimento di %@ su tutti i dispositivi."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "「%@」をすべてのデバイスで保持しています。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "모든 기기에 보관 중: %@."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Mantendo %@ em todos os dispositivos."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Хранится на всех устройствах: %@."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Зберігається на всіх пристроях: %@."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "正在所有设备上保留“%@”。"
           }
         }
       }
@@ -720329,10 +720359,40 @@
             "value" : "Spostato al punto salvato su %@."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ に保存されている位置に移動しました。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@에 저장된 위치로 이동했습니다."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Movido para o ponto salvo em %@."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Переход к месту, сохранённому на %@."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Перехід до місця, збереженого на %@."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "已跳到 %@ 上保存的位置。"
           }
         }
       }
@@ -720371,10 +720431,40 @@
             "value" : "Sincronizzato. Nessuna novità."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "同期しました。新しい内容はありません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "동기화했습니다. 새로운 내용이 없습니다."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Sincronizado. Nada de novo."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Синхронизировано. Нового нет."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Синхронізовано. Нічого нового."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "已同步。没有新内容。"
           }
         }
       }
@@ -720491,6 +720581,30 @@
             }
           }
         },
+        "ja" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "同期しました。%2$@ から %1$lld 件の変更を受け取りました。"
+                }
+              }
+            }
+          }
+        },
+        "ko" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "동기화했습니다. %2$@에서 변경 사항 %1$lld개를 받았습니다."
+                }
+              }
+            }
+          }
+        },
         "pt-BR" : {
           "variations" : {
             "plural" : {
@@ -720510,6 +720624,78 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Sincronizado. %lld alterações de %@."
+                }
+              }
+            }
+          }
+        },
+        "ru" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Синхронизировано. %lld изменения с %@."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Синхронизировано. %lld изменений с %@."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Синхронизировано. %lld изменение с %@."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Синхронизировано. %lld изменения с %@."
+                }
+              }
+            }
+          }
+        },
+        "uk" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Синхронізовано. %lld зміни з %@."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Синхронізовано. %lld змін з %@."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Синхронізовано. %lld зміна з %@."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Синхронізовано. %lld зміни з %@."
+                }
+              }
+            }
+          }
+        },
+        "zh-Hans" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "已同步。来自 %2$@ 的 %1$lld 项更改。"
                 }
               }
             }
@@ -720551,10 +720737,40 @@
             "value" : "Sincronizzazione in corso."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "同期しています。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "동기화하는 중입니다."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Sincronizando."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Синхронизация."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Синхронізація."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "正在同步。"
           }
         }
       }
@@ -720593,10 +720809,40 @@
             "value" : "La cartella di sincronizzazione ora contiene la sincronizzazione di un’altra libreria. Scegli di nuovo Unisciti alla cartella di sincronizzazione."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "同期フォルダに、別のライブラリの同期データが入っています。「同期フォルダに参加」をもう一度選択してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "동기화 폴더에 다른 보관함의 동기화 내용이 들어 있습니다. “동기화 폴더에 참여”를 다시 선택하십시오."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "A pasta de sincronização agora contém a sincronização de outra biblioteca. Escolha Entrar na pasta de sincronização novamente."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "В папке синхронизации теперь синхронизация другой библиотеки. Выберите «Подключиться к папке синхронизации» ещё раз."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "У папці синхронізації тепер синхронізація іншої бібліотеки. Виберіть ще раз «Приєднатися до папки синхронізації»."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "同步文件夹现在存放的是另一个资料库的同步内容。请再次选取“加入同步文件夹”。"
           }
         }
       }
@@ -720635,10 +720881,40 @@
             "value" : "Backup dei libri: %lld di %lld."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ブックをバックアップ中：%lld / %lld。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "책 백업 중: %lld/%lld."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Fazendo backup dos livros: %lld de %lld."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Резервное копирование книг: %lld из %lld."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Резервне копіювання книг: %lld з %lld."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "正在备份图书：已完成 %lld 本，共 %lld 本。"
           }
         }
       }
@@ -720755,6 +721031,30 @@
             }
           }
         },
+        "ja" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld 冊のブック"
+                }
+              }
+            }
+          }
+        },
+        "ko" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "책 %lld권"
+                }
+              }
+            }
+          }
+        },
         "pt-BR" : {
           "variations" : {
             "plural" : {
@@ -720774,6 +721074,78 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "%lld livros"
+                }
+              }
+            }
+          }
+        },
+        "ru" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld книги"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld книг"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld книга"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld книги"
+                }
+              }
+            }
+          }
+        },
+        "uk" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld книги"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld книг"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld книга"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld книги"
+                }
+              }
+            }
+          }
+        },
+        "zh-Hans" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld 本图书"
                 }
               }
             }
@@ -720893,6 +721265,30 @@
             }
           }
         },
+        "ja" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld 件の変更"
+                }
+              }
+            }
+          }
+        },
+        "ko" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "변경 사항 %lld개"
+                }
+              }
+            }
+          }
+        },
         "pt-BR" : {
           "variations" : {
             "plural" : {
@@ -720912,6 +721308,78 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "%lld alterações"
+                }
+              }
+            }
+          }
+        },
+        "ru" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld изменения"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld изменений"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld изменение"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld изменения"
+                }
+              }
+            }
+          }
+        },
+        "uk" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld зміни"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld змін"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld зміна"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld зміни"
+                }
+              }
+            }
+          }
+        },
+        "zh-Hans" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld 项更改"
                 }
               }
             }
@@ -720953,10 +721421,40 @@
             "value" : "Esiste già una cartella chiamata TextMouth Sync. Per usarla, scegli Unisciti alla cartella di sincronizzazione."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth Sync という名前のフォルダがすでにあります。使うには「同期フォルダに参加」を選択してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth Sync라는 폴더가 이미 있습니다. 사용하려면 “동기화 폴더에 참여”를 선택하십시오."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Já existe uma pasta chamada TextMouth Sync. Para usá-la, escolha Entrar na pasta de sincronização."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Папка с именем TextMouth Sync уже существует. Чтобы использовать её, выберите «Подключиться к папке синхронизации»."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Папка з назвою TextMouth Sync уже існує. Щоб її використати, виберіть «Приєднатися до папки синхронізації»."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "此处已有名为 TextMouth Sync 的文件夹。要使用它，请选取“加入同步文件夹”。"
           }
         }
       }
@@ -720995,10 +721493,40 @@
             "value" : "Sceglie la cartella TextMouth Sync configurata da un altro dispositivo."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "別のデバイスで設定された TextMouth Sync フォルダを選択します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "다른 기기에서 설정한 TextMouth Sync 폴더를 선택합니다."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Escolhe a pasta TextMouth Sync que outro dispositivo configurou."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Выбирает папку TextMouth Sync, созданную на другом устройстве."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Вибирає папку TextMouth Sync, створену на іншому пристрої."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "选取由另一台设备设置的 TextMouth Sync 文件夹。"
           }
         }
       }
@@ -721037,10 +721565,40 @@
             "value" : "Unisciti alla cartella di sincronizzazione…"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "同期フォルダに参加…"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "동기화 폴더에 참여…"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Entrar na pasta de sincronização…"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Подключиться к папке синхронизации…"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Приєднатися до папки синхронізації…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "加入同步文件夹…"
           }
         }
       }
@@ -721157,6 +721715,30 @@
             }
           }
         },
+        "ja" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld 冊のブックをすべてのデバイスに保持"
+                }
+              }
+            }
+          }
+        },
+        "ko" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "책 %lld권을 모든 기기에 보관"
+                }
+              }
+            }
+          }
+        },
         "pt-BR" : {
           "variations" : {
             "plural" : {
@@ -721176,6 +721758,78 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Manter %lld livros em todos os dispositivos"
+                }
+              }
+            }
+          }
+        },
+        "ru" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Хранить %lld книги на всех устройствах"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Хранить %lld книг на всех устройствах"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Хранить %lld книгу на всех устройствах"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Хранить %lld книги на всех устройствах"
+                }
+              }
+            }
+          }
+        },
+        "uk" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Зберігати %lld книги на всіх пристроях"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Зберігати %lld книг на всіх пристроях"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Зберігати %lld книгу на всіх пристроях"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Зберігати %lld книги на всіх пристроях"
+                }
+              }
+            }
+          }
+        },
+        "zh-Hans" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "在所有设备上保留 %lld 本图书"
                 }
               }
             }
@@ -721217,10 +721871,40 @@
             "value" : "Ogni dispositivo che sincronizza mantiene i file di questo libro e li scarica quando può."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "同期するすべてのデバイスが、このブックのファイルを保持し、可能なときにダウンロードします。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "동기화하는 모든 기기가 이 책의 파일을 보관하고, 가능할 때 다운로드합니다."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Todos os dispositivos que sincronizam mantêm os arquivos deste livro e os baixam quando puderem."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Каждое устройство с синхронизацией хранит файлы этой книги и загружает их, когда может."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Кожен пристрій із синхронізацією зберігає файли цієї книги й завантажує їх, коли може."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "每台参与同步的设备都会保留这本图书的文件，并在可以时下载它们。"
           }
         }
       }
@@ -721259,10 +721943,40 @@
             "value" : "Mantieni su tutti i dispositivi"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "すべてのデバイスに保持"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "모든 기기에 보관"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Manter em todos os dispositivos"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Хранить на всех устройствах"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Зберігати на всіх пристроях"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "在所有设备上保留"
           }
         }
       }
@@ -721301,10 +722015,40 @@
             "value" : "Mantenuto su tutti i dispositivi"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "すべてのデバイスに保持済み"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "모든 기기에 보관됨"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Mantido em todos os dispositivos"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Хранится на всех устройствах"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Зберігається на всіх пристроях"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "已在所有设备上保留"
           }
         }
       }
@@ -721343,10 +722087,40 @@
             "value" : "Ultimo contatto con %@ alle %@."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ との最後の通信は %@ です。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@에서 마지막으로 응답한 시각: %@."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Último contato com %@ às %@."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Последний контакт с %@ в %@."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Останній контакт із %@ о %@."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "上次与 %@ 联系是在 %@。"
           }
         }
       }
@@ -721385,10 +722159,40 @@
             "value" : "La sincronizzazione è pensata per una libreria conservata su questo Mac. Sposta prima questa libreria qui con Cambia posizione."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "同期は、この Mac に置かれているライブラリが対象です。先に「場所を変更」で、このライブラリをここに移動してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "동기화는 이 Mac에 있는 보관함에서만 사용할 수 있습니다. 먼저 “위치 변경”으로 이 보관함을 여기로 옮기십시오."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "A sincronização é para uma biblioteca mantida neste Mac. Primeiro mova esta para cá com Alterar localização."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Синхронизация работает для библиотеки, которая хранится на этом Mac. Сначала перенесите эту библиотеку сюда через «Изменить расположение»."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Синхронізація працює для бібліотеки, що зберігається на цьому Mac. Спершу перенесіть цю бібліотеку сюди через «Змінити розташування»."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "同步仅适用于保存在这台 Mac 上的资料库。请先用“更改位置”把这个资料库移到这里。"
           }
         }
       }
@@ -721427,10 +722231,40 @@
             "value" : "Questa non è una cartella TextMouth Sync, oppure i suoi file non sono ancora arrivati da iCloud Drive."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth Sync フォルダではないか、そのファイルがまだ iCloud Drive から届いていません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth Sync 폴더가 아니거나, 폴더의 파일이 아직 iCloud Drive에서 도착하지 않았습니다."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Essa não é uma pasta TextMouth Sync, ou os arquivos dela ainda não chegaram do iCloud Drive."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Это не папка TextMouth Sync, или её файлы ещё не поступили из iCloud Drive."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Це не папка TextMouth Sync, або її файли ще не надійшли з iCloud Drive."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "这不是 TextMouth Sync 文件夹，或其文件尚未从 iCloud 云盘到达。"
           }
         }
       }
@@ -721469,10 +722303,40 @@
             "value" : "Questa cartella non è in iCloud Drive. Scegli una cartella in iCloud Drive."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "このフォルダは iCloud Drive にありません。iCloud Drive 内のフォルダを選択してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이 폴더는 iCloud Drive에 없습니다. iCloud Drive에 있는 폴더를 선택하십시오."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Essa pasta não está no iCloud Drive. Escolha uma pasta no iCloud Drive."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Эта папка не в iCloud Drive. Выберите папку в iCloud Drive."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ця папка не в iCloud Drive. Виберіть папку в iCloud Drive."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "该文件夹不在 iCloud 云盘中。请选取 iCloud 云盘中的文件夹。"
           }
         }
       }
@@ -721511,10 +722375,40 @@
             "value" : "Mantiene uguali i tuoi libri, le posizioni di lettura e i segnalibri su Mac e iPhone, tramite iCloud Drive."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive を使って、Mac と iPhone で、ブック、読み取り位置、ブックマークを同じ状態に保ちます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive를 통해 Mac과 iPhone에서 책, 읽기 위치, 북마크를 똑같이 유지합니다."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Mantém seus livros, posições de leitura e marcadores iguais no seu Mac e no seu iPhone, pelo iCloud Drive."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Поддерживает одинаковыми ваши книги, позиции чтения и закладки на Mac и iPhone через iCloud Drive."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Підтримує однаковими ваші книги, позиції читання та закладки на Mac і iPhone через iCloud Drive."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "通过 iCloud 云盘，让你的图书、阅读位置和书签在 Mac 和 iPhone 上保持一致。"
           }
         }
       }
@@ -721553,10 +722447,40 @@
             "value" : "Sincronizzazione"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "同期"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "동기화"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Sincronização"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Синхронизация"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Синхронізація"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "同步"
           }
         }
       }
@@ -721595,10 +722519,40 @@
             "value" : "Crea una cartella chiamata TextMouth Sync nella cartella di iCloud Drive che scegli e vi copia i tuoi libri."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "選択した iCloud Drive のフォルダ内に TextMouth Sync という名前のフォルダを作成し、ブックをコピーします。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "선택한 iCloud Drive 폴더 안에 TextMouth Sync라는 폴더를 만들고 책을 복사합니다."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Cria uma pasta chamada TextMouth Sync na pasta do iCloud Drive que você escolher e copia seus livros para ela."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Создаёт папку TextMouth Sync в выбранной вами папке iCloud Drive и копирует в неё ваши книги."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Створює папку TextMouth Sync у вибраній вами папці iCloud Drive та копіює до неї ваші книги."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "在你选取的 iCloud 云盘文件夹中创建名为 TextMouth Sync 的文件夹，并将你的图书复制进去。"
           }
         }
       }
@@ -721637,10 +722591,40 @@
             "value" : "Configura la sincronizzazione…"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "同期を設定…"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "동기화 설정…"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Configurar sincronização…"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Настроить синхронизацию…"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Налаштувати синхронізацію…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "设置同步…"
           }
         }
       }
@@ -721679,10 +722663,40 @@
             "value" : "TextMouth non trova la cartella TextMouth Sync in iCloud Drive. Potrebbe essere stata spostata o eliminata, oppure iCloud Drive potrebbe essere disconnesso. La tua libreria su %@ è rimasta com’era."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth が iCloud Drive 内の TextMouth Sync フォルダを見つけられません。移動または削除されたか、iCloud Drive からサインアウトしている可能性があります。%@ のライブラリは変わっていません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth가 iCloud Drive에서 TextMouth Sync 폴더를 찾을 수 없습니다. 폴더가 이동되었거나 삭제되었거나 iCloud Drive에서 로그아웃되었을 수 있습니다. %@의 보관함은 그대로입니다."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "O TextMouth não encontra a pasta TextMouth Sync no iCloud Drive. Ela pode ter sido movida ou apagada, ou o iCloud Drive pode estar sem login. Sua biblioteca (%@) continua como estava."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth не находит папку TextMouth Sync в iCloud Drive. Возможно, её переместили или удалили, либо выполнен выход из iCloud Drive. Ваша библиотека (%@) осталась без изменений."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth не знаходить папку TextMouth Sync в iCloud Drive. Можливо, її переміщено чи видалено, або виконано вихід з iCloud Drive. Ваша бібліотека (%@) залишилася без змін."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 在 iCloud 云盘中找不到 TextMouth Sync 文件夹。它可能已被移动或删除，或者 iCloud 云盘已退出登录。你在 %@ 上的资料库保持原样。"
           }
         }
       }
@@ -721721,10 +722735,40 @@
             "value" : "Questa cartella di sincronizzazione è stata creata da una versione più recente di TextMouth. Aggiorna TextMouth per usarla."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "この同期フォルダは、より新しい TextMouth で作成されました。使うには TextMouth をアップデートしてください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "더 새로운 TextMouth가 이 동기화 폴더를 만들었습니다. 사용하려면 TextMouth를 업데이트하십시오."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Uma versão mais recente do TextMouth criou esta pasta de sincronização. Atualize o TextMouth para usá-la."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Эту папку синхронизации создала более новая версия TextMouth. Обновите TextMouth, чтобы её использовать."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Цю папку синхронізації створила новіша версія TextMouth. Оновіть TextMouth, щоб її використовувати."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "此同步文件夹由更新版本的 TextMouth 创建。请更新 TextMouth 以使用它。"
           }
         }
       }
@@ -721763,10 +722807,40 @@
             "value" : "Alcune modifiche da iPhone non sono ancora state scaricate. TextMouth riproverà."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iPhone からの変更の一部がまだダウンロードされていません。TextMouth は再試行します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iPhone의 변경 사항 일부를 아직 다운로드하지 못했습니다. TextMouth가 다시 시도합니다."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Algumas alterações do iPhone ainda não foram baixadas. O TextMouth vai tentar de novo."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Некоторые изменения с iPhone ещё не загружены. TextMouth попробует снова."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Деякі зміни з iPhone ще не завантажено. TextMouth спробує знову."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "来自 iPhone 的部分更改尚未下载。TextMouth 将重试。"
           }
         }
       }
@@ -721805,10 +722879,40 @@
             "value" : "La sincronizzazione è disattivata."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "同期はオフです。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "동기화가 꺼져 있습니다."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "A sincronização está desativada."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Синхронизация выключена."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Синхронізацію вимкнено."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "同步已关闭。"
           }
         }
       }
@@ -721925,6 +723029,30 @@
             }
           }
         },
+        "ja" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "オフラインです。%lld 件の変更が %@ で待機中で、ネットワークが戻ると送信されます。"
+                }
+              }
+            }
+          }
+        },
+        "ko" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "오프라인입니다. 변경 사항 %lld개가 %@에서 대기 중이며, 네트워크가 돌아오면 전송됩니다."
+                }
+              }
+            }
+          }
+        },
         "pt-BR" : {
           "variations" : {
             "plural" : {
@@ -721944,6 +723072,78 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Sem conexão. %lld alterações aguardam para serem enviadas por %@ quando a rede voltar."
+                }
+              }
+            }
+          }
+        },
+        "ru" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Нет сети (%2$@). Будет отправлено, когда сеть вернётся: %1$lld изменения."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Нет сети (%2$@). Будет отправлено, когда сеть вернётся: %1$lld изменений."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Нет сети (%2$@). Будет отправлено, когда сеть вернётся: %1$lld изменение."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Нет сети (%2$@). Будет отправлено, когда сеть вернётся: %1$lld изменения."
+                }
+              }
+            }
+          }
+        },
+        "uk" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Немає мережі (%2$@). Буде надіслано, коли мережа з’явиться: %1$lld зміни."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Немає мережі (%2$@). Буде надіслано, коли мережа з’явиться: %1$lld змін."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Немає мережі (%2$@). Буде надіслано, коли мережа з’явиться: %1$lld зміна."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Немає мережі (%2$@). Буде надіслано, коли мережа з’явиться: %1$lld зміни."
+                }
+              }
+            }
+          }
+        },
+        "zh-Hans" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "已离线。%lld 项更改正在 %@ 上等待，网络恢复后将发送。"
                 }
               }
             }
@@ -721985,10 +723185,40 @@
             "value" : "iCloud Drive è pieno, quindi %@ e %@ non vengono caricati. La tua libreria su %@ è rimasta com’era."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive がいっぱいのため、%@と%@はアップロードされていません。%@ のライブラリは変わっていません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive가 가득 차서 업로드하지 못했습니다: %@, %@. %@의 보관함은 그대로입니다."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "O iCloud Drive está cheio, então %@ e %@ não foram enviados. Sua biblioteca (%@) continua como estava."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive заполнен, поэтому не загружены: %@ и %@. Ваша библиотека (%@) осталась без изменений."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive заповнено, тому не завантажено: %@ і %@. Ваша бібліотека (%@) залишилася без змін."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud 云盘已满，因此 %@ 和 %@ 未上传。你在 %@ 上的资料库保持原样。"
           }
         }
       }
@@ -722027,10 +723257,40 @@
             "value" : "Sincronizzazione…"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "同期中…"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "동기화하는 중…"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Sincronizando…"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Синхронизация…"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Синхронізація…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "正在同步…"
           }
         }
       }
@@ -722069,10 +723329,40 @@
             "value" : "Tutto aggiornato. Ultima sincronizzazione alle %@."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "最新の状態です。最後の同期：%@。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "최신 상태입니다. 마지막 동기화: %@."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Tudo em dia. Última sincronização às %@."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Всё актуально. Последняя синхронизация в %@."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Усе актуально. Остання синхронізація о %@."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "已是最新。上次同步时间：%@。"
           }
         }
       }
@@ -722189,6 +723479,30 @@
             }
           }
         },
+        "ja" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld 件の変更が、iCloud Drive によるアップロードを待っています。"
+                }
+              }
+            }
+          }
+        },
+        "ko" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "변경 사항 %lld개가 iCloud Drive의 업로드를 기다리고 있습니다."
+                }
+              }
+            }
+          }
+        },
         "pt-BR" : {
           "variations" : {
             "plural" : {
@@ -722208,6 +723522,78 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "%lld alterações aguardam o iCloud Drive enviá-las."
+                }
+              }
+            }
+          }
+        },
+        "ru" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Ожидает загрузки в iCloud Drive: %lld изменения."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Ожидает загрузки в iCloud Drive: %lld изменений."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Ожидает загрузки в iCloud Drive: %lld изменение."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Ожидает загрузки в iCloud Drive: %lld изменения."
+                }
+              }
+            }
+          }
+        },
+        "uk" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Очікує завантаження в iCloud Drive: %lld зміни."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Очікує завантаження в iCloud Drive: %lld змін."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Очікує завантаження в iCloud Drive: %lld зміна."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Очікує завантаження в iCloud Drive: %lld зміни."
+                }
+              }
+            }
+          }
+        },
+        "zh-Hans" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld 项更改正在等待 iCloud 云盘上传。"
                 }
               }
             }
@@ -722327,6 +723713,30 @@
             }
           }
         },
+        "ja" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld 冊のブックのすべてのデバイスへの保持を解除"
+                }
+              }
+            }
+          }
+        },
+        "ko" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "책 %lld권의 모든 기기 보관 해제"
+                }
+              }
+            }
+          }
+        },
         "pt-BR" : {
           "variations" : {
             "plural" : {
@@ -722346,6 +723756,78 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Parar de manter %lld livros em todos os dispositivos"
+                }
+              }
+            }
+          }
+        },
+        "ru" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Не хранить %lld книги на всех устройствах"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Не хранить %lld книг на всех устройствах"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Не хранить %lld книгу на всех устройствах"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Не хранить %lld книги на всех устройствах"
+                }
+              }
+            }
+          }
+        },
+        "uk" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Не зберігати %lld книги на всіх пристроях"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Не зберігати %lld книг на всіх пристроях"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Не зберігати %lld книгу на всіх пристроях"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Не зберігати %lld книги на всіх пристроях"
+                }
+              }
+            }
+          }
+        },
+        "zh-Hans" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "不再在所有设备上保留 %lld 本图书"
                 }
               }
             }
@@ -722387,10 +723869,40 @@
             "value" : "Non mantenere più su tutti i dispositivi"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "すべてのデバイスへの保持を解除"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "모든 기기 보관 해제"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Parar de manter em todos os dispositivos"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Не хранить на всех устройствах"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Не зберігати на всіх пристроях"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "不再在所有设备上保留"
           }
         }
       }
@@ -722429,10 +723941,40 @@
             "value" : "Interrompere la sincronizzazione di questa libreria? Non viene eliminato nulla, né su questo Mac né in iCloud Drive."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "このライブラリの同期を停止しますか？この Mac でも iCloud Drive でも、何も削除されません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이 보관함의 동기화를 중지하시겠습니까? 이 Mac과 iCloud Drive 모두 아무것도 삭제되지 않습니다."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Parar de sincronizar esta biblioteca? Nada é apagado, neste Mac nem no iCloud Drive."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Остановить синхронизацию этой библиотеки? Ничего не удаляется ни на этом Mac, ни в iCloud Drive."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Зупинити синхронізацію цієї бібліотеки? Нічого не видаляється ні на цьому Mac, ні в iCloud Drive."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "要停止同步这个资料库吗？这台 Mac 和 iCloud 云盘上的内容都不会被删除。"
           }
         }
       }
@@ -722471,10 +724013,40 @@
             "value" : "Interrompi la sincronizzazione…"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "同期を停止…"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "동기화 중지…"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Parar de sincronizar…"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Остановить синхронизацию…"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Зупинити синхронізацію…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "停止同步…"
           }
         }
       }
@@ -722513,10 +724085,40 @@
             "value" : "Sincronizza ora"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "今すぐ同期"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "지금 동기화"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Sincronizar agora"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Синхронизировать сейчас"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Синхронізувати зараз"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "立即同步"
           }
         }
       }
@@ -722555,10 +724157,40 @@
             "value" : "questo iPhone"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "この iPhone"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이 iPhone"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "este iPhone"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "этот iPhone"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "цей iPhone"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "这部 iPhone"
           }
         }
       }
@@ -722597,10 +724229,40 @@
             "value" : "questo Mac"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "この Mac"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이 Mac"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "este Mac"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "этот Mac"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "цей Mac"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "这台 Mac"
           }
         }
       }
@@ -722639,10 +724301,40 @@
             "value" : "In attesa che i file della cartella di sincronizzazione arrivino da iCloud Drive."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "同期フォルダのファイルが iCloud Drive から届くのを待っています。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "동기화 폴더의 파일이 iCloud Drive에서 도착하기를 기다리는 중입니다."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Aguardando os arquivos da pasta de sincronização chegarem do iCloud Drive."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ожидание файлов папки синхронизации из iCloud Drive."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Очікування файлів папки синхронізації з iCloud Drive."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "正在等待同步文件夹的文件从 iCloud 云盘到达。"
           }
         }
       }
