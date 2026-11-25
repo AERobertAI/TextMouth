@@ -720257,6 +720257,18 @@
       "comment" : "Said aloud after the person chooses Keep on All Devices. %@ is the book's title.",
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يجري الاحتفاظ بـ %@ على جميع الأجهزة."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সব ডিভাইসে রাখা হচ্ছে: %@।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -720279,6 +720291,18 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Conservation de %@ sur tous les appareils."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "सभी डिवाइस पर रखा जा रहा है: %@।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ tetap ada di semua perangkat."
           }
         },
         "it" : {
@@ -720317,6 +720341,12 @@
             "value" : "Зберігається на всіх пристроях: %@."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Đang giữ %@ trên mọi thiết bị."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -720329,6 +720359,18 @@
       "comment" : "Said aloud when the open book moves to the place saved on another device. %@ names that device, such as \"iPhone\".",
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تم الانتقال إلى الموضع المحفوظ على %@."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@-এ সংরক্ষিত স্থানে যাওয়া হয়েছে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -720351,6 +720393,18 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Passage à la position enregistrée sur %@."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ पर सहेजे गए स्थान पर चले गए।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Berpindah ke posisi yang tersimpan di %@."
           }
         },
         "it" : {
@@ -720389,6 +720443,12 @@
             "value" : "Перехід до місця, збереженого на %@."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Đã chuyển đến vị trí đã lưu trên %@."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -720401,6 +720461,18 @@
       "comment" : "Said aloud when Sync Now finishes and no other device had anything new.",
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تمت المزامنة. لا جديد."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সিঙ্ক হয়েছে। নতুন কিছু নেই।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -720423,6 +720495,18 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Synchronisé. Rien de nouveau."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "सिंक हो गया। कुछ नया नहीं।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tersinkron. Tidak ada yang baru."
           }
         },
         "it" : {
@@ -720461,6 +720545,12 @@
             "value" : "Синхронізовано. Нічого нового."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Đã đồng bộ. Không có gì mới."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -720473,6 +720563,66 @@
       "comment" : "Said aloud when Sync Now finishes. A plural line. %lld is how many changes arrived, and %@ names the device they came from, such as \"iPhone\".",
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تمت المزامنة. %lld تغييرات من %@."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تمت المزامنة. %lld تغييرًا من %@."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تمت المزامنة. %lld تغيير من %@."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تمت المزامنة. %lld تغيير من %@."
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تمت المزامنة. %lld تغييرين من %@."
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تمت المزامنة. %lld تغييرات من %@."
+                }
+              }
+            }
+          }
+        },
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "সিঙ্ক হয়েছে। %2$@ থেকে %1$lldটি পরিবর্তন।"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "সিঙ্ক হয়েছে। %2$@ থেকে %1$lldটি পরিবর্তন।"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -720552,6 +720702,36 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Synchronisé. %lld modifications depuis %@."
+                }
+              }
+            }
+          }
+        },
+        "hi" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "सिंक हो गया। %2$@ से %1$lld बदलाव।"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "सिंक हो गया। %2$@ से %1$lld बदलाव।"
+                }
+              }
+            }
+          }
+        },
+        "id" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Tersinkron. %1$lld perubahan dari %2$@."
                 }
               }
             }
@@ -720689,6 +720869,18 @@
             }
           }
         },
+        "vi" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Đã đồng bộ. %1$lld thay đổi từ %2$@."
+                }
+              }
+            }
+          }
+        },
         "zh-Hans" : {
           "variations" : {
             "plural" : {
@@ -720707,6 +720899,18 @@
       "comment" : "Said aloud when the person starts Sync Now.",
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "جارٍ المزامنة."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সিঙ্ক হচ্ছে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -720729,6 +720933,18 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Synchronisation en cours."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "सिंक हो रहा है।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Menyinkronkan."
           }
         },
         "it" : {
@@ -720767,6 +720983,12 @@
             "value" : "Синхронізація."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Đang đồng bộ."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -720779,6 +721001,18 @@
       "comment" : "Shown when the sync folder now belongs to another library's sync. Join Sync Folder is a button.",
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يحتوي مجلد المزامنة الآن على مزامنة مكتبة أخرى. اختر «الانضمام إلى مجلد المزامنة» مرة أخرى."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সিঙ্ক ফোল্ডারে এখন অন্য একটি লাইব্রেরির সিঙ্ক আছে। আবার “সিঙ্ক ফোল্ডারে যোগ দিন” বেছে নিন।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -720801,6 +721035,18 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le dossier de synchronisation contient maintenant la synchronisation d’une autre bibliothèque. Choisissez de nouveau Rejoindre le dossier de synchronisation."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "सिंक फ़ोल्डर में अब किसी दूसरी लाइब्रेरी का सिंक है। “सिंक फ़ोल्डर से जुड़ें” फिर से चुनें।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Folder sinkronisasi kini berisi sinkronisasi pustaka lain. Pilih Gabung ke Folder Sinkronisasi lagi."
           }
         },
         "it" : {
@@ -720839,6 +721085,12 @@
             "value" : "У папці синхронізації тепер синхронізація іншої бібліотеки. Виберіть ще раз «Приєднатися до папки синхронізації»."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Thư mục đồng bộ hiện chứa bản đồng bộ của một thư viện khác. Hãy chọn lại Tham gia thư mục đồng bộ."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -720851,6 +721103,18 @@
       "comment" : "A line of the Sync status while books are copied into the sync folder. The first %lld is how many are done and the second how many there are, such as \"612 of 750\".",
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "جارٍ نسخ الكتب احتياطيًا: %lld من %lld."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বইয়ের ব্যাকআপ নেওয়া হচ্ছে: %2$lldটির মধ্যে %1$lldটি।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -720873,6 +721137,18 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Sauvegarde des livres : %lld sur %lld."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "पुस्तकों का बैकअप लिया जा रहा है: %2$lld में से %1$lld।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mencadangkan buku: %lld dari %lld."
           }
         },
         "it" : {
@@ -720911,6 +721187,12 @@
             "value" : "Резервне копіювання книг: %lld з %lld."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Đang sao lưu sách: %lld trên %lld."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -720923,6 +721205,66 @@
       "comment" : "A plural phrase: how many books, such as \"138 books\". %lld is the count. It sits inside a longer sentence.",
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld كتب"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld كتابًا"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld كتاب"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld كتاب"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld كتابين"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld كتب"
+                }
+              }
+            }
+          }
+        },
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lldটি বই"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lldটি বই"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -721002,6 +721344,36 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "%lld livres"
+                }
+              }
+            }
+          }
+        },
+        "hi" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld पुस्तक"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld पुस्तकें"
+                }
+              }
+            }
+          }
+        },
+        "id" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld buku"
                 }
               }
             }
@@ -721139,6 +721511,18 @@
             }
           }
         },
+        "vi" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld sách"
+                }
+              }
+            }
+          }
+        },
         "zh-Hans" : {
           "variations" : {
             "plural" : {
@@ -721157,6 +721541,66 @@
       "comment" : "A plural phrase: how many changes, such as \"3 changes\". %lld is the count. It sits inside a longer sentence.",
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld تغييرات"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld تغييرًا"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld تغيير"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld تغيير"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld تغييرين"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld تغييرات"
+                }
+              }
+            }
+          }
+        },
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lldটি পরিবর্তন"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lldটি পরিবর্তন"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -721236,6 +721680,36 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "%lld modifications"
+                }
+              }
+            }
+          }
+        },
+        "hi" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld बदलाव"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld बदलाव"
+                }
+              }
+            }
+          }
+        },
+        "id" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld perubahan"
                 }
               }
             }
@@ -721373,6 +721847,18 @@
             }
           }
         },
+        "vi" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld thay đổi"
+                }
+              }
+            }
+          }
+        },
         "zh-Hans" : {
           "variations" : {
             "plural" : {
@@ -721391,6 +721877,18 @@
       "comment" : "Shown when Set Up Sync finds a folder named TextMouth Sync already there. Join Sync Folder is a button. TextMouth Sync is the folder's name and is not translated.",
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يوجد بالفعل مجلد باسم TextMouth Sync. لاستخدامه، اختر «الانضمام إلى مجلد المزامنة»."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth Sync নামে একটি ফোল্ডার আগে থেকেই আছে। এটি ব্যবহার করতে “সিঙ্ক ফোল্ডারে যোগ দিন” বেছে নিন।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -721413,6 +721911,18 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Un dossier nommé TextMouth Sync existe déjà. Pour l’utiliser, choisissez Rejoindre le dossier de synchronisation."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth Sync नाम का फ़ोल्डर पहले से मौजूद है। इसे उपयोग करने के लिए “सिंक फ़ोल्डर से जुड़ें” चुनें।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Folder bernama TextMouth Sync sudah ada. Untuk menggunakannya, pilih Gabung ke Folder Sinkronisasi."
           }
         },
         "it" : {
@@ -721451,6 +721961,12 @@
             "value" : "Папка з назвою TextMouth Sync уже існує. Щоб її використати, виберіть «Приєднатися до папки синхронізації»."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Đã có một thư mục tên TextMouth Sync. Để dùng nó, hãy chọn Tham gia thư mục đồng bộ."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -721463,6 +721979,18 @@
       "comment" : "VoiceOver hint of the Join Sync Folder button. TextMouth Sync is the folder's name and is not translated.",
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يختار مجلد TextMouth Sync الذي أعدّه جهاز آخر."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "অন্য ডিভাইসে সেট আপ করা TextMouth Sync ফোল্ডার বেছে নেয়।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -721485,6 +722013,18 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Choisit le dossier TextMouth Sync configuré par un autre appareil."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "किसी दूसरे डिवाइस द्वारा सेट किया गया TextMouth Sync फ़ोल्डर चुनता है।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Memilih folder TextMouth Sync yang disiapkan perangkat lain."
           }
         },
         "it" : {
@@ -721523,6 +722063,12 @@
             "value" : "Вибирає папку TextMouth Sync, створену на іншому пристрої."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Chọn thư mục TextMouth Sync do thiết bị khác thiết lập."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -721535,6 +722081,18 @@
       "comment" : "Title of the button that chooses a sync folder another device already made. Title case; the ellipsis means a folder chooser opens.",
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "الانضمام إلى مجلد المزامنة…"
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সিঙ্ক ফোল্ডারে যোগ দিন…"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -721557,6 +722115,18 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Rejoindre le dossier de synchronisation…"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "सिंक फ़ोल्डर से जुड़ें…"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Gabung ke Folder Sinkronisasi…"
           }
         },
         "it" : {
@@ -721595,6 +722165,12 @@
             "value" : "Приєднатися до папки синхронізації…"
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tham gia thư mục đồng bộ…"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -721607,6 +722183,66 @@
       "comment" : "Title of the command that keeps several selected books on every device that syncs. A plural line, title case. %lld is the number of books.",
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "الاحتفاظ بـ %lld كتب على جميع الأجهزة"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "الاحتفاظ بـ %lld كتابًا على جميع الأجهزة"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "الاحتفاظ بـ %lld كتاب على جميع الأجهزة"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "الاحتفاظ بـ %lld كتاب على جميع الأجهزة"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "الاحتفاظ بـ %lld كتابين على جميع الأجهزة"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "الاحتفاظ بـ %lld كتب على جميع الأجهزة"
+                }
+              }
+            }
+          }
+        },
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lldটি বই সব ডিভাইসে রাখুন"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lldটি বই সব ডিভাইসে রাখুন"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -721686,6 +722322,36 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Conserver %lld livres sur tous les appareils"
+                }
+              }
+            }
+          }
+        },
+        "hi" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld पुस्तक सभी डिवाइस पर रखें"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld पुस्तकें सभी डिवाइस पर रखें"
+                }
+              }
+            }
+          }
+        },
+        "id" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Tetap di Semua Perangkat: %lld Buku"
                 }
               }
             }
@@ -721823,6 +722489,18 @@
             }
           }
         },
+        "vi" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Giữ %lld sách trên mọi thiết bị"
+                }
+              }
+            }
+          }
+        },
         "zh-Hans" : {
           "variations" : {
             "plural" : {
@@ -721841,6 +722519,18 @@
       "comment" : "VoiceOver hint of the Kept on all devices checkbox in Book Information.",
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "كل جهاز يزامن يحتفظ بملفات هذا الكتاب ويُنزّلها عندما يستطيع."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সিঙ্ক করা প্রতিটি ডিভাইস এই বইয়ের ফাইল রাখে এবং পারলে ডাউনলোড করে নেয়।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -721863,6 +722553,18 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Chaque appareil qui se synchronise conserve les fichiers de ce livre et les télécharge dès qu’il le peut."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "सिंक करने वाला हर डिवाइस इस पुस्तक की फ़ाइलें रखता है और संभव होने पर उन्हें डाउनलोड करता है।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Setiap perangkat yang menyinkronkan menyimpan file buku ini dan mengunduhnya jika bisa."
           }
         },
         "it" : {
@@ -721901,6 +722603,12 @@
             "value" : "Кожен пристрій із синхронізацією зберігає файли цієї книги й завантажує їх, коли може."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mọi thiết bị đồng bộ đều giữ các tệp của sách này và tải về khi có thể."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -721913,6 +722621,18 @@
       "comment" : "Title of the command and button that keeps a book's files on every device that syncs. Title case.",
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "الاحتفاظ على جميع الأجهزة"
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সব ডিভাইসে রাখুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -721935,6 +722655,18 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Conserver sur tous les appareils"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "सभी डिवाइस पर रखें"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tetap di Semua Perangkat"
           }
         },
         "it" : {
@@ -721973,6 +722705,12 @@
             "value" : "Зберігати на всіх пристроях"
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Giữ trên mọi thiết bị"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -721985,6 +722723,18 @@
       "comment" : "Label of the Book Information checkbox, and the state a book's row speaks when its files are kept on every device that syncs.",
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "محتفَظ به على جميع الأجهزة"
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সব ডিভাইসে রাখা আছে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -722007,6 +722757,18 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Conservé sur tous les appareils"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "सभी डिवाइस पर रखी गई"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tetap di semua perangkat"
           }
         },
         "it" : {
@@ -722045,6 +722807,12 @@
             "value" : "Зберігається на всіх пристроях"
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Đã giữ trên mọi thiết bị"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -722057,6 +722825,18 @@
       "comment" : "A line of the Sync status. The first %@ names a device, such as \"iPhone\", and the second is a time written by the system, such as \"9:40 AM\".",
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "آخر اتصال بـ %@ كان في %@."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@-এর সঙ্গে শেষ যোগাযোগ হয়েছে %@-এ।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -722079,6 +722859,18 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Dernier contact avec %@ à %@."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ से आख़िरी संपर्क %@ पर हुआ।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Terakhir berhubungan dengan %@ pada %@."
           }
         },
         "it" : {
@@ -722117,6 +722909,12 @@
             "value" : "Останній контакт із %@ о %@."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Lần liên lạc gần nhất với %@ lúc %@."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -722129,6 +722927,18 @@
       "comment" : "Shown when syncing is refused because the library is kept in a cloud folder. Change Location is a button of the Storage settings.",
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "المزامنة مخصّصة لمكتبة محفوظة على هذا الـ Mac. انقل هذه المكتبة إلى هنا أولًا باستخدام «تغيير الموقع»."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সিঙ্ক এমন লাইব্রেরির জন্য, যা এই Mac-এ রাখা আছে। আগে “অবস্থান পরিবর্তন করুন” দিয়ে এই লাইব্রেরি এখানে সরিয়ে আনুন।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -722151,6 +722961,18 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "La synchronisation est prévue pour une bibliothèque conservée sur ce Mac. Commencez par déplacer celle-ci ici avec Changer l’emplacement."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "सिंक उस लाइब्रेरी के लिए है जो इस Mac पर रखी है। पहले “स्थान बदलें” से इस लाइब्रेरी को यहाँ ले आएँ।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sinkronisasi untuk pustaka yang disimpan di Mac ini. Pindahkan pustaka ini ke sini dulu dengan Ubah Lokasi."
           }
         },
         "it" : {
@@ -722189,6 +723011,12 @@
             "value" : "Синхронізація працює для бібліотеки, що зберігається на цьому Mac. Спершу перенесіть цю бібліотеку сюди через «Змінити розташування»."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Đồng bộ dành cho thư viện được lưu trên máy Mac này. Hãy chuyển thư viện này về đây trước bằng Đổi vị trí."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -722201,6 +723029,18 @@
       "comment" : "Shown when the folder chosen to join is not a TextMouth Sync folder, or its files have not arrived from iCloud Drive yet.",
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "هذا ليس مجلد TextMouth Sync، أو أن ملفاته لم تصل بعد من iCloud Drive."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এটি TextMouth Sync ফোল্ডার নয়, অথবা এর ফাইল এখনও iCloud Drive থেকে এসে পৌঁছায়নি।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -722223,6 +723063,18 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Ce n’est pas un dossier TextMouth Sync, ou ses fichiers ne sont pas encore arrivés d’iCloud Drive."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "यह TextMouth Sync फ़ोल्डर नहीं है, या इसकी फ़ाइलें अभी iCloud Drive से नहीं पहुँची हैं।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Itu bukan folder TextMouth Sync, atau file-nya belum tiba dari iCloud Drive."
           }
         },
         "it" : {
@@ -722261,6 +723113,12 @@
             "value" : "Це не папка TextMouth Sync, або її файли ще не надійшли з iCloud Drive."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Đây không phải thư mục TextMouth Sync, hoặc các tệp của nó chưa đến từ iCloud Drive."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -722273,6 +723131,18 @@
       "comment" : "Shown when the person chose a folder that is not in iCloud Drive for syncing.",
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "هذا المجلد ليس في iCloud Drive. اختر مجلدًا في iCloud Drive."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ফোল্ডারটি iCloud Drive-এ নেই। iCloud Drive-এর একটি ফোল্ডার বেছে নিন।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -722295,6 +723165,18 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Ce dossier n’est pas dans iCloud Drive. Choisissez un dossier dans iCloud Drive."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "यह फ़ोल्डर iCloud Drive में नहीं है। iCloud Drive में कोई फ़ोल्डर चुनें।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Folder itu tidak ada di iCloud Drive. Pilih folder di iCloud Drive."
           }
         },
         "it" : {
@@ -722333,6 +723215,12 @@
             "value" : "Ця папка не в iCloud Drive. Виберіть папку в iCloud Drive."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Thư mục đó không nằm trong iCloud Drive. Hãy chọn một thư mục trong iCloud Drive."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -722345,6 +723233,18 @@
       "comment" : "Explains the Sync section: the library stays the same on the Mac and the iPhone, through iCloud Drive.",
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تُبقي كتبك ومواضع قراءتك وإشاراتك المرجعية متطابقة على الـ Mac وعلى الـ iPhone، عبر iCloud Drive."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive-এর মাধ্যমে আপনার Mac ও iPhone-এ আপনার বই, পড়ার অবস্থান ও বুকমার্ক এক রাখে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -722367,6 +723267,18 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Garde vos livres, vos positions de lecture et vos signets identiques sur votre Mac et votre iPhone, grâce à iCloud Drive."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive के ज़रिए आपकी पुस्तकें, पठन स्थितियाँ और बुकमार्क आपके Mac और iPhone पर एक जैसे रखता है।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Menjaga buku, posisi baca, dan markah Anda tetap sama di Mac dan iPhone, lewat iCloud Drive."
           }
         },
         "it" : {
@@ -722405,6 +723317,12 @@
             "value" : "Підтримує однаковими ваші книги, позиції читання та закладки на Mac і iPhone через iCloud Drive."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Giữ sách, vị trí đọc và dấu trang của bạn giống nhau trên máy Mac và iPhone, qua iCloud Drive."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -722417,6 +723335,18 @@
       "comment" : "Heading of the settings section for syncing the library between devices, and the name of the feature. Title case.",
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "المزامنة"
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সিঙ্ক"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -722439,6 +723369,18 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Synchronisation"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "सिंक"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sinkronisasi"
           }
         },
         "it" : {
@@ -722477,6 +723419,12 @@
             "value" : "Синхронізація"
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Đồng bộ"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -722489,6 +723437,18 @@
       "comment" : "VoiceOver hint of the Set Up Sync button. TextMouth Sync is the folder's name and is not translated.",
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تنشئ مجلدًا باسم TextMouth Sync في مجلد iCloud Drive الذي تختاره، وتنسخ كتبك إليه."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "আপনার বেছে নেওয়া iCloud Drive ফোল্ডারে TextMouth Sync নামে একটি ফোল্ডার তৈরি করে এবং আপনার বই সেখানে কপি করে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -722511,6 +723471,18 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Crée un dossier nommé TextMouth Sync dans le dossier iCloud Drive que vous choisissez, et y copie vos livres."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "आपके चुने हुए iCloud Drive फ़ोल्डर में TextMouth Sync नाम का फ़ोल्डर बनाता है और आपकी पुस्तकें उसमें कॉपी करता है।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Membuat folder bernama TextMouth Sync di folder iCloud Drive yang Anda pilih, lalu menyalin buku Anda ke dalamnya."
           }
         },
         "it" : {
@@ -722549,6 +723521,12 @@
             "value" : "Створює папку TextMouth Sync у вибраній вами папці iCloud Drive та копіює до неї ваші книги."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tạo thư mục tên TextMouth Sync trong thư mục iCloud Drive mà bạn chọn, rồi sao chép sách của bạn vào đó."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -722561,6 +723539,18 @@
       "comment" : "Title of the button that makes a new sync folder. Title case; the ellipsis means a folder chooser opens.",
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "إعداد المزامنة…"
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সিঙ্ক সেট আপ করুন…"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -722583,6 +723573,18 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Configurer la synchronisation…"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "सिंक सेट अप करें…"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Siapkan Sinkronisasi…"
           }
         },
         "it" : {
@@ -722621,6 +723623,12 @@
             "value" : "Налаштувати синхронізацію…"
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Thiết lập đồng bộ…"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -722633,6 +723641,18 @@
       "comment" : "The Sync status when the TextMouth Sync folder cannot be found. %@ names the device (\"this Mac\" or \"this iPhone\"), whose library is unchanged. TextMouth Sync is the folder's name and is not translated.",
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لا يجد TextMouth مجلد TextMouth Sync في iCloud Drive. ربما نُقل أو حُذف، أو ربما سُجّل الخروج من iCloud Drive. مكتبتك (%@) كما كانت."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth iCloud Drive-এ TextMouth Sync ফোল্ডার খুঁজে পাচ্ছে না। এটি সরানো বা মুছে ফেলা হয়ে থাকতে পারে, অথবা iCloud Drive থেকে সাইন আউট হয়ে থাকতে পারে। %@-এ আপনার লাইব্রেরি আগের মতোই আছে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -722655,6 +723675,18 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth ne trouve pas le dossier TextMouth Sync dans iCloud Drive. Il a peut-être été déplacé ou supprimé, ou la session iCloud Drive est fermée. Votre bibliothèque sur %@ est restée telle quelle."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth को iCloud Drive में TextMouth Sync फ़ोल्डर नहीं मिल रहा। हो सकता है उसे हटा या मिटा दिया गया हो, या iCloud Drive से साइन आउट हो गया हो। %@ पर आपकी लाइब्रेरी जैसी थी वैसी ही है।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth tidak menemukan folder TextMouth Sync di iCloud Drive. Folder itu mungkin dipindahkan atau dihapus, atau Anda sudah keluar dari iCloud Drive. Pustaka Anda di %@ tetap seperti semula."
           }
         },
         "it" : {
@@ -722693,6 +723725,12 @@
             "value" : "TextMouth не знаходить папку TextMouth Sync в iCloud Drive. Можливо, її переміщено чи видалено, або виконано вихід з iCloud Drive. Ваша бібліотека (%@) залишилася без змін."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth không tìm thấy thư mục TextMouth Sync trong iCloud Drive. Có thể nó đã bị di chuyển hoặc xóa, hoặc iCloud Drive đã đăng xuất. Thư viện của bạn trên %@ vẫn như cũ."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -722705,6 +723743,18 @@
       "comment" : "The Sync status when a newer TextMouth made the sync folder, so this one cannot use it.",
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "أنشأ إصدار أحدث من TextMouth مجلد المزامنة هذا. حدّث TextMouth لاستخدامه."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth-এর একটি নতুন সংস্করণ এই সিঙ্ক ফোল্ডার তৈরি করেছে। এটি ব্যবহার করতে TextMouth হালনাগাদ করুন।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -722727,6 +723777,18 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Une version plus récente de TextMouth a créé ce dossier de synchronisation. Mettez TextMouth à jour pour l’utiliser."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "यह सिंक फ़ोल्डर TextMouth के नए संस्करण ने बनाया है। इसे उपयोग करने के लिए TextMouth को अपडेट करें।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Folder sinkronisasi ini dibuat oleh TextMouth versi yang lebih baru. Perbarui TextMouth untuk menggunakannya."
           }
         },
         "it" : {
@@ -722765,6 +723827,12 @@
             "value" : "Цю папку синхронізації створила новіша версія TextMouth. Оновіть TextMouth, щоб її використовувати."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Thư mục đồng bộ này do một bản TextMouth mới hơn tạo ra. Hãy cập nhật TextMouth để dùng nó."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -722777,6 +723845,18 @@
       "comment" : "The Sync status when changes another device made have not yet downloaded from iCloud Drive.",
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لم تُنزَّل بعد بعض التغييرات من iPhone. سيحاول TextMouth مرة أخرى."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iPhone থেকে কিছু পরিবর্তন এখনও ডাউনলোড হয়নি। TextMouth আবার চেষ্টা করবে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -722799,6 +723879,18 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Certaines modifications de l’iPhone ne sont pas encore téléchargées. TextMouth réessaiera."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iPhone से कुछ बदलाव अभी डाउनलोड नहीं हुए हैं। TextMouth फिर कोशिश करेगा।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Beberapa perubahan dari iPhone belum diunduh. TextMouth akan mencoba lagi."
           }
         },
         "it" : {
@@ -722837,6 +723929,12 @@
             "value" : "Деякі зміни з iPhone ще не завантажено. TextMouth спробує знову."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Một số thay đổi từ iPhone chưa được tải về. TextMouth sẽ thử lại."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -722849,6 +723947,18 @@
       "comment" : "The Sync status when syncing is not set up.",
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "المزامنة متوقفة."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সিঙ্ক বন্ধ আছে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -722871,6 +723981,18 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "La synchronisation est désactivée."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "सिंक बंद है।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sinkronisasi mati."
           }
         },
         "it" : {
@@ -722909,6 +724031,12 @@
             "value" : "Синхронізацію вимкнено."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Đồng bộ đang tắt."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -722921,6 +724049,66 @@
       "comment" : "The Sync status with no network. A plural line. %lld is how many changes wait, and %@ names the device (\"this Mac\" or \"this iPhone\"), which sends them.",
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "بلا اتصال (%2$@). سيُرسَل عند عودة الشبكة: %1$lld تغييرات."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "بلا اتصال (%2$@). سيُرسَل عند عودة الشبكة: %1$lld تغييرًا."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "بلا اتصال (%2$@). سيُرسَل عند عودة الشبكة: %1$lld تغيير."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "بلا اتصال (%2$@). سيُرسَل عند عودة الشبكة: %1$lld تغيير."
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "بلا اتصال (%2$@). سيُرسَل عند عودة الشبكة: %1$lld تغييرين."
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "بلا اتصال (%2$@). سيُرسَل عند عودة الشبكة: %1$lld تغييرات."
+                }
+              }
+            }
+          }
+        },
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "অফলাইন। %lldটি পরিবর্তন %@-এ অপেক্ষা করছে এবং নেটওয়ার্ক ফিরলে পাঠানো হবে।"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "অফলাইন। %lldটি পরিবর্তন %@-এ অপেক্ষা করছে এবং নেটওয়ার্ক ফিরলে পাঠানো হবে।"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -723000,6 +724188,36 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Hors connexion. %lld modifications attendent sur %@ et seront envoyées au retour du réseau."
+                }
+              }
+            }
+          }
+        },
+        "hi" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "ऑफ़लाइन। %lld बदलाव %@ पर प्रतीक्षा में है, और नेटवर्क लौटने पर भेजा जाएगा।"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "ऑफ़लाइन। %lld बदलाव %@ पर प्रतीक्षा में हैं, और नेटवर्क लौटने पर भेजे जाएँगे।"
+                }
+              }
+            }
+          }
+        },
+        "id" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Luring. %lld perubahan menunggu di %@ dan akan dikirim saat jaringan kembali."
                 }
               }
             }
@@ -723137,6 +724355,18 @@
             }
           }
         },
+        "vi" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Ngoại tuyến. %lld thay đổi đang chờ trên %@ và sẽ được gửi khi có mạng trở lại."
+                }
+              }
+            }
+          }
+        },
         "zh-Hans" : {
           "variations" : {
             "plural" : {
@@ -723155,6 +724385,18 @@
       "comment" : "The Sync status when iCloud Drive is full. The first %@ is a phrase counting changes (\"3 changes\"), the second counts books (\"138 books\"), and the third names the device (\"this Mac\" or \"this iPhone\"), whose library is unchanged.",
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive ممتلئ، لذا لم يُرفع %@ و%@. مكتبتك (%@) كما كانت."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive ভরে গেছে, তাই %@ ও %@ আপলোড হয়নি। %@-এ আপনার লাইব্রেরি আগের মতোই আছে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -723177,6 +724419,18 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "iCloud Drive est plein, donc %@ et %@ ne sont pas envoyés. Votre bibliothèque sur %@ est restée telle quelle."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive भरा है, इसलिए %@ और %@ अपलोड नहीं हुए। %@ पर आपकी लाइब्रेरी जैसी थी वैसी ही है।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive penuh, jadi %@ dan %@ tidak diunggah. Pustaka Anda di %@ tetap seperti semula."
           }
         },
         "it" : {
@@ -723215,6 +724469,12 @@
             "value" : "iCloud Drive заповнено, тому не завантажено: %@ і %@. Ваша бібліотека (%@) залишилася без змін."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive đã đầy nên %@ và %@ chưa được tải lên. Thư viện của bạn trên %@ vẫn như cũ."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -723227,6 +724487,18 @@
       "comment" : "The Sync status while a sync runs. The ellipsis means it is not finished.",
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "جارٍ المزامنة…"
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সিঙ্ক হচ্ছে…"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -723249,6 +724521,18 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Synchronisation…"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "सिंक हो रहा है…"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Menyinkronkan…"
           }
         },
         "it" : {
@@ -723287,6 +724571,12 @@
             "value" : "Синхронізація…"
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Đang đồng bộ…"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -723299,6 +724589,18 @@
       "comment" : "The Sync status when everything is synced. %@ is the time of the last sync, written by the system, such as \"9:41 AM\".",
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "كل شيء محدّث. آخر مزامنة في %@."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সবকিছু হালনাগাদ আছে। শেষ সিঙ্ক হয়েছে %@-এ।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -723321,6 +724623,18 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "À jour. Dernière synchronisation à %@."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "सब अप टू डेट है। आख़िरी सिंक %@ पर हुआ।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sudah terbaru. Sinkronisasi terakhir pukul %@."
           }
         },
         "it" : {
@@ -723359,6 +724673,12 @@
             "value" : "Усе актуально. Остання синхронізація о %@."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Đã cập nhật. Lần đồng bộ cuối lúc %@."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -723371,6 +724691,66 @@
       "comment" : "The Sync status while iCloud Drive has not yet uploaded changes. A plural line. %lld is how many changes wait.",
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "في انتظار رفع iCloud Drive: %lld تغييرات."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "في انتظار رفع iCloud Drive: %lld تغييرًا."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "في انتظار رفع iCloud Drive: %lld تغيير."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "في انتظار رفع iCloud Drive: %lld تغيير."
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "في انتظار رفع iCloud Drive: %lld تغييرين."
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "في انتظار رفع iCloud Drive: %lld تغييرات."
+                }
+              }
+            }
+          }
+        },
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lldটি পরিবর্তন iCloud Drive আপলোড করার অপেক্ষায় আছে।"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lldটি পরিবর্তন iCloud Drive আপলোড করার অপেক্ষায় আছে।"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -723450,6 +724830,36 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "%lld modifications attendent qu’iCloud Drive les envoie."
+                }
+              }
+            }
+          }
+        },
+        "hi" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld बदलाव iCloud Drive के अपलोड करने की प्रतीक्षा में है।"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld बदलाव iCloud Drive के अपलोड करने की प्रतीक्षा में हैं।"
+                }
+              }
+            }
+          }
+        },
+        "id" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld perubahan menunggu iCloud Drive mengunggahnya."
                 }
               }
             }
@@ -723587,6 +724997,18 @@
             }
           }
         },
+        "vi" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld thay đổi đang chờ iCloud Drive tải lên."
+                }
+              }
+            }
+          }
+        },
         "zh-Hans" : {
           "variations" : {
             "plural" : {
@@ -723605,6 +725027,66 @@
       "comment" : "Title of the command that ends keeping several selected books on every device that syncs. A plural line, title case. %lld is the number of books.",
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "إيقاف الاحتفاظ بـ %lld كتب على جميع الأجهزة"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "إيقاف الاحتفاظ بـ %lld كتابًا على جميع الأجهزة"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "إيقاف الاحتفاظ بـ %lld كتاب على جميع الأجهزة"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "إيقاف الاحتفاظ بـ %lld كتاب على جميع الأجهزة"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "إيقاف الاحتفاظ بـ %lld كتابين على جميع الأجهزة"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "إيقاف الاحتفاظ بـ %lld كتب على جميع الأجهزة"
+                }
+              }
+            }
+          }
+        },
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lldটি বই সব ডিভাইসে রাখা বন্ধ করুন"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lldটি বই সব ডিভাইসে রাখা বন্ধ করুন"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -723684,6 +725166,36 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Ne plus conserver %lld livres sur tous les appareils"
+                }
+              }
+            }
+          }
+        },
+        "hi" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld पुस्तक को सभी डिवाइस पर रखना बंद करें"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld पुस्तकों को सभी डिवाइस पर रखना बंद करें"
+                }
+              }
+            }
+          }
+        },
+        "id" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Jangan Lagi Tetap di Semua Perangkat: %lld Buku"
                 }
               }
             }
@@ -723821,6 +725333,18 @@
             }
           }
         },
+        "vi" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Dừng giữ %lld sách trên mọi thiết bị"
+                }
+              }
+            }
+          }
+        },
         "zh-Hans" : {
           "variations" : {
             "plural" : {
@@ -723839,6 +725363,18 @@
       "comment" : "Title of the command and button that ends keeping a book's files on every device that syncs. Title case.",
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "إيقاف الاحتفاظ على جميع الأجهزة"
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সব ডিভাইসে রাখা বন্ধ করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -723861,6 +725397,18 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Ne plus conserver sur tous les appareils"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "सभी डिवाइस पर रखना बंद करें"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Jangan Lagi Tetap di Semua Perangkat"
           }
         },
         "it" : {
@@ -723899,6 +725447,12 @@
             "value" : "Не зберігати на всіх пристроях"
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Dừng giữ trên mọi thiết bị"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -723911,6 +725465,18 @@
       "comment" : "The confirmation asked before syncing stops. \"This Mac\" names the device the person is using.",
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "هل تريد إيقاف مزامنة هذه المكتبة؟ لن يُحذف شيء، لا على هذا الـ Mac ولا في iCloud Drive."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই লাইব্রেরির সিঙ্ক বন্ধ করবেন? এই Mac-এ বা iCloud Drive-এ কিছুই মোছা হবে না।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -723933,6 +725499,18 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Arrêter la synchronisation de cette bibliothèque ? Rien n’est supprimé, ni sur ce Mac ni dans iCloud Drive."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "इस लाइब्रेरी का सिंक रोकें? इस Mac और iCloud Drive में कुछ भी नहीं हटाया जाएगा।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Berhenti menyinkronkan pustaka ini? Tidak ada yang dihapus, baik di Mac ini maupun di iCloud Drive."
           }
         },
         "it" : {
@@ -723971,6 +725549,12 @@
             "value" : "Зупинити синхронізацію цієї бібліотеки? Нічого не видаляється ні на цьому Mac, ні в iCloud Drive."
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Dừng đồng bộ thư viện này? Không có gì bị xóa, cả trên máy Mac này lẫn trong iCloud Drive."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -723983,6 +725567,18 @@
       "comment" : "Title of the button that stops syncing this library. Title case; the ellipsis means a confirmation follows.",
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "إيقاف المزامنة…"
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সিঙ্ক বন্ধ করুন…"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -724005,6 +725601,18 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Arrêter la synchronisation…"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "सिंक रोकें…"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Berhenti Menyinkronkan…"
           }
         },
         "it" : {
@@ -724043,6 +725651,12 @@
             "value" : "Зупинити синхронізацію…"
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Dừng đồng bộ…"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -724055,6 +725669,18 @@
       "comment" : "Title of the button and the Library menu command that syncs right now. Title case.",
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "المزامنة الآن"
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এখনই সিঙ্ক করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -724077,6 +725703,18 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Synchroniser maintenant"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "अभी सिंक करें"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sinkronkan Sekarang"
           }
         },
         "it" : {
@@ -724115,6 +725753,12 @@
             "value" : "Синхронізувати зараз"
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Đồng bộ ngay"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -724127,6 +725771,18 @@
       "comment" : "The device the person is using, in the middle of a sentence, on an iPhone.",
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "هذا الـ iPhone"
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই iPhone"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -724149,6 +725805,18 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "cet iPhone"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "इस iPhone"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iPhone ini"
           }
         },
         "it" : {
@@ -724187,6 +725855,12 @@
             "value" : "цей iPhone"
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iPhone này"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -724199,6 +725873,18 @@
       "comment" : "The device the person is using, in the middle of a sentence, on a Mac.",
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "هذا الـ Mac"
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই Mac"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -724221,6 +725907,18 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "ce Mac"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "इस Mac"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mac ini"
           }
         },
         "it" : {
@@ -724259,6 +725957,12 @@
             "value" : "цей Mac"
           }
         },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "máy Mac này"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -724271,6 +725975,18 @@
       "comment" : "Said while joining waits for the sync folder's files to arrive from iCloud Drive.",
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "في انتظار وصول ملفات مجلد المزامنة من iCloud Drive."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সিঙ্ক ফোল্ডারের ফাইল iCloud Drive থেকে এসে পৌঁছানোর অপেক্ষা চলছে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -724293,6 +726009,18 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "En attente de l’arrivée des fichiers du dossier de synchronisation depuis iCloud Drive."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "सिंक फ़ोल्डर की फ़ाइलों के iCloud Drive से पहुँचने की प्रतीक्षा है।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Menunggu file folder sinkronisasi tiba dari iCloud Drive."
           }
         },
         "it" : {
@@ -724329,6 +726057,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Очікування файлів папки синхронізації з iCloud Drive."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Đang chờ các tệp của thư mục đồng bộ đến từ iCloud Drive."
           }
         },
         "zh-Hans" : {
