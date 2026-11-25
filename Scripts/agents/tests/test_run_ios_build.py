@@ -581,5 +581,77 @@ class SizeTests(unittest.TestCase):
         self.assertIn("Size: not measured: the device build failed (xcodebuild status 0, 0 errors)", summary)
 
 
+class SplitSizeTests(unittest.TestCase):
+    """The two modes that split the device build off the iPhone jobs: --no-size (the Simulator build only) and --size-only
+    (the device build only, written to ios-size-summary.txt). Uses SizeTests' device build stand-in."""
+
+    def run_split(self, request, flag, device_script=FAKE_DEVICE_BUILD):
+        """Runs main with `flag` for a request file holding `request`; returns (the output folder's files by name, the
+        device build's folder, the number of times the Simulator build was started)."""
+        folder = tempfile.TemporaryDirectory()
+        self.addCleanup(folder.cleanup)
+        root = Path(folder.name)
+        (root / ".github").mkdir()
+        if request is not None:
+            (root / ".github" / "test-request.json").write_text(request)
+        simulator_runs = []
+
+        def simulator(derived, architecture=None):
+            """A Simulator build that counts itself."""
+            simulator_runs.append(1)
+            return [sys.executable, "-c", "print('** TEST BUILD SUCCEEDED **')"]
+
+        with mock.patch.object(ios, "build_command", simulator), mock.patch.object(ios, "ROOT", root), \
+                mock.patch.object(ios, "device_build_command", lambda derived: [sys.executable, "-c", device_script, str(derived)]), \
+                contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(ios.main(["--out", "out", flag]), 0)
+        out = root / "out"
+        files = {path.name: path.read_text() for path in out.iterdir()}
+        return files, root / "build" / "remote-DerivedData-ios" / "device", len(simulator_runs)
+
+    def test_no_size_builds_the_simulator_app_and_never_the_device_app_even_when_asked(self):
+        files, device, simulator_runs = self.run_split('{"ios_size": true}', "--no-size")
+        self.assertEqual(simulator_runs, 1)
+        self.assertTrue(files["ios-summary.txt"].startswith("iOS build: PASSED"))
+        self.assertNotIn("Size", files["ios-summary.txt"])
+        self.assertFalse(device.exists())
+        self.assertNotIn(ios.SIZE_SUMMARY_FILE, files)
+
+    def test_size_only_builds_the_device_app_alone_and_writes_the_size_lines_to_their_own_file(self):
+        files, device, simulator_runs = self.run_split('{"ios_size": true}', "--size-only")
+        self.assertEqual(simulator_runs, 0, "no Simulator build in the size job")
+        self.assertNotIn("ios-summary.txt", files, "the verdict of the iPhone build is the iPhone jobs' alone")
+        lines = files[ios.SIZE_SUMMARY_FILE].splitlines()
+        self.assertTrue(lines[0].startswith("Size: iPhone app: 0.0 MB (5,504 bytes) in 2 files, within the 30 MB limit."), lines)
+        self.assertTrue(all(line.startswith(("Size: ", "Size detail: ")) for line in lines), "nothing but size lines")
+        self.assertIn("device build for the app's size", files["ios.log"])
+        self.assertTrue(device.is_dir())
+
+    def test_size_only_without_a_request_for_the_size_writes_an_empty_file_and_builds_nothing(self):
+        for request in (None, "{}", '{"ios_size": false}'):
+            files, device, simulator_runs = self.run_split(request, "--size-only")
+            self.assertEqual((files, device.exists(), simulator_runs), ({ios.SIZE_SUMMARY_FILE: ""}, False, 0), request)
+
+    def test_size_only_says_when_the_device_build_fails_and_still_writes_the_file(self):
+        files, _, _ = self.run_split('{"ios_size": true}', "--size-only", "import sys; sys.exit(65)")
+        self.assertIn("Size: not measured: the device build failed (xcodebuild status 65", files[ios.SIZE_SUMMARY_FILE])
+
+    def test_size_only_has_the_limits_of_both_builds_unless_one_is_given(self):
+        self.assertEqual(ios.SIZE_ONLY_LIMIT_MINUTES, ios.DEFAULT_LIMIT_MINUTES + ios.DEFAULT_SIZE_LIMIT_MINUTES)
+        limits = []
+
+        def spy(derived_data, out, limit_minutes):
+            limits.append(limit_minutes)
+            return []
+
+        with mock.patch.object(ios, "device_size_lines", spy):
+            self.run_split('{"ios_size": true}', "--size-only")
+        self.assertEqual(limits, [ios.SIZE_ONLY_LIMIT_MINUTES])
+
+    def test_the_two_modes_cannot_be_asked_together(self):
+        with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+            ios.main(["--no-size", "--size-only"])
+
+
 if __name__ == "__main__":
     unittest.main()

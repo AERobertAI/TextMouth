@@ -21,6 +21,12 @@ says how) in the folder "device" inside the derived-data folder, which the workf
 to ios-summary.txt as lines starting "Size: " (the headlines) and "Size detail: ". A device build that fails or outlives
 --size-limit-minutes adds one "Size: not measured" line and changes nothing else: the Simulator build's verdict stands.
 
+The workflow runs the device build in a job of its own, beside the iPhone jobs, so that no iPhone job waits for it (it took 12 to
+18 minutes, more than the Simulator build and the tests' set-up together). The iPhone jobs run `--no-size` (the Simulator
+build only), and the size job runs `--size-only`: no Simulator build, only the device build, whose lines go to
+ios-size-summary.txt (the same "Size: " lines, merge_ios_shards.join_size puts them into the joined ios-summary.txt) and
+whose log's last lines go to ios.log. Without either flag one run does both, as before.
+
 A build that fails to compile is a result, not a failure of this script: it exits 0 whenever it wrote a summary, so
 the run's tests and the iPhone build are judged apart, and the Mac shows the errors by file. It exits 2 only when it
 cannot start (a missing output folder it cannot make). Every wait has a limit (--limit-minutes): a build that outlives
@@ -52,7 +58,8 @@ from pathlib import Path
 # Importing this module must leave no __pycache__ folder in the repository.
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-import runner_module_cache  # noqa: E402  (the path above must be set first)
+import merge_ios_shards  # noqa: E402  (the path above must be set first)
+import runner_module_cache  # noqa: E402
 
 # The repository's root, where the build runs.
 ROOT = Path(__file__).resolve().parents[2]
@@ -70,6 +77,11 @@ MINIMUM_RETRY_MINUTES = 1.0
 # (`size_limit`): by November 25 a finished device build took 12 to 14.4 minutes, and 4 of the 10 trains before that day's
 # 05:01 were stopped at 15, while the Simulator build used about 8 of its 20.
 DEFAULT_SIZE_LIMIT_MINUTES = 15
+# The device build's limit in the size job (`--size-only`), which has no Simulator build before it: the time both limits
+# gave together, since a build that is stopped measures nothing.
+SIZE_ONLY_LIMIT_MINUTES = DEFAULT_LIMIT_MINUTES + DEFAULT_SIZE_LIMIT_MINUTES
+# The file the size job writes its lines to: the one the join reads them from.
+SIZE_SUMMARY_FILE = merge_ios_shards.SIZE_SUMMARY_FILE
 # The folder of the device build, inside the derived-data folder, and how much of its log goes into ios.log.
 DEVICE_FOLDER = "device"
 SIZE_LOG_LINES_KEPT = 200
@@ -300,6 +312,20 @@ def device_size_lines(derived_data, out, limit_minutes):
             f"{app_size.SUMMARY_DETAIL_PREFIX}the device build and the measuring took {minutes:.1f} minutes{note}."]
 
 
+def run_size_only(out, args):
+    """The size job's whole work: the device build for the app's size, when the request asks for it, and its lines written to
+    SIZE_SUMMARY_FILE in `out` (a request that does not ask writes an empty file, so that the join sees the job ran). The
+    device build's log tail goes to `out`/ios.log, as device_size_lines does. Returns 0, as the main run does whenever the
+    results were written."""
+    lines = []
+    if size_requested(ROOT / args.request):
+        limit = args.size_limit_minutes if args.size_limit_minutes is not None else SIZE_ONLY_LIMIT_MINUTES
+        lines = device_size_lines((ROOT / args.derived_data).resolve() / DEVICE_FOLDER, out, limit)
+    (out / SIZE_SUMMARY_FILE).write_text("".join(line + "\n" for line in lines), encoding="utf-8")
+    print((out / SIZE_SUMMARY_FILE).read_text(), end="")
+    return 0
+
+
 def main(argv):
     """Builds, writes the results, prints the summary, and exits 0 whenever the results were written."""
     parser = argparse.ArgumentParser(prog="run-ios-build.py", description=__doc__.splitlines()[0])
@@ -309,6 +335,10 @@ def main(argv):
     # No default: without the flag, the device build takes its share and what the Simulator build left (`size_limit`).
     parser.add_argument("--size-limit-minutes", type=float, default=None)
     parser.add_argument("--request", default=".github/test-request.json")
+    # The workflow splits the two builds over jobs: the iPhone jobs pass --no-size, the size job --size-only.
+    modes = parser.add_mutually_exclusive_group()
+    modes.add_argument("--no-size", action="store_true", help="build for the Simulator only, even when the request asks for the size")
+    modes.add_argument("--size-only", action="store_true", help="build for a device only, and write ios-size-summary.txt")
     args = parser.parse_args(argv)
     out = (ROOT / args.out).resolve()
     try:
@@ -316,6 +346,8 @@ def main(argv):
     except OSError as error:
         print(f"run-ios-build: cannot make {out}: {error}", file=sys.stderr)
         return 2
+    if args.size_only:
+        return run_size_only(out, args)
     derived = (ROOT / args.derived_data).resolve()
     # Empties the restored module caches when they were made on another toolchain, and stamps this one.
     runner_module_cache.prepare(derived)
@@ -350,7 +382,7 @@ def main(argv):
             retried = retry_note(first_seconds / 60, failure)
     simulator_seconds = time.monotonic() - started
     write_results(out, parse_errors(log_text), log_text, status, timed_out, simulator_seconds, args.limit_minutes, retried)
-    if size_requested(ROOT / args.request):
+    if size_requested(ROOT / args.request) and not args.no_size:
         # The request asked for the app's size: a second build, for a device. Its lines go at the end of the summary.
         limit = args.size_limit_minutes
         if limit is None:
