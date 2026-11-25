@@ -143,6 +143,70 @@ final class SyncReviewFixTests: XCTestCase {
         XCTAssertEqual(application.booksToAdd.map(\.book.id), [older.id])
     }
 
+    /// A dropped copy of a book is not a book of this library: none of its keys is applied, so a baseline
+    /// that absorbs the applied keys never holds it, and no removal of it is ever recorded.
+    func testDroppedDuplicateKeysAreNotApplied() {
+        var older = Fixtures.book(md5: "same"), newer = Fixtures.book(md5: "same")
+        older.dateAdded = Date(timeIntervalSince1970: 10)
+        newer.dateAdded = Date(timeIntervalSince1970: 20)
+        let registers = Fixtures.registers(
+            Fixtures.presence(of: newer, wall: 5) + Fixtures.presence(of: older, wall: 5)
+            + [Fixtures.entry(.bookmark(book: newer.id, id: UUID()), SyncValueCoding.json(SyncBookmarkValue(Bookmark(number: 1, chapterIndex: 0, characterOffset: 0))), wall: 6)]
+        )
+        let application = SyncMerge.apply(registers, to: Fixtures.library(), voices: nil)
+        XCTAssertTrue(application.appliedKeys.allSatisfy { $0.bookID != newer.id }, "nothing of the dropped copy is applied")
+        XCTAssertTrue(application.appliedKeys.contains(.book(older.id, .presence)))
+        var baseline = SyncProjection()
+        baseline.absorbApplied(application.appliedKeys, from: registers)
+        XCTAssertNil(baseline.values[.book(newer.id, .presence)])
+        let now = SyncProjection.of(application.library, contents: [:])
+        XCTAssertNil(SyncMerge.changes(from: baseline, to: now, atLaunch: false)[.book(newer.id, .presence)])
+    }
+
+    /// Stopping keeping a removed book does not bring it back; keeping it later does.
+    func testKeepFalseDoesNotReviveARemovedBook() {
+        let book = Fixtures.book()
+        let stopped = apply([
+            Fixtures.entry(.book(book.id, .presence), .null, wall: 5),
+            Fixtures.entry(.book(book.id, .keep), .bool(false), wall: 9),
+        ], to: Fixtures.library(books: [book]))
+        XCTAssertEqual(stopped.booksToRemove, [book.id])
+        let kept = apply([
+            Fixtures.entry(.book(book.id, .presence), .null, wall: 5),
+            Fixtures.entry(.book(book.id, .keep), .bool(true), wall: 9),
+        ], to: Fixtures.library(books: [book]))
+        XCTAssertTrue(kept.booksToRemove.isEmpty)
+    }
+
+    /// A later content entry brings a removed book back, and a new book that comes back is recorded as present.
+    func testLaterContentRevivesAndANewRevivedBookIsRecorded() {
+        let book = Fixtures.book()
+        let revived = apply([
+            Fixtures.entry(.book(book.id, .presence), .null, wall: 5),
+            Fixtures.entry(.book(book.id, .content), SyncValueCoding.json(Fixtures.content(of: book)), wall: 9),
+        ], to: Fixtures.library(books: [book]))
+        XCTAssertTrue(revived.booksToRemove.isEmpty)
+        let elsewhere = apply([
+            Fixtures.entry(.book(book.id, .presence), .null, wall: 5),
+            Fixtures.entry(.book(book.id, .content), SyncValueCoding.json(Fixtures.content(of: book)), wall: 9),
+        ], to: Fixtures.library())
+        XCTAssertEqual(elsewhere.booksToAdd.map(\.book.id), [book.id])
+        XCTAssertEqual(elsewhere.entriesToRecord[.book(book.id, .presence)], .bool(true))
+        XCTAssertFalse(elsewhere.appliedKeys.contains(.book(book.id, .presence)))
+    }
+
+    /// A place dated in the future is stamped at now, so the clock does not refuse its stamp.
+    func testJoiningStampOfAFutureDateIsCappedAtNow() {
+        var place = ReadingPosition(chapterIndex: 1)
+        let now = Date(timeIntervalSince1970: 1_000_000)
+        place.lastUpdated = now.addingTimeInterval(10 * 365 * 24 * 3600)
+        let key = SyncKey.book(UUID(), .position)
+        let stamp = SyncMerge.joiningStamp(for: key, value: SyncValueCoding.json(place), device: "d", now: now)
+        XCTAssertEqual(stamp.wall, SyncClock.milliseconds(of: now))
+        var clock = SyncClock(device: "e")
+        XCTAssertTrue(clock.observe(stamp, at: now))
+    }
+
     // MARK: - Item 10: folders
 
     /// A fold lasts: a book recorded into the folded folder later lands in the survivor, and so does a folder.
