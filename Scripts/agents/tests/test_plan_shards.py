@@ -85,7 +85,8 @@ class PlanShardsTests(unittest.TestCase):
         self.assertEqual(self.output({"cold": "yes"})["cold"], "false", "only a real true makes it cold")
 
     def test_a_full_suite_asks_for_several_iphone_jobs_and_a_request_without_iphone_tests_for_one(self):
-        full = self.output({"areas": ["all"], "full": True, "shards": 4})
+        # Beside 2 Mac shards there are slots for several (beside 4, the Mac keeps its shards and leaves one).
+        full = self.output({"areas": ["all"], "full": True, "shards": 2})
         self.assertGreater(int(full["ios_shards"]), 1, "the interface tests are the longest path of a full suite")
         self.assertEqual(json.loads(full["ios_matrix"]), {"shard": list(range(1, int(full["ios_shards"]) + 1))})
         self.assertEqual(self.output({"classes": ["ChatterTests"]})["ios_shards"], "1")
@@ -113,9 +114,51 @@ class PlanShardsTests(unittest.TestCase):
                 self.assertLessEqual(int(out["shards"]) + ios_jobs, plan_shards.MACOS_JOBS_AT_ONCE)
                 self.assertGreaterEqual(int(out["shards"]), 1)
 
-    def test_a_full_suite_with_three_iphone_jobs_leaves_two_mac_shards(self):
+    def test_the_mac_keeps_the_shards_it_asked_for_and_the_iphone_jobs_take_the_slots_left(self):
         out = self.output({"full": True, "shards": 4, "ios_shards": 3})
+        self.assertEqual((out["shards"], out["ios_shards"]), ("4", "1"), "4 + 1 are the 5 macOS jobs")
+        out = self.output({"full": True, "shards": 3, "ios_shards": 3})
+        self.assertEqual((out["shards"], out["ios_shards"]), ("3", "2"))
+        out = self.output({"full": True, "shards": 2, "ios_shards": 3})
         self.assertEqual((out["shards"], out["ios_shards"]), ("2", "3"))
+
+    def estimate_of(self, seconds):
+        """A patch that makes the iPhone tests' estimate `seconds` in all, as the real classes' shares of it."""
+        real = ios_ui_tests.estimated_seconds
+
+        def scaled(classes, *args, **kwargs):
+            """The real estimate of `classes`, scaled to the total."""
+            base = real(classes, *args, **kwargs)
+            factor = seconds / (sum(base.values()) or 1)
+            return {name: value * factor for name, value in base.items()}
+
+        return mock.patch.object(ios_ui_tests, "estimated_seconds", scaled)
+
+    def test_an_estimate_past_two_jobs_does_not_take_a_mac_shard_from_a_full_suite(self):
+        # exportphone's ExportUITests (125 s), PhoneExportPeakMemoryTests (45.8) and PhoneExportMemoryCheckTests (6.6) bring the
+        # estimate of the whole iPhone suite from 1,520 to 1,714 seconds, past the two-job line (2 x 800): 3 iPhone jobs.
+        with self.estimate_of(1714.0):
+            wanted = self.output({"shards": 2, "full": True})["ios_shards"]
+            self.assertEqual(wanted, "3", "the estimate wants 3 iPhone jobs where there is room")
+            for mac, expected_ios in ((4, "1"), (3, "2")):
+                with self.subTest(mac_shards=mac):
+                    out = self.output({"full": True, "areas": ["all"], "shards": mac})
+                    self.assertEqual((out["shards"], out["ios_shards"]), (str(mac), expected_ios))
+
+    def test_a_one_shard_train_keeps_the_iphone_jobs_its_estimate_wants(self):
+        with self.estimate_of(1714.0):
+            out = self.output({"shards": 1, "full": True})
+            self.assertEqual((out["shards"], out["ios_shards"]), ("1", "3"))
+        with self.estimate_of(2600.0):
+            out = self.output({"shards": 1, "full": True})
+            self.assertEqual((out["shards"], out["ios_shards"]), ("1", "4"), "room for 4 beside one Mac shard")
+
+    def test_the_iphone_jobs_are_at_least_one_whatever_the_mac_asks(self):
+        for mac in (1, 2, 3, 4, 99):
+            with self.subTest(mac=mac), self.estimate_of(5000.0):
+                out = self.output({"full": True, "shards": mac})
+                self.assertGreaterEqual(int(out["ios_shards"]), 1)
+                self.assertEqual(int(out["shards"]), min(mac, shard.MAX_SHARDS))
 
     def test_a_train_without_iphone_tests_keeps_all_the_mac_shards_beside_its_one_iphone_build(self):
         out = self.output({"classes": ["ChatterTests"], "shards": 4})

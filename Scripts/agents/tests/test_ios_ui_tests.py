@@ -487,17 +487,18 @@ class ShardingTests(TreeCase):
         self.assertGreater(ui.shard_count(ui.all_classes(ROOT), ROOT), 1)
         self.assertIsInstance(ui.load_times(), dict)
 
-    def test_the_full_suite_is_two_jobs_that_end_within_ten_percent_of_each_other(self):
-        """The real tree's measured times (ios-class-times.json, the runs of November 23, 2026) come to about 1,350 seconds of
-        tests, which two jobs run. Two jobs leave the Mac tests three shards of the 5 macOS slots; a third iPhone job would cost
-        the Mac one, and a slower run."""
+    def test_the_full_suite_is_jobs_that_end_within_ten_percent_of_each_other(self):
+        """The real tree's measured times (ios-class-times.json) come to 1,500 to 1,800 seconds of tests, which the plan deals
+        to 2 or 3 jobs (plan_shards.py gives the Mac its shards first, so the jobs it can start are fewer when the Mac asks for
+        4). However many jobs the tree's times want, they are dealt evenly."""
         classes = ui.all_classes(ROOT)
-        self.assertEqual(ui.shard_count(classes, ROOT), 2)
+        count = ui.shard_count(classes, ROOT)
+        self.assertIn(count, (2, 3))
         seconds = ui.estimated_seconds(classes, ROOT)
-        shares = [sum(seconds[name] for name in ui.slice_for(classes, number, 2, ROOT)) for number in (1, 2)]
-        self.assertLess(abs(shares[0] - shares[1]), 0.10 * max(shares), shares)
+        shares = [sum(seconds[name] for name in ui.slice_for(classes, number, count, ROOT)) for number in range(1, count + 1)]
+        self.assertLess(abs(max(shares) - min(shares)), 0.10 * max(shares), shares)
         # Every class is in exactly one job.
-        dealt = [name for number in (1, 2) for name in ui.slice_for(classes, number, 2, ROOT)]
+        dealt = [name for number in range(1, count + 1) for name in ui.slice_for(classes, number, count, ROOT)]
         self.assertEqual(sorted(dealt), sorted(classes))
 
 
