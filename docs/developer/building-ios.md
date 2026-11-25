@@ -16,6 +16,7 @@ project.yml defines two apps over one source folder.
   They are `LAME_iOS`, `ObjCExceptionCatcher_iOS`, `liblouis_iOS`, TextMouthBrailleLibrary_iOS (the braille translation, DR34), and FFmpeg_iOS (FFmpeg with TextMouth's session, FMT54; see [The FFmpeg build](building.md#the-ffmpeg-build)).
   The file project.yml defines each library, SwiftSoup included, once, as a target template, and builds it for each platform; the Mac targets' settings are as they were.
 - It has no helper program, since iOS lets an app start none, so it runs liblouis and FFmpeg's session inside the app (see [The translator on the iPhone](../architecture/state/imports-braille-tables.md#the-translator-on-the-iphone)).
+  Its liblouis tables are one BrailleTables.pack, which the build phase "Pack braille tables" writes and `make check` holds to a size limit, and which the app unpacks into its Caches at first use (see [Braille table pack](../architecture/state/braille-table-pack.md)).
 - It is the iPhone app: the Library, the reader, Settings, and importing, built from research/IOS-INTERFACE-SPEC-2026-11-07.md (see [The two apps and the platform folders](../architecture/platforms.md)).
   Nothing has run on a phone.
 - Its scheme, `TextMouthiOS`, is committed.

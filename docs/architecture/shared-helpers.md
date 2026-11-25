@@ -268,6 +268,7 @@ MachineLocalPaths (Models/CloudStorageContract.swift): this Mac's own folders, w
 - and, in its Caches folder:
   - the kept reading text;
   - the feeds' fetch details and resume data;
+  - the braille tables unpacked from the pack at first use (MachineLocalPaths.brailleTables, a folder for each liblouis version);
   - audio editing's scratch folders (AudioEditScratch, in Services/AudioEditing/AudioEditComposition.swift);
   - and the audio editor's clips (AudioEditCaches.clipsRoot, in Services/AudioEditing/AudioEditCaches.swift).
 

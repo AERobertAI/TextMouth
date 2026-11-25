@@ -92,19 +92,31 @@ Text: substitutionsEnabled, the switch for the substitution rules, and the repea
 The rules themselves are in substitutions.json.
 
 ### Braille settings
-<!-- id: braille-settings; keys: brailleTable, brailleFileCode, mac: tables, ascii-na, ascii-eurobraille, en-ueb-g2.ctb; src: TextMouth/Services/ConfigService.swift, TextMouth/Models/BrailleTableCatalog.swift, TextMouth/Parsers/BrailleFileCode.swift -->
+<!-- id: braille-settings; keys: brailleTable, brailleFileCode, mac: tables, ascii-na, ascii-eurobraille, en-ueb-g2.ctb; src: TextMouth/Services/ConfigService.swift, TextMouth/Models/BrailleTableCatalog.swift, TextMouth/Parsers/BrailleFileCode.swift, TextMouth/Phone/PhoneImportRefusal.swift, TextMouthProductionTests/BrailleTablePrintOnlyTests.swift -->
 
 Braille: brailleTable, the table braille files are read and written with, by its file name:
 
 - "en-ueb-g1.ctb" or "en-ueb-g2.ctb" for Unified English Braille, uncontracted or contracted,
 - and "en-us-g1.ctb" or "en_US.tbl" for English Braille, American Edition, uncontracted or contracted,
+- or the bare file name of one of this Mac's VoiceOver tables, such as "fr-bfu-g2.ctb", which is the value an iPhone stores for its own table of that name,
 - or "mac:" and the file name of one of this Mac's VoiceOver tables, such as "mac:fr-bfu-g2.ctb" (see the Braille tab, under [Settings](settings-braille.md)).
 
 TextMouth writes the table in use, "en-ueb-g2.ctb" until one is chosen.
-A missing, empty, or other value, such as a name that is not exactly one of these four or "mac:" and a bare file name (no slash or comma, and not starting with a dot), leaves the current table as it is.
+A missing, empty, or other value leaves the current table as it is.
+Other values are "mac:" and a name with a slash, a comma, or a leading dot, and a bare name of a file that is no table, such as "en-ueb-chardefs.uti", which a table only includes.
 A "mac:" name is taken as it is, without reading this Mac's tables: TextMouth checks the table before its first use, and an import or an export that needs a table this Mac lacks or refuses fails by name (see [Adding books](settings-braille.md)).
+A bare name that is none of the four is kept when this Mac has a VoiceOver file of that name that is a table TextMouth offers, and read with that file.
+TextMouth judges it from that one file's head and never reads the folder of tables at launch.
+A bare name this Mac has no table of, such as an iPhone's "en-nz-g2.ctb", or one whose VoiceOver table could never load, such as "is.tbl", leaves this Mac reading with its own table, and TextMouth writes the name back into config.json as it was, so that the iPhone keeps its choice.
+It does so until you change the table on this Mac, which then replaces the name.
+A table that only writes braille (see Tables that only write braille, in [Settings](settings-braille.md)) is kept too, and an export may use it; reading never offers it, but a setting that already names one keeps working.
 It chooses the table for books imported and braille exported from then on.
-A book already in the library keeps the table it was imported with. brailleFileCode, the braille file characters a BRF or BRL file is read with, by id: "ascii-na", North American Braille ASCII, or "ascii-eurobraille", Eurobraille, six-dot (see the Braille tab, under [Settings](settings-braille.md)).
+A book already in the library keeps the table it was imported with.
+A table's value travels between a Mac and an iPhone as it is, and neither rewrites it: a Mac keeps the bare name an iPhone stored, and an iPhone keeps the "mac:" name a Mac stored.
+Each reads the value with its own table of that file name: an iPhone reads "mac:fr-bfu-g2.ctb" with its "fr-bfu-g2.ctb".
+It refuses a "mac:" name it has no table of, in the words of [What TextMouth reads](reads-daisy-and-braille.md).
+
+brailleFileCode, the braille file characters a BRF or BRL file is read with, by id: "ascii-na", North American Braille ASCII, or "ascii-eurobraille", Eurobraille, six-dot (see the Braille tab, under [Settings](settings-braille.md)).
 TextMouth writes the one in use, "ascii-na" until one is chosen.
 A missing, empty, or other value, "unicode" included, since TextMouth recognizes Unicode braille patterns by a file's bytes and never takes them from the setting, leaves the current choice as it is.
 It chooses the characters for books imported from then on, and the Export dialog starts a BRF with them; a book already in the library keeps the characters it was imported with (see [Where TextMouth keeps your library](book-packages.md)).

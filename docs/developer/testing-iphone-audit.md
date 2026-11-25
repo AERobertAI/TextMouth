@@ -25,12 +25,12 @@ Part of [TextMouth's documentation](../../README.md).
   The audit of an element's actions exists on macOS alone (`XCUIAccessibilityAuditTypes.h`).
 
 ## The accepted findings
-<!-- id: accepted-findings; keys: Accepted struct, allow list, waived finding, color contrast; src: TextMouthiOSUITests/TextMouthUITestCase.swift, TextMouthiOSUITests/LargeTextUITests.swift, TextMouthiOSUITests/SearchUITests.swift -->
+<!-- id: accepted-findings; keys: Accepted struct, allow list, waived finding, color contrast; src: TextMouthiOSUITests/TextMouthUITestCase.swift, TextMouthiOSUITests/LargeTextUITests.swift, TextMouthiOSUITests/SearchUITests.swift, TextMouthiOSTests/PhoneWholeWordsTests.swift -->
 
 - A finding is accepted only when the app cannot change it, or when it is proven false.
   An `Accepted` value matches the audit's type and the element's label (exactly, or by its start when `labelIsPrefix`), and, for some, Apple's own short description of the finding.
   It is kept with the results, with its reason.
-  There are eight, in four groups, and a ninth for the phone's SwiftUI text fields (see the next section).
+  There are nine, in five groups, and a tenth for the phone's SwiftUI text fields (see the next section).
   The Search in Book audit declares one more of its own, in the test (see SearchUITests, below).
   - **Parts iOS draws:**
     - `searchField`: the clipped-text finding on "Search books", because the system's search field clips its placeholder at the largest text sizes, and VoiceOver and braille read it whole.
@@ -44,6 +44,8 @@ Part of [TextMouth's documentation](../../README.md).
     The screenshots kept with the results showed black text, (0, 0, 0), on (235 to 242, 235 to 242, 240 to 247), in a frame 370 by 40 points at (16, 116) or (16, 132): about 17 to 1.
     Nothing switched off cleared it.
     It is matched by the header's words and the contrast kind only, so any other contrast finding still fails.
+  - **A false positive, measured:** `brailleCaption` is the clipped-text finding on the Braille section's caption in Settings, matched by its exact words and the kind only.
+    `PhoneWholeWordsTests` measures its frame a point taller than its words at the largest size, and the screenshot kept with train 1125-0148's audit shows all seven of its lines whole.
   - **Large text, by element:** `librarySummary` is the Dynamic Type finding ("partially unsupported") on the Library's summary row, matched by the first words of its label, "1 book."
     The row is a plain `Text` that grows and wraps (5 lines at the largest size in the screenshots).
     Its cause is unknown.
@@ -56,6 +58,8 @@ Part of [TextMouth's documentation](../../README.md).
     - `scrolledPastTheEdge`: the clipped-text kind and Apple's words "Text clipped", for text cut by the screen's edge or the bar it scrolls under, which is what scrolling does.
       The screenshot of pass 4 showed a line cut under the navigation bar and a row cut at the bottom edge.
       It is used only by the two scrolled audits.
+    - The scrolled Settings audit also passes `acceptingTextCutByTheScroll` to `audit`, which accepts a clipped-text finding on any named row whose frame crosses the bottom of the navigation bar or the bottom edge of the screen, and keeps it with the results.
+      The audit cannot tell a cut by the edge from a cut of the text; the same screen audited unscrolled holds every row whole.
     - These three are broader than the others and not verified one by one.
       A real fixed font would still name its element and fail.
 - Any other finding fails its test.
@@ -113,7 +117,8 @@ Part of [TextMouth's documentation](../../README.md).
   - `testSettingsHoldsAtTheLargestText` audits Settings as it first appears and then scrolled two screens down.
     A list lays its rows out lazily and a swipe's momentum carries on after the swipe returns, so the audit must not read it mid-scroll.
     The test first scrolls the whole list through once (`scrollThroughTheList`), so every row has been laid out, and before each audit waits for a still screen (`waitUntilStill`): the frames of every labeled element are the same on two reads half a second apart, for at most `patience`.
-    It accepts the title and `unnamedUnsupported`, and, scrolled, the other two nameless findings.
+    It accepts the title, `brailleCaption`, and `unnamedUnsupported`, and, scrolled, the other two nameless findings.
+    Switch labels and captions take `phoneWholeWords`, a point of line spacing that leaves each frame taller than its words, since a frame that fit its words exactly was read as clipped in some runs.
     `PhoneValueRow` stacks the value under the name at these sizes, and the screenshots show nothing cut or overlapped.
   - `testAddToLibraryHoldsAtTheLargestText` audits the Add to Library sheet.
     It accepts its title and Cancel, and nothing else.

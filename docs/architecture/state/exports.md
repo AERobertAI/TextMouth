@@ -144,7 +144,8 @@ What each format keeps and leaves out is in [Exporting books](../../user/exporti
 <!-- id: braille-writers; keys: BRF, PEF, braille export, BANA, six-dot cells, liblouis, embosser, braille pages; src: TextMouth/Services/Export/BrailleExportWriters.swift, TextMouth/Services/BrailleDocumentWriter.swift, TextMouth/Services/BrailleLayout.swift, TextMouth/Services/BrailleFileWriter.swift, TextMouth/Parsers/BrailleEmphasis.swift, TextMouth/Parsers/BrailleFileCode.swift, TextMouth/Views/Export/BrailleExportOptionsView.swift, TextMouth/Services/Export/TextExportWriter.swift -->
 
 - Braille (FMT22): BRFExportWriter and PEFExportWriter (Services/Export/BrailleExportWriters.swift), last in TextExportWriters.all, write a book as braille.
-  What the files hold and the layout's rules are in [Exporting books](../../user/exporting-braille.md); the translator, its helper, and the table catalog are under Braille files in [Imports](imports-braille-tables.md).
+  What the files hold and the layout's rules are in [Exporting books](../../user/exporting-braille.md); the translator and its helper are under Braille files in [Imports](imports-braille-tables.md).
+  The table catalog, with the export list that adds the tables that only write braille, is in [Braille table pack](braille-table-pack.md).
   - Blocks: BrailleExportBlocks.blocks(of:) turns an ExportDocument into BrailleBlocks, and printBlocks(of:) gives each its emphasis (BraillePrintBlock).
     A block's print keeps its runs' italic (isEmphasis) and bold (isStrong) as flags on each scalar (EmphasizedText(runs:)), and a link's address is not written.
     The text of a table's cells, a code block's lines, an ordered item's number, and the title carries no emphasis.
@@ -182,11 +183,13 @@ What each format keeps and leaves out is in [Exporting books](../../user/exporti
 - Layout: BrailleLayout is pure Swift over translated cells: BANA's margins, each list set apart by blank lines (setListsApart), pagination (Paginator), and the cuts of a word too long for a line (cutLength(of:room:)).
 - Options: BrailleExportOptions (a BraillePageFormat with the cells per line, 18 to 80, the lines per page, 4 to 50, and whether pages are numbered; the table; the BRF's BrailleLineEnd, and the BRF's fileCode, a BrailleFileCode) is the two writers' Options.
   It is started by BrailleExportOptions.standard() from BraillePreferences.importTable() and, for the file code, the Braille setting's, BraillePreferences.importFileCode() (never Unicode braille patterns, which the Export dialog offers but the setting does not).
-  Or it is started from the default table, with replacedTable set, when that is one of this Mac's tables that this Mac does not offer or that a kept verdict refused this session (isUnusableMacTable; a too-slow refusal and a check that could not be made are not kept).
+  Or it is started from the default table, with replacedTable set, when that is one of this Mac's tables (BrailleTableCatalog.readsFromMacFolder).
+  That is when this Mac does not offer it for export or a kept verdict refused it this session (isUnusableMacTable; a too-slow refusal and a check that could not be made are not kept).
   The options view then says BrailleExportWording.startsFromDefault(replacing:) until another table is chosen.
   BrailleExportOptionsView draws them under the picker, with the words in BrailleExportWording and no line ends or braille file characters for a PEF.
   A BRF's two own pop-ups, drawn by one menuPopUp builder, come last, the braille file characters (BrailleFileCode.all) after the line ends, so every other control keeps its place in the reading order.
   Its language, code, and contraction pop-ups are BrailleTablePickers, which the Braille tab of Settings draws too, each with hints of its own (see [Preferences](preferences.md)).
+  The export's pop-ups are given BrailleTableCatalog.exportCodes, which add the tables that only write braille, and the Braille tab's are given offeredCodes, which do not (see [Braille table pack](braille-table-pack.md#the-catalogs-lists)).
   A Mac table chosen there is checked off the main thread (The check of this Mac's tables, in [Imports](imports-braille-tables.md)) through BrailleTableChoiceChecks.shared.
   BookExportModel.export waits on it in its exporting phase (finished(unless:), ended at once by Stop or the dialog closing).
   So the export writes with the table the pop-ups show.

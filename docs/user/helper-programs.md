@@ -123,6 +123,7 @@ When the helper fails by itself, because it is missing, could not start, ended w
 Neither line holds any text of a book.
 The debug log also records BRAILLE_MAC_TABLE_REFUSED when the check of one of this Mac's tables refuses it, with the table's name, as "mac:" and its file name, and the reason in the refusal's words (see [Settings](settings-braille.md)).
 A check that could not run is not logged so, and the line holds no text of a book.
+The debug log records BRAILLE_TABLES_UNAVAILABLE when a braille table cannot be unpacked from the app's pack, with the file's name and why, once for each cause, and never a folder or a book's text.
 Cancel in the import overlay stops it at once.
 The iPhone can start no program, so it runs the same translation, liblouis 3.39.0, inside the app, one call at a time on a thread of its own.
 It keeps the Mac's limits as nearly as one process allows: its batches read the same limits on time and output, and a call still running 5 seconds past its limit is abandoned, since nothing in an app can stop one of its threads.
