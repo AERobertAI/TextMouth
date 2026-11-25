@@ -1394,6 +1394,29 @@ makefile_cases() {
   refute_report "SWIFT_REFLECTION_METADATA_LEVEL"
   end_case
 
+  # make install-ios builds the iPhone app for the user's own iPhone. `make -n` prints its commands and
+  # runs none of them: nothing here signs, builds, or installs.
+  begin_case "make install-ios is light by default, takes the lock, and passes TEAM, DEVICE, and LAUNCH through"
+  copy_makefile
+  output=$(cd "$sandbox" && "$REAL_MAKE" -n install-ios 2>&1)
+  status=$?
+  expect_status 0
+  expect_report "run_locked.py install-ios"
+  expect_report "install-on-device.py --profile \"light\""
+  refute_report "--team"
+  refute_report "--device"
+  refute_report "--launch"
+  # make -n prints the note's command either way: its test says whether the note would be printed.
+  expect_report 'if [ "light" = "full" ]'
+  # SIZE_PROFILE=full overrides the target's light, and then the memory note is printed.
+  output=$(cd "$sandbox" && "$REAL_MAKE" -n install-ios SIZE_PROFILE=full TEAM=X DEVICE=Y LAUNCH=1 2>&1)
+  status=$?
+  expect_status 0
+  expect_report "--profile \"full\" --team \"X\" --device \"Y\" --launch"
+  expect_report 'if [ "full" = "full" ]'
+  refute_report 'if [ "light" = "full" ]'
+  end_case
+
   # The once-per-release run of the golden tests against a Release build must
   # build what ships (Release, -Osize) with testability on and the settings
   # that would hide the app's symbols from the test bundle switched back.

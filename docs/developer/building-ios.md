@@ -188,6 +188,52 @@ The user's limits are the same for both apps: 30 MB, and 40 MB a strict one (see
   `app-size.py` reads the limits from `Scripts/check.sh`, and its default derived-data folder, `build/ios-size-DerivedData`, is absolute.
   Only a GitHub runner skips the step, with a line saying so.
 
+## Installing on your own iPhone
+<!-- id: installing-on-own-iphone; keys: make install-ios, install-on-device.py, devicectl, Developer Mode, free team, Apple ID, TEAM, DEVICE; src: Scripts/ios/install-on-device.py, Scripts/ios/iphone_release.py, Makefile, Scripts/agents/tests/test_install_on_device.py, project.yml -->
+
+`make install-ios` builds the iPhone app, signed for your own team, and installs it on your own iPhone with no Xcode window.
+No agent runs it, since it signs and installs, and installing is the user's.
+
+Once, before the first run:
+1. Add your Apple ID to Xcode: Xcode > Settings > Accounts, the plus button, Apple ID.
+   A free Apple ID gives a personal team, and the app needs nothing a paid membership adds (it has no entitlements, and its bundle identifier is one a free team can register).
+2. Download the iOS platform: Xcode > Settings > Components.
+3. Connect the iPhone by USB, unlock it, and tap Trust.
+4. Turn on Developer Mode on the iPhone: Settings > Privacy & Security > Developer Mode.
+   The switch appears once the iPhone has been connected to Xcode, and the iPhone restarts when you turn it on.
+
+Then run `make install-ios`.
+It takes the heavy-work lock, so it waits behind any build already going on this Mac and says so, then:
+- picks the team and the iPhone, and says which;
+- builds with `xcodebuild`, which makes or updates the provisioning profile and registers the iPhone itself (`-allowProvisioningUpdates` and `-allowProvisioningDeviceRegistration`);
+- installs with `xcrun devicectl device install app`, and tells you to open TextMouth on your iPhone.
+
+Its variables:
+- `SIZE_PROFILE=light` is the default, since the iPhone's size is not what matters yet and the full profile's link takes several GB of memory.
+  `SIZE_PROFILE=full` takes every size setting, and says to quit other heavy apps first (see [The Release size settings](building-release.md#the-release-size-settings)).
+- `TEAM=<10-character team identifier>`, else the environment variable `TEXTMOUTH_TEAM`, else the one team in Xcode's preferences.
+  With several teams the command lists their names and asks for `TEAM=`.
+- `DEVICE=<name or UDID>`, else the one paired iPhone or iPad that `xcrun devicectl list devices` shows.
+  With several, the command lists their names and asks for `DEVICE=`.
+- `LAUNCH=1` starts the app on the iPhone after installing it.
+
+### Checking it, and when it fails
+<!-- id: installing-on-own-iphone-fixes; keys: dry-run, install.log, exit status 2, expired profile, untrusted developer, VPN & Device Management; src: Scripts/ios/install-on-device.py, Scripts/agents/tests/test_install_on_device.py -->
+
+`python3 -I -B Scripts/ios/install-on-device.py --dry-run` prints each command and runs none; it reads no preferences and lists no device, so a team or device not given shows as a placeholder.
+The build's output goes to `build/ios-device/install.log`, and the tool prints only errors, a line each minute, and the verdict.
+Exit status 2 means a missing step, with the words to fix it.
+Any other failure exits with the failed tool's status and the log's path.
+
+With a free team the profile lasts a week, after which the app stops opening: run `make install-ios` again.
+The command prints the fixes for the errors a person is likely to meet:
+- **Untrusted developer:** on the iPhone, Settings > General > VPN & Device Management, choose the developer, tap Trust.
+- **Developer Mode off:** turn it on as in step 4, then run again.
+- **Expired profile:** run again, which makes a new one.
+- **Bundle identifier another team holds:** use the team that holds it (`TEAM=`), or sign the other Apple ID out of Xcode's Accounts.
+- **No team:** step 1.
+- **iPhone newer than this Xcode supports:** update Xcode.
+
 ## Building TextMouthiOS for the simulator
 <!-- id: building-textmouthios-simulator; keys: xcodebuild, simctl, iPhone 17, DerivedData-ios.noindex, xcresult; src: project.yml, TextMouth.xcodeproj/xcshareddata/xcschemes/TextMouthiOS.xcscheme, Scripts/agents/run_locked.py, Scripts/agents/run-ios-ui-tests.py, TextMouth/Phone/PhoneLaunchRequest.swift -->
 

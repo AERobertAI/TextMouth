@@ -44,9 +44,12 @@ sys.dont_write_bytecode = True
 
 # The repository's root: this file is in Scripts/ios.
 ROOT = Path(__file__).resolve().parents[2]
-# The Release size settings the Makefile gives the Mac build too, defined once in Scripts/size_settings.py.
+# The target, product names, and Release build settings (the size settings among them, defined once in
+# Scripts/size_settings.py) that this tool shares with Scripts/ios/install-on-device.py: Scripts/ios/iphone_release.py,
+# which needs Scripts/ on the path too.
 sys.path.insert(0, str(ROOT / "Scripts"))
-import size_settings  # noqa: E402
+sys.path.insert(0, str(ROOT / "Scripts" / "ios"))
+import iphone_release  # noqa: E402
 
 # One megabyte, as Scripts/check.sh counts it.
 MEGABYTE = 1_000_000
@@ -77,10 +80,10 @@ DEFAULT_TOP = 15
 # in Build/Products/Release-iphoneos, objects and the link map in Build/Intermediates.noindex, and the module cache in
 # ModuleCache.noindex, where a runner's stale-cache check (Scripts/agents/runner_module_cache.py) looks). The folder name Xcode gives its products. The product's name is
 # TextMouth, as project.yml sets it (the Mac app has the same name).
-TARGET = "TextMouthiOS"
-SDK = "iphoneos"
-PRODUCTS_FOLDER = "Release-iphoneos"
-APP_NAME = "TextMouth.app"
+TARGET = iphone_release.TARGET
+SDK = iphone_release.SDK
+PRODUCTS_FOLDER = iphone_release.PRODUCTS_FOLDER
+APP_NAME = iphone_release.APP_NAME
 # The longest a build may take, in minutes, unless --limit-minutes says otherwise.
 DEFAULT_BUILD_LIMIT_MINUTES = 40
 # The first four bytes of a Mach-O file (thin, 32 and 64 bit, in either byte order), and of a universal ("fat") one.
@@ -300,10 +303,8 @@ def build_command(derived_data):
     return ["xcodebuild", "build", "-project", "TextMouth.xcodeproj", "-target", TARGET, "-configuration", "Release",
             "-sdk", SDK, "-clonedSourcePackagesDirPath", f"{derived_data}/SourcePackages",
             f"SYMROOT={derived_data}/Build/Products", f"OBJROOT={derived_data}/Build/Intermediates.noindex",
-            f"MODULE_CACHE_DIR={derived_data}/ModuleCache.noindex", "ARCHS=arm64",
-            "CODE_SIGNING_ALLOWED=NO", "COMPILER_INDEX_STORE_ENABLE=NO", "CLANG_COVERAGE_MAPPING=NO",
-            "SWIFT_OPTIMIZATION_LEVEL=-Osize", *size_settings.settings(), "LD_GENERATE_MAP_FILE=YES",
-            "DEPLOYMENT_POSTPROCESSING=YES"]
+            f"MODULE_CACHE_DIR={derived_data}/ModuleCache.noindex", *iphone_release.release_settings(),
+            "CODE_SIGNING_ALLOWED=NO", "LD_GENERATE_MAP_FILE=YES"]
 
 
 def run_build(derived_data, limit_minutes):

@@ -22,7 +22,7 @@ The orchestrator's own rules are in [Orchestrating TextMouth's agents](docs/agen
 
 ## The user's standing rules
 
-- Never install: the user runs `make install` themselves when told main is ready.
+- Never run `make install` or `make install-ios`: the user runs them when told.
 - Task agents never push, except to `TestBuild` through the train tools.
   Only the orchestrator pushes main and its version tags, and only at a version bump it judges a fairly stable release: a green full Mac suite on that tree, `make check` passed, and nothing private in the commits (no path under `build/`, `humanQuestions/`, or `humanReports/`).
 - `github_run.py`'s workflow guard is on: a change to `.github/workflows/` or `.github/actions/` runs on `TestBuild` only after it is on GitHub's main, so it ships with a release push after an outside review.
