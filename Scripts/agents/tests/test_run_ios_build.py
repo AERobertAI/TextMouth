@@ -474,6 +474,37 @@ class SizeTests(unittest.TestCase):
                       "error: no slice for arm64).", summary)
         self.assertIn("no slice for arm64", (out / "ios.log").read_text())
 
+    def limits_passed(self, *arguments):
+        """Runs main for a size request with the device build replaced by a spy, and returns the limits it was given."""
+        limits = []
+
+        def spy(derived_data, out, limit_minutes):
+            limits.append(limit_minutes)
+            return ["Size: not measured: a stand-in."]
+
+        with mock.patch.object(ios, "device_size_lines", spy):
+            self.run_main('{"ios_size": true}', FAKE_DEVICE_BUILD, *arguments)
+        return limits
+
+    def test_the_device_build_takes_what_the_simulator_build_left_of_its_limit(self):
+        # Without --size-limit-minutes, the device build has its own share and what the Simulator build, a moment here,
+        # left of its limit: nearly both (trains 1125-0350 and 1125-0501 were stopped at 15 with about 12 left unused).
+        limits = self.limits_passed()
+        self.assertEqual(len(limits), 1)
+        both = ios.DEFAULT_SIZE_LIMIT_MINUTES + ios.DEFAULT_LIMIT_MINUTES
+        self.assertGreater(limits[0], both - 1)
+        self.assertLessEqual(limits[0], both)
+
+    def test_a_size_limit_given_is_the_limit_whatever_the_simulator_build_left(self):
+        self.assertEqual(self.limits_passed("--size-limit-minutes", "7"), [7.0])
+
+    def test_the_size_limit_adds_only_what_the_simulator_build_left_rounded_down(self):
+        self.assertEqual(ios.size_limit(20, 8), 27.0)
+        self.assertEqual(ios.size_limit(20, 8.04), 26.9, "rounded down to a tenth of a minute")
+        self.assertEqual(ios.size_limit(20, 0), 35.0)
+        self.assertEqual(ios.size_limit(20, 20), ios.DEFAULT_SIZE_LIMIT_MINUTES)
+        self.assertEqual(ios.size_limit(20, 26), ios.DEFAULT_SIZE_LIMIT_MINUTES, "a Simulator build past its limit leaves nothing")
+
     def test_a_device_build_that_outlives_its_limit_is_stopped_and_says_so(self):
         summary, _, _ = self.run_main('{"ios_size": true}', "import time; time.sleep(60)", "--size-limit-minutes", "0.01")
         self.assertIn("Size: not measured: the device build was stopped after 0.01 minutes.", summary)

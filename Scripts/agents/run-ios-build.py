@@ -39,6 +39,7 @@ Run it from the repository root. Python 3 standard library only.
 import argparse
 import importlib.util
 import json
+import math
 import os
 import platform
 import re
@@ -61,10 +62,13 @@ DEFAULT_LIMIT_MINUTES = 20
 # The least time, in minutes, that must be left of the limit for the retry to be worth starting: less would stop it before
 # it had compiled anything.
 MINIMUM_RETRY_MINUTES = 1.0
-# The longest the device build for the app's size may take, in minutes, when the request asks for the size. It comes after the
+# The device build's own share of the job, in minutes, when the request asks for the app's size. It comes after the
 # Simulator build in the same job (limit 90 minutes: the platform download about 4, the Simulator build at most
 # DEFAULT_LIMIT_MINUTES, this, and the interface tests' step of at most 45). The first run on GitHub (43966277770, November 16,
 # 2026) took 10.6 minutes for the device build and measuring from a cold cache, and the Simulator build 2.5 from a warm one.
+# Unless --size-limit-minutes is given, the device build also takes what the Simulator build left of its own limit
+# (`size_limit`): by November 25 a finished device build took 12 to 14.4 minutes, and 4 of the 10 trains before that day's
+# 05:01 were stopped at 15, while the Simulator build used about 8 of its 20.
 DEFAULT_SIZE_LIMIT_MINUTES = 15
 # The folder of the device build, inside the derived-data folder, and how much of its log goes into ios.log.
 DEVICE_FOLDER = "device"
@@ -245,6 +249,15 @@ def start_device_folder_over(derived_data, names=(DEVICE_FOLDER,)):
     return True
 
 
+def size_limit(simulator_limit_minutes, simulator_minutes):
+    """The device build's limit when none is given, in minutes: DEFAULT_SIZE_LIMIT_MINUTES and whatever the Simulator
+    build, which took `simulator_minutes`, left of its own `simulator_limit_minutes`, rounded down to a tenth of a minute.
+    The two builds together then never take more than the job holds for both, so its 90 minutes still hold the interface
+    tests' step after them."""
+    left = max(0.0, simulator_limit_minutes - simulator_minutes)
+    return math.floor((DEFAULT_SIZE_LIMIT_MINUTES + left) * 10) / 10
+
+
 def device_size_lines(derived_data, out, limit_minutes):
     """Builds the Release app for a device into `derived_data`, measures it, and returns the lines for ios-summary.txt:
     the measurement's, or one "Size: not measured" line saying why not. The build's log is kept in `out`/ios-size.log, and
@@ -293,7 +306,8 @@ def main(argv):
     parser.add_argument("--out", default="build/remote-ios")
     parser.add_argument("--derived-data", default="build/remote-DerivedData-ios")
     parser.add_argument("--limit-minutes", type=float, default=DEFAULT_LIMIT_MINUTES)
-    parser.add_argument("--size-limit-minutes", type=float, default=DEFAULT_SIZE_LIMIT_MINUTES)
+    # No default: without the flag, the device build takes its share and what the Simulator build left (`size_limit`).
+    parser.add_argument("--size-limit-minutes", type=float, default=None)
     parser.add_argument("--request", default=".github/test-request.json")
     args = parser.parse_args(argv)
     out = (ROOT / args.out).resolve()
@@ -334,11 +348,14 @@ def main(argv):
             status, timed_out = run_build(command, log, left, append=True)
             log_text = log.read_bytes()[first_size:].decode("utf-8", errors="replace")
             retried = retry_note(first_seconds / 60, failure)
-    write_results(out, parse_errors(log_text), log_text, status, timed_out, time.monotonic() - started,
-                  args.limit_minutes, retried)
+    simulator_seconds = time.monotonic() - started
+    write_results(out, parse_errors(log_text), log_text, status, timed_out, simulator_seconds, args.limit_minutes, retried)
     if size_requested(ROOT / args.request):
         # The request asked for the app's size: a second build, for a device. Its lines go at the end of the summary.
-        lines = device_size_lines((ROOT / args.derived_data).resolve() / DEVICE_FOLDER, out, args.size_limit_minutes)
+        limit = args.size_limit_minutes
+        if limit is None:
+            limit = size_limit(args.limit_minutes, simulator_seconds / 60)
+        lines = device_size_lines((ROOT / args.derived_data).resolve() / DEVICE_FOLDER, out, limit)
         with open(out / "ios-summary.txt", "a", encoding="utf-8") as summary:
             summary.write("\n".join(lines) + "\n")
     print((out / "ios-summary.txt").read_text(), end="")
