@@ -1,4 +1,5 @@
 import Foundation
+import os
 
 /// How an export makes each file and puts it in the folder chosen (FR31): the
 /// one place the Mac's way and the iPhone's differ.
@@ -103,7 +104,10 @@ struct BookExportDelivery: Sendable {
     static func copyCoordinated(_ scratch: URL, to target: URL, cancellation: BookExportCancellation) throws {
         try cancellation.checkCancelled()
         let coordinator = NSFileCoordinator(filePresenter: nil)
-        try cancellation.childProcesses.whileRunning({ coordinator.cancel() }) {
+        // Stop calls `cancel()` from another thread, which Apple documents for a coordinator; the lock only carries the
+        // coordinator, which is no `Sendable` type, to the closure that Stop runs.
+        let stopper = OSAllocatedUnfairLock(uncheckedState: coordinator)
+        try cancellation.childProcesses.whileRunning({ stopper.withLockUnchecked { $0.cancel() } }) {
             try coordinateWriting(coordinator, at: target.deletingLastPathComponent(), cancellation: cancellation) { folder in
                 try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
             }
