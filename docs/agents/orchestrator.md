@@ -139,6 +139,7 @@ The Mac has 8 GB of memory and froze under the agents' own builds, so agents do 
 While agents work, the orchestrator runs two background tasks.
 `Scripts/agents/hold-build-slots.sh <release flag>` holds every build slot, so no agent builds on its own.
 `python3 -I Scripts/agents/build-train.py loop --hours <N>` runs a train every hour, on the hour; with `--remote` the trains build and test on GitHub Actions instead of this Mac (see **Builds on GitHub** below), and `--remote --soon <minutes>` sends one that many minutes after a request comes.
+Run it with `--base main`, so each train tests a branch merged onto main's tip, as its merge will be: the default base, `train/base`, can be an old commit, which tests each branch without main's newer commits.
 Every heavy job takes the heavy-work lock (`Scripts/agents/heavy_lock.py`), so one runs at a time: the trains, the type-checks, `run_suite.py`, and anything run through `run_locked.py`, simulator runs included.
 The jobs that wait go first come, first served: a waiting job takes a ticket in `heavy-lock-line/` beside the lock, and takes the lock only when no live older ticket remains; the train's first-in-line mark still goes ahead of every ticket.
 
