@@ -2085,6 +2085,7 @@
 		A9AD78285899F7B3BEFD8D40 /* OrphanedConversionSweep+iOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBA8B1EFB5EC9719217CD99F /* OrphanedConversionSweep+iOS.swift */; };
 		A9BFB571C75532657831199C /* MOBIFixture.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6BF729B05D157F0772E2B29 /* MOBIFixture.swift */; };
 		A9BFF32CE0D68395F8859534 /* EndBehaviorMatrixChapteredTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 846817489370B482ABE0E488 /* EndBehaviorMatrixChapteredTests.swift */; };
+		A9CB857F00AF2C71F0EB18B4 /* SyncSettingsUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6418EFCECE75A8B53724C56D /* SyncSettingsUITests.swift */; };
 		A9D08168AED947BB86ADCE15 /* PDFTextRecognizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4633A1731B6F99044C29E0D8 /* PDFTextRecognizer.swift */; };
 		A9ECB9D052834E627365F468 /* ManualOrderRearrangingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4F32AB3DA0F671C6BC0A243 /* ManualOrderRearrangingTests.swift */; };
 		AA11FB3F013D4B5CF668C194 /* PageImageWording.swift in Sources */ = {isa = PBXBuildFile; fileRef = F42FE322534EC88FF75F875C /* PageImageWording.swift */; };
@@ -4347,6 +4348,7 @@
 		63C3E7B75557DA7AAF01BE0B /* WatchedProcessSafetyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchedProcessSafetyTests.swift; sourceTree = "<group>"; };
 		641454A13EB2CC273F98A2E1 /* ReaderViewModel+Playback.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ReaderViewModel+Playback.swift"; sourceTree = "<group>"; };
 		6414D9D27C5C5CF49EB7EC46 /* SpeechRefusalReaderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechRefusalReaderTests.swift; sourceTree = "<group>"; };
+		6418EFCECE75A8B53724C56D /* SyncSettingsUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncSettingsUITests.swift; sourceTree = "<group>"; };
 		641BBBBF9534D3830F333D39 /* SpeechExportDialogTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechExportDialogTests.swift; sourceTree = "<group>"; };
 		6435C3EB3DB0FFE66814247C /* PhoneAudioWordWatchdogTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneAudioWordWatchdogTests.swift; sourceTree = "<group>"; };
 		644590F670C5D7D3781319A9 /* config.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = config.h; sourceTree = "<group>"; };
@@ -6349,6 +6351,7 @@
 				D72638E24C1DE19033E266A0 /* ScreenOrderUITests.swift */,
 				793BD4C64C3AC0CB7576712D /* SearchUITests.swift */,
 				BCAF85F972926D988AE6F0A4 /* SpanishUITests.swift */,
+				6418EFCECE75A8B53724C56D /* SyncSettingsUITests.swift */,
 				E13739E1A89C071D9187CAC7 /* TextMouthUITestCase.swift */,
 			);
 			path = TextMouthiOSUITests;
@@ -11306,6 +11309,7 @@
 				8075D357500D112F77556208 /* ScreenOrderUITests.swift in Sources */,
 				04D6BA95C171680ABA710CD2 /* SearchUITests.swift in Sources */,
 				F0BB3D5D7D6DAF67A768A230 /* SpanishUITests.swift in Sources */,
+				A9CB857F00AF2C71F0EB18B4 /* SyncSettingsUITests.swift in Sources */,
 				AD3A4BD7A8B5A9F60D290A18 /* TextMouthUITestCase.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
