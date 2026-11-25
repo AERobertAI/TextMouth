@@ -28,7 +28,7 @@ Each carries its tables in one file, BrailleTables.pack, in its resources, and u
 ## The index
 <!-- id: braille-table-pack-index; keys: index blob, group, offset, length, SHA-256, includes, include-only, catalog fields; src: Scripts/packs/braille_tables.py, TextMouth/Packs/BrailleTablePack.swift, TextMouthProductionTests/BrailleTablePackTests.swift -->
 
-The index is JSON: `{"v": 1, "liblouis": "3.39.0", "files": [...], "f": [...], "w": [...]}`, in sorted-key compact form so the same files give the same bytes.
+The index is JSON: `{"v": 1, "liblouis": "3.39.0", "files": [...], "f": [...]}`, in sorted-key compact form so the same files give the same bytes.
 Each entry of `files`, in name order, holds:
 
 - `n`, the name;
@@ -38,7 +38,7 @@ Each entry of `files`, in name order, holds:
 - `m`, the header fields the catalog reads (`CATALOG_KEYS`), for a file with a `type`, so the catalog lists tables without opening a file;
 - `t`, the tables a file includes when it does nothing else (`include_only_targets`), which the catalog uses to hide a twin.
 
-`f` names the release's literary tables that write braille only (`direction: forward`), and `w` those that read it back too.
+`f` names the release's literary tables that write braille only (`direction: forward`), and nothing names the others, since nothing reads such a list.
 They are judged over the whole release, shipped or not, because the Mac judges VoiceOver's older copies of a table by them (see The catalog's lists, below).
 Every name is plain, and the reader rejects the pack otherwise:
 
@@ -125,7 +125,7 @@ Adding a bundled table is adding its file to Vendor/liblouis/tables, which the p
   BrailleTableCatalog.tables(in:source:) sorts them by language, system, contraction, and name, and leaves out a true twin, a table whose only rule is one include of an offered table in the same language.
   BrailleTableCatalog.merged(bundled:mac:) lists every bundled table, then every Mac table whose file name no bundled table has.
 - Reading: the headers of the Mac's tables (485 files on macOS 26.3) are read once, off the main thread.
-  AppDelegate starts BrailleTableCatalog.loadInBackground() at launch, and mac, offeredCodes, and offeredTables are static lets made once.
+  AppDelegate starts BrailleTableCatalog.loadInBackground() at launch, which makes offeredTables and exportTables, and mac, offeredCodes, and exportCodes are static lets made once.
   BrailleTableCatalog.storableValue(_:) validates the setting and config.json without reading them for a value the pack holds and for a "mac:" value (BrailleTableSource.isMacValue), because both are read on the main thread at every launch.
   A bare value the pack lacks is judged by reading that one VoiceOver file's header, never the folder (see Stored values on each platform, below).
 - Codes and languages: BrailleTableCatalog.codes(of:)
@@ -149,7 +149,9 @@ Adding a bundled table is adding its file to Vendor/liblouis/tables, which the p
   The iPhone's `exportTables` exist, and no screen offers them yet (see [Exports](exports.md)).
 - A wrapper that only includes a print-only table of its language is print-only too (`followingTheirTargets`), such as `zh_TW.tbl`.
 - The newer liblouis decides which of VoiceOver's tables only write braille: `releaseDirections(judgingMacVersion:of:)` compares VoiceOver's liblouis version (the OpenSourceVersion of its property list) with `bundledLiblouisVersion`.
-  When VoiceOver's is older, or names none, `macTables(in:propertyList:release:requiresIncludes:)` is given `BrailleTablePack.ReleaseDirections` from the index's `f`, and a table is print-only when the release's list or the file's own `direction: forward` says so.
+  A version that does not begin with a digit ("unknown", "v3.34.0") is unknown.
+  When VoiceOver's is older or unknown, `macTables(in:propertyList:release:requiresIncludes:)` is given `BrailleTablePack.ReleaseDirections` from the index's `f`.
+  A table is then print-only when the release's list or the file's own `direction: forward` says so.
   That moves `cs.tbl`, `lv.tbl`, `sl.tbl`, and `zh_CHN.tbl` out of reading and into export.
   When VoiceOver's is newer, the release is not used and VoiceOver's own headers decide.
   The Mac's pack stays small because it carries only the lists.
@@ -170,10 +172,13 @@ A platform never rewrites a value it reads: `table(withID:)` answers with the id
 
 - The Mac reads a `mac:<file>` with VoiceOver's file, and a bare value its own pack lacks, such as the `fr-bfu-g2.ctb` an iPhone stores, with VoiceOver's file of that name (`readsFromMacFolder`).
   `storableValue` keeps such a value only when VoiceOver has a file of that name whose header makes a table the app offers, for reading or for export; an include or a chardefs file is refused.
-  It reads that one file's header (`table(fields:)`), never the folder, which the setting's read, at launch on the main thread, must not list; what only the listing judges is left to `table(withID:)` when the value is used.
+  It reads that one file (`table(fields:)` on its header, and `hasEveryInclude` on a short file's include lines), never the folder, which the setting's read, at launch on the main thread, must not list.
+  It applies the listing's include rule, so a bare `is.tbl`, `pt.tbl`, or `sr.tbl` is refused like any unknown value, and held by config.json (below); what only the listing judges is left to `table(withID:)` when the value is used.
   The Mac's own twin of a bundled table stays hidden, so `mac:en-ueb-g2.ctb` is not found beside the bundled `en-ueb-g2.ctb`.
 - The iPhone reads a `mac:<file>` with the pack's table of that file name (`bundledID(forStored:)`), and refuses one the pack lacks with `PhoneImportRefusal.macBrailleTable`.
-- The lists spell a table otherwise than a stored value may, so `listedID(forStored:)` maps a stored value to the id the lists use: on the Mac a bare value its pack lacks becomes `mac:<file>`, on the iPhone a `mac:<file>` becomes the pack's bare id, and any other value stays.
+- The lists spell a table otherwise than a stored value may, so `listedID(forStored:)` maps a stored value to the id the lists use: a `mac:<file>` for a table the app's own pack has becomes the pack's bare id on both platforms (the twin the lists keep, such as `mac:en-ueb-g2.ctb`).
+  On the Mac a bare value its pack lacks becomes `mac:<file>`, and any other value stays.
+  A table the lists hide behind another, for its words or its include (`ga.tbl`, `zh_HK.tbl`), is not mapped.
   It is used wherever a selection, the "offered" check, the source sentence, or a value's words are worked out: the Braille tab, Export's pop-ups, Book Information's pop-up and `description(ofTableID:)`, and the iPhone's selected row and row value.
   It never changes what is stored.
 - Each platform records the liblouis version it read with (`liblouisVersionRead(forTable:)`): the Mac's VoiceOver version for a table from VoiceOver's folder, and `bundledLiblouisVersion` for any other table the iPhone reads, `mac:` values included.
@@ -185,7 +190,7 @@ A platform never rewrites a value it reads: `table(withID:)` answers with the id
   A change of the table on this device ends the hold, and the file then names the new table.
 
 ## Tests
-<!-- id: braille-table-pack-tests; keys: BrailleTablePackTests, BrailleTableUnpackerTests, PackContainerTests, test_braille_tables, braille area, BrailleSettingsUITests, BRAILLE_COUNTS; src: Scripts/packs/tests/test_braille_tables.py, Scripts/packs/tests/test_packfile.py, TextMouthProductionTests/PackContainerTests.swift, TextMouthProductionTests/BrailleTablePackTests.swift, TextMouthProductionTests/BrailleTablePrintOnlyTests.swift, TextMouthProductionTests/MacBrailleTableCatalogTests.swift, TextMouthProductionTests/BrailleFileCodeReplaceTests.swift, TextMouthProductionTests/PhoneBrailleSettingsTests.swift, TextMouthProductionTests/PhoneSettingsModelTests.swift, TextMouthProductionTests/PhoneImportWordingTests.swift, TextMouthiOSTests/BrailleLibraryTests.swift, TextMouthiOSUITests/BrailleSettingsUITests.swift, TextMouthiOSUITests/LanguagePickerUITests.swift, Scripts/test/areas.conf -->
+<!-- id: braille-table-pack-tests; keys: BrailleTablePackTests, BrailleTableUnpackerTests, PackContainerTests, test_braille_tables, braille area, BrailleSettingsUITests, BRAILLE_COUNTS; src: Scripts/packs/tests/test_braille_tables.py, Scripts/packs/tests/test_packfile.py, TextMouthProductionTests/PackContainerTests.swift, TextMouthProductionTests/BrailleTablePackTests.swift, TextMouthProductionTests/BrailleTablePrintOnlyTests.swift, TextMouthProductionTests/MacBrailleTableCatalogTests.swift, TextMouthProductionTests/BrailleFileCodeReplaceTests.swift, TextMouthProductionTests/PhoneBrailleSettingsTests.swift, TextMouthProductionTests/PhoneSettingsDefaultsTests.swift, TextMouthProductionTests/PhoneSettingsModelTests.swift, TextMouthProductionTests/PhoneImportWordingTests.swift, TextMouthiOSTests/BrailleLibraryTests.swift, TextMouthiOSUITests/BrailleSettingsUITests.swift, TextMouthiOSUITests/LanguagePickerUITests.swift, Scripts/test/areas.conf -->
 
 - The Python tests run with `make check-selftest`, or `python3 -I -B -m unittest discover -s Scripts/packs/tests`:
   - `test_packfile.py` tests the container's writer and reader;
@@ -200,5 +205,7 @@ A platform never rewrites a value it reads: `table(withID:)` answers with the id
   - `BrailleFileCodeReplaceTests` checks that Replace Existing keeps a `mac:` value as it is.
 - Every test that unpacks makes its own folder, never the app's Caches.
 - The iPhone's own: `BrailleLibraryTests` in the iPhone's unit bundle translates in process with a table other than English, and checks the `mac:` mapping and the phone's wording of a changed liblouis.
-  `PhoneBrailleSettingsTests` (the groups, the rows, and a choice), `PhoneSettingsModelTests` (the section's place and its rows' words), and `PhoneImportWordingTests` (which `mac:` tables the iPhone refuses) run on the Mac's test host too.
+  `PhoneBrailleSettingsTests` test the groups, the rows, and a choice, and `PhoneSettingsModelTests` the section's place and its rows' words.
+  `PhoneSettingsDefaultsTests` test the config.json hold on the iPhone's own path, `brailleTableForConfig`.
+  `PhoneImportWordingTests` test which `mac:` tables the iPhone refuses, and they run on the Mac's test host too.
   `BrailleSettingsUITests` and `ScreenOrderUITests` read the section, its list, and a choice with VoiceOver's labels and values on the hosted iPhone runs, and `LanguagePickerUITests` scrolls to the rows it needs, since the Braille section moved the About row off the first screen.

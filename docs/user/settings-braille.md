@@ -37,6 +37,8 @@ The iPhone has a Braille section in its Settings instead (see The iPhone's Brail
   When this Mac no longer has the table chosen, as after a macOS update that removed it, it is "This Mac no longer has the chosen table, “mac:fr-bfu-g2.ctb”; choose another."
 - A table chosen on an iPhone, whose name has no "mac:" in front, such as fr-bfu-g2.ctb, is read by this Mac with VoiceOver's table of that name.
   The pop-ups show it as that table, with its language, and the sentence says it is one of this Mac's VoiceOver braille tables; it is never shown as English, or as built in.
+  A bare name this Mac has no usable table of, including a table whose includes VoiceOver's folder lacks (Icelandic, Portuguese, and Serbian today), is not taken; the sentence never calls such a table built into TextMouth.
+- A table chosen with "mac:" in front for one of TextMouth's own, such as mac:en-ueb-g2.ctb, shows as the built-in table of that name, on a Mac and on an iPhone.
 - The caption under that sentence reads "TextMouth reads braille files (BRF, BRL, and PEF) with this code and exports with it unless the Export dialog chooses another.
   A book keeps the code it was imported with."
   A change applies to the books imported from then on; a book already in the library keeps its code.
@@ -179,7 +181,7 @@ They are marked "direction: forward" in the table; German, Czech, Latvian, Slove
   Reading never does: not the Braille tab, not Book Information's Braille Code pop-up, not Replace Existing, and not an import.
   The iPhone has no Export dialog yet, so its list offers them nowhere; its pack carries them.
 - The Mac judges each of VoiceOver's tables by the newer liblouis.
-  When VoiceOver's liblouis is older than TextMouth's, 3.39.0, or names no version, a table is print-only when either marks it so.
+  When VoiceOver's liblouis is older than TextMouth's, 3.39.0, or names no version, or a version that is not a number, a table is print-only when either marks it so.
   VoiceOver's older copies of cs.tbl, lv.tbl, sl.tbl, and zh_CHN.tbl lack the mark that 3.39.0 gives them, and so does a table that only includes one, such as zh_TW.tbl.
   When VoiceOver's liblouis is newer, VoiceOver's own tables decide.
   The Mac offers a print-only table for export and not for reading.

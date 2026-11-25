@@ -107,7 +107,7 @@ Other values are "mac:" and a name with a slash, a comma, or a leading dot, and 
 A "mac:" name is taken as it is, without reading this Mac's tables: TextMouth checks the table before its first use, and an import or an export that needs a table this Mac lacks or refuses fails by name (see [Adding books](settings-braille.md)).
 A bare name that is none of the four is kept when this Mac has a VoiceOver file of that name that is a table TextMouth offers, and read with that file.
 TextMouth judges it from that one file's head and never reads the folder of tables at launch.
-A bare name this Mac has no table of, such as an iPhone's "en-nz-g2.ctb", leaves this Mac reading with its own table, and TextMouth writes the name back into config.json as it was, so that the iPhone keeps its choice.
+A bare name this Mac has no table of, such as an iPhone's "en-nz-g2.ctb", or one whose VoiceOver table could never load, such as "is.tbl", leaves this Mac reading with its own table, and TextMouth writes the name back into config.json as it was, so that the iPhone keeps its choice.
 It does so until you change the table on this Mac, which then replaces the name.
 A table that only writes braille (see Tables that only write braille, in [Settings](settings-braille.md)) is kept too, and an export may use it; reading never offers it, but a setting that already names one keeps working.
 It chooses the table for books imported and braille exported from then on.

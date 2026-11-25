@@ -56,6 +56,8 @@ Part of [TextMouth's documentation](../../README.md).
     - `scrolledPastTheEdge`: the clipped-text kind and Apple's words "Text clipped", for text cut by the screen's edge or the bar it scrolls under, which is what scrolling does.
       The screenshot of pass 4 showed a line cut under the navigation bar and a row cut at the bottom edge.
       It is used only by the two scrolled audits.
+    - The scrolled Settings audit also passes `acceptingTextCutByTheScroll` to `audit`, which accepts a clipped-text finding on any named row whose frame crosses the bottom of the navigation bar or the bottom edge of the screen, and keeps it with the results.
+      The audit cannot tell a cut by the edge from a cut of the text; the same screen audited unscrolled holds every row whole.
     - These three are broader than the others and not verified one by one.
       A real fixed font would still name its element and fail.
 - Any other finding fails its test.

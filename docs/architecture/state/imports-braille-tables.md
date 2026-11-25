@@ -33,6 +33,7 @@ Its iPhone targets in project.yml are liblouis_iOS and TextMouthBrailleLibrary_i
 - The `#if os(iOS)` branch of BrailleTranslator (`translateInProcess`, `check`) sends the same pieces and records, in batches of about 256 KiB (`LibraryBatches`), and joins the answers as the Mac does.
 - Each batch is one call of `BrailleTranslator.libraryEngine`, an InProcessEngine: one thread of its own with an 8 MB stack, calls one at a time.
   A call is told to stop (`Call.shouldStop`, which the library asks before each record) once its time is spent, or when its import is cancelled.
+  A cancellation that has already happened is told to the call before it is queued, so the work finds `shouldStop` true from its first step.
 - The limits are the tool's (`BrailleTranslator.tool`), as the Mac's watchdog sets them:
   - a record of at most 4,000 characters (status 4);
   - the output of each batch, and of the whole book, within the Mac's cap for its input (statuses 8 and 9, in the Mac's words);
