@@ -21,7 +21,7 @@ struct PhoneExportMemoryCheck: Sendable {
 
     /// How many bytes of memory a conversion by a writer of text holds at its
     /// peak for each byte of the book's text (content.md): Markdown, HTML, RTF,
-    /// and EPUB, which held 5.4 to 10.6 in four runs on GitHub's simulator.
+    /// and EPUB, which held 5.4 to 10.9 in four runs on GitHub's simulator.
     /// `PhoneExportPeakMemoryTests` measures each writer there and fails if
     /// any holds more than its figure for the largest fixture, so a figure
     /// can only be raised by its evidence, never left behind by a writer that

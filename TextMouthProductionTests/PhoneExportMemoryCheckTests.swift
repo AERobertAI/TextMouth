@@ -21,12 +21,12 @@ final class PhoneExportMemoryCheckTests: XCTestCase {
     }
 
     /// The braille writers have a figure of their own, larger than the text writers', which holds the
-    /// peaks measured on GitHub's simulator (19.0 to 28.8 for braille, 5.4 to 10.6 for the others); every
+    /// peaks measured on GitHub's simulator (19.0 to 28.8 for braille, 5.4 to 10.9 for the others); every
     /// other writer has the text figure, an unknown one included.
     func testTheBrailleWritersHaveALargerFigure() {
         XCTAssertGreaterThan(PhoneExportMemoryCheck.braillePeakBytesPerTextByte, PhoneExportMemoryCheck.peakBytesPerTextByte)
         XCTAssertGreaterThanOrEqual(PhoneExportMemoryCheck.braillePeakBytesPerTextByte, 29, "the most measured is 28.8")
-        XCTAssertGreaterThanOrEqual(PhoneExportMemoryCheck.peakBytesPerTextByte, 11, "the most measured is 10.6")
+        XCTAssertGreaterThanOrEqual(PhoneExportMemoryCheck.peakBytesPerTextByte, 11, "the most measured is 10.9")
         for id in [BRFExportWriter().id, PEFExportWriter().id] {
             XCTAssertEqual(PhoneExportMemoryCheck.peakBytesPerTextByte(forWriter: id), PhoneExportMemoryCheck.braillePeakBytesPerTextByte, id)
         }
