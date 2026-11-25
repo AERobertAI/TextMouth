@@ -185,7 +185,7 @@ private struct SyncApplier {
             }
             if let position {
                 // Only a bookmark that differs is replaced, keeping the keys it holds that this version does not know.
-                if SyncBookmarkValue(book.bookmarks[position]) != value {
+                if SyncValueCoding.json(SyncBookmarkValue(book.bookmarks[position])) != entry.value {
                     var bookmark = book.bookmarks[position]
                     bookmark.chapterIndex = value.chapterIndex
                     bookmark.characterOffset = value.characterOffset
