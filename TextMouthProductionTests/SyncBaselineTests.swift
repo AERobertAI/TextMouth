@@ -44,7 +44,8 @@ final class SyncBaselineTests: XCTestCase {
         let book = Fixtures.book()
         let stored = #"{"byHand":[],"values":[{"key":"book/\#(book.id.uuidString.lowercased())/presence","value":null}]}"#
         let baseline = try SyncValueCoding.makeDecoder().decode(SyncProjection.self, from: Data(stored.utf8))
-        XCTAssertTrue(SyncMerge.changes(from: baseline, to: SyncProjection.of(Fixtures.library(), contents: [:]), atLaunch: false).isEmpty)
+        let changes = SyncMerge.changes(from: baseline, to: SyncProjection.of(Fixtures.library(), contents: [:]), atLaunch: false)
+        XCTAssertNil(changes[.book(book.id, .presence)], "the removal is not recorded again")
     }
 
     /// A baseline reads back as it was written, in the same bytes.
