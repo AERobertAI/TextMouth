@@ -32,7 +32,9 @@ struct StoreFetch: Sendable {
 
     /// The pointer in the package at `package`, or nil for a book that has none.
     static func pointer(in package: URL) -> StorePointer? {
-        guard let data = try? Data(contentsOf: package.appendingPathComponent(StorePointer.fileName)) else { return nil }
+        // A folder that is dataless is not downloaded to look for the pointer.
+        let data = DatalessFiles.withoutDownloading { try? Data(contentsOf: package.appendingPathComponent(StorePointer.fileName)) }
+        guard let data else { return nil }
         return try? SyncFormats.decodePointer(data)
     }
 
@@ -60,6 +62,8 @@ struct StoreFetch: Sendable {
     static func isSafe(_ file: StoreManifest.File) -> Bool {
         let parts = file.path.split(separator: "/", omittingEmptySubsequences: false).map(String.init)
         guard !file.path.isEmpty, !file.path.hasPrefix("/"), !parts.contains(""), !parts.contains("."), !parts.contains("..") else { return false }
+        // The pointer is the device's own record of the book: no manifest may write over it.
+        guard file.path != StorePointer.fileName, parts.last != StorePointer.fileName else { return false }
         guard SyncNames.isDigest(file.sha256), file.blob.hasPrefix(file.sha256 + "."), file.size >= 0 else { return false }
         let ext = String(file.blob.dropFirst(file.sha256.count + 1))
         return SyncNames.blobName(sha256: file.sha256, pathExtension: ext) == file.blob

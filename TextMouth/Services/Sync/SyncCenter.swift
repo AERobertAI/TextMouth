@@ -34,7 +34,7 @@ struct SyncCenterEnvironment {
     /// The pause between looks when Join waits for store.json to arrive; a test answers at once.
     var pauseWhileJoining: @Sendable (Duration) async throws -> Void = { try await Task.sleep(for: $0) }
     /// A fresh bookmark for a stale one, or nil when it is current (`SyncFolderAccessFactory.renewedBookmark`).
-    var renewedBookmark: @Sendable @MainActor (Data) -> Data? = { _ in nil }
+    var renewedBookmark: @Sendable (Data) -> Data? = { _ in nil }
 
     /// The name this device gives itself in the store: its host name without ".local", or "Mac" or "iPhone".
     @MainActor static func deviceName(isPhone: Bool) -> String {
@@ -69,7 +69,7 @@ struct SyncCenterEnvironment {
                 let values = try? url.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey])
                 return values?.volumeAvailableCapacityForImportantUsage ?? 0
             },
-            renewedBookmark: { SyncFolderAccessFactory.renewedBookmark($0) }
+            renewedBookmark: SyncFolderAccessFactory.renewedBookmark
         )
     }
 }
@@ -125,6 +125,12 @@ struct SyncCenterEnvironment {
     /// missing at launch (an offline launch, a change made while the launch sync reads) is never reported
     /// removed before then (R7). The apply runs even when nothing changed while it is true.
     private var firstApplyPending = true
+    /// Whether the person chose Sync Now while removals were held back: that record sends them.
+    private var confirmHeldRemovals = false
+    /// The device name of each applied key's winning writer, for the host to say.
+    private var writers: [SyncKey: String] = [:]
+    /// The names devices call themselves, by device ID, from what was read.
+    private var deviceNames: [String: String] = [:]
     /// Whether the host left keys alone at the last apply (a row it didn't touch, an open book's removal), so the
     /// next sync applies again even when nothing new arrives.
     private var applyAgain = false
@@ -136,8 +142,6 @@ struct SyncCenterEnvironment {
     private var awaitingUpload: [UUID: AwaitingBook] = [:]
     /// Books refused by the backup (a symbolic link, an error), not tried again this launch.
     private var refusedBackups: Set<UUID> = []
-    /// The sizes of the books' packages, scanned once, off the main actor.
-    private var backupSizes: [UUID: Int64] = [:]
 
     /// A book copied into the store whose upload is awaited: what the backup made, and what is
     /// needed to finish it without the library.
@@ -167,14 +171,45 @@ struct SyncCenterEnvironment {
 
     /// Hands the sync its library and data directory. A device that joined a folder before
     /// picks it up again here and syncs at launch; one that has not does nothing (R1).
+    ///
+    /// It may be called again, as after Move Library Here: R6 is checked again, and sync is on only where
+    /// this data directory's `Sync/` holds this store's files, so a library opened later, which has none,
+    /// never joins the store another library did.
     func install(host: any SyncLibraryHost, dataDirectory: URL) {
         self.host = host
+        // A second install starts over for the library now in hand; the preferences stay as they are.
+        if status.isOn { deactivate() }
         self.dataDirectory = dataDirectory
         let preferences = environment.preferences
         guard let bookmark = SyncPreferences.bookmark.read(from: preferences),
               let storeID = SyncPreferences.storeID.read(from: preferences) else { return }
+        guard (try? requireLocalLibrary()) != nil else { return }
+        let files = SyncLocalFiles(syncFolder: dataDirectory.appendingPathComponent(TextMouthPaths.syncFolderName, isDirectory: true), storeID: storeID)
+        guard FileManager.default.fileExists(atPath: files.deviceURL.path) else { return }
         guard activate(bookmark: bookmark, storeID: storeID) else { return }
         moment(.launch)
+    }
+
+    /// Stops what runs for this library, keeping the preferences: the library is changing, not sync.
+    private func deactivate() {
+        wakeTask?.cancel()
+        backupTask?.cancel()
+        engineTask?.cancel()
+        wakeTask = nil
+        backupTask = nil
+        engineTask = nil
+        recorder?.cancel()
+        recorder = nil
+        engine = nil
+        access = nil
+        local = nil
+        storeID = nil
+        bookmark = nil
+        awaitingUpload = [:]
+        scheduler.turnOff()
+        SyncActivity.set(false)
+        status = SyncStatus()
+        keptBookIDs = []
     }
 
     /// Starts the engine (off the main actor) and the timers for the store `storeID` in the folder
@@ -199,6 +234,7 @@ struct SyncCenterEnvironment {
         recorder.isOn = true
         self.recorder = recorder
         status.isOn = true
+        SyncActivity.set(true)
         status.lastSynced = nil
         firstApplyPending = true
         observeNetwork()
@@ -280,6 +316,7 @@ struct SyncCenterEnvironment {
         scheduler.turnOff()
         SyncPreferences.bookmark.write(nil, to: environment.preferences)
         SyncPreferences.storeID.write(nil, to: environment.preferences)
+        SyncActivity.set(false)
         status = SyncStatus()
         keptBookIDs = []
     }
@@ -291,6 +328,8 @@ struct SyncCenterEnvironment {
     func syncNow() {
         guard status.isOn else { return }
         environment.announce(SyncWording.announceSyncing)
+        // Sync Now chosen while removals are held back is the person's word that they are meant.
+        if status.heldRemovals > 0 { confirmHeldRemovals = true }
         requestRun(.syncNow)
     }
 
@@ -307,6 +346,12 @@ struct SyncCenterEnvironment {
         recorder?.noteChange()
         scheduler.noteChange(at: environment.now())
         rearm()
+    }
+
+    /// The name of the device that wrote the winning value of `key` in the last merge, for a sentence such as
+    /// "Moved to the place saved on iPhone"; nil when it isn't known.
+    func deviceName(forKey key: SyncKey) -> String? {
+        writers[key]
     }
 
     /// Asks for the merge to be applied again at the next sync, even when nothing new arrives: for a host
@@ -409,20 +454,29 @@ struct SyncCenterEnvironment {
     /// or renamed): the preferences and the access use it from now on. It is checked again against R6: a
     /// renewal that now leads outside iCloud Drive (the Trash, a local copy left at sign-out) is not kept,
     /// and the folder is reported missing.
-    private func renewBookmarkIfStale() {
-        guard let current = bookmark, let fresh = environment.renewedBookmark(current) else { return }
-        if let target = PlainSyncFolderAccess.resolve(fresh)?.url, environment.locate(target) != .cloud(.iCloudDrive) {
+    private func renewBookmarkIfStale() async {
+        guard let current = bookmark else { return }
+        // Resolving a bookmark can wait on the file system: it is done off the main actor.
+        let renew = environment.renewedBookmark
+        let locate = environment.locate
+        let checked = await Task.detached { () -> (fresh: Data, refused: Bool)? in
+            guard let fresh = renew(current) else { return nil }
+            if let target = PlainSyncFolderAccess.resolve(fresh)?.url, locate(target) != .cloud(.iCloudDrive) { return (fresh, true) }
+            return (fresh, false)
+        }.value
+        guard let checked, bookmark == current else { return }
+        if checked.refused {
             status.problem = .folderMissing
             return
         }
-        SyncPreferences.bookmark.write(fresh, to: environment.preferences)
-        bookmark = fresh
-        access = environment.makeAccess(fresh)
+        SyncPreferences.bookmark.write(checked.fresh, to: environment.preferences)
+        bookmark = checked.fresh
+        access = environment.makeAccess(checked.fresh)
     }
 
     /// Records this device's changes now, unless a merge is being applied (those values are not this
     /// device's changes) or the library may not sync (index recovery has emptied it): then it waits.
-    private func recordNow() async {
+    func recordNow() async {
         guard let host, status.isOn else { return }
         if recorder?.isApplying == true {
             recordWantedAfterApply = true
@@ -434,12 +488,22 @@ struct SyncCenterEnvironment {
             return
         }
         guard let engine = await readyEngine() else { return }
-        // The library is read after the flag is looked at, and nothing awaits in between.
+        // The engine may have taken a while to open: look again, so nothing recorded meanwhile is a merge's.
+        if recorder?.isApplying == true {
+            recordWantedAfterApply = true
+            return
+        }
+        guard host.maySyncNow else {
+            recorder?.noteChange()
+            return
+        }
+        // The library is read after the flags are looked at, and nothing awaits in between.
         let library = host.library
-        if let held = try? await engine.record(library: library), held.heldRemovals > 0 {
-            status.heldRemovals = held.heldRemovals
-        } else {
-            status.heldRemovals = 0
+        let confirming = confirmHeldRemovals
+        confirmHeldRemovals = false
+        // A record that throws leaves what was held as it was.
+        if let result = try? await engine.record(library: library, allowMassRemoval: confirming) {
+            status.heldRemovals = result.heldRemovals
         }
         status.pendingChanges = await engine.pendingChanges()
     }
@@ -468,7 +532,12 @@ struct SyncCenterEnvironment {
             pendingReason = Self.folded(pendingReason, reason)
             return
         }
-        renewBookmarkIfStale()
+        await renewBookmarkIfStale()
+        // Another request may have started while the bookmark was looked at.
+        if isRunning {
+            pendingReason = Self.folded(pendingReason, reason)
+            return
+        }
         guard let access, let storeID, let host else { return }
         guard host.maySyncNow else {
             if reason == .syncNow { environment.announce(SyncStatusLine.text(for: status, isPhone: environment.isPhone, time: Self.timeOfDay)) }
@@ -548,12 +617,22 @@ struct SyncCenterEnvironment {
             // The flag is set before the library is read, so nothing recorded meanwhile takes applied values for
             // changes. One library is read: it is recorded exactly as it is, the merge is computed from it, and the
             // host gets it as the start, keeping any field changed since.
+            // The library may have stopped being fit to sync during the exchange's awaits (index recovery began).
+            guard host.maySyncNow else { return SyncStatusLine.text(for: status, isPhone: environment.isPhone, time: Self.timeOfDay) }
             recorder?.isApplying = true
+            // Reset however this ends: a record that throws must not leave recording off for good.
+            defer { recorder?.isApplying = false }
             let source = host.library
-            try await engine.record(library: source)
+            let confirming = confirmHeldRemovals
+            confirmHeldRemovals = false
+            let recorded = try await engine.record(library: source, allowMassRemoval: confirming)
+            status.heldRemovals = recorded.heldRemovals
             let application = await engine.application(for: source, voices: host.availableVoiceIDs)
+            // Who wrote each winning value, by name, for the host's words.
+            deviceNames.merge(result.read.names) { _, new in new }
+            let writerIDs = await engine.writers(of: application.appliedKeys.union(result.changedKeys))
+            writers = writerIDs.compactMapValues { deviceNames[$0] }
             let applied = await host.applySync(application, from: source)
-            recorder?.isApplying = false
             // Keys the host left alone are applied again at the next sync.
             applyAgain = !application.appliedKeys.isSubset(of: applied)
             try await engine.didApply(application, keys: applied)
@@ -604,8 +683,12 @@ struct SyncCenterEnvironment {
         let staging = local.stagingFolder
         let free = environment.freeSpace(dataDirectory)
         let budget = StoreBackupBudget.limit(freeSpace: free)
+        // The books to back up are found in one scan, off the main actor: the library's rows are read here, and
+        // the packages (their pointers, their existence, their sizes) are looked at there, once for the run.
+        let scanned = await scanBooksForBackup(engine: engine)
         do {
             try await access.withFolder { root in
+                var queue = scanned
                 let folder = SyncFolder(root: root, access: access)
                 let backup = StoreBackup(folder: folder, storeID: storeID, staging: staging)
                 // Books whose copies have uploaded since the last look are done first.
@@ -614,7 +697,8 @@ struct SyncCenterEnvironment {
                 }
                 while !Task.isCancelled {
                     let held = await self.awaitingUpload.values.reduce(Int64(0)) { $0 + $1.bytes }
-                    guard let next = await self.nextBookToBackUp(engine: engine) else { break }
+                    guard !queue.isEmpty else { break }
+                    let next = queue.removeFirst()
                     // A book over what is left of the local budget waits, unless nothing is held: then it goes alone.
                     if held > 0, held + next.bytes > budget { break }
                     do {
@@ -649,32 +733,51 @@ struct SyncCenterEnvironment {
         refusedBackups.insert(id)
     }
 
-    /// The next book to back up: one whose content isn't in the registers, whole here, not awaited, not
-    /// refused. The packages' sizes are read once, off the main actor, into `sizes`.
-    private func nextBookToBackUp(engine: SyncEngine) async -> BackupCandidate? {
-        guard let host else { return nil }
+    /// What the library says of a book the backup may take: no file work is needed to read it.
+    private struct BackupRow: Sendable {
+        var bookID: UUID
+        var package: URL
+        var isPackage: Bool
+        var isText: Bool
+        var format: BookFormat
+        var dateAdded: Date
+        var md5Hash: String
+        var totalWordCount: Int?
+        var audioDuration: TimeInterval?
+    }
+
+    /// The books to back up, text books first and smaller first: those whose content isn't in the registers,
+    /// whole here, not awaited, not refused. The rows are read on the main actor; each package's pointer,
+    /// existence, and size are looked at once, off it.
+    private func scanBooksForBackup(engine: SyncEngine) async -> [BackupCandidate] {
+        guard let host else { return [] }
         let contents = await engine.contents()
-        let books = host.library.libraryBooks.filter { book in
+        let rows: [BackupRow] = host.library.libraryBooks.compactMap { book in
+            guard contents[book.id] == nil, awaitingUpload[book.id] == nil, !refusedBackups.contains(book.id) else { return nil }
             let package = BookPackage(book)
-            return contents[book.id] == nil && awaitingUpload[book.id] == nil && !refusedBackups.contains(book.id)
-                && package.isPackage && !StoreFetch.isMissingFiles(package.url)
-                && FileManager.default.fileExists(atPath: package.url.path)
+            return BackupRow(
+                bookID: book.id, package: package.url, isPackage: package.isPackage, isText: !book.format.isAudio, format: book.format,
+                dateAdded: book.dateAdded, md5Hash: book.md5Hash, totalWordCount: book.totalWordCount, audioDuration: book.audioDuration
+            )
         }
-        status.booksToBackUp = contents.count + books.count
+        let found = await Task.detached { () -> [(BackupRow, Int64)] in
+            rows.compactMap { row in
+                guard row.isPackage, FileManager.default.fileExists(atPath: row.package.path), !StoreFetch.isMissingFiles(row.package) else { return nil }
+                return (row, StoreBackup.bytes(of: row.package))
+            }
+        }.value
+        status.booksToBackUp = contents.count + found.count
         status.booksBackedUp = contents.count
-        // Sizes of the books not scanned yet, in one pass off the main actor.
-        let unscanned = books.filter { backupSizes[$0.id] == nil }.map { ($0.id, BookPackage($0).url) }
-        if !unscanned.isEmpty {
-            let scanned = await Task.detached { unscanned.map { ($0.0, StoreBackup.bytes(of: $0.1)) } }.value
-            for (id, bytes) in scanned { backupSizes[id] = bytes }
-        }
-        let ordered = StoreBackup.order(books.map {
-            StoreBackupCandidate(bookID: $0.id, isText: !$0.format.isAudio, bytes: backupSizes[$0.id] ?? 0)
-        })
-        guard let first = ordered.first, let book = books.first(where: { $0.id == first.bookID }) else { return nil }
-        let made = (book.format, book.dateAdded, book.md5Hash, book.totalWordCount, book.audioDuration)
-        return BackupCandidate(bookID: book.id, package: BookPackage(book).url, bytes: backupSizes[book.id] ?? 0) { manifest in
-            SyncContent(manifest: manifest, format: made.0, dateAdded: made.1, md5Hash: made.2, totalWordCount: made.3, audioDuration: made.4)
+        let ordered = StoreBackup.order(found.map { StoreBackupCandidate(bookID: $0.0.bookID, isText: $0.0.isText, bytes: $0.1) })
+        let byID = Dictionary(found.map { ($0.0.bookID, $0) }, uniquingKeysWith: { first, _ in first })
+        return ordered.compactMap { candidate in
+            guard let (row, bytes) = byID[candidate.bookID] else { return nil }
+            return BackupCandidate(bookID: row.bookID, package: row.package, bytes: bytes) { manifest in
+                SyncContent(
+                    manifest: manifest, format: row.format, dateAdded: row.dateAdded, md5Hash: row.md5Hash,
+                    totalWordCount: row.totalWordCount, audioDuration: row.audioDuration
+                )
+            }
         }
     }
 

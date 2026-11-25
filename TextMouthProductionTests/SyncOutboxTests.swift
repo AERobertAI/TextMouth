@@ -107,12 +107,13 @@ final class SyncOutboxTests: XCTestCase {
     }
 
     /// Offline, the copy is local and the file stays in the outbox until uploaded.
-    func testChangesWaitUntilUploaded() throws {
+    func testChangesWaitUntilUploaded() async throws {
         var (outbox, drive, deviceFolder, _) = try makeWorld()
         drive.setOffline(true)
         drive.setUpload(.uploading)
         try outbox.append([entry(1)])
-        XCTAssertEqual(try outbox.copy(into: deviceFolder, using: drive), 1)
+        let copied1 = try await outbox.copy(into: deviceFolder, using: drive)
+        XCTAssertEqual(copied1, 1)
         try outbox.refreshUploads(in: deviceFolder, using: drive)
         XCTAssertEqual(outbox.pendingChanges, 1, "uploading still counts as waiting")
         XCTAssertNotNil(outbox.file(1, kind: .changes), "the file stays")
@@ -122,73 +123,79 @@ final class SyncOutboxTests: XCTestCase {
     }
 
     /// A file sent again keeps its name and bytes, and goes only once.
-    func testNothingIsSentTwice() throws {
+    func testNothingIsSentTwice() async throws {
         var (outbox, drive, deviceFolder, _) = try makeWorld()
         drive.setUpload(.uploading)
         try outbox.append([entry(1)])
-        try outbox.copy(into: deviceFolder, using: drive)
-        XCTAssertEqual(try outbox.copy(into: deviceFolder, using: drive), 0)
+        try await outbox.copy(into: deviceFolder, using: drive)
+        let copied2 = try await outbox.copy(into: deviceFolder, using: drive)
+        XCTAssertEqual(copied2, 0)
         XCTAssertEqual(drive.copiedNames, ["000000000001.changes.json"])
     }
 
     /// A copy deleted "in the cloud" before it uploaded is copied again, with the same bytes.
-    func testAMissingCopyIsSentAgain() throws {
+    func testAMissingCopyIsSentAgain() async throws {
         var (outbox, drive, deviceFolder, _) = try makeWorld()
         drive.setUpload(.uploading)
         try outbox.append([entry(1)])
-        try outbox.copy(into: deviceFolder, using: drive)
+        try await outbox.copy(into: deviceFolder, using: drive)
         let copy = deviceFolder.appendingPathComponent("000000000001.changes.json")
         let before = try Data(contentsOf: copy)
         try FileManager.default.removeItem(at: copy)
-        XCTAssertEqual(try outbox.copy(into: deviceFolder, using: drive), 1)
+        let copied3 = try await outbox.copy(into: deviceFolder, using: drive)
+        XCTAssertEqual(copied3, 1)
         XCTAssertEqual(try Data(contentsOf: copy), before)
     }
 
     /// Where the drive reports no state, a copy counts as sent but not confirmed.
-    func testUnreportedUploadCountsAsSent() throws {
+    func testUnreportedUploadCountsAsSent() async throws {
         var (outbox, drive, deviceFolder, _) = try makeWorld()
         drive.setUpload(.notReported)
         try outbox.append([entry(1)])
-        try outbox.copy(into: deviceFolder, using: drive)
+        try await outbox.copy(into: deviceFolder, using: drive)
         try outbox.refreshUploads(in: deviceFolder, using: drive)
         XCTAssertEqual(outbox.pendingChanges, 0)
         XCTAssertEqual(outbox.index.items.first?.confirmed, false)
     }
 
     /// A refused upload stays counted as waiting, and the reason is returned.
-    func testFailedUploadStaysAndSaysWhy() throws {
+    func testFailedUploadStaysAndSaysWhy() async throws {
         var (outbox, drive, deviceFolder, _) = try makeWorld()
         drive.setUpload(.failed(.outOfSpace))
         try outbox.append([entry(1)])
-        try outbox.copy(into: deviceFolder, using: drive)
+        try await outbox.copy(into: deviceFolder, using: drive)
         XCTAssertEqual(try outbox.refreshUploads(in: deviceFolder, using: drive), .outOfSpace)
         XCTAssertEqual(outbox.pendingChanges, 1)
     }
 
     /// A copy that stops half way records the files already copied and throws.
-    func testInterruptedCopyKeepsWhatWasCopied() throws {
+    func testInterruptedCopyKeepsWhatWasCopied() async throws {
         var (outbox, drive, deviceFolder, local) = try makeWorld()
         try outbox.append([entry(1)])
         try outbox.append([entry(2)])
         drive.failCopies(after: 1)
-        XCTAssertThrowsError(try outbox.copy(into: deviceFolder, using: drive))
+        do {
+            _ = try await outbox.copy(into: deviceFolder, using: drive)
+            XCTFail("the copy was stopped")
+        } catch {}
         // A fresh start, as after a crash, reads the index from disk.
         var restarted = SyncOutbox(local: local, device: SyncDeviceState(deviceID: "dev-a", incarnation: UUID(), installID: "i", lastSeq: 0))
         XCTAssertEqual(restarted.index.items.map(\.state), [.copied, .written])
         drive.failCopies(after: nil)
-        XCTAssertEqual(try restarted.copy(into: deviceFolder, using: drive), 1)
+        let copied4 = try await restarted.copy(into: deviceFolder, using: drive)
+        XCTAssertEqual(copied4, 1)
         XCTAssertEqual(drive.copiedNames, ["000000000001.changes.json", "000000000002.changes.json"])
     }
 
     /// A file leaves the outbox only once it and a later snapshot have uploaded.
-    func testFilesLeaveAfterALaterSnapshotUploaded() throws {
+    func testFilesLeaveAfterALaterSnapshotUploaded() async throws {
         var (outbox, drive, deviceFolder, _) = try makeWorld()
         try outbox.append([entry(1)])
-        try outbox.copy(into: deviceFolder, using: drive)
+        try await outbox.copy(into: deviceFolder, using: drive)
         try outbox.refreshUploads(in: deviceFolder, using: drive)
         XCTAssertEqual(try outbox.retireUploaded(), 0, "no snapshot yet")
         try outbox.append([entry(1)], kind: .snapshot)
-        try outbox.copy(into: deviceFolder, using: drive)
+        try await outbox.copy(into: deviceFolder, using: drive)
         try outbox.refreshUploads(in: deviceFolder, using: drive)
         XCTAssertEqual(try outbox.retireUploaded(), 1)
         XCTAssertNil(outbox.file(1, kind: .changes))
@@ -196,7 +203,7 @@ final class SyncOutboxTests: XCTestCase {
     }
 
     /// A file a crash left unindexed is found and copied.
-    func testUnindexedFileIsAdopted() throws {
+    func testUnindexedFileIsAdopted() async throws {
         var (outbox, drive, deviceFolder, local) = try makeWorld()
         try outbox.append([entry(1)])
         // The crash: the file exists, but the index and lastSeq never saw it.
@@ -206,7 +213,8 @@ final class SyncOutboxTests: XCTestCase {
         var restarted = SyncOutbox(local: local, device: outbox.device)
         XCTAssertEqual(try restarted.adoptUnindexedFiles(), 1)
         XCTAssertEqual(restarted.device.lastSeq, 2)
-        XCTAssertEqual(try restarted.copy(into: deviceFolder, using: drive), 2)
+        let copied5 = try await restarted.copy(into: deviceFolder, using: drive)
+        XCTAssertEqual(copied5, 2)
         XCTAssertEqual(restarted.entries(after: 1).count, 1, "what goes back into the registers")
     }
 }

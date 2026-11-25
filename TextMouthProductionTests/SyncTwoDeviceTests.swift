@@ -118,6 +118,67 @@ final class SyncInterruptionTests: XCTestCase {
     }
 }
 
+/// A run stopped after each of its steps in turn (section 11), then started afresh on the same files.
+extension SyncInterruptionTests {
+    /// After a stop at any step: every change made before it is in the folder or still in the outbox, never lost or
+    /// doubled; the library is as it was; and a second device ends with the same state as the first.
+    func testAStopAfterEveryStepLosesNothing() async throws {
+        for step in SyncStep.allCases {
+            try await checkAStop(after: step)
+        }
+    }
+
+    /// One stop: the Mac records its library and a keep, exchanges, and is stopped after `step`; it restarts, and
+    /// the two devices meet.
+    private func checkAStop(after step: SyncStep) async throws {
+        var world = try SyncTwoDevices(sandbox: try makeSandboxDirectory("interrupt-\(step.rawValue)"))
+        let rows = [SyncTestFixtures.book(title: "One"), SyncTestFixtures.book(title: "Two")]
+        let library = SyncTestFixtures.library(books: rows)
+        let keep = UUID()
+        let theirs = UUID()
+        // The iPhone wrote something for the Mac to read, merge, and apply.
+        try await world.phone.engine.recordKeep(true, for: [theirs])
+        _ = try await world.phone.engine.exchange(in: world.folder)
+
+        // The Mac works until the stop. The stop throws at `step` wherever the step is reached.
+        struct Stop: Error {}
+        await world.mac.engine.setStopAfter { reached in if reached == step { throw Stop() } }
+        _ = try? await world.mac.engine.record(library: library)
+        try? await world.mac.engine.recordKeep(true, for: [keep])
+        _ = try? await world.mac.engine.exchange(in: world.folder)
+        let application = await world.mac.engine.application(for: library, voices: nil)
+        try? await world.mac.engine.didApply(application, keys: application.appliedKeys)
+
+        // Started afresh on the same files, as after a crash: the app records again, exchanges, and applies.
+        try world.restart(\.mac)
+        let relaunched = world.mac.engine
+        _ = try await relaunched.record(library: library)
+        let again = try await relaunched.exchange(in: world.folder)
+        XCTAssertNil(again.uploadProblem, "after a stop after \(step)")
+        let rebuilt = await relaunched.application(for: library, voices: nil)
+        try await relaunched.didApply(rebuilt, keys: rebuilt.appliedKeys)
+        _ = try await world.phone.engine.exchange(in: world.folder)
+        _ = try await relaunched.exchange(in: world.folder)
+
+        // The library opens, and every row is still there.
+        XCTAssertEqual(rebuilt.library.books.map(\.id), rows.map(\.id), "rows are kept after a stop after \(step)")
+
+        // Every change made before the stop is in the state: the keep, the rows' presence, and the other device's keep.
+        let macKept = await relaunched.keptBookIDs()
+        let phoneKept = await world.phone.engine.keptBookIDs()
+        XCTAssertEqual(macKept, [keep, theirs], "the Mac's keeps after a stop after \(step)")
+        XCTAssertEqual(phoneKept, macKept, "the iPhone ends with the Mac's keeps after a stop after \(step)")
+        for row in rows {
+            let onMac = await relaunched.entry(for: .book(row.id, .presence))
+            let onPhone = await world.phone.engine.entry(for: .book(row.id, .presence))
+            XCTAssertEqual(onMac?.value, .bool(true), "a row recorded by the Mac after a stop after \(step)")
+            XCTAssertEqual(onPhone?.value, onMac?.value, "the iPhone holds the same row after a stop after \(step)")
+        }
+        // Nothing went into the folder twice.
+        XCTAssertEqual(Set(world.drive.copiedNames).count, world.drive.copiedNames.count, "no file went twice after a stop after \(step)")
+    }
+}
+
 /// Each moment in each network case (FR43, section 11): the library stays whole, every wait is bounded, and
 /// the status can say what happened.
 final class SyncNetworkCaseTests: XCTestCase {
