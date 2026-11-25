@@ -1110,6 +1110,10 @@ targets:
       - TextMouthProductionTests/PhoneBookSearchTests.swift
       - TextMouthProductionTests/PhoneBookmarksModelTests.swift
       - TextMouthProductionTests/PhoneEscapePolicyTests.swift
+      - TextMouthProductionTests/PhoneExportFolderTests.swift
+      - TextMouthProductionTests/PhoneExportMemoryCheckTests.swift
+      - TextMouthProductionTests/PhoneExportOfferTests.swift
+      - TextMouthProductionTests/PhoneExportQuestionTests.swift
       - TextMouthProductionTests/PhoneFocusRequestsTests.swift
       - TextMouthProductionTests/PhoneFolderVocabularyTests.swift
       - TextMouthProductionTests/PhoneGoToModelTests.swift

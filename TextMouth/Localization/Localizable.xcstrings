@@ -533689,6 +533689,18 @@
         }
       }
     },
+    "phoneExport.tooLittleMemory" : {
+      "comment" : "Why an export on the iPhone could not convert a book's text, after the file's name in a failure sentence: the iPhone has too little memory left for it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The iPhone has too little memory free to convert this book now. Close other apps, then export again."
+          }
+        }
+      }
+    },
     "phoneGoToField.jumpLabel.page" : {
       "comment" : "VoiceOver label of the Jump button under the Page field of the iPhone's Go To sheet.",
       "extractionState" : "manual",

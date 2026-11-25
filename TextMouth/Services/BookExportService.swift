@@ -413,6 +413,13 @@ enum BookExportConversion: Sendable, Equatable {
 /// `MaintenanceFileAccess`, with dataless files left in the cloud, and an
 /// item with any file in the cloud is refused instead, named in the words
 /// the library list uses (`LibraryCloudWording.notDownloaded(titles:)`).
+/// What an export asks before it converts a book's text (FR31): whether the
+/// memory left holds a conversion of that many bytes of text. It throws, with
+/// a sentence naming why (a `TextExportError`), to refuse: that book's file
+/// then fails alone and the export goes on. The iPhone's is
+/// `PhoneExportMemoryCheck`; the Mac asks nothing.
+typealias BookExportMemoryGuard = @Sendable (_ textBytes: Int64) throws -> Void
+
 enum BookExportService {
     /// The extensions of the audio files an audiobook's folder of tracks
     /// can hold: the formats TextMouth plays.
@@ -1270,6 +1277,9 @@ enum BookExportService {
     /// the Mac moves it from a scratch folder, the iPhone copies it in under a
     /// file coordinator (`BookExportDelivery`).
     ///
+    /// `memoryGuard` (FR31) is asked before each text conversion walks its
+    /// book, with the size of the book's text; see `BookExportMemoryGuard`.
+    ///
     /// `askAboutDeepChapters` (FR24) is how the export asks what to do with a
     /// chapter of a text conversion that nests quotes, lists, or emphasis
     /// past the reader's limit: it is called on the export's thread, which
@@ -1292,6 +1302,7 @@ enum BookExportService {
         progress: (@Sendable (_ done: Int, _ total: Int) -> Void)? = nil,
         speech: SpeechExportContext = .live,
         delivery: BookExportDelivery = .standard,
+        memoryGuard: BookExportMemoryGuard? = nil,
         askAboutDeepChapters: ExportDeepChapterQuestioner.Ask? = nil
     ) -> BookExportOutcome {
         let (files, booksInCloud) = plan(offers, kinds: kinds, conversions: conversions, in: destination)
@@ -1317,6 +1328,7 @@ enum BookExportService {
                 cancellation: token,
                 speech: speech,
                 delivery: delivery,
+                memoryGuard: memoryGuard,
                 deepChapters: questioner?.decider(for: planned.book, filesAfter: textFilesAfter[number]),
                 into: &outcome
             )
@@ -1349,14 +1361,16 @@ enum BookExportService {
     /// removed from the folder chosen: the file is made in a scratch folder
     /// and only moved in whole. `speech` is what a speech conversion runs
     /// with (`export`); `delivery` is how the file is made and put in place
-    /// (`BookExportDelivery`); `deepChapters` decides what a text conversion
-    /// does with a chapter nested too deeply (nil refuses it).
+    /// (`BookExportDelivery`); `memoryGuard` is asked before a text
+    /// conversion (`BookExportMemoryGuard`); `deepChapters` decides what a
+    /// text conversion does with a chapter nested too deeply (nil refuses it).
     private static func write(
         _ planned: PlannedFile,
         access: MaintenanceFileAccess,
         cancellation: BookExportCancellation,
         speech: SpeechExportContext,
         delivery: BookExportDelivery,
+        memoryGuard: BookExportMemoryGuard?,
         deepChapters: ExportDeepChapterDecider?,
         into outcome: inout BookExportOutcome
     ) {
@@ -1398,6 +1412,8 @@ enum BookExportService {
                     cancellation: cancellation,
                     speech: speech,
                     delivery: delivery,
+                    memoryGuard: memoryGuard,
+                    textBytes: planned.file.byteCount,
                     deepChapters: deepChapters
                 )
             }
@@ -1438,6 +1454,8 @@ enum BookExportService {
     /// A text conversion's walk takes `deepChapters` (FR24): what to do with a
     /// chapter nested too deeply, which is to refuse it when nil. `delivery`
     /// is how the scratch file is put in place (`BookExportDelivery`).
+    /// `memoryGuard` is asked, with `textBytes`, the size of the text the
+    /// source holds, before a text conversion reads the source at all.
     /// - Throws: `CancellationError` when stopped, or when `deepChapters` says
     ///   to cancel the export; the walk's or the
     ///   writer's error, or the speech export's (a refusal, such as a
@@ -1454,6 +1472,8 @@ enum BookExportService {
         cancellation: BookExportCancellation,
         speech: SpeechExportContext,
         delivery: BookExportDelivery,
+        memoryGuard: BookExportMemoryGuard?,
+        textBytes: Int64,
         deepChapters: ExportDeepChapterDecider?
     ) throws {
         // A chapter list is made from the book's audio and its record, never
@@ -1468,6 +1488,11 @@ enum BookExportService {
                 try bytes.write(to: scratch, options: .withoutOverwriting)
             }
             return
+        }
+        // A text conversion holds the whole text, its document, and the file
+        // it makes in memory at once: asked before any of it is read.
+        if case .text = conversion {
+            try memoryGuard?(textBytes)
         }
         let bytes = try access.read(source) { try Data(contentsOf: source) }
         try cancellation.checkCancelled()
