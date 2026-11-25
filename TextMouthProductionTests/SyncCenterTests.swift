@@ -124,7 +124,8 @@ final class SyncCenterTests: XCTestCase {
         XCTAssertNotNil(SyncPreferences.storeID.read(from: world.preferences))
         // The first run publishes this device.
         let deviceFolder = folder.appendingPathComponent("Devices", isDirectory: true)
-        try await waitUntil { (try? FileManager.default.contentsOfDirectory(atPath: deviceFolder.path))?.count == 1 }
+        await world.center.waitUntilIdle()
+        XCTAssertEqual((try? FileManager.default.contentsOfDirectory(atPath: deviceFolder.path))?.count, 1)
         XCTAssertFalse(world.center.status.isSyncing)
     }
 
@@ -161,7 +162,7 @@ final class SyncCenterTests: XCTestCase {
         world.center.install(host: world.host, dataDirectory: world.dataDirectory)
         try await world.center.setUp(in: world.parent)
         let folder = world.parent.appendingPathComponent("TextMouth Sync")
-        try await waitUntil { !world.center.status.isSyncing && (try? FileManager.default.contentsOfDirectory(atPath: folder.appendingPathComponent("Devices").path))?.count == 1 }
+        await world.center.waitUntilIdle()
         world.center.stop()
         XCTAssertFalse(world.center.status.isOn)
         XCTAssertNil(SyncPreferences.bookmark.read(from: world.preferences))
@@ -191,7 +192,7 @@ final class SyncCenterTests: XCTestCase {
         let world = try makeWorld()
         world.center.install(host: world.host, dataDirectory: world.dataDirectory)
         try await world.center.setUp(in: world.parent)
-        try await waitUntil { !world.center.status.isSyncing }
+        await world.center.waitUntilIdle()
         world.spoken.lines = []
         world.center.syncNow()
         XCTAssertEqual(world.spoken.lines.first, SyncWording.announceSyncing)
@@ -204,7 +205,7 @@ final class SyncCenterTests: XCTestCase {
         let world = try makeWorld()
         world.center.install(host: world.host, dataDirectory: world.dataDirectory)
         try await world.center.setUp(in: world.parent)
-        try await waitUntil { !world.center.status.isSyncing }
+        await world.center.waitUntilIdle()
         world.host.maySyncNow = false
         world.spoken.lines = []
         let before = world.host.appliedCount
@@ -218,7 +219,7 @@ final class SyncCenterTests: XCTestCase {
         let world = try makeWorld()
         world.center.install(host: world.host, dataDirectory: world.dataDirectory)
         try await world.center.setUp(in: world.parent)
-        try await waitUntil { !world.center.status.isSyncing }
+        await world.center.waitUntilIdle()
         let book = UUID()
         world.center.setKeep(true, for: [book])
         try await waitUntil { world.center.keptBookIDs == [book] }
