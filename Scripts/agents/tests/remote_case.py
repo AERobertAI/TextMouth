@@ -71,6 +71,20 @@ if first_failures.get(word, 0) > 0:
 if state.get("fail") == word:
     print("gh: simulated failure", file=sys.stderr)
     finish(1)
+if arguments[:1] == ["api"]:
+    # `gh api repos/R/actions/runs/ID/jobs...`: the next queued {"jobs": [...]}; `gh api repos/R/check-runs/ID/annotations`:
+    # state["annotations"][ID], a list of messages (none by default).
+    if "/annotations" in word:
+        job_id = word.split("/check-runs/")[1].split("/")[0]
+        print(json.dumps([{"message": m} for m in state.get("annotations", {}).get(job_id, [])]))
+    else:
+        print(json.dumps({"jobs": next_answer("jobs") or []}))
+    finish(0)
+if arguments[:2] == ["run", "rerun"]:
+    if state.get("rerun_fail"):
+        print("HTTP 403: Workflow is already running", file=sys.stderr)
+        finish(1)
+    finish(0)
 if word == "list":
     sha = arguments[arguments.index("--commit") + 1] if "--commit" in arguments else ""
     runs = next_answer("list" if sha else "active") or []
