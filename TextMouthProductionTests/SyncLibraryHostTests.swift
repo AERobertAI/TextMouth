@@ -10,14 +10,14 @@ final class SyncLibraryHostTests: XCTestCase {
     /// The hosted test root's library index, put back after each test.
     private var sandbox: LibraryIndexSandbox!
 
-    override func setUpWithError() throws {
+    override func setUp() async throws {
         sandbox = try LibraryIndexSandbox.capture()
     }
 
     /// What a test made in the hosted library: packages and folders, removed after it.
     private var made: [URL] = []
 
-    override func tearDownWithError() throws {
+    override func tearDown() async throws {
         // Optional: tear-down also runs when capturing failed in set-up.
         sandbox?.restore()
         for url in made { try? FileManager.default.removeItem(at: url) }

@@ -11,11 +11,11 @@ final class SyncReaderPlaceTests: XCTestCase {
     /// reader's save writes it.
     private var sandbox: LibraryIndexSandbox!
 
-    override func setUpWithError() throws {
+    override func setUp() async throws {
         sandbox = try LibraryIndexSandbox.capture()
     }
 
-    override func tearDownWithError() throws {
+    override func tearDown() async throws {
         // Optional: tear-down also runs when capturing failed in set-up.
         sandbox?.restore()
     }
