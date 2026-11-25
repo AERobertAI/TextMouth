@@ -63,6 +63,50 @@ enum SyncWording {
         InterfaceText.line("sync.stopQuestion", "Stop syncing this library? Nothing is deleted, on this Mac or in iCloud Drive.")
     }
 
+    // MARK: - Keep on All Devices (section 16)
+
+    /// The command that keeps a book's files on every device that syncs.
+    static var keepTitle: String {
+        // Translators: Title of the command and button that keeps a book's files on every device that syncs. Title case.
+        InterfaceText.line("sync.keepTitle", "Keep on All Devices")
+    }
+
+    /// The command that ends it.
+    static var stopKeepingTitle: String {
+        // Translators: Title of the command and button that ends keeping a book's files on every device that syncs. Title case.
+        InterfaceText.line("sync.stopKeepingTitle", "Stop Keeping on All Devices")
+    }
+
+    /// The keep command for several books.
+    static func keepTitle(count: Int) -> String {
+        // Translators: Title of the command that keeps several selected books on every device that syncs. A plural line, title case. %lld is the number of books.
+        InterfaceText.line("sync.keepCountTitle", "Keep \(number: count) Books on All Devices")
+    }
+
+    /// The stop-keeping command for several books.
+    static func stopKeepingTitle(count: Int) -> String {
+        // Translators: Title of the command that ends keeping several selected books on every device that syncs. A plural line, title case. %lld is the number of books.
+        InterfaceText.line("sync.stopKeepingCountTitle", "Stop Keeping \(number: count) Books on All Devices")
+    }
+
+    /// The checkbox in Book Information, and a row's state.
+    static var keptState: String {
+        // Translators: Label of the Book Information checkbox, and the state a book's row speaks when its files are kept on every device that syncs.
+        InterfaceText.line("sync.keptState", "Kept on all devices")
+    }
+
+    /// The hint of the Book Information checkbox.
+    static var keepHint: String {
+        // Translators: VoiceOver hint of the Kept on all devices checkbox in Book Information.
+        InterfaceText.line("sync.keepHint", "Every device that syncs keeps this book's files, and downloads them when it can.")
+    }
+
+    /// Announced after a person keeps a book.
+    static func announceKeeping(title: String) -> String {
+        // Translators: Said aloud after the person chooses Keep on All Devices. %@ is the book's title.
+        InterfaceText.line("sync.announce.keeping", "Keeping \(title) on all devices.")
+    }
+
     // MARK: - Refusals
 
     /// A folder chosen outside iCloud Drive.

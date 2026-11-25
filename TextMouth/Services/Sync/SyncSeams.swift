@@ -103,12 +103,17 @@ final class StoreBookStorage: BookCloudStorage {
     var maySyncNow: Bool { get }
     /// Applies a merge; returns the keys applied.
     func applySync(_ application: SyncApplication) async -> Set<SyncKey>
+    /// Called after each run with the books kept on all devices; `mayDownload` is true on a satisfied
+    /// path that is neither expensive nor constrained (section 16).
+    func syncDidApply(keptBookIDs: Set<UUID>, mayDownload: Bool)
 }
 
 /// The app's one sync; the interfaces and life cycles call it.
 @MainActor final class SyncCenter: ObservableObject {
     static let shared = SyncCenter()
     @Published private(set) var status = SyncStatus()
+    /// The books kept on all devices, from the registers (section 16). Empty until sync-store fills it.
+    @Published private(set) var keptBookIDs: Set<UUID> = []
 
     /// Hands the sync its library and data directory.
     func install(host: any SyncLibraryHost, dataDirectory: URL) {}
@@ -124,4 +129,6 @@ final class StoreBookStorage: BookCloudStorage {
     func libraryDidChange() {}
     /// Forgets the folder; deletes nothing.
     func stop() {}
+    /// Stamps Keep on All Devices on or off for `bookIDs`, as a person chose. Inert at `sync/base`.
+    func setKeep(_ keep: Bool, for bookIDs: [UUID]) {}
 }

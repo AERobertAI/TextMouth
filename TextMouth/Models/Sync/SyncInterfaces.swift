@@ -51,6 +51,9 @@ struct SyncClock: Codable, Sendable {
 enum SyncBookField: String, Codable, Sendable, CaseIterable {
     case presence, content, title, author, publisher, publicationDate, album, genre, year
     case folder, voice, rate, pitch, skipForward, skipBackward, endOfBook, position, skippedHeadings, lastOpened
+    /// Keep on All Devices (section 16): `true` or `false`, stamped by `SyncCenter.setKeep`. Never projected
+    /// from the library (`SyncProjection.of` leaves it out) and applied to no row (`SyncMerge.apply`).
+    case keep
 }
 
 /// The fields of a folder that sync.
