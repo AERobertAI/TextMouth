@@ -682,11 +682,15 @@ enum BrailleTableCatalog {
 
     /// The release's directions to judge this Mac's tables by, given the liblouis version they are (`OpenSourceVersion`):
     /// the newer liblouis decides, so when VoiceOver's is older than the app's, or unknown, the release's marks are added
-    /// to the files' own; when VoiceOver's is newer, VoiceOver's own headers decide and the release is not used (FR40).
+    /// to the files' own; when VoiceOver's is newer, VoiceOver's own headers decide and the release is not used (FR40). A
+    /// version that is not a number, one that does not begin with a digit, is unknown.
     static func releaseDirections(
         judgingMacVersion version: String?, of release: BrailleTablePack.ReleaseDirections?
     ) -> BrailleTablePack.ReleaseDirections? {
-        guard let version, version.compare(bundledLiblouisVersion, options: .numeric) == .orderedDescending else { return release }
+        // A version that does not begin with a digit ("unknown", "v3.34.0") is no version we can compare: it is unknown.
+        guard let version, version.first?.isASCII == true, version.first?.isNumber == true,
+              version.compare(bundledLiblouisVersion, options: .numeric) == .orderedDescending
+        else { return release }
         return nil
     }
 
@@ -912,9 +916,10 @@ enum BrailleTableCatalog {
     /// using them meanwhile, reads nothing twice: Swift makes each `static
     /// let` once, and a thread that needs one while another makes it waits.
     /// - Parameter load: The loading, which a test replaces to see where it
-    ///   runs; the app's reads the offered tables.
+    ///   runs; the app's reads the offered tables and the export tables, which a bare value's lookup (`table(withID:)`) goes
+    ///   through, so the first lookup never makes them on its caller's thread.
     @discardableResult
-    static func loadInBackground(_ load: @escaping @Sendable () -> Void = { _ = offeredTables }) -> Task<Void, Never> {
+    static func loadInBackground(_ load: @escaping @Sendable () -> Void = { _ = offeredTables; _ = exportTables }) -> Task<Void, Never> {
         Task.detached(priority: .utility) {
             load()
         }

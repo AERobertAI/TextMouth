@@ -114,17 +114,20 @@ final class BrailleTablePrintOnlyTests: XCTestCase {
             printOnly: ["cs.tbl", "lv.tbl", "sl.tbl", "zh_CHN.tbl", "changed.ctb"]
         )
         let tables = try folder(of: files)
+        // The property lists are written in a folder of their own, made for this test, never beside it.
+        let lists = try makeSandboxDirectory("PrintOnlyPropertyLists")
         /// The Mac's tables judged with a property list that names `version` (none: no property list).
         func judged(version: String?) throws -> BrailleTableCatalog.MacTables {
             var list = URL(fileURLWithPath: "/nonexistent/none.plist")
             if let version {
-                list = tables.deletingLastPathComponent().appendingPathComponent("tables-\(version).plist")
+                list = lists.appendingPathComponent("tables-\(version).plist")
                 try PropertyListSerialization.data(fromPropertyList: ["OpenSourceVersion": version], format: .xml, options: 0).write(to: list)
             }
             return try XCTUnwrap(BrailleTableCatalog.macTables(in: tables, propertyList: list, release: release))
         }
         // VoiceOver's liblouis is older than the app's, or unknown: the release's marks are added to the files' own.
-        for version in [nil, "3.34.0", "3.39.0"] {
+        // A version that is no number ("unknown", "v3.34.0") is unknown, not newer: the release applies.
+        for version in [nil, "3.34.0", "3.39.0", "unknown", "v3.34.0", "v9.0.0"] {
             let mac = try judged(version: version)
             let writesOnly = Set(mac.printOnly.map(\.id))
             XCTAssertEqual(writesOnly, [
@@ -144,6 +147,9 @@ final class BrailleTablePrintOnlyTests: XCTestCase {
             Set(newer.tables.map(\.id)).isSuperset(of: ["mac:changed.ctb", "mac:cs.tbl", "mac:lv.tbl", "mac:sl.tbl", "mac:zh_CHN.tbl"])
         )
         XCTAssertNil(BrailleTableCatalog.releaseDirections(judgingMacVersion: "3.40.0", of: release))
+        for unknown in ["unknown", "v3.34.0", "v9.0.0", "", "\u{0663}.1"] {
+            XCTAssertEqual(BrailleTableCatalog.releaseDirections(judgingMacVersion: unknown, of: release), release, unknown)
+        }
         XCTAssertEqual(BrailleTableCatalog.releaseDirections(judgingMacVersion: "3.34.0", of: release), release)
         XCTAssertEqual(BrailleTableCatalog.releaseDirections(judgingMacVersion: nil, of: release), release)
     }
