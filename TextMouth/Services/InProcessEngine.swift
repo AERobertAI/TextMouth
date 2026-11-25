@@ -254,6 +254,11 @@ final class InProcessEngine: Sendable {
             let result = body(call)
             value.withLock { $0 = result }
         }
+        // A cancellation that has happened already is told to the call before it is queued, so the work finds `shouldStop`
+        // true from its first step. Told only by `whileRunning` below, after the queueing, the engine's thread could start the
+        // work and read `shouldStop` first (the iPhone's InProcessEngineTests.testACallFromACancelledTaskStillRunsToldToStop
+        // failed that way once, in train 1124-2049). Telling twice is harmless: the first time counts.
+        if cancellation?.isCancelled == true { call.cancel() }
         // Queue the call unless the engine refuses, starting the thread for
         // the first.
         let startsThread: Bool? = state.withLock { engine in
