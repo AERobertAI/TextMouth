@@ -169,6 +169,25 @@ final class SyncLibraryHostTests: XCTestCase {
         XCTAssertTrue(SyncPlaceholder.isPlaceholder(package: package, contentFile: added.bookFileURL))
     }
 
+    /// A merge that puts a book in a new folder moves its package there,
+    /// through the library transition, and the keys are applied.
+    func testApplyMovesAPackageIntoANewFolder() async throws {
+        let model = LibraryViewModel(initializeServices: false)
+        let book = try SyncPlaceholder.makePackage(for: makeNewBook("Mover"), storeID: UUID())
+        model.library = Library(books: [book])
+        var merged = model.library
+        let folder = BookFolder(name: "Synced Shelf \(UUID().uuidString.prefix(6))")
+        merged.folders = [folder]
+        merged.books[0].folderPath = folder.fullPath
+        let key = SyncKey.book(book.id, .folder)
+        let applied = await model.applySync(makeApplication(library: merged, moves: true, keys: [key]))
+        XCTAssertEqual(applied, [key])
+        let moved = try XCTUnwrap(model.bookByID(book.id))
+        XCTAssertEqual(moved.folderPath, folder.fullPath)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: moved.tmbDirectory.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: book.tmbDirectory.path))
+    }
+
     /// A book a person removed elsewhere is removed here, package and row;
     /// one open in a reader waits for the next sync and its key is not applied.
     func testApplyRemovesABookButNotAnOpenOne() async throws {
