@@ -7,7 +7,7 @@ import XCTest
 /// (`SyncRegisters.merge`) are marked, and pass once sync-core's branch is in.
 final class SyncEngineTests: XCTestCase {
     /// A made-up book.
-    private let book = UUID(uuidString: "66666666-6666-6666-6666-666666666666")!
+    private let book = UUID(uuidString: "66666666-6666-6666-6666-666666666666") ?? UUID()
 
     /// The identity of a device on install `install`.
     private func identity(_ name: String = "Mac", install: String = "install-1") -> SyncDeviceIdentity {
@@ -33,8 +33,10 @@ final class SyncEngineTests: XCTestCase {
         let files = local(sandbox, "a")
         let first = try SyncEngine(local: files, identity: identity())
         let second = try SyncEngine(local: files, identity: identity())
-        XCTAssertEqual(first.deviceID, second.deviceID)
-        XCTAssertEqual(first.deviceID, first.deviceID.lowercased())
+        let firstID = await first.deviceID
+        let secondID = await second.deviceID
+        XCTAssertEqual(firstID, secondID)
+        XCTAssertEqual(firstID, firstID.lowercased())
         XCTAssertEqual(files.loadDevice()?.installID, "install-1")
     }
 
@@ -45,7 +47,9 @@ final class SyncEngineTests: XCTestCase {
         let original = try SyncEngine(local: files, identity: identity(install: "install-1"))
         try await original.recordKeep(true, for: [book])
         let restored = try SyncEngine(local: files, identity: identity(install: "install-2"))
-        XCTAssertNotEqual(original.deviceID, restored.deviceID)
+        let originalID = await original.deviceID
+        let restoredID = await restored.deviceID
+        XCTAssertNotEqual(originalID, restoredID)
         let pending = await restored.pendingChanges()
         XCTAssertEqual(pending, 0, "the old device's outbox is not this device's")
     }
@@ -73,12 +77,13 @@ final class SyncEngineTests: XCTestCase {
         try await engine.recordKeep(true, for: [book])
         let result = try await engine.exchange(in: folder)
         XCTAssertEqual(result.pendingChanges, 1, "uploading counts as waiting")
-        let names = try drive.list(folder.deviceFolder(engine.deviceID)).map(\.name)
+        let id = await engine.deviceID
+        let names = try drive.list(folder.deviceFolder(id)).map(\.name)
         XCTAssertTrue(names.contains(SyncNames.deviceFile))
         XCTAssertTrue(names.contains(SyncNames.changeFile(seq: 1, kind: .changes)))
         XCTAssertTrue(names.contains(SyncNames.changeFile(seq: 2, kind: .snapshot)), "a new device publishes a snapshot")
         // The device file says who this is.
-        let data = try Data(contentsOf: folder.deviceFolder(engine.deviceID).appendingPathComponent(SyncNames.deviceFile))
+        let data = try Data(contentsOf: folder.deviceFolder(id).appendingPathComponent(SyncNames.deviceFile))
         XCTAssertEqual((try? SyncFormats.decodeDeviceFile(data))?.name, "Mac")
     }
 
@@ -124,32 +129,116 @@ final class SyncEngineTests: XCTestCase {
         let files = local(sandbox, "a")
         let kept = SyncTestFixtures.book()
         let engine = try SyncEngine(local: files, identity: identity())
-        let recorded = try await engine.record(library: SyncTestFixtures.library(books: [kept]))
+        let recorded = try await engine.record(library: SyncTestFixtures.library(books: [kept])).recorded
         XCTAssertGreaterThan(recorded, 0)
 
         // The next launch: the book is missing, and stays so across several records.
         let relaunched = try SyncEngine(local: files, identity: identity())
         let empty = SyncTestFixtures.library()
-        let first = try await relaunched.record(library: empty)
-        let second = try await relaunched.record(library: empty)
+        let first = try await relaunched.record(library: empty).recorded
+        let second = try await relaunched.record(library: empty).recorded
         XCTAssertEqual([first, second], [0, 0])
         let presence = await relaunched.entry(for: .book(kept.id, .presence))
         XCTAssertEqual(presence?.value, .bool(true), "the book is still there in the registers")
 
         // The first apply could not put it back: it is forgotten, and no later record reports it removed.
         try await relaunched.settleLaunch(library: empty)
-        let afterSettling = try await relaunched.record(library: empty)
+        let afterSettling = try await relaunched.record(library: empty).recorded
         XCTAssertEqual(afterSettling, 0)
 
         // A book a person removes in the running app is a removal.
         let other = SyncTestFixtures.book()
         let withOther = SyncTestFixtures.library(books: [other])
-        let added = try await relaunched.record(library: withOther)
+        let added = try await relaunched.record(library: withOther).recorded
         XCTAssertGreaterThan(added, 0)
-        let removedCount = try await relaunched.record(library: empty)
+        let removedCount = try await relaunched.record(library: empty).recorded
         XCTAssertEqual(removedCount, 1)
         let mark = await relaunched.entry(for: .book(other.id, .presence))
         XCTAssertEqual(mark?.value, .null)
+    }
+
+    // MARK: - Review items 2, 3, 4, 6, 15
+
+    /// A library restored on the same install, whose folder already holds newer files of its device, takes a
+    /// new identity and sends a snapshot, instead of finding its seqs "already there" and sending nothing.
+    func testARestoredLibraryTakesANewIdentityAndIsHeard() async throws {
+        let sandbox = try makeSandboxDirectory("sync-engine-restore-same-install")
+        let (_, folder) = makeDrive(sandbox)
+        let original = try SyncEngine(local: local(sandbox, "a"), identity: identity())
+        let originalID = await original.deviceID
+        for _ in 1...3 { try await original.recordKeep(true, for: [UUID()]) }
+        _ = try await original.exchange(in: folder)
+
+        // The library is restored from an older copy: it knows only the first file.
+        let older = try makeSandboxDirectory("sync-engine-restore-copy")
+        let restoredFiles = local(older, "a")
+        try restoredFiles.prepare()
+        try restoredFiles.saveDevice(SyncDeviceState(deviceID: originalID, incarnation: UUID(), installID: "install-1", lastSeq: 1))
+        let restored = try SyncEngine(local: restoredFiles, identity: identity())
+        let restoredBefore = await restored.deviceID
+        XCTAssertEqual(restoredBefore, originalID)
+        let result = try await restored.exchange(in: folder)
+        XCTAssertTrue(result.tookNewIdentity)
+        let restoredAfter = await restored.deviceID
+        XCTAssertNotEqual(restoredAfter, originalID)
+        let published = try FileManager.default.contentsOfDirectory(atPath: folder.deviceFolder(restoredAfter).path)
+        XCTAssertTrue(published.contains(SyncNames.changeFile(seq: 1, kind: .snapshot)), "a snapshot under the new identity")
+    }
+
+    /// A mass removal, as index recovery makes, is held back and reported, not sent.
+    func testAMassRemovalIsHeldBack() async throws {
+        let sandbox = try makeSandboxDirectory("sync-engine-mass")
+        let engine = try SyncEngine(local: local(sandbox, "a"), identity: identity())
+        let books = (0..<6).map { _ in SyncTestFixtures.book() }
+        let full = SyncTestFixtures.library(books: books)
+        let initial = try await engine.record(library: full)
+        XCTAssertGreaterThan(initial.recorded, 0)
+        try await engine.settleLaunch(library: full)
+        // The library empties at once, after the launch hold has settled.
+        let emptied = try await engine.record(library: SyncTestFixtures.library())
+        XCTAssertEqual(emptied.recorded, 0)
+        XCTAssertEqual(emptied.heldRemovals, 6)
+        let still = await engine.entry(for: .book(books[0].id, .presence))
+        XCTAssertEqual(still?.value, .bool(true), "nothing was sent")
+        // One or two removals are a person's.
+        let two = SyncTestFixtures.library(books: Array(books.dropFirst(2)))
+        let removed = try await engine.record(library: two)
+        XCTAssertEqual(removed.recorded, 2)
+        XCTAssertEqual(removed.heldRemovals, 0)
+    }
+
+    /// A snapshot is due after 100 files, counted from the device's own record, so a restart doesn't forget them.
+    func testASnapshotIsDueAfterManyFilesEvenAcrossRestarts() async throws {
+        let sandbox = try makeSandboxDirectory("sync-engine-snapshots")
+        let (_, folder) = makeDrive(sandbox)
+        let files = local(sandbox, "a")
+        var engine = try SyncEngine(local: files, identity: identity())
+        _ = try await engine.exchange(in: folder)
+        for index in 0..<100 {
+            try await engine.recordKeep(true, for: [UUID()])
+            if index % 40 == 39 { engine = try SyncEngine(local: files, identity: identity()) }
+        }
+        _ = try await engine.exchange(in: folder)
+        let id = await engine.deviceID
+        let names = try FileManager.default.contentsOfDirectory(atPath: folder.deviceFolder(id).path)
+        XCTAssertEqual(names.filter { $0.hasSuffix(".snapshot.json") }.count, 2, "the first, and one after 100 files")
+    }
+
+    /// What was read is merged and the cursors are saved after the registers, so a crash between them never loses entries.
+    func testTheCursorsAreSavedAfterTheRegisters() async throws {
+        let sandbox = try makeSandboxDirectory("sync-engine-order")
+        let (_, folder) = makeDrive(sandbox)
+        let mac = try SyncEngine(local: local(sandbox, "mac"), identity: identity("Mac", install: "m"))
+        let phoneFiles = local(sandbox, "phone")
+        let phone = try SyncEngine(local: phoneFiles, identity: identity("iPhone", install: "p"))
+        let book = UUID()
+        try await mac.recordKeep(true, for: [book])
+        _ = try await mac.exchange(in: folder)
+        _ = try await phone.exchange(in: folder)
+        // Whatever the cursors say was merged is in the saved registers.
+        let cursors = phoneFiles.loadCursors()
+        XCTAssertFalse(cursors.merged.isEmpty)
+        XCTAssertNotNil(phoneFiles.loadRegisters().entries[.book(book, .keep)])
     }
 
     // MARK: - Two devices (these need sync-core's merge)

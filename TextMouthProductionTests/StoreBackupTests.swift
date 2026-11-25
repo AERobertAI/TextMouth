@@ -7,7 +7,7 @@ import XCTest
 /// halfway leaves.
 final class StoreBackupTests: XCTestCase {
     /// A made-up book.
-    private let bookID = UUID(uuidString: "44444444-4444-4444-4444-444444444444")!
+    private let bookID = UUID(uuidString: "44444444-4444-4444-4444-444444444444") ?? UUID()
 
     /// A package with a content file, a record, and things the manifest leaves out.
     private func makePackage(in sandbox: URL, content: String = "Chapter one.") throws -> URL {
@@ -134,7 +134,7 @@ final class StoreBackupTests: XCTestCase {
         let package = try makePackage(in: sandbox)
         let (backup, drive) = makeBackup(sandbox)
         XCTAssertThrowsError(try backup.back(up: package, bookID: bookID, budget: 5)) {
-            XCTAssertEqual($0 as? SyncProblem, .outOfSpace)
+            XCTAssertEqual($0 as? StoreBackup.BudgetError, .overBudget)
         }
         XCTAssertTrue(drive.copiedNames.isEmpty)
     }

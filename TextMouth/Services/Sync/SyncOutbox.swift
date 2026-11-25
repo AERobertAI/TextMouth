@@ -23,6 +23,8 @@ struct SyncOutboxIndex: Codable, Equatable, Sendable {
         var state: SyncOutboxState
         /// Whether the drive reported the upload (true) or reported nothing (false).
         var confirmed: Bool
+        /// When the file was copied into the folder; a copy the drive never confirms leaves the outbox only a week on.
+        var copiedAt: Date?
     }
     var items: [Item] = []
 }
@@ -72,7 +74,7 @@ struct SyncOutbox: Sendable {
         try local.prepare()
         try SyncFormats.encode(file).write(to: fileURL(seq, kind), options: .atomic)
         device.lastSeq = seq
-        index.items.append(.init(seq: seq, kind: kind, count: entries.count, state: .written, confirmed: false))
+        index.items.append(.init(seq: seq, kind: kind, count: entries.count, state: .written, confirmed: false, copiedAt: nil))
         try local.saveDevice(device)
         try local.write(index, to: local.outboxIndexURL)
         return seq
@@ -100,7 +102,7 @@ struct SyncOutbox: Sendable {
             guard let parsed = SyncNames.parseChangeFile(name),
                   !index.items.contains(where: { $0.seq == parsed.seq }),
                   let file = file(parsed.seq, kind: parsed.kind) else { continue }
-            index.items.append(.init(seq: parsed.seq, kind: parsed.kind, count: file.entries.count, state: .written, confirmed: false))
+            index.items.append(.init(seq: parsed.seq, kind: parsed.kind, count: file.entries.count, state: .written, confirmed: false, copiedAt: nil))
             device.lastSeq = max(device.lastSeq, parsed.seq)
             found += 1
         }
@@ -119,7 +121,7 @@ struct SyncOutbox: Sendable {
     /// many it copied. A problem stops the copying and is thrown after the
     /// files copied so far are recorded.
     @discardableResult
-    mutating func copy(into deviceFolder: URL, using access: any SyncFolderAccess) throws -> Int {
+    mutating func copy(into deviceFolder: URL, using access: any SyncFolderAccess, now: Date = Date()) throws -> Int {
         // A device folder not made yet lists as empty: `copyIn` makes it.
         let present = Set(((try? access.list(deviceFolder)) ?? []).map(\.name))
         var copied = 0
@@ -134,6 +136,7 @@ struct SyncOutbox: Sendable {
                     copied += 1
                 }
                 index.items[position].state = .copied
+                index.items[position].copiedAt = index.items[position].copiedAt ?? now
             } catch {
                 failure = error
                 break
@@ -170,14 +173,22 @@ struct SyncOutbox: Sendable {
         return problem
     }
 
-    /// Lets files leave the outbox: a file goes once it has uploaded and a
-    /// later snapshot has too (which rebuilds anything it held). Returns how
-    /// many went. A snapshot itself goes when a later one has uploaded.
+    /// How long a copy the drive never confirms stays in the outbox after a later snapshot, in seconds.
+    static let unconfirmedStay: TimeInterval = 7 * 86_400
+
+    /// Lets files leave the outbox: a file goes once the drive confirmed its upload and a
+    /// later snapshot has uploaded too (which rebuilds anything it held). A copy the drive
+    /// never reports on goes only a week after it was copied. Returns how many went. A
+    /// snapshot itself goes when a later one has uploaded.
     @discardableResult
-    mutating func retireUploaded() throws -> Int {
+    mutating func retireUploaded(now: Date = Date()) throws -> Int {
         guard let newestSnapshot = index.items.filter({ $0.kind == .snapshot && $0.state == .uploaded })
             .map(\.seq).max() else { return 0 }
-        let retiring = index.items.filter { $0.state == .uploaded && $0.seq < newestSnapshot }
+        let retiring = index.items.filter { item in
+            guard item.state == .uploaded, item.seq < newestSnapshot else { return false }
+            if item.confirmed { return true }
+            return now.timeIntervalSince(item.copiedAt ?? now) >= Self.unconfirmedStay
+        }
         for item in retiring {
             // The outbox's own file: a copy exists in the sync folder, uploaded.
             try? FileManager.default.removeItem(at: fileURL(item.seq, item.kind))
@@ -185,6 +196,14 @@ struct SyncOutbox: Sendable {
         index.items.removeAll { item in retiring.contains { $0.seq == item.seq } }
         try local.write(index, to: local.outboxIndexURL)
         return retiring.count
+    }
+
+    // MARK: The device's state
+
+    /// Changes this device's own state and saves it.
+    mutating func updateDevice(_ change: (inout SyncDeviceState) -> Void) throws {
+        change(&device)
+        try local.saveDevice(device)
     }
 
     // MARK: Counts

@@ -64,6 +64,8 @@ struct SyncStatus: Equatable, Sendable {
     var isOn = false, isSyncing = false, isOffline = false, pendingChanges = 0
     var lastSynced: Date?, lastHeard: [String: Date] = [:], problem: SyncProblem?
     var booksBackedUp: Int?, booksToBackUp: Int?
+    /// How many book removals were held back, not sent, as a mass removal (index recovery, a wrong folder).
+    var heldRemovals = 0
 }
 
 /// Makes the folder access for a bookmark; the iPhone sets its own.

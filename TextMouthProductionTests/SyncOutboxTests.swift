@@ -6,7 +6,7 @@ import XCTest
 /// before any copy, stays there offline, and leaves only once uploaded.
 final class SyncOutboxTests: XCTestCase {
     /// A made-up book.
-    private let book = UUID(uuidString: "22222222-2222-2222-2222-222222222222")!
+    private let book = UUID(uuidString: "22222222-2222-2222-2222-222222222222") ?? UUID()
 
     /// One stamped entry, numbered by `n`.
     private func entry(_ n: Int) -> SyncEntry {
@@ -152,7 +152,7 @@ final class SyncOutboxTests: XCTestCase {
         try outbox.copy(into: deviceFolder, using: drive)
         try outbox.refreshUploads(in: deviceFolder, using: drive)
         XCTAssertEqual(outbox.pendingChanges, 0)
-        XCTAssertFalse(outbox.index.items[0].confirmed)
+        XCTAssertEqual(outbox.index.items.first?.confirmed, false)
     }
 
     /// A refused upload stays counted as waiting, and the reason is returned.

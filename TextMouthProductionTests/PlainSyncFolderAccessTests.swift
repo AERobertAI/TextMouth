@@ -54,6 +54,17 @@ final class PlainSyncFolderAccessTests: XCTestCase {
         XCTAssertEqual(replaced, Data("two".utf8))
     }
 
+    /// A write is made whole under a hidden name and moved in: nothing half-made is left beside it.
+    func testNothingHalfMadeIsLeftBeside() throws {
+        let (access, folder) = try makeAccess()
+        try access.write(Data("x".utf8), to: folder.appendingPathComponent("a.json"), replacing: false)
+        let source = folder.deletingLastPathComponent().appendingPathComponent("s.bin")
+        try Data("y".utf8).write(to: source)
+        try access.copyIn(source, to: folder.appendingPathComponent("b.bin"))
+        let raw = try FileManager.default.contentsOfDirectory(atPath: folder.path).sorted()
+        XCTAssertEqual(raw, ["a.json", "b.bin"])
+    }
+
     /// A copy in makes the folders above it, and is refused over a file.
     func testCopyInMakesFoldersAndRefusesOverAFile() throws {
         let (access, folder) = try makeAccess()

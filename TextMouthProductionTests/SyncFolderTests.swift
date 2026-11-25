@@ -6,7 +6,7 @@ import XCTest
 /// bounded time, and a file not here yet holds a cursor, never the library.
 final class SyncFolderTests: XCTestCase {
     /// A made-up book.
-    private let book = UUID(uuidString: "33333333-3333-3333-3333-333333333333")!
+    private let book = UUID(uuidString: "33333333-3333-3333-3333-333333333333") ?? UUID()
 
     /// A folder over a fresh sandbox drive.
     private func makeFolder() throws -> (folder: SyncFolder, drive: SyncTestDrive) {
@@ -179,6 +179,47 @@ final class SyncFolderTests: XCTestCase {
         XCTAssertEqual(result.cursors.merged["dev-b"], 4)
         XCTAssertEqual(result.entries.map(\.stamp.wall), [3, 4])
         XCTAssertTrue(result.notArrived.isEmpty)
+    }
+
+    /// iCloud Drive keeps no order: a small seq 3 that is listed before the large seq 1 and 2 never moves the
+    /// cursor past them; they are read when they arrive, and nothing is skipped.
+    func testAFileListedBeforeEarlierOnesDoesNotSkipThem() async throws {
+        let (folder, _) = try makeFolder()
+        try put(changeFile(device: "dev-b", seq: 3), in: folder)
+        let early = try await reader(folder).read(after: SyncCursors())
+        XCTAssertEqual(early.cursors.merged["dev-b"] ?? 0, 0, "seq 1 and 2 are not here yet")
+        XCTAssertTrue(early.entries.isEmpty)
+        XCTAssertEqual(early.notArrived, ["dev-b"])
+        try put(changeFile(device: "dev-b", seq: 1), in: folder)
+        try put(changeFile(device: "dev-b", seq: 2), in: folder)
+        let later = try await reader(folder).read(after: early.cursors)
+        XCTAssertEqual(later.entries.map(\.stamp.wall), [1, 2, 3])
+        XCTAssertEqual(later.cursors.merged["dev-b"], 3)
+    }
+
+    /// A seq the device says it wrote but no listing shows yet holds the cursor too.
+    func testTheDevicesOwnLastSeqIsExpected() async throws {
+        let (folder, _) = try makeFolder()
+        try put(changeFile(device: "dev-b", seq: 1), in: folder)
+        try folder.publishDevice(SyncDeviceFile(formatVersion: 1, deviceID: "dev-b", name: "iPhone", platform: "ios", appVersion: "0.6.0", lastSeq: 2, updated: Date(timeIntervalSince1970: 1)))
+        let held = try await reader(folder).read(after: SyncCursors())
+        XCTAssertEqual(held.cursors.merged["dev-b"], 1)
+        XCTAssertEqual(held.notArrived, ["dev-b"], "seq 2 is promised but not listed")
+        try put(changeFile(device: "dev-b", seq: 2), in: folder)
+        let caught = try await reader(folder).read(after: held.cursors)
+        XCTAssertEqual(caught.cursors.merged["dev-b"], 2)
+        XCTAssertTrue(caught.notArrived.isEmpty)
+    }
+
+    /// A read that is refused for want of a network is noted, so the status can say offline.
+    func testAnOfflineReadIsNoted() async throws {
+        let (folder, drive) = try makeFolder()
+        try put(changeFile(device: "dev-b", seq: 1), in: folder)
+        drive.setNotDownloaded(SyncNames.changeFile(seq: 1, kind: .changes))
+        drive.setOffline(true)
+        let result = try await reader(folder).read(after: SyncCursors())
+        XCTAssertTrue(result.sawOffline)
+        XCTAssertEqual(result.cursors.merged["dev-b"] ?? 0, 0)
     }
 
     /// A device read for the first time starts at its newest snapshot.

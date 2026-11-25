@@ -6,7 +6,7 @@ import XCTest
 /// device's own record kept, a stop resumed, and a damaged blob never in the package.
 final class StoreFetchTests: XCTestCase {
     /// A made-up book.
-    private let bookID = UUID(uuidString: "55555555-5555-5555-5555-555555555555")!
+    private let bookID = UUID(uuidString: "55555555-5555-5555-5555-555555555555") ?? UUID()
 
     /// A world: one device backed a book up, another holds a placeholder for it.
     private struct World {
@@ -88,12 +88,60 @@ final class StoreFetchTests: XCTestCase {
         // Files before the stop stay; the pointer says which.
         let partial = try XCTUnwrap(StoreFetch.pointer(in: world.placeholder))
         XCTAssertTrue(StoreFetch.isMissingFiles(world.placeholder))
-        XCTAssertFalse(partial.files.first { $0.path == "book.txt" }!.onThisDevice)
+        XCTAssertEqual(partial.files.first { $0.path == "book.txt" }?.onThisDevice, false)
 
         world.drive.setNotDownloaded(text.blob, false)
         world.drive.setOffline(false)
         try await world.fetch.fetch(package: world.placeholder)
         XCTAssertFalse(StoreFetch.isMissingFiles(world.placeholder))
+    }
+
+    /// A manifest path that would leave the package is refused, and nothing is written outside it.
+    func testAManifestPathLeavingThePackageIsRefused() async throws {
+        let world = try makeWorld()
+        var hostile = world.backup.manifest
+        hostile.files[0].path = "../escape.txt"
+        let data = try SyncFormats.encode(hostile)
+        let name = StoreBackup.manifestName(for: data)
+        try world.drive.write(data, to: world.fetch.folder.bookFolder(bookID).appendingPathComponent(name), replacing: false)
+        var pointer = try XCTUnwrap(StoreFetch.pointer(in: world.placeholder))
+        pointer.manifest = name
+        try StoreFetch.write(pointer, in: world.placeholder)
+        do {
+            try await world.fetch.fetch(package: world.placeholder)
+            XCTFail("a path leaving the package")
+        } catch { XCTAssertEqual(error as? SyncProblem, .damaged(file: "../escape.txt")) }
+        let outside = world.placeholder.deletingLastPathComponent().appendingPathComponent("escape.txt")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: outside.path))
+    }
+
+    /// A manifest whose bytes are not what its name says is refused.
+    func testAManifestThatIsNotItsNameIsRefused() async throws {
+        let world = try makeWorld()
+        let url = world.fetch.folder.bookFolder(bookID).appendingPathComponent(world.backup.manifestName)
+        try world.drive.write(Data("{\"formatVersion\":1}".utf8), to: url, replacing: true)
+        do {
+            try await world.fetch.fetch(package: world.placeholder)
+            XCTFail("a swapped manifest")
+        } catch { XCTAssertEqual(error as? SyncProblem, .damaged(file: world.backup.manifestName)) }
+    }
+
+    /// What may be fetched: relative plain paths, a digest, a blob named by it.
+    func testWhatIsSafeToFetch() {
+        let digest = String(repeating: "a", count: 64)
+        func file(_ path: String, blob: String? = nil, sha: String? = nil) -> StoreManifest.File {
+            StoreManifest.File(path: path, sha256: sha ?? digest, blob: blob ?? digest + ".epub", role: "content", size: 1)
+        }
+        XCTAssertTrue(StoreFetch.isSafe(file("book.epub")))
+        XCTAssertTrue(StoreFetch.isSafe(file("tracks/01.mp3")))
+        XCTAssertFalse(StoreFetch.isSafe(file("../x")))
+        XCTAssertFalse(StoreFetch.isSafe(file("a/../../x")))
+        XCTAssertFalse(StoreFetch.isSafe(file("/etc/passwd")))
+        XCTAssertFalse(StoreFetch.isSafe(file("a//b")))
+        XCTAssertFalse(StoreFetch.isSafe(file("")))
+        XCTAssertFalse(StoreFetch.isSafe(file("book.epub", blob: "../" + digest + ".epub")))
+        XCTAssertFalse(StoreFetch.isSafe(file("book.epub", blob: "other.epub")))
+        XCTAssertFalse(StoreFetch.isSafe(file("book.epub", sha: "short")))
     }
 
     /// A pointer of another store is not fetched.
@@ -109,12 +157,18 @@ final class StoreFetchTests: XCTestCase {
     /// A cancelled fetch stops between files and leaves the pointer true.
     func testCancellationStopsBetweenFiles() async throws {
         let world = try makeWorld()
-        let task = Task { try await world.fetch.fetch(package: world.placeholder) }
+        // The task starts only once it is cancelled, so a fetch that ignored cancellation would bring every file.
+        let task = Task { () -> String? in
+            while !Task.isCancelled { await Task.yield() }
+            return try await world.fetch.fetch(package: world.placeholder)
+        }
         task.cancel()
         do {
             _ = try await task.value
+            XCTFail("a cancelled fetch went on")
         } catch is CancellationError {
         } catch { XCTFail("\(error)") }
+        XCTAssertTrue(StoreFetch.isMissingFiles(world.placeholder), "nothing was fetched")
         // Whatever the pointer claims is here, is here.
         for file in StoreFetch.pointer(in: world.placeholder)?.files ?? [] where file.onThisDevice {
             XCTAssertTrue(FileManager.default.fileExists(atPath: world.placeholder.appendingPathComponent(file.path).path), file.path)

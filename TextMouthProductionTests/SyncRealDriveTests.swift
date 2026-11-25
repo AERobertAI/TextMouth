@@ -130,7 +130,7 @@ final class SyncRealDriveTests: XCTestCase {
             try FileManager.default.createDirectory(at: device, withIntermediateDirectories: true)
             let files = (1...5).map { device.appendingPathComponent(SyncNames.changeFile(seq: $0, kind: .changes)) }
             for file in files { try writeStaged(20_000, to: file, staging: staging) }
-            let first = items.flaggedStatus(of: files[0])
+            let first = items.flaggedStatus(of: files.first ?? device)
             await note("case 1", "right after the move: state \(first.status.state), uploaded \(first.status.isUploaded), "
                 + "upload reported \(first.status.isUploadReported), carries flags \(first.carriesSyncFlags)", on: root)
             let took = try await waitUntilUploaded(files)

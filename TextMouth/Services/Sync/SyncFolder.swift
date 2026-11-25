@@ -45,8 +45,10 @@ struct SyncFolder: Sendable {
             createdBy: creator, createdByVersion: version
         )
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        // `.withoutOverwriting`: only a folder just made gets a store file (R4).
-        try SyncFormats.encode(store).write(to: folder.appendingPathComponent(SyncNames.storeFile), options: .withoutOverwriting)
+        // Written whole under a hidden name and moved in, which never goes over a file: only a folder just made gets a store file (R4).
+        let staged = folder.appendingPathComponent(".partial-" + UUID().uuidString.lowercased())
+        try SyncFormats.encode(store).write(to: staged)
+        try FileManager.default.moveItem(at: staged, to: folder.appendingPathComponent(SyncNames.storeFile))
         return (folder, store)
     }
 

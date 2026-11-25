@@ -46,6 +46,8 @@ final class SyncStatusLineTests: XCTestCase {
         status.problem = .laterVersion
         XCTAssertEqual(line(status), SyncWording.statusLaterVersion)
         status.problem = .notDownloaded(device: "iPhone")
+        XCTAssertEqual(line(status), SyncWording.statusUploading(changes: 3), "uploads waiting come first (section 7's order)")
+        status.pendingChanges = 0
         XCTAssertEqual(line(status), SyncWording.statusNotDownloaded)
         status.problem = .anotherStore
         XCTAssertEqual(line(status), SyncWording.anotherStore)

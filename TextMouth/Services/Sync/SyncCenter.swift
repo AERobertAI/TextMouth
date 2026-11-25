@@ -37,9 +37,9 @@ struct SyncCenterEnvironment {
     var renewedBookmark: @Sendable @MainActor (Data) -> Data? = { _ in nil }
 
     /// The name this device gives itself in the store: its host name without ".local", or "Mac" or "iPhone".
-    static func deviceName(isPhone: Bool) -> String {
-        let host = ProcessInfo.processInfo.hostName.replacingOccurrences(of: ".local", with: "")
-        return host.isEmpty ? (isPhone ? "iPhone" : "Mac") : host
+    @MainActor static func deviceName(isPhone: Bool) -> String {
+        let name = LibrarySessionLease.systemComputerName()
+        return name.isEmpty ? (isPhone ? "iPhone" : "Mac") : name
     }
 
     /// The app's own: the process's preferences, iCloud Drive's location, and the real clock and voice.
@@ -104,29 +104,56 @@ struct SyncCenterEnvironment {
 
     private weak var host: (any SyncLibraryHost)?
     private var dataDirectory: URL?
+    /// The engine, opened off the main actor: `engineTask` makes it, `readyEngine()` waits for it.
     private var engine: SyncEngine?
+    private var engineTask: Task<SyncEngine?, Never>?
     private var access: (any SyncFolderAccess)?
     /// The bookmark of the sync folder in use, kept in `SyncPreferences`.
     private var bookmark: Data?
     private var local: SyncLocalFiles?
     private var scheduler = SyncScheduler()
     private var recorder: SyncRecorder?
-    /// The run going now, and the moment that came during it.
+    /// The run going now, and the moments that came during it, folded into one.
     private var isRunning = false
     private var pendingReason: SyncReason?
     private var runTask: Task<Void, Never>?
     private var wakeTask: Task<Void, Never>?
     private var backupTask: Task<Void, Never>?
+    /// Which backup task is current, so a stale one that ends late never clears a newer task.
+    private var backupGeneration = 0
     /// True from launch until the first apply has finished, which settles the engine's launch hold: a book
     /// missing at launch (an offline launch, a change made while the launch sync reads) is never reported
     /// removed before then (R7). The apply runs even when nothing changed while it is true.
     private var firstApplyPending = true
+    /// Whether a record was asked for while a merge was applied, and so must run after it.
+    private var recordWantedAfterApply = false
     private var observingNetwork = false
     private var lastPath: NetworkPathReport?
     /// Books whose copy is made and whose upload is awaited, with what they hold.
-    private var awaitingUpload: [UUID: (result: StoreBackupResult, bytes: Int64)] = [:]
-    /// Books refused by the backup (a symbolic link, say), not tried again this launch.
+    private var awaitingUpload: [UUID: AwaitingBook] = [:]
+    /// Books refused by the backup (a symbolic link, an error), not tried again this launch.
     private var refusedBackups: Set<UUID> = []
+    /// The sizes of the books' packages, scanned once, off the main actor.
+    private var backupSizes: [UUID: Int64] = [:]
+
+    /// A book copied into the store whose upload is awaited: what the backup made, and what is
+    /// needed to finish it without the library.
+    private struct AwaitingBook: Sendable {
+        var result: StoreBackupResult
+        var bytes: Int64
+        var package: URL
+        var content: SyncContent
+    }
+
+    /// A book chosen for the backup, with what is needed to back it up and finish it off the main actor.
+    private struct BackupCandidate: Sendable {
+        var bookID: UUID
+        var package: URL
+        /// The package's size in bytes, scanned once for the run.
+        var bytes: Int64
+        /// The book's content for a manifest name.
+        var content: @Sendable (String) -> SyncContent
+    }
 
     /// A center in `environment`; nil means the live one.
     init(environment: SyncCenterEnvironment? = nil) {
@@ -147,7 +174,8 @@ struct SyncCenterEnvironment {
         moment(.launch)
     }
 
-    /// Starts the engine and the timers for the store `storeID` in the folder `bookmark` leads to.
+    /// Starts the engine (off the main actor) and the timers for the store `storeID` in the folder
+    /// `bookmark` leads to.
     @discardableResult
     private func activate(bookmark: Data, storeID: UUID) -> Bool {
         guard let dataDirectory else { return false }
@@ -156,8 +184,9 @@ struct SyncCenterEnvironment {
         let files = SyncLocalFiles(syncFolder: dataDirectory.appendingPathComponent(TextMouthPaths.syncFolderName, isDirectory: true), storeID: storeID)
         let identity = SyncDeviceIdentity(name: environment.deviceName, platform: environment.platform, appVersion: environment.appVersion, installID: installID)
         let now = environment.now
-        guard let engine = try? SyncEngine(local: files, identity: identity, now: now) else { return false }
-        self.engine = engine
+        // The engine reads the device's files, megabytes of JSON for a large library: not on the main actor (R2).
+        engineTask = Task { try? await SyncEngine.open(local: files, identity: identity, now: now) }
+        engine = nil
         local = files
         access = environment.makeAccess(bookmark)
         self.bookmark = bookmark
@@ -172,6 +201,16 @@ struct SyncCenterEnvironment {
         observeNetwork()
         rearm()
         return true
+    }
+
+    /// The engine, once it has opened; nil when it couldn't, or sync is off.
+    private func readyEngine() async -> SyncEngine? {
+        if let engine { return engine }
+        guard let task = engineTask else { return nil }
+        let opened = await task.value
+        // Sync may have stopped, or another folder been joined, while it opened.
+        if engineTask == task { engine = opened }
+        return engine
     }
 
     // MARK: Setting up, joining, stopping
@@ -190,7 +229,11 @@ struct SyncCenterEnvironment {
     func setUp(in parent: URL) async throws {
         try requireLocalLibrary()
         try requireICloudDrive(parent)
-        let made = try SyncFolder.create(in: parent, creator: environment.deviceName, version: environment.appVersion, now: environment.now())
+        let creator = environment.deviceName
+        let version = environment.appVersion
+        let created = environment.now()
+        // The folder is made off the main actor.
+        let made = try await Task.detached { try SyncFolder.create(in: parent, creator: creator, version: version, now: created) }.value
         try await join(made.folder)
     }
 
@@ -208,6 +251,10 @@ struct SyncCenterEnvironment {
         SyncPreferences.bookmark.write(bookmark, to: environment.preferences)
         SyncPreferences.storeID.write(store.storeID, to: environment.preferences)
         guard activate(bookmark: bookmark, storeID: store.storeID) else { throw SyncProblem.folderMissing }
+        guard await readyEngine() != nil else {
+            stop()
+            throw SyncProblem.folderMissing
+        }
         requestRun(.launch)
     }
 
@@ -215,14 +262,17 @@ struct SyncCenterEnvironment {
     func stop() {
         wakeTask?.cancel()
         backupTask?.cancel()
+        engineTask?.cancel()
         wakeTask = nil
         backupTask = nil
+        engineTask = nil
         recorder?.cancel()
         recorder = nil
         engine = nil
         access = nil
         local = nil
         storeID = nil
+        bookmark = nil
         awaitingUpload = [:]
         scheduler.turnOff()
         SyncPreferences.bookmark.write(nil, to: environment.preferences)
@@ -258,8 +308,9 @@ struct SyncCenterEnvironment {
 
     /// Stamps Keep on All Devices on or off for `bookIDs`, as a person chose.
     func setKeep(_ keep: Bool, for bookIDs: [UUID]) {
-        guard status.isOn, let engine, !bookIDs.isEmpty else { return }
+        guard status.isOn, !bookIDs.isEmpty else { return }
         Task {
+            guard let engine = await readyEngine() else { return }
             try? await engine.recordKeep(keep, for: bookIDs)
             keptBookIDs = await engine.keptBookIDs()
             scheduler.noteChange(at: environment.now())
@@ -307,10 +358,24 @@ struct SyncCenterEnvironment {
 
     // MARK: Running
 
+    /// Whether `reason` reads other devices' files; the iPhone's background and the Mac's quit only send.
+    private static func reads(_ reason: SyncReason) -> Bool {
+        reason != .background && reason != .quit
+    }
+
+    /// Folds a moment that came during a run into the one waiting: Sync Now wins, so its outcome is
+    /// announced, and a run that reads beats one that only sends.
+    static func folded(_ waiting: SyncReason?, _ incoming: SyncReason) -> SyncReason {
+        guard let waiting else { return incoming }
+        if waiting == .syncNow || incoming == .syncNow { return .syncNow }
+        if reads(incoming) { return incoming }
+        return reads(waiting) ? waiting : incoming
+    }
+
     /// Runs `reason` now, or after the run going now: one run at a time.
     private func requestRun(_ reason: SyncReason) {
         if isRunning {
-            pendingReason = reason
+            pendingReason = Self.folded(pendingReason, reason)
             return
         }
         runTask = Task { await run(reason) }
@@ -319,37 +384,83 @@ struct SyncCenterEnvironment {
     /// Waits until no run is going or waiting, including the one a moment made during another. A test
     /// uses it instead of guessing a time.
     func waitUntilIdle() async {
-        while let task = runTask {
-            await task.value
-            if runTask == task { runTask = nil }
+        while true {
+            if let task = runTask {
+                await task.value
+                if runTask == task { runTask = nil }
+            } else if isRunning, pendingReason != nil || backupTask != nil {
+                await Task.yield()
+            } else {
+                return
+            }
         }
     }
 
     /// Keeps the renewed bookmark when the system found the folder's bookmark stale (the folder was moved
-    /// or renamed): the preferences and the access use it from now on.
+    /// or renamed): the preferences and the access use it from now on. It is checked again against R6: a
+    /// renewal that now leads outside iCloud Drive (the Trash, a local copy left at sign-out) is not kept,
+    /// and the folder is reported missing.
     private func renewBookmarkIfStale() {
         guard let current = bookmark, let fresh = environment.renewedBookmark(current) else { return }
+        if let target = PlainSyncFolderAccess.resolve(fresh)?.url, environment.locate(target) != .cloud(.iCloudDrive) {
+            status.problem = .folderMissing
+            return
+        }
         SyncPreferences.bookmark.write(fresh, to: environment.preferences)
         bookmark = fresh
         access = environment.makeAccess(fresh)
     }
 
-    /// Records this device's changes now.
+    /// Records this device's changes now, unless a merge is being applied (those values are not this
+    /// device's changes) or the library may not sync (index recovery has emptied it): then it waits.
     private func recordNow() async {
-        guard let engine, let host else { return }
-        _ = try? await engine.record(library: host.library)
+        guard let host, status.isOn else { return }
+        if recorder?.isApplying == true {
+            recordWantedAfterApply = true
+            return
+        }
+        guard host.maySyncNow else {
+            // Not now: look again soon, so a library that is whole again is recorded.
+            recorder?.noteChange()
+            return
+        }
+        guard let engine = await readyEngine() else { return }
+        // The library is read after the flag is looked at, and nothing awaits in between.
+        let library = host.library
+        if let held = try? await engine.record(library: library), held.heldRemovals > 0 {
+            status.heldRemovals = held.heldRemovals
+        } else {
+            status.heldRemovals = 0
+        }
         status.pendingChanges = await engine.pendingChanges()
+    }
+
+    /// Runs `operation`, giving up after `seconds`: nil then.
+    private func bounded<T: Sendable>(_ seconds: TimeInterval, _ operation: @escaping @Sendable () async throws -> T) async -> T? {
+        let sleep = environment.sleep
+        return await withTaskGroup(of: T?.self) { group in
+            group.addTask { try? await operation() }
+            group.addTask {
+                try? await sleep(seconds)
+                return nil
+            }
+            let first = await group.next() ?? nil
+            group.cancelAll()
+            return first
+        }
     }
 
     /// One sync: record, open the folder, copy and read, merge, apply, and let the backup go on.
     private func run(_ reason: SyncReason) async {
+        // The engine may still be opening; nothing is checked before it has, so two requests meet below.
+        guard let engine = await readyEngine() else { return }
         // Two requests made before either began meet here: the later waits for the earlier.
         if isRunning {
-            pendingReason = reason
+            pendingReason = Self.folded(pendingReason, reason)
             return
         }
         renewBookmarkIfStale()
-        guard let engine, let access, let storeID, let host else { return }
+        guard let access, let storeID, let host else { return }
         guard host.maySyncNow else {
             if reason == .syncNow { environment.announce(SyncStatusLine.text(for: status, isPhone: environment.isPhone, time: Self.timeOfDay)) }
             return
@@ -362,6 +473,10 @@ struct SyncCenterEnvironment {
             status.isSyncing = false
             scheduler.runFinished(at: environment.now())
             rearm()
+            if recordWantedAfterApply {
+                recordWantedAfterApply = false
+                recorder?.noteChange()
+            }
             if let next = pendingReason {
                 pendingReason = nil
                 requestRun(next)
@@ -369,12 +484,25 @@ struct SyncCenterEnvironment {
         }
 
         await recorder?.flush()
+        // The iPhone going to the background and the Mac quitting only send, in a bounded time: no store.json
+        // read, no apply, no backup (section 7).
+        if !Self.reads(reason) {
+            let seconds: TimeInterval = reason == .quit ? 2 : 20
+            let sent = await bounded(seconds) {
+                try await access.withFolder { root -> Int in
+                    try await engine.exchange(in: SyncFolder(root: root, access: access), readsOthers: false).pendingChanges
+                }
+            }
+            if let sent { status.pendingChanges = sent }
+            return
+        }
+
         var announcement: String
         do {
             let result = try await access.withFolder { root -> SyncExchangeResult in
                 let folder = SyncFolder(root: root, access: access)
                 _ = try await folder.readStore(expecting: storeID, within: .seconds(30))
-                return try await engine.exchange(in: folder, readsOthers: reason != .background && reason != .quit)
+                return try await engine.exchange(in: folder, readsOthers: true)
             }
             announcement = try await finish(result, reason: reason, engine: engine, host: host)
         } catch let problem as SyncProblem {
@@ -389,18 +517,28 @@ struct SyncCenterEnvironment {
         if reason == .syncNow { environment.announce(announcement) }
     }
 
+    /// The problem of an exchange, in the order the status line speaks them: an upload refused, no
+    /// network, a later TextMouth's files, files not arrived.
+    private func problem(of result: SyncExchangeResult) -> SyncProblem? {
+        if let upload = result.uploadProblem { return upload }
+        if result.read.sawOffline { return .offline }
+        if result.read.laterVersionFrom != nil { return .laterVersion }
+        return result.read.notArrived.first.map { SyncProblem.notDownloaded(device: $0) }
+    }
+
     /// Applies a finished exchange to the library and the status; returns what Sync Now says.
     private func finish(_ result: SyncExchangeResult, reason: SyncReason, engine: SyncEngine, host: any SyncLibraryHost) async throws -> String {
-        status.problem = result.uploadProblem ?? result.read.notArrived.first.map { SyncProblem.notDownloaded(device: $0) }
-        status.isOffline = false
+        status.problem = problem(of: result)
+        status.isOffline = status.problem == .offline
         status.pendingChanges = result.pendingChanges
         for (id, date) in result.read.lastHeard { status.lastHeard[result.read.names[id] ?? id] = date }
 
         // Apply what other devices wrote; until the first apply after launch even when nothing changed, as an older
         // TextMouth left rows unstamped and a book missing at launch is put back by it.
         if !result.changedKeys.isEmpty || firstApplyPending {
-            let application = await engine.application(for: host.library, voices: host.availableVoiceIDs)
+            // The flag is set before the library is read, so nothing recorded meanwhile takes applied values for changes.
             recorder?.isApplying = true
+            let application = await engine.application(for: host.library, voices: host.availableVoiceIDs)
             let applied = await host.applySync(application)
             recorder?.isApplying = false
             try await engine.didApply(application, keys: applied)
@@ -410,14 +548,16 @@ struct SyncCenterEnvironment {
             }
         }
         keptBookIDs = await engine.keptBookIDs()
-        host.syncDidApply(keptBookIDs: keptBookIDs, mayDownload: lastPath?.allowsBackgroundDownloads ?? true)
+        // Nothing downloads on its own until the network has told what kind of path it is.
+        host.syncDidApply(keptBookIDs: keptBookIDs, mayDownload: lastPath?.allowsBackgroundDownloads ?? false)
         if status.problem == nil { status.lastSynced = environment.now() }
         startBackup()
 
         let line = SyncStatusLine.text(for: status, isPhone: environment.isPhone, time: Self.timeOfDay)
         guard status.problem == nil, status.pendingChanges == 0 else { return line }
         if result.changedKeys.isEmpty { return SyncWording.announceNothingNew }
-        let device = result.read.names.values.sorted().first ?? ""
+        // The device the changes came from is the one that wrote them, never an old identity of this one.
+        let device = result.read.names.sorted { $0.key < $1.key }.first?.value ?? ""
         return SyncWording.announceSynced(changes: result.changedKeys.count, from: device)
     }
 
@@ -430,18 +570,22 @@ struct SyncCenterEnvironment {
 
     /// Lets the backup go on, one book at a time, if it isn't going already (section 8).
     private func startBackup() {
-        guard backupTask == nil, engine != nil else { return }
+        guard backupTask == nil, status.isOn else { return }
+        backupGeneration += 1
+        let generation = backupGeneration
         backupTask = Task { [weak self] in
             await self?.backUpBooks()
-            self?.backupTask = nil
+            // A task that stopped late never clears a newer one.
+            if self?.backupGeneration == generation { self?.backupTask = nil }
         }
     }
 
     /// Backs books up, text books first and smaller first, until all are backed up, the budget is
     /// spent, a problem stops it, or sync stops. Each book is done when its blobs and manifest
-    /// have uploaded; its content is then stamped, and the local copies of its blobs evicted.
+    /// have uploaded; its content is then stamped, and the local copies of its blobs evicted. All
+    /// file work happens off the main actor.
     private func backUpBooks() async {
-        guard let engine, let access, let storeID, let local, let dataDirectory else { return }
+        guard let engine = await readyEngine(), let access, let storeID, let local, let dataDirectory else { return }
         let staging = local.stagingFolder
         let free = environment.freeSpace(dataDirectory)
         let budget = StoreBackupBudget.limit(freeSpace: free)
@@ -451,31 +595,38 @@ struct SyncCenterEnvironment {
                 let backup = StoreBackup(folder: folder, storeID: storeID, staging: staging)
                 // Books whose copies have uploaded since the last look are done first.
                 for (bookID, waiting) in await self.awaitingUpload {
-                    await self.completeIfUploaded(bookID, waiting.result, backup: backup, engine: engine)
+                    await self.finishUpload(of: bookID, waiting, backup: backup, engine: engine)
                 }
                 while !Task.isCancelled {
                     let held = await self.awaitingUpload.values.reduce(Int64(0)) { $0 + $1.bytes }
-                    guard let next = await self.nextBookToBackUp(engine: engine), held < budget else { break }
+                    guard let next = await self.nextBookToBackUp(engine: engine) else { break }
+                    // A book over what is left of the local budget waits, unless nothing is held: then it goes alone.
+                    if held > 0, held + next.bytes > budget { break }
                     do {
-                        let result = try backup.back(up: next.package, bookID: next.book.id, budget: budget - held)
-                        await self.noteCopied(next.book.id, result)
-                        await self.completeIfUploaded(next.book.id, result, backup: backup, engine: engine)
-                    } catch SyncProblem.outOfSpace {
-                        throw SyncProblem.outOfSpace
-                    } catch let problem as SyncProblem {
-                        // A book that can't be backed up (a link, a damaged file) is passed by, not retried.
-                        if case .damaged = problem { await self.refuse(next.book.id) } else { throw problem }
+                        let result = try backup.back(up: next.package, bookID: next.bookID, budget: held == 0 ? .max : budget - held)
+                        let waiting = AwaitingBook(result: result, bytes: result.bytesCopied, package: next.package, content: next.content(result.manifestName))
+                        await self.noteCopied(next.bookID, waiting)
+                        await self.finishUpload(of: next.bookID, waiting, backup: backup, engine: engine)
+                    } catch let problem as SyncProblem where problem == .outOfSpace {
+                        // The drive refused for room: the status says so (the local budget is checked above, not thrown).
+                        throw problem
+                    } catch {
+                        // Any other error refuses the book for this launch, so a run never stops at it again; it is logged.
+                        DiagnosticLog.event(.storage, "SYNC_BACKUP: a book could not be backed up and is passed by for this launch (\(type(of: error)))") // l10n: no (debug log text)
+                        await self.refuse(next.bookID)
                     }
                 }
             }
         } catch let problem as SyncProblem {
             status.problem = status.problem ?? problem
-        } catch {}
+        } catch {
+            DiagnosticLog.event(.storage, "SYNC_BACKUP: the backup stopped (\(type(of: error)))") // l10n: no (debug log text)
+        }
     }
 
     /// Remembers a copied book while its upload is awaited.
-    private func noteCopied(_ id: UUID, _ result: StoreBackupResult) {
-        awaitingUpload[id] = (result, result.bytesCopied)
+    private func noteCopied(_ id: UUID, _ waiting: AwaitingBook) {
+        awaitingUpload[id] = waiting
     }
 
     /// Passes a book by for this launch.
@@ -483,51 +634,63 @@ struct SyncCenterEnvironment {
         refusedBackups.insert(id)
     }
 
-    /// The next book to back up: one whose content isn't in the registers, whole here, not awaited, not refused.
-    private func nextBookToBackUp(engine: SyncEngine) async -> (book: Book, package: URL)? {
+    /// The next book to back up: one whose content isn't in the registers, whole here, not awaited, not
+    /// refused. The packages' sizes are read once, off the main actor, into `sizes`.
+    private func nextBookToBackUp(engine: SyncEngine) async -> BackupCandidate? {
         guard let host else { return nil }
         let contents = await engine.contents()
-        let candidates = host.library.libraryBooks.filter { book in
+        let books = host.library.libraryBooks.filter { book in
             let package = BookPackage(book)
             return contents[book.id] == nil && awaitingUpload[book.id] == nil && !refusedBackups.contains(book.id)
                 && package.isPackage && !StoreFetch.isMissingFiles(package.url)
                 && FileManager.default.fileExists(atPath: package.url.path)
         }
-        status.booksToBackUp = contents.count + candidates.count
+        status.booksToBackUp = contents.count + books.count
         status.booksBackedUp = contents.count
-        let ordered = StoreBackup.order(candidates.map {
-            StoreBackupCandidate(bookID: $0.id, isText: !$0.format.isAudio, bytes: StoreBackup.bytes(of: BookPackage($0).url))
+        // Sizes of the books not scanned yet, in one pass off the main actor.
+        let unscanned = books.filter { backupSizes[$0.id] == nil }.map { ($0.id, BookPackage($0).url) }
+        if !unscanned.isEmpty {
+            let scanned = await Task.detached { unscanned.map { ($0.0, StoreBackup.bytes(of: $0.1)) } }.value
+            for (id, bytes) in scanned { backupSizes[id] = bytes }
+        }
+        let ordered = StoreBackup.order(books.map {
+            StoreBackupCandidate(bookID: $0.id, isText: !$0.format.isAudio, bytes: backupSizes[$0.id] ?? 0)
         })
-        guard let first = ordered.first, let book = candidates.first(where: { $0.id == first.bookID }) else { return nil }
-        return (book, BookPackage(book).url)
+        guard let first = ordered.first, let book = books.first(where: { $0.id == first.bookID }) else { return nil }
+        let made = (book.format, book.dateAdded, book.md5Hash, book.totalWordCount, book.audioDuration)
+        return BackupCandidate(bookID: book.id, package: BookPackage(book).url, bytes: backupSizes[book.id] ?? 0) { manifest in
+            SyncContent(manifest: manifest, format: made.0, dateAdded: made.1, md5Hash: made.2, totalWordCount: made.3, audioDuration: made.4)
+        }
     }
 
     /// Once the drive reports a book's blobs uploaded (or reports nothing), stamps its content, notes the
-    /// pointer, and evicts the local copies of the blobs; a failure is said in the status.
-    private func completeIfUploaded(_ id: UUID, _ result: StoreBackupResult, backup: StoreBackup, engine: SyncEngine) async {
-        guard let host else { return }
-        switch backup.uploadState(of: result, bookID: id) {
+    /// pointer, and evicts the local copies of the blobs; a failure is said in the status. The drive's
+    /// states, the pointer, and the evictions are read and done here, off the main actor.
+    private nonisolated func finishUpload(of id: UUID, _ waiting: AwaitingBook, backup: StoreBackup, engine: SyncEngine) async {
+        let state = backup.uploadState(of: waiting.result, bookID: id)
+        switch state {
         case .uploading:
             return
         case .failed(let problem):
-            status.problem = status.problem ?? problem
+            await self.noteBackupProblem(problem)
             return
         case .uploaded, .notReported:
             break
         }
-        guard let book = host.library.libraryBooks.first(where: { $0.id == id }) else {
-            awaitingUpload[id] = nil
-            return
-        }
-        let uploaded = backup.uploadState(of: result, bookID: id) == .uploaded
-        let content = SyncContent(
-            manifest: result.manifestName, format: book.format, dateAdded: book.dateAdded, md5Hash: book.md5Hash,
-            totalWordCount: book.totalWordCount, audioDuration: book.audioDuration
-        )
-        try? backup.markUploaded(package: BookPackage(book).url, bookID: id, result: result)
-        try? await engine.recordContent(content, for: id)
+        try? backup.markUploaded(package: waiting.package, bookID: id, result: waiting.result)
+        try? await engine.recordContent(waiting.content, for: id)
         // Only blobs the drive reports uploaded are evicted; where it reports nothing the copy stays.
-        if uploaded { backup.evictBlobs(of: result, bookID: id) }
+        if state == .uploaded { backup.evictBlobs(of: waiting.result, bookID: id) }
+        await self.bookBackedUp(id)
+    }
+
+    /// Says a backup problem in the status.
+    private func noteBackupProblem(_ problem: SyncProblem) {
+        status.problem = status.problem ?? problem
+    }
+
+    /// A book's backup is complete.
+    private func bookBackedUp(_ id: UUID) {
         awaitingUpload[id] = nil
         status.booksBackedUp = (status.booksBackedUp ?? 0) + 1
     }
