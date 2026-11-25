@@ -50,6 +50,12 @@ final class KeptBooks: ObservableObject {
     /// kept only while `keepsReadingListBooks` is on.
     @Published private(set) var readingListBookIDs: Set<UUID> = []
 
+    /// The books kept on all devices that sync (Keep on All Devices, FR43):
+    /// derived like the reading list's, from the sync's registers, in memory
+    /// only; the choice itself is stamped in the sync folder, not saved here
+    /// (`setSyncedBooks(_:)`).
+    @Published private(set) var syncedBookIDs: Set<UUID> = []
+
     /// Whether this Mac keeps the reading list's books downloaded in a cloud
     /// library: this Mac's own choice, on until cleared, saved in its own
     /// folder (`settingFile`) and never in the library, which every Mac
@@ -107,22 +113,36 @@ final class KeptBooks: ObservableObject {
         keepsReadingListBooks && readingListBookIDs.contains(bookID)
     }
 
-    /// Whether the book `bookID` is kept on this Mac for either reason: the
-    /// listener kept it, or it is on the reading list being kept.
+    /// Whether the book `bookID` is kept on this Mac for any reason: the
+    /// listener kept it, it is on the reading list being kept, or it is kept
+    /// on all devices (`isKeptOnAllDevices(_:)`).
     func isKept(_ bookID: UUID) -> Bool {
-        bookIDs.contains(bookID) || isKeptForReadingList(bookID)
+        bookIDs.contains(bookID) || isKeptForReadingList(bookID) || syncedBookIDs.contains(bookID)
+    }
+
+    /// Whether the book `bookID` is kept on all devices that sync.
+    func isKeptOnAllDevices(_ bookID: UUID) -> Bool {
+        syncedBookIDs.contains(bookID)
+    }
+
+    /// Takes `ids` as the books kept on all devices, as the sync's registers
+    /// say; nothing is saved here. A book that stops being kept on all
+    /// devices stops being kept for it, and nothing is removed by that.
+    func setSyncedBooks(_ ids: Set<UUID>) {
+        guard ids != syncedBookIDs else { return }
+        syncedBookIDs = ids
     }
 
     /// Whether the book `bookID` is kept only because of the reading list:
     /// the listener's own choice does not keep it, so Stop Keeping on This
     /// Mac has nothing to stop.
     func isKeptOnlyForReadingList(_ bookID: UUID) -> Bool {
-        !bookIDs.contains(bookID) && isKeptForReadingList(bookID)
+        !bookIDs.contains(bookID) && !syncedBookIDs.contains(bookID) && isKeptForReadingList(bookID)
     }
 
     /// Whether any book is kept, for either reason.
     var keepsAnyBook: Bool {
-        !bookIDs.isEmpty || (keepsReadingListBooks && !readingListBookIDs.isEmpty)
+        !bookIDs.isEmpty || !syncedBookIDs.isEmpty || (keepsReadingListBooks && !readingListBookIDs.isEmpty)
     }
 
     /// How many of `books` are kept on this Mac, for either reason.
