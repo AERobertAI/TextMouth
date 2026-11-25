@@ -120,7 +120,8 @@ struct SyncOutbox: Sendable {
     /// files copied so far are recorded.
     @discardableResult
     mutating func copy(into deviceFolder: URL, using access: any SyncFolderAccess) throws -> Int {
-        let present = Set(try access.list(deviceFolder).map(\.name))
+        // A device folder not made yet lists as empty: `copyIn` makes it.
+        let present = Set(((try? access.list(deviceFolder)) ?? []).map(\.name))
         var copied = 0
         var failure: Error?
         for position in index.items.indices where index.items[position].state != .uploaded {

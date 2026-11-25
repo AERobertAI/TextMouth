@@ -1,0 +1,132 @@
+import XCTest
+@testable import TextMouth
+
+/// A book fetched from the store onto a device that lacks it (FR43, section
+/// 6): checked against each blob's name and size, staged, then moved in, the
+/// device's own record kept, a stop resumed, and a damaged blob never in the package.
+final class StoreFetchTests: XCTestCase {
+    /// A made-up book.
+    private let bookID = UUID(uuidString: "55555555-5555-5555-5555-555555555555")!
+
+    /// A world: one device backed a book up, another holds a placeholder for it.
+    private struct World {
+        var drive: SyncTestDrive
+        var fetch: StoreFetch
+        var backup: StoreBackupResult
+        var placeholder: URL
+        var original: URL
+    }
+
+    /// Backs up a book of three files and makes the other device's placeholder.
+    private func makeWorld() throws -> World {
+        let sandbox = try makeSandboxDirectory("store-fetch")
+        let original = sandbox.appendingPathComponent("A.tmb", isDirectory: true)
+        try FileManager.default.createDirectory(at: original, withIntermediateDirectories: true)
+        try Data("the book's text, long enough to matter".utf8).write(to: original.appendingPathComponent("book.txt"))
+        try Data("{\"title\":\"Theirs\"}".utf8).write(to: original.appendingPathComponent("bookInfo.json"))
+        try Data("an index".utf8).write(to: original.appendingPathComponent("contentIndex.json"))
+        let drive = SyncTestDrive(root: sandbox.appendingPathComponent("cloud", isDirectory: true))
+        let folder = SyncFolder(root: drive.root, access: drive)
+        let storeID = UUID()
+        let backup = try StoreBackup(folder: folder, storeID: storeID, staging: sandbox.appendingPathComponent("StagingA")).back(up: original, bookID: bookID)
+
+        // The other device: its own record, and a pointer naming the manifest, every file away.
+        let placeholder = sandbox.appendingPathComponent("B.tmb", isDirectory: true)
+        try FileManager.default.createDirectory(at: placeholder, withIntermediateDirectories: true)
+        try Data("{\"title\":\"Mine\"}".utf8).write(to: placeholder.appendingPathComponent("bookInfo.json"))
+        let pointer = StoreFetch.placeholderPointer(storeID: storeID, manifestName: backup.manifestName, manifest: backup.manifest)
+        try StoreFetch.write(pointer, in: placeholder)
+        let fetch = StoreFetch(folder: folder, storeID: storeID, staging: sandbox.appendingPathComponent("StagingB"))
+        return World(drive: drive, fetch: fetch, backup: backup, placeholder: placeholder, original: original)
+    }
+
+    /// A placeholder is missing files, and says how many bytes a fetch needs.
+    func testAPlaceholderIsMissingFilesAndKnowsItsSize() throws {
+        let world = try makeWorld()
+        XCTAssertTrue(StoreFetch.isMissingFiles(world.placeholder))
+        XCTAssertEqual(StoreFetch.bytesToFetch(world.placeholder), world.backup.manifest.files.reduce(0) { $0 + $1.size })
+        XCTAssertFalse(StoreFetch.isMissingFiles(world.original.deletingLastPathComponent()), "a folder without a pointer is whole")
+    }
+
+    /// A fetch brings in every file, byte for byte, and keeps the device's own record.
+    func testFetchBringsTheBookAndKeepsTheRecord() async throws {
+        let world = try makeWorld()
+        let reported = ProgressLog()
+        try await world.fetch.fetch(package: world.placeholder) { files, bytes in reported.add(files, bytes) }
+        XCTAssertEqual(try Data(contentsOf: world.placeholder.appendingPathComponent("book.txt")), try Data(contentsOf: world.original.appendingPathComponent("book.txt")))
+        XCTAssertEqual(try String(contentsOf: world.placeholder.appendingPathComponent("bookInfo.json"), encoding: .utf8), "{\"title\":\"Mine\"}", "the device's own record")
+        XCTAssertFalse(StoreFetch.isMissingFiles(world.placeholder))
+        XCTAssertEqual(reported.files.last, 3)
+        XCTAssertEqual(reported.files, reported.files.sorted(), "progress only goes up")
+        XCTAssertEqual(StoreFetch.bytesToFetch(world.placeholder), 0)
+    }
+
+    /// A blob that doesn't match its name is refused and never reaches the package.
+    func testADamagedBlobIsRefused() async throws {
+        let world = try makeWorld()
+        let text = try XCTUnwrap(world.backup.manifest.files.first { $0.path == "book.txt" })
+        let blob = world.fetch.folder.bookFolder(bookID).appendingPathComponent(text.blob)
+        try world.drive.write(Data("tampered, and a different size".utf8), to: blob, replacing: true)
+        do {
+            try await world.fetch.fetch(package: world.placeholder)
+            XCTFail("a damaged blob")
+        } catch { XCTAssertEqual(error as? SyncProblem, .damaged(file: text.blob)) }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: world.placeholder.appendingPathComponent("book.txt").path))
+    }
+
+    /// A blob not downloaded stops the fetch at once offline, or at the limit; the next fetch goes on from there.
+    func testAStopResumesWhereItLeftOff() async throws {
+        let world = try makeWorld()
+        let text = try XCTUnwrap(world.backup.manifest.files.first { $0.path == "book.txt" })
+        world.drive.setNotDownloaded(text.blob)
+        world.drive.setOffline(true)
+        do {
+            try await world.fetch.fetch(package: world.placeholder)
+            XCTFail("offline")
+        } catch { XCTAssertEqual(error as? SyncProblem, .offline) }
+        // Files before the stop stay; the pointer says which.
+        let partial = try XCTUnwrap(StoreFetch.pointer(in: world.placeholder))
+        XCTAssertTrue(StoreFetch.isMissingFiles(world.placeholder))
+        XCTAssertFalse(partial.files.first { $0.path == "book.txt" }!.onThisDevice)
+
+        world.drive.setNotDownloaded(text.blob, false)
+        world.drive.setOffline(false)
+        try await world.fetch.fetch(package: world.placeholder)
+        XCTAssertFalse(StoreFetch.isMissingFiles(world.placeholder))
+    }
+
+    /// A pointer of another store is not fetched.
+    func testAnotherStoreIsRefused() async throws {
+        var world = try makeWorld()
+        world.fetch = StoreFetch(folder: world.fetch.folder, storeID: UUID(), staging: world.fetch.staging)
+        do {
+            try await world.fetch.fetch(package: world.placeholder)
+            XCTFail("another store")
+        } catch { XCTAssertEqual(error as? SyncProblem, .anotherStore) }
+    }
+
+    /// A cancelled fetch stops between files and leaves the pointer true.
+    func testCancellationStopsBetweenFiles() async throws {
+        let world = try makeWorld()
+        let task = Task { try await world.fetch.fetch(package: world.placeholder) }
+        task.cancel()
+        do {
+            try await task.value
+        } catch is CancellationError {
+        } catch { XCTFail("\(error)") }
+        // Whatever the pointer claims is here, is here.
+        for file in StoreFetch.pointer(in: world.placeholder)?.files ?? [] where file.onThisDevice {
+            XCTAssertTrue(FileManager.default.fileExists(atPath: world.placeholder.appendingPathComponent(file.path).path), file.path)
+        }
+    }
+}
+
+/// Collects the fetch's progress reports.
+///
+/// `@unchecked Sendable`: `values` is read and changed only under `lock`.
+private final class ProgressLog: @unchecked Sendable {
+    private let lock = NSLock()
+    private var values: [Int] = []
+    func add(_ files: Int, _ bytes: Int64) { lock.lock(); values.append(files); lock.unlock() }
+    var files: [Int] { lock.lock(); defer { lock.unlock() }; return values }
+}

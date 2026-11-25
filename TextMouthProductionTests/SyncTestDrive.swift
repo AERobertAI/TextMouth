@@ -27,6 +27,7 @@ final class SyncTestDrive: SyncFolderAccess, @unchecked Sendable {
     private var notDownloaded: Set<String> = []
     private var copies: [String] = []
     private var failCopiesAfter: Int?
+    private var limits: [Duration] = []
 
     /// A drive whose folder is `root`.
     init(root: URL) {
@@ -50,6 +51,8 @@ final class SyncTestDrive: SyncFolderAccess, @unchecked Sendable {
     }
     /// Lets `count` more copies work, then fails the next (a crash or a full drive).
     func failCopies(after count: Int?) { locked { failCopiesAfter = count } }
+    /// The limit of every read made, so a test shows every wait was bounded.
+    var readLimits: [Duration] { locked { limits } }
     /// The names of the files copied in, in order, for "nothing went twice".
     var copiedNames: [String] { locked { copies } }
 
@@ -78,6 +81,7 @@ final class SyncTestDrive: SyncFolderAccess, @unchecked Sendable {
     }
 
     func read(_ file: URL, within limit: Duration) async throws -> Data {
+        locked { limits.append(limit) }
         let state = locked { (offline: offline, away: notDownloaded.contains(file.lastPathComponent)) }
         if state.away {
             throw state.offline ? SyncProblem.offline : SyncProblem.notDownloaded(device: file.deletingLastPathComponent().lastPathComponent)

@@ -15,9 +15,19 @@ struct NetworkReachability: Sendable {
     /// Whether this Mac can reach the network now.
     let isOnline: @Sendable () -> Bool
 
+    /// Starts telling a handler of each path the system reports, on the
+    /// monitor's queue, beginning with the latest one if there is one (FR43:
+    /// sync's "the network is back" moment). Does nothing for a test's own
+    /// reachability.
+    let observe: @Sendable (_ handler: @escaping @Sendable (NetworkPathReport) -> Void) -> Void
+
     /// Reachability that answers with `isOnline`.
-    init(isOnline: @escaping @Sendable () -> Bool) {
+    init(
+        isOnline: @escaping @Sendable () -> Bool,
+        observe: @escaping @Sendable (_ handler: @escaping @Sendable (NetworkPathReport) -> Void) -> Void = { _ in }
+    ) {
         self.isOnline = isOnline
+        self.observe = observe
     }
 
     /// The system's answer: the current network path, followed by one
@@ -25,7 +35,7 @@ struct NetworkReachability: Sendable {
     /// the app.
     static let system: NetworkReachability = {
         let monitor = NetworkPathMonitor()
-        return NetworkReachability { monitor.isOnline }
+        return NetworkReachability(isOnline: { monitor.isOnline }, observe: { monitor.addObserver($0) })
     }()
 
     /// Always online: for tests.
@@ -48,6 +58,35 @@ struct NetworkReachability: Sendable {
     }
 }
 
+// MARK: - What a Path Report Says
+
+/// One report of the network path: whether it is satisfied, and whether it
+/// is expensive (cellular or a hotspot) or constrained (Low Data Mode).
+struct NetworkPathReport: Equatable, Sendable {
+    var isSatisfied: Bool
+    var isExpensive: Bool
+    var isConstrained: Bool
+
+    /// The report of an `NWPath`.
+    init(_ path: NWPath) {
+        isSatisfied = path.status != .unsatisfied
+        isExpensive = path.isExpensive
+        isConstrained = path.isConstrained
+    }
+
+    /// A report with the given answers.
+    init(isSatisfied: Bool, isExpensive: Bool = false, isConstrained: Bool = false) {
+        self.isSatisfied = isSatisfied
+        self.isExpensive = isExpensive
+        self.isConstrained = isConstrained
+    }
+
+    /// Whether a download nobody asked for may start: a satisfied path that is neither expensive nor constrained (FR43, section 16).
+    var allowsBackgroundDownloads: Bool {
+        isSatisfied && !isExpensive && !isConstrained
+    }
+}
+
 // MARK: - The Path Monitor
 
 /// One `NWPathMonitor` and the status of the latest path it reported
@@ -64,11 +103,14 @@ private final class NetworkPathMonitor: @unchecked Sendable {
     /// The status of the latest path the monitor reported; nil until its
     /// first report.
     private var latestStatus: NWPath.Status?
+    /// The latest report and the handlers told of each; guarded by `lock`.
+    private var latestReport: NetworkPathReport?
+    private var observers: [@Sendable (NetworkPathReport) -> Void] = []
 
     /// Starts monitoring at once, reporting on a queue of its own.
     init() {
         monitor.pathUpdateHandler = { [weak self] path in
-            self?.record(path.status)
+            self?.record(path)
         }
         monitor.start(queue: DispatchQueue(label: "com.textmouth.network-path", qos: .utility))
     }
@@ -82,8 +124,23 @@ private final class NetworkPathMonitor: @unchecked Sendable {
         NetworkReachability.isOnline(given: lock.withLock { latestStatus })
     }
 
-    /// Keeps the status of a path the monitor reported.
-    private func record(_ status: NWPath.Status) {
-        lock.withLock { latestStatus = status }
+    /// Keeps the status of a path the monitor reported, and tells the observers.
+    private func record(_ path: NWPath) {
+        let report = NetworkPathReport(path)
+        let handlers = lock.withLock { () -> [@Sendable (NetworkPathReport) -> Void] in
+            latestStatus = path.status
+            latestReport = report
+            return observers
+        }
+        for handler in handlers { handler(report) }
+    }
+
+    /// Adds a handler, and tells it the latest report at once if there is one.
+    func addObserver(_ handler: @escaping @Sendable (NetworkPathReport) -> Void) {
+        let latest = lock.withLock { () -> NetworkPathReport? in
+            observers.append(handler)
+            return latestReport
+        }
+        if let latest { handler(latest) }
     }
 }

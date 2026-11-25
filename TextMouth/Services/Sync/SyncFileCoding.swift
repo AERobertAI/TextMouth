@@ -31,6 +31,19 @@ enum SyncFileCoding {
         try? decoder().decode(type, from: data)
     }
 
+    /// `value` as a `JSONValue`, the form a register holds it in.
+    static func jsonValue<T: Encodable>(of value: T) throws -> JSONValue {
+        let data = try encode(value)
+        guard let json = decode(JSONValue.self, from: data) else { throw SyncProblem.damaged(file: "value") }
+        return json
+    }
+
+    /// The `T` a register's `JSONValue` holds, or nil when it holds another shape.
+    static func value<T: Decodable>(_ json: JSONValue, as type: T.Type) -> T? {
+        guard let data = try? encode(json) else { return nil }
+        return decode(type, from: data)
+    }
+
     /// The highest `formatVersion` this TextMouth reads; a file with a
     /// higher one is left alone, and "a later TextMouth" is said.
     static let supportedFormatVersion = 1
