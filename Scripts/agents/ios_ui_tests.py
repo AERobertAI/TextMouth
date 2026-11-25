@@ -397,6 +397,15 @@ SECONDS_PER_TEST = {UI_BUNDLE: 25.0, UNIT_BUNDLE: 0.05}
 TARGET_SHARD_SECONDS = 800
 # The most iPhone jobs: a free account runs 5 macOS jobs at once, and the Mac tests' shards share them.
 MAX_SHARDS = 3
+# The most iPhone jobs when nothing else wants the slots: a request for one Mac shard leaves 4 of the 5 to the iPhone
+# (plan_shards.py). A job's set-up, 14 minutes in the median (the platform's download 3.8, the Simulator build 4.9, the
+# simulator's set-up 5.7; the 39 jobs of the 22 trains of November 23 to 25), is the same however few tests it holds, so a
+# fourth job takes the tests' share from about 15 minutes (unit tests 3.6, interface tests 11.3) down to about 11.
+MAX_SHARDS_WITH_ROOM = 4
+# One iPhone job's share of tests, in seconds, past which another job is taken when slots stand idle (the same room): an
+# idle macOS slot costs the Mac tests nothing, so the plan splits finer than TARGET_SHARD_SECONDS, which weighs a job against
+# the Mac shards it would displace. At 600 seconds a split saves about 5 minutes of the slowest job's tests.
+TARGET_SHARD_SECONDS_WITH_ROOM = 600
 
 
 def load_times(path=TIMES_FILE):
