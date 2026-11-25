@@ -177,8 +177,10 @@ def parse_areas(path) -> List[Area]:
     Format: `#` starts a comment (a whole line, or after a name); `[name] one-line
     description` starts an area (name: lowercase letters, digits and hyphens);
     every other non-blank line is one test class name belonging to the last
-    area. A class may be listed in two areas, but not twice in one. A malformed
-    line raises AreasError naming the line number.
+    area. A class may be listed in two areas; listed twice in one, it counts once,
+    since two branches that add the same class merge both lines (areas.conf merges
+    as a union, .gitattributes). A malformed line raises AreasError naming the line
+    number.
     """
     areas: List[Tuple[str, str, List[str]]] = []
     for number, raw in enumerate(Path(path).read_text(encoding="utf-8").splitlines(), 1):
@@ -206,7 +208,8 @@ def parse_areas(path) -> List[Area]:
         if not areas:
             raise AreasError(f"{where}: class '{name}' comes before any [area] line")
         if name in areas[-1][2]:
-            raise AreasError(f"{where}: class '{name}' is listed twice in area '{areas[-1][0]}'")
+            # A repeat in one area: two branches each added it, and the union merge kept both lines. It means what one does.
+            continue
         areas[-1][2].append(name)
     return [Area(name, description, tuple(classes)) for name, description, classes in areas]
 
