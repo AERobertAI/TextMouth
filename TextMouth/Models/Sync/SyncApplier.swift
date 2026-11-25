@@ -88,6 +88,8 @@ private struct SyncApplier {
         guard let mark = entries[.book(id, .presence)], mark.value == .null else { return false }
         let later = (entriesOfBook[id] ?? [:]).values.contains { entry in
             if case .book(_, .presence) = entry.key { return false }
+            // Only keeping a book is a sign it is wanted; stopping to keep it is not.
+            if case .book(_, .keep) = entry.key, entry.value != .bool(true) { return false }
             // A bookmark or list place that was only removed is no sign the book lives. A Keep on
             // All Devices that came later is one: a person wanted the book.
             if entry.key.marksRemoval(entry.value) { return false }
@@ -219,7 +221,8 @@ private struct SyncApplier {
     private mutating func addNewBooks() {
         let known = Set(source.books.map(\.id))
         let ownHashes = Set(source.books.filter { !$0.isFeedItem }.map(\.md5Hash))
-        var candidates: [SyncNewBook] = []
+        // A candidate with the keys and records applying it made, which count only if it is offered.
+        var candidates: [(new: SyncNewBook, keys: Set<SyncKey>, records: [SyncKey: JSONValue])] = []
         for (id, group) in entriesOfBook where !known.contains(id) {
             guard let presence = group[.book(id, .presence)], presence.value != .null || !isRemoved(id),
                   let contentEntry = group[.book(id, .content)],
@@ -230,16 +233,29 @@ private struct SyncApplier {
                 id: id, title: "", format: content.format, filePath: "", md5Hash: content.md5Hash,
                 dateAdded: content.dateAdded, totalWordCount: content.totalWordCount, audioDuration: content.audioDuration
             )
+            // Applying the entries notes keys and records; set what was noted before aside, so that
+            // what this candidate notes can be kept or dropped with it.
+            let notedKeys = appliedKeys, notedRecords = entriesToRecord
+            appliedKeys = []
+            entriesToRecord = [:]
             book = apply(to: book, folderID: nil)
-            appliedKeys.formUnion([.book(id, .content), .book(id, .presence)])
-            candidates.append(SyncNewBook(book: book, content: content))
+            let keys = appliedKeys.union([.book(id, .content)]), records = entriesToRecord
+            appliedKeys = notedKeys
+            entriesToRecord = notedRecords
+            candidates.append((SyncNewBook(book: book, content: content), keys, records))
         }
         // Oldest first, so every device adds them in one order; of two that are one book (the same
         // file, imported on two devices) the older is offered and the other is left out.
         var seenHashes = Set<String>()
-        booksToAdd = candidates
-            .sorted { ($0.content.dateAdded, $0.book.id.uuidString) < ($1.content.dateAdded, $1.book.id.uuidString) }
-            .filter { new in new.content.md5Hash.isEmpty || seenHashes.insert(new.content.md5Hash).inserted }
+        let offered = candidates
+            .sorted { ($0.new.content.dateAdded, $0.new.book.id.uuidString) < ($1.new.content.dateAdded, $1.new.book.id.uuidString) }
+            .filter { $0.new.content.md5Hash.isEmpty || seenHashes.insert($0.new.content.md5Hash).inserted }
+        // A copy that was left out is no book of this library: none of its keys is applied.
+        for candidate in offered {
+            appliedKeys.formUnion(candidate.keys)
+            entriesToRecord.merge(candidate.records, uniquingKeysWith: { _, new in new })
+        }
+        booksToAdd = offered.map { $0.new }
         if !booksToAdd.isEmpty { movesPackages = true }
     }
 
