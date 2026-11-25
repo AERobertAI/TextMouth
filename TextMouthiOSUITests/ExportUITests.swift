@@ -125,7 +125,8 @@ final class ExportUITests: TextMouthUITestCase {
         XCTAssertTrue((app.buttons["Braille code"].value as? String ?? "").hasPrefix("Unified English Braille"), "Braille code says \(String(describing: app.buttons["Braille code"].value))")
         // Each row says its value, as the Mac's pop-ups and steppers do.
         let rows = try elementsInOrder(of: app)
-        func value(of label: String) -> String? { rows.first { $0.label == label }?.value }
+        // The first element of the label that has a value: a stepper's words, shown beside it, have none.
+        func value(of label: String) -> String? { rows.first { $0.label == label && $0.value != nil }?.value }
         XCTAssertEqual(value(of: "Cells per line"), "40 cells")
         XCTAssertEqual(value(of: "Lines per page"), "25 lines")
         XCTAssertEqual(value(of: "Line ends"), "CR LF")
