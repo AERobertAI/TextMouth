@@ -117,6 +117,8 @@ final class ExportUITests: TextMouthUITestCase {
         XCTAssertTrue(app.buttons["Markdown"].isSelected, "Markdown, the current choice, is not marked selected")
         // BRF brings the braille rows, in the Mac's order, after the Convert to row.
         app.buttons["BRF"].tap()
+        // The choice sheet is still sliding away when the rows beneath it exist: read the order only once it is gone.
+        XCTAssertTrue(app.navigationBars["Convert to"].waitForNonExistence(timeout: Self.patience), "The Convert to sheet stayed open after a choice")
         XCTAssertTrue(app.buttons["Braille code"].appears(within: Self.patience), "No Braille code row under BRF:\n\(app.debugDescription)")
         assertOrder(
             ["Convert to", "Braille code", "Cells per line", "Lines per page", "Braille page numbers", "Line ends", "Braille file characters"],
@@ -157,11 +159,13 @@ final class ExportUITests: TextMouthUITestCase {
         // PEF has no line ends or braille file characters.
         tap(app.buttons["Convert to"], until: app.navigationBars["Convert to"], in: app, what: "the Convert to row")
         app.buttons["PEF"].tap()
+        XCTAssertTrue(app.navigationBars["Convert to"].waitForNonExistence(timeout: Self.patience), "The Convert to sheet stayed open after a choice")
         XCTAssertTrue(app.buttons["Braille code"].appears(within: Self.patience))
         XCTAssertFalse(app.buttons["Line ends"].exists, "A PEF has line ends")
         XCTAssertFalse(app.buttons["Braille file characters"].exists, "A PEF has braille file characters")
         tap(app.buttons["Convert to"], until: app.navigationBars["Convert to"], in: app, what: "the Convert to row")
         app.buttons["HTML"].tap()
+        XCTAssertTrue(app.navigationBars["Convert to"].waitForNonExistence(timeout: Self.patience), "The Convert to sheet stayed open after a choice")
         XCTAssertTrue(kindSwitch("Text as HTML", in: app).appears(within: Self.patience), "The switch does not name HTML:\n\(app.debugDescription)")
         XCTAssertEqual(app.buttons["Convert to"].value as? String, "HTML")
 
