@@ -101,6 +101,7 @@ Run these from the repository root:
 - `make check-ios-plist` fails when the iOS app's `TextMouth/Platform/iOS/Info.plist` is not what `Scripts/ios/sync-info-plist.py` writes from the Mac's `TextMouth/Resources/Info.plist`.
   Run `python3 -I Scripts/ios/sync-info-plist.py` after changing the Mac's plist, then commit both (see [The two apps and the platform folders](../architecture/platforms.md)).
 - `make ios-size` builds the iPhone app for a device under the heavy-work lock and measures it (see [The iPhone app's size](building-ios.md)).
+- `make install-ios` builds the iPhone app signed and installs it on your own iPhone, with no Xcode window; the one-time steps are under [Installing on your own iPhone](building-ios.md#installing-on-your-own-iphone).
 - `make xcode` regenerates the project and opens it in Xcode.
 - `make clean` removes the build products.
 - `make help` lists these targets.

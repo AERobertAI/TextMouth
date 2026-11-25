@@ -12,7 +12,7 @@ How a Release build is made smaller, which builds take which settings, and how t
 - **How a build takes them.**
   - The Makefile's `SIZE_SETTINGS` runs the script for a Release build only, and `make build` gives its words to `xcodebuild` on the command line, as it does `SMALL_CODE`, so they reach every target and every Swift package, which project.yml cannot.
   - `make check` and `make install` build through `make build`.
-  - `Scripts/ios/app-size.py build` takes the same list from `size_settings.settings()` for the iPhone app's device build, so `make ios-size` and `make check`'s iPhone step have them too.
+  - `Scripts/ios/app-size.py build` takes the same list from `size_settings.settings()` for the iPhone app's device build, through `Scripts/ios/iphone_release.py`, so `make ios-size`, `make check`'s iPhone step, and `make install-ios` (light unless given `SIZE_PROFILE=full`) have them too.
 - **The profiles.**
   Full link-time optimization's link takes several GB of memory for some minutes, which can freeze a Mac with 8 GB, so a build takes the settings by its profile, `SIZE_PROFILE`:
   - `full`, every setting: `make install` and `make release`, the app that ships;

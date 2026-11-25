@@ -120,6 +120,7 @@ Run `make bump-minor` instead when that day holds a change that is not backward 
 - run `make release-goldens` before the user installs, and after a change to the Release build settings (`Scripts/size_settings.py`), through `Scripts/agents/run_locked.py` while other agents work ([The Release golden tests](../developer/building-release.md#the-release-golden-tests)).
   On a Mac it tests the light profile; the full build's golden tests wait for a GitHub job (TL22);
 - never build the full profile on the Mac (`make install`, `make release`, `SIZE_PROFILE=full`): its link takes several GB of memory and once froze the user's Mac, and installing is the user's;
+- never run `make install-ios` or its script without `--dry-run`: it signs with the user's Apple ID and installs on their iPhone, and is the user's;
 - and record the bump in the TODO.
 
 MAJOR stays 0 until the user calls TextMouth released.
