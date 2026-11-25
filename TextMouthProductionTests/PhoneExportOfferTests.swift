@@ -45,13 +45,13 @@ final class PhoneExportOfferTests: XCTestCase {
     /// the Mac's, and Export dimmed until it can be pressed.
     func testTheBarBeforeAnExport() {
         for stage in [PhoneExportOffer.Stage.listing, .ready] {
-            let dimmed = PhoneExportOffer.bar(stage: stage, canExport: false)
+            let dimmed = PhoneExportOffer.bar(stage: stage, canExport: false).buttons
             XCTAssertEqual(dimmed.map(\.role), [.cancel, .export])
             XCTAssertEqual(dimmed.map(\.title), ["Cancel", "Export"])
             XCTAssertEqual(dimmed.map(\.hint), ["", "Exports the checked items to the folder."])
             XCTAssertEqual(dimmed.map(\.isEnabled), [true, false])
 
-            let ready = PhoneExportOffer.bar(stage: stage, canExport: true)
+            let ready = PhoneExportOffer.bar(stage: stage, canExport: true).buttons
             XCTAssertEqual(ready.map(\.isEnabled), [true, true])
         }
     }
@@ -59,7 +59,7 @@ final class PhoneExportOfferTests: XCTestCase {
     /// While an export runs, Stop takes Cancel's place with the Mac's hint,
     /// and Export is dimmed whatever else is so.
     func testTheBarWhileAnExportRuns() {
-        let bar = PhoneExportOffer.bar(stage: .exporting, canExport: false)
+        let bar = PhoneExportOffer.bar(stage: .exporting, canExport: false).buttons
 
         XCTAssertEqual(bar.map(\.role), [.stop, .export])
         XCTAssertEqual(bar.map(\.title), ["Stop", "Export"])
@@ -71,7 +71,7 @@ final class PhoneExportOfferTests: XCTestCase {
     /// which stays open to say what the export did, can be closed, and a
     /// second export can be made from it.
     func testTheBarOnceAnExportHasEnded() {
-        let bar = PhoneExportOffer.bar(stage: .finished, canExport: true)
+        let bar = PhoneExportOffer.bar(stage: .finished, canExport: true).buttons
 
         XCTAssertEqual(bar.map(\.role), [.close, .export])
         XCTAssertEqual(bar.map(\.title), ["Close", "Export"])

@@ -81,12 +81,23 @@ enum PhoneExportOffer {
         let isEnabled: Bool
     }
 
-    /// The bar's buttons at `stage`, in VoiceOver's order, which is the
-    /// order the spec gives after the title: Cancel, or Stop while an export
-    /// runs, or Close once one has ended; then Export. Export is dimmed
-    /// unless `canExport`: a folder is chosen and an available kind is on
+    /// The sheet's bar: its two buttons.
+    struct Bar: Equatable, Sendable {
+        /// Cancel, or Stop while an export runs, or Close once one has ended.
+        let leading: BarButton
+        /// Export.
+        let export: BarButton
+
+        /// Both, in VoiceOver's order: the leading button first.
+        var buttons: [BarButton] { [leading, export] }
+    }
+
+    /// The bar at `stage`, in VoiceOver's order, which is the order the spec
+    /// gives after the title: Cancel, or Stop while an export runs, or Close
+    /// once one has ended; then Export. Export is dimmed unless `canExport`: a
+    /// folder is chosen and an available kind is on
     /// (`BookExportModel.canExport`).
-    static func bar(stage: Stage, canExport: Bool) -> [BarButton] {
+    static func bar(stage: Stage, canExport: Bool) -> Bar {
         let leading: BarButton
         switch stage {
         case .listing, .ready:
@@ -102,7 +113,7 @@ enum PhoneExportOffer {
             hint: BookExportWording.exportHint,
             isEnabled: canExport
         )
-        return [leading, export]
+        return Bar(leading: leading, export: export)
     }
 
     // MARK: - The Folder Row

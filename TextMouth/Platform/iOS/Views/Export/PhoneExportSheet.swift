@@ -157,10 +157,12 @@ struct PhoneExportSheet: View {
     /// Cancel, Stop, or Close, then Export, as `PhoneExportOffer.bar` decides.
     @ToolbarContentBuilder
     private var bar: some ToolbarContent {
-        ForEach(PhoneExportOffer.bar(stage: stage, canExport: model.canExport), id: \.role) { button in
-            PhoneSheetButton(title: button.title, hint: button.hint, isEnabled: button.isEnabled) {
-                press(button.role)
-            }
+        let buttons = PhoneExportOffer.bar(stage: stage, canExport: model.canExport)
+        PhoneSheetButton(title: buttons.leading.title, hint: buttons.leading.hint, isEnabled: buttons.leading.isEnabled) {
+            press(buttons.leading.role)
+        }
+        PhoneSheetButton(title: buttons.export.title, hint: buttons.export.hint, isEnabled: buttons.export.isEnabled) {
+            press(buttons.export.role)
         }
     }
 
