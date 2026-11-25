@@ -286,7 +286,7 @@ final class SyncEngineTests: XCTestCase {
         _ = try await mac.exchange(in: folder)
 
         struct Stop: Error {}
-        await phone.setStopBetweenSaves { throw Stop() }
+        await phone.setStopAfter { step in if step == .registers { throw Stop() } }
         do {
             _ = try await phone.exchange(in: folder)
             XCTFail("the stop was not reached")

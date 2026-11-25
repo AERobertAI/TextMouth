@@ -19,6 +19,13 @@ struct SyncExchangeResult: Equatable, Sendable {
     var tookNewIdentity = false
 }
 
+/// The steps of a run, in order, after each of which a test stops the engine to see what a crash there leaves
+/// (section 11): the record, the outbox write, the copy into the folder, the upload check, the read of other
+/// devices' files, the merge, the apply, and the saves of the registers, the clock, and the cursors.
+enum SyncStep: String, CaseIterable, Sendable {
+    case record, outboxWrite, copy, upload, read, merge, apply, registers, clock, cursors
+}
+
 /// What recording the library did.
 struct SyncRecordResult: Equatable, Sendable {
     /// How many keys were recorded.
@@ -77,12 +84,12 @@ actor SyncEngine {
     /// The most book removals one record may send: more, or most of the library at once, is held back.
     static let massRemovalLimit = 20
 
-    /// A stop a test injects between the registers' save and the cursors', to prove their order.
-    private var betweenSaves: (@Sendable () throws -> Void)?
+    /// A stop a test injects after a step, to see what a crash there leaves (tests only; nothing sets it in the app).
+    private var stopAfter: (@Sendable (SyncStep) throws -> Void)?
 
-    /// Sets the stop between the saves (tests only).
-    func setStopBetweenSaves(_ stop: (@Sendable () throws -> Void)?) {
-        betweenSaves = stop
+    /// Sets the stop after steps (tests only).
+    func setStopAfter(_ stop: (@Sendable (SyncStep) throws -> Void)?) {
+        stopAfter = stop
     }
 
     /// This device's ID.
@@ -188,6 +195,7 @@ actor SyncEngine {
             return SyncEntry(key: pair.key, value: pair.value, stamp: stamp, byHand: pair.byHand)
         }
         let seq = try outbox.append(stamped)
+        try stopAfter?(.outboxWrite)
         try local.saveClock(clock)
         registers.merge(stamped)
         registers.throughSeq = seq
@@ -234,6 +242,7 @@ actor SyncEngine {
         if joining && recorded > 0 {
             try outbox.updateDevice { $0.hasRecordedLibrary = true }
         }
+        try stopAfter?(.record)
         return SyncRecordResult(recorded: recorded, heldRemovals: held)
     }
 
@@ -339,7 +348,9 @@ actor SyncEngine {
                 deviceFolder = folder.deviceFolder(outbox.device.deviceID)
                 result.filesCopied = try await outbox.copy(into: deviceFolder, using: folder.access, now: now())
             }
+            try stopAfter?(.copy)
             result.uploadProblem = try outbox.refreshUploads(in: deviceFolder, using: folder.access)
+            try stopAfter?(.upload)
             try outbox.retireUploaded(now: now())
         } catch {
             result.pendingChanges = outbox.pendingChanges
@@ -351,6 +362,7 @@ actor SyncEngine {
 
         let reader = SyncReader(folder: folder, ownDeviceID: outbox.device.deviceID, limits: limits)
         let read = try await reader.read(after: cursors)
+        try stopAfter?(.read)
         result.read = read
         var refused = 0
         for entry in read.entries where !clock.observe(entry.stamp, at: now()) { refused += 1 }
@@ -361,11 +373,14 @@ actor SyncEngine {
         // What was read is merged even when a later TextMouth's file was left alone. The registers and the
         // clock are saved before the cursors, so a crash between them re-reads files, never loses their entries.
         result.changedKeys = registers.merge(read.entries)
+        try stopAfter?(.merge)
         try local.saveRegisters(registers)
-        try betweenSaves?()
+        try stopAfter?(.registers)
         try local.saveClock(clock)
+        try stopAfter?(.clock)
         cursors = read.cursors
         try local.saveCursors(cursors)
+        try stopAfter?(.cursors)
         return result
     }
 
@@ -387,6 +402,7 @@ actor SyncEngine {
     /// Takes the values applied to the library into the baseline, key by key, so a change made
     /// meanwhile is still found; and records the entries applying made (same-named folders folded).
     func didApply(_ application: SyncApplication, keys: Set<SyncKey>) throws {
+        try stopAfter?(.apply)
         // The baseline takes the winning entry of each applied key, through `absorbApplied` alone.
         baseline.absorbApplied(keys, from: registers)
         try local.saveBaseline(baseline)
