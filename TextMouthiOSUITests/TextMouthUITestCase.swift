@@ -593,6 +593,9 @@ class TextMouthUITestCase: XCTestCase {
     /// combined run. Every kind in `auditKinds`, the seven this SDK has, still
     /// runs; a kind a later SDK adds would need a row there.
     ///
+    /// With `acceptingTextCutByTheScroll`, a clipped-text finding on a row whose frame crosses the top (the navigation bar's
+    /// bottom) or the bottom edge of the screen is accepted, kept with the results: it is what scrolling does to a row.
+    ///
     /// Each finding names its element with its type, label, value, identifier,
     /// and frame in points (`trace(of:named:)`), so that a finding can be found on
     /// the screenshot kept with the results. When any finding is not accepted,
@@ -604,9 +607,13 @@ class TextMouthUITestCase: XCTestCase {
         types: XCUIAccessibilityAuditType = .all,
         informing informed: XCUIAccessibilityAuditType = [],
         accepting accepted: [Accepted] = [],
+        acceptingTextCutByTheScroll: Bool = false,
         file: StaticString = #filePath,
         line: UInt = #line
     ) throws {
+        // Where a scrolled screen's rows are cut: under the navigation bar at the top, and at the screen's bottom edge.
+        let topEdge = app.navigationBars.firstMatch.exists ? app.navigationBars.firstMatch.frame.maxY : app.frame.minY
+        let bottomEdge = app.frame.maxY
         var findings: [String] = []
         var acceptedFindings: [String] = []
         var informingFindings: [String] = []
@@ -620,6 +627,12 @@ class TextMouthUITestCase: XCTestCase {
                 let said = "[\(Self.name(of: issue.auditType))] \(Self.trace(of: snapshot, named: issue.element != nil)): \(issue.compactDescription). \(issue.detailedDescription)"
                 if let match = accepted.first(where: { $0.matches(type: issue.auditType, label: label, description: issue.compactDescription) }) {
                     acceptedFindings.append("\(said) Accepted: \(match.why).")
+                } else if acceptingTextCutByTheScroll, issue.auditType == .textClipped, let frame = snapshot?.frame,
+                          frame.minY < topEdge || frame.maxY > bottomEdge {
+                    // A named row the scroll cuts at an edge (a caption's top 5 points under the bar, in train 1124-2049): the
+                    // audit cannot tell a cut by the edge from a cut of the text. The same screen audited as it first
+                    // appears, unscrolled, holds every row whole, and each caption wraps to its words (`fixedSize`).
+                    acceptedFindings.append("\(said) Accepted: the row crosses the edge of a scrolled screen (top \(topEdge), bottom \(bottomEdge)).")
                 } else if !informed.isDisjoint(with: issue.auditType) {
                     // Kept with the results, and not failed.
                     informingFindings.append(said)

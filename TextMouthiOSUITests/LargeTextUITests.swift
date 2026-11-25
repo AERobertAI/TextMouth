@@ -50,7 +50,11 @@ final class LargeTextUITests: TextMouthUITestCase {
         app.swipeUp()
         app.swipeUp()
         try waitUntilStill(app)
-        try audit(app, screen: "Settings at the largest text, scrolled", types: Self.sizeFindings, accepting: [.navigationTitle("Settings"), .scrolledPastTheEdge, .unnamedUnsupported, .unnamedPartlyUnsupported])
+        try audit(
+            app, screen: "Settings at the largest text, scrolled", types: Self.sizeFindings,
+            accepting: [.navigationTitle("Settings"), .scrolledPastTheEdge, .unnamedUnsupported, .unnamedPartlyUnsupported],
+            acceptingTextCutByTheScroll: true
+        )
     }
 
     /// The sleep timer switch's label, in Settings at the largest text, is taller than its words need at the frame's

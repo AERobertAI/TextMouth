@@ -250,7 +250,8 @@ final class BrailleTablePrintOnlyTests: XCTestCase {
         XCTAssertEqual(reads, ["fixture-two-way.ctb", "fixture-print-only.ctb", "fixture-chardefs.uti"], "more than the named files were read")
         XCTAssertNil(storable("fixture-wrapper-lacking.tbl"), "a wrapper of a file the folder lacks is kept")
         XCTAssertEqual(storable("fixture-wrapper-whole.tbl"), "fixture-wrapper-whole.tbl")
-        XCTAssertEqual(reads.suffix(2), ["fixture-wrapper-lacking.tbl", "fixture-wrapper-whole.tbl"])
+        // The wrapper that lacks a file is refused before its header is read; the whole one is read.
+        XCTAssertEqual(reads.suffix(2), ["fixture-chardefs.uti", "fixture-wrapper-whole.tbl"])
 
         reads = []
         for value in ["en-ueb-g2.ctb", "mac:fixture-two-way.ctb", "../fixture-two-way.ctb", ".fixture.ctb", "", "a,b.ctb"] {
