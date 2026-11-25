@@ -510,7 +510,9 @@ extension SyncMerge {
     /// place's `lastUpdated`, a bookmark's date, or when a book was last opened; otherwise the
     /// lowest stamp. So what the device brings never outranks what is already in the store,
     /// and still wins where nothing competes.
-    static func joiningStamp(for key: SyncKey, value: JSONValue, device: String) -> SyncStamp {
+    /// A date after `now` counts as `now`: a place dated in the future (a clock that was ahead)
+    /// must not get a stamp that `SyncClock.observe` then refuses as too far ahead.
+    static func joiningStamp(for key: SyncKey, value: JSONValue, device: String, now: Date = Date()) -> SyncStamp {
         let dated: JSONValue?
         switch key {
         case .book(_, .position): dated = value["lastUpdated"]
@@ -519,6 +521,6 @@ extension SyncMerge {
         default: dated = nil
         }
         let milliseconds = dated.flatMap { SyncValueCoding.date(from: $0) }.map { SyncClock.milliseconds(of: $0) } ?? 0
-        return SyncStamp(wall: max(0, milliseconds), counter: 0, device: device)
+        return SyncStamp(wall: min(max(0, milliseconds), SyncClock.milliseconds(of: now)), counter: 0, device: device)
     }
 }
