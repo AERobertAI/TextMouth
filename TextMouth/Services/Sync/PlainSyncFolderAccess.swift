@@ -138,8 +138,8 @@ struct PlainSyncFolderAccess: SyncFolderAccess {
     private static func coordinated<T>(reading url: URL, _ body: (URL) throws -> T) throws -> T {
         var coordinationError: NSError?
         var result: Result<T, Error>?
-        NSFileCoordinator(filePresenter: nil).coordinate(readingItemAt: url, options: [.withoutChanges], error: &coordinationError) {
-            result = Result { try body($0) }
+        NSFileCoordinator(filePresenter: nil).coordinate(readingItemAt: url, options: [.withoutChanges], error: &coordinationError) { accessed in
+            result = Result { try body(accessed) }
         }
         if let coordinationError { throw coordinationError }
         return try result!.get()
@@ -149,8 +149,8 @@ struct PlainSyncFolderAccess: SyncFolderAccess {
     private static func coordinated<T>(writing url: URL, replacing: Bool, _ body: (URL) throws -> T) throws -> T {
         var coordinationError: NSError?
         var result: Result<T, Error>?
-        NSFileCoordinator(filePresenter: nil).coordinate(writingItemAt: url, options: replacing ? [.forReplacing] : [], error: &coordinationError) {
-            result = Result { try body($0) }
+        NSFileCoordinator(filePresenter: nil).coordinate(writingItemAt: url, options: replacing ? [.forReplacing] : [], error: &coordinationError) { accessed in
+            result = Result { try body(accessed) }
         }
         if let coordinationError { throw coordinationError }
         return try result!.get()

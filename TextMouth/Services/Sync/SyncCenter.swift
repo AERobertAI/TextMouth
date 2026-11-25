@@ -6,7 +6,7 @@ import Foundation
 /// preferences live, who this device is, how a bookmark becomes folder
 /// access, where a folder lives, how the network is told, and how the
 /// clock and the announcer work.
-struct SyncCenterEnvironment: Sendable {
+struct SyncCenterEnvironment {
     /// This device's preferences (`SyncPreferences`).
     var preferences: UserDefaults
     /// The device's name, platform, and the app's version; the install ID is added.
@@ -399,7 +399,7 @@ struct SyncCenterEnvironment: Sendable {
     /// spent, a problem stops it, or sync stops. Each book is done when its blobs and manifest
     /// have uploaded; its content is then stamped, and the local copies of its blobs evicted.
     private func backUpBooks() async {
-        guard let engine, let access, let storeID, let host, let local, let dataDirectory else { return }
+        guard let engine, let access, let storeID, let local, let dataDirectory else { return }
         let staging = local.stagingFolder
         let free = environment.freeSpace(dataDirectory)
         let budget = StoreBackupBudget.limit(freeSpace: free)
@@ -409,15 +409,15 @@ struct SyncCenterEnvironment: Sendable {
                 let backup = StoreBackup(folder: folder, storeID: storeID, staging: staging)
                 // Books whose copies have uploaded since the last look are done first.
                 for (bookID, waiting) in await self.awaitingUpload {
-                    await self.completeIfUploaded(bookID, waiting.result, backup: backup, engine: engine, host: host)
+                    await self.completeIfUploaded(bookID, waiting.result, backup: backup, engine: engine)
                 }
                 while !Task.isCancelled {
                     let held = await self.awaitingUpload.values.reduce(Int64(0)) { $0 + $1.bytes }
-                    guard let next = await self.nextBookToBackUp(host: host, engine: engine), held < budget else { break }
+                    guard let next = await self.nextBookToBackUp(engine: engine), held < budget else { break }
                     do {
                         let result = try backup.back(up: next.package, bookID: next.book.id, budget: budget - held)
                         await self.noteCopied(next.book.id, result)
-                        await self.completeIfUploaded(next.book.id, result, backup: backup, engine: engine, host: host)
+                        await self.completeIfUploaded(next.book.id, result, backup: backup, engine: engine)
                     } catch SyncProblem.outOfSpace {
                         throw SyncProblem.outOfSpace
                     } catch let problem as SyncProblem {
@@ -442,7 +442,8 @@ struct SyncCenterEnvironment: Sendable {
     }
 
     /// The next book to back up: one whose content isn't in the registers, whole here, not awaited, not refused.
-    private func nextBookToBackUp(host: any SyncLibraryHost, engine: SyncEngine) async -> (book: Book, package: URL)? {
+    private func nextBookToBackUp(engine: SyncEngine) async -> (book: Book, package: URL)? {
+        guard let host else { return nil }
         let contents = await engine.contents()
         let candidates = host.library.libraryBooks.filter { book in
             let package = BookPackage(book)
@@ -461,7 +462,8 @@ struct SyncCenterEnvironment: Sendable {
 
     /// Once the drive reports a book's blobs uploaded (or reports nothing), stamps its content, notes the
     /// pointer, and evicts the local copies of the blobs; a failure is said in the status.
-    private func completeIfUploaded(_ id: UUID, _ result: StoreBackupResult, backup: StoreBackup, engine: SyncEngine, host: any SyncLibraryHost) async {
+    private func completeIfUploaded(_ id: UUID, _ result: StoreBackupResult, backup: StoreBackup, engine: SyncEngine) async {
+        guard let host else { return }
         switch backup.uploadState(of: result, bookID: id) {
         case .uploading:
             return
