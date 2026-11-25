@@ -33,7 +33,7 @@ struct BrailleExportOptions: TextExportOptions {
     /// the Braille tab chose (`BraillePreferences.importFileCode()`: the
     /// setting, or a test's bound code; North American Braille ASCII for an
     /// id that names no code). A table the export cannot start from
-    /// (`isUnusableMacTable(_:)`: on the Mac one of its own that it does not
+    /// (`exportCannotStart(from:)`: on the Mac one of its own that it does not
     /// offer, or that its check refused this session; on the iPhone one no
     /// export list has) is replaced by the default table, so the pop-ups show
     /// what the export will use (review R4); the braille file characters are
