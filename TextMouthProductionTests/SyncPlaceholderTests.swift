@@ -86,6 +86,32 @@ final class SyncPlaceholderTests: XCTestCase {
         XCTAssertEqual(SyncPlaceholder.pointer(in: package)?.manifest, "0123abcd.manifest.json")
     }
 
+    /// Orphan adoption keeps a placeholder as a book, its file named as its
+    /// record names it, and never takes the pointer for the book's file.
+    func testAdoptionKeepsAPlaceholder() throws {
+        let library = makeLibraryDirectory()
+        var newBook = makeNewBook()
+        newBook.book.filePath = "/ignored/book.epub"
+        let made = try SyncPlaceholder.makePackage(for: newBook, storeID: UUID(), libraryDirectory: library)
+        var adopted = Library()
+        FileImportService.adoptOrphanedTMBPackages(library: &adopted, libraryDirectory: library)
+        let book = try XCTUnwrap(adopted.books.first { $0.id == made.id })
+        XCTAssertEqual(URL(fileURLWithPath: book.filePath).lastPathComponent, "book.epub")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: book.filePath))
+    }
+
+    /// A package with a record and no book file and no pointer is not a
+    /// placeholder: it is adopted as before, which is to say not at all.
+    func testAdoptionStillLeavesAPackageWithNeitherFileNorPointer() throws {
+        let library = makeLibraryDirectory()
+        let made = try SyncPlaceholder.makePackage(for: makeNewBook(), storeID: UUID(), libraryDirectory: library)
+        let package = SyncPlaceholder.packageDirectory(of: made, in: library)
+        try FileManager.default.removeItem(at: package.appendingPathComponent(StorePointer.fileName))
+        var adopted = Library()
+        FileImportService.adoptOrphanedTMBPackages(library: &adopted, libraryDirectory: library)
+        XCTAssertTrue(adopted.books.isEmpty)
+    }
+
     /// A folder path or a package name the library refuses makes no package.
     func testARefusedFolderOrNameMakesNothing() throws {
         let library = makeLibraryDirectory()

@@ -295,6 +295,9 @@ extension LibraryViewModel {
                 return found
             }
             guard presence(of: book.bookFileURL) == .absent else { continue }
+            // A book another device has, not fetched yet, has no file to
+            // find (FR43): its package is where it is.
+            if SyncPlaceholder.isPlaceholder(package: book.tmbDirectory, contentFile: book.bookFileURL) { continue }
             let fileName = book.bookFileURL.lastPathComponent
 
             // First try the expected folder location

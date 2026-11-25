@@ -1,3 +1,4 @@
+import Combine
 import Foundation
 
 // LibraryViewModel+Sync.swift: the library's side of syncing it between
@@ -19,6 +20,19 @@ extension SyncKey {
         case .folder, .readingListOption: return nil
         }
     }
+}
+
+// MARK: - What a Merge Tells the Readers
+
+/// The reading state a sync merge gave a book, which its open readers weigh
+/// (`ReaderViewModel.takeSyncedReadingState(_:)`).
+struct SyncedReadingState {
+    /// The book.
+    let bookID: UUID
+    /// Its place, bookmarks, and settings as the merge made them.
+    let state: Book.ReadingState
+    /// The other device's name, for what is said: "iPhone".
+    let device: String
 }
 
 // MARK: - The Merge of Rows
@@ -198,6 +212,15 @@ extension LibraryViewModel: SyncLibraryHost {
             }
         }
 
+        // The readers of the books whose place changed hear of it, after the
+        // records are queued, so a reader at rest moves to it.
+        let startRows = Dictionary(start.books.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        for id in merge.changedBookIDs where openBookIDs.contains(id) {
+            guard let row = bookByID(id), let before = startRows[id],
+                  row.readingState != before.readingState else { continue }
+            syncedReadingStates.send(SyncedReadingState(bookID: id, state: row.readingState, device: Self.otherDeviceName()))
+        }
+
         // 5. Removals: a book open in a reader waits for the next sync.
         for id in application.booksToRemove {
             guard let book = bookByID(id) else { continue }
@@ -215,6 +238,24 @@ extension LibraryViewModel: SyncLibraryHost {
         return merge.appliedKeys(of: application, failed: failed)
     }
 
+    /// Tells the cloud notes whether sync is on, now and whenever the sync's
+    /// status changes, so a library with a sync folder shows In Cloud for the
+    /// books it has not fetched (FR43).
+    func observeSyncStatus() {
+        syncStatusSubscription = SyncCenter.shared.$status
+            .map(\.isOn)
+            .removeDuplicates()
+            .receive(on: DispatchQueue.main)
+            .sink { isOn in BookCloudStates.shared.setSyncIsOn(isOn) }
+    }
+
+    /// The name of the device whose changes arrived last, from the sync's
+    /// status, or the other platform's name where none has been heard from.
+    private static func otherDeviceName() -> String {
+        let heard = SyncCenter.shared.status.lastHeard
+        return heard.max { $0.value < $1.value }?.key ?? "iPhone" // l10n: no (a product name)
+    }
+
     /// The store the placeholders' pointers name. sync-store's `SyncCenter`
     /// does not publish the store's ID, so a placeholder names the nil UUID;
     /// the fetch reads the manifest the pointer names, not the store's ID.
@@ -224,9 +265,34 @@ extension LibraryViewModel: SyncLibraryHost {
     /// 16): this Mac keeps them downloaded as books kept on this Mac are,
     /// and, where the network allows (`mayDownload`: a path that is neither
     /// expensive nor constrained), downloads those evicted.
+    ///
+    /// Each placeholder's state is recorded as In Cloud first, so the rows
+    /// say so and the kept books' downloads find them: the cloud refresher
+    /// runs only while a Mac Library window is open, so a sync does this
+    /// itself (section 16).
     func syncDidApply(keptBookIDs: Set<UUID>, mayDownload: Bool) {
         KeptBooks.shared.setSyncedBooks(keptBookIDs)
-        guard mayDownload else { return }
-        cloudCommands.downloadEvictedKeptBooks(in: self)
+        let books = library.books
+        Task { @MainActor in
+            // Looking for pointers is file work, so it is off the main thread.
+            let placeholders = await OffMainWork.run {
+                books.filter {
+                    SyncPlaceholder.isPlaceholder(package: $0.tmbDirectory, contentFile: $0.bookFileURL)
+                }.map(\.id)
+            }
+            Self.recordInCloud(placeholders)
+            if mayDownload {
+                cloudCommands.downloadEvictedKeptBooks(in: self)
+            }
+        }
+    }
+
+    /// Records the books `ids`, placeholders, as In Cloud in the shared
+    /// states, but never over a download under way, which owns its book's state.
+    static func recordInCloud(_ ids: [UUID], in states: BookCloudStates = .shared) {
+        for id in ids {
+            if case .downloading? = states.state(of: id) { continue }
+            states.record(.inCloud, for: id)
+        }
     }
 }

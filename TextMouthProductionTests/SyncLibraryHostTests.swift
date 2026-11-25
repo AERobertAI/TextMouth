@@ -210,6 +210,17 @@ final class SyncLibraryHostTests: XCTestCase {
         XCTAssertEqual(try BookInfo.load(from: book.tmbDirectory).state.readingPosition?.characterOffset, 100)
     }
 
+    /// A placeholder is recorded as In Cloud, but a download under way keeps its own state.
+    func testPlaceholdersAreRecordedInCloudButNotOverADownload() {
+        let states = BookCloudStates()
+        let waiting = UUID(), downloading = UUID()
+        let progress = BookDownloadProgress(completedFiles: 0, totalFiles: 2, completedBytes: 0, totalBytes: 10)
+        states.record(.downloading(progress), for: downloading)
+        LibraryViewModel.recordInCloud([waiting, downloading], in: states)
+        XCTAssertEqual(states.state(of: waiting), .inCloud)
+        XCTAssertEqual(states.state(of: downloading), .downloading(progress))
+    }
+
     /// The books kept on all devices are kept on this Mac too, and the
     /// listener's own keep is a different choice.
     func testSyncedBooksAreKept() {

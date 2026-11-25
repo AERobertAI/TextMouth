@@ -1048,7 +1048,8 @@ struct LibraryView: View {
                 skipsFinished: list.skipsFinished,
                 removesFinished: list.removesFinished,
                 keepsBooks: keptBooks.keepsReadingListBooks,
-                showsKeepChoice: cloudStates.showsCloudNotes,
+                // Keep on This Mac is for a cloud library; sync keeps its own choice.
+                showsKeepChoice: cloudStates.libraryLocation.isCloud,
                 chooseContinuation: { libraryViewModel.setReadingListContinuation($0) },
                 chooseSkipsFinished: { libraryViewModel.setReadingListSkipsFinished($0) },
                 chooseRemovesFinished: { libraryViewModel.setReadingListRemovesFinished($0) },

@@ -4099,10 +4099,17 @@ enum FileImportService {
             ? recordedName
             : tmbContents.first(where: isPackageContentName)
 
-        guard let fileName = bookFileName else { return nil }
+        // A package that holds a sync pointer and no book file is a book
+        // another device has, not fetched yet (FR43): it is kept as a
+        // placeholder, its file named as its record names it.
+        let isPlaceholder = bookFileName == nil
+            && isPackageContentName(recordedName)
+            && SyncPlaceholder.pointer(in: url) != nil
+        guard let fileName = bookFileName ?? (isPlaceholder ? recordedName : nil) else { return nil }
         let bookFile = url.appendingPathComponent(fileName)
         switch access.presence(of: bookFile) {
         case .absent:
+            if isPlaceholder { break }
             return nil
         case .inCloud:
             throw MaintenanceFileAccess.refusal(of: bookFile)

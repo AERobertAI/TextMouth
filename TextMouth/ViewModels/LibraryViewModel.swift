@@ -149,6 +149,8 @@ final class LibraryViewModel: ObservableObject {
     let listCache = LibraryListCache()
     /// Tells open readers when the library changes or moves their book.
     let bookUpdates = LibraryBookUpdates()
+    /// Keeps the cloud notes saying whether sync is on (`observeSyncStatus()`, FR43).
+    var syncStatusSubscription: AnyCancellable?
     /// The reading list (FR09), as the library holds it: its books in
     /// reading order and its options. Changed only through the functions in
     /// LibraryViewModel+ReadingList, each of which saves the index.
@@ -447,6 +449,11 @@ final class LibraryViewModel: ObservableObject {
     /// on it, as at a book's end (`holdFinishedBookOnReadingList()`). Sent
     /// synchronously, so the holds are made before the list decides.
     let bookMarkedPlayedByHand = PassthroughSubject<UUID, Never>()
+    /// Tells the readers that a sync merge gave a book another reading state
+    /// (FR43): an open reader at rest moves to the place and says so; a
+    /// playing one plays on, and its next checkpoint wins. Sent
+    /// synchronously, after the merge's rows are in the library.
+    let syncedReadingStates = PassthroughSubject<SyncedReadingState, Never>()
 
     /// Combine subscriptions shared across extension files
     var cancellables = Set<AnyCancellable>()
@@ -552,6 +559,7 @@ final class LibraryViewModel: ObservableObject {
         // With a sync folder set up, the library syncs now (FR43); with none,
         // both calls do nothing.
         SyncCenter.shared.install(host: self, dataDirectory: TextMouthPaths.root)
+        observeSyncStatus()
         SyncCenter.shared.moment(.launch)
     }
 

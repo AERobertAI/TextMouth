@@ -57,19 +57,6 @@ final class SyncOlderVersionsTests: XCTestCase {
         XCTAssertFalse(FileImportService.isPackageContentName(StorePointer.fileName))
     }
 
-    /// An older TextMouth's orphan adoption finds no book file in a
-    /// placeholder, so it adopts nothing and writes nothing: the package is
-    /// left as it was (the plan's point that an older version "can't open a
-    /// placeholder").
-    func testAdoptionLeavesAPlaceholderAlone() throws {
-        let fixture = try makePlaceholderLibrary()
-        let before = try FileManager.default.contentsOfDirectory(atPath: fixture.package.path).sorted()
-        var adopted = Library()
-        FileImportService.adoptOrphanedTMBPackages(library: &adopted, libraryDirectory: fixture.library)
-        XCTAssertTrue(adopted.books.isEmpty)
-        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: fixture.package.path).sorted(), before)
-    }
-
     /// Once the book's file is on the device, the same package is adopted as
     /// any other, naming the book file and never the pointer.
     func testAdoptionTakesAFetchedBookByItsFileNotThePointer() throws {
