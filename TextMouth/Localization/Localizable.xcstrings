@@ -720257,6 +720257,12 @@
       "comment" : "Said aloud after the person chooses Keep on All Devices. %@ is the book's title.",
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ wird auf allen Geräten behalten."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -720268,6 +720274,24 @@
             "state" : "machine_translated",
             "value" : "Se mantiene %@ en todos los dispositivos."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Conservation de %@ sur tous les appareils."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mantenimento di %@ su tutti i dispositivi."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mantendo %@ em todos os dispositivos."
+          }
         }
       }
     },
@@ -720275,6 +720299,12 @@
       "comment" : "Said aloud when the open book moves to the place saved on another device. %@ names that device, such as \"iPhone\".",
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zur gespeicherten Stelle von %@ gewechselt."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -720286,6 +720316,24 @@
             "state" : "machine_translated",
             "value" : "Se pasó al punto guardado en %@."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Passage à la position enregistrée sur %@."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Spostato al punto salvato su %@."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Movido para o ponto salvo em %@."
+          }
         }
       }
     },
@@ -720293,6 +720341,12 @@
       "comment" : "Said aloud when Sync Now finishes and no other device had anything new.",
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Synchronisiert. Nichts Neues."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -720304,6 +720358,24 @@
             "state" : "machine_translated",
             "value" : "Sincronizado. Nada nuevo."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Synchronisé. Rien de nouveau."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sincronizzato. Nessuna novità."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sincronizado. Nada de novo."
+          }
         }
       }
     },
@@ -720311,6 +720383,24 @@
       "comment" : "Said aloud when Sync Now finishes. A plural line. %lld is how many changes arrived, and %@ names the device they came from, such as \"iPhone\".",
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Synchronisiert. %lld Änderung von %@."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Synchronisiert. %lld Änderungen von %@."
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -720352,6 +720442,78 @@
               }
             }
           }
+        },
+        "fr" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Synchronisé. %lld de modifications depuis %@."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Synchronisé. %lld modification depuis %@."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Synchronisé. %lld modifications depuis %@."
+                }
+              }
+            }
+          }
+        },
+        "it" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Sincronizzato. %lld di modifiche da %@."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Sincronizzato. %lld modifica da %@."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Sincronizzato. %lld modifiche da %@."
+                }
+              }
+            }
+          }
+        },
+        "pt-BR" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Sincronizado. %lld de alterações de %@."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Sincronizado. %lld alteração de %@."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Sincronizado. %lld alterações de %@."
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -720359,6 +720521,12 @@
       "comment" : "Said aloud when the person starts Sync Now.",
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Synchronisierung läuft."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -720370,6 +720538,24 @@
             "state" : "machine_translated",
             "value" : "Sincronizando."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Synchronisation en cours."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sincronizzazione in corso."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sincronizando."
+          }
         }
       }
     },
@@ -720377,6 +720563,12 @@
       "comment" : "Shown when the sync folder now belongs to another library's sync. Join Sync Folder is a button.",
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Der Synchronisierungsordner enthält jetzt die Synchronisierung einer anderen Bibliothek. Wähle erneut „Synchronisierungsordner beitreten“."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -720388,6 +720580,24 @@
             "state" : "machine_translated",
             "value" : "La carpeta de sincronización ahora contiene la sincronización de otra biblioteca. Elige Unirse a la carpeta de sincronización otra vez."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Le dossier de synchronisation contient maintenant la synchronisation d’une autre bibliothèque. Choisissez de nouveau Rejoindre le dossier de synchronisation."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La cartella di sincronizzazione ora contiene la sincronizzazione di un’altra libreria. Scegli di nuovo Unisciti alla cartella di sincronizzazione."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "A pasta de sincronização agora contém a sincronização de outra biblioteca. Escolha Entrar na pasta de sincronização novamente."
+          }
         }
       }
     },
@@ -720395,6 +720605,12 @@
       "comment" : "A line of the Sync status while books are copied into the sync folder. The first %lld is how many are done and the second how many there are, such as \"612 of 750\".",
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bücher werden gesichert: %lld von %lld."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -720406,6 +720622,24 @@
             "state" : "machine_translated",
             "value" : "Copiando libros: %lld de %lld."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sauvegarde des livres : %lld sur %lld."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Backup dei libri: %lld di %lld."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Fazendo backup dos livros: %lld de %lld."
+          }
         }
       }
     },
@@ -720413,6 +720647,24 @@
       "comment" : "A plural phrase: how many books, such as \"138 books\". %lld is the count. It sits inside a longer sentence.",
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Buch"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Bücher"
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -720454,6 +720706,78 @@
               }
             }
           }
+        },
+        "fr" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld de livres"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld livre"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld livres"
+                }
+              }
+            }
+          }
+        },
+        "it" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld di libri"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld libro"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld libri"
+                }
+              }
+            }
+          }
+        },
+        "pt-BR" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld de livros"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld livro"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld livros"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -720461,6 +720785,24 @@
       "comment" : "A plural phrase: how many changes, such as \"3 changes\". %lld is the count. It sits inside a longer sentence.",
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Änderung"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Änderungen"
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -720502,6 +720844,78 @@
               }
             }
           }
+        },
+        "fr" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld de modifications"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld modification"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld modifications"
+                }
+              }
+            }
+          }
+        },
+        "it" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld di modifiche"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld modifica"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld modifiche"
+                }
+              }
+            }
+          }
+        },
+        "pt-BR" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld de alterações"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld alteração"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld alterações"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -720509,6 +720923,12 @@
       "comment" : "Shown when Set Up Sync finds a folder named TextMouth Sync already there. Join Sync Folder is a button. TextMouth Sync is the folder's name and is not translated.",
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ein Ordner namens TextMouth Sync ist bereits vorhanden. Um ihn zu verwenden, wähle „Synchronisierungsordner beitreten“."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -720520,6 +720940,24 @@
             "state" : "machine_translated",
             "value" : "Ya hay una carpeta llamada TextMouth Sync. Para usarla, elige Unirse a la carpeta de sincronización."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Un dossier nommé TextMouth Sync existe déjà. Pour l’utiliser, choisissez Rejoindre le dossier de synchronisation."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Esiste già una cartella chiamata TextMouth Sync. Per usarla, scegli Unisciti alla cartella di sincronizzazione."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Já existe uma pasta chamada TextMouth Sync. Para usá-la, escolha Entrar na pasta de sincronização."
+          }
         }
       }
     },
@@ -720527,6 +720965,12 @@
       "comment" : "VoiceOver hint of the Join Sync Folder button. TextMouth Sync is the folder's name and is not translated.",
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Wählt den Ordner „TextMouth Sync“, den ein anderes Gerät eingerichtet hat."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -720538,6 +720982,24 @@
             "state" : "machine_translated",
             "value" : "Elige la carpeta TextMouth Sync que configuró otro dispositivo."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Choisit le dossier TextMouth Sync configuré par un autre appareil."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sceglie la cartella TextMouth Sync configurata da un altro dispositivo."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Escolhe a pasta TextMouth Sync que outro dispositivo configurou."
+          }
         }
       }
     },
@@ -720545,6 +721007,12 @@
       "comment" : "Title of the button that chooses a sync folder another device already made. Title case; the ellipsis means a folder chooser opens.",
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Synchronisierungsordner beitreten…"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -720556,6 +721024,24 @@
             "state" : "machine_translated",
             "value" : "Unirse a la carpeta de sincronización…"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Rejoindre le dossier de synchronisation…"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Unisciti alla cartella di sincronizzazione…"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Entrar na pasta de sincronização…"
+          }
         }
       }
     },
@@ -720563,6 +721049,24 @@
       "comment" : "Title of the command that keeps several selected books on every device that syncs. A plural line, title case. %lld is the number of books.",
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Buch auf allen Geräten behalten"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Bücher auf allen Geräten behalten"
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -720604,6 +721108,78 @@
               }
             }
           }
+        },
+        "fr" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Conserver %lld de livres sur tous les appareils"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Conserver %lld livre sur tous les appareils"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Conserver %lld livres sur tous les appareils"
+                }
+              }
+            }
+          }
+        },
+        "it" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Mantieni %lld di libri su tutti i dispositivi"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Mantieni %lld libro su tutti i dispositivi"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Mantieni %lld libri su tutti i dispositivi"
+                }
+              }
+            }
+          }
+        },
+        "pt-BR" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Manter %lld de livros em todos os dispositivos"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Manter %lld livro em todos os dispositivos"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Manter %lld livros em todos os dispositivos"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -720611,6 +721187,12 @@
       "comment" : "VoiceOver hint of the Kept on all devices checkbox in Book Information.",
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Jedes Gerät, das synchronisiert, behält die Dateien dieses Buchs und lädt sie herunter, wenn es kann."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -720622,6 +721204,24 @@
             "state" : "machine_translated",
             "value" : "Todos los dispositivos que sincronizan mantienen los archivos de este libro y los descargan cuando pueden."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Chaque appareil qui se synchronise conserve les fichiers de ce livre et les télécharge dès qu’il le peut."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ogni dispositivo che sincronizza mantiene i file di questo libro e li scarica quando può."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Todos os dispositivos que sincronizam mantêm os arquivos deste livro e os baixam quando puderem."
+          }
         }
       }
     },
@@ -720629,6 +721229,12 @@
       "comment" : "Title of the command and button that keeps a book's files on every device that syncs. Title case.",
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Auf allen Geräten behalten"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -720640,6 +721246,24 @@
             "state" : "machine_translated",
             "value" : "Mantener en todos los dispositivos"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Conserver sur tous les appareils"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mantieni su tutti i dispositivi"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Manter em todos os dispositivos"
+          }
         }
       }
     },
@@ -720647,6 +721271,12 @@
       "comment" : "Label of the Book Information checkbox, and the state a book's row speaks when its files are kept on every device that syncs.",
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Auf allen Geräten behalten"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -720658,6 +721288,24 @@
             "state" : "machine_translated",
             "value" : "Mantenido en todos los dispositivos"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Conservé sur tous les appareils"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mantenuto su tutti i dispositivi"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mantido em todos os dispositivos"
+          }
         }
       }
     },
@@ -720665,6 +721313,12 @@
       "comment" : "A line of the Sync status. The first %@ names a device, such as \"iPhone\", and the second is a time written by the system, such as \"9:40 AM\".",
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zuletzt von %@ um %@ gehört."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -720676,6 +721330,24 @@
             "state" : "machine_translated",
             "value" : "Última comunicación con %@ a las %@."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Dernier contact avec %@ à %@."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ultimo contatto con %@ alle %@."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Último contato com %@ às %@."
+          }
         }
       }
     },
@@ -720683,6 +721355,12 @@
       "comment" : "Shown when syncing is refused because the library is kept in a cloud folder. Change Location is a button of the Storage settings.",
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Die Synchronisierung ist für eine Bibliothek gedacht, die auf diesem Mac liegt. Verschiebe diese zuerst mit „Ort ändern“ hierher."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -720694,6 +721372,24 @@
             "state" : "machine_translated",
             "value" : "La sincronización es para una biblioteca guardada en esta Mac. Primero mueve esta aquí con Cambiar ubicación."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La synchronisation est prévue pour une bibliothèque conservée sur ce Mac. Commencez par déplacer celle-ci ici avec Changer l’emplacement."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La sincronizzazione è pensata per una libreria conservata su questo Mac. Sposta prima questa libreria qui con Cambia posizione."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "A sincronização é para uma biblioteca mantida neste Mac. Primeiro mova esta para cá com Alterar localização."
+          }
         }
       }
     },
@@ -720701,6 +721397,12 @@
       "comment" : "Shown when the folder chosen to join is not a TextMouth Sync folder, or its files have not arrived from iCloud Drive yet.",
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Das ist kein TextMouth-Sync-Ordner, oder seine Dateien sind noch nicht aus iCloud Drive angekommen."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -720712,6 +721414,24 @@
             "state" : "machine_translated",
             "value" : "Esa no es una carpeta de TextMouth Sync, o sus archivos aún no han llegado desde iCloud Drive."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ce n’est pas un dossier TextMouth Sync, ou ses fichiers ne sont pas encore arrivés d’iCloud Drive."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Questa non è una cartella TextMouth Sync, oppure i suoi file non sono ancora arrivati da iCloud Drive."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Essa não é uma pasta TextMouth Sync, ou os arquivos dela ainda não chegaram do iCloud Drive."
+          }
         }
       }
     },
@@ -720719,6 +721439,12 @@
       "comment" : "Shown when the person chose a folder that is not in iCloud Drive for syncing.",
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Dieser Ordner liegt nicht in iCloud Drive. Wähle einen Ordner in iCloud Drive."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -720730,6 +721456,24 @@
             "state" : "machine_translated",
             "value" : "Esa carpeta no está en iCloud Drive. Elige una carpeta de iCloud Drive."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ce dossier n’est pas dans iCloud Drive. Choisissez un dossier dans iCloud Drive."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Questa cartella non è in iCloud Drive. Scegli una cartella in iCloud Drive."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Essa pasta não está no iCloud Drive. Escolha uma pasta no iCloud Drive."
+          }
         }
       }
     },
@@ -720737,6 +721481,12 @@
       "comment" : "Explains the Sync section: the library stays the same on the Mac and the iPhone, through iCloud Drive.",
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Hält deine Bücher, Lesepositionen und Lesezeichen auf Mac und iPhone gleich, über iCloud Drive."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -720748,6 +721498,24 @@
             "state" : "machine_translated",
             "value" : "Mantiene tus libros, posiciones de lectura y marcadores iguales en tu Mac y tu iPhone, mediante iCloud Drive."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Garde vos livres, vos positions de lecture et vos signets identiques sur votre Mac et votre iPhone, grâce à iCloud Drive."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mantiene uguali i tuoi libri, le posizioni di lettura e i segnalibri su Mac e iPhone, tramite iCloud Drive."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mantém seus livros, posições de leitura e marcadores iguais no seu Mac e no seu iPhone, pelo iCloud Drive."
+          }
         }
       }
     },
@@ -720755,6 +721523,12 @@
       "comment" : "Heading of the settings section for syncing the library between devices, and the name of the feature. Title case.",
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Synchronisierung"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -720766,6 +721540,24 @@
             "state" : "machine_translated",
             "value" : "Sincronización"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Synchronisation"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sincronizzazione"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sincronização"
+          }
         }
       }
     },
@@ -720773,6 +721565,12 @@
       "comment" : "VoiceOver hint of the Set Up Sync button. TextMouth Sync is the folder's name and is not translated.",
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Erstellt in dem iCloud-Drive-Ordner, den du wählst, einen Ordner namens TextMouth Sync und kopiert deine Bücher hinein."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -720784,6 +721582,24 @@
             "state" : "machine_translated",
             "value" : "Crea una carpeta llamada TextMouth Sync en la carpeta de iCloud Drive que elijas y copia tus libros en ella."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Crée un dossier nommé TextMouth Sync dans le dossier iCloud Drive que vous choisissez, et y copie vos livres."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Crea una cartella chiamata TextMouth Sync nella cartella di iCloud Drive che scegli e vi copia i tuoi libri."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Cria uma pasta chamada TextMouth Sync na pasta do iCloud Drive que você escolher e copia seus livros para ela."
+          }
         }
       }
     },
@@ -720791,6 +721607,12 @@
       "comment" : "Title of the button that makes a new sync folder. Title case; the ellipsis means a folder chooser opens.",
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Synchronisierung einrichten…"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -720802,6 +721624,24 @@
             "state" : "machine_translated",
             "value" : "Configurar la sincronización…"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Configurer la synchronisation…"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Configura la sincronizzazione…"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Configurar sincronização…"
+          }
         }
       }
     },
@@ -720809,6 +721649,12 @@
       "comment" : "The Sync status when the TextMouth Sync folder cannot be found. %@ names the device (\"this Mac\" or \"this iPhone\"), whose library is unchanged. TextMouth Sync is the folder's name and is not translated.",
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth findet den Ordner TextMouth Sync in iCloud Drive nicht. Er wurde vielleicht verschoben oder gelöscht, oder iCloud Drive ist abgemeldet. Deine Bibliothek (%@) ist unverändert."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -720820,6 +721666,24 @@
             "state" : "machine_translated",
             "value" : "TextMouth no encuentra la carpeta TextMouth Sync en iCloud Drive. Puede que se haya movido o eliminado, o que se haya cerrado la sesión de iCloud Drive. Tu biblioteca en %@ sigue como estaba."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth ne trouve pas le dossier TextMouth Sync dans iCloud Drive. Il a peut-être été déplacé ou supprimé, ou la session iCloud Drive est fermée. Votre bibliothèque sur %@ est restée telle quelle."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth non trova la cartella TextMouth Sync in iCloud Drive. Potrebbe essere stata spostata o eliminata, oppure iCloud Drive potrebbe essere disconnesso. La tua libreria su %@ è rimasta com’era."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "O TextMouth não encontra a pasta TextMouth Sync no iCloud Drive. Ela pode ter sido movida ou apagada, ou o iCloud Drive pode estar sem login. Sua biblioteca (%@) continua como estava."
+          }
         }
       }
     },
@@ -720827,6 +721691,12 @@
       "comment" : "The Sync status when a newer TextMouth made the sync folder, so this one cannot use it.",
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Eine neuere Version von TextMouth hat diesen Synchronisierungsordner erstellt. Aktualisiere TextMouth, um ihn zu verwenden."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -720838,6 +721708,24 @@
             "state" : "machine_translated",
             "value" : "Una versión más reciente de TextMouth creó esta carpeta de sincronización. Actualiza TextMouth para usarla."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Une version plus récente de TextMouth a créé ce dossier de synchronisation. Mettez TextMouth à jour pour l’utiliser."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Questa cartella di sincronizzazione è stata creata da una versione più recente di TextMouth. Aggiorna TextMouth per usarla."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Uma versão mais recente do TextMouth criou esta pasta de sincronização. Atualize o TextMouth para usá-la."
+          }
         }
       }
     },
@@ -720845,6 +721733,12 @@
       "comment" : "The Sync status when changes another device made have not yet downloaded from iCloud Drive.",
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Einige Änderungen vom iPhone sind noch nicht heruntergeladen. TextMouth versucht es erneut."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -720856,6 +721750,24 @@
             "state" : "machine_translated",
             "value" : "Algunos cambios del iPhone aún no se han descargado. TextMouth lo intentará de nuevo."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Certaines modifications de l’iPhone ne sont pas encore téléchargées. TextMouth réessaiera."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Alcune modifiche da iPhone non sono ancora state scaricate. TextMouth riproverà."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Algumas alterações do iPhone ainda não foram baixadas. O TextMouth vai tentar de novo."
+          }
         }
       }
     },
@@ -720863,6 +721775,12 @@
       "comment" : "The Sync status when syncing is not set up.",
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Die Synchronisierung ist aus."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -720874,6 +721792,24 @@
             "state" : "machine_translated",
             "value" : "La sincronización está desactivada."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La synchronisation est désactivée."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La sincronizzazione è disattivata."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "A sincronização está desativada."
+          }
         }
       }
     },
@@ -720881,6 +721817,24 @@
       "comment" : "The Sync status with no network. A plural line. %lld is how many changes wait, and %@ names the device (\"this Mac\" or \"this iPhone\"), which sends them.",
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Offline (%2$@). %1$lld Änderung wartet und wird gesendet, sobald das Netzwerk wieder da ist."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Offline (%2$@). %1$lld Änderungen warten und werden gesendet, sobald das Netzwerk wieder da ist."
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -720922,6 +721876,78 @@
               }
             }
           }
+        },
+        "fr" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Hors connexion. %lld de modifications attendent sur %@ et seront envoyées au retour du réseau."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Hors connexion. %lld modification attend sur %@ et sera envoyée au retour du réseau."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Hors connexion. %lld modifications attendent sur %@ et seront envoyées au retour du réseau."
+                }
+              }
+            }
+          }
+        },
+        "it" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Offline. %lld di modifiche sono in attesa su %@ e saranno inviate quando la rete tornerà."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Offline. %lld modifica è in attesa su %@ e sarà inviata quando la rete tornerà."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Offline. %lld modifiche sono in attesa su %@ e saranno inviate quando la rete tornerà."
+                }
+              }
+            }
+          }
+        },
+        "pt-BR" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Sem conexão. %lld de alterações aguardam para serem enviadas por %@ quando a rede voltar."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Sem conexão. %lld alteração aguarda para ser enviada por %@ quando a rede voltar."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Sem conexão. %lld alterações aguardam para serem enviadas por %@ quando a rede voltar."
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -720929,6 +721955,12 @@
       "comment" : "The Sync status when iCloud Drive is full. The first %@ is a phrase counting changes (\"3 changes\"), the second counts books (\"138 books\"), and the third names the device (\"this Mac\" or \"this iPhone\"), whose library is unchanged.",
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive ist voll, daher werden %@ und %@ nicht hochgeladen. Deine Bibliothek (%@) ist unverändert."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -720940,6 +721972,24 @@
             "state" : "machine_translated",
             "value" : "iCloud Drive está lleno, así que no se suben %@ ni %@. Tu biblioteca en %@ sigue como estaba."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive est plein, donc %@ et %@ ne sont pas envoyés. Votre bibliothèque sur %@ est restée telle quelle."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive è pieno, quindi %@ e %@ non vengono caricati. La tua libreria su %@ è rimasta com’era."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "O iCloud Drive está cheio, então %@ e %@ não foram enviados. Sua biblioteca (%@) continua como estava."
+          }
         }
       }
     },
@@ -720947,6 +721997,12 @@
       "comment" : "The Sync status while a sync runs. The ellipsis means it is not finished.",
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Synchronisierung läuft…"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -720958,6 +722014,24 @@
             "state" : "machine_translated",
             "value" : "Sincronizando…"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Synchronisation…"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sincronizzazione…"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sincronizando…"
+          }
         }
       }
     },
@@ -720965,6 +722039,12 @@
       "comment" : "The Sync status when everything is synced. %@ is the time of the last sync, written by the system, such as \"9:41 AM\".",
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Auf dem neuesten Stand. Zuletzt um %@ synchronisiert."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -720976,6 +722056,24 @@
             "state" : "machine_translated",
             "value" : "Todo al día. Última sincronización a las %@."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "À jour. Dernière synchronisation à %@."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tutto aggiornato. Ultima sincronizzazione alle %@."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tudo em dia. Última sincronização às %@."
+          }
         }
       }
     },
@@ -720983,6 +722081,24 @@
       "comment" : "The Sync status while iCloud Drive has not yet uploaded changes. A plural line. %lld is how many changes wait.",
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Änderung wartet darauf, dass iCloud Drive sie hochlädt."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Änderungen warten darauf, dass iCloud Drive sie hochlädt."
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -721024,6 +722140,78 @@
               }
             }
           }
+        },
+        "fr" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld de modifications attendent qu’iCloud Drive les envoie."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld modification attend qu’iCloud Drive l’envoie."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld modifications attendent qu’iCloud Drive les envoie."
+                }
+              }
+            }
+          }
+        },
+        "it" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld di modifiche sono in attesa che iCloud Drive le carichi."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld modifica è in attesa che iCloud Drive la carichi."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld modifiche sono in attesa che iCloud Drive le carichi."
+                }
+              }
+            }
+          }
+        },
+        "pt-BR" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld de alterações aguardam o iCloud Drive enviá-las."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld alteração aguarda o iCloud Drive enviá-la."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld alterações aguardam o iCloud Drive enviá-las."
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -721031,6 +722219,24 @@
       "comment" : "Title of the command that ends keeping several selected books on every device that syncs. A plural line, title case. %lld is the number of books.",
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Buch nicht mehr auf allen Geräten behalten"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Bücher nicht mehr auf allen Geräten behalten"
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -721072,6 +722278,78 @@
               }
             }
           }
+        },
+        "fr" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Ne plus conserver %lld de livres sur tous les appareils"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Ne plus conserver %lld livre sur tous les appareils"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Ne plus conserver %lld livres sur tous les appareils"
+                }
+              }
+            }
+          }
+        },
+        "it" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Non mantenere più %lld di libri su tutti i dispositivi"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Non mantenere più %lld libro su tutti i dispositivi"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Non mantenere più %lld libri su tutti i dispositivi"
+                }
+              }
+            }
+          }
+        },
+        "pt-BR" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Parar de manter %lld de livros em todos os dispositivos"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Parar de manter %lld livro em todos os dispositivos"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Parar de manter %lld livros em todos os dispositivos"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -721079,6 +722357,12 @@
       "comment" : "Title of the command and button that ends keeping a book's files on every device that syncs. Title case.",
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nicht mehr auf allen Geräten behalten"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -721090,6 +722374,24 @@
             "state" : "machine_translated",
             "value" : "Dejar de mantener en todos los dispositivos"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ne plus conserver sur tous les appareils"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Non mantenere più su tutti i dispositivi"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Parar de manter em todos os dispositivos"
+          }
         }
       }
     },
@@ -721097,6 +722399,12 @@
       "comment" : "The confirmation asked before syncing stops. \"This Mac\" names the device the person is using.",
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Synchronisierung dieser Bibliothek beenden? Nichts wird gelöscht, weder auf diesem Mac noch in iCloud Drive."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -721108,6 +722416,24 @@
             "state" : "machine_translated",
             "value" : "¿Dejar de sincronizar esta biblioteca? No se elimina nada, ni en esta Mac ni en iCloud Drive."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Arrêter la synchronisation de cette bibliothèque ? Rien n’est supprimé, ni sur ce Mac ni dans iCloud Drive."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Interrompere la sincronizzazione di questa libreria? Non viene eliminato nulla, né su questo Mac né in iCloud Drive."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Parar de sincronizar esta biblioteca? Nada é apagado, neste Mac nem no iCloud Drive."
+          }
         }
       }
     },
@@ -721115,6 +722441,12 @@
       "comment" : "Title of the button that stops syncing this library. Title case; the ellipsis means a confirmation follows.",
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Synchronisierung beenden…"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -721126,6 +722458,24 @@
             "state" : "machine_translated",
             "value" : "Dejar de sincronizar…"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Arrêter la synchronisation…"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Interrompi la sincronizzazione…"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Parar de sincronizar…"
+          }
         }
       }
     },
@@ -721133,6 +722483,12 @@
       "comment" : "Title of the button and the Library menu command that syncs right now. Title case.",
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Jetzt synchronisieren"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -721144,6 +722500,24 @@
             "state" : "machine_translated",
             "value" : "Sincronizar ahora"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Synchroniser maintenant"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sincronizza ora"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sincronizar agora"
+          }
         }
       }
     },
@@ -721151,6 +722525,12 @@
       "comment" : "The device the person is using, in the middle of a sentence, on an iPhone.",
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "dieses iPhone"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -721162,6 +722542,24 @@
             "state" : "machine_translated",
             "value" : "este iPhone"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "cet iPhone"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "questo iPhone"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "este iPhone"
+          }
         }
       }
     },
@@ -721169,6 +722567,12 @@
       "comment" : "The device the person is using, in the middle of a sentence, on a Mac.",
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "dieser Mac"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -721180,6 +722584,24 @@
             "state" : "machine_translated",
             "value" : "esta Mac"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ce Mac"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "questo Mac"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "este Mac"
+          }
         }
       }
     },
@@ -721187,6 +722609,12 @@
       "comment" : "Said while joining waits for the sync folder's files to arrive from iCloud Drive.",
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Warten, bis die Dateien des Synchronisierungsordners aus iCloud Drive angekommen sind."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -721197,6 +722625,24 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Esperando a que lleguen los archivos de la carpeta de sincronización desde iCloud Drive."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "En attente de l’arrivée des fichiers du dossier de synchronisation depuis iCloud Drive."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "In attesa che i file della cartella di sincronizzazione arrivino da iCloud Drive."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Aguardando os arquivos da pasta de sincronização chegarem do iCloud Drive."
           }
         }
       }
