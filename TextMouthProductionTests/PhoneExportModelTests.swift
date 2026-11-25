@@ -363,6 +363,39 @@ final class PhoneExportModelTests: XCTestCase {
         }
     }
 
+    // MARK: - The Sheet's Other Rows
+
+    /// What the sheet's kind switches and its Convert to row say, which it reads from the model and draws as it finds it:
+    /// each switch names its kind and carries the Mac's hint, and the Convert to row, once its kind is on, is labelled
+    /// "Convert to", valued with the conversion chosen and hinted with what that conversion exports.
+    func testTheKindSwitchesAndTheConvertToRowSayTheirLabelsValuesAndHints() async throws {
+        let world = try makeIntegrationWorld("Phone Export Rows")
+        let book = try world.importBook(from: writeSource(named: "Harbour Pilots.md"))
+        let model = BookExportModel(books: [book], offering: PhoneExportOffer.kinds, destinationIsChosen: false)
+        await model.load()
+
+        // The kinds, in the dialog's order, each named and hinted.
+        let labels = model.choices.map { model.label(for: $0) }
+        XCTAssertTrue(labels[0].hasPrefix("Original file"), "\(labels)")
+        XCTAssertTrue(labels[1].hasPrefix("Text as Markdown"), "\(labels)")
+        XCTAssertTrue(labels[2].hasPrefix("Text as plain text"), "\(labels)")
+        for choice in model.choices {
+            XCTAssertFalse(model.hint(for: choice.kind).isEmpty, "\(choice.kind) has no hint")
+        }
+
+        // The Convert to row: there while the kind is on, and saying the conversion chosen.
+        model.setChecked(true, for: .markdown)
+        let choice = try XCTUnwrap(model.conversionChoice(for: .markdown))
+        XCTAssertEqual(BookExportWording.convertToLabel(for: .markdown), "Convert to")
+        XCTAssertEqual(choice.name, "Markdown")
+        XCTAssertFalse(choice.hint.isEmpty, "The Convert to row has no hint")
+        // Choosing BRF changes the row's value and its hint to the writer's.
+        model.setConversionID(BRFExportWriter().id, for: .markdown)
+        let brf = try XCTUnwrap(model.conversionChoice(for: .markdown))
+        XCTAssertEqual(brf.name, "BRF")
+        XCTAssertNotEqual(brf.hint, choice.hint)
+    }
+
     /// What an export held and let go, in order.
     private final class HoldRecord {
         private(set) var events: [String] = []

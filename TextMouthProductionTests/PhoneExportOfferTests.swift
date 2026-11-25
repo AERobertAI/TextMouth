@@ -91,4 +91,65 @@ final class PhoneExportOfferTests: XCTestCase {
         XCTAssertEqual(chosen.label, "Export to: Downloads")
         XCTAssertEqual(chosen.hint, none.hint)
     }
+
+    // MARK: - The Braille Rows
+
+    /// A BRF's rows are the Mac's six, in the Mac's order, each with its label, its value, and its hint: the sheet reads
+    /// these three from each row and draws nothing else, so this is what VoiceOver says.
+    func testABRFsBrailleRowsSayTheirLabelsValuesAndHints() {
+        var options = BrailleExportOptions()
+        options.page.cellsPerLine = 32
+        options.page.linesPerPage = 20
+        options.lineEnd = .lf
+
+        let rows = PhoneExportOffer.brailleRows(options, choosesLineEnds: true)
+
+        XCTAssertEqual(
+            rows.map(\.label),
+            ["Braille code", "Cells per line", "Lines per page", "Braille page numbers", "Line ends", "Braille file characters"]
+        )
+        XCTAssertEqual(
+            rows.map(\.control),
+            [.choice(.code), .cellsPerLine, .linesPerPage, .pageNumbers, .choice(.lineEnds), .choice(.fileCode)]
+        )
+        XCTAssertEqual(rows.map(\.hint), [
+            "The braille code the book is written in.",
+            "How many braille cells each line holds, from 18 to 80.",
+            "How many lines each braille page holds, from 4 to 50.",
+            "Whether each page's last line carries its braille page number.",
+            "CR LF suits most braille displays and embossers.",
+            BrailleExportWording.fileCodeHint
+        ])
+        XCTAssertTrue(rows[0].value?.hasPrefix("Unified English Braille") == true, "The code says \(String(describing: rows[0].value))")
+        XCTAssertEqual(rows[1].value, "32 cells")
+        XCTAssertEqual(rows[2].value, "20 lines")
+        XCTAssertNil(rows[3].value, "A switch says its own value")
+        XCTAssertEqual(rows[4].value, "LF")
+        XCTAssertEqual(rows[5].value, "North American Braille ASCII")
+        XCTAssertTrue(rows.allSatisfy { !$0.hint.isEmpty }, "A braille row has no hint")
+    }
+
+    /// A PEF's rows stop after the page numbers: it has no line ends or braille file characters.
+    func testAPEFsBrailleRowsLeaveOutTheLineEndsAndTheFileCharacters() {
+        let rows = PhoneExportOffer.brailleRows(BrailleExportOptions(), choosesLineEnds: false)
+
+        XCTAssertEqual(rows.map(\.label), ["Braille code", "Cells per line", "Lines per page", "Braille page numbers"])
+        XCTAssertEqual(rows[1].value, "40 cells")
+        XCTAssertEqual(rows[2].value, "25 lines")
+    }
+
+    /// The braille file characters row says the code chosen, and a choice sheet is asked for by each of the three choice rows.
+    func testTheChoiceRowsAskForTheirOwnSheets() {
+        var options = BrailleExportOptions()
+        options.fileCode = BrailleFileCode.all.last ?? options.fileCode
+
+        let rows = PhoneExportOffer.brailleRows(options, choosesLineEnds: true)
+        let choices = rows.compactMap { row -> PhoneExportOffer.BrailleChoice? in
+            if case .choice(let choice) = row.control { return choice }
+            return nil
+        }
+
+        XCTAssertEqual(choices, [.code, .lineEnds, .fileCode])
+        XCTAssertEqual(rows.last?.value, options.fileCode.name)
+    }
 }
