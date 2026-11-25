@@ -71,6 +71,13 @@ enum SyncFolderAccessFactory {
     @MainActor static var make: (_ bookmark: Data) -> any SyncFolderAccess = { PlainSyncFolderAccess(bookmark: $0) }
     /// Makes the bookmark of the folder a person chose; the iPhone sets its own (a folder picked in Files).
     @MainActor static var makeBookmark: (_ folder: URL) -> Data? = { DataDirectoryPreferences.makeBookmark(of: $0) }
+    /// A fresh bookmark for `bookmark` when the system found it stale (the folder moved or was renamed, and the
+    /// bookmark still found it), nil when it is current; the center keeps the fresh one in `SyncPreferences`.
+    /// The iPhone sets its own, which opens the folder's scope to make it.
+    @MainActor static var renewedBookmark: (_ bookmark: Data) -> Data? = { bookmark in
+        guard let resolved = PlainSyncFolderAccess.resolve(bookmark), resolved.isStale else { return nil }
+        return DataDirectoryPreferences.makeBookmark(of: resolved.url)
+    }
 }
 
 // MARK: - The library's side, and the app's one sync

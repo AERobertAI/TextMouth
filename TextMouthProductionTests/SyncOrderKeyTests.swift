@@ -97,7 +97,7 @@ final class SyncOrderKeyTests: XCTestCase {
     func testAssignAlwaysEndsInOrder() {
         var generator = SyncSeededGenerator(seed: 7)
         for _ in 0..<100 {
-            let ids = (0..<Int.random(in: 1...12, using: &generator)).map { _ in UUID() }
+            let ids = (1...Int.random(in: 1...12, using: &generator)).map { SyncTestFixtures.id($0) }
             // Some books have keys, all different and in no relation to the list's order.
             let pool = SyncOrderKey.keys(count: ids.count, between: nil, nil).shuffled(using: &generator)
             var existing: [UUID: String] = [:]

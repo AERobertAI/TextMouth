@@ -33,6 +33,8 @@ struct SyncCenterEnvironment {
     var freeSpace: @Sendable (URL) -> Int64
     /// The pause between looks when Join waits for store.json to arrive; a test answers at once.
     var pauseWhileJoining: @Sendable (Duration) async throws -> Void = { try await Task.sleep(for: $0) }
+    /// A fresh bookmark for a stale one, or nil when it is current (`SyncFolderAccessFactory.renewedBookmark`).
+    var renewedBookmark: @Sendable @MainActor (Data) -> Data? = { _ in nil }
 
     /// The name this device gives itself in the store: its host name without ".local", or "Mac" or "iPhone".
     static func deviceName(isPhone: Bool) -> String {
@@ -66,7 +68,8 @@ struct SyncCenterEnvironment {
             freeSpace: { url in
                 let values = try? url.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey])
                 return values?.volumeAvailableCapacityForImportantUsage ?? 0
-            }
+            },
+            renewedBookmark: { SyncFolderAccessFactory.renewedBookmark($0) }
         )
     }
 }
@@ -103,6 +106,8 @@ struct SyncCenterEnvironment {
     private var dataDirectory: URL?
     private var engine: SyncEngine?
     private var access: (any SyncFolderAccess)?
+    /// The bookmark of the sync folder in use, kept in `SyncPreferences`.
+    private var bookmark: Data?
     private var local: SyncLocalFiles?
     private var scheduler = SyncScheduler()
     private var recorder: SyncRecorder?
@@ -112,9 +117,10 @@ struct SyncCenterEnvironment {
     private var runTask: Task<Void, Never>?
     private var wakeTask: Task<Void, Never>?
     private var backupTask: Task<Void, Never>?
-    /// True from launch until the first apply has finished: every record in that time is told so, so a book
-    /// missing at launch (an offline launch, a change made while the launch sync reads) is put back, not removed (R7).
-    private var launchPending = true
+    /// True from launch until the first apply has finished, which settles the engine's launch hold: a book
+    /// missing at launch (an offline launch, a change made while the launch sync reads) is never reported
+    /// removed before then (R7). The apply runs even when nothing changed while it is true.
+    private var firstApplyPending = true
     private var observingNetwork = false
     private var lastPath: NetworkPathReport?
     /// Books whose copy is made and whose upload is awaited, with what they hold.
@@ -154,6 +160,7 @@ struct SyncCenterEnvironment {
         self.engine = engine
         local = files
         access = environment.makeAccess(bookmark)
+        self.bookmark = bookmark
         self.storeID = storeID
         scheduler.turnOn(at: environment.now())
         let recorder = SyncRecorder { [weak self] in await self?.recordNow() }
@@ -161,7 +168,7 @@ struct SyncCenterEnvironment {
         self.recorder = recorder
         status.isOn = true
         status.lastSynced = nil
-        launchPending = true
+        firstApplyPending = true
         observeNetwork()
         rearm()
         return true
@@ -318,10 +325,19 @@ struct SyncCenterEnvironment {
         }
     }
 
+    /// Keeps the renewed bookmark when the system found the folder's bookmark stale (the folder was moved
+    /// or renamed): the preferences and the access use it from now on.
+    private func renewBookmarkIfStale() {
+        guard let current = bookmark, let fresh = environment.renewedBookmark(current) else { return }
+        SyncPreferences.bookmark.write(fresh, to: environment.preferences)
+        bookmark = fresh
+        access = environment.makeAccess(fresh)
+    }
+
     /// Records this device's changes now.
     private func recordNow() async {
         guard let engine, let host else { return }
-        _ = try? await engine.record(library: host.library, atLaunch: launchPending)
+        _ = try? await engine.record(library: host.library)
         status.pendingChanges = await engine.pendingChanges()
     }
 
@@ -332,6 +348,7 @@ struct SyncCenterEnvironment {
             pendingReason = reason
             return
         }
+        renewBookmarkIfStale()
         guard let engine, let access, let storeID, let host else { return }
         guard host.maySyncNow else {
             if reason == .syncNow { environment.announce(SyncStatusLine.text(for: status, isPhone: environment.isPhone, time: Self.timeOfDay)) }
@@ -381,13 +398,16 @@ struct SyncCenterEnvironment {
 
         // Apply what other devices wrote; until the first apply after launch even when nothing changed, as an older
         // TextMouth left rows unstamped and a book missing at launch is put back by it.
-        if !result.changedKeys.isEmpty || launchPending {
+        if !result.changedKeys.isEmpty || firstApplyPending {
             let application = await engine.application(for: host.library, voices: host.availableVoiceIDs)
             recorder?.isApplying = true
             let applied = await host.applySync(application)
             recorder?.isApplying = false
             try await engine.didApply(application, keys: applied)
-            launchPending = false
+            if firstApplyPending {
+                try await engine.settleLaunch(library: host.library)
+                firstApplyPending = false
+            }
         }
         keptBookIDs = await engine.keptBookIDs()
         host.syncDidApply(keptBookIDs: keptBookIDs, mayDownload: lastPath?.allowsBackgroundDownloads ?? true)

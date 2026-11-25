@@ -41,12 +41,12 @@ struct SyncFolder: Sendable {
         let folder = parent.appendingPathComponent(SyncNames.folderName, isDirectory: true)
         if FileManager.default.fileExists(atPath: folder.path) { throw SyncProblem.exists }
         let store = SyncStoreFile(
-            formatVersion: SyncFileCoding.supportedFormatVersion, storeID: UUID(), created: now,
+            formatVersion: SyncFormats.currentVersion, storeID: UUID(), created: now,
             createdBy: creator, createdByVersion: version
         )
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         // `.withoutOverwriting`: only a folder just made gets a store file (R4).
-        try SyncFileCoding.encode(store).write(to: folder.appendingPathComponent(SyncNames.storeFile), options: .withoutOverwriting)
+        try SyncFormats.encode(store).write(to: folder.appendingPathComponent(SyncNames.storeFile), options: .withoutOverwriting)
         return (folder, store)
     }
 
@@ -65,13 +65,14 @@ struct SyncFolder: Sendable {
         } catch {
             throw SyncProblem.notASyncFolder
         }
-        // A later TextMouth's file is told from a damaged one by its version alone.
-        struct VersionOnly: Decodable { var formatVersion: Int }
-        if let later = SyncFileCoding.decode(VersionOnly.self, from: data), later.formatVersion > SyncFileCoding.supportedFormatVersion {
+        // A later TextMouth's file is told from a damaged one by core's reader.
+        do {
+            return try SyncFormats.decodeStoreFile(data)
+        } catch SyncProblem.laterVersion {
             throw SyncProblem.laterVersion
+        } catch {
+            throw SyncProblem.notASyncFolder
         }
-        guard let store = SyncFileCoding.decode(SyncStoreFile.self, from: data) else { throw SyncProblem.notASyncFolder }
-        return store
     }
 
     /// Reads `store.json`, and for a device that joined before checks it names `expected`.
@@ -112,7 +113,7 @@ struct SyncFolder: Sendable {
     /// access makes the device's folder, as `write` and `copyIn` make the
     /// folder of any file they put.
     func publishDevice(_ file: SyncDeviceFile) throws {
-        try access.write(try SyncFileCoding.encode(file), to: deviceFolder(file.deviceID).appendingPathComponent(SyncNames.deviceFile), replacing: true)
+        try access.write(try SyncFormats.encode(file), to: deviceFolder(file.deviceID).appendingPathComponent(SyncNames.deviceFile), replacing: true)
     }
 
     /// The IDs of the devices that have a folder here, in order.

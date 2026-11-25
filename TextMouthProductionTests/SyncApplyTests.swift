@@ -131,16 +131,27 @@ final class SyncApplyTests: XCTestCase {
         XCTAssertEqual(application.library.books.first?.readingPosition?.chapterIndex, 1)
     }
 
-    /// A removed bookmark, or one taken off the list, does not bring a removed book back; keep does not either.
-    func testRemovalsAndKeepDoNotBringABookBack() {
+    /// A removed bookmark, or one taken off the list, does not bring a removed book back.
+    func testRemovalsDoNotBringABookBack() {
         let book = Fixtures.book()
         let application = apply([
             Fixtures.entry(.book(book.id, .presence), .null, wall: 5),
             Fixtures.entry(.bookmark(book: book.id, id: UUID()), .null, wall: 9),
             Fixtures.entry(.readingList(book: book.id), .null, wall: 9),
-            Fixtures.entry(.book(book.id, .keep), .bool(true), wall: 9),
         ], to: Fixtures.library(books: [book]))
         XCTAssertEqual(application.booksToRemove, [book.id])
+    }
+
+    /// A Keep on All Devices later than a removal brings the book back (the orchestrator's decision).
+    func testKeepLaterThanARemovalBringsTheBookBack() {
+        let book = Fixtures.book()
+        let application = apply([
+            Fixtures.entry(.book(book.id, .presence), .null, wall: 5),
+            Fixtures.entry(.book(book.id, .keep), .bool(true), wall: 9),
+        ], to: Fixtures.library(books: [book]))
+        XCTAssertTrue(application.booksToRemove.isEmpty)
+        XCTAssertEqual(application.entriesToRecord[.book(book.id, .presence)], .bool(true))
+        XCTAssertFalse(application.appliedKeys.contains(.book(book.id, .presence)), "the removal mark is not what was applied")
     }
 
     // MARK: New books
@@ -312,9 +323,8 @@ final class SyncApplyTests: XCTestCase {
         ], to: Fixtures.library(books: [book]))
         XCTAssertEqual(Set(application.library.folders.map(\.fullPath)), ["Fiction", "Fiction/Sub"])
         XCTAssertEqual(application.library.books.first?.folderPath, "Fiction")
-        XCTAssertEqual(application.entriesToRecord[.folder(younger, .presence)], .null)
-        XCTAssertEqual(application.entriesToRecord[.folder(child, .parent)], SyncValueCoding.id(older))
-        XCTAssertEqual(application.entriesToRecord[.book(book.id, .folder)], SyncValueCoding.id(older))
+        // The removal mark names the folder it folded into, which is all that is recorded.
+        XCTAssertEqual(application.entriesToRecord, [.folder(younger, .presence): SyncValueCoding.id(older)])
     }
 
     // MARK: The reading list

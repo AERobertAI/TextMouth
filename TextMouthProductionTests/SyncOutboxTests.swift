@@ -77,11 +77,11 @@ final class SyncOutboxTests: XCTestCase {
         let registers = SyncRegisters(entries: [key: SyncEntry(key: key, value: .null, stamp: SyncStamp(wall: 1, counter: 0, device: "d"), byHand: true)], throughSeq: 2)
         try local.saveRegisters(registers)
         XCTAssertEqual(local.loadRegisters(), registers)
-        var baseline = SyncBaselineFile()
-        baseline.items = [.init(key: .folder(book, .name), value: .string("F"))]
+        var baseline = SyncProjection()
+        baseline.absorb([SyncEntry(key: .folder(book, .name), value: .string("F"), stamp: SyncStamp(wall: 1, counter: 0, device: "d"), byHand: false)])
         try local.saveBaseline(baseline)
         XCTAssertEqual(local.loadBaseline(), baseline)
-        XCTAssertEqual(local.loadBaseline().projection.values[.folder(book, .name)], .string("F"))
+        XCTAssertEqual(local.loadBaseline().values[.folder(book, .name)], .string("F"))
     }
 
     /// A damaged file reads as nothing, not a trap.
@@ -202,7 +202,7 @@ final class SyncOutboxTests: XCTestCase {
         // The crash: the file exists, but the index and lastSeq never saw it.
         let orphan = SyncChangeFile(formatVersion: 1, deviceID: "dev-a", incarnation: outbox.device.incarnation,
                                     seq: 2, kind: .changes, count: 1, entries: [entry(2)])
-        try SyncFileCoding.encode(orphan).write(to: local.outboxFolder.appendingPathComponent(SyncNames.changeFile(seq: 2, kind: .changes)))
+        try SyncFormats.encode(orphan).write(to: local.outboxFolder.appendingPathComponent(SyncNames.changeFile(seq: 2, kind: .changes)))
         var restarted = SyncOutbox(local: local, device: outbox.device)
         XCTAssertEqual(try restarted.adoptUnindexedFiles(), 1)
         XCTAssertEqual(restarted.device.lastSeq, 2)

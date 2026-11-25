@@ -74,7 +74,7 @@ struct SyncReader: Sendable {
         var queue = pending
         if cursor == 0 {
             for snapshot in pending.filter({ $0.kind == .snapshot }).reversed() {
-                if let file = await readFile(directory.appendingPathComponent(snapshot.name), expecting: snapshot.seq) {
+                if case .file(let file) = await readFile(directory.appendingPathComponent(snapshot.name), expecting: snapshot.seq) {
                     result.entries += file.entries
                     cursor = snapshot.seq
                     queue = pending.filter { $0.seq > snapshot.seq }
@@ -90,21 +90,25 @@ struct SyncReader: Sendable {
                 result.ranOutOfTime = true
                 break
             }
-            if let file = await readFile(directory.appendingPathComponent(next.name), expecting: next.seq) {
-                if file.formatVersion > SyncFileCoding.supportedFormatVersion {
-                    result.laterVersionFrom = result.laterVersionFrom ?? deviceID
-                    break
-                }
+            switch await readFile(directory.appendingPathComponent(next.name), expecting: next.seq) {
+            case .file(let file):
                 result.entries += file.entries
                 cursor = next.seq
                 index += 1
                 continue
+            case .laterVersion:
+                // A later TextMouth's file is left alone, and said.
+                result.laterVersionFrom = result.laterVersionFrom ?? deviceID
+                result.cursors.merged[deviceID] = cursor
+                return
+            case .notHere:
+                break
             }
             // Not here yet: a later snapshot that reads covers it, and the cursor moves past.
             let covering = queue[(index + 1)...].filter { $0.kind == .snapshot }
             var jumped = false
             for snapshot in covering.reversed() {
-                if let file = await readFile(directory.appendingPathComponent(snapshot.name), expecting: snapshot.seq) {
+                if case .file(let file) = await readFile(directory.appendingPathComponent(snapshot.name), expecting: snapshot.seq) {
                     result.entries += file.entries
                     cursor = snapshot.seq
                     index = queue.firstIndex { $0.seq > snapshot.seq } ?? queue.count
@@ -124,18 +128,31 @@ struct SyncReader: Sendable {
     /// file not here yet leaves them as they were.
     private func readDeviceFile(_ directory: URL, deviceID: String, into result: inout SyncReadResult) async {
         guard let data = try? await folder.access.read(directory.appendingPathComponent(SyncNames.deviceFile), within: limits.perFile),
-              let device = SyncFileCoding.decode(SyncDeviceFile.self, from: data) else { return }
+              let device = try? SyncFormats.decodeDeviceFile(data) else { return }
         result.lastHeard[deviceID] = device.updated
         result.names[deviceID] = device.name
     }
 
-    /// A change file read whole: nil when it isn't here yet, doesn't decode,
-    /// or holds other than `count` entries (section 3). A file of a later
-    /// format is returned as read, with its `formatVersion`, for the caller to leave alone.
-    private func readFile(_ url: URL, expecting seq: Int) async -> SyncChangeFile? {
-        guard let data = try? await folder.access.read(url, within: limits.perFile),
-              let file = SyncFileCoding.decode(SyncChangeFile.self, from: data),
-              file.seq == seq, file.count == file.entries.count else { return nil }
-        return file
+    /// What reading one change file found.
+    private enum FileRead {
+        /// The file, whole.
+        case file(SyncChangeFile)
+        /// Not here yet: not downloaded, half there, not decodable, or holding other than `count` entries (section 3).
+        case notHere
+        /// Written by a later TextMouth: left alone.
+        case laterVersion
+    }
+
+    /// A change file read through core's reader, which knows a half file from a later TextMouth's.
+    private func readFile(_ url: URL, expecting seq: Int) async -> FileRead {
+        guard let data = try? await folder.access.read(url, within: limits.perFile) else { return .notHere }
+        do {
+            let file = try SyncFormats.decodeChangeFile(data, named: url.lastPathComponent)
+            return file.seq == seq ? .file(file) : .notHere
+        } catch SyncProblem.laterVersion {
+            return .laterVersion
+        } catch {
+            return .notHere
+        }
     }
 }

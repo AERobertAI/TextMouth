@@ -66,11 +66,11 @@ struct SyncOutbox: Sendable {
     mutating func append(_ entries: [SyncEntry], kind: SyncChangeFile.Kind = .changes) throws -> Int {
         let seq = device.lastSeq + 1
         let file = SyncChangeFile(
-            formatVersion: SyncFileCoding.supportedFormatVersion, deviceID: device.deviceID,
+            formatVersion: SyncFormats.currentVersion, deviceID: device.deviceID,
             incarnation: device.incarnation, seq: seq, kind: kind, count: entries.count, entries: entries
         )
         try local.prepare()
-        try SyncFileCoding.encode(file).write(to: fileURL(seq, kind), options: .atomic)
+        try SyncFormats.encode(file).write(to: fileURL(seq, kind), options: .atomic)
         device.lastSeq = seq
         index.items.append(.init(seq: seq, kind: kind, count: entries.count, state: .written, confirmed: false))
         try local.saveDevice(device)

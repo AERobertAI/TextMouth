@@ -25,6 +25,8 @@ struct SyncFolderPlan {
         /// When the folder was made: its presence stamp, or its creation date.
         var created: SyncStamp
         var isLive: Bool
+        /// The folder this one was folded into, when its removal mark says so.
+        var foldedInto: UUID?
         var existing: BookFolder?
     }
 
@@ -68,7 +70,7 @@ struct SyncFolderPlan {
         var seen = Set<UUID>()
         while seen.insert(current).inserted {
             if pathByID[current] != nil { return current }
-            if let folded = redirect[current] { current = folded; continue }
+            if let folded = redirect[current] ?? nodes[current]?.foldedInto { current = folded; continue }
             guard let parent = nodes[current]?.parent else { return nil }
             current = parent
         }
@@ -91,7 +93,7 @@ struct SyncFolderPlan {
             nodes[folder.id] = Node(
                 id: folder.id, name: folder.name, parent: index.id(atPath: folder.parentPath), parentStamp: nil,
                 created: SyncStamp(wall: SyncClock.milliseconds(of: folder.dateCreated), counter: 0, device: ""),
-                isLive: true, existing: folder
+                isLive: true, foldedInto: nil, existing: folder
             )
         }
         var registered = Set<UUID>()
@@ -102,10 +104,12 @@ struct SyncFolderPlan {
             let parent = entries[.folder(id, .parent)]
             var node = nodes[id] ?? Node(
                 id: id, name: "", parent: nil, parentStamp: nil,
-                created: presence?.stamp ?? SyncStamp(wall: 0, counter: 0, device: ""), isLive: false, existing: nil
+                created: presence?.stamp ?? SyncStamp(wall: 0, counter: 0, device: ""), isLive: false, foldedInto: nil, existing: nil
             )
             if let presence { node.created = presence.stamp }
-            if let text = name?.value.stringValue { node.name = text }
+            // A name from another device passes through the rules a name made here does, so that a
+            // "/" or ".." in a damaged file cannot split a path or make the apply refuse.
+            if let text = name?.value.stringValue, let normalized = BookFolder.normalizedName(text) { node.name = normalized }
             if let parent {
                 node.parent = SyncValueCoding.uuid(from: parent.value)
                 node.parentStamp = parent.stamp
@@ -113,7 +117,8 @@ struct SyncFolderPlan {
             if let presence {
                 // Removed only if nothing else about the folder is later than the removal mark.
                 let newest = [name?.stamp, parent?.stamp].compactMap { $0 }.max()
-                node.isLive = presence.value != .null || (newest.map { $0 > presence.stamp } ?? false)
+                node.isLive = !presence.key.marksRemoval(presence.value) || (newest.map { $0 > presence.stamp } ?? false)
+                node.foldedInto = node.isLive ? nil : SyncValueCoding.uuid(from: presence.value)
             } else {
                 node.isLive = node.existing != nil
             }
@@ -137,7 +142,8 @@ struct SyncFolderPlan {
         while let candidate = next {
             if nodes[candidate]?.isLive == true { return candidate }
             guard seen.insert(candidate).inserted else { return nil }
-            next = nodes[candidate]?.parent
+            // A folder folded into another is its place's, whatever its own parent was.
+            next = nodes[candidate]?.foldedInto ?? nodes[candidate]?.parent
         }
         return nil
     }
@@ -218,10 +224,12 @@ struct SyncFolderPlan {
                 redirect[folded] = keeper
                 nodes[folded]?.isLive = false
                 parentOf[folded] = nil
-                entriesToRecord[.folder(folded, .presence)] = .null
+                // The removal mark names the folder it folded into, so that it lasts: a book recorded
+                // into this folder later still lands in the survivor, and so does a folder.
+                entriesToRecord[.folder(folded, .presence)] = SyncValueCoding.id(keeper)
+                nodes[folded]?.foldedInto = keeper
                 for child in sortedLiveIDs() where (parentOf[child] ?? nil) == folded {
                     parentOf[child] = .some(keeper)
-                    entriesToRecord[.folder(child, .parent)] = SyncValueCoding.id(keeper)
                 }
             }
         }

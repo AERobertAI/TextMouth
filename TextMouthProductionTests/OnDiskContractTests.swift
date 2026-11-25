@@ -829,6 +829,11 @@ final class OnDiskContractTests: XCTestCase {
         let first = try XCTUnwrap(entries.first)
         XCTAssertEqual(Set(first.keys), ["key", "value", "stamp", "byHand"])
         XCTAssertEqual((first["key"] as? String)?.hasPrefix("bookmark/"), true)
+        let stamp = try XCTUnwrap(first["stamp"] as? [String: Any])
+        XCTAssertEqual(
+            Set(stamp.keys), ["wall", "counter", "device"],
+            Self.because("a sync stamp's key", "stamps of the two versions no longer order the same")
+        )
 
         let store = SyncStoreFile(formatVersion: 1, storeID: UUID(), created: Date(), createdBy: "Mac", createdByVersion: "1")
         XCTAssertEqual(
