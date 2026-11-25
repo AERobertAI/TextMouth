@@ -98,4 +98,38 @@ final class PhoneSettingsDefaultsTests: XCTestCase {
             XCTAssertEqual(BrailleTableCatalog.storableValue(written) ?? "", written, stored)
         }
     }
+
+    /// A braille table config.json names that this platform lacks is written back as the file has it, until the table is
+    /// changed on this device: the launch's save must not hand the other platform this one's choice. This runs in the iPhone's
+    /// unit bundle and the Mac's alike, so the iPhone's own path (`brailleTableForConfig`, which writes an empty value for a
+    /// table its bundle lacks) is tested where it runs.
+    func testAFileTableThisPlatformLacksIsWrittenBackUntilTheTableIsChanged() throws {
+        let theirs = "table-only-the-other-platform-has.ctb"
+        let folder = try makeSandboxDirectory("PhoneBrailleHold")
+        let service = ConfigService(fileURL: folder.appendingPathComponent("config.json"))
+        addTeardownBlock { service._dropScheduledSaveForTesting() }
+        let settings = SettingsViewModel(
+            notificationCenter: NotificationCenter(), initializeServices: false,
+            userDefaults: makeSandboxedPreferences("PhoneBrailleHold"), configService: service
+        )
+        let own = BrailleTableCatalog.defaultTableID
+        var file = ConfigService.AppConfig()
+        file.brailleTable = theirs
+
+        // Applying the file takes nothing of it, and what the launch's save writes is the file's value.
+        settings.applyConfigChanges(file)
+        XCTAssertEqual(settings.brailleTable, own, "a table this platform lacks was taken")
+        var written = ConfigService.AppConfig()
+        settings.writePreferences(into: &written)
+        XCTAssertEqual(written.brailleTable, theirs, "the save handed the other platform this one's table")
+        settings.writePreferences(into: &written)
+        XCTAssertEqual(written.brailleTable, theirs)
+
+        // A change on this device replaces it, and stays replaced.
+        settings.brailleTable = "en-us-g1.ctb"
+        settings.writePreferences(into: &written)
+        XCTAssertEqual(written.brailleTable, "en-us-g1.ctb")
+        settings.writePreferences(into: &written)
+        XCTAssertEqual(written.brailleTable, "en-us-g1.ctb")
+    }
 }
