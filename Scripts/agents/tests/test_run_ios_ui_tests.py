@@ -192,6 +192,86 @@ class ReadingTheLogTests(unittest.TestCase):
         self.assertEqual(parsed["cases"], {"AUITests.testX": "passed"})
 
 
+class SplitResultLineTests(unittest.TestCase):
+    """TL17: an app log line that lands in the middle of a start or result line must not make a passed test 'never finished'."""
+
+    APP = "2026-11-25 17:06:45.859092+0000 TextMouth[65200:169312] [Client] XPC connection interrupted\n"
+    START = "Test Case '-[TextMouthiOSTests.BrailleFileReaderTests testUnseenCharactersAreNamedByTheirCode]' started.\n"
+    RESULT = "Test Case '-[TextMouthiOSTests.BrailleFileReaderTests testUnseenCharactersAreNamedByTheirCode]' passed (0.003 seconds).\n"
+    NAME = "BrailleFileReaderTests.testUnseenCharactersAreNamedByTheirCode"
+
+    def parsed(self, text):
+        """The log read as the script reads it."""
+        return uitests.parse_results(text, ROOT)
+
+    def split_at(self, text, where, count=1):
+        """`text` with the app's line put in the middle of its result line, just before the first `where` in it."""
+        at = text.index(where)
+        return text[:at] + self.APP * count + text[at:]
+
+    def test_the_exact_fragment_of_train_1125_1123_reads_as_a_pass(self):
+        log = (self.START + "Test Case '-[TextMouthiOSTests" + self.APP
+               + ".BrailleFileReaderTests testUnseenCharactersAreNamedByTheirCode]' passed (0.003 seconds).\n")
+        parsed = self.parsed(log)
+        self.assertEqual(parsed["cases"], {self.NAME: "passed"})
+        self.assertEqual(parsed["failures"], [])
+        self.assertIn(self.APP, uitests.rejoin_split_results(log), "the app's line is kept, not dropped")
+
+    def test_a_split_in_the_class_the_method_or_the_status_is_read(self):
+        for where in (".BrailleFileReaderTests", " testUnseen", "passed", "(0.003", "seconds)."):
+            with self.subTest(split_before=where):
+                parsed = self.parsed(self.START + self.split_at(self.RESULT, where))
+                self.assertEqual(parsed["cases"], {self.NAME: "passed"})
+                self.assertEqual(parsed["failures"], [])
+
+    def test_a_split_in_the_middle_of_a_word_is_read(self):
+        for where in ("sed (", "ssed (", "Reader"):
+            with self.subTest(split_before=where):
+                self.assertEqual(self.parsed(self.START + self.split_at(self.RESULT, where))["cases"], {self.NAME: "passed"})
+
+    def test_a_failed_and_a_skipped_result_line_split_are_read_too(self):
+        for outcome in ("failed", "skipped"):
+            result = self.RESULT.replace("passed", outcome)
+            self.assertEqual(self.parsed(self.START + self.split_at(result, "BrailleFileReaderTests"))["cases"], {self.NAME: outcome})
+
+    def test_the_swift_form_split_is_read(self):
+        result = "Test case 'ReaderUITests.testA()' passed on 'iPhone 17 - xctest (123)' (1.234 seconds)\n"
+        self.assertEqual(self.parsed(self.split_at(result, "testA"))["cases"], {"ReaderUITests.testA": "passed"})
+
+    def test_two_splits_in_one_line_are_both_rejoined(self):
+        line = self.split_at(self.split_at(self.RESULT, "BrailleFileReaderTests"), "passed")
+        self.assertEqual(line.count(self.APP), 2)
+        parsed = self.parsed(self.START + line)
+        self.assertEqual(parsed["cases"], {self.NAME: "passed"})
+        self.assertEqual(parsed["failures"], [])
+        self.assertEqual(self.parsed(self.START + self.split_at(self.RESULT, "BrailleFileReaderTests", count=3))["cases"],
+                         {self.NAME: "passed"}, "three app lines in a row")
+
+    def test_a_split_start_line_still_starts_the_test(self):
+        # The start is cut and the result never comes: the test is named as unfinished, as a whole start line's is.
+        parsed = self.parsed(self.split_at(self.START, "BrailleFileReaderTests"))
+        self.assertEqual(parsed["cases"], {self.NAME: "failed"})
+        self.assertEqual(parsed["failures"], [f"FAILED {self.NAME} (TextMouthiOSTests) at (no location): {uitests.UNFINISHED}"])
+
+    def test_a_real_crash_a_started_test_with_no_result_line_is_still_reported(self):
+        # The app's lines follow the start line (whole) and no result ever comes.
+        parsed = self.parsed(self.START + self.APP + self.APP)
+        self.assertEqual(parsed["failures"], [f"FAILED {self.NAME} (TextMouthiOSTests) at (no location): {uitests.UNFINISHED}"])
+        # An app line after the start line on the same line, with nothing of the test's after it.
+        parsed = self.parsed(self.START.rstrip("\n") + self.APP)
+        self.assertEqual(parsed["cases"], {self.NAME: "failed"})
+        # A crash in a test whose neighbour's result line was split: only the neighbour is rescued.
+        other = self.START.replace("BrailleFileReaderTests", "OtherTests").replace("testUnseenCharactersAreNamedByTheirCode", "testB")
+        parsed = self.parsed(self.START + self.split_at(self.RESULT, "BrailleFileReaderTests") + other + self.APP)
+        self.assertEqual(parsed["cases"], {self.NAME: "passed", "OtherTests.testB": "failed"})
+
+    def test_a_whole_line_and_text_that_only_looks_like_one_are_left_alone(self):
+        whole = self.START + self.APP + self.RESULT + self.APP
+        self.assertEqual(uitests.rejoin_split_results(whole), whole)
+        self.assertEqual(uitests.rejoin_split_results("no tests here\n" + self.APP), "no tests here\n" + self.APP)
+        self.assertEqual(uitests.rejoin_split_results(""), "")
+
+
 class TheTwoBundlesTests(unittest.TestCase):
     """One run holds the unit tests and the interface tests; the results name each test's bundle and count each apart."""
 
