@@ -37,6 +37,8 @@ enum PhoneReaderControl: CaseIterable, Hashable, Sendable {
     case voice
     /// Opens the Book Info sheet.
     case bookInfo
+    /// Opens the Export sheet.
+    case export
     /// A move back by the unit in force.
     case skipBackward
     /// A move forward by the unit in force.
@@ -54,13 +56,14 @@ enum PhoneReaderControl: CaseIterable, Hashable, Sendable {
     /// that each pair stays together instead: Previous and Next Heading in
     /// the second row, Bookmarks, Headings, and Search in Book in the third,
     /// and the two skips side by side in the last, as the spec's last row
-    /// has them. The fifth row, Voice and Book Info, holds two.
+    /// has them. The fifth row holds Voice, Book Info, and Export this book
+    /// (FR31), so the grid keeps its shape and the two skips stay last.
     static let gridRows: [[PhoneReaderControl]] = [
         [.whereAmI, .navigationUnit, .speed],
         [.previousHeading, .nextHeading, .addBookmark],
         [.bookmarks, .headings, .searchInBook],
         [.goTo, .returnToPlace, .sleepTimer],
-        [.voice, .bookInfo],
+        [.voice, .bookInfo, .export],
         [.skipBackward, .skipForward],
     ]
 
@@ -85,6 +88,7 @@ enum PhoneReaderControl: CaseIterable, Hashable, Sendable {
         case .sleepTimer: return .sleepTimer
         case .voice: return .voice
         case .bookInfo: return .bookInfo
+        case .export: return .export
         case .skipBackward: return .skipBackward
         case .skipForward: return .skipForward
         }
@@ -101,6 +105,7 @@ enum PhoneReaderControl: CaseIterable, Hashable, Sendable {
         case .sleepTimer: return .sleepTimer
         case .voice: return .voice
         case .bookInfo: return .bookInfo
+        case .export: return .export
         default: return nil
         }
     }

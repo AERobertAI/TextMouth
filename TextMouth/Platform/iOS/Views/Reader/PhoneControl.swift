@@ -130,9 +130,10 @@ final class PhoneControlButton: UIButton {
     /// reads the getters below, so setting it pushes nothing to VoiceOver.
     func refreshTitle() {
         guard let description = describe() else { return }
+        let name = description.visibleTitle ?? description.label
         let title = showsValue && !description.value.isEmpty
-            ? "\(description.label): \(description.value)"
-            : description.label
+            ? "\(name): \(description.value)"
+            : name
         if configuration?.title != title {
             configuration?.title = title
         }
