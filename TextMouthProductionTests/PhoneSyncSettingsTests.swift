@@ -252,6 +252,38 @@ final class PhoneSyncSettingsTests: XCTestCase {
         XCTAssertEqual(record.heard, ["Sync is off."])
     }
 
+    // MARK: - Keep on All Devices
+
+    /// With sync off a book's row offers neither keep command (R1); with it on, one of the two by whether the book is kept,
+    /// after the reading list's and before Move to Folder.
+    func testRowCommandsOfferKeepOnlyWithSyncOn() {
+        func titles(isKept: Bool?) -> [String] {
+            PhoneLibraryOffer.bookCommands(
+                for: PhoneLibraryFixture.book("Dune"),
+                isInReadingList: false,
+                moves: nil,
+                removal: PhoneLibraryFixture.phoneRemoval,
+                isKeptOnAllDevices: isKept
+            ).map(\.title)
+        }
+        XCTAssertEqual(titles(isKept: nil), ["Book Info", "Add to Reading List", "Move to Folder...", "Remove from Library..."])
+        XCTAssertEqual(
+            titles(isKept: false),
+            ["Book Info", "Add to Reading List", "Keep on All Devices", "Move to Folder...", "Remove from Library..."]
+        )
+        XCTAssertEqual(
+            titles(isKept: true),
+            ["Book Info", "Add to Reading List", "Stop Keeping on All Devices", "Move to Folder...", "Remove from Library..."]
+        )
+    }
+
+    /// What is said when keeping ends.
+    func testStoppedKeepingIsSaid() {
+        XCTAssertEqual(PhoneSyncWording.announceStoppedKeeping(title: "Dune"), "Stopped keeping Dune on all devices.")
+        XCTAssertEqual(SyncWording.announceKeeping(title: "Dune"), "Keeping Dune on all devices.")
+        XCTAssertEqual(SyncWording.keptState, "Kept on all devices")
+    }
+
     // MARK: - The Section in Settings
 
     /// The Sync section comes after About, with its own heading.

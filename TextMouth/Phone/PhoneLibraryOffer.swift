@@ -19,6 +19,10 @@ enum PhoneLibraryOffer {
         case removeFromReadingList
         /// Asks for a folder, and moves the book there.
         case moveToFolder
+        /// Keeps the book's files on every device that syncs (FR43, section 16).
+        case keepOnAllDevices
+        /// Ends keeping the book's files on every device that syncs.
+        case stopKeepingOnAllDevices
         /// Moves the book one place up the order the list shows.
         case moveUp
         /// Moves the book one place down the order the list shows.
@@ -56,11 +60,15 @@ enum PhoneLibraryOffer {
     ///     where the list shows no order the listener arranges.
     ///   - removal: The removal preferences in force, which name the removal:
     ///     "Remove from Library..." when it asks first.
+    ///   - isKeptOnAllDevices: Whether the book is kept on all devices, or nil
+    ///     while sync is off, when neither keep command is offered (R1: nothing
+    ///     is added before a folder is chosen).
     static func bookCommands(
         for book: Book,
         isInReadingList: Bool,
         moves: LibraryManualMoves?,
-        removal: RemovalPreferences
+        removal: RemovalPreferences,
+        isKeptOnAllDevices: Bool? = nil
     ) -> [Command] {
         var commands = [Command(action: .bookInfo, title: PhoneLibraryVocabulary.bookInfo)]
         // The Mac's own rule: a book is offered exactly one of the two, by
@@ -69,6 +77,12 @@ enum PhoneLibraryOffer {
         for listCommand in ReadingListCommand.commands(for: [book], isSelection: false, inList: inList) {
             let action: Action = listCommand.kind == .add ? .addToReadingList : .removeFromReadingList
             commands.append(Command(action: action, title: listCommand.title))
+        }
+        // One of the two keep commands, with sync on.
+        if let isKept = isKeptOnAllDevices {
+            commands.append(isKept
+                ? Command(action: .stopKeepingOnAllDevices, title: SyncWording.stopKeepingTitle)
+                : Command(action: .keepOnAllDevices, title: SyncWording.keepTitle))
         }
         // Nil for a feed's item, which stays in its feed's folder.
         if let moveTitle = LibraryTransitionWording.moveToFolderTitle(for: [book]) {

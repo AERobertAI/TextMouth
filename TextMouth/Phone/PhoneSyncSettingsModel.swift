@@ -49,6 +49,12 @@ enum PhoneSyncWording {
         InterfaceText.line("phoneSync.stopButton", "Stop Syncing")
     }
 
+    /// Announced after a person ends keeping a book on all devices.
+    static func announceStoppedKeeping(title: String) -> String {
+        // Translators: Said aloud after the person chooses Stop Keeping on All Devices. %@ is the book's title.
+        InterfaceText.line("phoneSync.announce.stoppedKeeping", "Stopped keeping \(title) on all devices.")
+    }
+
     /// The name of the other device in "Last heard from …": the iPhone hears
     /// from the Mac.
     static var otherDeviceName: String {

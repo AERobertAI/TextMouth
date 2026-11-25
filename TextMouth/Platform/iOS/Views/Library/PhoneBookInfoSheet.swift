@@ -297,6 +297,32 @@ private struct PhoneBookInfoFacts: View {
                 PhoneBookInfoRow(PhoneLibraryVocabulary.wordCountRow, value: "\(words)")
             }
         }
+        PhoneBookInfoKeep(book: book)
+    }
+}
+
+/// The Kept on all devices switch (FR43, section 16), with sync on only: it keeps the book's files on every device that syncs,
+/// and takes effect when it is flipped, not on Save, since it is no field of the book. Its hint says what it does, once.
+private struct PhoneBookInfoKeep: View {
+    let book: Book
+    /// What the app's one sync reports: the switch shows with sync on, and follows the set kept.
+    @ObservedObject private var center = SyncCenter.shared
+
+    var body: some View {
+        if center.status.isOn {
+            Section {
+                Toggle(isOn: Binding(
+                    get: { center.keptBookIDs.contains(book.id) },
+                    set: { keeps in
+                        center.setKeep(keeps, for: [book.id])
+                        PhoneAnnouncer.say(keeps ? SyncWording.announceKeeping(title: book.title) : PhoneSyncWording.announceStoppedKeeping(title: book.title))
+                    }
+                )) {
+                    Text(SyncWording.keptState).phoneWholeWords()
+                }
+                .accessibilityHint(SyncWording.keepHint)
+            }
+        }
     }
 }
 

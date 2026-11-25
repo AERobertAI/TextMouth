@@ -547873,6 +547873,162 @@
         }
       }
     },
+    "phoneSync.announce.stoppedKeeping" : {
+      "comment" : "Said aloud after the person chooses Stop Keeping on All Devices. %@ is the book's title.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تم إيقاف إبقاء %@ على كل الأجهزة."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ সব ডিভাইসে রাখা বন্ধ করা হয়েছে।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ wird nicht mehr auf allen Geräten behalten."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stopped keeping %@ on all devices."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Se dejó de mantener %@ en todos los dispositivos."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "نگه‌داشتن %@ روی همه دستگاه‌ها متوقف شد."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ n’est plus conservé sur tous les appareils."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הפסקת השמירה של %@ בכל המכשירים."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ को सभी डिवाइस पर रखना बंद किया गया।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Berhenti menyimpan %@ di semua perangkat."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ non viene più conservato su tutti i dispositivi."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@をすべてのデバイスに保持する設定を解除しました。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@을(를) 모든 기기에 보관하는 것을 중단했습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ wordt niet meer op alle apparaten bewaard."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Przestano zachowywać %@ na wszystkich urządzeniach."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ não será mais mantido em todos os dispositivos."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "«%@» больше не хранится на всех устройствах."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ behålls inte längre på alla enheter."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เลิกเก็บ %@ ไว้ในทุกอุปกรณ์แล้ว"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ artık tüm aygıtlarda tutulmayacak."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "«%@» більше не зберігається на всіх пристроях."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ کو تمام آلات پر رکھنا بند کر دیا گیا۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Đã ngừng giữ %@ trên tất cả thiết bị."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "已停止在所有设备上保留 %@。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "已停止在所有裝置上保留 %@。"
+          }
+        }
+      }
+    },
     "phoneSync.otherDeviceName" : {
       "comment" : "The name of the Mac, in the line \"Last heard from Mac at 9:40 AM.\" shown on an iPhone.",
       "extractionState" : "manual",
