@@ -1017,11 +1017,13 @@ targets:
       - TextMouthProductionTests/DataDirectoryCopyTests.swift
       - TextMouthProductionTests/DataDirectoryCreationTests.swift
       - TextMouthProductionTests/DataDirectoryServicesTests.swift
+      - TextMouthProductionTests/DeepMarkdown.swift
       - TextMouthProductionTests/DocumentByteLimitTests.swift
       - TextMouthProductionTests/EPUBExportRoundTripTests.swift
       - TextMouthProductionTests/EPUBExportWriterNavigationTests.swift
       - TextMouthProductionTests/EPUBExportWriterTests.swift
       - TextMouthProductionTests/EPUBLinkAddressTests.swift
+      - TextMouthProductionTests/EPUBRoundTripSupport.swift
       - TextMouthProductionTests/EPUBStructureFailureTests.swift
       - TextMouthProductionTests/EndOfBookRuleTests.swift
       - TextMouthProductionTests/ExportContentsListTests.swift
@@ -1099,6 +1101,7 @@ targets:
       - TextMouthProductionTests/MarkdownExportWriterTests.swift
       - TextMouthProductionTests/MarkdownNestingTests.swift
       - TextMouthProductionTests/MarkdownPageMarkerTests.swift
+      - TextMouthProductionTests/MarkdownWalkCorpusKit.swift
       - TextMouthProductionTests/MarkupFuzzGenerator.swift
       - TextMouthProductionTests/MarkupGuardTests.swift
       - TextMouthProductionTests/MediaGestureDetectorTests.swift
@@ -1171,6 +1174,7 @@ targets:
       - TextMouthProductionTests/SpeechPreparationBenchmarkSupport.swift
       - TextMouthProductionTests/SpeechPreparationSubstitutionTests.swift
       - TextMouthProductionTests/SpeechRenderCoordinatorTests.swift
+      - TextMouthProductionTests/StackProbe.swift
       - TextMouthProductionTests/StorageDestinationAssessmentTests.swift
       - TextMouthProductionTests/StorageGenerationTestSupport.swift
       - TextMouthProductionTests/StorageGenerationTests.swift
@@ -1196,6 +1200,7 @@ targets:
       - TextMouthProductionTests/ViewsAndWindowsCloudStatesTests.swift
       - TextMouthProductionTests/WordDocumentComparisonTests.swift
       - TextMouthProductionTests/WordDocumentLegacyComparisonTests.swift
+      - TextMouthProductionTests/WordsInOrderSupport.swift
       - TextMouthProductionTests/XMLInputGuardTests.swift
       - TextMouthProductionTests/ZIPTestSupport.swift
       # End of the shared Mac test files.
