@@ -125,7 +125,7 @@ RESOLVE_PACKAGES = xcodebuild -resolvePackageDependencies \
 	-scheme $(SCHEME) \
 	-derivedDataPath "$(DERIVED_BUILD_DIR)"
 
-.PHONY: all clean build debug run install release full-build-note uninstall generate set-version bump-patch bump-minor resolve-packages update-packages test check release-goldens check-selftest issues-merge-driver test-area lint-tests lint-a11y lint-ogg lint-docs lint-l10n check-ios-plist check-ios-licenses typecheck-ios typecheck-mac typecheck-tests typecheck-ios-tests typecheck-tests-census mac-projection perf-baselines open xcode help signing-identity ios-size
+.PHONY: all clean build debug run install release full-build-note uninstall generate set-version bump-patch bump-minor resolve-packages update-packages test check release-goldens check-selftest issues-merge-driver test-area lint-tests lint-a11y lint-ogg lint-docs lint-l10n check-ios-plist check-ios-licenses typecheck-ios typecheck-mac typecheck-tests typecheck-ios-tests typecheck-tests-census mac-projection perf-baselines open xcode help signing-identity ios-size install-ios
 
 ## Default: build the app
 all: build
@@ -156,6 +156,7 @@ help:
 	@echo "  make check-ios-plist - Fail if the iOS Info.plist is not what the Mac's gives (Scripts/ios/sync-info-plist.py --check)"
 	@echo "  make check-ios-licenses - Fail if a library the iPhone app links has no licence in the app (Scripts/ios/check-licenses.py)"
 	@echo "  make ios-size   - Build the iPhone app for a device (Release, unsigned) under the heavy-work lock, then measure it: app, IPA, App Store estimate, biggest files, libraries"
+	@echo "  make install-ios - Build the iPhone app, signed, and install it on your own iPhone with no Xcode window (SIZE_PROFILE=light by default; TEAM=, DEVICE=, LAUNCH=1; once: add your Apple ID in Xcode, connect the iPhone, turn on Developer Mode; never run by an agent)"
 	@echo "  make l10n-sync  - Read the code's InterfaceText.line calls and bring the String Catalog into step with them (seconds: no build, no lock)"
 	@echo "  make l10n-status - Per language: the strings translated, machine translated, new, needing review, stale, and missing, and the English bytes (LANG_CODE=es for one language)"
 	@echo "  make l10n-size  - The English bytes against the 150,000-byte budget, and each language's blob in the pack, and the pack's total"
@@ -367,6 +368,19 @@ check-selftest:
 ## IOS_SIZE_ARGS passes options to Scripts/ios/app-size.py build, such as --json.
 ios-size: generate
 	@python3 -I -B Scripts/agents/run_locked.py ios-size python3 -I -B Scripts/ios/app-size.py build $(IOS_SIZE_ARGS)
+
+## Build the iPhone app signed for your own team and install it on your own
+## iPhone, from the command line (Scripts/ios/install-on-device.py: its --help
+## and docs/developer/building-ios.md say the one-time steps). The profile is
+## light unless you give SIZE_PROFILE=full, whose link takes several GB of
+## memory (full-build-note says so). It takes the heavy-work lock like ios-size,
+## so it waits behind any build already going on this Mac, and says so. TEAM
+## (a 10-character team identifier), DEVICE (the iPhone's name or UDID), and
+## LAUNCH=1 (start the app after installing) are passed through when given.
+## Run it yourself: no agent runs it, since it signs and installs.
+install-ios: SIZE_PROFILE = light
+install-ios: full-build-note generate
+	@python3 -I -B Scripts/agents/run_locked.py install-ios python3 -I -B Scripts/ios/install-on-device.py --profile "$(SIZE_PROFILE)" $(if $(TEAM),--team "$(TEAM)") $(if $(DEVICE),--device "$(DEVICE)") $(if $(LAUNCH),--launch)
 
 ## Define the merge driver that .gitattributes names for Issues/*.md, in this
 ## repository's config, which every worktree (the train's too) shares; run it once.
