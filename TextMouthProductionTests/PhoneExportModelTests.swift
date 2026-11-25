@@ -111,6 +111,86 @@ final class PhoneExportModelTests: XCTestCase {
         XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: folder.path).count, 1)
     }
 
+    /// A Stop pressed as the export begins ends it as stopped, and the hold the run took is let go; so is the hold of
+    /// an export whose writer fails (below).
+    func testTheHoldEndsOnAnEarlyStop() async throws {
+        let world = try makeIntegrationWorld("Phone Export Early Stop")
+        let book = try world.importBook(from: writeSource(named: "Harbour Pilots.md"))
+        let folder = try makeSandboxDirectory("Phone Export Early Stop Folder")
+        let holds = HoldRecord()
+        let stopper = WordsSeenWhileHolding()
+        let model = BookExportModel(
+            books: [book],
+            library: world.library,
+            destination: folder,
+            offering: PhoneExportOffer.kinds,
+            delivery: .coordinatedCopy,
+            holdWhileExporting: { url in
+                holds.began(url)
+                // Stop, as a person presses it the moment the export begins.
+                stopper.model?.stop()
+                return { holds.ended() }
+            }
+        )
+        stopper.model = model
+        await model.load()
+
+        let exported = await model.export()
+        let outcome = try XCTUnwrap(exported)
+
+        XCTAssertTrue(outcome.wasCancelled)
+        XCTAssertEqual(outcome.exported, [])
+        XCTAssertEqual(holds.events, ["began \(folder.path)", "ended"])
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: folder.path), [])
+    }
+
+    /// The hold of an export whose writer fails is let go too, and the failure is the writer's sentence.
+    func testTheHoldEndsWhenTheWriterFails() async throws {
+        let world = try makeIntegrationWorld("Phone Export Writer Error")
+        let book = try world.importBook(from: writeSource(named: "Harbour Pilots.md"))
+        let folder = try makeSandboxDirectory("Phone Export Writer Error Folder")
+        let holds = HoldRecord()
+        let model = BookExportModel(
+            books: [book],
+            library: world.library,
+            destination: folder,
+            writers: [FailingWriter()],
+            offering: PhoneExportOffer.kinds,
+            delivery: .coordinatedCopy,
+            holdWhileExporting: { url in
+                holds.began(url)
+                return { holds.ended() }
+            }
+        )
+        await model.load()
+        model.setChecked(true, for: .markdown)
+        model.setChecked(false, for: .originalFile)
+        model.setConversionID("failing", for: .markdown)
+
+        let exported = await model.export()
+        let outcome = try XCTUnwrap(exported)
+
+        XCTAssertEqual(outcome.failures.map(\.reason), ["The writer cannot write this book."])
+        XCTAssertEqual(holds.events, ["began \(folder.path)", "ended"])
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: folder.path), [])
+    }
+
+    /// The end of an export names the folder as the caller read it under its scope, and not as the model finds it later.
+    func testTheEndNamesTheFolderAsTheCallerReadIt() async throws {
+        let world = try makeIntegrationWorld("Phone Export Folder Name")
+        let book = try world.importBook(from: writeSource(named: "Harbour Pilots.md"))
+        let folder = try makeSandboxDirectory("Phone Export Folder Name Folder")
+        let model = BookExportModel(
+            books: [book], library: world.library, destination: folder, offering: PhoneExportOffer.kinds,
+            destinationName: "Downloads", delivery: .coordinatedCopy
+        )
+        await model.load()
+
+        _ = await model.export()
+
+        XCTAssertEqual(model.finishedWords, "Exported 1 item to Downloads.")
+    }
+
     /// An export that cannot start holds nothing.
     func testAnExportThatCannotStartHoldsNothing() async throws {
         let world = try makeIntegrationWorld("Phone Export No Hold")
@@ -231,12 +311,17 @@ final class PhoneExportModelTests: XCTestCase {
         let world = try makeIntegrationWorld("Phone Export Guard")
         let book = try world.importBook(from: writeSource(named: "Harbour Pilots.md"))
         let folder = try makeSandboxDirectory("Phone Export Guard Folder")
+        let holds = HoldRecord()
         let model = BookExportModel(
             books: [book],
             library: world.library,
             destination: folder,
             offering: PhoneExportOffer.kinds,
-            memoryGuard: { _, _ in throw TextExportError("There is no room.") }
+            memoryGuard: { _, _ in throw TextExportError("There is no room.") },
+            holdWhileExporting: { url in
+                holds.began(url)
+                return { holds.ended() }
+            }
         )
         await model.load()
         model.setChecked(true, for: .markdown)
@@ -245,6 +330,8 @@ final class PhoneExportModelTests: XCTestCase {
 
         let exported = await model.export()
         let outcome = try XCTUnwrap(exported)
+
+        XCTAssertEqual(holds.events, ["began \(folder.path)", "ended"], "the hold was kept after a refusal")
 
         XCTAssertEqual(outcome.exported, [])
         XCTAssertEqual(outcome.failures.map(\.reason), ["There is no room."])
@@ -262,6 +349,18 @@ final class PhoneExportModelTests: XCTestCase {
     private final class WordsSeenWhileHolding {
         var model: BookExportModel?
         var words: [String?] = []
+    }
+
+    /// A writer whose every book fails, with a sentence of its own.
+    private struct FailingWriter: TextExportWriter {
+        let id = "failing"
+        let name = "Failing"
+        let hint = "Fails."
+        let fileExtension = "fail"
+
+        func write(_ document: ExportDocument, options: NoTextExportOptions, to url: URL, cancellation: BookExportCancellation) throws {
+            throw TextExportError("The writer cannot write this book.")
+        }
     }
 
     /// What an export held and let go, in order.

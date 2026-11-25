@@ -123,6 +123,34 @@ final class ExportUITests: TextMouthUITestCase {
             in: try elementsInOrder(of: app)
         )
         XCTAssertTrue((app.buttons["Braille code"].value as? String ?? "").hasPrefix("Unified English Braille"), "Braille code says \(String(describing: app.buttons["Braille code"].value))")
+        // Each row says its value, as the Mac's pop-ups and steppers do.
+        let rows = try elementsInOrder(of: app)
+        func value(of label: String) -> String? { rows.first { $0.label == label }?.value }
+        XCTAssertEqual(value(of: "Cells per line"), "40 cells")
+        XCTAssertEqual(value(of: "Lines per page"), "25 lines")
+        XCTAssertEqual(value(of: "Line ends"), "CR LF")
+        XCTAssertEqual(value(of: "Braille file characters"), "North American Braille ASCII")
+        // The three choice rows each open one sheet, with Cancel first and the choices after it.
+        tap(app.buttons["Braille code"], until: app.navigationBars["Braille code"], in: app, what: "the Braille code row")
+        let codes = try elementsOfSheet(titled: "Braille code", in: app)
+        assertOrder(["Braille code", "Cancel"], in: codes)
+        XCTAssertTrue(codes.contains { $0.label.hasPrefix("Unified English Braille") }, "No table of Unified English Braille among the choices")
+        app.navigationBars["Braille code"].buttons["Cancel"].tap()
+        tap(app.buttons["Line ends"], until: app.navigationBars["Line ends"], in: app, what: "the Line ends row")
+        assertOrder(["Line ends", "Cancel", "CR LF", "LF"], in: try elementsOfSheet(titled: "Line ends", in: app))
+        app.buttons["LF"].tap()
+        let lineEnd = NSPredicate(format: "value == %@", "LF")
+        XCTAssertEqual(
+            XCTWaiter().wait(for: [XCTNSPredicateExpectation(predicate: lineEnd, object: app.buttons["Line ends"])], timeout: Self.patience),
+            .completed, "Line ends does not say LF"
+        )
+        tap(app.buttons["Braille file characters"], until: app.navigationBars["Braille file characters"], in: app, what: "the Braille file characters row")
+        assertOrder(
+            ["Braille file characters", "Cancel", "North American Braille ASCII"],
+            in: try elementsOfSheet(titled: "Braille file characters", in: app)
+        )
+        app.navigationBars["Braille file characters"].buttons["Cancel"].tap()
+        XCTAssertTrue(app.buttons["Convert to"].appears(within: Self.patience), "The export sheet is not back")
         // PEF has no line ends or braille file characters.
         tap(app.buttons["Convert to"], until: app.navigationBars["Convert to"], in: app, what: "the Convert to row")
         app.buttons["PEF"].tap()

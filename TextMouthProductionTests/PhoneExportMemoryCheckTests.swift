@@ -1,3 +1,4 @@
+import os
 import XCTest
 @testable import TextMouth
 
@@ -21,12 +22,12 @@ final class PhoneExportMemoryCheckTests: XCTestCase {
     }
 
     /// The braille writers have a figure of their own, larger than the text writers', which holds the
-    /// peaks measured on GitHub's simulator (19.0 to 28.8 for braille, 5.4 to 10.9 for the others); every
-    /// other writer has the text figure, an unknown one included.
+    /// peaks measured on GitHub's simulator over several runs (10.9 to 28.8 for braille, 5.4 to 10.9 for
+    /// the others); every other writer has the text figure, an unknown one included.
     func testTheBrailleWritersHaveALargerFigure() {
         XCTAssertGreaterThan(PhoneExportMemoryCheck.braillePeakBytesPerTextByte, PhoneExportMemoryCheck.peakBytesPerTextByte)
-        XCTAssertGreaterThanOrEqual(PhoneExportMemoryCheck.braillePeakBytesPerTextByte, 29, "the most measured is 28.8")
-        XCTAssertGreaterThanOrEqual(PhoneExportMemoryCheck.peakBytesPerTextByte, 11, "the most measured is 10.9")
+        XCTAssertGreaterThanOrEqual(PhoneExportMemoryCheck.braillePeakBytesPerTextByte, 29, "the most measured over the runs is 28.8")
+        XCTAssertGreaterThanOrEqual(PhoneExportMemoryCheck.peakBytesPerTextByte, 11, "the most measured over the runs is 10.9")
         for id in [BRFExportWriter().id, PEFExportWriter().id] {
             XCTAssertEqual(PhoneExportMemoryCheck.peakBytesPerTextByte(forWriter: id), PhoneExportMemoryCheck.braillePeakBytesPerTextByte, id)
         }
@@ -154,6 +155,67 @@ final class PhoneExportMemoryCheckTests: XCTestCase {
         XCTAssertEqual(asMarkdown.exported.map(\.lastPathComponent), ["Large Harbour - Text.md"])
     }
 
+    /// An export of two kinds asks about each against its own writer's figure: with 600 MB left, a book of 4 MB of
+    /// text as HTML fits (64 MB and the floor) and its transcript's text as BRF does not (128 MB and the floor), so
+    /// the one is written and the other fails by name, in the one export.
+    func testTwoKindsOfOneExportAreEachCheckedAgainstTheirOwnWriter() throws {
+        let sandbox = try makeSandboxDirectory("Phone Export Two Kinds")
+        let markdown = try makeOffer(title: "Large Harbour", bytes: 4 * 1_048_576, in: sandbox)
+        let transcript = try makeOffer(title: "Large Harbour", bytes: 4 * 1_048_576, in: sandbox, kind: .transcript)
+        let both = BookExportOffer(book: markdown.book, items: markdown.items + transcript.items, isPackageInCloud: false)
+        let asked = AskedRecord()
+        let memoryLeft: UInt64 = 600 << 20
+        let memoryGuard: BookExportMemoryGuard = { writerID, textBytes in
+            asked.note(writerID)
+            try PhoneExportMemoryCheck.check(writerID: writerID, textBytes: textBytes, availableBytes: memoryLeft)
+        }
+        let html = BookExportConversion.text(TextExportConversion(HTMLExportWriter(), options: NoTextExportOptions()))
+        let brf = BookExportConversion.text(TextExportConversion(BRFExportWriter(), options: BrailleExportOptions()))
+
+        let outcome = BookExportService.export(
+            [both],
+            kinds: [.markdown, .transcript],
+            conversions: [.markdown: html, .transcript: brf],
+            to: sandbox.appendingPathComponent("Chosen", isDirectory: true),
+            delivery: .coordinatedCopy,
+            memoryGuard: memoryGuard
+        )
+
+        XCTAssertEqual(asked.ids.sorted(), [BRFExportWriter().id, HTMLExportWriter().id].sorted(), "each kind was asked about by its own writer")
+        XCTAssertEqual(outcome.exported.map(\.lastPathComponent), ["Large Harbour - Text.html"])
+        XCTAssertEqual(outcome.failures.map(\.reason), [PhoneExportWording.tooLittleMemory])
+        XCTAssertEqual(outcome.failures.first?.name, "Large Harbour - Transcript.brf")
+    }
+
+    /// The plain text and a transcript's captions are asked about too, by names of their own, before their source is
+    /// read: a refusal fails the file by name, and nothing is made.
+    func testThePlainTextAndTheCaptionsAreAskedAboutBeforeTheyAreRead() throws {
+        let sandbox = try makeSandboxDirectory("Phone Export Plain And Captions")
+        let plain = try makeOffer(title: "Large Harbour", bytes: 4 * 1_048_576, in: sandbox, kind: .plainText)
+        let captions = try makeOffer(title: "Large Harbour", bytes: 4 * 1_048_576, in: sandbox, kind: .transcript, asCaptionsSource: true)
+        let both = BookExportOffer(book: plain.book, items: plain.items + captions.items, isPackageInCloud: false)
+        let asked = AskedRecord()
+        let refuse: BookExportMemoryGuard = { writerID, _ in
+            asked.note(writerID)
+            throw TextExportError("No room.")
+        }
+        let destination = sandbox.appendingPathComponent("Chosen", isDirectory: true)
+
+        let outcome = BookExportService.export(
+            [both],
+            kinds: [.plainText, .transcript],
+            conversions: [.transcript: .timedText(.webVTT)],
+            to: destination,
+            delivery: .coordinatedCopy,
+            memoryGuard: refuse
+        )
+
+        XCTAssertEqual(asked.ids.sorted(), [BookExportService.captionsGuardID, BookExportService.plainTextGuardID].sorted())
+        XCTAssertEqual(outcome.exported, [])
+        XCTAssertEqual(outcome.failures.map(\.reason), ["No room.", "No room."])
+        XCTAssertFalse(FileManager.default.fileExists(atPath: destination.path), "a refused file made a folder")
+    }
+
     /// With no guard, as on the Mac, a book is converted whatever its size.
     func testWithNoGuardEveryBookIsConverted() throws {
         let sandbox = try makeSandboxDirectory("Phone Export No Guard")
@@ -173,24 +235,50 @@ final class PhoneExportMemoryCheckTests: XCTestCase {
 
     // MARK: - Helpers
 
+    /// The writer ids a guard was asked about, in the order asked, kept under a lock: the export asks off the test's thread.
+    private final class AskedRecord: Sendable {
+        private let asked = OSAllocatedUnfairLock<[String]>(initialState: [])
+        var ids: [String] { asked.withLock { $0 } }
+        func note(_ id: String) { asked.withLock { $0.append(id) } }
+    }
+
     /// An offer, made by hand, of a book's Markdown, whose text cache holds
     /// `bytes` bytes of paragraphs: written in `folder`, and sized as the
     /// offer sizes it.
-    private func makeOffer(title: String, bytes: Int, in folder: URL) throws -> BookExportOffer {
+    private func makeOffer(
+        title: String, bytes: Int, in folder: URL, kind: BookExportKind = .markdown, asCaptionsSource: Bool = false
+    ) throws -> BookExportOffer {
         let package = folder.appendingPathComponent("\(title) \(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: package, withIntermediateDirectories: true)
-        let cache = package.appendingPathComponent("content.md")
+        let cache = package.appendingPathComponent(asCaptionsSource ? TextMouthPaths.transcriptFileName : "content.md")
         let paragraph = "The pilot boat ties up at the slip.\n\n"
         let text = String(repeating: paragraph, count: max(1, bytes / paragraph.utf8.count))
         try Data(text.utf8).write(to: cache)
         let size = Int64(text.utf8.count)
         let book = Book(title: title, format: .markdown, filePath: cache.path, md5Hash: "")
-        let file = BookExportFile(
-            source: .converted(from: cache, book: ExportBookDetails(book), by: .markdown),
-            path: "\(BookExportService.fileNameStem(for: title)) - Text.md",
-            byteCount: size
-        )
-        let item = BookExportItem(kind: .markdown, folderName: nil, files: [file], fileInCloud: nil)
+        let stem = BookExportService.fileNameStem(for: title)
+        let file: BookExportFile
+        switch kind {
+        case .plainText:
+            file = BookExportFile(source: .readingText(fromMarkdown: cache), path: "\(stem) - Text.txt", byteCount: size)
+        case .transcript where asCaptionsSource:
+            // The transcript.json captions are made of: never read here, since the guard refuses first.
+            file = BookExportFile(source: .copy(cache), path: "\(stem) - Transcript.json", byteCount: size)
+        case .transcript:
+            // A transcript's text, which a text writer's conversion makes into its file.
+            file = BookExportFile(
+                source: .converted(from: cache, book: ExportBookDetails(book), by: .markdown),
+                path: "\(stem) - Transcript.md",
+                byteCount: size
+            )
+        default:
+            file = BookExportFile(
+                source: .converted(from: cache, book: ExportBookDetails(book), by: .markdown),
+                path: "\(stem) - Text.md",
+                byteCount: size
+            )
+        }
+        let item = BookExportItem(kind: kind, folderName: nil, files: [file], fileInCloud: nil)
         return BookExportOffer(book: book, items: [item], isPackageInCloud: false)
     }
 }

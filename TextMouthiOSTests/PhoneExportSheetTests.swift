@@ -37,7 +37,7 @@ final class PhoneExportSheetTests: XCTestCase {
     /// own file and its content.md, so that it offers its original file, its
     /// Markdown, and its plain text, and the iPhone's offer leaves out spoken
     /// audio. Removed when the test ends.
-    private func makeBook() throws -> Book {
+    private func makeBook(cacheText: String = "<!-- chapter: First -->\n# First\n\nOne two three.\n") throws -> Book {
         let directory = try makeSandboxDirectory("PhoneExportSheetSource")
         let file = directory.appendingPathComponent("Harbour Pilots.md")
         try Data("# First\n\nOne two three.\n".utf8).write(to: file)
@@ -50,7 +50,7 @@ final class PhoneExportSheetTests: XCTestCase {
         )
         let cache = MarkdownCacheService.cacheURL(for: book)
         try FileManager.default.createDirectory(at: cache.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try Data("<!-- chapter: First -->\n# First\n\nOne two three.\n".utf8).write(to: cache)
+        try Data(cacheText.utf8).write(to: cache)
         let package = book.tmbDirectory
         addTeardownBlock { try? FileManager.default.removeItem(at: package) }
         return book
@@ -105,6 +105,43 @@ final class PhoneExportSheetTests: XCTestCase {
         return switches(in: controller.view).sorted {
             $0.convert($0.bounds, to: controller.view).minY < $1.convert($1.bounds, to: controller.view).minY
         }
+    }
+
+    // MARK: - Stop
+
+    /// A book whose text nests quotes past the limit makes its export ask the person what to do, as an alert of the
+    /// sheet's own; Stop, pressed while the question is up, answers it Cancel Export, so the export ends as stopped,
+    /// nothing is written, and no question is left. This is the iPhone's half of `BookExportModel.init`.
+    func testStopAnswersCancelExportToTheQuestionTheExportWaitsOn() async throws {
+        let deep = DeepMarkdown.quotes(MarkupGuard.Limits.standard.deepestNesting + 1) + "\n"
+        let book = try makeBook(cacheText: deep)
+        let folder = try makeSandboxDirectory("PhoneExportSheetStop")
+        let library = LibraryViewModel(initializeServices: false)
+        library.library = Library(books: [book])
+        let model = BookExportModel(
+            books: [book],
+            library: library,
+            destination: folder,
+            deepChapterPrompting: .standard,
+            offering: PhoneExportOffer.kinds,
+            delivery: .coordinatedCopy
+        )
+        await model.load()
+        model.setChecked(true, for: .markdown)
+        model.setChecked(false, for: .originalFile)
+        model.setConversionID("html", for: .markdown)
+        let prompt = try XCTUnwrap(model.questionPrompt, "the iPhone's model has no prompt of its own")
+
+        let exporting = Task { await model.export() }
+        let asked = await eventually(timeout: 30) { prompt.pending != nil }
+        XCTAssertTrue(asked, "the export never asked about the chapter")
+        model.stop()
+        let outcome = await exporting.value
+
+        XCTAssertEqual(outcome?.wasCancelled, true)
+        XCTAssertEqual(outcome?.exported, [])
+        XCTAssertNil(prompt.pending, "the question stayed up after Stop")
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: folder.path), [])
     }
 
     // MARK: - The Kinds

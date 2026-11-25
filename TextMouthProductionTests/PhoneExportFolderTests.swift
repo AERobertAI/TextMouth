@@ -86,6 +86,55 @@ final class PhoneExportFolderTests: XCTestCase {
         XCTAssertNil(PhoneExportFolder.kept(in: defaults))
     }
 
+    /// A folder that was moved is found where it is, by its bookmark, under the name it has there.
+    func testAMovedFolderIsFoundWhereItIs() throws {
+        let defaults = makeSandboxedPreferences("PhoneExportFolderMoved")
+        let parent = try makeSandboxDirectory("Moved Parent")
+        let before = parent.appendingPathComponent("Before Exports", isDirectory: true)
+        let after = parent.appendingPathComponent("After Exports", isDirectory: true)
+        try FileManager.default.createDirectory(at: before, withIntermediateDirectories: true)
+        PhoneExportFolder.keep(before, in: defaults)
+
+        try FileManager.default.moveItem(at: before, to: after)
+        let found = PhoneExportFolder.kept(in: defaults)
+
+        XCTAssertEqual(found?.url.resolvingSymlinksInPath(), after.resolvingSymlinksInPath())
+        XCTAssertEqual(found?.name, "After Exports")
+    }
+
+    /// A bookmark gone stale (a moved folder's is) is made again from the folder as it was found, so the next
+    /// launch finds a bookmark that is not stale, and the folder is not lost.
+    func testAStaleBookmarkIsMadeAgain() throws {
+        let defaults = makeSandboxedPreferences("PhoneExportFolderStale")
+        let parent = try makeSandboxDirectory("Stale Parent")
+        let before = parent.appendingPathComponent("Old Place", isDirectory: true)
+        let after = parent.appendingPathComponent("New Place", isDirectory: true)
+        try FileManager.default.createDirectory(at: before, withIntermediateDirectories: true)
+        PhoneExportFolder.keep(before, in: defaults)
+        try FileManager.default.moveItem(at: before, to: after)
+
+        _ = PhoneExportFolder.kept(in: defaults)
+
+        var isStale = false
+        let data = try XCTUnwrap(defaults.data(forKey: PhoneExportFolder.bookmarkKey), "the folder was forgotten")
+        let resolved = try URL(resolvingBookmarkData: data, bookmarkDataIsStale: &isStale)
+        XCTAssertFalse(isStale, "the bookmark was kept stale")
+        XCTAssertEqual(resolved.resolvingSymlinksInPath(), after.resolvingSymlinksInPath())
+    }
+
+    /// The name is read once, when the folder is kept: the folder that `keep` returns says the name the folder has
+    /// then, and the one found later says the same.
+    func testTheNameIsReadWhenTheFolderIsKept() throws {
+        let defaults = makeSandboxedPreferences("PhoneExportFolderNamed")
+        let folder = try makeSandboxDirectory("Read Once Exports")
+
+        let kept = try XCTUnwrap(PhoneExportFolder.keep(folder, in: defaults))
+
+        XCTAssertEqual(kept.name, PhoneExportFolder.name(of: folder))
+        XCTAssertEqual(PhoneExportFolder.kept(in: defaults)?.name, kept.name)
+        XCTAssertEqual(PhoneExportFolder(url: folder, name: "Downloads").name, "Downloads", "a name given is the name kept")
+    }
+
     // MARK: - Name and Access
 
     /// The name is the folder's localized name where the system gives one,
