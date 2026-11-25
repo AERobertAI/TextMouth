@@ -125,6 +125,9 @@ struct SyncCenterEnvironment {
     /// missing at launch (an offline launch, a change made while the launch sync reads) is never reported
     /// removed before then (R7). The apply runs even when nothing changed while it is true.
     private var firstApplyPending = true
+    /// Whether the host left keys alone at the last apply (a row it didn't touch, an open book's removal), so the
+    /// next sync applies again even when nothing new arrives.
+    private var applyAgain = false
     /// Whether a record was asked for while a merge was applied, and so must run after it.
     private var recordWantedAfterApply = false
     private var observingNetwork = false
@@ -304,6 +307,12 @@ struct SyncCenterEnvironment {
         recorder?.noteChange()
         scheduler.noteChange(at: environment.now())
         rearm()
+    }
+
+    /// Asks for the merge to be applied again at the next sync, even when nothing new arrives: for a host
+    /// that deferred a key and now can apply it.
+    func applyAtNextSync() {
+        applyAgain = true
     }
 
     /// Stamps Keep on All Devices on or off for `bookIDs`, as a person chose.
@@ -535,12 +544,18 @@ struct SyncCenterEnvironment {
 
         // Apply what other devices wrote; until the first apply after launch even when nothing changed, as an older
         // TextMouth left rows unstamped and a book missing at launch is put back by it.
-        if !result.changedKeys.isEmpty || firstApplyPending {
-            // The flag is set before the library is read, so nothing recorded meanwhile takes applied values for changes.
+        if !result.changedKeys.isEmpty || firstApplyPending || applyAgain {
+            // The flag is set before the library is read, so nothing recorded meanwhile takes applied values for
+            // changes. One library is read: it is recorded exactly as it is, the merge is computed from it, and the
+            // host gets it as the start, keeping any field changed since.
             recorder?.isApplying = true
-            let application = await engine.application(for: host.library, voices: host.availableVoiceIDs)
-            let applied = await host.applySync(application)
+            let source = host.library
+            try await engine.record(library: source)
+            let application = await engine.application(for: source, voices: host.availableVoiceIDs)
+            let applied = await host.applySync(application, from: source)
             recorder?.isApplying = false
+            // Keys the host left alone are applied again at the next sync.
+            applyAgain = !application.appliedKeys.isSubset(of: applied)
             try await engine.didApply(application, keys: applied)
             if firstApplyPending {
                 try await engine.settleLaunch(library: host.library)
@@ -715,12 +730,10 @@ struct SyncCenterEnvironment {
     /// Fetches `package`'s missing files, telling `progress` after each.
     private func fetchBook(_ package: BookPackage, progress: @escaping @Sendable (BookDownloadProgress) -> Void) async throws {
         guard let access, let storeID, let local else { throw SyncProblem.folderMissing }
-        let total = StoreFetch.pointer(in: package.url)?.files ?? []
-        let totalBytes = total.reduce(Int64(0)) { $0 + $1.size }
         let contentPath = try await access.withFolder { root -> String? in
             let fetch = StoreFetch(folder: SyncFolder(root: root, access: access), storeID: storeID, staging: local.stagingFolder)
-            return try await fetch.fetch(package: package.url) { files, bytes in
-                progress(BookDownloadProgress(completedFiles: files, totalFiles: total.count, completedBytes: bytes, totalBytes: totalBytes))
+            return try await fetch.fetch(package: package.url) { files, bytes, totalFiles, totalBytes in
+                progress(BookDownloadProgress(completedFiles: files, totalFiles: totalFiles, completedBytes: bytes, totalBytes: totalBytes))
             }
         }
         host?.syncDidFetch(bookID: package.bookID, contentPath: contentPath)

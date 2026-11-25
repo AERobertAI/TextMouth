@@ -19,7 +19,7 @@ final class SyncCenterTests: XCTestCase {
             voiceReads += 1
             return ["voice-1"]
         }
-        func applySync(_ application: SyncApplication) async -> Set<SyncKey> {
+        func applySync(_ application: SyncApplication, from start: Library) async -> Set<SyncKey> {
             appliedCount += 1
             return application.appliedKeys
         }
