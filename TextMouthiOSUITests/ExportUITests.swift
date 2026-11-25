@@ -115,6 +115,21 @@ final class ExportUITests: TextMouthUITestCase {
         let choices = try elementsOfSheet(titled: "Convert to", in: app)
         assertOrder(["Convert to", "Cancel", "Markdown", "HTML", "RTF", "EPUB", "BRF", "PEF"], in: choices)
         XCTAssertTrue(app.buttons["Markdown"].isSelected, "Markdown, the current choice, is not marked selected")
+        // BRF brings the braille rows, in the Mac's order, after the Convert to row.
+        app.buttons["BRF"].tap()
+        XCTAssertTrue(app.buttons["Braille code"].appears(within: Self.patience), "No Braille code row under BRF:\n\(app.debugDescription)")
+        assertOrder(
+            ["Convert to", "Braille code", "Cells per line", "Lines per page", "Braille page numbers", "Line ends", "Braille file characters"],
+            in: try elementsInOrder(of: app)
+        )
+        XCTAssertTrue((app.buttons["Braille code"].value as? String ?? "").hasPrefix("Unified English Braille"), "Braille code says \(String(describing: app.buttons["Braille code"].value))")
+        // PEF has no line ends or braille file characters.
+        tap(app.buttons["Convert to"], until: app.navigationBars["Convert to"], in: app, what: "the Convert to row")
+        app.buttons["PEF"].tap()
+        XCTAssertTrue(app.buttons["Braille code"].appears(within: Self.patience))
+        XCTAssertFalse(app.buttons["Line ends"].exists, "A PEF has line ends")
+        XCTAssertFalse(app.buttons["Braille file characters"].exists, "A PEF has braille file characters")
+        tap(app.buttons["Convert to"], until: app.navigationBars["Convert to"], in: app, what: "the Convert to row")
         app.buttons["HTML"].tap()
         XCTAssertTrue(kindSwitch("Text as HTML", in: app).appears(within: Self.patience), "The switch does not name HTML:\n\(app.debugDescription)")
         XCTAssertEqual(app.buttons["Convert to"].value as? String, "HTML")

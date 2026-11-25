@@ -1,3 +1,4 @@
+import Combine
 import XCTest
 @testable import TextMouth
 
@@ -193,6 +194,23 @@ final class PhoneExportModelTests: XCTestCase {
             .text(TextExportConversion(BRFExportWriter(), options: options))
         )
         XCTAssertNil(model.optionsState(for: .plainText), "an unchecked kind has no options")
+    }
+
+    /// A change of the options is announced once, which is what draws the iPhone's rows
+    /// again, and the state's own first value is no change.
+    func testAChangeOfTheOptionsIsAnnouncedOnce() {
+        let state = TextExportWriters.optionsState(for: BRFExportWriter())
+        var heard = 0
+        let listening = state.changes.sink { heard += 1 }
+        defer { listening.cancel() }
+        XCTAssertEqual(heard, 0, "the first value counted as a change")
+
+        var options = state.brailleOptions ?? BrailleExportOptions()
+        options.page.cellsPerLine = 33
+        state.brailleOptions = options
+
+        XCTAssertEqual(heard, 1)
+        XCTAssertEqual(state.brailleOptions?.page.cellsPerLine, 33)
     }
 
     /// A writer that is not braille's has no braille options, and setting

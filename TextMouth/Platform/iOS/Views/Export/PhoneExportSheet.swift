@@ -238,7 +238,13 @@ struct PhoneExportSheet: View {
     /// braille's rows for a BRF or a PEF.
     @ViewBuilder
     private func optionRows(for kind: BookExportKind) -> some View {
-        EmptyView()
+        if let state = model.optionsState(for: kind), state.brailleOptions != nil {
+            PhoneBrailleExportRows(
+                state: state,
+                choosesLineEnds: state.writerID == BRFExportWriter().id,
+                isExporting: model.isExporting
+            )
+        }
     }
 
     /// The sheet of `kind`'s Convert to choices, each with its hint.

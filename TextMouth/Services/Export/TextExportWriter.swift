@@ -1,3 +1,4 @@
+import Combine
 import Foundation
 import SwiftUI
 
@@ -184,6 +185,9 @@ protocol TextExportOptionsEditing: AnyObject {
     /// which the iPhone's rows read and set where the Mac's view binds them
     /// (FR31); nil for any other writer, and setting it changes nothing there.
     var brailleOptions: BrailleExportOptions? { get set }
+    /// Says, once for each change, that the options changed, for a view that reads them through
+    /// `brailleOptions` and must be drawn again (the iPhone's rows).
+    var changes: AnyPublisher<Void, Never> { get }
 }
 
 /// The options of a `Writer` while an Export dialog is open: what its view
@@ -215,6 +219,11 @@ final class TextExportOptionsState<Writer: TextExportWriter>: ObservableObject, 
 
     func conversion() -> TextExportConversion {
         TextExportConversion(writer, options: options)
+    }
+
+    var changes: AnyPublisher<Void, Never> {
+        // `$options` also says the value it starts with, which is no change.
+        $options.dropFirst().map { _ in () }.eraseToAnyPublisher()
     }
 
     var brailleOptions: BrailleExportOptions? {
