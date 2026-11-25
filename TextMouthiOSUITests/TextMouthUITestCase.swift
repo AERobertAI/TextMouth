@@ -564,8 +564,9 @@ class TextMouthUITestCase: XCTestCase {
         /// screen at the largest size, with a frame well taller than its words: 393.33 points after `phoneWholeWords` gave it
         /// a point of spacing a line, from 387.33, and flagged both times (the full suite of 0a5d1405b, train 1125-0148). It is
         /// accepted by its exact words and the clipped-text kind only, because the words are measured whole: `PhoneWholeWordsTests`
-        /// hosts the real caption at the largest size and requires its frame to be a point taller than its words. The other
-        /// captions, shorter, are not flagged.
+        /// hosts the real caption at the largest size and requires its frame to be a point taller than its words, and the screenshot
+        /// kept with train 1125-0148's audit shows all seven of its lines whole, between its row's separators. The other captions,
+        /// shorter, are not flagged.
         static let brailleCaption = Accepted(
             type: .textClipped,
             label: "TextMouth reads braille files you add from now on with this code. A book keeps the code it was added with.",

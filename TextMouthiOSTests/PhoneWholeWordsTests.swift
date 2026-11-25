@@ -9,12 +9,12 @@ import XCTest
 /// (249.33 points for words measuring 249.25) and the Braille caption's (the full suite of 0a5d1405b). The audit itself runs
 /// on GitHub and sees the fit only some of the time, so this test measures the cause every time: the real caption and a
 /// switch's label, hosted at the largest text size, must be at least one point taller than the same words measured at that
-/// size and width. Without the line spacing the heights are equal to a hundredth of a point, and this fails.
+/// size and width. Without the line spacing a frame fits its words to within a tenth of a point, and this fails.
 ///
 /// Nothing here plays, types, or speaks.
 @MainActor
 final class PhoneWholeWordsTests: XCTestCase {
-    /// The width of the Settings column's text on the phone the audit runs on: 390 points less the 16-point margins.
+    /// The width of the Settings column's text on the phone the audit runs on: its 402 points less the 16-point margins.
     private let width: CGFloat = 370
 
     /// The traits of the largest text size iOS offers.
