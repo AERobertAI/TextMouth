@@ -37,7 +37,7 @@ struct SyncCenterEnvironment {
     var renewedBookmark: @Sendable @MainActor (Data) -> Data? = { _ in nil }
 
     /// The name this device gives itself in the store: its host name without ".local", or "Mac" or "iPhone".
-    static func deviceName(isPhone: Bool) -> String {
+    @MainActor static func deviceName(isPhone: Bool) -> String {
         let name = LibrarySessionLease.systemComputerName()
         return name.isEmpty ? (isPhone ? "iPhone" : "Mac") : name
     }
