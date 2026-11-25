@@ -279,7 +279,7 @@ final class PhoneExportPeakMemoryTests: XCTestCase {
         let duration = count * 3_000
         let file = TranscriptFile(
             path: "01.mp3",
-            fingerprint: FileFingerprint(byteCount: 1, modificationTimeNanoseconds: 1, digest: "0"),
+            fingerprint: FileFingerprint(stamp: FileStamp(byteCount: 1, modificationTimeNanoseconds: 1), digest: "0"),
             durationMilliseconds: duration,
             sentences: sentences
         )
