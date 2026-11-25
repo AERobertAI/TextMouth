@@ -109,6 +109,24 @@ final class BookExportDeliveryTests: XCTestCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("Book").path))
     }
 
+    /// A Stop that comes between the copy's two coordinations, after the folder is made and before the file is, lands no
+    /// file: the copy throws `CancellationError` and the target is not made.
+    func testAStopBetweenTheTwoCoordinationsLandsNoFile() throws {
+        let folder = try makeSandboxDirectory("Delivery Stopped Between")
+        let source = folder.appendingPathComponent("source.txt")
+        try Data("new".utf8).write(to: source)
+        let target = folder.appendingPathComponent("Book/01.txt")
+        let stop = BookExportCancellation()
+
+        XCTAssertThrowsError(
+            try BookExportDelivery.copyCoordinated(source, to: target, cancellation: stop, betweenCoordinations: { stop.cancel() })
+        ) { error in
+            XCTAssertTrue(error is CancellationError, "\(error)")
+        }
+
+        XCTAssertFalse(FileManager.default.fileExists(atPath: target.path), "A file landed after Stop")
+    }
+
     // MARK: - The scratch folders an earlier run left
 
     /// The sweep removes the scratch folders last changed more than a day before now, and leaves a newer one, a folder

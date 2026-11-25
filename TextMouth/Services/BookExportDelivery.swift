@@ -98,10 +98,17 @@ struct BookExportDelivery: Sendable {
     /// the item it made is removed only if the copy then fails. While a
     /// coordination waits on a provider, Stop cancels it
     /// (`NSFileCoordinator.cancel()`, through the export's cancellation).
+    /// - Parameter betweenCoordinations: Run once the folder is made and before the file is copied, which only a test
+    ///   gives, to press Stop at the one moment no earlier check covers.
     /// - Throws: `CancellationError` when stopped; `CocoaError.fileWriteFileExists`
     ///   for a name that is taken; the coordinator's error when it cannot
     ///   coordinate; otherwise the creation's or the copy's.
-    static func copyCoordinated(_ scratch: URL, to target: URL, cancellation: BookExportCancellation) throws {
+    static func copyCoordinated(
+        _ scratch: URL,
+        to target: URL,
+        cancellation: BookExportCancellation,
+        betweenCoordinations: () -> Void = {}
+    ) throws {
         try cancellation.checkCancelled()
         let coordinator = NSFileCoordinator(filePresenter: nil)
         // Stop calls `cancel()` from another thread, which Apple documents for a coordinator; the lock only carries the
@@ -111,6 +118,10 @@ struct BookExportDelivery: Sendable {
             try coordinateWriting(coordinator, at: target.deletingLastPathComponent(), cancellation: cancellation) { folder in
                 try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
             }
+            // A Stop that came while the folder was coordinated lands no file: the second coordination, which could
+            // wait on a provider and then copy, is not begun.
+            betweenCoordinations()
+            try cancellation.checkCancelled()
             try coordinateWriting(coordinator, at: target, cancellation: cancellation) { coordinatedTarget in
                 try BookExportService.copyExclusively(scratch, to: coordinatedTarget)
             }
