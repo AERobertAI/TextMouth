@@ -402,6 +402,13 @@ enum BookExportConversion: Sendable, Equatable {
 
 // MARK: - Listing and Exporting
 
+/// What an export asks before it converts a book's text (FR31): whether the
+/// memory left holds a conversion of that many bytes of text. It throws, with
+/// a sentence naming why (a `TextExportError`), to refuse: that book's file
+/// then fails alone and the export goes on. The iPhone's is
+/// `PhoneExportMemoryCheck`; the Mac asks nothing.
+typealias BookExportMemoryGuard = @Sendable (_ textBytes: Int64) throws -> Void
+
 /// Lists what a book can export and copies the chosen items to a folder
 /// (FR05): an audiobook's audio, a recording's original take, the original
 /// audio an edit kept, a transcript, and a text book's own file, its
@@ -413,13 +420,6 @@ enum BookExportConversion: Sendable, Equatable {
 /// `MaintenanceFileAccess`, with dataless files left in the cloud, and an
 /// item with any file in the cloud is refused instead, named in the words
 /// the library list uses (`LibraryCloudWording.notDownloaded(titles:)`).
-/// What an export asks before it converts a book's text (FR31): whether the
-/// memory left holds a conversion of that many bytes of text. It throws, with
-/// a sentence naming why (a `TextExportError`), to refuse: that book's file
-/// then fails alone and the export goes on. The iPhone's is
-/// `PhoneExportMemoryCheck`; the Mac asks nothing.
-typealias BookExportMemoryGuard = @Sendable (_ textBytes: Int64) throws -> Void
-
 enum BookExportService {
     /// The extensions of the audio files an audiobook's folder of tracks
     /// can hold: the formats TextMouth plays.
