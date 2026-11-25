@@ -138,6 +138,9 @@ final class ConfigTestWorldTeardownTests: XCTestCase {
         let allowed = [
             "TextMouthProductionTests/ConfigTestSupport.swift",
             "TextMouthProductionTests/ConfigTestWorldTeardownTests.swift",
+            // Runs in the iPhone's unit bundle too, where ConfigTestSupport.swift (and so makeConfigService) is not
+            // compiled; its one service drops its waiting save in a teardown block of its own, which is what the helper does.
+            "TextMouthProductionTests/PhoneSettingsDefaultsTests.swift",
         ]
         var madeByHand: [String] = []
         for (folder, fewest) in folders {
