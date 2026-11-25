@@ -40,7 +40,6 @@ Usage: python3 -I -B Scripts/agents/run-ios-ui-tests.py [--out DIR] [--derived-d
 Run it from the repository root. Python 3 standard library only.
 """
 import argparse
-import concurrent.futures
 import json
 import os
 import re
@@ -86,9 +85,11 @@ FIRST_BOOT_SECONDS = 180
 BOOT_SECONDS = 300
 SIMCTL_SECONDS = 60
 # How many `simctl` calls the set-up makes besides the boots' waits, at the most: the listing, the runtimes, the devices, the
-# device made when there is none, the shutdown of a device that did not boot, the new device made for the second try, and one
-# `defaults write` for each keyboard setting (the workflow test adds their limits up, with FIRST_BOOT_SECONDS and BOOT_SECONDS).
-SETUP_SIMCTL_CALLS = 6 + 4
+# device made when there is none, the shutdown of a device that did not boot, and the new device made for the second try (the
+# workflow test adds their limits up, with FIRST_BOOT_SECONDS and BOOT_SECONDS). The keyboard's settings are not written: the
+# `defaults write` calls of November 23 to 25 worked in 112 of 348 and took 12 to 64 seconds for the four when they did, and the
+# typing tests passed in all 168 jobs (`dismissKeyboardIntroduction` taps Continue on the keyboard's first-use page).
+SETUP_SIMCTL_CALLS = 6
 # How long a run past its limit is given to end after being asked to, before it is killed, in seconds.
 KILL_GRACE_SECONDS = 60
 # The longest one test may take, in seconds: a test that waits for a minute at a time can take several.
@@ -97,12 +98,6 @@ TEST_SECONDS = 300
 # 42952036750) and took no less time for the same 34 tests (17.1 minutes against 17.5), the runner having three slow cores,
 # and xcodebuild then printed no failure message or location for a failed test. So one simulator.
 PARALLEL_WORKERS = 1
-# The keyboard's own settings in the simulator, written before the first test: the one-time "Speed up your typing by
-# sliding your finger" page would otherwise cover the keyboard of the first test that types, and a correction or a
-# prediction could change what a test typed.
-KEYBOARD_DOMAIN = "com.apple.keyboard.preferences"
-KEYBOARD_SETTINGS = (("DidShowContinuousPathIntroduction", True), ("KeyboardAutocorrection", False),
-                     ("KeyboardPrediction", False), ("KeyboardShowPredictionBar", False))
 
 
 class SimulatorFailure(Exception):
@@ -183,27 +178,8 @@ def wait_for_boot(udid, seconds, log):
         raise SimulatorFailure(f"the simulator {udid} did not boot: {(booted.stderr or booted.stdout).strip()[-300:]}")
 
 
-def write_keyboard_settings(udid, log):
-    """Writes every KEYBOARD_SETTINGS entry into the simulator `udid`, all at once: each `simctl spawn` took about 22 seconds
-    on the runner (90 seconds for the four, one after another, in run 43716590818), mostly waiting for the booted device
-    to start a process, so they wait together. The notes go to `log` in the settings' order.
-
-    Best effort: a setting that is not written in time (run 43018768161: `simctl spawn` did not finish in 60 seconds after
-    a boot that had finished) is noted in the log and the tests go on; the typing tests dismiss the keyboard's one-time page
-    themselves, and a prediction bar or a correction would show in their failure."""
-    def write(setting):
-        key, value = setting
-        return simctl("spawn", udid, "defaults", "write", KEYBOARD_DOMAIN, key, "-bool", "true" if value else "false",
-                      tolerate_timeout=True)
-
-    with concurrent.futures.ThreadPoolExecutor(max_workers=len(KEYBOARD_SETTINGS)) as pool:
-        # map yields in the settings' order, whichever call ends first.
-        for (key, value), written in zip(KEYBOARD_SETTINGS, pool.map(write, KEYBOARD_SETTINGS)):
-            log.write(f"$ defaults write {KEYBOARD_DOMAIN} {key} {value} -> {written.returncode} {written.stderr.strip()}\n")
-
-
 def ready_simulator(log):
-    """Finds or makes an iPhone 17 on the best iOS runtime, boots it, and sets the keyboard's settings. Returns
+    """Finds or makes an iPhone 17 on the best iOS runtime, and boots it. Returns
     (its UDID, a sentence naming it). Every `simctl` call is written to `log`. A step that cannot finish raises
     SimulatorFailure, naming it. The seconds each phase took are printed, so that a run's log says where a slow set-up went."""
     began = time.monotonic()
@@ -238,8 +214,6 @@ def ready_simulator(log):
         if made.returncode != 0 or not udid:
             raise SimulatorFailure(f"the first boot did not finish ({stuck}) and a new device could not be made: {made.stderr.strip()[:300]}")
         wait_for_boot(udid, BOOT_SECONDS, log)
-    write_keyboard_settings(udid, log)
-    lap("the keyboard settings are written")
     sentence = f"{DEVICE_NAME}, iOS {runtime.get('version', '?')} ({udid})"
     if not str(runtime.get("version", "")).startswith(RUNTIME_VERSION):
         sentence += f" (the wanted iOS {RUNTIME_VERSION} runtime was not there)"

@@ -31,6 +31,7 @@ Nothing of the user's library or drives was read.
 ### What waits
 
 - Freeing space (Remove from This Mac), and the read-back that proves a copy first.
+- Removing a device's downloads of books unopened for some days (section 16).
 - Settings, substitutions, feeds, statistics, sorts, views, folders' sort and listening options, and the manual order.
 - A text edit reaching a device that has the book already: each backs up its own text, and places follow their words (`PlaceRelocator`).
 - Google Drive, Dropbox, CloudKit, and merging the old Google Drive copy.
@@ -265,6 +266,7 @@ All go through `VoiceOverAnnouncer.announce` (`VoiceOverAnnouncer.swift:75`); th
 ## 9. The interfaces
 
 sync-core owns `TextMouth/Models/Sync/SyncInterfaces.swift`, the first three parts; sync-store owns `TextMouth/Services/Sync/SyncSeams.swift`, the last two, with a `PlainSyncFolderAccess` stub.
+Section 16 adds `SyncBookField.keep`, two `SyncCenter` members, and one `SyncLibraryHost` method.
 
 ### Stamps, keys, and entries
 
@@ -485,10 +487,85 @@ Each recommendation is what gets built; only the rehearsal and the install wait 
 9. **The iPhone on Saturday:** section 14's steps, on Friday evening. Recommended: yes.
 10. **Next week:** Remove from This Mac with its proof, then settings and statistics, then the Google Drive copy. Recommended: that order.
 11. **The name** TextMouth Sync, for the research's store. Recommended: yes.
+12. **Keep on All Devices,** for the Keep Downloaded you asked for, which every device that syncs follows; Keep on This Mac stays for a library in a cloud folder. Recommended: that name.
+13. **Removing books unopened for some days** (next week): 7 days by default on the iPhone, and off on the Mac, which holds the whole library, until you turn it on. Recommended: yes.
+14. **What "opened" means:** a reader opening the book on any device, a play on this device, or its files arriving here; not an export or Book Information. Recommended: yes.
+15. **Automatic downloads** only on Wi-Fi or Ethernet with Low Data Mode off; a book you open downloads on any network; a cellular setting next week. Recommended: yes.
+16. **The iPhone's backup:** books fetched from the sync folder left out of its iCloud Backup, since iCloud Drive holds them. Recommended: yes, built Friday.
+17. **The reading list's books** kept on every device that keeps its list, as each Mac does today, on by default. Recommended: yes.
+
+## 16. Addendum: keeping books on a device
+
+For the user's message of about 08:45: books unopened for some days, Keep Downloaded, the reading list, and downloading when a device can.
+
+### Who decides what stays
+
+- With sync, each device's library is on its own disk, outside iCloud Drive: the Mac's data directory, and the iPhone's `Library/Application Support/.TextMouth` in its container (`TextMouthPaths.swift:15-29`).
+  So TextMouth alone decides which books' files stay; iCloud Drive manages only its copy of TextMouth Sync, and downloads an evicted file of it again when it is read.
+- iOS doesn't purge Application Support: Apple's guide names only Caches, purged "on rare occasions when the system is very low on disk space", and tmp, and says Application Support is backed up; offloading the app keeps its data [A][B].
+- A library in a cloud folder is unchanged: there the drive evicts files as it likes, TextMouth can't pin them, Keep on This Mac downloads kept books again, and the rules below don't apply.
+
+### Keep on All Devices (Friday)
+
+- The user's Keep Downloaded, named for what it does: every device that syncs keeps the book's files, and downloads them when it can; Finder's Keep Downloaded and one Mac's Keep on This Mac mean less.
+- It syncs, as the user's words ask: a new key, `SyncBookField.keep`, `true` or `false`, stamped by `SyncCenter.setKeep(_:for:)` when a person chooses, never projected from the library.
+- So it lives in the registers, here and in the folder, with no new key in library.json, config.json, or bookInfo.json (R5).
+- `SyncCenter.keptBookIDs` hands the set to `KeptBooks` (`KeptBooks.swift:37`), whose `isKept(_:)` (`:112`) then answers for it beside the reading list.
+- Offered with sync on only: a row's commands and VoiceOver actions (`LibraryCloudCommand.Kind`, `LibraryViewModel+Cloud.swift:375`), the Library menu's keep items, and a checkbox in Book Information (`LibrarySheetViews.swift:230`, `PhoneBookInfoSheet`).
+
+### The reading list (Friday, already built)
+
+- `rlkeep` works the list's keep out and never writes it: `observeReadingListKeeping` (`LibraryViewModel+ReadingList.swift:221`) hands `KeptBooks` the list after each change, and `isKept` answers "kept by the person, or listed".
+- So a book that leaves the list returns to its own choice, whatever it was, with nothing to undo.
+- Keeping the list's books stays each device's choice (`keepsReadingListBooks`, on until cleared); the Mac's checkbox shows while sync is on, since `showsCloudNotes` holds, and the iPhone's waits, on meanwhile.
+
+### Downloading when a device can (Friday)
+
+- After each sync the host records its placeholders' states in `BookCloudStates` and runs `downloadEvictedKeptBooks` (`LibraryViewModel+Cloud.swift:703`), since the refresher runs only while a Mac Library window is open (`:179`).
+- It downloads kept and listed books missing here, one at a time, as many as fit in the free space less 1 GB (`downloadWhatFits`), sized from their manifests (`StoreBookStorage.bytesToDownload`).
+- It starts only on Wi-Fi or Ethernet with Low Data Mode off (a satisfied path neither expensive nor constrained); on cellular or a hotspot it waits for a later moment, which also spares iCloud Drive's cellular switch.
+- A book a person opens downloads on any network; offline nothing starts; short of room, it says so once, as today.
+- VoiceOver hears today's single notice, "Downloading 12 reading list books", and the room notice; kept books download quietly, their rows saying "Downloading 40%".
+- The phone's first sync fills its reading list so, and each package fetched onto it is left out of its iCloud Backup (`isExcludedFromBackup`, as `ImportScratchSpace.swift:106` sets).
+
+### Books unopened for some days (next week)
+
+- A setting of each device: Off, or 1 to 30 days; 7 by default on the iPhone, off on the Mac until the user turns it on (question 13).
+- It removes only a book's own file or tracks (`isPackageContentName`), as Remove from This Mac will, keeping its record and text: a text book still reads, and an audiobook downloads when opened.
+- Only once each such file is proven by the research's read-back (its section 6) at the fingerprint it has now, with the folder reachable.
+- Opened is the latest of a reader opening it on any device (`lastOpened`, synced), a play here (`lastPlaybackStopped`, this device's own), and its files arriving here.
+- Never a book kept on all devices or on a kept reading list, nor one open, playing, downloading, or being edited, exported, or transcribed.
+- It runs after a sync, at most daily, and says once: "Removed the downloads of 3 books unopened for 7 days, freeing 412 megabytes. They stay in iCloud Drive."
+- It is this device's own: nothing is stamped, and the book stays in the library everywhere (R7).
+
+### What Friday's branches add
+
+The orchestrator adds these declarations to `sync/base` (step 0b), and each branch merges it again.
+- **sync-core:** `SyncBookField.keep`, which `SyncProjection.of` leaves out and `SyncMerge.apply` applies to no row.
+- **sync-store:** `SyncCenter.keptBookIDs` and `setKeep(_:for:)`; `SyncLibraryHost.syncDidApply(keptBookIDs:mayDownload:)`; `StoreBookStorage.bytesToDownload(of:)` from manifests; the backup exclusion in `StoreFetch`.
+- **sync-mac:** `KeptBooks` taking the synced set; `LibraryCloudCommand.Kind.keepOnAllDevices` and `.stopKeepingOnAllDevices`; the host's `syncDidApply` and its path rule; the Mac's Book Information checkbox.
+- **sync-iphone:** the row action, and a switch in `PhoneBookInfoSheet`.
+- **Words, in `SyncWording`:** "Keep on All Devices", "Stop Keeping on All Devices", their counted forms ("Keep 3 Books on All Devices"), "Kept on all devices", and "Keeping Moby-Dick on all devices."
+  And Book Information's hint: "Every device that syncs keeps this book's files, and downloads them when it can."
+- **Tests:** `SyncKeepTests` on two devices (kept on one, downloaded on the other when it may; a book in and out of the list; the path rule), and the commands in `SyncSettingsSectionTests` and `PhoneSyncSettingsTests`.
+- **If a day slips,** these go before section 13's cuts: the Book Information checkbox, then Keep on All Devices; the reading list's downloads stay.
+
+```swift
+enum SyncBookField { /* …, */ case keep }                                   // sync-core
+extension SyncCenter {                                                        // sync-store
+    var keptBookIDs: Set<UUID> { get }                                        // @Published
+    func setKeep(_ keep: Bool, for bookIDs: [UUID])
+}
+protocol SyncLibraryHost { func syncDidApply(keptBookIDs: Set<UUID>, mayDownload: Bool) }   // sync-mac
+```
+
+Sources: [A] Apple's File System Programming Guide, File System Basics: https://developer.apple.com/library/archive/documentation/FileManagement/Conceptual/FileSystemProgrammingGuide/FileSystemOverview/FileSystemOverview.html
+[B] Apple's platform support guide, offloading apps: https://support.apple.com/guide/platform-support/supb175ad6a1/web
 
 ## What I could not verify
 
 - The spike's five points, and whether an iPhone app's writes into a picked folder reach iCloud with upload states.
 - Whether Xcode 26.0.1 installs on iOS 27.2; the room macOS 26.6 and Xcode 27 need; iOS's background time; and what Low Data Mode and iCloud's cellular switch do to uploads.
 - The recorder's cost on 750 books, and `performLibraryTransition` taking renames, moves, and new folders at once: read, not run.
+- That `isExcludedFromBackup` on a package's folder keeps its files out of iCloud Backup, and how much a phone's backup grows without it.
 - Each `file:line` was checked with `git grep` at e7c6fd20e; reading code is not running it.

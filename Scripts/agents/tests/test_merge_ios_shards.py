@@ -2,6 +2,8 @@
 
 Run with: python3 -I -B -m unittest discover -s Scripts/agents/tests
 """
+import contextlib
+import io
 import tempfile
 import unittest
 from pathlib import Path
@@ -204,6 +206,102 @@ class MergeShardsReadsSeveralJobsTests(unittest.TestCase):
             (root / "ios" / "ios-ui-summary.txt").write_text(test_summary())
             merge_shards.merge(root / "shards", root / "out", 1, root / "ios")
             self.assertIn("iOS build: PASSED", (root / "out" / "summary.md").read_text())
+
+
+SIZE_LINES = ["Size: iPhone app: 16.4 MB (16,392,677 bytes) in 48 files, within the 30 MB limit.",
+              "Size: iPhone app IPA: 10.4 MB (10,361,401 bytes).",
+              "Size detail: 13.2 MB (13,176,592 bytes)  TextMouth"]
+
+
+class SizeJobTests(JoinCase):
+    """The size job's result (run-ios-build.py --size-only, its own artifact) joined into the iPhone build's summary."""
+
+    def size_job(self, summary=None, log="the device build's last lines"):
+        """Writes the size job's folder: a None summary leaves its file out, as a job that failed before the build does."""
+        folder = self.root / "size"
+        folder.mkdir()
+        if summary is not None:
+            (folder / merge_ios_shards.SIZE_SUMMARY_FILE).write_text(summary)
+        (folder / "ios.log").write_text(log)
+        return folder
+
+    def joined_with(self, size_dir, jobs=2):
+        """Joins `jobs` passing iPhone jobs, then the size job's folder; returns the joined summary's lines."""
+        for number in range(1, jobs + 1):
+            self.job(number, build_summary(), test_summary())
+        merge_ios_shards.join(self.ios, self.out, jobs)
+        merge_ios_shards.join_size(size_dir, self.out)
+        return self.joined("ios-summary.txt").splitlines()
+
+    def test_the_size_jobs_lines_are_read_by_the_trains_as_a_jobs_own_would_be(self):
+        lines = self.joined_with(self.size_job("\n".join(SIZE_LINES) + "\n"))
+        self.assertEqual(lines[0], "iOS build: PASSED", "the size never changes the build's verdict")
+        self.assertEqual(merge_ios_shards.size_lines(lines), SIZE_LINES)
+
+    def test_the_size_jobs_log_follows_the_builds_under_a_heading(self):
+        self.joined_with(self.size_job("\n".join(SIZE_LINES) + "\n", log="LAST LINES"))
+        log = self.joined("ios.log")
+        self.assertIn("===== iPhone job 1 of 2: build log =====", log)
+        self.assertLess(log.index("iPhone job 2 of 2"), log.index("===== size job: device build ====="))
+        self.assertTrue(log.rstrip().endswith("LAST LINES"))
+
+    def test_a_size_job_that_reported_nothing_is_a_not_measured_line_the_train_can_read(self):
+        lines = self.joined_with(self.size_job(summary=None))
+        sizes = merge_ios_shards.size_lines(lines)
+        self.assertEqual(len(sizes), 1)
+        self.assertTrue(sizes[0].startswith("Size: not measured: the size job reported nothing"), sizes)
+        self.assertEqual(lines[0], "iOS build: PASSED")
+
+    def test_a_size_job_that_found_the_request_did_not_ask_adds_nothing(self):
+        lines = self.joined_with(self.size_job(""))
+        self.assertEqual(merge_ios_shards.size_lines(lines), [])
+        self.assertNotIn("size job", self.joined("ios.log"))
+
+    def test_a_failed_measurement_comes_through_as_the_jobs_one_line(self):
+        failed = "Size: not measured: the device build failed (xcodebuild status 65, 1 errors)."
+        self.assertEqual(merge_ios_shards.size_lines(self.joined_with(self.size_job(failed + "\n"))), [failed])
+
+    def test_the_lines_are_added_to_a_summary_that_says_the_iphone_build_did_not_run(self):
+        # merge_shards.merge_ios writes this when no iPhone job reported; the size lines still follow it.
+        self.out.mkdir()
+        (self.out / "ios-summary.txt").write_text("iOS build: NOT RUN\nReason: its job reported nothing")
+        merge_ios_shards.join_size(self.size_job("\n".join(SIZE_LINES) + "\n"), self.out)
+        lines = self.joined("ios-summary.txt").splitlines()
+        self.assertEqual(lines[:2], ["iOS build: NOT RUN", "Reason: its job reported nothing"])
+        self.assertEqual(merge_ios_shards.size_lines(lines), SIZE_LINES)
+
+    def test_a_run_that_did_not_ask_for_the_size_never_says_size_not_measured(self):
+        for request in ('{}', '{"ios_size": false}', '{"ios_size": "yes"}'):
+            with self.subTest(request=request), tempfile.TemporaryDirectory() as folder:
+                root = Path(folder)
+                shard = root / "shards" / "shard-results-1"
+                shard.mkdir(parents=True)
+                (shard / "request.json").write_text(request)
+                (root / "ios").mkdir()
+                (root / "ios" / "ios-summary.txt").write_text(build_summary())
+                (root / "ios" / "ios-ui-summary.txt").write_text(test_summary())
+                (root / "size").mkdir()  # a size folder with no result in it, as a skipped size job leaves
+                merge_shards.merge(root / "shards", root / "out", 1, root / "ios", 1, root / "size")
+                self.assertNotIn("Size", (root / "out" / "ios-summary.txt").read_text())
+
+    def test_merge_shards_passes_the_size_folder_on_and_the_command_line_takes_it_last(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            (root / "shards").mkdir()
+            (root / "ios").mkdir()
+            (root / "ios" / "ios-summary.txt").write_text(build_summary())
+            (root / "ios" / "ios-ui-summary.txt").write_text(test_summary())
+            (root / "size").mkdir()
+            (root / "size" / merge_ios_shards.SIZE_SUMMARY_FILE).write_text("\n".join(SIZE_LINES) + "\n")
+            shard = root / "shards" / "shard-results-1"
+            shard.mkdir()
+            (shard / "request.json").write_text('{"ios_size": true}')
+            with contextlib.redirect_stdout(io.StringIO()):
+                merge_shards.main([str(root / "shards"), str(root / "out"), "1", str(root / "ios"), "1", str(root / "size")])
+            lines = (root / "out" / "ios-summary.txt").read_text().splitlines()
+            self.assertEqual(merge_ios_shards.size_lines(lines), SIZE_LINES)
+            with contextlib.redirect_stderr(io.StringIO()):
+                self.assertEqual(merge_shards.main(["a", "b", "1", "c", "1", "d", "e"]), 2)
 
 
 if __name__ == "__main__":
