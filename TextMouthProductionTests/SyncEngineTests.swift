@@ -144,8 +144,10 @@ final class SyncEngineTests: XCTestCase {
         // A book a person removes in the running app is a removal.
         let other = SyncTestFixtures.book()
         let withOther = SyncTestFixtures.library(books: [other])
-        XCTAssertGreaterThan(try await relaunched.record(library: withOther), 0)
-        XCTAssertEqual(try await relaunched.record(library: empty), 1)
+        let added = try await relaunched.record(library: withOther)
+        XCTAssertGreaterThan(added, 0)
+        let removedCount = try await relaunched.record(library: empty)
+        XCTAssertEqual(removedCount, 1)
         let mark = await relaunched.entry(for: .book(other.id, .presence))
         XCTAssertEqual(mark?.value, .null)
     }
