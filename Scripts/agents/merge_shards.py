@@ -225,7 +225,8 @@ def merge(shards_dir, out_dir, expected, ios_dir=None, ios_expected=1, size_dir=
         merge_ios_shards.join(ios_dir, joined, ios_expected)
         ios_dir = joined
     ios_line = [merge_ios(ios_dir, out_dir), *merge_ios_ui(ios_dir, out_dir)] if ios_dir is not None else []
-    if size_dir is not None and ios_dir is not None:
+    # The size lines join only for a request that asked for the size (a run without it must never say "Size: not measured").
+    if size_dir is not None and ios_dir is not None and request.get("ios_size") is True:
         merge_ios_shards.join_size(size_dir, out_dir)
     (out_dir / "summary.md").write_text(
         "\n".join(["# Test build", "", f"- Verdict: {'PASSED' if passed else 'FAILED'}", f"- {executed}",

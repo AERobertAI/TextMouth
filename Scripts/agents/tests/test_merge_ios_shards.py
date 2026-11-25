@@ -270,6 +270,20 @@ class SizeJobTests(JoinCase):
         self.assertEqual(lines[:2], ["iOS build: NOT RUN", "Reason: its job reported nothing"])
         self.assertEqual(merge_ios_shards.size_lines(lines), SIZE_LINES)
 
+    def test_a_run_that_did_not_ask_for_the_size_never_says_size_not_measured(self):
+        for request in ('{}', '{"ios_size": false}', '{"ios_size": "yes"}'):
+            with self.subTest(request=request), tempfile.TemporaryDirectory() as folder:
+                root = Path(folder)
+                shard = root / "shards" / "shard-results-1"
+                shard.mkdir(parents=True)
+                (shard / "request.json").write_text(request)
+                (root / "ios").mkdir()
+                (root / "ios" / "ios-summary.txt").write_text(build_summary())
+                (root / "ios" / "ios-ui-summary.txt").write_text(test_summary())
+                (root / "size").mkdir()  # a size folder with no result in it, as a skipped size job leaves
+                merge_shards.merge(root / "shards", root / "out", 1, root / "ios", 1, root / "size")
+                self.assertNotIn("Size", (root / "out" / "ios-summary.txt").read_text())
+
     def test_merge_shards_passes_the_size_folder_on_and_the_command_line_takes_it_last(self):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
@@ -279,6 +293,9 @@ class SizeJobTests(JoinCase):
             (root / "ios" / "ios-ui-summary.txt").write_text(test_summary())
             (root / "size").mkdir()
             (root / "size" / merge_ios_shards.SIZE_SUMMARY_FILE).write_text("\n".join(SIZE_LINES) + "\n")
+            shard = root / "shards" / "shard-results-1"
+            shard.mkdir()
+            (shard / "request.json").write_text('{"ios_size": true}')
             with contextlib.redirect_stdout(io.StringIO()):
                 merge_shards.main([str(root / "shards"), str(root / "out"), "1", str(root / "ios"), "1", str(root / "size")])
             lines = (root / "out" / "ios-summary.txt").read_text().splitlines()
