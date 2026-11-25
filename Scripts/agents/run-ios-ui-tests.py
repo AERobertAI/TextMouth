@@ -289,6 +289,36 @@ CASE_SWIFT = re.compile(r"Test case '([A-Za-z0-9_]+)\.([A-Za-z0-9_]+)\(\)' (pass
 CASE_STARTED = re.compile(r"Test Case '-\[(?:([A-Za-z0-9_]+)\.)?([A-Za-z0-9_]+) ([A-Za-z0-9_]+)\]' started\.")
 # What the summary says of a test that began and never finished, in place of a failure message.
 UNFINISHED = "started and never finished (the host app crashed, or the run was stopped, in the middle of it)"
+# A line the app (not the test runner) printed: "2026-11-25 17:06:45.859092+0000 TextMouth[65200:169312] [Client] XPC ...",
+# a timestamp, the process name, and [pid:tid], to the end of its line.
+APP_LOG_LINE = r"\d{4}-\d\d-\d\d \d\d:\d\d:\d\d\.\d+[+-]\d{4} [^\s\[]+\[\d+:\d+\][^\n]*\n"
+# A test's start or result line (either form) up to an app log line that landed in the middle of it: the prefix is the text of
+# the line so far, and the app line is everything to its end, which was the app's own full line (train 1125-1123: the class
+# name cut in two by "XPC connection interrupted").
+SPLIT_RESULT = re.compile(r"(Test [Cc]ase '[^\n]*?)(" + APP_LOG_LINE + ")")
+# How a start or result line ends when it is whole: "started." or "(0.003 seconds)." (a test's time ends the Objective-C form
+# and the Swift form alike). A prefix that ends so is a whole line, which the app's line merely followed.
+WHOLE_RESULT_END = re.compile(r"(?:started\.|\)\.)\s*$")
+
+
+def rejoin_split_results(log_text):
+    """`log_text` with each start or result line that an app log line split put back together: the app's line is moved in
+    front of the test line, which then reads whole whether the split fell in the class, the method, or the status, and however
+    many splits one line has. A start or result line that is already whole is left alone, so a test with no result line at all
+    (the host app crashed in it) still has none."""
+    def move(match):
+        """The app line first, then the test line's text so far; a whole test line is not touched."""
+        prefix, app_line = match.group(1), match.group(2)
+        return match.group(0) if WHOLE_RESULT_END.search(prefix) else app_line + prefix
+
+    # One pass takes the first split of each line (the rest of the line, after the app line, is read by the next pass).
+    while True:
+        joined = SPLIT_RESULT.sub(move, log_text)
+        if joined == log_text:
+            return log_text
+        log_text = joined
+
+
 # A failure the test process printed: "<path>:<line>: error: -[Module.Class test] : <message>".
 FAILURE_LINE = re.compile(r"^(\S.*?):(\d+): error: -\[(?:[A-Za-z0-9_]+\.)?([A-Za-z0-9_]+) ([A-Za-z0-9_]+)\] : (.*)$", re.M)
 # A skip: "<path>:<line>: -[Module.Class test] : Test skipped - <why>".
@@ -320,6 +350,7 @@ def parse_results(log_text, root=ROOT):
     "failures" ("FAILED Class.test (Bundle) at path:line: message", for each failed case, the first message of the case;
     the parenthesis is left out where the bundle is not known),
     and "skips" ("Class.test: why", one for each skipped case, in the order met)."""
+    log_text = rejoin_split_results(log_text)
     cases = {}
     modules = {}
     for module, owner, test, outcome in CASE_OBJC.findall(log_text):

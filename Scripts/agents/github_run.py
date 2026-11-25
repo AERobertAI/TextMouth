@@ -108,6 +108,14 @@ REQUEST_KEYS_NOT_TESTED = ("train",)
 # How many times in all a record may be used to collect a run before it is ignored: a record whose run keeps failing to
 # be collected must not keep a train from ever pushing.
 MAX_COLLECT_TRIES = 3
+# What GitHub's annotation on a job says when no runner took it ("The job was not acquired by Runner of type hosted even
+# after multiple attempts", run 45667831635 and 45639853419, November 25, 2026, when macOS runners were scarce): a job lost
+# to the runner pool, not one whose steps failed. Compared in lower case.
+LOST_RUNNER_WORDS = ("was not acquired by runner",)
+# The run's attempt that may be re-run: only the first. A run is re-run once at most.
+RERUN_ONLY_ATTEMPT = 1
+# The step of the workflow's last job that must say `overwrite: true` for a re-run to be safe (see rerun_supported).
+RERUN_UPLOAD_STEP = "name: Upload the results"
 # The clock and the pause, which tests replace so that no test really waits.
 CLOCK = time.monotonic
 SLEEP = time.sleep
@@ -383,9 +391,10 @@ def find_run(sha):
         SLEEP(min(POLL_SECONDS, 10))
 
 
-def wait_for_run(run, limit_minutes=RUN_LIMIT_MINUTES, progress=None):
-    """Waits for `run` (as find_run returns it) to complete; returns its final state: {"status", "conclusion", "url"},
-    plus "lost_minutes" (how long, in all, GitHub could not be asked) when any poll was missed.
+def wait_for_run(run, limit_minutes=RUN_LIMIT_MINUTES, progress=None, attempt=1):
+    """Waits for `run` (as find_run returns it) to complete; returns its final state: {"status", "conclusion", "url",
+    "attempt"}, plus "lost_minutes" (how long, in all, GitHub could not be asked) when any poll was missed. `attempt` is the
+    attempt of the run to wait for: a re-run run shows its first attempt's completed state for a moment, which is not the end.
 
     A poll that fails (gh_json has already tried it GH_ATTEMPTS times) is a missed poll, not the end: the run goes on, on
     GitHub, whatever the Mac can see (the lid closed on battery cut the connection for 35 and 90 minutes on November 17,
@@ -397,7 +406,7 @@ def wait_for_run(run, limit_minutes=RUN_LIMIT_MINUTES, progress=None):
     lost_since = None
     lost_seconds = 0.0
     last_failure = ""
-    while state.get("status") != "completed":
+    while state.get("status") != "completed" or state.get("attempt", attempt) < attempt:
         if CLOCK() - started > limit_minutes * 60:
             still_lost = (f"; GitHub could not be asked for the last {(CLOCK() - lost_since) / 60:.0f} minutes "
                           f"({last_failure})") if lost_since is not None else ""
@@ -407,7 +416,7 @@ def wait_for_run(run, limit_minutes=RUN_LIMIT_MINUTES, progress=None):
         # lost from its start.
         polled = CLOCK()
         try:
-            state = gh_json("run", "view", str(run["databaseId"]), "-R", REPO, "--json", "status,conclusion,url")
+            state = gh_json("run", "view", str(run["databaseId"]), "-R", REPO, "--json", "status,conclusion,url,attempt")
         except RemoteFailure as failure:
             # A missed poll: the last known state stands, and the watch goes on.
             last_failure = str(failure)
@@ -425,6 +434,74 @@ def wait_for_run(run, limit_minutes=RUN_LIMIT_MINUTES, progress=None):
     if lost_seconds:
         state["lost_minutes"] = round(lost_seconds / 60, 1)
     return state
+
+
+def is_lost_job(job, annotations, run_conclusion):
+    """Whether `job` (a job of `gh api .../runs/ID/jobs`) never had a runner: its annotations (`annotations`, the messages of
+    `gh api .../check-runs/ID/annotations`) say no runner acquired it (LOST_RUNNER_WORDS), or it was cancelled before its
+    first step (no steps at all) in a run that was not itself cancelled (a newer push cancels the queued jobs of a run, which
+    have no steps either). A job that began its steps and failed, or was cancelled in the middle of them (the train's own
+    limit), is not lost."""
+    if any(words in message.lower() for message in annotations for words in LOST_RUNNER_WORDS):
+        return True
+    return job.get("conclusion") == "cancelled" and not job.get("steps") and run_conclusion != "cancelled"
+
+
+def failed_jobs(run_id, run_conclusion):
+    """({the names of the jobs of the run's latest attempt that never had a runner}, [the names of the other jobs that
+    ended without success]): the jobs are read with `gh api` (see is_lost_job). A job's annotations that cannot be read
+    count as none (the job is then lost only by having no steps)."""
+    jobs = gh_json("api", f"repos/{REPO}/actions/runs/{run_id}/jobs?per_page=100").get("jobs", [])
+    lost, others = [], []
+    for job in jobs:
+        if job.get("status") != "completed" or job.get("conclusion") in (None, "success", "skipped", "neutral"):
+            continue
+        try:
+            notes = gh_json("api", f"repos/{REPO}/check-runs/{job['id']}/annotations")
+            messages = [str(note.get("message", "")) for note in notes if isinstance(note, dict)]
+        except RemoteFailure:
+            messages = []
+        (lost if is_lost_job(job, messages, run_conclusion) else others).append(job.get("name", str(job.get("id"))))
+    return lost, others
+
+
+def rerun_supported(cwd, commit):
+    """Whether the workflow of the pushed `commit` can take a re-run: its join job's "Upload the results" step says
+    `overwrite: true`. A re-run runs the join again, which uploads the artifact of the same name the first attempt's join
+    uploaded, and without `overwrite` that upload fails and the results of the first attempt (a lost job reported as nothing)
+    would be downloaded as the new ones."""
+    shown = call(["git", "show", f"{commit}:.github/workflows/tests.yml"], cwd=cwd)
+    if shown.returncode != 0 or RERUN_UPLOAD_STEP not in shown.stdout:
+        return False
+    step = shown.stdout[shown.stdout.index(RERUN_UPLOAD_STEP):]
+    return "overwrite: true" in step.split("\n      - name:")[0]
+
+
+def rerun_lost_jobs(cwd, commit, run, state, limit_minutes, progress):
+    """After a run ended, re-runs it once if a job never had a runner. Returns (the state to judge, a note or None): the
+    note is {"lost": [job names], "rerun": [job names GitHub re-ran besides the join], "lost_again": [job names]} for the
+    train's summary, and the state is the new attempt's when it was re-run and waited for.
+
+    Only a job that no runner took triggers it (is_lost_job), only once (the run's first attempt), only for a run whose
+    workflow can take it (rerun_supported) and that did not succeed. It runs `gh run rerun ID --failed`, which re-runs every
+    failed job and the jobs after them (a single job's re-run cannot be asked for again while the run goes on); a job that
+    began and failed is then re-run too, and the note names it. The jobs that passed keep their results (their artifacts
+    belong to the run, which is where the join looks)."""
+    if state.get("conclusion") == "success" or state.get("attempt", RERUN_ONLY_ATTEMPT) != RERUN_ONLY_ATTEMPT:
+        return state, None
+    lost, others = failed_jobs(run["databaseId"], state.get("conclusion"))
+    if not lost or not rerun_supported(cwd, commit):
+        return state, None
+    progress(f"{len(lost)} job(s) never had a runner ({'; '.join(lost)}); re-running the failed jobs once")
+    result = gh_call(["run", "rerun", str(run["databaseId"]), "-R", REPO, "--failed"])
+    if result.returncode != 0:
+        said = (result.stderr or result.stdout).strip()[:200]
+        progress(f"the re-run was refused: {said}")
+        return state, {"lost": lost, "rerun": [], "lost_again": [], "refused": said}
+    again = wait_for_run({"databaseId": run["databaseId"], "url": run["url"], "status": "queued"}, limit_minutes, progress,
+                         attempt=RERUN_ONLY_ATTEMPT + 1)
+    lost_again, _ = failed_jobs(run["databaseId"], again.get("conclusion")) if again.get("conclusion") != "success" else ([], [])
+    return again, {"lost": lost, "rerun": others, "lost_again": lost_again}
 
 
 def has_no_artifact(result):
@@ -541,6 +618,8 @@ def run_remotely(cwd, parent, request, destination, message, limit_minutes=None,
             record_run(pending, key, run, commit)
     progress(f"run {run['url']}")
     state = wait_for_run(run, limit_minutes, progress)
+    # Jobs no runner took lose the whole run's results: re-run them once (see rerun_lost_jobs).
+    state, rerun = rerun_lost_jobs(cwd, commit, run, state, limit_minutes, progress)
     downloaded = download(run["databaseId"], destination)
     if pending:
         # The run is over and its results are in hand, or it has none to collect: nothing is left to collect later.
@@ -551,6 +630,8 @@ def run_remotely(cwd, parent, request, destination, message, limit_minutes=None,
               "minutes": minutes, "downloaded": downloaded}
     if state.get("lost_minutes"):
         result["lost_minutes"] = state["lost_minutes"]
+    if rerun:
+        result["rerun"] = rerun
     if collected:
         # The run was an earlier send's: its minutes count from this send's start, not from a push.
         result["collected"] = True

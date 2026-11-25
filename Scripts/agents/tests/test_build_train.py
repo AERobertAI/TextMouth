@@ -442,5 +442,30 @@ class LoopTests(unittest.TestCase):
         self.assertEqual(seen["every"], 60)
 
 
+class RerunNoteTests(unittest.TestCase):
+    """The train's summary says which jobs GitHub never gave a runner and that the run was re-run once."""
+
+    def test_nothing_is_said_when_nothing_was_rerun(self):
+        self.assertEqual(train.rerun_note(None), "")
+        self.assertEqual(train.rerun_note({}), "")
+
+    def test_the_lost_jobs_the_jobs_taken_along_and_a_second_loss_are_named(self):
+        note = train.rerun_note({"lost": ["tests / a", "tests / b"], "rerun": ["tests / c"], "lost_again": ["tests / b"]})
+        self.assertIn("lost to GitHub's runner shortage and re-run once: tests / a; tests / b", note)
+        self.assertIn("also re-run, as they had failed: tests / c", note)
+        self.assertIn("lost again, not re-run a second time: tests / b", note)
+
+    def test_a_refused_rerun_says_so(self):
+        note = train.rerun_note({"lost": ["tests / a"], "rerun": [], "lost_again": [], "refused": "HTTP 403"})
+        self.assertIn("not re-run (GitHub refused: HTTP 403): tests / a", note)
+
+    def test_the_run_line_carries_the_note(self):
+        with tempfile.TemporaryDirectory() as folder:
+            (Path(folder) / "remote.json").write_text(json.dumps({"url": "u", "minutes": 40.0, "rerun": {"lost": ["tests / a"]}}))
+            line = train.remote_line(Path(folder))
+        self.assertTrue(line.startswith("- Run on GitHub: u (40.0 minutes"))
+        self.assertIn("re-run once: tests / a", line)
+
+
 if __name__ == "__main__":
     unittest.main()
