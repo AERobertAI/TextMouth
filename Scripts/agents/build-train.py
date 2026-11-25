@@ -829,7 +829,7 @@ def train_verdict(mac_verdict, interface):
     failed = []
     if mac_verdict != "PASSED":
         failed.append("Mac suite")
-    if asked and interface[0] != "PASSED":
+    if interface[0] != "PASSED":
         failed.append("iPhone tests")
     return f"FAILED ({' and '.join(failed)})" if failed else "PASSED"
 

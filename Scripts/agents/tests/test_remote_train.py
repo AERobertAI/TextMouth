@@ -413,7 +413,7 @@ class InterfaceTestsTests(RemoteTrainCase):
         self.assertIn("- Verdict: FAILED (iPhone tests)", summary, "failed interface tests fail the whole train (TL23)")
         self.assertIn("- Mac suite verdict: PASSED", summary, "the Mac suite's own verdict stays visible")
 
-    def test_a_failed_unit_test_is_told_to_the_agent_that_asked_for_its_class_with_both_counts_and_never_changes_the_verdict(self):
+    def test_a_failed_unit_test_is_told_to_the_agent_that_asked_for_its_class_with_both_counts_and_fails_the_whole_train(self):
         unit = ("iOS UI tests: FAILED\nExecuted 52 tests, with 0 tests skipped and 1 failures (0 unexpected) in 9.0 (9.0) seconds\n"
                 "Unit tests (TextMouthiOSTests): 19 ran, 0 skipped, 1 failed\n"
                 "Interface tests (TextMouthiOSUITests): 33 ran, 0 skipped, 0 failed\n"
