@@ -36,6 +36,11 @@ final class TextMouthAppDelegate: UIResponder, UIApplicationDelegate {
     ) -> Bool {
         // The interface-text engine's problems (a missing or damaged pack, an unknown ID) go to the debug log.
         InterfaceText.reportProblemsToDiagnosticLog()
+        // Sync (FR43), before the model is first made, since the library's launch checks read the cloud services: a book
+        // only in the sync folder is answered as a cloud book, and the folder is reached as the phone reaches files.
+        // Both do nothing until a sync folder is chosen (R1).
+        CloudServices.bookStorage = StoreBookStorage(wrapping: CloudServices.bookStorage)
+        SyncFolderAccessFactory.make = { PhoneSyncFolderAccess(bookmark: $0) }
         let model = Self.model
         model.lifeCycle.beginHold = { name in
             Self.beginBackgroundTask(named: name)
@@ -54,6 +59,7 @@ final class TextMouthAppDelegate: UIResponder, UIApplicationDelegate {
     /// - the import copier (Slice 3), which takes the files other apps hand
     ///   over, so a file sent at a cold launch is copied under its scope
     ///   rather than imported directly;
+    /// - the sync's moments (FR43): each activation, and the move to the background;
     /// - the reader's model (Slice 4), so the AirPods' and the lock screen's
     ///   skips take the phone's one move path before the reader's screen has
     ///   ever been shown.
@@ -66,6 +72,7 @@ final class TextMouthAppDelegate: UIResponder, UIApplicationDelegate {
         }
         PhoneBackgroundWork.install(on: model)
         PhoneImportCopier.shared.install()
+        PhoneSyncLifeCycle.install(on: model.lifeCycle)
         _ = PhoneReaderModel.attached(to: model.session)
     }
 
