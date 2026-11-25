@@ -21,18 +21,21 @@ struct PhoneExportMemoryCheck: Sendable {
 
     /// How many bytes of memory a conversion by a writer of text holds at its
     /// peak for each byte of the book's text (content.md): Markdown, HTML, RTF,
-    /// and EPUB, which held 5.4 to 10.9 in four runs on GitHub's simulator.
-    /// `PhoneExportPeakMemoryTests` measures each writer there and fails if
-    /// any holds more than its figure for the largest fixture, so a figure
-    /// can only be raised by its evidence, never left behind by a writer that
-    /// grew.
+    /// and EPUB, which held 5.4 to 10.9 in six runs on GitHub's simulator, and
+    /// the same figure for the plain text and the captions, whose figures the
+    /// same test measures. A peak is a measurement that differs from run to run
+    /// (HTML read 10.57 in one and 10.94 in the next), so each figure leaves a
+    /// margin over the range of the runs, and `PhoneExportPeakMemoryTests` logs
+    /// every run and fails past twice a figure: a figure is raised by its
+    /// evidence, never left behind by a writer that grew.
     static let peakBytesPerTextByte: UInt64 = 16
 
     /// The same for the braille writers, BRF and PEF, which translate the text and
-    /// keep its print blocks and its cells beside it: about 26 for each byte of a text
-    /// of 1 MB once the engine's own 3 MB is taken out, and 19.0 to 22.6 for a text of
-    /// 3 MB with the engine warm (train 1125-0601). 32 leaves a margin over the most
-    /// measured.
+    /// keep its print blocks and its cells beside it: 10.9 to 28.8 for each byte of a
+    /// text of 1 MB in five runs (the engine's own 0.6 to 3 MB and a first compile of
+    /// its tables are part of that, which a text of that size does not spread), and
+    /// 19.0 to 25.7 for a text of 3 MB with the engine warm. 32 leaves a margin over
+    /// the most measured.
     static let braillePeakBytesPerTextByte: UInt64 = 32
 
     /// The ids of the writers whose figure is the braille one.
