@@ -1193,7 +1193,8 @@ struct LibraryView: View {
             for: selection,
             isSelection: selection.count > 1,
             states: cloudStates,
-            kept: keptBooks.bookIDs
+            kept: keptBooks.bookIDs,
+            keptOnAllDevices: keptBooks.syncedBookIDs
         )
         // Every book's moves in the order the list shows, read from that
         // order rather than by sorting the folder again for each row.
@@ -1242,7 +1243,8 @@ struct LibraryView: View {
                     for: targets,
                     isSelection: false,
                     states: cloudStates,
-                    kept: keptBooks.bookIDs
+                    kept: keptBooks.bookIDs,
+                    keptOnAllDevices: keptBooks.syncedBookIDs
                 ),
             // Move Up and Move Down move the row's own book alone (TODO A06).
             manualMoves: isSelectionRow ? nil : context.manualMoves[book.id],

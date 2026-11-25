@@ -258,6 +258,10 @@ struct LibraryBookInfoSheet: View {
     /// sheet loads), and shown only for one that offers the choice.
     @StateObject private var brailleCode: BrailleCodeChoiceModel
     @Environment(\.dismiss) private var dismiss
+    /// Whether sync is on, which shows the Kept on all devices checkbox (FR43).
+    @ObservedObject private var cloudStates = BookCloudStates.shared
+    /// The books kept on all devices, which the checkbox shows and changes.
+    @ObservedObject private var keptBooks = KeptBooks.shared
 
     init(book: Book, libraryViewModel: LibraryViewModel) {
         self.book = book
@@ -308,6 +312,15 @@ struct LibraryBookInfoSheet: View {
 
                 LabeledContent(MetadataEditorWording.formatRow) {
                     Text(book.format.displayName)
+                }
+                // Keep on All Devices (FR43), only while sync is on. It acts
+                // at once, as the menu command does, not with Save.
+                if cloudStates.syncIsOn {
+                    Toggle(SyncWording.keptState, isOn: Binding(
+                        get: { keptBooks.isKeptOnAllDevices(book.id) },
+                        set: { LibraryCloudCommands.shared.setKeptOnAllDevices($0, [book], from: nil) }
+                    ))
+                    .accessibilityHint(SyncWording.keepHint)
                 }
                 // A braille book names its code (FMT21) and offers others:
                 // VoiceOver reads "Unified English Braille, contracted
@@ -417,7 +430,7 @@ struct LibraryBookInfoSheet: View {
         // Taller with either re-read pop-up, the Text Encoding or the Braille
         // File Characters one, and room for a refusal of a few lines below
         // the form.
-        .frame(width: 400, height: offersRereadChoice ? 470 : 350)
+        .frame(width: 400, height: (offersRereadChoice ? 470 : 350) + (cloudStates.syncIsOn ? 40 : 0))
         .navigationTitle(LibrarySheetWording.infoTitle(book.title))
         .task {
             // What the file is read in, worked out off the main actor, so the

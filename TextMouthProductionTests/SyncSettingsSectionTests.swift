@@ -170,6 +170,51 @@ final class SyncSettingsSectionTests: XCTestCase {
         XCTAssertEqual(calls.stops, 1)
     }
 
+    // MARK: - Keep on All Devices
+
+    /// A book with no file, for the command lists.
+    private func makeBook(_ title: String) -> Book {
+        Book(title: title, format: .txt, filePath: "/nonexistent/\(UUID().uuidString).txt", md5Hash: UUID().uuidString)
+    }
+
+    /// Keep on All Devices is offered only while sync is on; a library
+    /// that is not synced offers neither it nor Stop Keeping.
+    func testKeepOnAllDevicesIsOfferedOnlyWhileSyncIsOn() {
+        let book = makeBook("Kept Everywhere")
+        let states = BookCloudStates()
+        states.record(.downloaded, for: book.id)
+        func kinds(kept: Set<UUID> = []) -> [LibraryCloudCommand.Kind] {
+            LibraryCloudCommand.commands(for: [book], isSelection: false, states: states, kept: [], keptOnAllDevices: kept).map(\.kind)
+        }
+        XCTAssertFalse(kinds().contains(.keepOnAllDevices))
+        states.setSyncIsOn(true)
+        XCTAssertTrue(kinds().contains(.keepOnAllDevices))
+        XCTAssertFalse(kinds().contains(.stopKeepingOnAllDevices))
+        XCTAssertTrue(kinds(kept: [book.id]).contains(.stopKeepingOnAllDevices))
+        XCTAssertFalse(kinds(kept: [book.id]).contains(.keepOnAllDevices))
+    }
+
+    /// A synced library is on this device's disk, so Keep on This Mac and
+    /// Remove Download, which are for a library in a cloud folder, are not offered.
+    func testASyncedLibraryOffersNeitherKeepOnThisMacNorRemoveDownload() {
+        let book = makeBook("Synced Only")
+        let states = BookCloudStates()
+        states.setSyncIsOn(true)
+        states.record(.downloaded, for: book.id)
+        let kinds = LibraryCloudCommand.commands(for: [book], isSelection: false, states: states, kept: []).map(\.kind)
+        XCTAssertFalse(kinds.contains(.keepOnThisMac))
+        XCTAssertFalse(kinds.contains(.removeDownload))
+        XCTAssertTrue(kinds.contains(.keepOnAllDevices))
+    }
+
+    /// The commands are titled in SyncWording's words, counted for a selection.
+    func testTheKeepCommandsAreTitledInSyncWordingsWords() {
+        XCTAssertEqual(LibraryCloudCommand.Kind.keepOnAllDevices.title(count: 1, forSelection: false), "Keep on All Devices")
+        XCTAssertEqual(LibraryCloudCommand.Kind.stopKeepingOnAllDevices.title(count: 1, forSelection: false), "Stop Keeping on All Devices")
+        XCTAssertEqual(LibraryCloudCommand.Kind.keepOnAllDevices.title(count: 3, forSelection: true), SyncWording.keepTitle(count: 3))
+        XCTAssertEqual(LibraryCloudCommand.Kind.stopKeepingOnAllDevices.title(count: 3, forSelection: true), SyncWording.stopKeepingTitle(count: 3))
+    }
+
     // MARK: - The Folder Panels
 
     /// Each panel chooses one folder, never a file, and says what for in

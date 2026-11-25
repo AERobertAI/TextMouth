@@ -151,6 +151,8 @@ final class LibraryViewModel: ObservableObject {
     let bookUpdates = LibraryBookUpdates()
     /// Keeps the cloud notes saying whether sync is on (`observeSyncStatus()`, FR43).
     var syncStatusSubscription: AnyCancellable?
+    /// Keeps the books kept on all devices current (`observeSyncStatus()`, FR43).
+    var syncKeptSubscription: AnyCancellable?
     /// The reading list (FR09), as the library holds it: its books in
     /// reading order and its options. Changed only through the functions in
     /// LibraryViewModel+ReadingList, each of which saves the index.

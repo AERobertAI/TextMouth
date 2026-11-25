@@ -247,6 +247,12 @@ extension LibraryViewModel: SyncLibraryHost {
             .removeDuplicates()
             .receive(on: DispatchQueue.main)
             .sink { isOn in BookCloudStates.shared.setSyncIsOn(isOn) }
+        // The books kept on all devices follow the sync's registers at once,
+        // so a checkbox just changed shows it before the next run ends.
+        syncKeptSubscription = SyncCenter.shared.$keptBookIDs
+            .removeDuplicates()
+            .receive(on: DispatchQueue.main)
+            .sink { KeptBooks.shared.setSyncedBooks($0) }
     }
 
     /// The name of the device whose changes arrived last, from the sync's

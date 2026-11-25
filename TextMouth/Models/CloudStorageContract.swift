@@ -696,6 +696,13 @@ final class BookCloudStates: ObservableObject {
         libraryLocation.isCloud || syncIsOn
     }
 
+    /// Whether the library itself is in a cloud folder, which Keep on This Mac
+    /// and Remove Download are for; a library synced between devices is on
+    /// this device's disk and has neither.
+    var isCloudLibrary: Bool {
+        libraryLocation.isCloud
+    }
+
     /// Records whether sync is on, publishing only a change.
     func setSyncIsOn(_ isOn: Bool) {
         guard isOn != syncIsOn else { return }
