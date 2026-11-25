@@ -93,13 +93,22 @@ final class StoreBookStorage: BookCloudStorage {
         }
     }
 
+    /// Whether this is the iPhone's app, for the words that name the device.
+    private static var isPhone: Bool {
+        #if os(iOS)
+        true
+        #else
+        false
+        #endif
+    }
+
     /// The contract's error for a fetch's: offline and stalled keep their own, anything else is the provider's.
     static func cloudError(for error: Error) -> Error {
         switch error as? SyncProblem {
         case .offline: return BookCloudError.offline
         case .notDownloaded: return BookCloudError.stalled(seconds: 60)
         case .some(.damaged), .some(.notASyncFolder): return BookCloudError.provider(SyncWording.notASyncFolder)
-        case .some(.folderMissing): return BookCloudError.provider(SyncWording.statusFolderMissing(device: SyncWording.thisDevice(isPhone: false)))
+        case .some(.folderMissing): return BookCloudError.provider(SyncWording.statusFolderMissing(device: SyncWording.thisDevice(isPhone: Self.isPhone)))
         default: return error
         }
     }

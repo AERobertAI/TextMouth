@@ -157,12 +157,18 @@ final class StoreFetchTests: XCTestCase {
     /// A cancelled fetch stops between files and leaves the pointer true.
     func testCancellationStopsBetweenFiles() async throws {
         let world = try makeWorld()
-        let task = Task { try await world.fetch.fetch(package: world.placeholder) }
+        // The task starts only once it is cancelled, so a fetch that ignored cancellation would bring every file.
+        let task = Task { () -> String? in
+            while !Task.isCancelled { await Task.yield() }
+            return try await world.fetch.fetch(package: world.placeholder)
+        }
         task.cancel()
         do {
             _ = try await task.value
+            XCTFail("a cancelled fetch went on")
         } catch is CancellationError {
         } catch { XCTFail("\(error)") }
+        XCTAssertTrue(StoreFetch.isMissingFiles(world.placeholder), "nothing was fetched")
         // Whatever the pointer claims is here, is here.
         for file in StoreFetch.pointer(in: world.placeholder)?.files ?? [] where file.onThisDevice {
             XCTAssertTrue(FileManager.default.fileExists(atPath: world.placeholder.appendingPathComponent(file.path).path), file.path)

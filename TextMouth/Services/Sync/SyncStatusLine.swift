@@ -30,17 +30,16 @@ enum SyncStatusLine {
             return SyncWording.notASyncFolder
         case .anotherStore:
             return SyncWording.anotherStore
-        case .notDownloaded:
-            return SyncWording.statusNotDownloaded
         case .notInICloudDrive:
             return SyncWording.notInICloudDrive
         case .libraryNotLocal:
             return SyncWording.libraryNotLocal
-        case .exists, .damaged, nil:
+        case .notDownloaded, .exists, .damaged, nil:
             break
         }
         if status.isOffline { return SyncWording.statusOffline(changes: status.pendingChanges, device: device) }
         if status.pendingChanges > 0 { return SyncWording.statusUploading(changes: status.pendingChanges) }
+        if case .notDownloaded? = status.problem { return SyncWording.statusNotDownloaded }
         guard let last = status.lastSynced else { return SyncWording.statusSyncing }
         return SyncWording.statusUpToDate(at: time(last))
     }
