@@ -441,7 +441,7 @@ struct PhoneSettingsView: View {
                 title: row.title,
                 groups: PhoneSettingsModel.brailleTableGroups(),
                 // Spelled as the list's rows are, so a Mac's `mac:fr-bfu-g2.ctb` marks the pack's `fr-bfu-g2.ctb` row.
-                selected: BrailleTableCatalog.listedID(forStored: settings.brailleTable)
+                selected: PhoneSettingsModel.brailleTableSelection(settings.brailleTable)
             ) { id in
                 settings.brailleTable = id
                 noteChange()

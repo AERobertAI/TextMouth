@@ -295,7 +295,7 @@ struct BrailleTablePickers: View {
     /// (`VoiceOverAnnouncer.afterSheetCloses(_:)`).
     private func choose(_ chosen: BrailleTable) {
         // The table already shown is no choice, whichever way its stored value is spelled.
-        guard chosen.id != BrailleTableCatalog.listedID(forStored: shownID) else { return }
+        guard !BrailleSettingsChoice.isShown(chosen, stored: shownID) else { return }
         guard chosen.source == .mac else {
             pending = nil
             table = chosen.id

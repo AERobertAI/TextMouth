@@ -163,6 +163,12 @@ enum BrailleSettingsWording {
 /// The choices the Braille tab offers (FMT21), as pure functions of the
 /// codes they are given, so a test can pass codes of its own.
 enum BrailleSettingsChoice {
+    /// Whether `chosen` is the table the stored value `stored` already names, whichever way the value is spelled: a choice of
+    /// the table shown is no choice, and changes nothing (the pickers' guard).
+    static func isShown(_ chosen: BrailleTable, stored: String) -> Bool {
+        chosen.id == BrailleTableCatalog.listedID(forStored: stored)
+    }
+
     /// The table of `codes` that the stored value `stored` names, matched in the lists' own spelling
     /// (`BrailleTableCatalog.listedID(forStored:)`), so a value stored as another platform spells it, an iPhone's bare
     /// `fr-bfu-g2.ctb` on the Mac, still finds its table. Nil when no code has it.

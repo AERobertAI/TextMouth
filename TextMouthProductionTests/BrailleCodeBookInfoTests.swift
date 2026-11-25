@@ -178,6 +178,27 @@ final class BrailleCodeBookInfoTests: CloudMaintenanceTestCase {
         XCTAssertEqual(model.name(of: model.selection), book.brailleCodeDescription, "the pop-up and Speak Info never differ")
     }
 
+    /// A book stored with an iPhone's bare `fr-bfu-g2.ctb`, which this Mac reads with VoiceOver's file, shows that table as the
+    /// one it is read with, in the pop-up's selection, its items, and its words with the language: never "unavailable", and
+    /// choosing it asks nothing. The book keeps the value it was stored with.
+    func testABookStoredWithAnIPhonesBareValueSelectsThisMacsTable() async throws {
+        try XCTSkipIf(BrailleTableCatalog.table(withID: "mac:fr-bfu-g2.ctb") == nil, "This Mac has no VoiceOver table fr-bfu-g2.ctb")
+        let book = try makeBrailleBook("Atlas", table: "fr-bfu-g2.ctb")
+        let model = BrailleCodeChoiceModel(book: book, library: makeModel(with: [book]))
+        let french = BrailleCodeChoiceModel.Item.table("mac:fr-bfu-g2.ctb")
+
+        await model.load()
+
+        XCTAssertEqual(model.selection, french, "the stored bare value matched no item")
+        XCTAssertTrue(model.items.contains(french))
+        XCTAssertFalse(model.items.contains { if case .unavailable = $0 { return true } else { return false } })
+        XCTAssertEqual(model.name(of: french), BrailleTableCatalog.description(ofTableID: "mac:fr-bfu-g2.ctb"))
+        XCTAssertTrue(model.name(of: french).contains(", in "), model.name(of: french))
+        await model.choose(french)
+        XCTAssertNil(model.pending, "choosing the table the book is read with asked a question")
+        XCTAssertEqual(model.storedTable, "fr-bfu-g2.ctb")
+    }
+
     /// A table this Mac does not offer is listed last, selected, and named by
     /// its stored value, as the book's row and Speak Info name it; choosing it
     /// changes nothing, and nothing is asked.

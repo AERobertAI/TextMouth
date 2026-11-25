@@ -35,6 +35,39 @@ final class BrailleSettingsViewTests: XCTestCase {
         XCTAssertEqual(SettingsView.windowSize.width, 860)
     }
 
+    /// A value an iPhone stores, the bare `fr-bfu-g2.ctb`, which this Mac reads with VoiceOver's file: the tab's pop-ups show
+    /// French, French braille, contracted (not English, the table the raw value matches nothing of), and choosing the table
+    /// already shown changes nothing: the value stays as it was stored, with no check and no write. This pins the pickers' two
+    /// call sites of the lists' spelling, the table shown (`currentTable`) and the guard of a choice.
+    func testAnIPhonesBareValueShowsVoiceOversTableAndChoosingItChangesNothing() throws {
+        try XCTSkipIf(BrailleTableCatalog.table(withID: "mac:fr-bfu-g2.ctb") == nil,
+                      "This Mac has no VoiceOver table fr-bfu-g2.ctb (\(BrailleTableCatalog.macTablesFolder.path))")
+        let bare = "fr-bfu-g2.ctb"
+        let defaults = try isolatedDefaults()
+        let settings = try makeSettings(defaults: defaults)
+        settings.brailleTable = bare
+        XCTAssertEqual(settings.brailleTable, bare, "the setting did not keep the iPhone's value")
+        try withBrailleTab(settings: settings, codes: BrailleTableCatalog.offeredCodes) { hosting, _ in
+            XCTAssertTrue(waitUntil {
+                hosting.layoutSubtreeIfNeeded()
+                guard let (language, code, contraction) = self.popUpTriple(in: hosting) else { return false }
+                return language.titleOfSelectedItem == self.french && code.titleOfSelectedItem == "French braille"
+                    && contraction.titleOfSelectedItem == "Contracted (Grade 2)"
+            }, "the pop-ups did not show French for the stored \(bare)")
+            let (language, _, _) = try popUps(in: hosting)
+            let frenchItem = try XCTUnwrap(language.itemTitles.firstIndex(of: french))
+            language.menu?.performActionForItem(at: frenchItem)
+            // A choice of another table would be checked and stored within moments (the check of a Mac table runs the helper).
+            XCTAssertFalse(waitUntil(timeout: 3) { settings.brailleTable != bare }, "choosing the table shown changed the value")
+            XCTAssertEqual(BraillePreferences.table.read(from: defaults), bare)
+        }
+        // The guard itself, for every spelling.
+        let shown = try XCTUnwrap(BrailleTableCatalog.table(withID: "mac:fr-bfu-g2.ctb"))
+        XCTAssertTrue(BrailleSettingsChoice.isShown(shown, stored: bare))
+        XCTAssertTrue(BrailleSettingsChoice.isShown(shown, stored: "mac:fr-bfu-g2.ctb"))
+        XCTAssertFalse(BrailleSettingsChoice.isShown(shown, stored: "en-ueb-g2.ctb"))
+    }
+
     // MARK: - Export's Choices
 
     /// Export's braille options offer the tables that only write braille as well as those that read it back (FR40): its codes,

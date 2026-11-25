@@ -487,6 +487,12 @@ enum PhoneSettingsModel {
         return BrailleTableCatalog.description(of: table, language: language)
     }
 
+    /// The choice of the Braille code list to mark as selected for the table in use, `stored`: the id of the row the list
+    /// spells it with (`BrailleTableCatalog.listedID(forStored:)`), so a Mac's `mac:fr-bfu-g2.ctb` marks the pack's row.
+    static func brailleTableSelection(_ stored: String) -> String {
+        BrailleTableCatalog.listedID(forStored: stored)
+    }
+
     /// Whether the table `stored` names only writes braille (FR40), which the Braille row says under it: it keeps working,
     /// and is not among the choices for reading.
     static func brailleTableWritesOnly(_ stored: String) -> Bool {
