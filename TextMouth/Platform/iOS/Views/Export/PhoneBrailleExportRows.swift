@@ -81,17 +81,19 @@ struct PhoneBrailleExportRows: View {
                 fileCodeRow
             }
         }
-        .onReceive(state.changes) { _ in changes &+= 1 }
-        .sheet(item: $sheet, onDismiss: sheetClosed) { shown in
-            choices(for: shown)
-        }
     }
 
     // MARK: - The Rows
 
-    /// The braille code: a button valued with the table in words and its language, which opens the tables.
+    /// The braille code: a button valued with the table in words and its language, which opens the tables. The one
+    /// view of the rows that presents the choice sheets and hears the options change: a modifier on the group would
+    /// be applied to each of its six or seven rows, seven presenters of one sheet.
     private var codeRow: some View {
         choiceRow(.code, label: BrailleSettingsWording.codeLabel, value: PhoneSettingsModel.brailleTableValue(options.table), hint: BrailleExportWording.codeHint)
+            .onReceive(state.changes) { _ in changes &+= 1 }
+            .sheet(item: $sheet, onDismiss: sheetClosed) { shown in
+                choices(for: shown)
+            }
     }
 
     /// The line end, CR LF or LF.
