@@ -191,7 +191,9 @@ extension LibraryViewModel: SyncLibraryHost {
 
         // 3. Moves go through the transition, which keeps changes made
         // meanwhile; everything else is published in place.
-        if application.movesPackages || !moved.isEmpty {
+        // A change of folders goes through it as well, which makes the
+        // directories of new folders, though no package moves.
+        if application.movesPackages || !moved.isEmpty || merge.foldersApplied {
             do {
                 try await performLibraryTransition(merge.library, affectedBookIDs: moved)
             } catch {
