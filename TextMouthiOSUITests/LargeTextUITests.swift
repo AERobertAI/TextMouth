@@ -45,14 +45,14 @@ final class LargeTextUITests: TextMouthUITestCase {
         // Every row made once and the screen still, so that the audit reads settled layout, not rows being laid out.
         try scrollThroughTheList(of: app)
         try waitUntilStill(app)
-        try audit(app, screen: "Settings at the largest text", types: Self.sizeFindings, accepting: [.navigationTitle("Settings"), .unnamedUnsupported])
+        try audit(app, screen: "Settings at the largest text", types: Self.sizeFindings, accepting: [.navigationTitle("Settings"), .brailleCaption, .unnamedUnsupported])
         // Two screens down, where the sliders' captions and the switches are.
         app.swipeUp()
         app.swipeUp()
         try waitUntilStill(app)
         try audit(
             app, screen: "Settings at the largest text, scrolled", types: Self.sizeFindings,
-            accepting: [.navigationTitle("Settings"), .scrolledPastTheEdge, .unnamedUnsupported, .unnamedPartlyUnsupported],
+            accepting: [.navigationTitle("Settings"), .brailleCaption, .scrolledPastTheEdge, .unnamedUnsupported, .unnamedPartlyUnsupported],
             acceptingTextCutByTheScroll: true
         )
     }

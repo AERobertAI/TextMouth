@@ -560,6 +560,18 @@ class TextMouthUITestCase: XCTestCase {
             description: "Text clipped"
         )
 
+        /// The Braille section's caption in Settings, a long plain `Text` the audit names as clipped text whenever it is on the
+        /// screen at the largest size, with a frame well taller than its words: 393.33 points after `phoneWholeWords` gave it
+        /// a point of spacing a line, from 387.33, and flagged both times (the full suite of 0a5d1405b, train 1125-0148). It is
+        /// accepted by its exact words and the clipped-text kind only, because the words are measured whole: `PhoneWholeWordsTests`
+        /// hosts the real caption at the largest size and requires its frame to be a point taller than its words. The other
+        /// captions, shorter, are not flagged.
+        static let brailleCaption = Accepted(
+            type: .textClipped,
+            label: "TextMouth reads braille files you add from now on with this code. A book keeps the code it was added with.",
+            why: "the Braille caption, whose frame is measured taller than its words (PhoneWholeWordsTests) and read whole by VoiceOver and braille"
+        )
+
         /// The navigation bar's title: iOS truncates a long title at large
         /// sizes, and VoiceOver and braille read it whole.
         static func navigationTitle(_ title: String) -> Accepted {
