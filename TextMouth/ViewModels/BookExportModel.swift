@@ -162,6 +162,9 @@ final class BookExportModel: ObservableObject, Identifiable {
     /// always starts in one (Documents); the iPhone's starts with none until
     /// the person has chosen one, and Export waits for it (FR31).
     @Published private(set) var isDestinationChosen: Bool
+    /// The chosen folder's name as the person is told it, when the caller read it under the folder's scope (the
+    /// iPhone's `PhoneExportFolder`); nil on the Mac, whose export names the folder as Finder shows it.
+    @Published private(set) var destinationName: String?
     /// How the last export's summary is worded, kept so that `summary` is made in the interface language in use when the
     /// dialog shows it, and follows a switch of language (FR39).
     @Published private var summaryWording: (() -> String)?
@@ -337,6 +340,8 @@ final class BookExportModel: ObservableObject, Identifiable {
     ///   - destinationIsChosen: Whether `destination` is a folder the person
     ///     chose. The Mac's always is; the iPhone's is not until its picker
     ///     has returned one, and Export waits for it.
+    ///   - destinationName: The folder's name as read under its scope, which the end of an export says; nil
+    ///     names it as Finder shows it.
     ///   - delivery: How each file is made and put in the folder chosen.
     ///   - memoryGuard: What is asked before a book's text is converted.
     ///   - holdWhileExporting: Holds what an export needs while it runs, and
@@ -354,6 +359,7 @@ final class BookExportModel: ObservableObject, Identifiable {
         deepChapterPrompting: DeepChapterPrompting = .standard,
         offering offeredKinds: Set<BookExportKind>? = nil,
         destinationIsChosen: Bool = true,
+        destinationName: String? = nil,
         delivery: BookExportDelivery = .standard,
         memoryGuard: BookExportMemoryGuard? = nil,
         holdWhileExporting: @escaping @MainActor (URL) -> (@MainActor () -> Void) = { _ in {} }
@@ -385,6 +391,7 @@ final class BookExportModel: ObservableObject, Identifiable {
         self.books = books
         self.offeredKinds = offeredKinds ?? Set(BookExportKind.allCases)
         self.isDestinationChosen = destinationIsChosen
+        self.destinationName = destinationName
         self.delivery = delivery
         self.memoryGuard = memoryGuard
         self.holdWhileExporting = holdWhileExporting
@@ -854,6 +861,8 @@ final class BookExportModel: ObservableObject, Identifiable {
             speechFormat = nil
         }
         let folder = destination
+        // The name read under the folder's scope, before the run's hold lets go of it.
+        let knownFolderName = destinationName
         guard !Self.isInsideDataDirectory(folder) else {
             self.cancellation = nil
             phase = earlier.phase
@@ -943,7 +952,10 @@ final class BookExportModel: ObservableObject, Identifiable {
         // The finished sentence is made from values taken now, by a closure that can be run again in another language.
         let latest = speechRecord.latest
         let format = speechFormat
-        let words: () -> String = { Self.finishedWords(outcome, folder: folder, latest: latest, speechFormat: format) }
+        let folderName = knownFolderName
+        let words: () -> String = {
+            Self.finishedWords(outcome, folderName: folderName ?? BookExportWording.folderName(of: folder), latest: latest, speechFormat: format)
+        }
         summaryWording = Self.didEverything(outcome) ? nil : words
         finishedWording = words
         VoiceOverAnnouncer.announce(words(), from: window)
@@ -954,11 +966,11 @@ final class BookExportModel: ObservableObject, Identifiable {
     /// has chapters for, that. Made from values, so it can be made again in another interface language.
     private static func finishedWords(
         _ outcome: BookExportOutcome,
-        folder: URL,
+        folderName: String,
         latest: SpeechExportProgress?,
         speechFormat: SpeechExportFormat?
     ) -> String {
-        var words = BookExportWording.finished(outcome, folderName: BookExportWording.folderName(of: folder))
+        var words = BookExportWording.finished(outcome, folderName: folderName)
         if case .ended(let kept, let total)? = latest,
            let keptWords = SpeechExportWording.kept(done: kept, total: total) {
             words += " " + keptWords
@@ -1103,9 +1115,11 @@ final class BookExportModel: ObservableObject, Identifiable {
     #endif
 
     /// Makes `folder` the folder the items go to: the Mac's panel returned
-    /// it, or the iPhone's picker, or the kept folder it starts with.
-    func chooseDestination(_ folder: URL) {
+    /// it, or the iPhone's picker, or the kept folder it starts with. The iPhone gives the folder's `name`,
+    /// read under its scope.
+    func chooseDestination(_ folder: URL, named name: String? = nil) {
         destination = folder
+        destinationName = name
         isDestinationChosen = true
     }
 }

@@ -70,27 +70,40 @@ struct PhoneExportSheet: View {
         defaults: UserDefaults = TextMouthRuntime.current.preferences
     ) {
         self.defaults = defaults
-        let folder = Self.startingFolder(in: defaults)
-        _model = StateObject(wrappedValue: BookExportModel(
+        // Made once, when the sheet first appears: the kept folder's bookmark is resolved on the main thread, which
+        // every redraw of the screen behind the sheet would otherwise do again.
+        _model = StateObject(wrappedValue: Self.makeModel(books: books, library: library, beginHold: beginHold, defaults: defaults))
+    }
+
+    /// The model exporting `books`, starting with the folder kept, or the one a debug launch names.
+    private static func makeModel(
+        books: [Book],
+        library: LibraryViewModel,
+        beginHold: @escaping @MainActor (_ name: String) -> (@MainActor () -> Void),
+        defaults: UserDefaults
+    ) -> BookExportModel {
+        let folder = startingFolder(in: defaults)
+        return BookExportModel(
             books: books,
             library: library,
             destination: folder?.url,
             deepChapterPrompting: .standard,
             offering: PhoneExportOffer.kinds,
             destinationIsChosen: folder != nil,
+            destinationName: folder?.name,
             delivery: .coordinatedCopy,
             memoryGuard: PhoneExportMemoryCheck.live,
             holdWhileExporting: { url in
                 // The folder's scope and a background task, for as long as the
                 // export runs.
-                let letGoOfFolder = PhoneExportFolder(url: url).holdAccess()
+                let letGoOfFolder = PhoneExportFolder.holdAccess(to: url)
                 let endHold = beginHold("Exporting books") // l10n: no (a background task's name, in the system's diagnostics only)
                 return {
                     endHold()
                     letGoOfFolder()
                 }
             }
-        ))
+        )
     }
 
     /// The folder the sheet starts with: the one kept, or, in a debug build
@@ -129,9 +142,6 @@ struct PhoneExportSheet: View {
             .navigationTitle(model.title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { bar }
-            // VoiceOver's escape gesture presses Stop while an export runs,
-            // and otherwise closes the sheet, as Escape does on the Mac.
-            .accessibilityAction(.escape) { escape() }
             .sheet(item: $formatSheet, onDismiss: formatSheetClosed) { shown in
                 formatChoices(for: shown.kind)
             }
@@ -144,6 +154,10 @@ struct PhoneExportSheet: View {
                 onCancellation: { returnFocus(to: .folder) }
             )
         }
+        // VoiceOver's escape gesture presses Stop while an export runs, and otherwise closes the sheet, as Escape does on
+        // the Mac. It is on the whole sheet and not on its list, since focus stays in the bar, on Stop, once Export is
+        // pressed, and the bar is no part of the list.
+        .accessibilityAction(.escape) { escape() }
         // No swipe may close the sheet while an export runs: Stop does.
         .interactiveDismissDisabled(model.isExporting)
         .modifier(PhoneExportQuestionAlert(prompt: model.questionPrompt))
@@ -270,7 +284,7 @@ struct PhoneExportSheet: View {
     /// "Export to:" and its name; it opens the system's folder picker.
     private var folderSection: some View {
         let row = PhoneExportOffer.folderRow(
-            folderName: model.isDestinationChosen ? PhoneExportFolder.name(of: model.destination) : nil
+            folderName: model.isDestinationChosen ? (model.destinationName ?? model.destination.lastPathComponent) : nil
         )
         return Section {
             Button {
@@ -291,9 +305,11 @@ struct PhoneExportSheet: View {
     /// which now names it. A failure of the picker says nothing more than the
     /// system did.
     private func folderPicked(_ result: Result<[URL], Error>) {
-        if case .success(let urls) = result, let folder = urls.first {
-            PhoneExportFolder.keep(folder, in: defaults)
-            model.chooseDestination(folder)
+        if case .success(let urls) = result, let picked = urls.first {
+            // The name is read under the folder's scope, once, here (`PhoneExportFolder`), and kept for the row
+            // and for the end of every export. A folder no bookmark could be made of is still this session's.
+            let folder = PhoneExportFolder.keep(picked, in: defaults) ?? PhoneExportFolder(url: picked)
+            model.chooseDestination(folder.url, named: folder.name)
         }
         returnFocus(to: .folder)
     }
@@ -396,6 +412,7 @@ private struct PhoneExportQuestionAlert: ViewModifier {
                     Button(choice.title, role: choice == .cancelExport ? .cancel : nil) {
                         prompt.answer(choice)
                     }
+                    .keyboardShortcut(choice == .exportAsWritten ? .defaultAction : nil)
                 }
             } message: { question in
                 Text(question.message)

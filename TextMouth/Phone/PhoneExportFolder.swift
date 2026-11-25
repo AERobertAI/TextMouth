@@ -28,12 +28,27 @@ struct PhoneExportFolder: Equatable, Sendable {
     /// person's language, or the folder's own name when the system gives none.
     /// Used in the folder row and in "Exported 3 items to Downloads.", for
     /// which `FileManager.displayName(atPath:)`, the Mac's, may name an iCloud
-    /// Drive folder as its path spells it.
-    var name: String {
-        Self.name(of: url)
+    /// Drive folder as its path spells it. Read once, while access to the folder
+    /// is held, when the folder is kept or found: outside its scope a folder of
+    /// iCloud Drive's may read as its path's last part ("com~apple~CloudDocs"),
+    /// so the row and the end of an export, which come later, never ask again.
+    let name: String
+
+    /// The folder at `url`, named as it is read now, under its scope.
+    init(url: URL) {
+        let scoped = url.startAccessingSecurityScopedResource()
+        defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+        self.init(url: url, name: Self.name(of: url))
     }
 
-    /// The localized name of the folder at `url`; see `name`.
+    /// The folder at `url` with the name already read.
+    init(url: URL, name: String) {
+        self.url = url
+        self.name = name
+    }
+
+    /// The localized name of the folder at `url`, or its own name when the system gives none. Asks
+    /// the file system, so a caller holds access to the folder first (`init(url:)`).
     static func name(of url: URL) -> String {
         let localized = try? url.resourceValues(forKeys: [.localizedNameKey]).localizedName
         if let localized, !localized.isEmpty { return localized }
@@ -57,7 +72,7 @@ struct PhoneExportFolder: Equatable, Sendable {
             return nil
         }
         defaults.set(data, forKey: bookmarkKey)
-        return PhoneExportFolder(url: url)
+        return PhoneExportFolder(url: url, name: Self.name(of: url))
     }
 
     /// The folder kept, or nil when none is, or when the one kept is lost
@@ -98,8 +113,12 @@ struct PhoneExportFolder: Equatable, Sendable {
     /// closure does nothing when access was not granted, as it is not for a
     /// folder in the app's own container.
     func holdAccess() -> @Sendable () -> Void {
+        Self.holdAccess(to: url)
+    }
+
+    /// Holds access to the folder at `url` until the returned closure is called; see `holdAccess()`.
+    static func holdAccess(to url: URL) -> @Sendable () -> Void {
         let scoped = url.startAccessingSecurityScopedResource()
-        let url = url
         return { if scoped { url.stopAccessingSecurityScopedResource() } }
     }
 }
