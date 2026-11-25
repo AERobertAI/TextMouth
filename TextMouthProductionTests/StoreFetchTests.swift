@@ -52,7 +52,8 @@ final class StoreFetchTests: XCTestCase {
     func testFetchBringsTheBookAndKeepsTheRecord() async throws {
         let world = try makeWorld()
         let reported = ProgressLog()
-        try await world.fetch.fetch(package: world.placeholder) { files, bytes in reported.add(files, bytes) }
+        let contentPath = try await world.fetch.fetch(package: world.placeholder) { files, bytes in reported.add(files, bytes) }
+        XCTAssertEqual(contentPath, "book.txt", "the content file keeps the name it had where it was backed up")
         XCTAssertEqual(try Data(contentsOf: world.placeholder.appendingPathComponent("book.txt")), try Data(contentsOf: world.original.appendingPathComponent("book.txt")))
         XCTAssertEqual(try String(contentsOf: world.placeholder.appendingPathComponent("bookInfo.json"), encoding: .utf8), "{\"title\":\"Mine\"}", "the device's own record")
         XCTAssertFalse(StoreFetch.isMissingFiles(world.placeholder))

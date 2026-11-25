@@ -85,5 +85,14 @@ enum SyncFolderAccessFactory {
     /// Called after each run with the books kept on all devices; `mayDownload` is true on a satisfied
     /// path that is neither expensive nor constrained (section 16).
     func syncDidApply(keptBookIDs: Set<UUID>, mayDownload: Bool)
+    /// Called after a placeholder's files were fetched: `contentPath` is the content file's path in the package
+    /// as the store names it (the name it had where it was backed up), which the host sets as the row's
+    /// `filePath` if that differs. Nil when the manifest names no content file.
+    func syncDidFetch(bookID: UUID, contentPath: String?)
+}
+
+extension SyncLibraryHost {
+    /// A host that keeps the row's file name as it made it has nothing to do.
+    func syncDidFetch(bookID: UUID, contentPath: String?) {}
 }
 

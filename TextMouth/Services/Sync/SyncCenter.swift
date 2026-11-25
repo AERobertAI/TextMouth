@@ -86,6 +86,9 @@ struct SyncCenterEnvironment {
     @Published private(set) var status = SyncStatus()
     /// The books kept on all devices, from the registers (section 16).
     @Published private(set) var keptBookIDs: Set<UUID> = []
+    /// The ID of the store this device syncs with, nil while sync is off: what a placeholder's
+    /// pointer names (`StoreFetch.placeholderPointer`).
+    private(set) var storeID: UUID?
 
     /// The world; the live one is made on first use, since it needs the process's runtime.
     private var suppliedEnvironment: SyncCenterEnvironment?
@@ -101,7 +104,6 @@ struct SyncCenterEnvironment {
     private var engine: SyncEngine?
     private var access: (any SyncFolderAccess)?
     private var local: SyncLocalFiles?
-    private var storeID: UUID?
     private var scheduler = SyncScheduler()
     private var recorder: SyncRecorder?
     /// The run going now, and the moment that came during it.
@@ -514,11 +516,12 @@ struct SyncCenterEnvironment {
         guard let access, let storeID, let local else { throw SyncProblem.folderMissing }
         let total = StoreFetch.pointer(in: package.url)?.files ?? []
         let totalBytes = total.reduce(Int64(0)) { $0 + $1.size }
-        try await access.withFolder { root in
+        let contentPath = try await access.withFolder { root -> String? in
             let fetch = StoreFetch(folder: SyncFolder(root: root, access: access), storeID: storeID, staging: local.stagingFolder)
-            try await fetch.fetch(package: package.url) { files, bytes in
+            return try await fetch.fetch(package: package.url) { files, bytes in
                 progress(BookDownloadProgress(completedFiles: files, totalFiles: total.count, completedBytes: bytes, totalBytes: totalBytes))
             }
         }
+        host?.syncDidFetch(bookID: package.bookID, contentPath: contentPath)
     }
 }

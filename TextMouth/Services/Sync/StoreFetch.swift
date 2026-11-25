@@ -97,6 +97,7 @@ struct StoreFetch: Sendable {
             progress(completedFiles, completedBytes)
         }
         Self.excludeFromBackup(package)
+        return manifest.files.filter { $0.role == "content" }.map(\.path).min()
     }
 
     /// A file's modification time in milliseconds.
