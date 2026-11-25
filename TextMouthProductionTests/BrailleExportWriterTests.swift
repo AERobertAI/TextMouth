@@ -401,18 +401,24 @@ final class BrailleExportWriterTests: XCTestCase {
     /// preferences store, the hosted tests' sandboxed one, where no test
     /// stores a code.
     func testDefaultOptionsTakeTheSettingsBrailleFileCharacters() {
+        #if os(macOS)
         let gone = "mac:no-such-table-on-any-mac.ctb"
+        #endif
         for code in [BrailleFileCode.eurobraille] {
             BraillePreferences.$fileCodeForImports.withValue(code.id) {
                 for options in [BRFExportWriter().defaultOptions(), PEFExportWriter().defaultOptions()] {
                     XCTAssertEqual(options.fileCode, code)
                 }
+                // Mac only: the iPhone has no folder of the Mac's tables (FR40), so a Mac table the setting names is
+                // kept as it is there, never replaced by the default; the translator refuses it by name instead.
+                #if os(macOS)
                 BraillePreferences.$tableForImports.withValue(gone) {
                     let options = BrailleExportOptions.standard()
                     XCTAssertEqual(options.table, BrailleTableCatalog.defaultTableID)
                     XCTAssertEqual(options.replacedTable, gone)
                     XCTAssertEqual(options.fileCode, code, "the default table's options lost \(code.name)")
                 }
+                #endif
             }
         }
         for unknown in ["", "ascii-future", BrailleFileCode.unicode.id] {
