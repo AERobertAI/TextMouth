@@ -75,8 +75,10 @@ final class PhoneSyncFolderAccessTests: XCTestCase {
 
     /// A folder that isn't there is `.folderMissing`.
     func testListingAMissingFolder() throws {
-        let folder = try makeFolder().appendingPathComponent("gone", isDirectory: true)
-        XCTAssertThrowsError(try makeAccess(for: folder).list(folder)) {
+        // The bookmark is of a folder that exists (a bookmark of none can't be made); the one listed is not there.
+        let parent = try makeFolder()
+        let folder = parent.appendingPathComponent("gone", isDirectory: true)
+        XCTAssertThrowsError(try makeAccess(for: parent).list(folder)) {
             XCTAssertEqual($0 as? SyncProblem, .folderMissing)
         }
     }
