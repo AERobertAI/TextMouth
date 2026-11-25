@@ -54,6 +54,7 @@ final class ScreenOrderUITests: TextMouthUITestCase {
             "Rewind on resume unit",
             "End of book behavior",
             "Follow in Braille",
+            "Braille code", "Braille file characters", "Guess the braille code of new books",
             "Confirm before removing a book",
             "Reading Statistics",
             "Version", "Share Logs…",

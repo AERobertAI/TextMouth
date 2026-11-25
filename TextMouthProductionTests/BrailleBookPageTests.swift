@@ -550,8 +550,10 @@ final class BrailleBookPageTests: XCTestCase {
     /// first word of its first row: the word that row's first braille word
     /// reads as alone. A translation cut at a page reads as the whole.
     func testEveryBundledTableFindsEachPageAtItsFirstRowsFirstWord() throws {
-        let tables = BrailleTableCatalog.bundled.map(\.id)
-        XCTAssertEqual(tables.count, 4)
+        // The four English tables, which the Mac's pack holds alone and the iPhone's pack holds among the rest.
+        let english: Set = ["en-us-g1.ctb", "en_US.tbl", "en-ueb-g1.ctb", "en-ueb-g2.ctb"]
+        let tables = BrailleTableCatalog.bundled.map(\.id).filter(english.contains)
+        XCTAssertEqual(tables.count, 4, "\(BrailleTableCatalog.bundled.map(\.id))")
         let blocks = try longBook()
         for table in tables {
             let folder = try makeSandboxDirectory("BrailleBookPages")

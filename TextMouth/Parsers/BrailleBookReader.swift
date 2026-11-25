@@ -80,11 +80,16 @@ enum BrailleBookReader {
     /// so a macOS update that changes a table changes the version, and
     /// reading the book with the changed rules could move its text under its
     /// places. The rebuild then fails by name and keeps the old content.md.
-    /// A bundled table, and a book that recorded no version, pass.
+    /// A table both platforms bundle, and a book that recorded no version, pass. Each platform compares with the version it
+    /// reads the table with (`BrailleTableCatalog.liblouisVersionRead(forTable:)`): this Mac's for a table of VoiceOver's, which
+    /// includes a bare value the Mac's pack lacks, and the iPhone's own 3.39.0 for any other table it reads, which includes a
+    /// Mac's `mac:` value (FR40). The failure is worded by the platform that reads.
     static func requireUnchangedTable(_ table: String, recordedVersion recorded: String?) throws {
-        guard let recorded, BrailleTableSource.parse(table).source == .mac else { return }
-        let now = BrailleTableCatalog.currentMacLiblouisVersion()
-        guard now == recorded else { throw BrailleTranslator.Failure.changedTable(table, then: recorded, now: now) }
+        guard let recorded else { return }
+        let read = BrailleTableCatalog.liblouisVersionRead(forTable: table)
+        if read.guarded, read.version != recorded {
+            throw BrailleTranslator.Failure.changedTable(table, then: recorded, now: read.version)
+        }
     }
 
     /// The braille file code a file of `fileKind` is read in, from the id a

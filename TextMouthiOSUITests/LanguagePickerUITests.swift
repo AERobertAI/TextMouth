@@ -24,11 +24,14 @@ final class LanguagePickerUITests: TextMouthUITestCase {
         return app
     }
 
-    /// Swipes up until the row labelled `row` can be tapped, at most ten times.
+    /// Swipes up until the row labelled `row` can be tapped, at most ten times, then down, at most ten times, for a screen
+    /// that was scrolled past the row (the Settings list is long, and a search for a label further down leaves it near its end).
     private func scrollToTheLanguageRow(in app: XCUIApplication, row: String = LanguagePickerUITests.row) throws {
         let button = app.buttons[row]
-        for _ in 0..<10 where !(button.exists && button.isHittable) {
-            app.swipeUp()
+        for goingUp in [true, false] {
+            for _ in 0..<10 where !(button.exists && button.isHittable) {
+                if goingUp { app.swipeUp() } else { app.swipeDown() }
+            }
         }
         XCTAssertTrue(button.exists && button.isHittable, "No \"\(row)\" row in Settings:\n\(app.debugDescription)")
     }
@@ -80,13 +83,19 @@ final class LanguagePickerUITests: TextMouthUITestCase {
         }
     }
 
-    /// Waits until the screen's elements include `label`, and returns them in order.
+    /// Waits until the screen's elements include `label`, and returns them in order. Settings is a long list that makes its
+    /// rows lazily, so the label may be off the screen (the Braille section pushed About past the first screen): while it is
+    /// missing the list is scrolled, up first, and turned round whenever a swipe leaves the screen as it was (the list's end).
     private func waitForLabel(_ label: String, in app: XCUIApplication) throws -> [Element] {
         let deadline = Date().addingTimeInterval(Self.patience)
         var elements = try elementsInOrder(of: app)
+        var goingUp = true
         while !elements.contains(where: { $0.label == label }), Date() < deadline {
+            if goingUp { app.swipeUp() } else { app.swipeDown() }
             Thread.sleep(forTimeInterval: 0.5)
-            elements = try elementsInOrder(of: app)
+            let scrolled = try elementsInOrder(of: app)
+            if scrolled.map(\.label) == elements.map(\.label) { goingUp.toggle() }
+            elements = scrolled
         }
         XCTAssertTrue(elements.contains { $0.label == label }, "No \"\(label)\" in: \(Self.describe(elements))")
         return elements
@@ -97,14 +106,15 @@ final class LanguagePickerUITests: TextMouthUITestCase {
     func testSpanishAndBackToSystem() throws {
         let app = try openSettingsAtTheLanguageRow()
         try choose(Self.language("Español"), in: app, to: Self.spanishRow)
-        // "About" and "Version" in the catalog's Spanish, on the screen that was open: it was worded again in place.
-        let spanish = try waitForLabel("Acerca de", in: app)
-        XCTAssertTrue(spanish.contains { $0.label == "Versión" || $0.label.hasPrefix("Versión") }, "Spanish Settings: \(Self.describe(spanish))")
-        // The row is a button, worded in Spanish too; the section's heading carries the same words and no value, and comes
-        // first.
-        let languageRow = try XCTUnwrap(spanish.first { $0.label == Self.spanishRow && $0.type == .button })
+        // The screen that was open is worded again in place: its title reads "Ajustes" and the Language row, which the
+        // screen is still scrolled to, is a button worded in Spanish too, saying the language by its own name.
+        let reworded = try waitForLabel("Ajustes", in: app)
+        let languageRow = try XCTUnwrap(reworded.first { $0.label == Self.spanishRow && $0.type == .button })
         XCTAssertEqual(languageRow.value, "Español", "The row says the language by its own name")
         keepScreenshot(of: app, named: "Settings in Spanish")
+        // "About" and "Version" in the catalog's Spanish, further down the list than the first screen.
+        let spanish = try waitForLabel("Acerca de", in: app)
+        XCTAssertTrue(spanish.contains { $0.label == "Versión" || $0.label.hasPrefix("Versión") }, "Spanish Settings: \(Self.describe(spanish))")
 
         try scrollToTheLanguageRow(in: app, row: Self.spanishRow)
         try choose(Self.system, in: app, from: Self.spanishRow, to: Self.row)
@@ -122,8 +132,10 @@ final class LanguagePickerUITests: TextMouthUITestCase {
 
         try choose(Self.language("العربية"), in: app, to: Self.arabicRow)
         // The title "Settings", and the heading "Times": the screen is worded again at its top.
-        let arabic = try waitForLabel("الإعدادات", in: app)
+        _ = try waitForLabel("الإعدادات", in: app)
         keepScreenshot(of: app, named: "Settings in Arabic")
+        // The "Times" heading is further up the list than the Language row this screen is scrolled to.
+        let arabic = try waitForLabel("الأوقات", in: app)
         XCTAssertTrue(arabic.contains { $0.label == "الأوقات" }, "Arabic Settings: \(Self.describe(arabic))")
         let back = app.navigationBars.buttons.element(boundBy: 0)
         XCTAssertGreaterThan(back.frame.midX, app.frame.midX, "Back moved to the right, the reading direction of Arabic")

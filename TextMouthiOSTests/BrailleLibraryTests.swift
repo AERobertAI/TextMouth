@@ -64,7 +64,8 @@ final class BrailleLibraryTests: XCTestCase {
         maxOutput: Int = 0,
         stops: Bool = false
     ) throws -> Outcome {
-        let folder = try XCTUnwrap(tables ?? BrailleTranslator.Tool.helper.tablesFolder?.path, "the app has no tables folder")
+        // The folder given, else a new one the test makes with the table in it (any name that is no offered table gets the default's).
+        let folder = try tables ?? unpackedAppTables(for: BrailleTableCatalog.bundled.contains(where: { $0.id == table }) ? table : grade1).path
         let rawMode = mode.rawValue
         return try engine.run(limit: 60) { _ in
             folder.withCString { folder in
@@ -98,26 +99,144 @@ final class BrailleLibraryTests: XCTestCase {
 
     // MARK: - The Bundled Tables
 
-    /// The iPhone app holds liblouis's 20 table files in its liblouis/tables
-    /// folder, as the Mac app does, and each of the four tables it offers
-    /// loads in the app's own process.
-    func testTheBundledTablesAreInTheAppAndEachOfferedOneLoads() throws {
-        let folder = try XCTUnwrap(BrailleTranslator.Tool.helper.tablesFolder)
-        XCTAssertTrue(folder.path.hasSuffix("/liblouis/tables"), folder.path)
-        let files = try FileManager.default.contentsOfDirectory(atPath: folder.path)
-        XCTAssertEqual(files.count, 20, files.sorted().joined(separator: ", "))
-        XCTAssertEqual(Set(BrailleTableCatalog.bundled.map(\.id)), Set(offered))
+    /// The iPhone app holds every table it ships in its pack, unpacks a table and the files it includes into its Caches
+    /// folder, under the liblouis version, at first use, and each of the four English tables loads in the app's own process.
+    func testTheBundledTablesAreInThePackAndEachOfferedOneLoads() throws {
+        let folder = try XCTUnwrap(try BrailleTranslator.Tool.helper.tablesFolder("en-ueb-g1.ctb"))
+        XCTAssertEqual(folder.lastPathComponent, BrailleTableCatalog.bundledLiblouisVersion)
+        XCTAssertEqual(folder.deletingLastPathComponent().lastPathComponent, "BrailleTables")
+        XCTAssertTrue(Set(offered).isSubset(of: BrailleTableCatalog.bundled.map(\.id)))
         for table in offered {
             XCTAssertEqual(try status("", TMB_MODE_CHECK, table: table), Int(TMB_EXIT_DONE), table)
             XCTAssertNoThrow(try BrailleTranslator.check(table: table, workingIn: work), table)
+            XCTAssertTrue(FileManager.default.fileExists(atPath: folder.appendingPathComponent(table).path), table)
         }
     }
 
-    /// Only a bundled table is compiled on the iPhone: one of a Mac's own
-    /// tables, an include file, and a name that is no bare file name are each
-    /// refused by name, before the library loads anything.
+    /// Every table the iPhone offers, of every language, loads in the app's own process with the files it includes
+    /// (FR40), and a table that is not English reads its own letters: the print "\u{E9}t\u{E9} bonjour" is written
+    /// otherwise in Spanish and in French braille, and in neither as in English. The cells are what liblouis wrote
+    /// for them on the development Mac.
+    func testEveryOfferedTableLoadsAndOtherLanguagesTranslateWithTheirOwn() throws {
+        XCTAssertGreaterThan(BrailleTableCatalog.bundled.count, 100)
+        var failed: [String] = []
+        for table in BrailleTableCatalog.bundled.map(\.id) where (try? BrailleTranslator.check(table: table, workingIn: work)) == nil {
+            failed.append(table)
+        }
+        XCTAssertEqual(failed, [], "tables that did not load")
+        let print = "\u{E9}t\u{E9} bonjour"
+        let spanish = try BrailleTranslator.translate([print], table: "es.tbl", direction: .printToBraille, workingIn: work)
+        XCTAssertEqual(spanish, ["\u{282E}\u{281E}\u{282E}\u{2800}\u{2803}\u{2815}\u{281D}\u{281A}\u{2815}\u{2825}\u{2817}"])
+        let french = try BrailleTranslator.translate([print], table: "fr-bfu-g2.ctb", direction: .printToBraille, workingIn: work)
+        XCTAssertEqual(french, ["\u{2836}\u{2800}\u{2803}\u{281A}"])
+        let english = try BrailleTranslator.translate([print], table: "en-ueb-g1.ctb", direction: .printToBraille, workingIn: work)
+        XCTAssertNotEqual(english, spanish)
+        XCTAssertNotEqual(english, french)
+        // And back, with the table's own letters.
+        XCTAssertEqual(try BrailleTranslator.translate(spanish, table: "es.tbl", direction: .brailleToPrint, workingIn: work), [print])
+    }
+
+    /// A Mac's own table whose file name the iPhone's pack has is read with the pack's table (a library shared with a Mac,
+    /// or the import table of a config.json made on one), and gives what the bare name gives; one the pack lacks stays
+    /// refused by name.
+    func testAMacsTableOfAFileNameThePackHasReadsWithThePacksOwn() throws {
+        // The table is the pack's, under the value it was asked for (see testAMacsValueKeepsItsValue...).
+        XCTAssertEqual(BrailleTableCatalog.table(withID: "mac:fr-bfu-g2.ctb")?.id, "mac:fr-bfu-g2.ctb")
+        XCTAssertNil(BrailleTableCatalog.table(withID: "mac:no-such-table.ctb"))
+        let print = "\u{E9}t\u{E9} bonjour"
+        let own = try BrailleTranslator.translate([print], table: "fr-bfu-g2.ctb", direction: .printToBraille, workingIn: work)
+        let named = try BrailleTranslator.translate([print], table: "mac:fr-bfu-g2.ctb", direction: .printToBraille, workingIn: work)
+        XCTAssertEqual(named, own)
+        XCTAssertNoThrow(try BrailleTranslator.check(table: "mac:fr-bfu-g2.ctb", workingIn: work))
+        XCTAssertThrowsError(
+            try BrailleTranslator.translate(["\u{2801}"], table: "mac:no-such-table.ctb", direction: .brailleToPrint, workingIn: work)
+        ) {
+            XCTAssertEqual($0 as? BrailleTranslator.Failure, .unknownTable("mac:no-such-table.ctb"))
+        }
+    }
+
+    /// A value moves between devices as it was stored (FR40): asked for a Mac's `mac:<file>`, the catalog answers a table that
+    /// keeps that value, so a copy or a re-read stores `mac:<file>` again, and the version recorded is the one this iPhone reads
+    /// the table with, TextMouth's own (3.39.0), for a Mac's value and for a bare value of another language, and none for a
+    /// table both apps carry.
+    func testAMacsValueKeepsItsValueAndRecordsTheVersionTheIPhoneReadsWith() throws {
+        let table = try XCTUnwrap(BrailleTableCatalog.table(withID: "mac:fr-bfu-g2.ctb"))
+        XCTAssertEqual(table.id, "mac:fr-bfu-g2.ctb", "the value asked for is the value kept")
+        XCTAssertEqual(table.displayName, BrailleTableCatalog.table(withID: "fr-bfu-g2.ctb")?.displayName)
+        XCTAssertEqual(BrailleTableCatalog.table(withID: "fr-bfu-g2.ctb")?.id, "fr-bfu-g2.ctb")
+        XCTAssertEqual(BrailleTableCatalog.versionToRecord(forTable: "mac:fr-bfu-g2.ctb"), BrailleTableCatalog.bundledLiblouisVersion)
+        XCTAssertEqual(BrailleTableCatalog.versionToRecord(forTable: "fr-bfu-g2.ctb"), BrailleTableCatalog.bundledLiblouisVersion)
+        XCTAssertNil(BrailleTableCatalog.versionToRecord(forTable: "en-ueb-g2.ctb"), "both apps carry it")
+        XCTAssertNil(BrailleTableCatalog.table(withID: "mac:no-such-table.ctb"))
+    }
+
+    /// A re-read of a book a Mac read with one of its own tables, under liblouis 3.34.0, keeps the book's text on the iPhone,
+    /// in the iPhone's words (never "This Mac's braille table"); the iPhone's own version, no version, and a table both apps
+    /// carry pass.
+    func testAMacsBookReadUnderAnotherLiblouisKeepsItsTextInThePhonesWords() throws {
+        XCTAssertThrowsError(try BrailleBookReader.requireUnchangedTable("mac:fr-bfu-g2.ctb", recordedVersion: "3.34.0")) { error in
+            let changed = BrailleTranslator.Failure.changedTable("mac:fr-bfu-g2.ctb", then: "3.34.0", now: BrailleTableCatalog.bundledLiblouisVersion)
+            XCTAssertEqual(error as? BrailleTranslator.Failure, changed)
+            XCTAssertEqual(
+                (error as? LocalizedError)?.errorDescription,
+                "The braille table \u{201C}mac:fr-bfu-g2.ctb\u{201D} on this iPhone is liblouis \(BrailleTableCatalog.bundledLiblouisVersion), "
+                    + "not liblouis 3.34.0 as when the book was read, so TextMouth keeps the book's text as it was."
+            )
+            XCTAssertFalse((error as? LocalizedError)?.errorDescription?.contains("This Mac") ?? true)
+        }
+        XCTAssertThrowsError(try BrailleBookReader.requireUnchangedTable("fr-bfu-g2.ctb", recordedVersion: "3.34.0"))
+        XCTAssertNoThrow(try BrailleBookReader.requireUnchangedTable("mac:fr-bfu-g2.ctb", recordedVersion: BrailleTableCatalog.bundledLiblouisVersion))
+        XCTAssertNoThrow(try BrailleBookReader.requireUnchangedTable("mac:fr-bfu-g2.ctb", recordedVersion: nil))
+        XCTAssertNoThrow(try BrailleBookReader.requireUnchangedTable("en-ueb-g2.ctb", recordedVersion: "3.34.0"))
+        // A Mac's value for a table both apps carry was read with a Mac's liblouis, so it is held to its version as every
+        // other `mac:` value is, and records the iPhone's own.
+        XCTAssertThrowsError(try BrailleBookReader.requireUnchangedTable("mac:en-ueb-g2.ctb", recordedVersion: "3.34.0"))
+        XCTAssertNoThrow(try BrailleBookReader.requireUnchangedTable("mac:en-ueb-g2.ctb", recordedVersion: BrailleTableCatalog.bundledLiblouisVersion))
+        XCTAssertEqual(BrailleTableCatalog.versionToRecord(forTable: "mac:en-ueb-g2.ctb"), BrailleTableCatalog.bundledLiblouisVersion)
+        // A whole read of a book recorded under another version stops there, before anything is translated.
+        let sample = try copyOfFormatSample("brf/grade2-short.brf")
+        XCTAssertThrowsError(try BrailleBookReader.markdown(of: sample, table: "mac:fr-bfu-g2.ctb", recordedVersion: "3.34.0")) {
+            XCTAssertEqual($0 as? BrailleTranslator.Failure, .changedTable("mac:fr-bfu-g2.ctb", then: "3.34.0", now: BrailleTableCatalog.bundledLiblouisVersion))
+        }
+    }
+
+    /// A table whose files vanished between the check and the library's open (iOS may clear Caches whenever it likes) is
+    /// unpacked again, once, before it is called unknown: a tool that gives a folder with nothing in it the first time and the
+    /// unpacked one after succeeds, and one that always gives the empty folder is told the table is unknown, after one more try.
+    func testATableThatVanishedBetweenTheCheckAndTheOpenIsUnpackedAgainOnce() throws {
+        let good = try unpackedAppTables(for: grade1)
+        let empty = try makeSandboxDirectory("BrailleVanished")
+        func tool(calls: OSAllocatedUnfairLock<Int>, emptyFor count: Int) -> BrailleTranslator.Tool {
+            BrailleTranslator.Tool(
+                command: { _, _, _, _ in nil },
+                limits: { BrailleTranslator.limits(for: $0, bytes: $1) },
+                residentMemory: { _ in nil },
+                tablesFolder: { _ in
+                    let call = calls.withLock { total -> Int in total += 1; return total }
+                    return call <= count ? empty : good
+                }
+            )
+        }
+        let again = OSAllocatedUnfairLock<Int>(initialState: 0)
+        try BrailleTranslator.$tool.withValue(tool(calls: again, emptyFor: 1)) {
+            try BrailleTranslator.check(table: grade1, workingIn: work)
+        }
+        XCTAssertGreaterThanOrEqual(again.withLock { $0 }, 2, "the tool was not asked again")
+
+        let never = OSAllocatedUnfairLock<Int>(initialState: 0)
+        try BrailleTranslator.$tool.withValue(tool(calls: never, emptyFor: Int.max)) {
+            XCTAssertThrowsError(try BrailleTranslator.check(table: grade1, workingIn: work)) {
+                XCTAssertEqual($0 as? BrailleTranslator.Failure, .unknownTable(grade1))
+            }
+        }
+        XCTAssertGreaterThanOrEqual(never.withLock { $0 }, 2)
+        XCTAssertLessThanOrEqual(never.withLock { $0 }, 4, "it tried more than the once more")
+    }
+
+    /// Only a table of the pack is compiled on the iPhone: a Mac's own table the pack lacks, an include file, and a name that
+    /// is no bare file name are each refused by name, before the library loads anything.
     func testOnlyBundledTablesAreCompiled() throws {
-        for table in ["mac:fr-bfu-g2.ctb", "spaces.uti", "../en-ueb-g1.ctb", "en-ueb-g1.ctb,en-ueb-g2.ctb", ""] {
+        for table in ["mac:no-such-table.ctb", "spaces.uti", "../en-ueb-g1.ctb", "en-ueb-g1.ctb,en-ueb-g2.ctb", ""] {
             XCTAssertThrowsError(
                 try BrailleTranslator.translate(["⠁"], table: table, direction: .brailleToPrint, workingIn: work), table
             ) {
@@ -235,25 +354,24 @@ final class BrailleLibraryTests: XCTestCase {
 
     // MARK: - A Mac's Own Tables
 
-    /// A braille book that needs one of a Mac's own tables is refused first,
-    /// in the phone's words, whether a Mac read it with that table under a
-    /// recorded liblouis version or not, and so is an import whose table is
-    /// one (from a config.json made on a Mac): never in the Mac's sentences
-    /// about "this Mac's" table, nor as a table TextMouth lacks.
+    /// A braille book that needs one of a Mac's own tables the pack has no table of the same file name for is refused
+    /// first, in the phone's words, whether a Mac read it with that table under a recorded liblouis version or not, and so
+    /// is an import whose table is one (from a config.json made on a Mac): never in the Mac's sentences about "this Mac's"
+    /// table, nor as a table TextMouth lacks.
     func testABookNeedingAMacsTableIsRefusedInThePhonesWords() throws {
         let sample = try copyOfFormatSample("brf/grade2-short.brf")
         for version in ["3.34.0", nil] as [String?] {
             XCTAssertThrowsError(
-                try BrailleBookReader.markdown(of: sample, table: "mac:fr-bfu-g2.ctb", recordedVersion: version)
+                try BrailleBookReader.markdown(of: sample, table: "mac:no-such-table.ctb", recordedVersion: version)
             ) {
-                XCTAssertEqual($0 as? PhoneImportRefusal, .macBrailleTable("fr-bfu-g2.ctb"), version ?? "no version")
+                XCTAssertEqual($0 as? PhoneImportRefusal, .macBrailleTable("no-such-table.ctb"), version ?? "no version")
             }
         }
         let refusal = PhoneImportWording.macBrailleTableRefusal(
-            PhoneImportWording.displayName(ofFileNamed: "grade2-short.brf"), table: "fr-bfu-g2.ctb"
+            PhoneImportWording.displayName(ofFileNamed: "grade2-short.brf"), table: "no-such-table.ctb"
         )
         XCTAssertThrowsError(
-            try BraillePreferences.$tableForImports.withValue("mac:fr-bfu-g2.ctb") { try importedForTest(sample) }
+            try BraillePreferences.$tableForImports.withValue("mac:no-such-table.ctb") { try importedForTest(sample) }
         ) {
             XCTAssertEqual(($0 as? LocalizedError)?.errorDescription, refusal)
         }

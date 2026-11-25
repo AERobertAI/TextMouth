@@ -15,14 +15,31 @@ import SwiftUI
 struct PhoneChoiceSheet<ID: Hashable>: View {
     /// The sheet's title, read as its heading.
     let title: String
-    /// The choices, in the order they're offered.
-    let choices: [PhoneChoice<ID>]
+    /// The choices, in groups when the list is grouped, in the order they're offered. A plain list is one group with no heading.
+    let groups: [PhoneChoiceGroup<ID>]
     /// The current choice, marked selected. Nil when none is current, as for
     /// a sheet of commands.
     let selected: ID?
     /// Called once with the choice made, as the sheet closes. Cancel doesn't
     /// call it.
     let onChoose: (ID) -> Void
+
+    /// The choices of every group, in the order they're offered.
+    private var choices: [PhoneChoice<ID>] { groups.flatMap(\.choices) }
+
+    /// A sheet of plain `choices`, with `selected` marked and `onChoose` called with the one made.
+    init(title: String, choices: [PhoneChoice<ID>], selected: ID?, onChoose: @escaping (ID) -> Void) {
+        self.init(title: title, groups: [PhoneChoiceGroup(id: "", title: nil, choices: choices)], selected: selected, onChoose: onChoose)
+    }
+
+    /// A sheet of `groups`, each under its heading (a group with a title), with `selected` marked and `onChoose` called with
+    /// the one made.
+    init(title: String, groups: [PhoneChoiceGroup<ID>], selected: ID?, onChoose: @escaping (ID) -> Void) {
+        self.title = title
+        self.groups = groups
+        self.selected = selected
+        self.onChoose = onChoose
+    }
 
     /// Closes the sheet, whichever way it's left.
     @Environment(\.dismiss) private var dismiss
@@ -32,9 +49,21 @@ struct PhoneChoiceSheet<ID: Hashable>: View {
     var body: some View {
         NavigationStack {
             ScrollViewReader { proxy in
-                List(choices) { choice in
-                    choiceRow(choice)
-                        .id(choice.id)
+                List {
+                    ForEach(groups) { group in
+                        Section {
+                            ForEach(group.choices) { choice in
+                                choiceRow(choice)
+                                    .id(choice.id)
+                            }
+                        } header: {
+                            // A heading VoiceOver's Headings rotor moves by; a list with no groups has none.
+                            if let heading = group.title {
+                                Text(heading)
+                                    .accessibilityAddTraits(.isHeader)
+                            }
+                        }
+                    }
                 }
                 .task {
                     await focusCurrentChoice(scrollingWith: proxy)

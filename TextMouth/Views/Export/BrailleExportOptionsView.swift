@@ -176,13 +176,14 @@ struct BrailleTablePickers: View {
         languages = BrailleTableCatalog.languages(of: codes)
     }
 
-    /// The stored value the pop-ups show: the table being checked, else the
-    /// table in use.
+    /// The stored value the pop-ups show: the table being checked, else the table in use.
     private var shownID: String { pending ?? table }
 
-    /// The table the pop-ups show, when one of the codes has it.
+    /// The table the pop-ups show, when one of the codes has it. The stored value is matched in the lists' own spelling, so
+    /// one stored as another platform spells it (an iPhone's bare `fr-bfu-g2.ctb` on the Mac) still finds its table; the
+    /// stored value itself is never changed (`BrailleSettingsChoice.table(ofStored:in:)`).
     private var currentTable: BrailleTable? {
-        codes.lazy.flatMap(\.tables).first { $0.id == shownID }
+        BrailleSettingsChoice.table(ofStored: shownID, in: codes)
     }
 
     /// The language the pop-up shows: the shown table's, else the first (so
@@ -293,7 +294,8 @@ struct BrailleTablePickers: View {
     /// the pop-up's menu has closed and VoiceOver has spoken the value
     /// (`VoiceOverAnnouncer.afterSheetCloses(_:)`).
     private func choose(_ chosen: BrailleTable) {
-        guard chosen.id != shownID else { return }
+        // The table already shown is no choice, whichever way its stored value is spelled.
+        guard !BrailleSettingsChoice.isShown(chosen, stored: shownID) else { return }
         guard chosen.source == .mac else {
             pending = nil
             table = chosen.id
@@ -419,8 +421,9 @@ struct BrailleExportOptionsView: View {
     /// Whether the line end and the braille file characters are chosen
     /// here: a BRF's are, a PEF's are not.
     let choosesLineEnds: Bool
-    /// The codes the table pop-ups offer (see `BrailleTablePickers`).
-    var codes: [BrailleCode] = BrailleTableCatalog.offeredCodes
+    /// The codes the table pop-ups offer (see `BrailleTablePickers`): every code exporting offers, the tables that write
+    /// braille only among them (FR40), since an export only ever writes braille.
+    var codes: [BrailleCode] = BrailleTableCatalog.exportCodes
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {

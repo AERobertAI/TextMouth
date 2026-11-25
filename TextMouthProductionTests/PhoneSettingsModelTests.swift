@@ -18,7 +18,7 @@ final class PhoneSettingsModelTests: XCTestCase {
             PhoneSettingsSection.allCases.map(\.title),
             [
                 "Voice", "Navigation", "Rewind on Resume", "Punctuation Pauses", "End of Book", "Sleep Timer",
-                "Reading", "Times", "Pages", "Removal Behavior", "Statistics", "Interface Language", "About",
+                "Reading", "Braille", "Times", "Pages", "Removal Behavior", "Statistics", "Interface Language", "About",
             ]
         )
     }
@@ -43,6 +43,14 @@ final class PhoneSettingsModelTests: XCTestCase {
             ),
             (.endOfBook, "When book ends", "End of book behavior", "What happens when a book finishes playing"),
             (.readingStatistics, "Reading Statistics", "Reading Statistics", nil),
+            (
+                .brailleTable, "Braille code", "Braille code",
+                "The braille code for reading braille files."
+            ),
+            (
+                .brailleFileCode, "Braille file characters", "Braille file characters",
+                "How a BRF or BRL file writes each braille cell. Most files use North American Braille ASCII."
+            ),
             (
                 .interfaceLanguage, "Interface Language", "Interface Language",
                 "Chooses the language of TextMouth's menus, windows, and messages. The change applies at once."

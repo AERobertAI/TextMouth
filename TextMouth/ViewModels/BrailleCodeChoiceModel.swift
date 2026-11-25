@@ -112,10 +112,12 @@ final class BrailleCodeChoiceModel: ObservableObject, BookRereadChoosing {
 
     // MARK: The Pop-up
 
-    /// The id of the table the book is read with: its stored table, or the
-    /// default for a book that stores none.
+    /// The id of the table the book is read with, as the lists spell it: its stored table, or the default for a book that
+    /// stores none. A table the lists spell otherwise than the book stores it (an iPhone's bare `fr-bfu-g2.ctb`, which the
+    /// Mac lists as `mac:fr-bfu-g2.ctb`) still finds its item (`BrailleTableCatalog.listedID(forStored:)`); the book keeps
+    /// what it stored.
     private var currentTableID: String {
-        storedTable ?? BrailleTableCatalog.defaultTableID
+        BrailleTableCatalog.listedID(forStored: storedTable ?? BrailleTableCatalog.defaultTableID)
     }
 
     /// The items, in order: every offered table, then the book's own table

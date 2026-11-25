@@ -47,7 +47,7 @@ struct BrailleExportOptions: TextExportOptions {
     /// Whether `table` is one of this Mac's tables that an export cannot
     /// start from: not offered, or refused by a check that lasts the session.
     static func isUnusableMacTable(_ table: String) -> Bool {
-        guard BrailleTableSource.parse(table).source == .mac else { return false }
+        guard BrailleTableCatalog.readsFromMacFolder(table) else { return false }
         guard BrailleTableCatalog.table(withID: table) != nil else { return true }
         if case .refused? = MacBrailleTableCheck.verdicts.verdict(for: table) { return true }
         return false

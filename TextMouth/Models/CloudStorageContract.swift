@@ -929,6 +929,12 @@ enum MachineLocalPaths {
             .appendingPathComponent("Library/Caches/com.textmouth.TextMouth", isDirectory: true)
     }
 
+    /// The braille tables unpacked from `BrailleTables.pack` at first use (`BrailleTableUnpacker`), one folder for each liblouis
+    /// release: made again from the pack whenever a file is missing, so macOS or iOS may empty the Caches folder.
+    static var brailleTables: URL {
+        caches.appendingPathComponent("BrailleTables", isDirectory: true)
+    }
+
     /// The reading text of the large books this Mac opened lately
     /// (`ReadingTextCache`), each kept for a day after it was last used.
     static var readingTextCache: URL {

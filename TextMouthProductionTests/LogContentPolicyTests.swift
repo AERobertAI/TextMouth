@@ -383,6 +383,9 @@ final class LogContentPolicyTests: XCTestCase {
         "TRANSCRIPTION_STARTED", "TRANSCRIPTION_FINISHED", "TRANSCRIPTION_CANCELLED", "TRANSCRIPTION_FAILED",
         // Braille (October 20, 2026): one of this Mac's tables refused by its check, and why.
         "BRAILLE_MAC_TABLE_REFUSED",
+        // Braille tables unpacked from the pack (FR40): a table that could not be unpacked, with its file name and why;
+        // it holds no book text.
+        "BRAILLE_TABLES_UNAVAILABLE",
         // Library index (V03): rows of library.json a newer TextMouth wrote, kept as they are, counted.
         "LIBRARY_ROWS_KEPT",
         // Replace Existing (ST04): a duplicate's new copy taking the old copy's place under its ID, and what an
