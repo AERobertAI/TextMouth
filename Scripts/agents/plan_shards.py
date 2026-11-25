@@ -15,8 +15,8 @@ as check.yml) and writes its lines to $GITHUB_OUTPUT:
                                     of the iPhone tests it asks for, at most ios_ui_tests.MAX_SHARDS (3); with one Mac shard (has_room) one for each
                                     TARGET_SHARD_SECONDS_WITH_ROOM, at most MAX_SHARDS_WITH_ROOM (4).
 The Mac chose N when it made the request (the "shards" key, from shard.shard_count); this clamps
-it to 1..shard.MAX_SHARDS so that a request cannot ask for more jobs than the workflow allows, to what the iPhone jobs leave of
-the 5 macOS jobs a free account runs at once, and treats a missing or odd value as 1.
+it to 1..shard.MAX_SHARDS so that a request cannot ask for more jobs than the workflow allows, so that the iPhone jobs take only the slots the Mac's shards
+leave of the 5 macOS jobs a free account runs at once (at least 1), and treats a missing or odd value as 1.
 
 Usage: python3 -I -B Scripts/agents/plan_shards.py REQUEST_FILE >> "$GITHUB_OUTPUT"
 """
@@ -82,11 +82,15 @@ def main(argv):
         print(f"plan_shards: cannot read the request {argv[0]}: {error}", file=sys.stderr)
         return 2
     request = request if isinstance(request, dict) else {}
-    ios_count = ios_shard_total(request, has_room(shard_total(request)))
-    # The iPhone jobs (when the request builds the iPhone app at all) take their share of the macOS jobs; the Mac tests' shards
-    # take what is left, and at least one.
-    taken = ios_count if flag(request, "ios", True) == "true" else 0
-    count = max(1, min(shard_total(request), MACOS_JOBS_AT_ONCE - taken))
+    ios_on = flag(request, "ios", True) == "true"
+    mac_wanted = shard_total(request)
+    ios_count = ios_shard_total(request, has_room(mac_wanted))
+    # The Mac tests' shards come first: the Mac is the long pole of a full suite (4 shards, about 50 minutes), so a shard
+    # lost to a third iPhone job costs far more than that job saves. The iPhone jobs (when the request builds the iPhone app
+    # at all) take the slots left, at least 1, and at most what their tests want.
+    if ios_on:
+        ios_count = max(1, min(ios_count, MACOS_JOBS_AT_ONCE - mac_wanted))
+    count = max(1, min(mac_wanted, MACOS_JOBS_AT_ONCE - (ios_count if ios_on else 0)))
     print(f"shards={count}")
     print("matrix=" + json.dumps({"shard": list(range(1, count + 1))}, separators=(",", ":")))
     # One line, with no raw newline (ASCII escapes), since $GITHUB_OUTPUT reads a line as one value.

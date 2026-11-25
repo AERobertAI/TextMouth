@@ -894,5 +894,153 @@ class RunRemotelyTests(RemoteTestCase):
         self.assertEqual(sorted(names), sorted(["base.txt", github_run.REQUEST_PATH]))
 
 
+def job(number, name, conclusion, steps=1):
+    """A job as `gh api .../runs/ID/jobs` shows it: finished, with `steps` steps (0: it never had a runner)."""
+    return {"id": number, "name": f"tests / {name}", "status": "completed", "conclusion": conclusion,
+            "steps": [{"name": f"step {n}"} for n in range(steps)]}
+
+
+SHARD = "test (shard 1 of 1)"
+IPHONE_1, IPHONE_2 = "build the iPhone app (job 1 of 3)", "build the iPhone app (job 2 of 3)"
+JOIN = "join the results"
+LOST_NOTE = "The job was not acquired by Runner of type hosted even after multiple attempts"
+
+
+class ReRunningLostJobsTests(RemoteTestCase):
+    """A job no runner took (GitHub's runner shortage) is re-run once; nothing else triggers a re-run."""
+
+    DONE_1 = {"status": "completed", "conclusion": "failure", "url": "https://github.example/runs/7001", "attempt": 1}
+    STALE = {**DONE_1}
+    DONE_2 = {"status": "completed", "conclusion": "success", "url": "https://github.example/runs/7001", "attempt": 2}
+
+    def run_it(self, first_jobs, second_jobs=(), annotations=None, supported=True, views=None, **state):
+        """Runs run_remotely against a fake GitHub whose first attempt shows `first_jobs` and whose second (if asked for) shows
+        `second_jobs`; returns (the result, the messages). `views` are the run's states, one for each poll."""
+        self.patch_github(rerun_supported=lambda cwd, commit: supported)
+        views = views or [self.DONE_1, self.STALE, self.DONE_2]
+        self.gh_state({"list": [[STARTED]], "view": views, "jobs": [list(first_jobs), list(second_jobs)],
+                       "annotations": annotations or {}, "download": [results(PASSING_SUMMARY, PASSING_LOG)], **state})
+        messages = []
+        result = github_run.run_remotely(self.repo, self.head, REQUEST, self.folder / "results", "Test build: t",
+                                         progress=messages.append)
+        return result, messages
+
+    def reruns(self):
+        """The `gh run rerun` calls the fake gh had."""
+        return [call for call in self.gh_calls() if call[:2] == ["run", "rerun"]]
+
+    def test_a_lost_job_is_rerun_once_and_the_new_attempt_is_the_result(self):
+        result, messages = self.run_it([job(1, SHARD, "cancelled", 0), job(2, IPHONE_1, "success", 19)], [])
+        self.assertEqual(self.reruns(), [["run", "rerun", "7001", "-R", github_run.REPO, "--failed"]])
+        self.assertEqual(result["conclusion"], "success", "the second attempt's conclusion")
+        self.assertEqual(result["rerun"], {"lost": [f"tests / {SHARD}"], "rerun": [], "lost_again": []})
+        self.assertTrue(result["downloaded"])
+        self.assertTrue(any("never had a runner" in m for m in messages))
+
+    def test_two_lost_jobs_are_rerun_by_the_one_call_and_both_are_named(self):
+        result, _ = self.run_it([job(1, SHARD, "cancelled", 0), job(2, IPHONE_1, "cancelled", 0), job(3, IPHONE_2, "cancelled", 0),
+                                 job(4, "build the iPhone app (job 3 of 3)", "success", 19)])
+        self.assertEqual(len(self.reruns()), 1)
+        self.assertEqual(result["rerun"]["lost"], [f"tests / {SHARD}", f"tests / {IPHONE_1}", f"tests / {IPHONE_2}"])
+
+    def test_a_lost_join_is_rerun(self):
+        # The join never had a runner: the tests passed, and the run still has no results.
+        result, _ = self.run_it([job(1, SHARD, "success", 20), job(2, JOIN, "cancelled", 0)])
+        self.assertEqual(len(self.reruns()), 1)
+        self.assertEqual(result["rerun"]["lost"], [f"tests / {JOIN}"])
+
+    def test_a_job_that_failed_after_starting_never_triggers_a_rerun(self):
+        result, _ = self.run_it([job(1, IPHONE_1, "failure", 19), job(2, JOIN, "success", 9)], views=[self.DONE_1])
+        self.assertEqual(self.reruns(), [])
+        self.assertNotIn("rerun", result)
+        self.assertEqual(result["conclusion"], "failure")
+
+    def test_a_job_cancelled_in_the_middle_of_its_steps_is_the_train_tools_own_limit_and_is_not_lost(self):
+        result, _ = self.run_it([job(1, IPHONE_1, "cancelled", 12)], views=[self.DONE_1])
+        self.assertEqual((self.reruns(), "rerun" in result), ([], False))
+
+    def test_a_run_with_no_losses_is_not_even_asked_about_its_jobs(self):
+        done = {**self.DONE_2, "attempt": 1}
+        result, _ = self.run_it([], views=[done])
+        self.assertEqual(self.reruns(), [])
+        self.assertEqual([c for c in self.gh_calls() if c[0] == "api"], [])
+        self.assertNotIn("rerun", result)
+
+    def test_a_second_loss_after_the_rerun_is_reported_and_never_rerun_again(self):
+        again = {**self.DONE_1, "attempt": 2}
+        result, _ = self.run_it([job(1, SHARD, "cancelled", 0)], [job(1, SHARD, "cancelled", 0)], views=[self.DONE_1, again])
+        self.assertEqual(len(self.reruns()), 1, "one re-run at most")
+        self.assertEqual(result["rerun"]["lost_again"], [f"tests / {SHARD}"])
+        self.assertEqual(result["conclusion"], "failure")
+
+    def test_a_run_that_is_already_a_rerun_is_not_rerun_again(self):
+        second = {**self.DONE_1, "attempt": 2}
+        self.run_it([job(1, SHARD, "cancelled", 0)], views=[second])
+        self.assertEqual(self.reruns(), [])
+
+    def test_the_annotation_alone_makes_a_job_lost(self):
+        # Cancelled or failed with steps listed, but GitHub's note says no runner took it.
+        result, _ = self.run_it([job(5, IPHONE_2, "failure", 1)], annotations={"5": [LOST_NOTE]})
+        self.assertEqual(result["rerun"]["lost"], [f"tests / {IPHONE_2}"])
+
+    def test_other_annotations_do_not_make_a_job_lost(self):
+        note = "Due to capacity constraints, jobs targeting macOS arm64 runners may experience longer queue times."
+        self.run_it([job(5, IPHONE_2, "failure", 19)], annotations={"5": [note]}, views=[self.DONE_1])
+        self.assertEqual(self.reruns(), [])
+
+    def test_jobs_a_newer_push_cancelled_before_they_started_are_not_lost(self):
+        cancelled = {**self.DONE_1, "conclusion": "cancelled"}
+        self.run_it([job(1, SHARD, "cancelled", 0), job(2, IPHONE_1, "cancelled", 0)], views=[cancelled])
+        self.assertEqual(self.reruns(), [], "a cancelled run's queued jobs have no steps either")
+
+    def test_the_jobs_that_failed_after_starting_are_named_when_the_rerun_takes_them_along(self):
+        result, _ = self.run_it([job(1, SHARD, "cancelled", 0), job(2, IPHONE_1, "failure", 19)])
+        self.assertEqual(result["rerun"], {"lost": [f"tests / {SHARD}"], "rerun": [f"tests / {IPHONE_1}"], "lost_again": []})
+
+    def test_a_workflow_that_cannot_take_a_rerun_gets_none(self):
+        result, _ = self.run_it([job(1, SHARD, "cancelled", 0)], supported=False, views=[self.DONE_1])
+        self.assertEqual((self.reruns(), "rerun" in result), ([], False))
+
+    def test_a_rerun_github_refuses_leaves_the_first_attempts_results_and_says_so(self):
+        result, _ = self.run_it([job(1, SHARD, "cancelled", 0)], views=[self.DONE_1], rerun_fail=True)
+        self.assertEqual(result["conclusion"], "failure")
+        self.assertIn("already running", result["rerun"]["refused"])
+        self.assertEqual(result["rerun"]["lost"], [f"tests / {SHARD}"])
+
+    def test_the_wait_ignores_the_first_attempts_state_that_shows_for_a_moment(self):
+        # After the re-run the run still reads "completed" with attempt 1 for a poll or two: that is not the end.
+        result, _ = self.run_it([job(1, SHARD, "cancelled", 0)], views=[self.DONE_1, self.STALE, self.STALE, self.DONE_2])
+        self.assertEqual(result["conclusion"], "success")
+        self.assertGreaterEqual(len([c for c in self.gh_calls() if c[:2] == ["run", "view"]]), 4)
+
+
+class RerunSupportedTests(RemoteTestCase):
+    """Only a workflow whose join overwrites its artifact may be re-run (a re-run's join uploads the same name again)."""
+
+    def workflow(self, upload):
+        """Commits a tests.yml whose last step is `upload`; returns the commit."""
+        path = self.repo / ".github" / "workflows" / "tests.yml"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("jobs:\n  collect:\n    steps:\n      - name: Show the summary\n        run: x\n\n" + upload)
+        self.git("add", "-A")
+        self.git("commit", "-q", "-m", "w")
+        return self.git("rev-parse", "HEAD")
+
+    def test_a_join_with_overwrite_is_supported(self):
+        commit = self.workflow("      - name: Upload the results\n        uses: a/b\n        with:\n          overwrite: true\n")
+        self.assertTrue(github_run.rerun_supported(self.repo, commit))
+
+    def test_a_join_without_overwrite_is_not(self):
+        commit = self.workflow("      - name: Upload the results\n        uses: a/b\n        with:\n          name: x\n")
+        self.assertFalse(github_run.rerun_supported(self.repo, commit))
+
+    def test_an_overwrite_in_another_step_does_not_count(self):
+        commit = self.workflow("      - name: Upload the results\n        uses: a/b\n\n      - name: Other\n        with:\n          overwrite: true\n")
+        self.assertFalse(github_run.rerun_supported(self.repo, commit))
+
+    def test_a_tree_with_no_workflow_is_not_supported(self):
+        self.assertFalse(github_run.rerun_supported(self.repo, self.head))
+
+
 if __name__ == "__main__":
     unittest.main()
