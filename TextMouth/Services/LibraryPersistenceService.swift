@@ -137,6 +137,11 @@ enum LibraryPersistenceService {
     /// record is replaced without one or cannot be read. Confined to
     /// bookInfoSaveQueue.
     nonisolated(unsafe) private static var bookInfoRevisions: [UUID: Int] = [:]
+    /// The books whose next record write is a merge's (`saveBookInfo(for:asMerged:)`,
+    /// FR43): that write keeps the row's place whatever place the stored
+    /// record holds, since a merge may choose an earlier place than the
+    /// record's. Confined to bookInfoSaveQueue.
+    nonisolated(unsafe) private static var mergedBookIDs: Set<UUID> = []
     /// Packages retired by Remove from Library Only: those retired in this
     /// session, and those whose marker a write has already found. Confined
     /// to bookInfoSaveQueue, where every package metadata write checks it.
@@ -594,6 +599,19 @@ enum LibraryPersistenceService {
     /// Save a single book's bookInfo.json. Call this when a specific book's data changes.
     static func saveBookInfo(for book: Book) {
         guard !book.tmbDirectoryName.isEmpty else { return }
+        enqueueBookInfoSave(book: book, contentIndex: nil)
+    }
+
+    /// Saves a single book's record after a sync merge (FR43): as `saveBookInfo(for:)`,
+    /// but the write skips `Book.takeStandingReadingState(of:)`, so a record's older
+    /// or later place can't stand over the merged one.
+    static func saveBookInfo(for book: Book, asMerged: Bool) {
+        guard !book.tmbDirectoryName.isEmpty else { return }
+        if asMerged {
+            // The queue is serial, so the mark is in place before the write
+            // that the next call queues.
+            bookInfoSaveQueue.async { mergedBookIDs.insert(book.id) }
+        }
         enqueueBookInfoSave(book: book, contentIndex: nil)
     }
 
@@ -1126,12 +1144,15 @@ enum LibraryPersistenceService {
             }
         }
         guard !isRetired(book) else { return nil }
+        // A merge's write keeps the row's place (FR43).
+        let merged = mergedBookIDs.remove(book.id) != nil
         let record = book.bookInfo(
             replacing: replaced,
             contentIndex: contentIndex,
             revisionFloor: bookInfoRevisions[book.id] ?? 0,
             decidingTextEncoding: decidingTextEncoding,
-            decidingBrailleFileCode: decidingBrailleFileCode
+            decidingBrailleFileCode: decidingBrailleFileCode,
+            takingStandingReadingState: !merged
         )
         try record.saveRecord(to: book.tmbDirectory)
         bookInfoRevisions[book.id] = record.state.revision

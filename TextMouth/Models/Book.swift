@@ -2091,12 +2091,15 @@ struct Book: Identifiable, Codable, Hashable, KeepsUnknownKeys {
         revisionFloor: Int = 0,
         decidingTextEncoding: Bool = false,
         decidingBrailleFileCode: Bool = false,
-        notingMoveToLibraryAt movedToLibrary: Date? = nil
+        notingMoveToLibraryAt movedToLibrary: Date? = nil,
+        takingStandingReadingState: Bool = true
     ) -> BookInfo {
         var recorded = self
         // The reading state that stands between the row and the stored
         // record: the record's only when it holds the later place (risk 2).
-        if let stored {
+        // A sync merge's write keeps the row's, which the merge chose
+        // (`LibraryPersistenceService.saveBookInfo(for:asMerged:)`).
+        if let stored, takingStandingReadingState {
             recorded.takeStandingReadingState(of: stored.info)
         }
         var index = contentIndex
