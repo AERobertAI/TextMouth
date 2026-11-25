@@ -30,8 +30,10 @@ from unittest import mock
 HERE = Path(__file__).resolve().parent
 L10N = HERE.parent
 sys.path.insert(0, str(L10N))
+sys.path.insert(0, str(L10N.parent / "packs"))
 import catalog  # noqa: E402  (imported by path, after sys.path is set)
 import pack  # noqa: E402
+import packfile  # noqa: E402  (the container the pack is written in)
 
 FIXTURES = HERE / "fixtures" / "pack"
 REAL_CATALOG = L10N.parent.parent / "TextMouth" / "Localization" / "Localizable.xcstrings"
@@ -881,9 +883,9 @@ class CheckTests(PackCase):
                 self.assertLessEqual(len(data), len(other))
                 self.assertEqual(raw, decompress_blob(data, method))
         # A tie: both compressors replaced by ones that return equal-sized bytes.
-        with mock.patch.object(pack, "compress", return_value=b"aaaa"), mock.patch.object(pack, "compress_bzip2", return_value=b"bbbb"):
+        with mock.patch.object(packfile, "compress", return_value=b"aaaa"), mock.patch.object(packfile, "compress_bzip2", return_value=b"bbbb"):
             self.assertEqual((pack.METHOD_LZMA, b"aaaa"), pack.compress_smallest(b"x"))
-        with mock.patch.object(pack, "compress", return_value=b"aaaaa"), mock.patch.object(pack, "compress_bzip2", return_value=b"bbbb"):
+        with mock.patch.object(packfile, "compress", return_value=b"aaaaa"), mock.patch.object(packfile, "compress_bzip2", return_value=b"bbbb"):
             self.assertEqual((pack.METHOD_BZIP2, b"bbbb"), pack.compress_smallest(b"x"))
 
     def test_a_pack_uses_both_methods_and_is_the_same_bytes_twice(self):
@@ -900,7 +902,7 @@ class CheckTests(PackCase):
             if raw.startswith(b"a."):
                 return pack.METHOD_LZMA, pack.compress(raw, windowed)
             return pack.METHOD_BZIP2, pack.compress_bzip2(raw)
-        with mock.patch.object(pack, "compress_smallest", side_effect=by_name):
+        with mock.patch.object(packfile, "compress_smallest", side_effect=by_name):
             decoded = pack.read_pack(pack.assemble(b"\0" * 32, 1, [("ids", b"a.one\0", 1), ("notes", b"note\0", 1)]))
         self.assertEqual({"ids": pack.METHOD_LZMA, "notes": pack.METHOD_BZIP2}, {n: b.method for n, b in decoded.blobs.items()})
 

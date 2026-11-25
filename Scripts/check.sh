@@ -23,7 +23,10 @@
 #      (Scripts/l10n/pack.py). Each app must also hold exactly
 #      one interface-text pack, Strings.pack, in its resources folder, of at most
 #      PACK_LIMIT_BYTES (1.5 MB), as that build phase writes
-#      it (FR39; Scripts/l10n/pack.py); the gate reports its size. Still in step 3, a
+#      it (FR39; Scripts/l10n/pack.py); the gate reports its size. Each app must
+#      likewise hold exactly one braille-table pack, BrailleTables.pack, in its resources
+#      folder (the build phase "Pack braille tables", Scripts/packs/braille_tables.py, FR40),
+#      within its limit, and no liblouis/tables folder of raw tables. Still in step 3, a
 #      plain run (not --without-tests) then builds the iPhone app for a device
 #      (Scripts/ios/app-size.py build) and holds it to the same two limits: a
 #      warning above APP_SIZE_WARNING_MB and a failure above APP_SIZE_LIMIT_MB,
@@ -154,6 +157,13 @@ readonly INFO_PLIST_TABLE="InfoPlist.strings"
 # The interface-text pack's name, and the most bytes it may hold (1.5 MB of a million bytes; it is 1.28 MB today).
 readonly PACK_NAME="Strings.pack"
 readonly PACK_LIMIT_BYTES=1500000
+# The braille-table pack's name (FR40), and the most bytes each app's may hold, each below: the iPhone's holds every table
+# TextMouth ships for it, the Mac's the four English tables with what they include. The gate enforces both limits, and that
+# no raw liblouis table is in either app: the folder the apps once held, liblouis/tables, is looked for. Each pack's size is
+# reported with every check, so growth shows long before a limit; no size is written here, where it would go stale.
+readonly BRAILLE_PACK_NAME="BrailleTables.pack"
+readonly BRAILLE_PACK_LIMIT_BYTES=2100000
+readonly MAC_BRAILLE_PACK_LIMIT_BYTES=100000
 # The Release app's two size limits, in megabytes of a million bytes. Its
 # developer's real limit is 30 MB and its strict one 40 MB (November 16, 2026,
 # when FFmpeg was built in: the 20 MB of before was a target to optimize
@@ -614,32 +624,53 @@ require_language_layout() {
   detail "$app holds $count .lproj folders, each with an $INFO_PLIST_TABLE, and no table of Apple's"
 }
 
-# require_one_interface_pack <app folder> <resources folder> <app name>: the app
-# holds exactly one Strings.pack, in its resources folder, and it is no larger
-# than PACK_LIMIT_BYTES. A missing pack means the build phase "Pack interface
-# text" did not run (every line would show English); a second one is a stray
-# copy that would ship twice; a pack over the limit means the budget is spent
-# (FR39). Reports the pack's size.
-require_one_interface_pack() {
-  local app_folder=$1 resources=$2 app=$3 found count size
+# require_one_pack <app folder> <resources folder> <app name> <pack name> <limit> <phase>: the app holds exactly one file named
+# <pack name>, in its resources folder, no larger than <limit> bytes. A missing pack means the build phase <phase> did not
+# run (every line would show English, or no braille table could be unpacked); a second one is a stray copy that would ship
+# twice; a pack over the limit means the budget is spent (FR39, FR40). Reports the pack's size.
+require_one_pack() {
+  local app_folder=$1 resources=$2 app=$3 pack_name=$4 limit=$5 phase=$6 found count size
   if (( dry_run )); then
-    detail "would require $app to hold exactly one $PACK_NAME of at most $PACK_LIMIT_BYTES bytes"
+    detail "would require $app to hold exactly one $pack_name of at most $limit bytes"
     return 0
   fi
-  found=$(find "$app_folder" -name "$PACK_NAME" -type f)
+  found=$(find "$app_folder" -name "$pack_name" -type f)
   count=$(grep -c . <<<"$found" || true)
   if (( count != 1 )); then
     detail_lines "| " "$found"
-    fail "step $step_number of $STEP_COUNT ($step_title): $app holds $count files named $PACK_NAME, not one (the build phase \"Pack interface text\", Scripts/l10n/pack.py, writes exactly one into its resources)"
+    fail "step $step_number of $STEP_COUNT ($step_title): $app holds $count files named $pack_name, not one (the build phase \"$phase\" writes exactly one into its resources)"
   fi
-  if [[ $found != "$resources/$PACK_NAME" ]]; then
-    fail "step $step_number of $STEP_COUNT ($step_title): $app holds its $PACK_NAME at ${found#"$app_folder"/}, not in its resources folder"
+  if [[ $found != "$resources/$pack_name" ]]; then
+    fail "step $step_number of $STEP_COUNT ($step_title): $app holds its $pack_name at ${found#"$app_folder"/}, not in its resources folder"
   fi
   size=$(wc -c < "$found" | tr -d ' ')
-  detail "$app's $PACK_NAME is $size bytes (the limit is $PACK_LIMIT_BYTES)"
-  if (( size > PACK_LIMIT_BYTES )); then
-    fail "step $step_number of $STEP_COUNT ($step_title): $app's $PACK_NAME is $size bytes, over the $PACK_LIMIT_BYTES-byte limit"
+  detail "$app's $pack_name is $size bytes (the limit is $limit)"
+  if (( size > limit )); then
+    fail "step $step_number of $STEP_COUNT ($step_title): $app's $pack_name is $size bytes, over the $limit-byte limit"
   fi
+}
+
+# require_one_interface_pack <app folder> <resources folder> <app name>: the app holds exactly one Strings.pack (FR39,
+# Scripts/l10n/pack.py), within PACK_LIMIT_BYTES.
+require_one_interface_pack() {
+  require_one_pack "$1" "$2" "$3" "$PACK_NAME" "$PACK_LIMIT_BYTES" "Pack interface text"
+}
+
+# require_braille_pack <app folder> <resources folder> <app name> <limit>: the app holds exactly one BrailleTables.pack
+# (FR40, Scripts/packs/braille_tables.py) within <limit> bytes, and no raw liblouis tables: no folder named tables inside a
+# folder named liblouis, which the apps held before the pack, and no table file (.ctb .cti .utb .uti .tbl .dis .dic) anywhere.
+require_braille_pack() {
+  local app_folder=$1 resources=$2 app=$3 limit=$4 raw
+  require_one_pack "$app_folder" "$resources" "$app" "$BRAILLE_PACK_NAME" "$limit" "Pack braille tables"
+  if (( dry_run )); then
+    return 0
+  fi
+  raw=$(find "$app_folder" \( -type d -path '*/liblouis/tables' -o -type f \( -name '*.ctb' -o -name '*.cti' -o -name '*.utb' -o -name '*.uti' -o -name '*.tbl' -o -name '*.dis' -o -name '*.dic' \) \))
+  if [[ -n $raw ]]; then
+    detail_lines "| " "$raw"
+    fail "step $step_number of $STEP_COUNT ($step_title): $app holds raw liblouis tables (the tables are in $BRAILLE_PACK_NAME, which the app unpacks at first use, and no other file of the app is one)"
+  fi
+  detail "$app holds no raw liblouis tables"
 }
 
 # require_ios_app_within_size_limit: builds the iPhone app for a device and
@@ -829,12 +860,14 @@ main() {
   require_app_free_of_mac_paths
   require_language_layout "$RELEASE_APP" "$MAC_RESOURCES" "$RELEASE_APP"
   require_one_interface_pack "$RELEASE_APP" "$MAC_RESOURCES" "$RELEASE_APP"
+  require_braille_pack "$RELEASE_APP" "$MAC_RESOURCES" "$RELEASE_APP" "$MAC_BRAILLE_PACK_LIMIT_BYTES"
   if [[ ${GITHUB_ACTIONS:-} == true ]]; then
     detail "the iPhone app is not built or measured on a GitHub runner (GITHUB_ACTIONS=true); the trains measure it there"
   else
     require_ios_app_within_size_limit
     require_language_layout "$IOS_APP" "$IOS_APP" "the iPhone app"
     require_one_interface_pack "$IOS_APP" "$IOS_APP" "the iPhone app"
+    require_braille_pack "$IOS_APP" "$IOS_APP" "the iPhone app" "$BRAILLE_PACK_LIMIT_BYTES"
   fi
 
   if (( without_tests )); then

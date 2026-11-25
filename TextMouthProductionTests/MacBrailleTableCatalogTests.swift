@@ -93,9 +93,12 @@ final class MacBrailleTableCatalogTests: XCTestCase {
     }
 
     /// A stored value is kept when it is a bundled table or names a Mac
-    /// table by a bare file name, without reading this Mac's folder: a Mac
+    /// table by a `mac:` value, without reading this Mac's folder: a Mac
     /// table no Mac has is kept too, to be refused by name when used
-    /// (review R3).
+    /// (review R3). A bare file name the pack lacks is kept only when
+    /// VoiceOver's file of that name has the header of a table, read alone
+    /// (`BrailleTablePrintOnlyTests`), so an include of that folder
+    /// (`en-ueb-chardefs.uti`) is refused.
     func testStorableValues() {
         XCTAssertEqual(BrailleTableCatalog.storableValue("en-ueb-g2.ctb"), "en-ueb-g2.ctb")
         XCTAssertEqual(BrailleTableCatalog.storableValue("mac:no-such-table-on-any-mac.ctb"), "mac:no-such-table-on-any-mac.ctb")
@@ -470,9 +473,11 @@ final class MacBrailleTableCatalogTests: XCTestCase {
         }
     }
 
-    /// This Mac's Italian, Latvian, and Georgian tables, which state no
-    /// contraction, are offered; its lt-6dot.tbl, which only includes
-    /// lt-6dot.utb, is not, and lt-6dot.utb is. Tables this Mac lacks are
+    /// This Mac's Italian and Georgian tables, which state no contraction,
+    /// are offered for reading; its lt-6dot.tbl, which only includes
+    /// lt-6dot.utb, is not, and lt-6dot.utb is. Its Latvian table, `lv.tbl`,
+    /// is judged by liblouis 3.39.0, where it writes braille only: offered
+    /// for export and not for reading (FR40). Tables this Mac lacks are
     /// passed over.
     func testThisMacOffersTablesWithNoContractionLine() throws {
         _ = try requireThisMacsTables()
@@ -480,14 +485,59 @@ final class MacBrailleTableCatalogTests: XCTestCase {
             FileManager.default.fileExists(atPath: BrailleTableCatalog.macTablesFolder.appendingPathComponent(name).path)
         }
         let offered = Set(BrailleTableCatalog.offeredTables.map(\.id))
-        for name in ["it.tbl", "lv.tbl", "ka.utb", "lt-6dot.utb"] where has(name) {
+        for name in ["it.tbl", "ka.utb", "lt-6dot.utb"] where has(name) {
             XCTAssertTrue(offered.contains("mac:\(name)"), name)
+        }
+        if has("lv.tbl") {
+            XCTAssertFalse(offered.contains("mac:lv.tbl"), "lv.tbl is print-only in 3.39.0 and is offered for reading")
+            XCTAssertTrue(BrailleTableCatalog.exportTables.contains { $0.id == "mac:lv.tbl" }, "lv.tbl is not offered for export")
         }
         if has("lt-6dot.tbl") {
             XCTAssertFalse(offered.contains("mac:lt-6dot.tbl"))
         }
         if has("it.tbl") {
             XCTAssertEqual(BrailleTableCatalog.table(withID: "mac:it.tbl")?.contractionLabel, "As the table defines")
+        }
+    }
+
+    /// A table that only includes files, one of them missing from the folder, could never load: with `requiresIncludes` (what
+    /// this Mac's own listing asks) it is left out, and without it, as in every other folder, it is kept. A table with rules of
+    /// its own is never judged by its includes.
+    func testATableWhoseOnlyIncludesAreMissingIsLeftOut() throws {
+        let folder = try makeSandboxDirectory("MacBrailleMissingInclude")
+        func write(_ name: String, includes: [String], rule: Bool = false) throws {
+            let header = "#+type:literary\n#+language:is\n#+contraction:no\n#+display-name:\(name) braille\n"
+            let body = includes.map { "include \($0)\n" }.joined() + (rule ? "letter a 1\n" : "")
+            try (header + body).write(to: folder.appendingPathComponent(name), atomically: true, encoding: .utf8)
+        }
+        try write("whole.tbl", includes: ["present.cti"])
+        try "letter a 1\n".write(to: folder.appendingPathComponent("present.cti"), atomically: true, encoding: .utf8)
+        try write("broken.tbl", includes: ["present.cti", "absent.cti"])
+        try write("rules.tbl", includes: ["absent.cti"], rule: true)
+        let list = URL(fileURLWithPath: "/nonexistent/none.plist")
+
+        let strict = Set(try XCTUnwrap(BrailleTableCatalog.macTables(in: folder, propertyList: list, release: nil, requiresIncludes: true)).tables.map(\.fileName))
+        XCTAssertTrue(strict.isSuperset(of: ["whole.tbl", "rules.tbl"]), "\(strict)")
+        XCTAssertFalse(strict.contains("broken.tbl"), "a table that cannot load is offered")
+        let lenient = Set(try XCTUnwrap(BrailleTableCatalog.macTables(in: folder, propertyList: list, release: nil)).tables.map(\.fileName))
+        XCTAssertTrue(lenient.contains("broken.tbl"), "other folders are judged as before")
+    }
+
+    /// This Mac's own folder: Apple left out the LGPL 3 includes of `is.tbl`, `pt.tbl`, and `sr.tbl`, so a table of them that
+    /// is missing a file is not offered, for reading or export.
+    func testThisMacLeavesOutTablesItCannotLoad() throws {
+        _ = try requireThisMacsTables()
+        func has(_ name: String) -> Bool {
+            FileManager.default.fileExists(atPath: BrailleTableCatalog.macTablesFolder.appendingPathComponent(name).path)
+        }
+        let wrappers = [("is.tbl", "is-chardefs6.cti"), ("pt.tbl", "pt-pt-g2.ctb"), ("sr.tbl", "sr-g1.ctb")]
+        let present = wrappers.filter { has($0.0) }
+        try XCTSkipIf(present.isEmpty, "This Mac has none of is.tbl, pt.tbl, and sr.tbl")
+        for (table, include) in present {
+            // A table with its include here may still be left out as a twin of what it includes; one without it never loads.
+            if !has(include) {
+                XCTAssertFalse(BrailleTableCatalog.exportTables.contains { $0.id == "mac:\(table)" }, "\(table) is offered without \(include)")
+            }
         }
     }
 

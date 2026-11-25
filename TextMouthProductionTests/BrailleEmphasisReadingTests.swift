@@ -81,7 +81,7 @@ final class BrailleEmphasisReadingTests: XCTestCase {
         let helper = BrailleTranslator.Tool.helper
         var tool = helper
         tool.command = { mode, table, input, output in
-            guard var command = helper.command(liblouisAlone && mode == "back" ? "back-liblouis" : mode, table, input, output) else {
+            guard var command = try helper.command(liblouisAlone && mode == "back" ? "back-liblouis" : mode, table, input, output) else {
                 return nil
             }
             if let file { command.arguments = command.arguments.map { $0 == table ? file : $0 } }

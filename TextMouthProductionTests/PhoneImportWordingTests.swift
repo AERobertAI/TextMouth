@@ -91,15 +91,21 @@ final class PhoneImportWordingTests: XCTestCase {
         )
     }
 
-    /// Only one of a Mac's own braille tables is refused, by its file name;
-    /// a bundled table passes.
-    func testOnlyAMacsOwnBrailleTableIsRefused() {
-        XCTAssertThrowsError(try PhoneImportRefusal.refuseMacBrailleTable("mac:fr-bfu-g2.ctb")) {
-            XCTAssertEqual($0 as? PhoneImportRefusal, .macBrailleTable("fr-bfu-g2.ctb"))
+    /// Only one of a Mac's own braille tables that the app's pack has no table of the same file name for is refused, by its
+    /// file name; a bundled table passes, and so does a Mac's table whose file name the pack has (FR40: the Mac's pack has
+    /// the four English tables, the iPhone's has them and every other table it ships).
+    func testOnlyAMacsOwnBrailleTableTheAppLacksIsRefused() {
+        XCTAssertThrowsError(try PhoneImportRefusal.refuseMacBrailleTable("mac:no-such-table.ctb")) {
+            XCTAssertEqual($0 as? PhoneImportRefusal, .macBrailleTable("no-such-table.ctb"))
         }
-        for bundled in ["en-ueb-g2.ctb", "en_US.tbl"] {
+        for bundled in ["en-ueb-g2.ctb", "en_US.tbl", "mac:en-ueb-g2.ctb", "mac:en_US.tbl"] {
             XCTAssertNoThrow(try PhoneImportRefusal.refuseMacBrailleTable(bundled), bundled)
         }
+        #if os(iOS)
+        XCTAssertNoThrow(try PhoneImportRefusal.refuseMacBrailleTable("mac:fr-bfu-g2.ctb"), "the iPhone's pack has the French table")
+        #else
+        XCTAssertThrowsError(try PhoneImportRefusal.refuseMacBrailleTable("mac:fr-bfu-g2.ctb"), "the Mac's pack has English alone")
+        #endif
     }
 
     /// Without a name, a refusal says "This file", which its error

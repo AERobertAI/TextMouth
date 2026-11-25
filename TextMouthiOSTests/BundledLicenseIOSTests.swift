@@ -26,6 +26,10 @@ final class BundledLicenseIOSTests: XCTestCase {
             licence.trimmingCharacters(in: .whitespacesAndNewlines).hasPrefix("GNU LESSER GENERAL PUBLIC LICENSE"),
             String(licence.prefix(80)))
         XCTAssertFalse(try licenseText("liblouis", "README").isEmpty)
+        // The tables' own licenses, which are not all the release's (FR40): the list names the license each is under.
+        let tables = try licenseText("liblouis", "TABLES-LICENSES.md")
+        XCTAssertTrue(tables.contains("GNU Lesser General Public License, version 2.1 or (at your option) any later version"), String(tables.prefix(200)))
+        XCTAssertTrue(tables.contains("Left out"), "the list says what is left out")
     }
 
     /// FFmpeg's notices are in the app, as in the Mac's, since the iPhone links FFmpeg to convert in the app itself

@@ -105,14 +105,21 @@ enum BrailleSettingsWording {
     /// tables, each with its liblouis version when known, or that this Mac
     /// no longer has the chosen Mac table (`isOffered` false), as after a
     /// macOS update that removed it.
-    static func source(ofTable tableID: String, isOffered: Bool, macLiblouisVersion: String?) -> String {
-        guard BrailleTableSource.parse(tableID).source == .mac else {
-            // Translators: Under the pop-ups in the Braille tab of Settings: the chosen braille table comes with TextMouth. %@ is the version of liblouis, the braille library, written as a version number.
-            return InterfaceText.line("brailleSettings.source.built", "The chosen table is built into TextMouth (liblouis \(BrailleTableCatalog.bundledLiblouisVersion)).")
+    static func source(ofTable tableID: String, isOffered: Bool, macLiblouisVersion: String?, writesOnly: Bool = false) -> String {
+        // (The value is the lists' spelling of the table: see `source(ofStored:codes:macLiblouisVersion:)`.)
+        // A table the setting already names that only writes braille (FR40): it keeps working, and is not offered here.
+        guard !writesOnly else {
+            // Translators: Under the pop-ups in the Braille tab of Settings: the table chosen earlier only writes braille from print, so it is not among the choices for reading. Choosing another is the way to change it.
+            return InterfaceText.line("brailleSettings.source.writesOnly", "The chosen table only writes braille, so it is not offered for reading braille files; choose another.")
         }
+        // A table the lists do not offer is never said to be built in: a bare value the app's own pack lacks is no table of it.
         guard isOffered else {
             // Translators: Under the pop-ups in the Braille tab of Settings: the chosen braille table of this Mac is gone. %@ is the table's stored name, "mac:" and its file name.
             return InterfaceText.line("brailleSettings.source.another", "This Mac no longer has the chosen table, \u{201C}\(tableID)\u{201D}; choose another.")
+        }
+        guard BrailleTableSource.parse(tableID).source == .mac else {
+            // Translators: Under the pop-ups in the Braille tab of Settings: the chosen braille table comes with TextMouth. %@ is the version of liblouis, the braille library, written as a version number.
+            return InterfaceText.line("brailleSettings.source.built", "The chosen table is built into TextMouth (liblouis \(BrailleTableCatalog.bundledLiblouisVersion)).")
         }
         guard let version = macLiblouisVersion else {
             // Translators: Under the pop-ups in the Braille tab of Settings: the chosen braille table is one of this Mac's.
@@ -120,6 +127,19 @@ enum BrailleSettingsWording {
         }
         // Translators: Under the pop-ups in the Braille tab of Settings: the chosen braille table is one of this Mac's. %@ is the version of liblouis, the braille library, written as a version number.
         return InterfaceText.line("brailleSettings.source.voiceoverLiblouis", "The chosen table is one of this Mac's VoiceOver braille tables (liblouis \(version)).")
+    }
+
+    /// The sentence for the table the stored value `stored` names, worked out in the lists' spelling of it: whether `codes`
+    /// offer it, whether it only writes braille, and where it comes from. The one place the Braille tab asks, so an iPhone's
+    /// bare value the Mac reads with VoiceOver's file is told as VoiceOver's, not as built in.
+    static func source(ofStored stored: String, codes: [BrailleCode], macLiblouisVersion: String?) -> String {
+        let id = BrailleTableCatalog.listedID(forStored: stored)
+        return source(
+            ofTable: id,
+            isOffered: BrailleSettingsChoice.table(ofStored: stored, in: codes) != nil,
+            macLiblouisVersion: macLiblouisVersion,
+            writesOnly: BrailleTableCatalog.table(withID: id)?.isPrintOnly == true
+        )
     }
 
     /// What VoiceOver hears when one of this Mac's tables, chosen in the
@@ -143,6 +163,20 @@ enum BrailleSettingsWording {
 /// The choices the Braille tab offers (FMT21), as pure functions of the
 /// codes they are given, so a test can pass codes of its own.
 enum BrailleSettingsChoice {
+    /// Whether `chosen` is the table the stored value `stored` already names, whichever way the value is spelled: a choice of
+    /// the table shown is no choice, and changes nothing (the pickers' guard).
+    static func isShown(_ chosen: BrailleTable, stored: String) -> Bool {
+        chosen.id == BrailleTableCatalog.listedID(forStored: stored)
+    }
+
+    /// The table of `codes` that the stored value `stored` names, matched in the lists' own spelling
+    /// (`BrailleTableCatalog.listedID(forStored:)`), so a value stored as another platform spells it, an iPhone's bare
+    /// `fr-bfu-g2.ctb` on the Mac, still finds its table. Nil when no code has it.
+    static func table(ofStored stored: String, in codes: [BrailleCode]) -> BrailleTable? {
+        let id = BrailleTableCatalog.listedID(forStored: stored)
+        return codes.lazy.flatMap(\.tables).first { $0.id == id }
+    }
+
     /// The table to use once `language` is chosen while `current` is the
     /// table in use (decision 4): in the language's code that holds the
     /// default table (Unified English Braille, for English), else in its
@@ -258,11 +292,8 @@ struct BrailleSettingsView: View {
     /// The sentence that says where the table in use comes from
     /// (`BrailleSettingsWording.source(ofTable:isOffered:macLiblouisVersion:)`).
     private var sourceSentence: String {
-        let id = settingsViewModel.brailleTable
-        return BrailleSettingsWording.source(
-            ofTable: id,
-            isOffered: codes.contains { code in code.tables.contains { $0.id == id } },
-            macLiblouisVersion: BrailleTableCatalog.mac?.liblouisVersion
+        BrailleSettingsWording.source(
+            ofStored: settingsViewModel.brailleTable, codes: codes, macLiblouisVersion: BrailleTableCatalog.mac?.liblouisVersion
         )
     }
 

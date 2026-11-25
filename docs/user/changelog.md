@@ -4,6 +4,29 @@ Part of [TextMouth's documentation](../../README.md).
 
 Every version of TextMouth, newest first, and what changed for you in each.
 
+## 0.5.12 (November 25, 2026)
+
+### Braille in many languages on the iPhone
+- The iPhone now carries liblouis's braille tables for many languages, not only English: 134 tables in 84 languages read braille files, compressed into 1.9 MB of the app.
+- The iPhone's Settings has a Braille section. Braille code opens a list of every table, grouped by language, each row naming the code, how far it contracts, and its language, and VoiceOver says which one is selected. Braille file characters and Guess the braille code of new books are there too.
+
+### Tables that only write braille
+- Some tables, such as German, Chinese, Korean, and Czech, can write braille but can't read a braille file back. TextMouth offers them when you export braille, and never for reading braille files. The iPhone carries them for the export it doesn't have yet.
+- On the Mac, VoiceOver's Czech, Latvian, Slovenian, and two Chinese tables are judged by the newer liblouis, so they are offered for export only. A book you already read with one keeps its text.
+- The Mac no longer offers VoiceOver's Icelandic, Serbian, and one Portuguese table, which never worked because macOS lacks files they need.
+
+### A Mac and an iPhone together
+- A braille table chosen on one device shows as that table on the other, with its language, in Settings, Export, and Book Information.
+- When one device lacks the other's table, it keeps its own and leaves the other's choice in config.json alone.
+- An iPhone reads a book a Mac read with one of VoiceOver's tables when the iPhone has a table of the same name.
+
+### Smaller and steadier
+- Both apps keep their braille tables in one compressed file and unpack a table the first time it's used, so the Mac app's four tables take 57 KB instead of about 250 KB.
+- On the iPhone, a braille translation stopped before it began now stops at once.
+
+### Installing on your iPhone
+- `make install-ios` builds the iPhone app and installs it on your own iPhone from the Mac's command line. "Installing on your own iPhone" in the iPhone build guide has the one-time steps.
+
 ## 0.5.11 (November 23, 2026)
 
 ### BARD braille books

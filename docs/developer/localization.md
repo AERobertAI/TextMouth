@@ -59,7 +59,7 @@ Where the English has no plural entry, the call's own text is shown at every cou
 
 `TextMouth/Localization/InterfaceText/` holds the engine, which both apps share.
 It reads `Strings.pack` from the app's resources: the IDs, the English, the notes, and one compressed blob for each language.
-The pack's layout is in `Scripts/l10n/pack.py` and `InterfaceTextPack.swift`; the reader treats the file as untrusted bytes and checks every bound before it reads.
+The pack's container is `Scripts/packs/packfile.py` and `PackContainer.swift` (see The pack's compression, below), and what its blobs hold is in `Scripts/l10n/pack.py` and `InterfaceTextPack.swift`; the reader treats the file as untrusted bytes and checks every bound before it reads.
 A lookup of `InterfaceText.line(id, english)` goes in this order:
 
 1. It finds the ID by binary search over the pack's ID list, with no allocation.
@@ -75,9 +75,13 @@ Each problem (a missing or damaged pack, an unknown ID, a text that fails its ch
 Each language's decoded entries are kept after their first use, and the notes are never decoded.
 
 ## The pack's compression
-<!-- id: localization-pack-compression; keys: Strings.pack, bzip2, LZMA, xz, libbz2, CBZip2, directory record, format 2; src: Scripts/l10n/pack.py, TextMouth/Localization/InterfaceText/InterfaceTextPack.swift, Vendor/CBZip2/include/module.modulemap, project.yml, Scripts/check.sh, TextMouthProductionTests/InterfaceTextTests.swift, Scripts/l10n/tests/test_pack.py -->
+<!-- id: localization-pack-compression; keys: Strings.pack, bzip2, LZMA, xz, libbz2, CBZip2, directory record, format 2; src: Scripts/l10n/pack.py, Scripts/packs/packfile.py, TextMouth/Packs/PackContainer.swift, TextMouth/Localization/InterfaceText/InterfaceTextPack.swift, Vendor/CBZip2/include/module.modulemap, project.yml, Scripts/check.sh, TextMouthProductionTests/InterfaceTextTests.swift, TextMouthProductionTests/PackContainerTests.swift, Scripts/l10n/tests/test_pack.py, Scripts/packs/tests/test_packfile.py -->
 
-The pack is format 2: the header's version is 2, and each blob's 32-byte directory record ends with its method.
+The container is shared with BrailleTables.pack (see [Braille table pack](../architecture/state/braille-table-pack.md)): `Scripts/packs/packfile.py` writes it and `TextMouth/Packs/PackContainer.swift` reads it, so the two packs cannot drift apart.
+It knows only the framing: the header, the directory, the bounds, and the compression.
+Each pack gives it a format (its magic, its version, and the limits that stop a hostile header) and says what its blobs hold, and a pack can check each directory record in file order (`recordCheck`).
+The header's count is the number of IDs here and the number of table files in the braille pack.
+This pack's magic is `TMSP` and its format is 2: the header's version is 2, and each blob's 32-byte directory record ends with its method.
 - Method 0 is an xz stream (LZMA2), which Apple's Compression framework decodes (`COMPRESSION_LZMA`).
 - Method 1 is a bzip2 stream, which the system's `libbz2` decodes in one call.
 - `pack.py build` compresses each blob both ways and keeps the smaller, LZMA on a tie, so the two can mix in one pack.
@@ -87,8 +91,9 @@ The pack is format 2: the header's version is 2, and each blob's 32-byte directo
 - The apps link the system's `libbz2` through the `CBZip2` module, whose module map (`Vendor/CBZip2/include/module.modulemap`) imports the SDK's own bzip2 header and links `bz2`; project.yml puts it on `SWIFT_INCLUDE_PATHS`.
   Nothing of bzip2 is vendored.
 - `InterfaceTextTests` reads both methods in one pack, a stream under the wrong method, and garbage in a blob, each giving English and one report; `Scripts/l10n/tests/test_pack.py` tests the builder.
+- `PackContainerTests` test the container reader with a format of its own, both methods, and damage, and `Scripts/packs/tests/test_packfile.py` tests the writer.
 - A tool that compiles the engine outside the app, as the type-check of the iPhone's code does, needs `Vendor/CBZip2/include` on its include path.
-  `Scripts/ios/typecheck.py` and `Scripts/l10n/verify_packs.py` pass it.
+  `Scripts/ios/typecheck.py` and `Scripts/l10n/verify_packs.py` pass it, and `verify_packs.py` compiles `PackContainer.swift` with the engine.
 
 ## The interface language
 <!-- id: localization-interface-language; keys: InterfaceLanguageChoice, choose, select, observer, didChange, followsInterfaceLanguage, WindowTitleFollower, AppleLanguages; src: TextMouth/Localization/InterfaceText/InterfaceLanguage.swift, TextMouth/Localization/InterfaceText/InterfaceLanguageChoice.swift, TextMouth/Views/InterfaceLanguageEnvironment.swift, TextMouth/Platform/macOS/Views/WindowTitleFollower.swift, TextMouth/App/MenuCommands.swift, TextMouth/Platform/iOS/App/MagicTapWindow.swift -->

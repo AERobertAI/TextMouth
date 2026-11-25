@@ -443,8 +443,10 @@ final class ConfigService: ObservableObject {
         /// (`BraillePreferences`), by its stored value: a bundled table's
         /// file name, such as "en-ueb-g2.ctb", or "mac:" and the file name of
         /// one of this Mac's VoiceOver tables, such as "mac:fr-bfu-g2.ctb".
-        /// Empty keeps the current choice, as does a bundled name the bundle
-        /// lacks. A Mac table's value is taken as it is, without reading this
+        /// Empty keeps the current choice, as does a bare name this platform
+        /// lacks (the file keeps such a name for the platform that has the
+        /// table: `SettingsViewModel` writes it back as it was until the
+        /// table is changed on this device). A Mac table's value is taken as it is, without reading this
         /// Mac's tables (`BrailleTableCatalog.storableValue(_:)`), and is
         /// checked before its first use, as one chosen in Settings is
         /// (`MacBrailleTableCheck`), or refused by name if this Mac lacks it.
@@ -614,9 +616,14 @@ final class ConfigService: ObservableObject {
             }
             leadingArticles = fields.rawChoice(.leadingArticles, rule: SettingsPolicy.leadingArticles)
             // Without reading this Mac's tables (review R3): decoding runs on
-            // the main thread at every launch.
+            // the main thread at every launch. A bare table name this platform
+            // lacks, such as the iPhone's `en-nz-g2.ctb` on the Mac, is not
+            // this platform's to use and is not repaired: the value is kept as
+            // the file has it, so it survives a launch's save (the setting
+            // never takes it: `SettingsViewModel.adoptServicePreferences`). Any
+            // other value this platform cannot take is repaired to empty.
             brailleTable = fields.value(.brailleTable, default: fallback.brailleTable) {
-                BrailleTableCatalog.storableValue($0) ?? ""
+                BrailleTableCatalog.storableValue($0) ?? (BrailleTableSource.isBareTableName($0) ? $0 : "")
             }
             // An id this TextMouth lacks is repaired to empty, and logged, so
             // it leaves the current braille file characters alone.

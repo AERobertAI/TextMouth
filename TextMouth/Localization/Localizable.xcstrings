@@ -116941,6 +116941,162 @@
         }
       }
     },
+    "brailleSettings.source.writesOnly" : {
+      "comment" : "Under the pop-ups in the Braille tab of Settings: the table chosen earlier only writes braille from print, so it is not among the choices for reading. Choosing another is the way to change it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "جدول برايل المختار يكتب برايل فقط، لذلك لا يُعرض لقراءة ملفات برايل؛ اختر جدولًا آخر."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বেছে নেওয়া ব্রেইল টেবিলটি শুধু ব্রেইল লেখে, তাই ব্রেইল ফাইল পড়ার জন্য এটি দেওয়া হয় না; অন্যটি বেছে নিন।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Die gewählte Tabelle schreibt nur Braille und wird deshalb nicht zum Lesen von Braille-Dateien angeboten; wählen Sie eine andere."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The chosen table only writes braille, so it is not offered for reading braille files; choose another."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La tabla elegida solo escribe braille, así que no se ofrece para leer archivos braille; elige otra."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "جدول انتخاب‌شده فقط بریل می‌نویسد، پس برای خواندن پرونده‌های بریل پیشنهاد نمی‌شود؛ جدول دیگری انتخاب کنید."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La table choisie écrit seulement du braille, elle n’est donc pas proposée pour lire des fichiers braille ; choisissez-en une autre."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הטבלה שנבחרה רק כותבת ברייל, ולכן היא לא מוצעת לקריאת קובצי ברייל; בחרו טבלה אחרת."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "चुनी गई तालिका केवल ब्रेल लिखती है, इसलिए ब्रेल फ़ाइलें पढ़ने के लिए यह नहीं दी जाती; कोई और चुनें।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tabel yang dipilih hanya menulis Braille, jadi tidak ditawarkan untuk membaca berkas Braille; pilih yang lain."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La tabella scelta scrive solo braille, quindi non viene offerta per leggere i file braille; scegline un’altra."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "選択した点字テーブルは点字を書き出すだけなので、点字ファイルの読み取りには使えません。別のテーブルを選んでください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "선택한 점자 테이블은 점자를 쓰기만 하므로 점자 파일을 읽는 데는 제공되지 않습니다. 다른 테이블을 선택하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "De gekozen tabel schrijft alleen braille en wordt daarom niet aangeboden om braillebestanden te lezen; kies een andere."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Wybrana tabela tylko zapisuje Braille’a, więc nie jest oferowana do odczytu plików Braille’a; wybierz inną."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "A tabela escolhida só escreve braille, então não é oferecida para ler arquivos braille; escolha outra."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Выбранная таблица только пишет шрифт Брайля, поэтому её нельзя использовать для чтения файлов Брайля; выберите другую."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Den valda tabellen skriver bara punktskrift och erbjuds därför inte för att läsa punktskriftsfiler; välj en annan."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ตารางอักษรเบรลล์ที่เลือกใช้เขียนเบรลล์ได้อย่างเดียว จึงไม่เสนอให้ใช้อ่านไฟล์เบรลล์ โปรดเลือกตารางอื่น"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Seçilen tablo yalnızca Braille yazar, bu yüzden Braille dosyalarını okumak için sunulmaz; başka bir tane seçin."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Вибрана таблиця лише пише шрифт Брайля, тому її не пропонують для читання файлів Брайля; виберіть іншу."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "منتخب جدول صرف بریل لکھتا ہے، اس لیے بریل فائلیں پڑھنے کے لیے پیش نہیں کیا جاتا؛ کوئی اور چنیں۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bảng đã chọn chỉ viết Braille nên không được đưa ra để đọc tệp Braille; hãy chọn bảng khác."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "所选盲文表只能写出盲文，因此不会用于读取盲文文件；请另选一个。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "所選點字表只能寫出點字，因此不會用於讀取點字檔案；請另選一個。"
+          }
+        }
+      }
+    },
     "brailleTable.contractionLabel.contracted" : {
       "comment" : "How a braille table contracts, for a table with no grade that shortens words with contractions.",
       "extractionState" : "manual",
@@ -200061,6 +200217,162 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "自 liblouis %2$@ 讀取這本書以來，這部 Mac 的點字表「%1$@」可能已更改，因此 TextMouth 保留這本書原有的文字。"
+          }
+        }
+      }
+    },
+    "failure.changedTable.phoneBraille" : {
+      "comment" : "Why a book is not read with its braille table again on an iPhone: the table's liblouis version is not the one the book was read with. %1$@ is the table's name, %2$@ the liblouis version on this iPhone, and %3$@ the version the book was read with.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "جدول برايل “%@” على هذا الـ iPhone هو liblouis %@، وليس liblouis %@ كما كان عند قراءة الكتاب، لذلك يحتفظ TextMouth بنص الكتاب كما كان."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই iPhone-এ ব্রেইল টেবিল “%@” হলো liblouis %@, বইটি পড়ার সময় যা ছিল সেই liblouis %@ নয়, তাই TextMouth বইয়ের লেখা আগের মতোই রেখে দেয়।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Die Braille-Tabelle „%@“ auf diesem iPhone ist liblouis %@, nicht liblouis %@ wie beim Lesen des Buchs; TextMouth behält daher den Text des Buchs, wie er war."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The braille table “%@” on this iPhone is liblouis %@, not liblouis %@ as when the book was read, so TextMouth keeps the book's text as it was."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La tabla braille “%@” de este iPhone es liblouis %@, no liblouis %@ como cuando se leyó el libro, así que TextMouth conserva el texto del libro tal como estaba."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "جدول بریل «%@» در این iPhone نسخهٔ %@ از liblouis است، نه نسخهٔ %@ از liblouis که هنگام خواندن کتاب بود؛ پس TextMouth متن کتاب را همان‌طور که بود نگه می‌دارد."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La table braille « %@ » de cet iPhone est liblouis %@, et non liblouis %@ comme à la lecture du livre ; TextMouth conserve donc le texte du livre tel qu’il était."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "טבלת הברייל “%@” ב-iPhone הזה היא liblouis %@ ולא liblouis %@ כפי שהייתה בעת קריאת הספר, ולכן TextMouth שומר את טקסט הספר כפי שהיה."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "इस iPhone पर ब्रेल तालिका “%@” liblouis %@ है, न कि liblouis %@, जो पुस्तक पढ़ते समय थी, इसलिए TextMouth पुस्तक का पाठ जैसा था वैसा ही रखता है।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tabel Braille “%@” di iPhone ini adalah liblouis %@, bukan liblouis %@ seperti saat buku dibaca, jadi TextMouth mempertahankan teks buku seperti semula."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La tabella braille “%@” su questo iPhone è liblouis %@, non liblouis %@ come quando il libro è stato letto, quindi TextMouth mantiene il testo del libro così com’era."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "このiPhoneの点字テーブル「%@」はliblouis %@で、ブックを読み取ったときのliblouis %@ではないため、TextMouthはブックのテキストをそのまま保持します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이 iPhone의 점자 테이블 “%@”은(는) liblouis %@이며, 책을 읽었을 때의 liblouis %@가 아니므로 TextMouth는 책의 텍스트를 그대로 유지합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "De brailletabel “%@” op deze iPhone is liblouis %@, niet liblouis %@ zoals toen het boek werd gelezen, dus TextMouth houdt de tekst van het boek zoals die was."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tabela Braille’a „%@” w tym urządzeniu iPhone to liblouis %@, a nie liblouis %@ jak podczas czytania książki, więc TextMouth zachowuje tekst książki bez zmian."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "A tabela braille “%@” neste iPhone é liblouis %@, e não liblouis %@ como quando o livro foi lido, então o TextMouth mantém o texto do livro como estava."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Таблица Брайля «%@» на этом iPhone — liblouis %@, а не liblouis %@, как при чтении книги, поэтому TextMouth сохраняет текст книги без изменений."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Punktskriftstabellen ”%@” på den här iPhone är liblouis %@, inte liblouis %@ som när boken lästes, så TextMouth behåller bokens text som den var."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ตารางอักษรเบรลล์ “%@” บน iPhone เครื่องนี้คือ liblouis %@ ไม่ใช่ liblouis %@ เหมือนตอนอ่านหนังสือ TextMouth จึงเก็บข้อความของหนังสือไว้ตามเดิม"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bu iPhone’daki “%@” Braille tablosu liblouis %@; kitap okunduğundaki liblouis %@ değil, bu yüzden TextMouth kitabın metnini olduğu gibi korur."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Таблиця Брайля «%@» на цьому iPhone — це liblouis %@, а не liblouis %@, як під час читання книги, тому TextMouth зберігає текст книги без змін."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اس iPhone پر بریل جدول “%@” liblouis %@ ہے، نہ کہ liblouis %@ جیسا کتاب پڑھتے وقت تھا، اس لیے TextMouth کتاب کا متن جوں کا توں رکھتا ہے۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bảng Braille “%@” trên iPhone này là liblouis %@, không phải liblouis %@ như lúc đọc sách, nên TextMouth giữ nguyên văn bản của sách."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "此 iPhone 上的盲文表“%@”是 liblouis %@，而不是读取图书时的 liblouis %@，因此 TextMouth 会保留图书原有的文本。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "此 iPhone 上的點字表「%@」是 liblouis %@，而不是讀取書籍時的 liblouis %@，因此 TextMouth 會保留書籍原有的文字。"
           }
         }
       }
@@ -545373,6 +545685,318 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "有聲書的導覽單位"
+          }
+        }
+      }
+    },
+    "phoneSettings.brailleCaption" : {
+      "comment" : "The caption under the Braille code row in the iPhone's Settings. A book keeps the braille code it was added with.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يقرأ TextMouth ملفات برايل التي تضيفها من الآن فصاعدًا بهذا الرمز. يحتفظ الكتاب بالرمز الذي أُضيف به."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এখন থেকে আপনি যে ব্রেইল ফাইল যোগ করবেন, TextMouth তা এই কোড দিয়ে পড়বে। বইটি যে কোড দিয়ে যোগ করা হয়েছিল, সেটিই রেখে দেয়।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth liest Braille-Dateien, die Sie ab jetzt hinzufügen, mit diesem Code. Ein Buch behält den Code, mit dem es hinzugefügt wurde."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "TextMouth reads braille files you add from now on with this code. A book keeps the code it was added with."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth lee con este código los archivos braille que añadas a partir de ahora. Un libro conserva el código con el que se añadió."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth پرونده‌های بریلی را که از این پس اضافه می‌کنید با این کد می‌خواند. هر کتاب کدی را نگه می‌دارد که با آن اضافه شده است."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth lit avec ce code les fichiers braille que vous ajoutez à partir de maintenant. Un livre garde le code avec lequel il a été ajouté."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth קורא קובצי ברייל שתוסיפו מעכשיו בקוד הזה. ספר שומר את הקוד שבו נוסף."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "अब से आप जो ब्रेल फ़ाइलें जोड़ेंगे, TextMouth उन्हें इसी कोड से पढ़ेगा। पुस्तक उसी कोड को रखती है जिससे वह जोड़ी गई थी।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth membaca berkas Braille yang Anda tambahkan mulai sekarang dengan kode ini. Buku mempertahankan kode saat ditambahkan."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth legge con questo codice i file braille che aggiungi da ora in poi. Un libro mantiene il codice con cui è stato aggiunto."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouthは、今後追加する点字ファイルをこのコードで読み取ります。ブックは追加したときのコードを保持します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth는 지금부터 추가하는 점자 파일을 이 코드로 읽습니다. 책은 추가할 때의 코드를 유지합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth leest braillebestanden die je vanaf nu toevoegt met deze code. Een boek behoudt de code waarmee het is toegevoegd."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth odczytuje pliki Braille’a dodawane od teraz za pomocą tego kodu. Książka zachowuje kod, z którym została dodana."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "O TextMouth lê com este código os arquivos braille que você adicionar de agora em diante. Um livro mantém o código com que foi adicionado."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth читает файлы Брайля, которые вы добавите с этого момента, по этому коду. Книга сохраняет код, с которым была добавлена."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth läser punktskriftsfiler som du lägger till från och med nu med den här koden. En bok behåller koden som den lades till med."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth จะอ่านไฟล์อักษรเบรลล์ที่คุณเพิ่มจากนี้ไปด้วยรหัสนี้ หนังสือจะคงรหัสที่ใช้ตอนเพิ่มไว้"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth, bundan sonra eklediğiniz Braille dosyalarını bu kodla okur. Bir kitap, eklendiği kodu korur."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth читає файли Брайля, які ви додасте відтепер, за цим кодом. Книга зберігає код, з яким її додано."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اب سے آپ جو بریل فائلیں شامل کریں گے، TextMouth انہیں اسی کوڈ سے پڑھے گا۔ کتاب وہی کوڈ رکھتی ہے جس سے شامل کی گئی تھی۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth đọc các tệp Braille bạn thêm từ bây giờ bằng mã này. Sách giữ mã lúc được thêm."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "从现在起添加的盲文文件，TextMouth 会用此编码读取。图书会保留添加时所用的编码。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "從現在起加入的點字檔案，TextMouth 會用此編碼讀取。書籍會保留加入時所用的編碼。"
+          }
+        }
+      }
+    },
+    "phoneSettings.brailleCodeHint" : {
+      "comment" : "The hint of the Braille code row in the iPhone's Settings, which opens the list of braille codes used to read braille files.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "رمز برايل لقراءة ملفات برايل."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ব্রেইল ফাইল পড়ার ব্রেইল কোড।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Der Braille-Code zum Lesen von Braille-Dateien."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The braille code for reading braille files."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El código braille para leer archivos braille."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "کد بریل برای خواندن پرونده‌های بریل."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Le code braille pour lire les fichiers braille."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "קוד הברייל לקריאת קובצי ברייל."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ब्रेल फ़ाइलें पढ़ने के लिए ब्रेल कोड।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kode braille untuk membaca berkas braille."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Il codice braille per leggere i file braille."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "点字ファイルの読み取りに使う点字コードです。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "점자 파일을 읽는 데 사용하는 점자 코드입니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "De braillecode voor het lezen van braillebestanden."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tabela Braille’a do czytania plików Braille’a."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "O código braille para ler arquivos braille."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Код Брайля для чтения файлов Брайля."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Punktskriftskoden för att läsa punktskriftsfiler."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "รหัสอักษรเบรลล์สำหรับอ่านไฟล์อักษรเบรลล์"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Braille dosyalarını okumak için braille kodu."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Брайлівський код для читання файлів Брайля."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "بریل فائلیں پڑھنے کا بریل کوڈ۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mã braille để đọc các tệp braille."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "用于读取盲文文件的盲文码。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "用於讀取點字檔案的點字碼。"
           }
         }
       }

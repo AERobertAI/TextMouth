@@ -2,43 +2,19 @@
 <!-- id: imports-braille-tables-translator; keys: liblouis, TextMouthBraille, helper process, braille tables, back-translation, emphasis reading; src: -->
 
 Part of [TextMouth's architecture](../../../ARCHITECTURE.md).
-
-## The table catalog
-<!-- id: table-catalog; keys: liblouis tables, table list, VoiceOver tables, table metadata, language names, bundled resource; src: TextMouth/Models/BrailleTableCatalog.swift, TextMouth/Services/BrailleTranslator.swift, TextMouth/Platform/macOS/App/AppDelegate.swift, TextMouth/Models/LibraryInfoWording.swift, TextMouthProductionTests/MacBrailleTableCatalogTests.swift, TextMouthProductionTests/BrailleTableCatalogTests.swift -->
-
-The catalog: BrailleTableCatalog reads the tables' own metadata, from two sources (BrailleTableSource).
-Adding a bundled table is adding a resource to its folder.
-
-- The sources:
-  - the bundled tables folder (Contents/Resources/liblouis/tables, BrailleTranslator.Tool.helper.tablesFolder), and
-  - this Mac's, VoiceOver's own liblouis folder (macTablesFolder, in /System/Library/ScreenReader/BrailleTables/LiblouisBrailleTranslator.brailletable), read in place and never copied, changed, or downloaded.
-  BrailleTableCatalog.mac (macTables(in:propertyList:)) is nil without that folder, and then only the bundled tables are offered, with no error.
-  It holds the folder's liblouis version, read from the property list beside it.
-- Offered: a file whose header fields ("#+" or "#-" lines, as liblouis reads them) give type literary, a display-name, a language (or the older locale), dots of 6 or no dots line, and a direction of both or none.
-  It has a contraction of no, partial, or full, or none, in which case its grade implies it (Contraction(grade:)) or it is unstated.
-  A system is kept when it names one.
-  BrailleTableCatalog.tables(in:source:) sorts them by language, system, contraction, and name, and leaves out a true twin, a table whose only rule is one include of an offered table in the same language.
-  BrailleTableCatalog.merged(bundled:mac:) lists every bundled table, then every Mac table whose file name no bundled table has.
-- Reading: the headers of the Mac's tables (485 files on macOS 26.3) are read once, off the main thread.
-  AppDelegate starts BrailleTableCatalog.loadInBackground() at launch, and mac, offeredCodes, and offeredTables are static lets made once.
-  BrailleTableCatalog.storableValue(_:) validates the setting and config.json without reading them (BrailleTableSource.isMacValue), because both are read on the main thread at every launch.
-- Codes and languages: BrailleTableCatalog.codes(of:)
-  - groups tables into BrailleCode values by language and codeName (ueb is "Unified English Braille", ebae "English Braille, American Edition", any other the display name without its contraction words),
-  - lists a language by its region where two tables would be listed with the same words (languagesNeedingRegions), and
-  - keeps the first of tables with the same words.
-  BrailleTableCatalog.languages(of:) lists English first, then the others by their names in the user's language (languageName: Locale, else the first part of a table's index-name, else its display-name before "braille").
-- In words: description(ofTableID:) says a table for Book Information and Speak Info (Book.brailleCodeDescription), such as "Unified English Braille, contracted (Grade 2)", with ", in French" after a Mac table's, and the stored value itself when no offered table has it.
+The table catalog, the pack the bundled tables come from, and the lists of tables are in [Braille table pack](braille-table-pack.md).
 
 ## The translator and the helper
 <!-- id: translator-helper; keys: helper process, subprocess, timeout, memory limit, cancel import, piece cutting; src: TextMouth/Services/BrailleTranslator.swift, TextMouth/Services/MacBrailleTableCheck.swift, TextMouthBraille/main.c, TextMouth/Services/AsyncBridge.swift, TextMouth/Parsers/TextutilDocumentReader.swift, TextMouth/Platform/macOS/Services/WatchedProcess.swift, TextMouth/Parsers/BrailleEmphasis.swift, TextMouthProductionTests/BrailleTranslatorTests.swift, TextMouthProductionTests/BrailleHelperProtocolTests.swift -->
 
 The translator and the helper: BrailleTranslator.translate(_:table:direction:workingIn:) is the only caller of TextMouthBraille (TextMouthBraille/main.c, a C program that links liblouis, which only it links).
+The folder is VoiceOver's for a table the Mac reads from it (BrailleTableCatalog.readsFromMacFolder, on a Mac only), else the one BrailleTableUnpacker unpacks the table into (Tool.helper.command; see [Braille table pack](braille-table-pack.md#the-unpacker)).
 It
-- refuses a table the catalog lacks (requireOfferedTable, Failure.unknownTable) before anything starts,
+- refuses a table the catalog lacks, of any direction (requireOfferedTable, Failure.unknownTable), before anything starts,
 - checks one of this Mac's tables before its first use in the session unless the call is the check's own (MacBrailleTableCheck.requireUsable, checksMacTable),
 - cuts each text into pieces of at most 4,000 scalars at word breaks,
 - writes them as protocol 2 says (below) into a hidden `.<UUID>.braille-in.txt` (in a working folder from TextutilDocumentReader.withWorkingFolder(for:): the staged package, else a `TextMouth-textutil-<UUID>` folder), and
-- runs the helper, with the folder of the table's own source (Tool.helper.command), under WatchedProcess (limits(for:bytes:), raised for a Mac table by MacBrailleTableCheck.limits(for:raising:direction:bytes:):
+- runs the helper, with the folder the table is read from, under WatchedProcess (limits(for:bytes:), raised for a Mac table by MacBrailleTableCheck.limits(for:raising:direction:bytes:):
   - braille to print 10 seconds plus a quarter of a second for each MB,
   - print to braille 10 seconds plus 6 for each MB,
   - 16 MB of memory,
@@ -49,7 +25,7 @@ It
 It reads a record of the helper's .braille-out.txt for each piece, and where a paragraph of more than maximumPieceScalars (4,000) is cut inside an emphasized passage, the passage is written as two passages, each with its own indicators, and read back, the words after the cut come back plain.
 
 ### The translator on the iPhone
-<!-- id: translator-in-process-iphone; keys: InProcessEngine, tmb_translate, TextMouthBrailleLibrary, liblouis_iOS, bundled tables, abandoned call, DR34; src: TextMouth/Services/InProcessEngine.swift, TextMouth/Models/InProcessEngineWording.swift, TextMouth/Services/BrailleTranslator.swift, TextMouthBraille/TextMouthBrailleLibrary.c, TextMouthBraille/include/TextMouthBrailleLibrary.h, TextMouth/Phone/PhoneImportRefusal.swift; status: incomplete; issues: FR32, FU02, B20 -->
+<!-- id: translator-in-process-iphone; keys: InProcessEngine, tmb_translate, TextMouthBrailleLibrary, liblouis_iOS, bundled tables, abandoned call, DR34; src: TextMouth/Services/InProcessEngine.swift, TextMouth/Models/InProcessEngineWording.swift, TextMouth/Services/BrailleTranslator.swift, TextMouthBraille/TextMouthBrailleLibrary.c, TextMouthBraille/include/TextMouthBrailleLibrary.h, TextMouth/Phone/PhoneImportRefusal.swift, TextMouth/Packs/BrailleTableUnpacker.swift, TextMouth/Phone/PhoneSettingsModel.swift; status: incomplete; issues: FU02, B20 -->
 
 iOS starts no helper, so the iPhone runs the same translation inside the app (DR34).
 TextMouthBraille/main.c is a thin main around TextMouthBraille/TextMouthBrailleLibrary.c, which both apps build: `tmb_translate` takes a request and gives a response in memory, in the same protocol 2, and unloads every table however a call ends.
@@ -57,6 +33,7 @@ Its iPhone targets in project.yml are liblouis_iOS and TextMouthBrailleLibrary_i
 - The `#if os(iOS)` branch of BrailleTranslator (`translateInProcess`, `check`) sends the same pieces and records, in batches of about 256 KiB (`LibraryBatches`), and joins the answers as the Mac does.
 - Each batch is one call of `BrailleTranslator.libraryEngine`, an InProcessEngine: one thread of its own with an 8 MB stack, calls one at a time.
   A call is told to stop (`Call.shouldStop`, which the library asks before each record) once its time is spent, or when its import is cancelled.
+  A cancellation that has already happened is told to the call before it is queued, so the work finds `shouldStop` true from its first step.
 - The limits are the tool's (`BrailleTranslator.tool`), as the Mac's watchdog sets them:
   - a record of at most 4,000 characters (status 4);
   - the output of each batch, and of the whole book, within the Mac's cap for its input (statuses 8 and 9, in the Mac's words);
@@ -65,11 +42,12 @@ Its iPhone targets in project.yml are liblouis_iOS and TextMouthBrailleLibrary_i
 - A call still running 5 seconds past its limit is abandoned: its thread, which cannot be killed, drops to a lower priority, its caller gets `Failure.abandoned`, and the engine refuses every later call (`Failure.refused`) until TextMouth is closed and opened again.
   InProcessEngineWording holds both sentences, which end "won't try again until TextMouth is closed and opened again", and IN_PROCESS_CALL_ABANDONED is logged.
   Its sentence names the call's limit, not the book's (B20).
-- Only the bundled tables are used, by bare name: the four English tables of Vendor/liblouis/tables, in the app's liblouis folder, with the files they include.
-  `requireBundledTable` throws `Failure.unknownTable` for any other.
-  A book that needs one of a Mac's own tables, or a config.json import table from a Mac, is refused first by `PhoneImportRefusal.macBrailleTable`, in the phone's words.
+- Only the pack's tables are used, by bare name, from the folder the unpacker writes them into with the files they include (see [Braille table pack](braille-table-pack.md#the-unpacker)).
+  `requireBundledTable` maps a stored value to the pack's table of that file name (`BrailleTableCatalog.bundledID(forStored:)`, a Mac's `mac:<file>` included) and throws `Failure.unknownTable` when the pack has none.
+  A book that needs one of a Mac's own tables the pack lacks, or a config.json import table from a Mac, is refused first by `PhoneImportRefusal.macBrailleTable`, in the phone's words.
+  A table file that vanishes between the unpacker's look and liblouis's open is unpacked again once, before the table is called unknown.
 - A crash in liblouis, or its exit(3) when memory runs out, ends the app, which the Mac's helper survives (FU02, accepted for now).
-- There is no table choice yet: the iPhone reads with the Braille tab's defaults (FR32).
+- The table is the setting chosen in the Braille section of the iPhone's Settings (`PhoneSettingsModel.brailleTableGroups`; see [The iPhone's Braille section](../../user/settings-braille.md#the-iphones-braille-section)), and a book keeps the one it was added with.
 
 ### The helper's protocol
 <!-- id: helper-protocol; keys: protocol version, header line, emphasis flags, Clang module, modulemap, exit status 7; src: TextMouthBraille/include/TextMouthBrailleProtocol.h, TextMouthBraille/include/module.modulemap, TextMouthBraille/main.c, TextMouth/Parsers/BrailleEmphasis.swift, project.yml, TextMouthProductionTests/BrailleHelperProtocolTests.swift -->
@@ -92,6 +70,7 @@ Any other status (7 is an input without the protocol's header), a failure to sta
 Both are import events, and neither holds any book text.
 Failure.uncheckedTable is a Mac table whose check could not be made, not kept, so the next use checks again, and Failure.changedTable is in [The version](imports-braille.md); each has its sentence in errorDescription.
 A check that refuses a table logs BRAILLE_MAC_TABLE_REFUSED, an import event beside those, with the stored value and the reason.
+A bundled table that cannot be unpacked is Failure.unknownTable, and the unpacker logs BRAILLE_TABLES_UNAVAILABLE once for each cause (see [Braille table pack](braille-table-pack.md#the-unpacker)).
 
 ### The helper's three modes
 <!-- id: helper-three-modes; keys: check mode, forward translation, back-translation, typeform, emphasis classes, sandbox folder; src: TextMouthBraille/main.c, TextMouth/Services/BrailleTranslator.swift, TextMouth/Services/MacBrailleTableCheck.swift, TextMouthProductionTests/BrailleTranslatorTests.swift -->
@@ -216,12 +195,13 @@ So "can" in "can't", which contracted EBAE reads as one rule from ⠉⠄⠞, is 
 <!-- id: check-this-mac-tables; keys: table verdict, Mac table check, memory ceiling, timeout, table refusal, export picker; src: TextMouth/Services/MacBrailleTableCheck.swift, TextMouth/Services/BrailleTranslator.swift, TextMouth/Views/Export/BrailleExportOptionsView.swift, TextMouth/Views/Settings/BrailleSettingsView.swift, TextMouth/Platform/macOS/Services/WatchedProcess.swift, TextMouth/Platform/macOS/Services/OrphanedConversionSweep+Textutil.swift, TextMouth/Platform/macOS/App/AppDelegate.swift, TextMouthProductionTests/MacBrailleTableCheckTests.swift, TextMouthProductionTests/BrailleSettingsViewTests.swift -->
 
 The check of this Mac's tables: MacBrailleTableCheck decides whether one of this Mac's tables is used, because the Mac's tables are written for its own liblouis and the helper runs the bundled one.
+A table is this Mac's when its value is "mac:<file>" or a bare value that only VoiceOver's folder has (BrailleTableCatalog.readsFromMacFolder).
 It runs when BrailleTablePickers takes a choice (verdictOffTheMainThread, in a TextMouth-textutil- working folder) and before a Mac table's first use in a session (requireUsable).
 
 - Runs: three measured runs through BrailleTranslator.RunMeasure, with memory read at the start and each millisecond:
   - loading the table,
   - printing timingLines (120) lines of sample, which holds capitals, lowercase letters, digits, and punctuation, typographic punctuation included, and
-  - reading the braille back.
+  - reading the braille back, which a table that only writes braille (isPrintOnly) skips, so its check measures the way it is used.
 - Refusal:
   - gone (the catalog no longer offers it),
   - doesNotLoad (status 2),

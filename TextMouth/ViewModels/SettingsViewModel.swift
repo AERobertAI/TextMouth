@@ -409,6 +409,11 @@ final class SettingsViewModel: ObservableObject {
     /// reconciles the preferences with the file: preference changes made
     /// then are not saved back to the file one at a time.
     private var isSyncingFromConfig = false
+
+    /// A braille table that config.json names and this platform lacks, with the table this platform had when the file's
+    /// value was refused: the file's value is written back as it was while the setting still equals `own`
+    /// (`holdBrailleTableThisPlatformLacks`).
+    private var brailleTableHeldFromFile: (file: String, own: String)?
     /// The store holding every preference, the ones other services keep
     /// included; the mirror reads and writes theirs there.
     private let preferences: UserDefaults
@@ -1006,9 +1011,11 @@ final class SettingsViewModel: ObservableObject {
     /// by its stored value, such as "en-ueb-g2.ctb", or "mac:fr-bfu-g2.ctb"
     /// for one of this Mac's tables. Imports read it (`BraillePreferences`),
     /// and config.json follows it through the observer below, which also
-    /// announces a change made anywhere else. A value no offered table has
-    /// changes nothing; the Braille tab's pop-ups set a Mac table only once
-    /// its check passes (`BrailleTablePickers`).
+    /// announces a change made anywhere else. A value no table has changes
+    /// nothing (one for a table that only writes braille is accepted, since a
+    /// setting may already name one, but the pop-ups never offer it); the
+    /// Braille tab's pop-ups set a Mac table only once its check passes
+    /// (`BrailleTablePickers`).
     var brailleTable: String {
         get { BraillePreferences.table.read(from: preferences) }
         set {
@@ -1185,15 +1192,15 @@ final class SettingsViewModel: ObservableObject {
         config.libraryViews = LibraryViewDefinitionStore.preference.read(from: preferences).fileEntries
         // What a title's leading article does in the Library's lists.
         config.leadingArticles = LeadingArticles.preference.read(from: preferences).rawValue
-        #if os(iOS)
-        // The iPhone bundles no tables, so the Mac's default is not one it
-        // accepts: config.json would keep it, and decoding would repair it to
-        // empty and log it at every launch. Empty is the file's "keep the
-        // current choice".
-        config.brailleTable = PhoneDefaults.configBrailleTable(for: BraillePreferences.table.read(from: preferences))
-        #else
-        config.brailleTable = BraillePreferences.table.read(from: preferences)
-        #endif
+        // This platform's own table, unless the file named one this platform lacks and the person has not changed the table
+        // since (`holdBrailleTableThisPlatformLacks`): then the file's value is written back as it was.
+        let ownTable = brailleTableForConfig
+        if let held = brailleTableHeldFromFile, held.own == ownTable {
+            config.brailleTable = held.file
+        } else {
+            brailleTableHeldFromFile = nil
+            config.brailleTable = ownTable
+        }
         config.brailleFileCode = BraillePreferences.fileCode.read(from: preferences)
     }
 
@@ -1290,10 +1297,34 @@ final class SettingsViewModel: ObservableObject {
         // Mac table's value is taken without reading this Mac's tables
         // (review R3), and refused by name when it is used if the Mac lacks it.
         adopt(BrailleTableCatalog.storableValue(config.brailleTable), into: BraillePreferences.table)
+        holdBrailleTableThisPlatformLacks(config.brailleTable)
         // An empty id, or one this TextMouth lacks, leaves the current braille
         // file characters alone.
         adopt(BrailleFileCode.importChoice(withID: config.brailleFileCode)?.id, into: BraillePreferences.fileCode)
         return shortcutsWereRepaired
+    }
+
+    /// The braille table this platform writes to config.json: its setting, which on the iPhone is empty for a table the
+    /// bundle lacks (the Mac's default is not one it accepts: the file's empty value is "keep the current choice").
+    private var brailleTableForConfig: String {
+        #if os(iOS)
+        PhoneDefaults.configBrailleTable(for: BraillePreferences.table.read(from: preferences))
+        #else
+        BraillePreferences.table.read(from: preferences)
+        #endif
+    }
+
+    /// Remembers that config.json names a braille table this platform lacks (a bare name such as an iPhone's
+    /// `en-nz-g2.ctb` on the Mac, which the other platform has): this platform keeps reading with its own table, and keeps
+    /// writing the file's value back as it was, so the launch's save does not hand the other platform this one's choice.
+    /// The hold lasts until the person changes the table on this device, which makes the setting differ from what it was
+    /// when the file's value was refused, and ends when the file names a table this platform takes or none.
+    private func holdBrailleTableThisPlatformLacks(_ fileValue: String) {
+        if !fileValue.isEmpty, BrailleTableCatalog.storableValue(fileValue) == nil, BrailleTableSource.isBareTableName(fileValue) {
+            brailleTableHeldFromFile = (file: fileValue, own: brailleTableForConfig)
+        } else {
+            brailleTableHeldFromFile = nil
+        }
     }
 
     /// Writes a value config.json asks for into the store when it differs

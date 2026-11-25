@@ -36,7 +36,7 @@ TextMouth writes MP3 with it (see [Editing audio](../user/editing-audio.md)).
 - The licence asks that a copy of the app given to anyone else carry this notice and the licence's text, which the app carries in Licenses/LAME (above).
 
 ## liblouis, the braille translator
-<!-- id: liblouis-braille-translator; keys: liblouis, braille translator, TextMouthBraille, liblouis.h.in, UCS-4, LGPL 2.1, VoiceOver braille tables; src: project.yml, Vendor/liblouis/COPYING.LESSER, Vendor/liblouis/AUTHORS, Vendor/liblouis/config.h, Vendor/liblouis/include/liblouis.h, TextMouthBraille/main.c, TextMouthProductionTests/BrailleFileCodeTests.swift; status: incomplete; issues: FU02, QN01 -->
+<!-- id: liblouis-braille-translator; keys: liblouis, braille translator, TextMouthBraille, liblouis.h.in, UCS-4, LGPL 2.1, VoiceOver braille tables; src: project.yml, Vendor/liblouis/COPYING.LESSER, Vendor/liblouis/AUTHORS, Vendor/liblouis/config.h, Vendor/liblouis/include/liblouis.h, TextMouthBraille/main.c, TextMouthProductionTests/BrailleFileCodeTests.swift, Vendor/liblouis/TABLES-LICENSES.md, Scripts/packs/braille_tables.py, Scripts/packs/braille_tables_mac.txt, TextMouthProductionTests/BundledLicenseTests.swift; status: incomplete; issues: FU02, QN01 -->
 
 liblouis 3.39.0, the open-source braille translator and back-translator, by John J. Boyer, its founder, and the liblouis contributors (Vendor/liblouis/AUTHORS), under the GNU Lesser General Public License, version 2.1 or any later version, whose text is Vendor/liblouis/COPYING.LESSER.
 TextMouth reads and writes braille with it (see [What TextMouth reads: DAISY and braille books](../user/reads-daisy-and-braille.md) and [Exporting braille files](../user/exporting-braille.md)).
@@ -44,16 +44,20 @@ TextMouth reads and writes braille with it (see [What TextMouth reads: DAISY and
 - Vendor/liblouis holds, unchanged, these files of liblouis's release tarball, liblouis-3.39.0.tar.gz (https://github.com/liblouis/liblouis/releases/tag/v3.39.0; SHA-256 629fa8cb0dfd9ad457c5bf47a42f0953b673e62c8ad6b1d03ddc4e2bd20008f1, the digest GitHub publishes for it, which project.yml records):
   - COPYING.LESSER, README, AUTHORS, NEWS;
   - the sources and headers in liblouis/ that its Makefile.am builds the library from (liblouis.h.in among them);
-  - and in tables/ the four English tables built into TextMouth, with the 13 files they include, 17 in all.
+  - and tables/, the release's whole folder of tables, every file of it unchanged: the files that are tables, the files they include, and the release's build files (Makefile.am, Makefile.in, README, and the .in templates), which never ship.
 
+  The folder is no resource of either app.
+  The build phase "Pack braille tables" packs the files that may ship into each app's BrailleTables.pack, and the app unpacks the tables it needs into its Caches at first use (see [Braille table pack](../architecture/state/braille-table-pack.md)).
+  The Mac's pack holds only the files Scripts/packs/braille_tables_mac.txt lists: the four English tables, everything they include, and three display tables.
   The four are Unified English uncontracted (en-ueb-g1.ctb) and contracted (en-ueb-g2.ctb) braille, and English uncontracted (en-us-g1.ctb) and contracted (en_US.tbl) braille as used in the United States.
-  It also holds, unchanged from that tarball, three display tables that only the tests read, which bring tables/ to 20 files in all:
-  - en-us-brf.dis (North American Braille ASCII);
-  - de-eurobrl6.dis (Eurobraille, six-dot, lowercase, SBS Zürich 2009);
-  - and de-eurobrl6u.dis (the same code in capitals).
-
-  BrailleFileCodeTests compares TextMouth's own tables with them, 64 cells of 64.
-  No translation table includes them, so the helper never loads them; they are bundled with the tables folder (Vendor/liblouis/tables, into Contents/Resources/liblouis/tables), 6,793 bytes.
+  BrailleFileCodeTests compare TextMouth's own tables with the display tables en-us-brf.dis (North American Braille ASCII), de-eurobrl6.dis (Eurobraille, six-dot, lowercase, SBS Zürich 2009), and de-eurobrl6u.dis (the same code in capitals), 64 cells of 64.
+  No translation table includes them, so the helper never loads them.
+- The licenses of the tables are not all the release's own.
+  Vendor/liblouis/TABLES-LICENSES.md lists each file by the license its own head states, and what is left out and why.
+  `braille_tables.py licenses --write` writes it, and a test keeps it equal to the files.
+  A table ships when its license is the GNU Lesser General Public License 2.1 or later, or the file states none and the release's holds, or the user decided it ships (countries.cti).
+  A table under LGPL 3, and every table that includes one, is left out of both apps, as is a file only left-out tables use.
+  Both apps carry the list in Licenses/liblouis beside COPYING.LESSER and README, and BundledLicenseTests and BundledLicenseIOSTests check that it arrives.
 - TextMouth adds two files of its own: config.h, in place of the one liblouis's configure script writes, and include/liblouis.h, the release's liblouis.h.in with its one substitution made, 32-bit wide characters (UCS-4), so every Unicode character and braille cell fits.
   Nothing of the release was run (not configure, make, or any script), and nothing from liblouis's tools/ folder, which is GPL 3, is used.
 - project.yml builds it as a static library that the TextMouthBraille helper links, so on the Mac liblouis runs only in that helper and never in TextMouth's own process.
@@ -61,6 +65,13 @@ TextMouth reads and writes braille with it (see [What TextMouth reads: DAISY and
   It is C that reads untrusted braille and text, it has had memory-safety bugs, and it is not thread-safe (see Braille files, in [Imports: braille tables and the translator](../architecture/state/imports-braille-tables.md)).
   Static linking suits the licence while only the source is published, as it does LAME's (QN01 asks what a binary needs): the app's whole source, liblouis's included, is in the repository, so `make build` builds the app from that source, and the app can be rebuilt with a changed liblouis.
 - To update it, replace those files from a newer release, make include/liblouis.h again from its liblouis.h.in, compare config.h with what the new sources read, and run `make check`.
+- To update the tables:
+  - check the tarball's SHA-256 against the digest the release page publishes for it before opening it, and replace Vendor/liblouis/tables with the release's own tables/ folder, unchanged;
+  - set PACKAGE_VERSION in config.h and BrailleTableCatalog.bundledLiblouisVersion to the new release, which a test keeps equal to the pack's;
+  - run `python3 -I -B Scripts/packs/braille_tables.py licenses --write`, then read what it newly leaves out or ships; a file ships against its own head's license only by the user's decision (ACCEPTED_BY_DECISION in braille_tables.py);
+  - build the pack for both profiles: the build fails when a table includes a file the folder lacks, or a file of Scripts/packs/braille_tables_mac.txt is gone, is left out by the license rule, or includes a file the list lacks;
+  - run `python3 -I -B -m unittest discover -s Scripts/packs/tests`, whose tests read the real tables, and then `make check`.
+  The apps unpack into a folder named for the release, so the new tables unpack beside the old, and the first unpacking removes the folders of other versions.
 - The licence asks that a copy of the app given to anyone else carry the licence's text, which the app carries in Licenses/liblouis (above).
 - TextMouth also reads, but does not include, VoiceOver's own liblouis tables on the Mac (liblouis 3.34.0 on macOS 26.3, which the Mac records as LGPL 2.1).
   It reads them where they are on the system volume and never copies, changes, or downloads them, so the app does not grow (see the Braille tab, under [Settings: the Braille tab](../user/settings-braille.md)).

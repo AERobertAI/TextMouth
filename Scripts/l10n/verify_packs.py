@@ -55,6 +55,9 @@ ENGINE_SOURCES = [
         "FormatSpecifiers.swift", "InterfaceTextEngine.swift", "InterfaceTextFormat.swift", "InterfaceTextPack.swift",
         "InterfaceTextTables.swift", "InterfaceTextWording.swift", "PluralRules.swift",
     )
+] + [
+    # The container the pack is read through (FR40), which `InterfaceTextPack.swift` uses.
+    ROOT / "TextMouth" / "Packs" / "PackContainer.swift",
 ]
 # The Swift sources of the probe: its own main file, the lookups and the proof's calls it shares with the hosted tests,
 # and the engine.

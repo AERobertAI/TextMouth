@@ -60,6 +60,34 @@ extension View {
     func phonePrimaryText() -> some View {
         modifier(PhoneTextColored(color: PhoneTextColor.primary))
     }
+
+    /// Gives words the height they need at any text size, and a little more, wrapped to as many lines as they need, never cut.
+    /// At the largest size the sleep timer label's frame was 249.33 points for words measuring 249.25: an exact fit, which the
+    /// accessibility audit read as clipped in some runs (trains 1123-0905, 1124-0007, 1124-0044) and not in others, and the
+    /// Braille caption's was the same in train 1124-1128 and in the full suite of 0a5d1405b. Each line's extra point of spacing
+    /// leaves the frame a few points taller than the words, so no rounding can cut them. Every row of the phone's Settings
+    /// whose words wrap takes it (`PhoneReadableCaption`, the switch labels).
+    func phoneWholeWords() -> some View {
+        lineSpacing(1).fixedSize(horizontal: false, vertical: true)
+    }
+}
+
+/// Words in the small type of the Mac's captions, with the height they need (`phoneWholeWords`): the caption of a row, which
+/// VoiceOver and braille read where it stands when it is not a control's hint. A view of its own so a test hosts the real one.
+struct PhoneReadableCaption: View {
+    /// The caption's words.
+    let words: String
+
+    init(_ words: String) {
+        self.words = words
+    }
+
+    var body: some View {
+        Text(words)
+            .font(.caption)
+            .phoneSecondaryText()
+            .phoneWholeWords()
+    }
 }
 
 /// A button whose plain words are drawn in `PhoneTextColor.primary`, in place

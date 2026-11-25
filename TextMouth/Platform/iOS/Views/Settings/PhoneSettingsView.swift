@@ -187,9 +187,7 @@ struct PhoneSettingsView: View {
             choiceRow(.endOfBook, value: settings.endOfBookBehavior.title)
             // Left where VoiceOver and braille can read it, as on the Mac: the
             // row has a hint of its own, so this isn't said as one.
-            Text(EndOfBookWording.playOnAFinishedBookCaption)
-                .font(.caption)
-                .phoneSecondaryText()
+            readableCaption(EndOfBookWording.playOnAFinishedBookCaption)
         case .sleepTimer:
             stepperRow(.fadeOutDuration, value: noted($settings.sleepFadeOutDuration))
             switchRow(.closeSleepTimerSheet, isOn: noted($settings.sleepTimerAutoClose))
@@ -200,6 +198,20 @@ struct PhoneSettingsView: View {
             switchRow(.sayPageInWhereAmI, isOn: noted($settings.saysPageInWhereAmI))
         case .reading:
             switchRow(.followInBraille, isOn: followsInBraille)
+        case .braille:
+            // The table braille files are read with from now on, a row opening the tables of every language, then the
+            // characters a BRF or BRL file is read in, and whether a new book's code is guessed (FR32).
+            choiceRow(.brailleTable, value: PhoneSettingsModel.brailleTableValue(settings.brailleTable))
+            // Left where VoiceOver and braille can read it, as the End of Book caption is.
+            readableCaption(PhoneSettingsWording.brailleCaption)
+            // A chosen table that only writes braille is said so, in the words the Mac's Braille tab uses.
+            if PhoneSettingsModel.brailleTableWritesOnly(settings.brailleTable) {
+                readableCaption(BrailleSettingsWording.source(
+                    ofTable: settings.brailleTable, isOffered: false, macLiblouisVersion: nil, writesOnly: true
+                ))
+            }
+            choiceRow(.brailleFileCode, value: PhoneSettingsModel.brailleFileCodeName(settings.brailleFileCode))
+            switchRow(.guessBrailleTable, isOn: noted($settings.guessesBrailleTable))
         case .removalBehavior:
             switchRow(.confirmBeforeRemoving, isOn: confirmsBeforeRemoving)
         case .statistics:
@@ -208,9 +220,7 @@ struct PhoneSettingsView: View {
             let options = InterfaceLanguagePicker.options()
             choiceRow(.interfaceLanguage, value: InterfaceLanguagePicker.option(for: interfaceLanguageChoice, in: options)?.label ?? "")
             // Left where VoiceOver and braille can read it, as the End of Book caption is.
-            Text(InterfaceLanguagePickerWording.launchNote)
-                .font(.caption)
-                .phoneSecondaryText()
+            readableCaption(InterfaceLanguagePickerWording.launchNote)
             ownLinesRows
         case .about:
             versionRow
@@ -269,14 +279,10 @@ struct PhoneSettingsView: View {
     /// A switch, with its hint below it for the eye where the Mac shows one.
     private func switchRow(_ item: PhoneSettingsSwitch, isOn: Binding<Bool>, isEnabled: Bool = true) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            // The label takes the height its words need at any text size, and a little more. At the largest size the
-            // sleep timer label's frame was 249.33 points for words measuring 249.25: an exact fit, which the accessibility
-            // audit read as clipped in some runs (trains 1123-0905, 1124-0007, 1124-0044) and not in others. Each line's
-            // extra point of spacing leaves the frame a few points taller than the words, so no rounding can cut them.
+            // The label takes the height its words need at any text size, and a little more (`phoneWholeWords`).
             Toggle(isOn: isOn) {
                 Text(item.title)
-                    .lineSpacing(1)
-                    .fixedSize(horizontal: false, vertical: true)
+                    .phoneWholeWords()
             }
             .accessibilityLabel(item.label)
                 .accessibilityHint(item.hint ?? "")
@@ -287,16 +293,17 @@ struct PhoneSettingsView: View {
         .disabled(!isEnabled)
     }
 
+    /// Words in the small type of the Mac's captions that VoiceOver and braille read where they stand (a caption that is not a
+    /// control's hint), with the height they need at any text size (`PhoneReadableCaption`).
+    private func readableCaption(_ words: String) -> some View {
+        PhoneReadableCaption(words)
+    }
+
     /// Words for the eye, in the small type of the Mac's captions, and hidden
     /// from VoiceOver, which hears them once, as the control's hint (the Mac's
     /// rule).
     private func caption(_ words: String) -> some View {
-        Text(words)
-            .font(.caption)
-            .phoneSecondaryText()
-            // Wraps to as many lines as the words need at any text size, never cut.
-            .fixedSize(horizontal: false, vertical: true)
-            .accessibilityHidden(true)
+        readableCaption(words).accessibilityHidden(true)
     }
 
     /// Pushes the Mac's statistics, which have no title of their own, since on
@@ -333,9 +340,7 @@ struct PhoneSettingsView: View {
         Text(summary.inUse).phonePrimaryText()
         Text(summary.ignored).phonePrimaryText()
         ForEach(Array(summary.details.enumerated()), id: \.offset) { _, sentence in
-            Text(sentence)
-                .font(.caption)
-                .phoneSecondaryText()
+            readableCaption(sentence)
         }
         let row = PhoneSettingsRow.exportInterfaceText
         PhoneActionButton(title: row.title, action: exportInterfaceText)
@@ -422,6 +427,25 @@ struct PhoneSettingsView: View {
             ) { choice in
                 // Applied in `onDismiss`, once the sheet is gone.
                 pendingInterfaceLanguage = choice
+            }
+        case .brailleTable:
+            PhoneChoiceSheet(
+                title: row.title,
+                groups: PhoneSettingsModel.brailleTableGroups(),
+                // Spelled as the list's rows are, so a Mac's `mac:fr-bfu-g2.ctb` marks the pack's `fr-bfu-g2.ctb` row.
+                selected: PhoneSettingsModel.brailleTableSelection(settings.brailleTable)
+            ) { id in
+                settings.brailleTable = id
+                noteChange()
+            }
+        case .brailleFileCode:
+            PhoneChoiceSheet(
+                title: row.title,
+                choices: PhoneSettingsModel.brailleFileCodeChoices,
+                selected: settings.brailleFileCode
+            ) { id in
+                settings.brailleFileCode = id
+                noteChange()
             }
         case .shareLogs:
             if let logsFile {
