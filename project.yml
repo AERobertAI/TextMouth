@@ -1074,6 +1074,7 @@ targets:
       - TextMouthProductionTests/FFmpegImportSnifferTests.swift
       - TextMouthProductionTests/FFmpegMetadataTests.swift
       - TextMouthProductionTests/FFmpegTestSupport.swift
+      - TextMouthProductionTests/FileDigestTests.swift
       - TextMouthProductionTests/FinishedBookModelTests.swift
       - TextMouthProductionTests/FolderDuplicateRepairTests.swift
       - TextMouthProductionTests/FolderPathEquivalenceTests.swift
@@ -1206,6 +1207,15 @@ targets:
       - TextMouthProductionTests/StorageGenerationTests.swift
       - TextMouthProductionTests/StorageGenerationWorkTests.swift
       - TextMouthProductionTests/SubstitutionCompositionTests.swift
+      - TextMouthProductionTests/SyncApplyTests.swift
+      - TextMouthProductionTests/SyncFormatTests.swift
+      - TextMouthProductionTests/SyncMergePropertyTests.swift
+      - TextMouthProductionTests/SyncOrderKeyTests.swift
+      - TextMouthProductionTests/SyncProjectionTests.swift
+      - TextMouthProductionTests/SyncRegistersTests.swift
+      - TextMouthProductionTests/SyncStampTests.swift
+      - TextMouthProductionTests/SyncTestFixtures.swift
+      - TextMouthProductionTests/SyncWordingTests.swift
       - TextMouthProductionTests/TMBNameTests.swift
       - TextMouthProductionTests/TestDataFiles.swift
       - TextMouthProductionTests/TextAnchorFineWordsTests.swift

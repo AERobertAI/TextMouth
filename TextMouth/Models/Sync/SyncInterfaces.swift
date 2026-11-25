@@ -39,12 +39,37 @@ struct SyncClock: Codable, Sendable {
 
     /// The stamp for a change made at `now`: the later of the last stamp and
     /// the clock, so a clock set back never dates a change before an earlier
-    /// one. Inert at `sync/base`: returns the last stamp.
-    mutating func next(at now: Date) -> SyncStamp { last }
+    /// one. Each call gives a stamp above every earlier one.
+    mutating func next(at now: Date) -> SyncStamp {
+        let milliseconds = Self.milliseconds(of: now)
+        if milliseconds > last.wall {
+            // The clock moved on: a fresh millisecond starts its counter again.
+            last = SyncStamp(wall: milliseconds, counter: 0, device: last.device)
+        } else if last.counter == UInt32.max {
+            // The counter is spent (never in practice): the next millisecond takes over.
+            last = SyncStamp(wall: last.wall + 1, counter: 0, device: last.device)
+        } else {
+            // The same millisecond, or a clock set back: the counter orders the change.
+            last = SyncStamp(wall: last.wall, counter: last.counter + 1, device: last.device)
+        }
+        return last
+    }
 
-    /// Moves the clock past `remote`, a stamp merged from another device.
-    /// Inert at `sync/base`.
-    mutating func observe(_ remote: SyncStamp, at now: Date) {}
+    /// Moves the clock past `remote`, a stamp merged from another device, so
+    /// that this device's next change is dated after it. A stamp the clock
+    /// is already past changes nothing.
+    mutating func observe(_ remote: SyncStamp, at now: Date) {
+        // Only the wall time and counter count here: the device ID is this clock's own.
+        guard (remote.wall, remote.counter) >= (last.wall, last.counter) else { return }
+        let milliseconds = max(remote.wall, Self.milliseconds(of: now))
+        let counter: UInt32 = milliseconds == remote.wall ? remote.counter &+ 1 : 0
+        last = SyncStamp(wall: milliseconds, counter: counter, device: last.device)
+    }
+
+    /// `date` in whole milliseconds since 1970.
+    static func milliseconds(of date: Date) -> Int64 {
+        Int64((date.timeIntervalSince1970 * 1000).rounded(.down))
+    }
 }
 
 /// The fields of a book that sync, one register each.
@@ -66,6 +91,66 @@ enum SyncListOption: String, Codable, Sendable { case continuation, skipsFinishe
 enum SyncKey: Hashable, Codable, Sendable {
     case book(UUID, SyncBookField), bookmark(book: UUID, id: UUID)
     case folder(UUID, SyncFolderField), readingList(book: UUID), readingListOption(SyncListOption)
+
+    /// The key as one line of text, which is how a file holds it and how
+    /// keys are sorted: `book/<id>/<field>`, `bookmark/<book id>/<id>`,
+    /// `folder/<id>/<field>`, `readingList/<book id>`, and
+    /// `readingListOption/<option>`, with lower-case IDs.
+    var text: String {
+        switch self {
+        case .book(let id, let field): return "book/\(Self.text(of: id))/\(field.rawValue)"
+        case .bookmark(let book, let id): return "bookmark/\(Self.text(of: book))/\(Self.text(of: id))"
+        case .folder(let id, let field): return "folder/\(Self.text(of: id))/\(field.rawValue)"
+        case .readingList(let book): return "readingList/\(Self.text(of: book))"
+        case .readingListOption(let option): return "readingListOption/\(option.rawValue)"
+        }
+    }
+
+    /// The key `text` names, or nil for text that names none (a key a later
+    /// TextMouth added, which an older one leaves out).
+    init?(text: String) {
+        let parts = text.split(separator: "/", omittingEmptySubsequences: false).map(String.init)
+        switch (parts.first, parts.count) {
+        case ("book", 3):
+            guard let id = UUID(uuidString: parts[1]), let field = SyncBookField(rawValue: parts[2]) else { return nil }
+            self = .book(id, field)
+        case ("bookmark", 3):
+            guard let book = UUID(uuidString: parts[1]), let id = UUID(uuidString: parts[2]) else { return nil }
+            self = .bookmark(book: book, id: id)
+        case ("folder", 3):
+            guard let id = UUID(uuidString: parts[1]), let field = SyncFolderField(rawValue: parts[2]) else { return nil }
+            self = .folder(id, field)
+        case ("readingList", 2):
+            guard let book = UUID(uuidString: parts[1]) else { return nil }
+            self = .readingList(book: book)
+        case ("readingListOption", 2):
+            guard let option = SyncListOption(rawValue: parts[1]) else { return nil }
+            self = .readingListOption(option)
+        default:
+            return nil
+        }
+    }
+
+    /// An ID as the lower-case text files hold.
+    private static func text(of id: UUID) -> String { id.uuidString.lowercased() }
+
+    /// Reads the key from its text; a text that names no key is a decoding error.
+    init(from decoder: Decoder) throws {
+        let text = try decoder.singleValueContainer().decode(String.self)
+        guard let key = SyncKey(text: text) else {
+            throw DecodingError.dataCorrupted(DecodingError.Context(
+                codingPath: decoder.codingPath,
+                debugDescription: "Not a sync key." // l10n: no (damage reason: what is wrong inside a file stays English)
+            ))
+        }
+        self = key
+    }
+
+    /// Writes the key as its text.
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(text)
+    }
 }
 
 /// One value of one key with its stamp. `.null` is a removal mark.
@@ -77,8 +162,14 @@ struct SyncEntry: Codable, Equatable, Sendable {
     var byHand: Bool
 
     /// Whether this entry beats `other` for the same key: a hand edit first,
-    /// then the later stamp. Inert at `sync/base`: always false.
-    func outranks(_ other: SyncEntry) -> Bool { false }
+    /// then the later stamp. Two entries of one stamp and one kind (which a
+    /// correct device never writes) are told apart by their values' text, so
+    /// that every device picks the same one.
+    func outranks(_ other: SyncEntry) -> Bool {
+        if byHand != other.byHand { return byHand }
+        if stamp != other.stamp { return stamp > other.stamp }
+        return SyncValueCoding.canonicalText(of: value) > SyncValueCoding.canonicalText(of: other.value)
+    }
 }
 
 /// Every key's winning entry, and the last outbox file merged into them.
@@ -95,9 +186,18 @@ struct SyncRegisters: Codable, Equatable, Sendable {
     }
 
     /// Merges `incoming`, each key keeping its highest entry; returns the keys
-    /// whose winner changed. Inert at `sync/base`: changes nothing.
+    /// whose winner changed. Any order of merging gives the same registers,
+    /// and merging an entry again changes nothing.
     @discardableResult
-    mutating func merge(_ incoming: [SyncEntry]) -> Set<SyncKey> { [] }
+    mutating func merge(_ incoming: [SyncEntry]) -> Set<SyncKey> {
+        var changed = Set<SyncKey>()
+        for entry in incoming {
+            if let current = entries[entry.key], !entry.outranks(current) { continue }
+            entries[entry.key] = entry
+            changed.insert(entry.key)
+        }
+        return changed
+    }
 
     // A dictionary keyed by an enum with payloads does not encode as a JSON
     // object, so the entries are stored as an array.
@@ -134,12 +234,18 @@ struct SyncContent: Codable, Equatable, Sendable {
 
 /// The library's syncing values, key by key.
 struct SyncProjection: Equatable, Sendable {
+    /// Each key's value. A book's place on the reading list is its order, a
+    /// whole number, in the projection of a library, and its order key, a
+    /// string, in a baseline; `SyncMerge.changes` knows both.
     var values: [SyncKey: JSONValue]
+    /// The keys a person edited by hand (`HandEdits`).
     var byHand: Set<SyncKey>
 
-    /// The projection of `library`. Inert at `sync/base`: empty.
-    static func of(_ library: Library, contents: [UUID: SyncContent]) -> SyncProjection {
-        SyncProjection(values: [:], byHand: [])
+    /// A projection of `values`, none by default. `SyncProjection.of(_:contents:)`,
+    /// in SyncProjection.swift, makes one from a library.
+    init(values: [SyncKey: JSONValue] = [:], byHand: Set<SyncKey> = []) {
+        self.values = values
+        self.byHand = byHand
     }
 }
 
@@ -161,17 +267,10 @@ struct SyncApplication: Sendable {
     var appliedKeys: Set<SyncKey>
 }
 
-/// The pure merge: what changed locally, and what a merged state does to a library.
-enum SyncMerge {
-    /// The keys whose values differ between `baseline` and `now`. Inert at `sync/base`: empty.
-    static func changes(from baseline: SyncProjection, to now: SyncProjection, atLaunch: Bool) -> [SyncKey: JSONValue] { [:] }
-
-    /// Applies `winners` to `library`; `voices` is the set of voices this
-    /// device has, or nil for all. Inert at `sync/base`: the library as it was.
-    static func apply(_ winners: SyncRegisters, to library: Library, voices: Set<String>?) -> SyncApplication {
-        SyncApplication(library: library, booksToAdd: [], booksToRemove: [], movesPackages: false, entriesToRecord: [:], appliedKeys: [])
-    }
-}
+/// The pure merge: what changed locally, and what a merged state does to a
+/// library. `changes(from:to:atLaunch:)` is in SyncProjection.swift and
+/// `apply(_:to:voices:)` in SyncApplier.swift.
+enum SyncMerge {}
 
 // MARK: - Stored formats
 
