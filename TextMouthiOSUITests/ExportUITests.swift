@@ -2,16 +2,19 @@ import XCTest
 
 /// Export on the iPhone (FR31), as XCUITest reads it in the simulator: the
 /// sheet the reader's Export this book opens, in the Mac's words and in
-/// VoiceOver's order, the Convert to choices, an export into a folder named
-/// at launch, and the sheet at the largest text size, with Apple's audit.
+/// VoiceOver's order, with Apple's audit; the Library row's Export…; the
+/// Convert to choices and an export into a folder named at launch; and the
+/// sheet at the largest text size.
 ///
 /// The app runs in a sandbox of its own (TEXTMOUTH_UI_TEST), with the book
 /// sent to it. Nothing here makes sound, and nothing is typed. The system's
 /// folder picker cannot be driven by a test, so the one export that writes a
 /// file names its folder at launch (`TEXTMOUTH_EXPORT_TO`, a debug build's);
-/// the file goes into a folder of the test's own, and only an export of the
-/// book's own file is pressed, never spoken audio, which the iPhone does not
-/// offer yet.
+/// the files go into a folder of the test's own, and spoken audio, which the
+/// iPhone does not offer yet, is never pressed.
+///
+/// Four tests, since each interface test costs the planner 25 seconds, and a
+/// third iPhone job begins past 1,600 seconds of tests (`ios_ui_tests.py`).
 @MainActor
 final class ExportUITests: TextMouthUITestCase {
     /// The sheet's title, the Mac's: "Export" and the book's title.
@@ -35,8 +38,9 @@ final class ExportUITests: TextMouthUITestCase {
     /// and Export, "What to export", a switch for each kind the iPhone offers
     /// (the book's own file, its Markdown, its plain text, and no spoken
     /// audio), and the folder row asking for a folder. Export is dimmed until
-    /// a folder is chosen. Nothing is pressed.
-    func testTheSheetHasTheSpecsOrder() throws {
+    /// a folder is chosen. The sheet passes Apple's audit, and Cancel closes
+    /// it, which returns the reader's control.
+    func testTheSheetHasTheSpecsOrderPassesTheAuditAndCancels() throws {
         let app = try launchIntoTheReader()
 
         let elements = try openTheSheet(in: app)
@@ -48,10 +52,20 @@ final class ExportUITests: TextMouthUITestCase {
         XCTAssertFalse(elements.contains { $0.label.hasPrefix("Text as spoken audio") }, "The iPhone offers spoken audio before phase 2")
         XCTAssertTrue(app.buttons["Export"].exists)
         XCTAssertFalse(app.buttons["Export"].isEnabled, "Export is enabled before a folder is chosen")
-        XCTAssertTrue(kindSwitch("Original file", in: app).exists)
         XCTAssertEqual(kindSwitch("Original file", in: app).value as? String, "1", "The first kind is not on")
         XCTAssertEqual(kindSwitch("Text as Markdown", in: app).value as? String, "0")
         keepScreenshot(of: app, named: "Export")
+
+        try audit(
+            app,
+            screen: "Export sheet",
+            informing: .dynamicType,
+            accepting: [.navigationTitle(Self.sheetTitle), .barItem("Cancel"), .barItem("Export"), .firstHeader("What to export")]
+        )
+
+        app.buttons["Cancel"].tap()
+        XCTAssertTrue(app.buttons["Export this book"].appears(within: Self.patience), "The reader's Export control is not back:\n\(app.debugDescription)")
+        XCTAssertFalse(app.navigationBars[Self.sheetTitle].exists)
     }
 
     /// The Library's row has Export… in its context menu, after Move to Folder...,
@@ -73,66 +87,17 @@ final class ExportUITests: TextMouthUITestCase {
         XCTAssertTrue(app.buttons["Cancel"].exists)
     }
 
-    /// The sheet passes Apple's audit, with the book listed and nothing pressed.
-    func testTheSheetPassesTheAudit() throws {
-        let app = try launchIntoTheReader()
-        _ = try openTheSheet(in: app)
-
-        try audit(
-            app,
-            screen: "Export sheet",
-            informing: .dynamicType,
-            accepting: [.navigationTitle(Self.sheetTitle), .barItem("Cancel"), .barItem("Export"), .firstHeader("What to export")]
-        )
-    }
-
-    /// The Cancel button closes the sheet, and the reader's control is there
-    /// again.
-    func testCancelClosesTheSheet() throws {
-        let app = try launchIntoTheReader()
-        _ = try openTheSheet(in: app)
-
-        app.buttons["Cancel"].tap()
-
-        XCTAssertTrue(app.buttons["Export this book"].appears(within: Self.patience), "The reader's Export control is not back:\n\(app.debugDescription)")
-        XCTAssertFalse(app.navigationBars[Self.sheetTitle].exists)
-    }
-
-    // MARK: - Convert To
+    // MARK: - Convert To, and an Export
 
     /// Turning on Text as Markdown gives it a Convert to row, valued Markdown
     /// (its hint, which a test cannot read, is pinned by `PhoneExportOfferTests`
-    /// and the model's); it opens the choices, the
-    /// Markdown and then the iPhone's writers, in the Mac's order, Cancel
-    /// first, the current one selected. Choosing HTML puts HTML in the row.
-    func testConvertToListsTheIPhonesWriters() throws {
-        let app = try launchIntoTheReader()
-        _ = try openTheSheet(in: app)
-        kindSwitch("Text as Markdown", in: app).tap()
-        let row = app.buttons["Convert to"]
-        XCTAssertTrue(row.appears(within: Self.patience), "No Convert to row:\n\(app.debugDescription)")
-        XCTAssertEqual(row.value as? String, "Markdown")
-
-        tap(row, until: app.navigationBars["Convert to"], in: app, what: "the Convert to row")
-        XCTAssertTrue(app.buttons["PEF"].appears(within: Self.patience), "No PEF among the choices:\n\(app.debugDescription)")
-        let choices = try elementsOfSheet(titled: "Convert to", in: app)
-        assertOrder(["Convert to", "Cancel", "Markdown", "HTML", "RTF", "EPUB", "BRF", "PEF"], in: choices)
-        XCTAssertTrue(app.buttons["Markdown"].isSelected, "Markdown, the current choice, is not marked selected")
-
-        app.buttons["HTML"].tap()
-
-        XCTAssertTrue(app.buttons["Convert to"].appears(within: Self.patience))
-        let chosen = NSPredicate(format: "value == %@", "HTML")
-        XCTAssertEqual(XCTWaiter().wait(for: [XCTNSPredicateExpectation(predicate: chosen, object: app.buttons["Convert to"])], timeout: Self.patience), .completed, "The row does not say HTML")
-        XCTAssertTrue(kindSwitch("Text as HTML", in: app).exists, "The switch does not name HTML")
-    }
-
-    // MARK: - An Export
-
-    /// With a folder named at launch, Export writes the book's own file into
-    /// it, the bar then offers Close, and the sheet stays open saying what it
-    /// did, in the Mac's words, naming the folder.
-    func testExportWritesTheBookIntoTheFolder() throws {
+    /// and the model's); it opens the choices, the Markdown and then the
+    /// iPhone's writers, in the Mac's order, Cancel first, the current one
+    /// selected. Choosing HTML puts HTML in the row. With a folder named at
+    /// launch, Export then writes the book's own file and its HTML into it,
+    /// the bar offers Close, and the sheet stays open saying what it did, in
+    /// the Mac's words, naming the folder.
+    func testConvertToListsTheIPhonesWritersAndExportWritesIntoTheFolder() throws {
         let folder = FileManager.default.temporaryDirectory
             .appendingPathComponent("ExportUITests-\(UUID().uuidString)", isDirectory: true)
         let app = try launchIntoTheReader(environment: ["TEXTMOUTH_EXPORT_TO": folder.path])
@@ -140,15 +105,30 @@ final class ExportUITests: TextMouthUITestCase {
         assertOrder(["Export to: \(folder.lastPathComponent)"], in: elements)
         XCTAssertTrue(app.buttons["Export"].isEnabled, "Export is dimmed with a folder chosen")
 
+        kindSwitch("Text as Markdown", in: app).tap()
+        let row = app.buttons["Convert to"]
+        XCTAssertTrue(row.appears(within: Self.patience), "No Convert to row:\n\(app.debugDescription)")
+        XCTAssertEqual(row.value as? String, "Markdown")
+        tap(row, until: app.navigationBars["Convert to"], in: app, what: "the Convert to row")
+        XCTAssertTrue(app.buttons["PEF"].appears(within: Self.patience), "No PEF among the choices:\n\(app.debugDescription)")
+        let choices = try elementsOfSheet(titled: "Convert to", in: app)
+        assertOrder(["Convert to", "Cancel", "Markdown", "HTML", "RTF", "EPUB", "BRF", "PEF"], in: choices)
+        XCTAssertTrue(app.buttons["Markdown"].isSelected, "Markdown, the current choice, is not marked selected")
+        app.buttons["HTML"].tap()
+        XCTAssertTrue(kindSwitch("Text as HTML", in: app).appears(within: Self.patience), "The switch does not name HTML:\n\(app.debugDescription)")
+        XCTAssertEqual(app.buttons["Convert to"].value as? String, "HTML")
+
         app.buttons["Export"].tap()
 
-        let done = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Exported 1 item to")).firstMatch
+        let done = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Exported 2 items to")).firstMatch
         XCTAssertTrue(done.waitForExistence(timeout: Self.patience), "The sheet never said what the export did:\n\(app.debugDescription)")
-        XCTAssertEqual(done.label, "Exported 1 item to \(folder.lastPathComponent).")
+        XCTAssertEqual(done.label, "Exported 2 items to \(folder.lastPathComponent).")
         XCTAssertTrue(app.buttons["Close"].exists, "No Close once the export has ended")
         XCTAssertTrue(app.navigationBars[Self.sheetTitle].exists, "The sheet closed itself")
-        let written = try FileManager.default.contentsOfDirectory(atPath: folder.path)
-        XCTAssertEqual(written, ["alice.epub"], "The folder holds \(written)")
+        let written = try FileManager.default.contentsOfDirectory(atPath: folder.path).sorted()
+        XCTAssertEqual(written.count, 2, "The folder holds \(written)")
+        XCTAssertTrue(written.contains("alice.epub"), "The book's own file is missing: \(written)")
+        XCTAssertTrue(written.contains { $0.hasSuffix(" - Text.html") }, "The book's HTML is missing: \(written)")
         keepScreenshot(of: app, named: "Export done")
     }
 

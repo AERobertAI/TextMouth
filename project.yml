@@ -1100,9 +1100,9 @@ targets:
       - TextMouthProductionTests/MOBIFixture.swift
       - TextMouthProductionTests/MarkdownEmphasisTests.swift
       - TextMouthProductionTests/MarkdownExportWriterTests.swift
+      - TextMouthProductionTests/MarkdownMarkerSupport.swift
       - TextMouthProductionTests/MarkdownNestingTests.swift
       - TextMouthProductionTests/MarkdownPageMarkerTests.swift
-      - TextMouthProductionTests/MarkdownWalkCorpusKit.swift
       - TextMouthProductionTests/MarkupFuzzGenerator.swift
       - TextMouthProductionTests/MarkupGuardTests.swift
       - TextMouthProductionTests/MediaGestureDetectorTests.swift
