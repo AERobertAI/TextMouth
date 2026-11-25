@@ -176,7 +176,8 @@ The user's limits are the same for both apps: 30 MB, and 40 MB a strict one (see
   The report gives the app (the files' sizes, counted as `make check` counts the Mac app's), the IPA, an estimate of the App Store download, the 15 biggest files, and each library's share of the executable from the linker's map.
   The app is stripped as an archive strips it, since that is what ships; a plain build is about twice as large, with 14 MB of symbols.
   `app-size.py build --check` exits 3 above the strict limit.
-- **On GitHub,** a request with `ios_size` makes `run-ios-build.py` build the device app after the Simulator build, within 15 minutes, and add `Size:` lines (and `Size detail:` lines) to `ios-summary.txt`, which the train's summary, each agent's result, and the suite's output print.
+- **On GitHub,** a request with `ios_size` makes `run-ios-build.py` build the device app after the Simulator build, and add `Size:` lines (and `Size detail:` lines) to `ios-summary.txt`, which the train's summary, each agent's result, and the suite's output print.
+  The device build has 15 minutes and whatever the Simulator build left of its 20 (`size_limit`).
   `build-train.py request --ios-size` sets it, and `run_suite.py --remote` always does.
   The device build is only run when asked, and took about 7 to 11 minutes of the iPhone job.
   A device build that fails or runs late says `Size: not measured` and changes nothing else: the Simulator build's verdict stands.
