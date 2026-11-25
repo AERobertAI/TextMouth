@@ -928,6 +928,8 @@ final class BookExportModel: ObservableObject, Identifiable {
         // chapters kept, rather than cutting a chapter off midway.
         let underWay = speechFormat == nil ? nil : speechExportsUnderWay.begin(cancellation)
         let outcome = await OffMainWork.run {
+            // The scratch folders an earlier run of the app left (the iPhone's; the Mac has none to sweep).
+            delivery.removeStaleScratchFolders()
             let offers = books.map { BookExportService.offer(for: $0, access: access) }
             return BookExportService.export(
                 offers,

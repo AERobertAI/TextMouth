@@ -18,7 +18,10 @@ import Foundation
 ///   app's container, often a file provider's (iCloud Drive's, or a third
 ///   party's), where Apple's guide to chosen folders says to coordinate every
 ///   access, and a rename from the container into a provider's folder is not
-///   relied on. The scratch copy is removed by the export, as the Mac's is.
+///   relied on. The folders of the target (a book's, a track folder) are made
+///   under the coordinator too, and Stop cancels a coordination that is
+///   blocked on a provider. The scratch copy is removed by the export, as the
+///   Mac's is.
 ///
 /// A value, so a test passes its own, and the Mac's host tests the iPhone's
 /// copy too.
@@ -26,25 +29,51 @@ struct BookExportDelivery: Sendable {
     /// Makes a new, empty scratch folder for the file that will become
     /// `target`, in which the export makes it.
     let makeScratchFolder: @Sendable (_ target: URL) throws -> URL
-    /// Puts the whole file, or folder such as an RTFD package, at `scratch`
+    /// Makes the folder of `target`, and any above it that are missing, and
+    /// puts the whole file, or folder such as an RTFD package, at `scratch`
     /// at `target`, which must not exist: if anything is there, even
     /// something that appeared an instant ago, it throws
-    /// `CocoaError.fileWriteFileExists` and leaves both as they are. The
-    /// export removes the scratch folder afterwards, whatever this did.
-    let deliver: @Sendable (_ scratch: URL, _ target: URL) throws -> Void
+    /// `CocoaError.fileWriteFileExists` and leaves both as they are. It
+    /// throws `CancellationError` once `cancellation` says Stop, even while
+    /// it waits on a file provider. The export removes the scratch folder
+    /// afterwards, whatever this did.
+    let deliver: @Sendable (_ scratch: URL, _ target: URL, _ cancellation: BookExportCancellation) throws -> Void
+    /// Removes the scratch folders an earlier run of the app left, which a
+    /// launch ended while a file was being made cannot (the iPhone's
+    /// temporary folder is the app's own, and iOS empties it when it likes);
+    /// asked as an export starts, off the main thread. Nothing for the Mac,
+    /// whose scratch folders are the system's to clear.
+    let removeStaleScratchFolders: @Sendable () -> Void
+
+    /// A delivery that makes scratch folders by `makeScratchFolder`, delivers
+    /// by `deliver`, and sweeps by `removeStaleScratchFolders`, which a
+    /// delivery that leaves nothing behind leaves out.
+    init(
+        makeScratchFolder: @escaping @Sendable (_ target: URL) throws -> URL,
+        deliver: @escaping @Sendable (_ scratch: URL, _ target: URL, _ cancellation: BookExportCancellation) throws -> Void,
+        removeStaleScratchFolders: @escaping @Sendable () -> Void = {}
+    ) {
+        self.makeScratchFolder = makeScratchFolder
+        self.deliver = deliver
+        self.removeStaleScratchFolders = removeStaleScratchFolders
+    }
 
     /// The Mac's way: a scratch folder on the target's volume, and a move
-    /// (`BookExportService.moveExclusively`).
+    /// (`BookExportService.moveExclusively`) into a folder made first.
     static let moving = BookExportDelivery(
         makeScratchFolder: { try BookExportService.makeScratchFolder(near: $0) },
-        deliver: { try BookExportService.moveExclusively($0, to: $1) }
+        deliver: { scratch, target, _ in
+            try BookExportService.makeFolder(of: target)
+            try BookExportService.moveExclusively(scratch, to: target)
+        }
     )
 
     /// The iPhone's way: a scratch folder in the app's temporary folder, and
-    /// a copy under a file coordinator (`copyCoordinated(_:to:)`).
+    /// a copy under a file coordinator (`copyCoordinated(_:to:cancellation:)`).
     static let coordinatedCopy = BookExportDelivery(
         makeScratchFolder: { _ in try BookExportService.makeTemporaryScratchFolder() },
-        deliver: { try copyCoordinated($0, to: $1) }
+        deliver: { try copyCoordinated($0, to: $1, cancellation: $2) },
+        removeStaleScratchFolders: { removeStaleScratchFolders() }
     )
 
     /// The way the running app delivers: the move on the Mac, the coordinated
@@ -57,32 +86,86 @@ struct BookExportDelivery: Sendable {
         #endif
     }
 
-    /// Copies `scratch`, a file or a folder with all it holds, to `target`
-    /// under a file coordinator that coordinates the writing of `target`, so
-    /// that the file provider which owns the folder chosen, and any other app
-    /// reading it, know of the new item. The copy creates `target` exclusively
+    // MARK: - The Coordinated Copy
+
+    /// Makes the folder of `target` and copies `scratch`, a file or a folder
+    /// with all it holds, to `target`, each under a file coordinator that
+    /// coordinates the writing of what it makes, so that the file provider
+    /// which owns the folder chosen, and any other app reading it, know of
+    /// the new items. The copy creates `target` exclusively
     /// (`BookExportService.copyExclusively`), so nothing is ever replaced, and
-    /// the item it made is removed only if the copy then fails.
-    /// - Throws: `CocoaError.fileWriteFileExists` for a name that is taken;
-    ///   the coordinator's error when it cannot coordinate; otherwise the
-    ///   copy's.
-    static func copyCoordinated(_ scratch: URL, to target: URL) throws {
-        var coordinationError: NSError?
-        var copyError: Error?
-        // The accessor runs on this thread, before `coordinate` returns, and
-        // is not run at all when the coordinator fails.
-        NSFileCoordinator(filePresenter: nil).coordinate(
-            writingItemAt: target,
-            options: [],
-            error: &coordinationError
-        ) { coordinatedTarget in
-            do {
+    /// the item it made is removed only if the copy then fails. While a
+    /// coordination waits on a provider, Stop cancels it
+    /// (`NSFileCoordinator.cancel()`, through the export's cancellation).
+    /// - Throws: `CancellationError` when stopped; `CocoaError.fileWriteFileExists`
+    ///   for a name that is taken; the coordinator's error when it cannot
+    ///   coordinate; otherwise the creation's or the copy's.
+    static func copyCoordinated(_ scratch: URL, to target: URL, cancellation: BookExportCancellation) throws {
+        try cancellation.checkCancelled()
+        let coordinator = NSFileCoordinator(filePresenter: nil)
+        try cancellation.childProcesses.whileRunning({ coordinator.cancel() }) {
+            try coordinateWriting(coordinator, at: target.deletingLastPathComponent(), cancellation: cancellation) { folder in
+                try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+            }
+            try coordinateWriting(coordinator, at: target, cancellation: cancellation) { coordinatedTarget in
                 try BookExportService.copyExclusively(scratch, to: coordinatedTarget)
-            } catch {
-                copyError = error
             }
         }
-        if let coordinationError { throw coordinationError }
-        if let copyError { throw copyError }
+    }
+
+    /// Runs `body`, with the URL to write, under `coordinator`'s coordination
+    /// of the writing of `url`. A coordination the export's Stop cancelled
+    /// throws `CancellationError`.
+    private static func coordinateWriting(
+        _ coordinator: NSFileCoordinator,
+        at url: URL,
+        cancellation: BookExportCancellation,
+        _ body: (URL) throws -> Void
+    ) throws {
+        var coordinationError: NSError?
+        var bodyError: Error?
+        // The accessor runs on this thread, before `coordinate` returns, and
+        // is not run at all when the coordinator fails.
+        coordinator.coordinate(writingItemAt: url, options: [], error: &coordinationError) { coordinated in
+            do {
+                try body(coordinated)
+            } catch {
+                bodyError = error
+            }
+        }
+        if let bodyError { throw bodyError }
+        if let coordinationError {
+            // A coordination Stop cancelled says so with an error of its own; it is a Stop, not a failure.
+            try cancellation.checkCancelled()
+            throw coordinationError
+        }
+    }
+
+    // MARK: - Stale Scratch Folders
+
+    /// The start of the name of every scratch folder the iPhone's delivery makes.
+    static let scratchFolderPrefix = "TextMouth Export " // l10n: no (a folder of the app's temporary files, never shown)
+
+    /// Removes the scratch folders in `directory`, the app's temporary folder
+    /// unless a test gives its own, that were last changed more than `age`
+    /// before `now`: what an export the system ended left, which nothing else
+    /// removes. A day, so a long export under way, which keeps its folder
+    /// changing, is never in its way. Anything else in the folder is left.
+    static func removeStaleScratchFolders(
+        in directory: URL = FileManager.default.temporaryDirectory,
+        olderThan age: TimeInterval = 24 * 60 * 60,
+        now: Date = Date()
+    ) {
+        let keys: [URLResourceKey] = [.contentModificationDateKey, .isDirectoryKey]
+        guard let names = try? FileManager.default.contentsOfDirectory(
+            at: directory, includingPropertiesForKeys: keys
+        ) else { return }
+        for folder in names where folder.lastPathComponent.hasPrefix(scratchFolderPrefix) {
+            guard let values = try? folder.resourceValues(forKeys: Set(keys)),
+                  values.isDirectory == true,
+                  let changed = values.contentModificationDate,
+                  now.timeIntervalSince(changed) > age else { continue }
+            try? FileManager.default.removeItem(at: folder)
+        }
     }
 }

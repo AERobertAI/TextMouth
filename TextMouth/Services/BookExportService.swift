@@ -426,6 +426,11 @@ enum BookExportService {
     /// can hold: the formats TextMouth plays.
     private static let audioExtensions = Set(BookFormat.audio.fileExtensions)
 
+    /// What a `BookExportMemoryGuard` is given for the plain text of a book, which is no text writer's, and for a
+    /// transcript's captions: names that no writer's `id` is.
+    static let plainTextGuardID = "plain-text"
+    static let captionsGuardID = "captions"
+
     // MARK: Listing
 
     /// What `book` can export, read from its package as it is now.
@@ -1392,6 +1397,8 @@ enum BookExportService {
                     try access.read(url) { try FileManager.default.copyItem(at: url, to: scratch) }
                 }
             case .readingText(let markdown):
+                // The plain text is made of the whole of content.md in memory, as a conversion's walk is.
+                try memoryGuard?(plainTextGuardID, planned.file.byteCount)
                 try writeThroughScratchFile(to: planned.target, cancellation: cancellation, delivery: delivery) { scratch in
                     let bytes = try access.read(markdown) { try Data(contentsOf: markdown) }
                     let text = try plainText(fromMarkdown: bytes, at: markdown, title: planned.book.title)
@@ -1433,8 +1440,9 @@ enum BookExportService {
     }
 
     /// Makes the folder that holds `target`, and any above it that are
-    /// missing.
-    private static func makeFolder(of target: URL) throws {
+    /// missing: the Mac's delivery does so (`BookExportDelivery.moving`), and the iPhone's makes it under its
+    /// file coordinator.
+    static func makeFolder(of target: URL) throws {
         try FileManager.default.createDirectory(
             at: target.deletingLastPathComponent(),
             withIntermediateDirectories: true
@@ -1491,9 +1499,15 @@ enum BookExportService {
             return
         }
         // A text conversion holds the whole text, its document, and the file
-        // it makes in memory at once: asked before any of it is read.
-        if case .text(let text) = conversion {
+        // it makes in memory at once, and captions the whole transcript and
+        // its cues: asked before any of it is read.
+        switch conversion {
+        case .text(let text):
             try memoryGuard?(text.writerID, textBytes)
+        case .timedText:
+            try memoryGuard?(captionsGuardID, textBytes)
+        case .speech, .chapterList:
+            break
         }
         let bytes = try access.read(source) { try Data(contentsOf: source) }
         try cancellation.checkCancelled()
@@ -1581,8 +1595,9 @@ enum BookExportService {
     }
 
     /// Delivers the whole file `scratch` to `target` the way `delivery` does
-    /// (a move, or a coordinated copy), unless Stop was pressed, making the
-    /// folder of `target` only now.
+    /// (a move, or a coordinated copy), unless Stop was pressed; the folder of
+    /// `target` is made then too, by the delivery, so that a stopped export
+    /// leaves none.
     private static func moveScratchFile(
         _ scratch: URL,
         to target: URL,
@@ -1590,8 +1605,7 @@ enum BookExportService {
         delivery: BookExportDelivery
     ) throws {
         try cancellation.checkCancelled()
-        try makeFolder(of: target)
-        try delivery.deliver(scratch, target)
+        try delivery.deliver(scratch, target, cancellation)
     }
 
     /// Moves `source` (a file, or a folder such as an RTFD package) to
@@ -1826,7 +1840,7 @@ enum BookExportService {
     /// file.
     static func makeTemporaryScratchFolder() throws -> URL {
         let folder = FileManager.default.temporaryDirectory
-            .appendingPathComponent("TextMouth Export \(UUID().uuidString)", isDirectory: true)
+            .appendingPathComponent("\(BookExportDelivery.scratchFolderPrefix)\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         return folder
     }

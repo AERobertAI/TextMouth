@@ -22,7 +22,7 @@ final class BookExportDeliveryTests: XCTestCase {
         let target = folder.appendingPathComponent("target.txt")
         try Data("new".utf8).write(to: source)
 
-        try BookExportDelivery.coordinatedCopy.deliver(source, target)
+        try BookExportDelivery.coordinatedCopy.deliver(source, target, BookExportCancellation())
 
         XCTAssertEqual(try String(contentsOf: target, encoding: .utf8), "new")
         XCTAssertEqual(try String(contentsOf: source, encoding: .utf8), "new", "the copy leaves the scratch file to the export")
@@ -37,7 +37,7 @@ final class BookExportDeliveryTests: XCTestCase {
         try Data("new".utf8).write(to: source)
         try Data("Someone else's".utf8).write(to: target)
 
-        XCTAssertThrowsError(try BookExportDelivery.coordinatedCopy.deliver(source, target)) { error in
+        XCTAssertThrowsError(try BookExportDelivery.coordinatedCopy.deliver(source, target, BookExportCancellation())) { error in
             XCTAssertEqual((error as? CocoaError)?.code, .fileWriteFileExists)
         }
 
@@ -55,7 +55,7 @@ final class BookExportDeliveryTests: XCTestCase {
         try Data("deeper".utf8).write(to: nested.appendingPathComponent("cover.txt"))
         let copy = folder.appendingPathComponent("copy.rtfd", isDirectory: true)
 
-        try BookExportDelivery.coordinatedCopy.deliver(package, copy)
+        try BookExportDelivery.coordinatedCopy.deliver(package, copy, BookExportCancellation())
 
         XCTAssertEqual(try String(contentsOf: copy.appendingPathComponent("TXT.rtf"), encoding: .utf8), "inside")
         XCTAssertEqual(try String(contentsOf: copy.appendingPathComponent("Images/cover.txt"), encoding: .utf8), "deeper")
@@ -76,6 +76,84 @@ final class BookExportDeliveryTests: XCTestCase {
         XCTAssertNotEqual(first, second)
         XCTAssertEqual(first.deletingLastPathComponent().standardizedFileURL, FileManager.default.temporaryDirectory.standardizedFileURL)
         XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: first.path), [])
+    }
+
+    /// The copy makes the folder of its target, and the folders above it, under the coordinator, as the move makes them
+    /// (a book's folder, a track folder): the target may be several folders down in a folder that holds none of them.
+    func testTheCoordinatedCopyMakesTheFoldersOfItsTarget() throws {
+        let folder = try makeSandboxDirectory("Delivery Folders")
+        let source = folder.appendingPathComponent("source.txt")
+        try Data("new".utf8).write(to: source)
+        let target = folder.appendingPathComponent("Book/Tracks/01.txt")
+
+        try BookExportDelivery.coordinatedCopy.deliver(source, target, BookExportCancellation())
+
+        XCTAssertEqual(try String(contentsOf: target, encoding: .utf8), "new")
+    }
+
+    /// A Stop already pressed delivers nothing and makes no folder: the copy throws `CancellationError` first. (A Stop
+    /// that comes while a coordination waits on a file provider cancels it through the export's cancellation; a test
+    /// has no provider to hold one.)
+    func testAStoppedCopyDeliversNothingAndMakesNoFolder() throws {
+        let folder = try makeSandboxDirectory("Delivery Stopped")
+        let source = folder.appendingPathComponent("source.txt")
+        try Data("new".utf8).write(to: source)
+        let target = folder.appendingPathComponent("Book/01.txt")
+        let stop = BookExportCancellation()
+        stop.cancel()
+
+        XCTAssertThrowsError(try BookExportDelivery.coordinatedCopy.deliver(source, target, stop)) { error in
+            XCTAssertTrue(error is CancellationError, "\(error)")
+        }
+
+        XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("Book").path))
+    }
+
+    // MARK: - The scratch folders an earlier run left
+
+    /// The sweep removes the scratch folders last changed more than a day before now, and leaves a newer one, a folder
+    /// of another name, and a file of the name.
+    func testTheSweepRemovesOnlyTheStaleScratchFolders() throws {
+        let temporary = try makeSandboxDirectory("Delivery Sweep")
+        let prefix = BookExportDelivery.scratchFolderPrefix
+        let now = Date()
+        func make(_ name: String, changed: Date, isFolder: Bool = true) throws -> URL {
+            let url = temporary.appendingPathComponent(name, isDirectory: isFolder)
+            if isFolder {
+                try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+            } else {
+                try Data("x".utf8).write(to: url)
+            }
+            try FileManager.default.setAttributes([.modificationDate: changed], ofItemAtPath: url.path)
+            return url
+        }
+        let stale = try make("\(prefix)stale", changed: now.addingTimeInterval(-2 * 24 * 60 * 60))
+        let fresh = try make("\(prefix)fresh", changed: now.addingTimeInterval(-60 * 60))
+        let other = try make("Another folder", changed: now.addingTimeInterval(-9 * 24 * 60 * 60))
+        let file = try make("\(prefix)file", changed: now.addingTimeInterval(-9 * 24 * 60 * 60), isFolder: false)
+
+        BookExportDelivery.removeStaleScratchFolders(in: temporary, now: now)
+
+        XCTAssertFalse(FileManager.default.fileExists(atPath: stale.path), "a stale scratch folder was left")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: fresh.path), "a scratch folder of the last hour was removed")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: other.path), "a folder of another name was removed")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: file.path), "a file was removed")
+    }
+
+    /// An export starts by sweeping, through its delivery, and the Mac's delivery has nothing to sweep.
+    func testAnExportSweepsThroughItsDeliveryAndTheMacsHasNothingToSweep() throws {
+        let sandbox = try makeSandboxDirectory("Delivery Sweep Asked")
+        let asked = ScratchRecord()
+        let sweeping = BookExportDelivery(
+            makeScratchFolder: BookExportDelivery.coordinatedCopy.makeScratchFolder,
+            deliver: BookExportDelivery.coordinatedCopy.deliver,
+            removeStaleScratchFolders: { asked.note(sandbox) }
+        )
+
+        sweeping.removeStaleScratchFolders()
+        BookExportDelivery.moving.removeStaleScratchFolders()
+
+        XCTAssertEqual(asked.folders, [sandbox], "the delivery was not asked to sweep, or the Mac's was")
     }
 
     // MARK: - An export through each delivery
@@ -137,7 +215,7 @@ final class BookExportDeliveryTests: XCTestCase {
             [offer],
             kinds: [.originalFile],
             to: failedFolder,
-            delivery: delivery(recording: failed, delivering: { _, _ in throw CocoaError(.fileWriteOutOfSpace) })
+            delivery: delivery(recording: failed, delivering: { _, _, _ in throw CocoaError(.fileWriteOutOfSpace) })
         )
         XCTAssertEqual(failedOutcome.exported, [])
         XCTAssertEqual(failedOutcome.failures.map(\.name), ["Harbour.txt"])
@@ -148,6 +226,38 @@ final class BookExportDeliveryTests: XCTestCase {
                 XCTAssertFalse(FileManager.default.fileExists(atPath: folder.path), "a scratch folder was left behind")
             }
         }
+    }
+
+    /// A writer that fails leaves no scratch folder and nothing in the folder chosen, and a book the memory guard refuses
+    /// never makes a scratch folder at all; each is a failure named by its file, and the other books still export.
+    func testAWritersErrorAndAMemoryRefusalLeaveNothingBehind() throws {
+        let sandbox = try makeSandboxDirectory("Delivery Failures")
+        let offer = try makeConvertedOffer(in: sandbox)
+        let failing = BookExportConversion.text(TextExportConversion(FailingWriter(), options: NoTextExportOptions()))
+
+        let afterError = ScratchRecord()
+        let errorFolder = sandbox.appendingPathComponent("Error", isDirectory: true)
+        let errored = BookExportService.export(
+            [offer], kinds: [.markdown], conversions: [.markdown: failing], to: errorFolder, delivery: delivery(recording: afterError)
+        )
+        XCTAssertEqual(errored.exported, [])
+        XCTAssertEqual(errored.failures.map(\.reason), ["The writer cannot write this book."])
+        XCTAssertEqual(afterError.folders.count, 1, "the writer's file was made in one scratch folder")
+        for folder in afterError.folders {
+            XCTAssertFalse(FileManager.default.fileExists(atPath: folder.path), "the writer's scratch folder was left")
+        }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: errorFolder.path), "the writer's error left a folder in the destination")
+
+        let afterRefusal = ScratchRecord()
+        let refusalFolder = sandbox.appendingPathComponent("Refusal", isDirectory: true)
+        let refused = BookExportService.export(
+            [offer], kinds: [.markdown], conversions: [.markdown: .markdown], to: refusalFolder,
+            delivery: delivery(recording: afterRefusal),
+            memoryGuard: { _, _ in throw TextExportError("No room.") }
+        )
+        XCTAssertEqual(refused.failures.map(\.reason), ["No room."])
+        XCTAssertEqual(afterRefusal.folders, [], "a refused book made a scratch folder")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: refusalFolder.path), "the refusal left a folder in the destination")
     }
 
     /// The Mac's way still moves: through `.moving` the scratch file is gone
@@ -183,7 +293,7 @@ final class BookExportDeliveryTests: XCTestCase {
     private func delivery(
         recording record: ScratchRecord,
         whenMade: @escaping @Sendable () -> Void = {},
-        delivering: (@Sendable (URL, URL) throws -> Void)? = nil
+        delivering: (@Sendable (URL, URL, BookExportCancellation) throws -> Void)? = nil
     ) -> BookExportDelivery {
         BookExportDelivery(
             makeScratchFolder: { target in
@@ -194,6 +304,32 @@ final class BookExportDeliveryTests: XCTestCase {
             },
             deliver: delivering ?? BookExportDelivery.coordinatedCopy.deliver
         )
+    }
+
+    /// A writer whose every book fails, with a sentence of its own.
+    private struct FailingWriter: TextExportWriter {
+        let id = "failing"
+        let name = "Failing"
+        let hint = "Fails."
+        let fileExtension = "fail"
+
+        func write(_ document: ExportDocument, options: NoTextExportOptions, to url: URL, cancellation: BookExportCancellation) throws {
+            throw TextExportError("The writer cannot write this book.")
+        }
+    }
+
+    /// An offer, made by hand, of a book's Markdown, which a conversion converts.
+    private func makeConvertedOffer(in folder: URL) throws -> BookExportOffer {
+        let cache = folder.appendingPathComponent("Converted \(UUID().uuidString).md")
+        try Data("# Harbour\n\nThe pilot boat ties up at the slip.\n".utf8).write(to: cache)
+        let book = Book(title: "Harbour", format: .markdown, filePath: cache.path, md5Hash: "")
+        let file = BookExportFile(
+            source: .converted(from: cache, book: ExportBookDetails(book), by: .markdown),
+            path: "Harbour - Text.md",
+            byteCount: 50
+        )
+        let item = BookExportItem(kind: .markdown, folderName: nil, files: [file], fileInCloud: nil)
+        return BookExportOffer(book: book, items: [item], isPackageInCloud: false)
     }
 
     /// An offer, made by hand, of one book's own file, named `name` and
