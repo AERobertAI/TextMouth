@@ -100,7 +100,8 @@ final class PhoneBrailleSettingsTests: XCTestCase {
         let listed = BrailleTableCatalog.listedID(forStored: stored)
         let rows = PhoneSettingsModel.brailleTableGroups().flatMap(\.choices)
         XCTAssertTrue(rows.contains { $0.id == listed }, "no row is marked for \(stored): the list holds no \(listed)")
-        let french = try XCTUnwrap(Locale.current.localizedString(forIdentifier: "fr"))
+        // The language's name as the app words it, in the interface language (not the system's).
+        let french = try XCTUnwrap(InterfaceLanguage.current.locale.localizedString(forIdentifier: "fr"))
         XCTAssertTrue(PhoneSettingsModel.brailleTableValue(stored).hasSuffix(", in \(french)"), PhoneSettingsModel.brailleTableValue(stored))
         XCTAssertEqual(PhoneSettingsModel.brailleTableValue(stored), PhoneSettingsModel.brailleTableValue(listed))
         XCTAssertFalse(PhoneSettingsModel.brailleTableWritesOnly(stored))
