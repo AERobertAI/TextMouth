@@ -134,7 +134,7 @@ final class StoreBackupTests: XCTestCase {
         let package = try makePackage(in: sandbox)
         let (backup, drive) = makeBackup(sandbox)
         XCTAssertThrowsError(try backup.back(up: package, bookID: bookID, budget: 5)) {
-            XCTAssertEqual($0 as? SyncProblem, .outOfSpace)
+            XCTAssertEqual($0 as? StoreBackup.BudgetError, .overBudget)
         }
         XCTAssertTrue(drive.copiedNames.isEmpty)
     }

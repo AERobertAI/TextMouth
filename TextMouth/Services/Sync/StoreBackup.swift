@@ -77,6 +77,16 @@ struct StoreBackup: Sendable {
         }
     }
 
+    /// The name a manifest has in the store: the SHA-256 of its bytes, so a reader can check it.
+    static func manifestName(for data: Data) -> String {
+        SyncNames.manifestName(sha256: SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined())
+    }
+
+    /// The backup would copy more than the local budget allows: a result of its own, not the drive's "full".
+    enum BudgetError: Error, Equatable {
+        case overBudget
+    }
+
     // MARK: Listing a package
 
     /// One file of a package: its path from the package, and its URL.
@@ -147,7 +157,7 @@ struct StoreBackup: Sendable {
         let needed = staged.reduce(Int64(0)) { $0 + $1.size }
         if needed > budget {
             for item in staged { try? FileManager.default.removeItem(at: item.url) }
-            throw SyncProblem.outOfSpace
+            throw BudgetError.overBudget
         }
         for item in staged {
             // `copyIn` never writes over a file; one that appeared meanwhile is the same blob.
@@ -157,7 +167,7 @@ struct StoreBackup: Sendable {
 
         let manifest = StoreManifest(formatVersion: SyncFormats.currentVersion, bookID: bookID, files: entries)
         let manifestData = try SyncFormats.encode(manifest)
-        let manifestName = SyncNames.manifestName(sha256: SHA256.hash(data: manifestData).map { String(format: "%02x", $0) }.joined())
+        let manifestName = Self.manifestName(for: manifestData)
         if !present.contains(manifestName) {
             do { try folder.access.write(manifestData, to: bookFolder.appendingPathComponent(manifestName), replacing: false) } catch SyncProblem.exists {}
         }

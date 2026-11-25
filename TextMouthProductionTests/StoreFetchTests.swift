@@ -96,6 +96,54 @@ final class StoreFetchTests: XCTestCase {
         XCTAssertFalse(StoreFetch.isMissingFiles(world.placeholder))
     }
 
+    /// A manifest path that would leave the package is refused, and nothing is written outside it.
+    func testAManifestPathLeavingThePackageIsRefused() async throws {
+        let world = try makeWorld()
+        var hostile = world.backup.manifest
+        hostile.files[0].path = "../escape.txt"
+        let data = try SyncFormats.encode(hostile)
+        let name = StoreBackup.manifestName(for: data)
+        try world.drive.write(data, to: world.fetch.folder.bookFolder(bookID).appendingPathComponent(name), replacing: false)
+        var pointer = try XCTUnwrap(StoreFetch.pointer(in: world.placeholder))
+        pointer.manifest = name
+        try StoreFetch.write(pointer, in: world.placeholder)
+        do {
+            try await world.fetch.fetch(package: world.placeholder)
+            XCTFail("a path leaving the package")
+        } catch { XCTAssertEqual(error as? SyncProblem, .damaged(file: "../escape.txt")) }
+        let outside = world.placeholder.deletingLastPathComponent().appendingPathComponent("escape.txt")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: outside.path))
+    }
+
+    /// A manifest whose bytes are not what its name says is refused.
+    func testAManifestThatIsNotItsNameIsRefused() async throws {
+        let world = try makeWorld()
+        let url = world.fetch.folder.bookFolder(bookID).appendingPathComponent(world.backup.manifestName)
+        try world.drive.write(Data("{\"formatVersion\":1}".utf8), to: url, replacing: true)
+        do {
+            try await world.fetch.fetch(package: world.placeholder)
+            XCTFail("a swapped manifest")
+        } catch { XCTAssertEqual(error as? SyncProblem, .damaged(file: world.backup.manifestName)) }
+    }
+
+    /// What may be fetched: relative plain paths, a digest, a blob named by it.
+    func testWhatIsSafeToFetch() {
+        let digest = String(repeating: "a", count: 64)
+        func file(_ path: String, blob: String? = nil, sha: String? = nil) -> StoreManifest.File {
+            StoreManifest.File(path: path, sha256: sha ?? digest, blob: blob ?? digest + ".epub", role: "content", size: 1)
+        }
+        XCTAssertTrue(StoreFetch.isSafe(file("book.epub")))
+        XCTAssertTrue(StoreFetch.isSafe(file("tracks/01.mp3")))
+        XCTAssertFalse(StoreFetch.isSafe(file("../x")))
+        XCTAssertFalse(StoreFetch.isSafe(file("a/../../x")))
+        XCTAssertFalse(StoreFetch.isSafe(file("/etc/passwd")))
+        XCTAssertFalse(StoreFetch.isSafe(file("a//b")))
+        XCTAssertFalse(StoreFetch.isSafe(file("")))
+        XCTAssertFalse(StoreFetch.isSafe(file("book.epub", blob: "../" + digest + ".epub")))
+        XCTAssertFalse(StoreFetch.isSafe(file("book.epub", blob: "other.epub")))
+        XCTAssertFalse(StoreFetch.isSafe(file("book.epub", sha: "short")))
+    }
+
     /// A pointer of another store is not fetched.
     func testAnotherStoreIsRefused() async throws {
         var world = try makeWorld()

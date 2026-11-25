@@ -76,9 +76,11 @@ struct PlainSyncFolderAccess: SyncFolderAccess {
         guard reachability.isOnline() else { throw SyncProblem.offline }
         try? items.requestDownload(of: file)
         let clock = ContinuousClock()
-        let started = clock.now
+        var started = clock.now
         while isInCloudOnly(file) || items.status(of: file).state == .downloading {
             try Task.checkCancellation()
+            // The limit is for time spent not downloading: a long track that is arriving is not stalled.
+            if items.status(of: file).state == .downloading { started = clock.now }
             if clock.now - started >= limit {
                 throw SyncProblem.notDownloaded(device: file.deletingLastPathComponent().lastPathComponent)
             }
@@ -101,24 +103,50 @@ struct PlainSyncFolderAccess: SyncFolderAccess {
     // MARK: Writing
 
     func write(_ data: Data, to file: URL, replacing: Bool) throws {
-        if !replacing, FileManager.default.fileExists(atPath: file.path) { throw SyncProblem.exists }
-        try FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try Self.coordinated(writing: file, replacing: replacing) { url in
-            try data.write(to: url, options: replacing ? [.atomic] : [.withoutOverwriting])
-        }
+        try Self.stagedPlace(at: file, replacing: replacing) { try data.write(to: $0) }
     }
 
     func copyIn(_ local: URL, to file: URL) throws {
-        if FileManager.default.fileExists(atPath: file.path) { throw SyncProblem.exists }
-        try FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try Self.coordinated(writing: file, replacing: false) { try FileManager.default.copyItem(at: local, to: $0) }
+        // A clone where the volume allows, made under a hidden name and moved in whole.
+        try Self.stagedPlace(at: file, replacing: false) { try FileManager.default.copyItem(at: local, to: $0) }
+    }
+
+    /// Makes the file at `file` whole under a hidden name beside it, then moves it in, so a crash never
+    /// leaves a half file under its final name. A file already there is `.exists` unless `replacing`.
+    private static func stagedPlace(at file: URL, replacing: Bool, _ make: (URL) throws -> Void) throws {
+        let fileManager = FileManager.default
+        if !replacing, fileManager.fileExists(atPath: file.path) { throw SyncProblem.exists }
+        try fileManager.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
+        let staged = file.deletingLastPathComponent().appendingPathComponent(".partial-" + UUID().uuidString.lowercased())
+        try make(staged)
+        do {
+            try coordinated(writing: file, replacing: replacing) { destination in
+                if replacing {
+                    if fileManager.fileExists(atPath: destination.path) {
+                        _ = try fileManager.replaceItemAt(destination, withItemAt: staged)
+                    } else {
+                        try fileManager.moveItem(at: staged, to: destination)
+                    }
+                } else {
+                    // `moveItem` never goes over a file: a second writer finds the name taken.
+                    try fileManager.moveItem(at: staged, to: destination)
+                }
+            }
+        } catch {
+            try? fileManager.removeItem(at: staged)
+            if !replacing, fileManager.fileExists(atPath: file.path) { throw SyncProblem.exists }
+            throw error
+        }
     }
 
     // MARK: Cloud states
 
     func uploadState(of file: URL) -> SyncUploadState {
         let flagged = items.flaggedStatus(of: file)
-        guard flagged.carriesSyncFlags, flagged.status.isUploadReported else { return .notReported }
+        // A folder that carries no sync flags reports nothing at all. Where it does report, a missing upload
+        // flag means the file has not uploaded yet, never that it has.
+        guard flagged.carriesSyncFlags else { return .notReported }
+        guard flagged.status.isUploadReported else { return .uploading }
         if flagged.status.isUploaded { return .uploaded }
         // A quota refusal is the one failure that is told apart: the drive is full.
         let error = (try? file.resourceValues(forKeys: [.ubiquitousItemUploadingErrorKey]))?.ubiquitousItemUploadingError

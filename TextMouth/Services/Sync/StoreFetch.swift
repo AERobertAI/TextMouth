@@ -51,6 +51,16 @@ struct StoreFetch: Sendable {
         pointer(in: package).map { $0.files.filter { !$0.onThisDevice }.reduce(Int64(0)) { $0 + $1.size } }
     }
 
+    /// Whether a manifest's file may be fetched: a relative path of plain names (no `..`, no empty name, not
+    /// absolute), a digest, and a blob named `<digest>.<ext>` in the form the backup makes.
+    static func isSafe(_ file: StoreManifest.File) -> Bool {
+        let parts = file.path.split(separator: "/", omittingEmptySubsequences: false).map(String.init)
+        guard !file.path.isEmpty, !file.path.hasPrefix("/"), !parts.contains(""), !parts.contains("."), !parts.contains("..") else { return false }
+        guard SyncNames.isDigest(file.sha256), file.blob.hasPrefix(file.sha256 + "."), file.size >= 0 else { return false }
+        let ext = String(file.blob.dropFirst(file.sha256.count + 1))
+        return SyncNames.blobName(sha256: file.sha256, pathExtension: ext) == file.blob
+    }
+
     // MARK: Fetching
 
     /// Fetches the files of the package at `package` that aren't here yet.
@@ -70,9 +80,14 @@ struct StoreFetch: Sendable {
         if pointer.storeID != storeID { throw SyncProblem.anotherStore }
         let bookFolder = folder.bookFolder(pointer.bookID)
         let manifestData = try await folder.access.read(bookFolder.appendingPathComponent(pointer.manifest), within: perFile)
-        guard let manifest = try? SyncFormats.decodeManifest(manifestData, named: pointer.manifest), manifest.bookID == pointer.bookID else {
+        // The manifest's name is the digest of its bytes: a damaged or swapped file is refused. Every path and
+        // blob name in it is checked before anything is written or read.
+        guard StoreBackup.manifestName(for: manifestData) == pointer.manifest,
+              let manifest = try? SyncFormats.decodeManifest(manifestData, named: pointer.manifest),
+              manifest.bookID == pointer.bookID else {
             throw SyncProblem.damaged(file: pointer.manifest)
         }
+        if let unsafe = manifest.files.first(where: { !Self.isSafe($0) }) { throw SyncProblem.damaged(file: unsafe.path) }
         try FileManager.default.createDirectory(at: staging, withIntermediateDirectories: true)
 
         var completedFiles = manifest.files.count - pointer.files.filter { !$0.onThisDevice }.count
