@@ -134,6 +134,31 @@ extension ReaderViewModel {
         }
     }
 
+    // MARK: A Later Place From Another Device (FR43)
+
+    /// Listens for a sync merge giving this book another reading state, and
+    /// weighs it (`takeSyncedReadingState(_:)`).
+    func observeSyncedReadingStates() {
+        let bookID = book.id
+        libraryViewModel.syncedReadingStates
+            .filter { $0.bookID == bookID }
+            .sink { [weak self] synced in self?.takeSyncedReadingState(synced) }
+            .store(in: &cancellables)
+    }
+
+    /// Takes the reading state a sync merge gave this book, when the reader
+    /// is at rest: it moves to the place, as a later place in the record
+    /// does (`takeNewerRecordedState(_:)`), and says so. A playing reader
+    /// plays on, and its next checkpoint wins; a place that is not the later
+    /// one changes nothing and says nothing.
+    func takeSyncedReadingState(_ synced: SyncedReadingState) {
+        guard !isCurrentlyPlaying else { return }
+        let placeBefore = book.readingPosition
+        takeNewerRecordedState(synced.state)
+        guard book.readingPosition != placeBefore else { return }
+        VoiceOverAnnouncer.announce(SyncWording.announceMovedToPlace(from: synced.device))
+    }
+
     // MARK: Places Moved by a Rebuild of the Text
 
     /// Takes one move of the places of this book made while it loaded

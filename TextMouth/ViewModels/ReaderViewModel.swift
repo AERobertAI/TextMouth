@@ -913,6 +913,7 @@ final class ReaderViewModel: ObservableObject {
         observeSpokenAudioSettings()
         observeLibraryUpdates()
         observeReadingList()
+        observeSyncedReadingStates()
         observeLibrarySearchJumps()
         observeSleepTimerHandOvers()
         forwardSpeechState()
