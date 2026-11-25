@@ -44,14 +44,16 @@ struct SyncCenterEnvironment {
     @MainActor static func live() -> SyncCenterEnvironment {
         let provider = UbiquitousItemStatusProvider()
         #if os(iOS)
-        let phone = true
+        let platform = "ios"
         #else
-        let phone = false
+        let platform = "macos"
         #endif
+        // Told from the platform's name, so no constant is folded into a warning.
+        let phone = platform == "ios"
         return SyncCenterEnvironment(
             preferences: TextMouthRuntime.current.preferences,
             deviceName: Self.deviceName(isPhone: phone),
-            platform: phone ? "ios" : "macos",
+            platform: platform,
             appVersion: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "",
             isPhone: phone,
             makeAccess: { SyncFolderAccessFactory.make($0) },
