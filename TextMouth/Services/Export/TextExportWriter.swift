@@ -180,6 +180,10 @@ protocol TextExportOptionsEditing: AnyObject {
     func makeView() -> AnyView
     /// The writer with its options as they are now, for an export.
     func conversion() -> TextExportConversion
+    /// The writer's options as braille's, for a braille writer (BRF or PEF),
+    /// which the iPhone's rows read and set where the Mac's view binds them
+    /// (FR31); nil for any other writer, and setting it changes nothing there.
+    var brailleOptions: BrailleExportOptions? { get set }
 }
 
 /// The options of a `Writer` while an Export dialog is open: what its view
@@ -211,6 +215,15 @@ final class TextExportOptionsState<Writer: TextExportWriter>: ObservableObject, 
 
     func conversion() -> TextExportConversion {
         TextExportConversion(writer, options: options)
+    }
+
+    var brailleOptions: BrailleExportOptions? {
+        get { options as? BrailleExportOptions }
+        set {
+            // Only a braille writer's own options type takes braille options.
+            guard let typed = newValue as? Writer.Options else { return }
+            options = typed
+        }
     }
 }
 

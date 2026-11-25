@@ -158,12 +158,22 @@ final class BookExportModel: ObservableObject, Identifiable {
     @Published var checked: Set<BookExportKind> = []
     /// The folder the items go to.
     @Published var destination: URL
+    /// Whether a folder has been chosen for `destination`. The Mac's dialog
+    /// always starts in one (Documents); the iPhone's starts with none until
+    /// the person has chosen one, and Export waits for it (FR31).
+    @Published private(set) var isDestinationChosen: Bool
     /// How the last export's summary is worded, kept so that `summary` is made in the interface language in use when the
     /// dialog shows it, and follows a switch of language (FR39).
     @Published private var summaryWording: (() -> String)?
     /// What the last export said, kept in the dialog when it did not do
     /// everything asked.
     var summary: String? { summaryWording?() }
+    /// How the end of the last export is worded whether or not it did everything
+    /// asked, which the iPhone's sheet shows where the Mac's dialog closes.
+    @Published private var finishedWording: (() -> String)?
+    /// What the last export did, in the interface language in use now: kept
+    /// from the end of an export until the next begins.
+    var finishedWords: String? { finishedWording?() }
     /// The Convert to picker's choice for each kind that has one: a writer's
     /// `id`. A kind not here is on Markdown, so a dialog nobody touched
     /// exports as it always has. The transcript's picker (FMT23) keeps its
@@ -211,6 +221,23 @@ final class BookExportModel: ObservableObject, Identifiable {
     /// What a speech export reaches: the synthesizer, the voices, the power
     /// assertion, the disks, and the folder its chapters are kept in.
     private let speechEnvironment: SpeechExportEnvironment
+    /// The kinds the dialog offers: every kind on the Mac, and the iPhone's
+    /// (`PhoneExportOffer.kinds`) on the iPhone.
+    private let offeredKinds: Set<BookExportKind>
+    /// How each file is made and put in the folder chosen: the move on the
+    /// Mac, the coordinated copy on the iPhone (`BookExportDelivery`).
+    private let delivery: BookExportDelivery
+    /// What is asked before a book's text is converted, so that a book too
+    /// large for the memory left fails alone (`BookExportMemoryGuard`); nil
+    /// on the Mac, which asks nothing.
+    private let memoryGuard: BookExportMemoryGuard?
+    /// Holds what an export needs from its start to its end, given the
+    /// folder it goes to, and returns what lets it go: on the iPhone, the
+    /// folder's security scope (the folder the picker returned is reached only
+    /// through it) and a background task, so that locking the screen does not
+    /// cut a file off. Holds nothing by default, as the Mac's export needs
+    /// neither.
+    private let holdWhileExporting: @MainActor (URL) -> (@MainActor () -> Void)
     /// The preferences holding the global voice, speed, pitch, and pause
     /// level, which a book without its own speaks with.
     private let speechDefaults: UserDefaults
@@ -223,6 +250,10 @@ final class BookExportModel: ObservableObject, Identifiable {
     /// the person; nil where nobody can be asked, when such a chapter fails
     /// its book's file as it did before the question.
     private let deepChapterPrompt: DeepChapterPrompt?
+    /// On the iPhone, the question about a chapter nested too deeply that the
+    /// export waits on, which the sheet shows as an alert while it is
+    /// pending; nil on the Mac, whose alert is its own (`ExportDeepChapterAlert`).
+    let questionPrompt: PhoneExportQuestionPrompt?
 
     /// How the question about a chapter nested too deeply is put to the
     /// person: shown over the dialog's window, and taken down by Stop. Both
@@ -249,8 +280,8 @@ final class BookExportModel: ObservableObject, Identifiable {
 
     /// Who puts the question about a chapter nested too deeply.
     enum DeepChapterPrompting {
-        /// The app's way: an alert over the dialog on the Mac, and nobody on
-        /// the iPhone, which has no export.
+        /// The app's way: an alert over the dialog on the Mac, and on the
+        /// iPhone an alert of the sheet's own (`PhoneExportQuestionPrompt`).
         case standard
         /// Nobody can be asked: such a chapter fails its book's file.
         case unavailable
@@ -294,8 +325,17 @@ final class BookExportModel: ObservableObject, Identifiable {
     ///     ends, so that a quit stops it cleanly first; the app's own unless a
     ///     test gives one.
     ///   - deepChapterPrompting: Who puts the question about a chapter nested
-    ///     too deeply; the standard way asks with an alert, on the Mac. A
-    ///     test passes a scripted answer.
+    ///     too deeply; the standard way asks with an alert. A test passes a
+    ///     scripted answer.
+    ///   - offering: The kinds the dialog offers; nil offers every kind. The
+    ///     iPhone passes `PhoneExportOffer.kinds`.
+    ///   - destinationIsChosen: Whether `destination` is a folder the person
+    ///     chose. The Mac's always is; the iPhone's is not until its picker
+    ///     has returned one, and Export waits for it.
+    ///   - delivery: How each file is made and put in the folder chosen.
+    ///   - memoryGuard: What is asked before a book's text is converted.
+    ///   - holdWhileExporting: Holds what an export needs while it runs, and
+    ///     returns what lets it go.
     init(
         books: [Book],
         library: LibraryViewModel? = nil,
@@ -306,8 +346,15 @@ final class BookExportModel: ObservableObject, Identifiable {
         speechDefaults: UserDefaults = TextMouthRuntime.current.preferences,
         substitutionService: TextSubstitutionService = .shared,
         speechExportsUnderWay: SpeechExportsUnderWay = .shared,
-        deepChapterPrompting: DeepChapterPrompting = .standard
+        deepChapterPrompting: DeepChapterPrompting = .standard,
+        offering offeredKinds: Set<BookExportKind>? = nil,
+        destinationIsChosen: Bool = true,
+        delivery: BookExportDelivery = .standard,
+        memoryGuard: BookExportMemoryGuard? = nil,
+        holdWhileExporting: @escaping @MainActor (URL) -> (@MainActor () -> Void) = { _ in {} }
     ) {
+        let questions = Self.makeQuestionPrompt(for: deepChapterPrompting)
+        questionPrompt = questions
         switch deepChapterPrompting {
         case .standard:
             #if os(macOS)
@@ -318,8 +365,13 @@ final class BookExportModel: ObservableObject, Identifiable {
                 dismiss: { alert.dismiss() }
             )
             #else
-            // The iPhone has no export and nobody to ask.
-            deepChapterPrompt = nil
+            // The sheet shows the question as an alert of its own, which Stop
+            // takes down as a Cancel Export (`questionPrompt`).
+            let prompt = questions
+            deepChapterPrompt = DeepChapterPrompt(
+                ask: { question, _ in await prompt?.ask(question) ?? .cancelExport },
+                dismiss: { prompt?.dismiss() }
+            )
             #endif
         case .unavailable:
             deepChapterPrompt = nil
@@ -327,6 +379,11 @@ final class BookExportModel: ObservableObject, Identifiable {
             deepChapterPrompt = prompt
         }
         self.books = books
+        self.offeredKinds = offeredKinds ?? Set(BookExportKind.allCases)
+        self.isDestinationChosen = destinationIsChosen
+        self.delivery = delivery
+        self.memoryGuard = memoryGuard
+        self.holdWhileExporting = holdWhileExporting
         self.destination = destination ?? Self.defaultDestination
         self.access = access
         self.writers = writers
@@ -337,6 +394,18 @@ final class BookExportModel: ObservableObject, Identifiable {
         currentBooks = { [weak library] chosen in
             chosen.map { library?.bookByID($0.id) ?? $0 }
         }
+    }
+
+    /// The iPhone's prompt for the question about a chapter nested too deeply,
+    /// when the dialog asks the standard way; nil on the Mac, whose alert is
+    /// its own, and for any other way of asking.
+    private static func makeQuestionPrompt(for prompting: DeepChapterPrompting) -> PhoneExportQuestionPrompt? {
+        #if os(macOS)
+        return nil
+        #else
+        if case .standard = prompting { return PhoneExportQuestionPrompt() }
+        return nil
+        #endif
     }
 
     // MARK: Listing
@@ -350,7 +419,7 @@ final class BookExportModel: ObservableObject, Identifiable {
         let listed = await Self.offers(for: books, access: access)
         offers = listed
         speechOptionsMaking = .notMade
-        choices = BookExportChoice.choices(for: listed)
+        choices = BookExportChoice.choices(for: listed).filter { offeredKinds.contains($0.kind) }
         if let first = choices.first(where: \.isAvailable) {
             checked = [first.kind]
         }
@@ -445,14 +514,14 @@ final class BookExportModel: ObservableObject, Identifiable {
     }
 
     /// Whether Export can be pressed: the books are listed, nothing is
-    /// being exported, and a checked kind has something on this Mac, spoken
-    /// audio only once its options are made.
+    /// being exported, a folder is chosen, and a checked kind has something
+    /// on this Mac, spoken audio only once its options are made.
     var canExport: Bool {
         switch phase {
         case .listing, .exporting:
             return false
         case .ready, .finished:
-            return choices.contains { choice in
+            return isDestinationChosen && choices.contains { choice in
                 checked.contains(choice.kind) && choice.isAvailable && (choice.kind != .spokenAudio || speechOptions != nil)
             }
         }
@@ -659,6 +728,25 @@ final class BookExportModel: ObservableObject, Identifiable {
     /// on captions. A writer chosen beside both checkboxes has one options
     /// state, which both views set.
     func optionsView(for kind: BookExportKind) -> AnyView? {
+        optionsState(for: kind)?.makeView() ?? spokenAudioOptionsView(for: kind)
+    }
+
+    /// The options of the writer chosen beside the checkbox of `kind`, which
+    /// the iPhone's rows read and set where the Mac's view does; nil while
+    /// the kind is unchecked, on Markdown, on a format of captions, for
+    /// spoken audio, and when the writer takes no options.
+    func optionsState(for kind: BookExportKind) -> (any TextExportOptionsEditing)? {
+        guard kind != .spokenAudio, isChecked(kind),
+              let state = optionsStates[conversionID(for: kind)], state.hasOptions else {
+            return nil
+        }
+        return state
+    }
+
+    /// Spoken audio's options view, or the line saying why there is none yet,
+    /// under its checkbox; nil for any other kind, and while the kind is
+    /// unchecked.
+    private func spokenAudioOptionsView(for kind: BookExportKind) -> AnyView? {
         if kind == .spokenAudio {
             guard isChecked(kind) else { return nil }
             switch speechOptionsMaking {
@@ -672,10 +760,7 @@ final class BookExportModel: ObservableObject, Identifiable {
                 return AnyView(Text(SpeechExportWording.unreadableText).fixedSize(horizontal: false, vertical: true))
             }
         }
-        guard isChecked(kind), let state = optionsStates[conversionID(for: kind)], state.hasOptions else {
-            return nil
-        }
-        return state.makeView()
+        return nil
     }
 
     /// The conversions an export makes now: for each checked kind on a
@@ -752,6 +837,7 @@ final class BookExportModel: ObservableObject, Identifiable {
         let cancellation = BookExportCancellation()
         self.cancellation = cancellation
         summaryWording = nil
+        finishedWording = nil
         phase = .exporting(done: 0, total: 0)
         // A braille table just chosen in the options may still be checked.
         // Waiting for it is part of exporting (review R5, F3): Stop is offered
@@ -795,6 +881,11 @@ final class BookExportModel: ObservableObject, Identifiable {
         }
         let access = self.access
         Self.lastDestination = folder
+        // What the run needs is held for the whole of it, and let go at its end.
+        let releaseHold = holdWhileExporting(folder)
+        defer { releaseHold() }
+        let delivery = self.delivery
+        let memoryGuard = self.memoryGuard
 
         let books = currentBooks(self.books)
         // The books are in use until the export ends, so no rule of the
@@ -846,6 +937,8 @@ final class BookExportModel: ObservableObject, Identifiable {
                 cancellation: cancellation,
                 progress: report,
                 speech: speech,
+                delivery: delivery,
+                memoryGuard: memoryGuard,
                 askAboutDeepChapters: askAboutDeepChapters
             )
         }
@@ -860,6 +953,7 @@ final class BookExportModel: ObservableObject, Identifiable {
         let format = speechFormat
         let words: () -> String = { Self.finishedWords(outcome, folder: folder, latest: latest, speechFormat: format) }
         summaryWording = Self.didEverything(outcome) ? nil : words
+        finishedWording = words
         VoiceOverAnnouncer.announce(words(), from: window)
         return outcome
     }
@@ -1001,7 +1095,7 @@ final class BookExportModel: ObservableObject, Identifiable {
         let panel = Self.makeDestinationPanel(startingIn: destination).makePanel()
         let take: (NSApplication.ModalResponse) -> Void = { [weak self] response in
             guard response == .OK, let folder = panel.url else { return }
-            self?.destination = folder
+            self?.chooseDestination(folder)
         }
         if let window {
             panel.beginSheetModal(for: window, completionHandler: take)
@@ -1010,11 +1104,18 @@ final class BookExportModel: ObservableObject, Identifiable {
         }
     }
     #else
-    /// Phase 0 stand-in: the Mac opens a folder chooser here; iOS has no
-    /// folder panel yet (phase 1 brings the document picker), so choosing
-    /// does nothing and the destination stays as it was.
+    /// The iPhone's sheet opens the system's folder picker itself
+    /// (`fileImporter`), which returns the folder to `chooseDestination(_:)`,
+    /// so there is no panel to open here and choosing does nothing.
     func chooseDestination(from window: PlatformWindow?) {}
     #endif
+
+    /// Makes `folder` the folder the items go to: the Mac's panel returned
+    /// it, or the iPhone's picker, or the kept folder it starts with.
+    func chooseDestination(_ folder: URL) {
+        destination = folder
+        isDestinationChosen = true
+    }
 }
 
 // MARK: - A Speech Export's Latest Progress
