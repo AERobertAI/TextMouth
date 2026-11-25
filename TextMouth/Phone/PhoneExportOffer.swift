@@ -60,7 +60,7 @@ enum PhoneExportOffer {
     /// One button of the sheet's bar.
     struct BarButton: Equatable, Sendable {
         /// What the button does.
-        enum Role: Equatable, Sendable {
+        enum Role: Hashable, Sendable {
             /// Closes the sheet without exporting.
             case cancel
             /// Stops the export under way.

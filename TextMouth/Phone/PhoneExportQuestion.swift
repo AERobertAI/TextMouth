@@ -13,7 +13,7 @@ import Foundation
 /// and which any dismissal of the alert counts as.
 struct PhoneExportQuestion: Equatable, Identifiable {
     /// One button of the alert.
-    enum Choice: Equatable, Sendable {
+    enum Choice: Hashable, Sendable {
         /// Write this chapter as plain paragraphs of its lines.
         case exportAsWritten
         /// Do so for every such chapter of the export, without asking again.
