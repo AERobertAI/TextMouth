@@ -720253,6 +720253,474 @@
         }
       }
     },
+    "sync.announce.movedToPlace" : {
+      "comment" : "Said aloud when the open book moves to the place saved on another device. %@ names that device, such as \"iPhone\".",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Moved to the place saved on %@."
+          }
+        }
+      }
+    },
+    "sync.announce.nothingNew" : {
+      "comment" : "Said aloud when Sync Now finishes and no other device had anything new.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Synced. Nothing new."
+          }
+        }
+      }
+    },
+    "sync.announce.synced" : {
+      "comment" : "Said aloud when Sync Now finishes. A plural line. %lld is how many changes arrived, and %@ names the device they came from, such as \"iPhone\".",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Synced. %lld change from %@."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Synced. %lld changes from %@."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "sync.announce.syncing" : {
+      "comment" : "Said aloud when the person starts Sync Now.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Syncing."
+          }
+        }
+      }
+    },
+    "sync.anotherStore" : {
+      "comment" : "Shown when the sync folder now belongs to another library's sync. Join Sync Folder is a button.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The sync folder now holds another library's sync. Choose Join Sync Folder again."
+          }
+        }
+      }
+    },
+    "sync.backingUp" : {
+      "comment" : "A line of the Sync status while books are copied into the sync folder. The first %lld is how many are done and the second how many there are, such as \"612 of 750\".",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Backing up books: %lld of %lld."
+          }
+        }
+      }
+    },
+    "sync.books" : {
+      "comment" : "A plural phrase: how many books, such as \"138 books\". %lld is the count. It sits inside a longer sentence.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld book"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld books"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "sync.changes" : {
+      "comment" : "A plural phrase: how many changes, such as \"3 changes\". %lld is the count. It sits inside a longer sentence.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld change"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld changes"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "sync.folderAlreadyThere" : {
+      "comment" : "Shown when Set Up Sync finds a folder named TextMouth Sync already there. Join Sync Folder is a button. TextMouth Sync is the folder's name and is not translated.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A folder named TextMouth Sync is already there. To use it, choose Join Sync Folder."
+          }
+        }
+      }
+    },
+    "sync.joinHint" : {
+      "comment" : "VoiceOver hint of the Join Sync Folder button. TextMouth Sync is the folder's name and is not translated.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chooses the TextMouth Sync folder that another device set up."
+          }
+        }
+      }
+    },
+    "sync.joinTitle" : {
+      "comment" : "Title of the button that chooses a sync folder another device already made. Title case; the ellipsis means a folder chooser opens.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Join Sync Folder…"
+          }
+        }
+      }
+    },
+    "sync.lastHeard" : {
+      "comment" : "A line of the Sync status. The first %@ names a device, such as \"iPhone\", and the second is a time written by the system, such as \"9:40 AM\".",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last heard from %@ at %@."
+          }
+        }
+      }
+    },
+    "sync.libraryNotLocal" : {
+      "comment" : "Shown when syncing is refused because the library is kept in a cloud folder. Change Location is a button of the Storage settings.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sync is for a library kept on this Mac. Move this one here with Change Location first."
+          }
+        }
+      }
+    },
+    "sync.notASyncFolder" : {
+      "comment" : "Shown when the folder chosen to join is not a TextMouth Sync folder, or its files have not arrived from iCloud Drive yet.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "That isn't a TextMouth Sync folder, or its files haven't arrived from iCloud Drive yet."
+          }
+        }
+      }
+    },
+    "sync.notInICloudDrive" : {
+      "comment" : "Shown when the person chose a folder that is not in iCloud Drive for syncing.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "That folder isn't in iCloud Drive. Choose a folder in iCloud Drive."
+          }
+        }
+      }
+    },
+    "sync.sectionSummary" : {
+      "comment" : "Explains the Sync section: the library stays the same on the Mac and the iPhone, through iCloud Drive.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keeps your books, places, and bookmarks the same on your Mac and iPhone, through iCloud Drive."
+          }
+        }
+      }
+    },
+    "sync.sectionTitle" : {
+      "comment" : "Heading of the settings section for syncing the library between devices, and the name of the feature. Title case.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sync"
+          }
+        }
+      }
+    },
+    "sync.setUpHint" : {
+      "comment" : "VoiceOver hint of the Set Up Sync button. TextMouth Sync is the folder's name and is not translated.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Makes a folder named TextMouth Sync in the iCloud Drive folder you choose, and copies your books into it."
+          }
+        }
+      }
+    },
+    "sync.setUpTitle" : {
+      "comment" : "Title of the button that makes a new sync folder. Title case; the ellipsis means a folder chooser opens.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Set Up Sync…"
+          }
+        }
+      }
+    },
+    "sync.status.folderMissing" : {
+      "comment" : "The Sync status when the TextMouth Sync folder cannot be found. %@ names the device (\"this Mac\" or \"this iPhone\"), whose library is unchanged. TextMouth Sync is the folder's name and is not translated.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "TextMouth can't find the TextMouth Sync folder in iCloud Drive. It may have been moved or deleted, or iCloud Drive signed out. Your library on %@ is as it was."
+          }
+        }
+      }
+    },
+    "sync.status.laterVersion" : {
+      "comment" : "The Sync status when a newer TextMouth made the sync folder, so this one cannot use it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A later TextMouth made this sync folder. Update TextMouth to use it."
+          }
+        }
+      }
+    },
+    "sync.status.notDownloaded" : {
+      "comment" : "The Sync status when changes another device made have not yet downloaded from iCloud Drive.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Some changes from iPhone haven't downloaded yet. TextMouth will try again."
+          }
+        }
+      }
+    },
+    "sync.status.off" : {
+      "comment" : "The Sync status when syncing is not set up.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sync is off."
+          }
+        }
+      }
+    },
+    "sync.status.offline" : {
+      "comment" : "The Sync status with no network. A plural line. %lld is how many changes wait, and %@ names the device (\"this Mac\" or \"this iPhone\"), which sends them.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Offline. %lld change waits on %@, and will be sent when the network is back."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Offline. %lld changes wait on %@, and will be sent when the network is back."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "sync.status.outOfSpace" : {
+      "comment" : "The Sync status when iCloud Drive is full. The first %@ is a phrase counting changes (\"3 changes\"), the second counts books (\"138 books\"), and the third names the device (\"this Mac\" or \"this iPhone\"), whose library is unchanged.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iCloud Drive is full, so %@ and %@ aren't uploaded. Your library on %@ is as it was."
+          }
+        }
+      }
+    },
+    "sync.status.syncing" : {
+      "comment" : "The Sync status while a sync runs. The ellipsis means it is not finished.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Syncing…"
+          }
+        }
+      }
+    },
+    "sync.status.upToDate" : {
+      "comment" : "The Sync status when everything is synced. %@ is the time of the last sync, written by the system, such as \"9:41 AM\".",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Up to date. Last synced at %@."
+          }
+        }
+      }
+    },
+    "sync.status.uploading" : {
+      "comment" : "The Sync status while iCloud Drive has not yet uploaded changes. A plural line. %lld is how many changes wait.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld change is waiting for iCloud Drive to upload it."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld changes are waiting for iCloud Drive to upload them."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "sync.stopQuestion" : {
+      "comment" : "The confirmation asked before syncing stops. \"This Mac\" names the device the person is using.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stop syncing this library? Nothing is deleted, on this Mac or in iCloud Drive."
+          }
+        }
+      }
+    },
+    "sync.stopTitle" : {
+      "comment" : "Title of the button that stops syncing this library. Title case; the ellipsis means a confirmation follows.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stop Syncing…"
+          }
+        }
+      }
+    },
+    "sync.syncNowTitle" : {
+      "comment" : "Title of the button and the Library menu command that syncs right now. Title case.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sync Now"
+          }
+        }
+      }
+    },
+    "sync.thisDevice.iPhone" : {
+      "comment" : "The device the person is using, in the middle of a sentence, on an iPhone.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "this iPhone"
+          }
+        }
+      }
+    },
+    "sync.thisDevice.mac" : {
+      "comment" : "The device the person is using, in the middle of a sentence, on a Mac.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "this Mac"
+          }
+        }
+      }
+    },
+    "sync.waitingForFiles" : {
+      "comment" : "Said while joining waits for the sync folder's files to arrive from iCloud Drive.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting for the sync folder's files to arrive from iCloud Drive."
+          }
+        }
+      }
+    },
     "textEncoding.automaticNote" : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What Automatic does, as the alert says it before it is chosen.",
       "extractionState" : "manual",
