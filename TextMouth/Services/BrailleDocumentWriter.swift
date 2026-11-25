@@ -32,9 +32,10 @@ struct BrailleExportOptions: TextExportOptions {
     /// the setting, or a test's bound table) and the braille file characters
     /// the Braille tab chose (`BraillePreferences.importFileCode()`: the
     /// setting, or a test's bound code; North American Braille ASCII for an
-    /// id that names no code). One of this Mac's tables that this Mac does
-    /// not offer (gone, or a bundled table's twin), or that its check refused
-    /// this session, is replaced by the default table, so the pop-ups show
+    /// id that names no code). A table the export cannot start from
+    /// (`isUnusableMacTable(_:)`: on the Mac one of its own that it does not
+    /// offer, or that its check refused this session; on the iPhone one no
+    /// export list has) is replaced by the default table, so the pop-ups show
     /// what the export will use (review R4); the braille file characters are
     /// kept either way.
     static func standard() -> BrailleExportOptions {
@@ -44,13 +45,21 @@ struct BrailleExportOptions: TextExportOptions {
         return BrailleExportOptions(table: BrailleTableCatalog.defaultTableID, fileCode: fileCode, replacedTable: setting)
     }
 
-    /// Whether `table` is one of this Mac's tables that an export cannot
-    /// start from: not offered, or refused by a check that lasts the session.
+    /// Whether `table`, the Braille setting's, is one an export cannot start from. On the Mac, one of this Mac's tables that
+    /// it does not offer, or that a check refused for the session. On the iPhone, which has no folder of the Mac's tables,
+    /// one no export list has: the lookup the Braille code row makes (`BrailleTableCatalog.listedID(forStored:)` among the
+    /// tables of `exportCodes`), so a `mac:` value of a table the pack has is kept, as FR40 reads it with the pack's table
+    /// of that name, and one the pack lacks is replaced, which the options say (`replacedTable`).
     static func isUnusableMacTable(_ table: String) -> Bool {
+        #if os(iOS)
+        let listed = BrailleTableCatalog.listedID(forStored: table)
+        return !BrailleTableCatalog.exportCodes.contains { code in code.tables.contains { $0.id == listed } }
+        #else
         guard BrailleTableCatalog.readsFromMacFolder(table) else { return false }
         guard BrailleTableCatalog.table(withID: table) != nil else { return true }
         if case .refused? = MacBrailleTableCheck.verdicts.verdict(for: table) { return true }
         return false
+        #endif
     }
 }
 
