@@ -640,6 +640,20 @@ struct LibraryCommands: Commands {
                 NotificationCenter.default.post(name: .stopKeepingOnThisMac, object: nil)
             }
 
+            // Keeps the selected books on every device that syncs, or stops
+            // (FR43, section 16). Not in the menu until a sync folder is set
+            // up; it has no key, and the key Library window acts on its
+            // selection.
+            if sync.status.isOn {
+                Button(SyncWording.keepTitle) {
+                    NotificationCenter.default.post(name: .keepOnAllDevices, object: nil)
+                }
+
+                Button(SyncWording.stopKeepingTitle) {
+                    NotificationCenter.default.post(name: .stopKeepingOnAllDevices, object: nil)
+                }
+            }
+
             Divider()
 
             // "Remove from Library..." when it asks first; with confirmation
@@ -1088,6 +1102,12 @@ extension Notification.Name {
     /// Posted by Library > Stop Keeping on This Mac: the key Library window
     /// stops keeping its selected books on this Mac.
     static let stopKeepingOnThisMac = Notification.Name("stopKeepingOnThisMac")
+    /// Posted by Library > Keep on All Devices: the key Library window keeps
+    /// its selected books on every device that syncs (FR43).
+    static let keepOnAllDevices = Notification.Name("keepOnAllDevices")
+    /// Posted by Library > Stop Keeping on All Devices: the key Library
+    /// window stops keeping its selected books on all devices (FR43).
+    static let stopKeepingOnAllDevices = Notification.Name("stopKeepingOnAllDevices")
     static let showHeadingList = Notification.Name("showHeadingList")
     static let showBookmarkList = Notification.Name("showBookmarkList")
     static let showSleepTimer = Notification.Name("showSleepTimer")

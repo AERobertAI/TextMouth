@@ -358,6 +358,22 @@ final class SyncLibraryHostTests: XCTestCase {
         XCTAssertEqual(states.state(of: downloading), .downloading(progress))
     }
 
+    /// In a synced library that is not in a cloud folder, the cloud
+    /// refresher's call leaves the kept books alone: only a sync's own call
+    /// (`afterSync`), which has checked the network, downloads them.
+    func testTheRefreshersCallDoesNotDownloadInASyncedLibrary() {
+        let model = LibraryViewModel(initializeServices: false)
+        let book = makeBook("Kept And Away")
+        model.library = Library(books: [book])
+        let states = BookCloudStates()
+        states.setSyncIsOn(true)
+        states.record(.inCloud, for: book.id)
+        let kept = KeptBooks(file: nil)
+        kept.setSyncedBooks([book.id])
+        let commands = LibraryCloudCommands(states: states, kept: kept)
+        XCTAssertNil(commands.downloadEvictedKeptBooks(in: model))
+    }
+
     /// The books kept on all devices are kept on this Mac too, and the
     /// listener's own keep is a different choice.
     func testSyncedBooksAreKept() {

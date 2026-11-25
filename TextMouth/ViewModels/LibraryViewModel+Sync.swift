@@ -358,6 +358,11 @@ extension LibraryViewModel: SyncLibraryHost {
     /// and, where the network allows (`mayDownload`: a path that is neither
     /// expensive nor constrained), downloads those evicted.
     ///
+    /// `mayDownload` is the network check of the kept books' downloads in a
+    /// synced library: `downloadEvictedKeptBooks` downloads there only when
+    /// called from here (`afterSync`), and the cloud refresher's own call
+    /// leaves such a library alone.
+    ///
     /// Each placeholder's state is recorded as In Cloud first, so the rows
     /// say so and the kept books' downloads find them: the cloud refresher
     /// runs only while a Mac Library window is open, so a sync does this
@@ -374,7 +379,7 @@ extension LibraryViewModel: SyncLibraryHost {
             }
             Self.recordInCloud(placeholders)
             if mayDownload {
-                cloudCommands.downloadEvictedKeptBooks(in: self)
+                cloudCommands.downloadEvictedKeptBooks(in: self, afterSync: true)
             }
         }
     }

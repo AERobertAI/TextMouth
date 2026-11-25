@@ -746,7 +746,12 @@ final class LibraryCloudCommands {
     /// - Returns: The task running the downloads, which tests await; nil
     ///   when no kept book needed downloading.
     @discardableResult
-    func downloadEvictedKeptBooks(in library: LibraryViewModel) -> Task<Void, Never>? {
+    func downloadEvictedKeptBooks(in library: LibraryViewModel, afterSync: Bool = false) -> Task<Void, Never>? {
+        // In a library that is not in a cloud folder, only the call a sync
+        // makes downloads (`LibraryViewModel.syncDidApply`), once it has found
+        // the network allows it; the cloud refresher's own call, which knows
+        // nothing of the network's cost, leaves a synced library alone.
+        guard states.isCloudLibrary || afterSync else { return nil }
         guard states.showsCloudNotes, kept.keepsAnyBook else { return nil }
         let time = now()
         let evicted = library.library.books.filter { book in
