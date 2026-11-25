@@ -231,6 +231,10 @@ final class BrailleTablePrintOnlyTests: XCTestCase {
         try write("fixture-chardefs.uti", "# Characters only: no header of a table.\ndisplay 1 123456\n")
         try write("fixture-other-a.ctb", "#+type:literary\n#+display-name:Fixture A\n#+language:de\n")
         try write("fixture-other-b.ctb", "#+type:literary\n#+display-name:Fixture B\n#+language:de\n")
+        // A wrapper of a file the folder lacks never loads (as Apple's is.tbl, whose include was left out), and one of a file
+        // it has does.
+        try write("fixture-wrapper-lacking.tbl", "#+type:literary\n#+display-name:Fixture lacking\n#+language:is\ninclude fixture-absent.cti\n")
+        try write("fixture-wrapper-whole.tbl", "#+type:literary\n#+display-name:Fixture whole\n#+language:fr\ninclude fixture-chardefs.uti\n")
 
         var reads: [String] = []
         func storable(_ value: String) -> String? {
@@ -244,6 +248,9 @@ final class BrailleTablePrintOnlyTests: XCTestCase {
         XCTAssertNil(storable("fixture-chardefs.uti"))
         XCTAssertNil(storable("fixture-gone.ctb"))
         XCTAssertEqual(reads, ["fixture-two-way.ctb", "fixture-print-only.ctb", "fixture-chardefs.uti"], "more than the named files were read")
+        XCTAssertNil(storable("fixture-wrapper-lacking.tbl"), "a wrapper of a file the folder lacks is kept")
+        XCTAssertEqual(storable("fixture-wrapper-whole.tbl"), "fixture-wrapper-whole.tbl")
+        XCTAssertEqual(reads.suffix(2), ["fixture-wrapper-lacking.tbl", "fixture-wrapper-whole.tbl"])
 
         reads = []
         for value in ["en-ueb-g2.ctb", "mac:fixture-two-way.ctb", "../fixture-two-way.ctb", ".fixture.ctb", "", "a,b.ctb"] {
@@ -358,6 +365,8 @@ final class BrailleTablePrintOnlyTests: XCTestCase {
         #endif
         XCTAssertEqual(BrailleTableCatalog.listedID(forStored: stored), listed)
         XCTAssertEqual(BrailleTableCatalog.listedID(forStored: listed), listed)
+        // A Mac's value for a table the app's own pack has is that bundled table, whichever platform: the twin the lists keep.
+        XCTAssertEqual(BrailleTableCatalog.listedID(forStored: "mac:en-ueb-g2.ctb"), "en-ueb-g2.ctb")
         for value in ["en-ueb-g2.ctb", "mac:no-such-table.ctb", "no-such-table.ctb", ""] {
             XCTAssertEqual(BrailleTableCatalog.listedID(forStored: value), value, "a value no list spells otherwise changed")
         }
@@ -404,5 +413,13 @@ final class BrailleTablePrintOnlyTests: XCTestCase {
         let writesOnly = "The chosen table only writes braille, so it is not offered for reading braille files; choose another."
         XCTAssertEqual(BrailleSettingsWording.source(ofStored: printOnly, codes: codes, macLiblouisVersion: nil), writesOnly)
         XCTAssertNotEqual(BrailleSettingsWording.source(ofStored: "en-ueb-g2.ctb", codes: codes, macLiblouisVersion: nil), writesOnly)
+        // The tab never says "built into TextMouth" of a bare value that no list has, such as one the app's pack lacks.
+        let unlisted = BrailleSettingsWording.source(ofStored: "no-such-table.ctb", codes: codes, macLiblouisVersion: nil)
+        XCTAssertFalse(unlisted.contains("built into TextMouth"), unlisted)
+        XCTAssertTrue(unlisted.contains("no-such-table.ctb"), unlisted)
+        // The Mac's value for a table the app's pack has reads as that table, built in, whatever platform shares it.
+        XCTAssertTrue(
+            BrailleSettingsWording.source(ofStored: "mac:en-ueb-g2.ctb", codes: codes, macLiblouisVersion: nil).contains("built into TextMouth")
+        )
     }
 }

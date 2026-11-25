@@ -568,8 +568,15 @@ enum BrailleTableCatalog {
             .compactMap { file in
                 table(at: file, source: source, release: release).map { (table: $0, includeOnly: includeOnlyTargets(ofTableAt: file)) }
             }
-            .filter { !requiresIncludes || ($0.includeOnly ?? []).allSatisfy(present.contains) }
+            .filter { !requiresIncludes || hasEveryInclude($0.includeOnly, present: present.contains) }
         return offered(from: found)
+    }
+
+    /// Whether every file a table that only includes others (`targets`, from `includeOnlyTargets(ofTableAt:)`; nil for any
+    /// other table, which is never judged by its includes) names is there, as `present` says: the rule that leaves out a
+    /// table that could never load, for the listing (`allTables(in:requiresIncludes:)`) and for `storableValue`.
+    private static func hasEveryInclude(_ targets: [String]?, present: (String) -> Bool) -> Bool {
+        (targets ?? []).allSatisfy(present)
     }
 
     /// The tables TextMouth offers among the files of `pack` (FR40), read from
@@ -851,18 +858,20 @@ enum BrailleTableCatalog {
     /// platform reads it correctly; the lists spell the same table differently:
     /// - on the Mac, a bare value its own pack lacks that VoiceOver's folder has, such as the `fr-bfu-g2.ctb` an iPhone stores,
     ///   is the list's `mac:fr-bfu-g2.ctb` (`readsFromMacFolder`);
-    /// - on the iPhone, a Mac's `mac:fr-bfu-g2.ctb` is the pack's bare `fr-bfu-g2.ctb` (`bundledID(forStored:)`);
+    /// - on the iPhone, a Mac's `mac:fr-bfu-g2.ctb` is the pack's bare `fr-bfu-g2.ctb` (`bundledID(forStored:)`), and on the Mac
+    ///   too, for a table its own pack has: `mac:en-ueb-g2.ctb` is the bundled `en-ueb-g2.ctb`, the twin the lists keep;
+    ///   a table the lists hide behind another for its words or its include (`ga.tbl`, `zh_HK.tbl`) is left as it is;
     /// - any other value is its own id.
     /// Never changes what is stored: use it to compare with the lists' ids, never to write a setting or a book.
     static func listedID(forStored value: String) -> String {
-        #if os(macOS)
         let (source, fileName) = BrailleTableSource.parse(value)
+        // A Mac's value for a table the app's own pack has, such as `mac:en-ueb-g2.ctb`, is that bundled table, the one the
+        // lists keep where the two are twins (`merged(bundled:mac:)`), on the iPhone as on the Mac.
+        if source == .mac, let bundled = bundledID(forStored: value) { return bundled }
+        #if os(macOS)
         if source == .bundled, readsFromMacFolder(value) { return BrailleTableSource.mac.storedValue(ofFile: fileName) }
-        return value
-        #else
-        guard BrailleTableSource.parse(value).source == .mac, let bundled = bundledID(forStored: value) else { return value }
-        return bundled
         #endif
+        return value
     }
 
     /// The value the setting and config.json keep for `value`: a bundled
@@ -877,9 +886,10 @@ enum BrailleTableCatalog {
     ///
     /// On the Mac a bare value its own pack lacks, such as the `fr-bfu-g2.ctb` an iPhone stores (FR32), is kept too when
     /// VoiceOver's folder has a file of that name whose header makes a table TextMouth offers, for reading or for export
-    /// (`table(fields:fileName:source:release:)`, the rule the listing applies to each file). A file of that folder that is
-    /// no table, such as an include like `en-ueb-chardefs.uti`, is refused. Only that one file's header is read (a read of
-    /// 4 KB), never the folder's: decoding runs on the main thread at every launch (review R3). What the listing alone
+    /// (`table(fields:fileName:source:release:)`, the rule the listing applies to each file), and that is not a wrapper of
+    /// files the folder lacks (`hasEveryInclude`, the listing's rule too). A file of that folder that is
+    /// no table, such as an include like `en-ueb-chardefs.uti`, is refused. Only that one file is read (its header, and a
+    /// short file's include lines), never the folder's: decoding runs on the main thread at every launch (review R3). What the listing alone
     /// judges, such as a table that only includes another, is left to `table(withID:)` when the value is used.
     /// - Parameters:
     ///   - folder: VoiceOver's folder, which a test replaces with its own.
@@ -896,6 +906,10 @@ enum BrailleTableCatalog {
         if BrailleTableSource.isMacValue(BrailleTableSource.mac.storedValue(ofFile: value)) {
             let file = folder.appendingPathComponent(value)
             if FileManager.default.fileExists(atPath: file.path),
+               // The include rule of the listing: a wrapper whose includes the folder lacks never loads, as Apple's `is.tbl`.
+               hasEveryInclude(includeOnlyTargets(ofTableAt: file), present: {
+                   FileManager.default.fileExists(atPath: folder.appendingPathComponent($0).path)
+               }),
                table(
                    fields: headerOf(file), fileName: value, source: .mac,
                    release: releaseDirections(

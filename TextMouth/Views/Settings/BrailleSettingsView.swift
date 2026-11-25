@@ -112,13 +112,14 @@ enum BrailleSettingsWording {
             // Translators: Under the pop-ups in the Braille tab of Settings: the table chosen earlier only writes braille from print, so it is not among the choices for reading. Choosing another is the way to change it.
             return InterfaceText.line("brailleSettings.source.writesOnly", "The chosen table only writes braille, so it is not offered for reading braille files; choose another.")
         }
-        guard BrailleTableSource.parse(tableID).source == .mac else {
-            // Translators: Under the pop-ups in the Braille tab of Settings: the chosen braille table comes with TextMouth. %@ is the version of liblouis, the braille library, written as a version number.
-            return InterfaceText.line("brailleSettings.source.built", "The chosen table is built into TextMouth (liblouis \(BrailleTableCatalog.bundledLiblouisVersion)).")
-        }
+        // A table the lists do not offer is never said to be built in: a bare value the app's own pack lacks is no table of it.
         guard isOffered else {
             // Translators: Under the pop-ups in the Braille tab of Settings: the chosen braille table of this Mac is gone. %@ is the table's stored name, "mac:" and its file name.
             return InterfaceText.line("brailleSettings.source.another", "This Mac no longer has the chosen table, \u{201C}\(tableID)\u{201D}; choose another.")
+        }
+        guard BrailleTableSource.parse(tableID).source == .mac else {
+            // Translators: Under the pop-ups in the Braille tab of Settings: the chosen braille table comes with TextMouth. %@ is the version of liblouis, the braille library, written as a version number.
+            return InterfaceText.line("brailleSettings.source.built", "The chosen table is built into TextMouth (liblouis \(BrailleTableCatalog.bundledLiblouisVersion)).")
         }
         guard let version = macLiblouisVersion else {
             // Translators: Under the pop-ups in the Braille tab of Settings: the chosen braille table is one of this Mac's.
