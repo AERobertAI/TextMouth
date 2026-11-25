@@ -60,7 +60,12 @@ struct StoreFetch: Sendable {
     /// match its name (it stays in staging, never in the package), `.anotherStore` for a
     /// pointer of another store. A cancelled task stops between files; what was moved in stays, and
     /// the pointer says so, so the next fetch goes on from there.
-    func fetch(package: URL, progress: @Sendable (_ completedFiles: Int, _ completedBytes: Int64) -> Void = { _, _ in }) async throws {
+    ///
+    /// Every file is written at its manifest `path`, so the book's content has the name it had where it was
+    /// backed up. Returns that content file's path (the first `content` file of the manifest, by path), which
+    /// the host sets as the row's `filePath` (`SyncLibraryHost.syncDidFetch`).
+    @discardableResult
+    func fetch(package: URL, progress: @Sendable (_ completedFiles: Int, _ completedBytes: Int64) -> Void = { _, _ in }) async throws -> String? {
         guard var pointer = Self.pointer(in: package) else { throw SyncProblem.notASyncFolder }
         if pointer.storeID != storeID { throw SyncProblem.anotherStore }
         let bookFolder = folder.bookFolder(pointer.bookID)
