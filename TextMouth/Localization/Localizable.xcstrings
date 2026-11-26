@@ -123914,7 +123914,7 @@
       }
     },
     "common.countDays" : {
-      "comment" : "A count of days in a row, the Stats pane's current listening streak, such as \"3 days\". %lld is the number of days.\nA number of days, as the audio editor's original audio is kept for them. %lld is the number of days.\nA number of days, as the setting that deletes downloads after playing says it. %lld is the number of days.",
+      "comment" : "A count of days in a row, the Stats pane's current listening streak, such as \"3 days\". %lld is the number of days.\nA number of days, as the audio editor's original audio is kept for them. %lld is the number of days.\nA number of days, as the setting that deletes downloads after playing says it. %lld is the number of days.\nA number of days, as the setting that removes unopened books' downloads says it. %lld is the number of days.",
       "extractionState" : "manual",
       "localizations" : {
         "ar" : {
@@ -137846,7 +137846,7 @@
       }
     },
     "common.off" : {
-      "comment" : "The word for a setting that is turned off, as a slider's or stepper's value says it, such as the sleep timer's fade out.\nVoiceOver value of the iPhone reader's Sleep Timer button while no sleep timer runs.",
+      "comment" : "A setting that is turned off.\nThe word for a setting that is turned off, as a slider's or stepper's value says it, such as the sleep timer's fade out.\nVoiceOver value of the iPhone reader's Sleep Timer button while no sleep timer runs.",
       "extractionState" : "manual",
       "localizations" : {
         "ar" : {
@@ -722281,6 +722281,162 @@
         }
       }
     },
+    "sync.announce.removedUnopened" : {
+      "comment" : "Said aloud once after a sync removed downloads of books not opened for some days. %1$@ is a count of books, such as \"3 books\"; %2$@ is a count of days, such as \"7 days\".",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "أُزيلت تنزيلات %1$@ التي لم تفتحها خلال %2$@؛ وتبقى في iCloud Drive."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%2$@ ধরে না খোলা %1$@-এর ডাউনলোড সরানো হয়েছে; সেগুলো iCloud Drive-এ থাকছে।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Die Downloads von %1$@, die du seit %2$@ nicht geöffnet hast, wurden entfernt; sie bleiben in iCloud Drive."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Removed the downloads of %@ you hadn't opened in %@; they stay in iCloud Drive."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Se quitaron las descargas de %1$@ que no habías abierto en %2$@; siguen en iCloud Drive."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "بارگیری %1$@ که %2$@ باز نشده بودند برداشته شد؛ آن‌ها در iCloud Drive می‌مانند."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Les téléchargements de %1$@ non ouverts depuis %2$@ ont été retirés ; ils restent dans iCloud Drive."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הורדות של %1$@ שלא נפתחו במשך %2$@ הוסרו; הן נשארות ב-iCloud Drive."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%2$@ से न खोली गई %1$@ के डाउनलोड हटाए गए; वे iCloud Drive में बने रहते हैं।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Unduhan %1$@ yang tidak dibuka selama %2$@ dibuang; buku-buku itu tetap ada di iCloud Drive."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Rimossi i download di %1$@ non aperti da %2$@; restano in iCloud Drive."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%2$@以上開かれていない%1$@のダウンロードを取り除きました。iCloud Drive には残っています。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%2$@ 동안 열지 않은 %1$@의 다운로드를 제거했습니다. iCloud Drive에는 남아 있습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "De downloads van %1$@ die je %2$@ niet hebt geopend, zijn verwijderd; ze blijven in iCloud Drive."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Usunięto pobrane pliki dla %1$@, których nie otwierano przez %2$@; pozostają w iCloud Drive."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Foram removidos os downloads de %1$@ não abertos há %2$@; eles continuam no iCloud Drive."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Убраны загрузки (%1$@), которые вы не открывали %2$@; они остаются в iCloud Drive."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nedladdningarna av %1$@ som du inte har öppnat på %2$@ har tagits bort; de finns kvar i iCloud Drive."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "นำการดาวน์โหลดของ %1$@ ที่ไม่ได้เปิดมา %2$@ ออกแล้ว หนังสือยังอยู่ใน iCloud Drive"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%2$@ boyunca açılmayan %1$@ için indirilen kopyalar kaldırıldı; kitaplar iCloud Drive'da duruyor."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Вилучено завантаження (%1$@), які ви не відкривали %2$@; вони залишаються в iCloud Drive."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "جو %1$@ %2$@ سے نہیں کھولی گئیں، ان کے ڈاؤن لوڈ ہٹا دیے گئے؛ وہ iCloud Drive میں رہتی ہیں۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Đã gỡ bản tải về của %1$@ không mở trong %2$@; chúng vẫn ở trong iCloud Drive."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "已移除 %2$@ 内未打开的 %1$@ 的下载内容；它们仍保留在 iCloud Drive 中。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "已移除 %2$@ 內未打開的 %1$@ 的下載項目；它們仍保留在 iCloud Drive 中。"
+          }
+        }
+      }
+    },
     "sync.announce.stoppedKeeping" : {
       "comment" : "Said aloud after the person chooses Stop Keeping on All Devices. %@ is the book's title.",
       "extractionState" : "manual",
@@ -723909,6 +724065,942 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "sync.booksOnDevice.all" : {
+      "comment" : "Choice of the Books on this device setting: this device downloads every book.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "كل الكتب"
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সব বই"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Alle Bücher"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All books"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Todos los libros"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "همه کتاب‌ها"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tous les livres"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "כל הספרים"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "सभी पुस्तकें"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Semua buku"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tutti i libri"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "すべてのブック"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "모든 책"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Alle boeken"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Wszystkie książki"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Todos os livros"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Все книги"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Alla böcker"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "หนังสือทั้งหมด"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tüm kitaplar"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Усі книги"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تمام کتابیں"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tất cả sách"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "所有图书"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "所有書籍"
+          }
+        }
+      }
+    },
+    "sync.booksOnDevice.announce.all" : {
+      "comment" : "Said aloud after the person chose All books for this device. Books this device lacks download after the next sync.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "كل الكتب. الكتب غير الموجودة هنا تُنزَّل بعد المزامنة التالية."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সব বই। যে বইগুলো এখানে নেই, পরের সিঙ্কের পর সেগুলো ডাউনলোড হবে।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Alle Bücher. Fehlende Bücher werden nach der nächsten Synchronisierung heruntergeladen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All books. Books missing here download after the next sync."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Todos los libros. Los libros que faltan aquí se descargan después de la próxima sincronización."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "همه کتاب‌ها. کتاب‌هایی که اینجا نیستند، پس از همگام‌سازی بعدی بارگیری می‌شوند."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tous les livres. Les livres absents ici sont téléchargés après la prochaine synchronisation."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "כל הספרים. ספרים שחסרים כאן יורדו לאחר הסנכרון הבא."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "सभी पुस्तकें। यहाँ जो पुस्तकें नहीं हैं, वे अगले सिंक के बाद डाउनलोड होंगी।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Semua buku. Buku yang belum ada di sini diunduh setelah sinkronisasi berikutnya."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tutti i libri. I libri mancanti qui vengono scaricati dopo la prossima sincronizzazione."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "すべてのブック。このデバイスにないブックは、次の同期のあとにダウンロードされます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "모든 책. 이 기기에 없는 책은 다음 동기화 후 다운로드됩니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Alle boeken. Boeken die hier ontbreken, worden na de volgende synchronisatie gedownload."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Wszystkie książki. Książki, których tu brakuje, zostaną pobrane po następnej synchronizacji."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Todos os livros. Os livros que faltam aqui são baixados após a próxima sincronização."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Все книги. Недостающие здесь книги загрузятся после следующей синхронизации."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Alla böcker. Böcker som saknas här laddas ned efter nästa synkronisering."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "หนังสือทั้งหมด หนังสือที่ยังไม่มีในเครื่องนี้จะดาวน์โหลดหลังการซิงค์ครั้งถัดไป"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tüm kitaplar. Burada olmayan kitaplar bir sonraki eşzamanlamadan sonra indirilir."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Усі книги. Книги, яких тут немає, завантажаться після наступної синхронізації."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تمام کتابیں۔ جو کتابیں یہاں موجود نہیں، وہ اگلے سنک کے بعد ڈاؤن لوڈ ہوں گی۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tất cả sách. Những sách chưa có ở đây sẽ được tải về sau lần đồng bộ tiếp theo."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "所有图书。此设备上缺少的图书会在下次同步后下载。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "所有書籍。此裝置上缺少的書籍會在下次同步後下載。"
+          }
+        }
+      }
+    },
+    "sync.booksOnDevice.announce.openedOrKept" : {
+      "comment" : "Said aloud after the person chose Books you open or keep for this device. No download is removed at once.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "الكتب التي تفتحها أو تحتفظ بها. لا يُزال شيء الآن."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "আপনি যে বই খোলেন বা রাখেন। এখন কিছুই সরানো হবে না।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bücher, die du öffnest oder behältst. Es wird jetzt nichts entfernt."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Books you open or keep. Nothing is removed now."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Libros que abres o mantienes. Ahora no se quita nada."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "کتاب‌هایی که باز می‌کنید یا نگه می‌دارید. اکنون چیزی برداشته نمی‌شود."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Livres que vous ouvrez ou conservez. Rien n’est retiré maintenant."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ספרים שאתה פותח או שומר. שום דבר לא יוסר עכשיו."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "वे पुस्तकें जो आप खोलते या रखते हैं। अभी कुछ नहीं हटाया जाता।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Buku yang Anda buka atau simpan. Tidak ada yang dibuang sekarang."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Libri che apri o mantieni. Per ora non viene rimosso nulla."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "開くか保持するブック。今は何も取り除きません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "열거나 보관하는 책. 지금은 아무것도 제거되지 않습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Boeken die je opent of bewaart. Er wordt nu niets verwijderd."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Książki, które otwierasz lub zachowujesz. Teraz nic nie jest usuwane."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Livros que você abre ou mantém. Nada é removido agora."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Книги, которые вы открываете или храните. Сейчас ничего не убирается."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Böcker du öppnar eller behåller. Inget tas bort nu."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "หนังสือที่คุณเปิดหรือเก็บไว้ ตอนนี้ยังไม่นำสิ่งใดออก"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Açtığınız veya tuttuğunuz kitaplar. Şu an hiçbir şey kaldırılmaz."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Книги, які ви відкриваєте або зберігаєте. Зараз нічого не вилучається."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "وہ کتابیں جو آپ کھولتے یا رکھتے ہیں۔ ابھی کچھ نہیں ہٹایا جاتا۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sách bạn mở hoặc giữ. Hiện chưa gỡ gì cả."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "你打开或保留的图书。现在不会移除任何内容。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "你打開或保留的書籍。現在不會移除任何項目。"
+          }
+        }
+      }
+    },
+    "sync.booksOnDevice.hint" : {
+      "comment" : "VoiceOver hint of the Books on this device setting.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يحدد ما إذا كان هذا الجهاز يُنزّل كل الكتب أو الكتب التي تفتحها أو تحتفظ بها فقط."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই ডিভাইস সব বই ডাউনলোড করবে, নাকি শুধু আপনি যে বই খোলেন বা রাখেন, তা বেছে নেয়।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Legt fest, ob dieses Gerät alle Bücher herunterlädt oder nur die, die du öffnest oder behältst."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chooses whether this device downloads every book, or only the books you open or keep."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Elige si este dispositivo descarga todos los libros o solo los que abres o mantienes."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "مشخص می‌کند این دستگاه همه کتاب‌ها را بارگیری کند یا فقط کتاب‌هایی را که باز می‌کنید یا نگه می‌دارید."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Choisit si cet appareil télécharge tous les livres ou seulement ceux que vous ouvrez ou conservez."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "קובע אם המכשיר הזה מוריד את כל הספרים, או רק את הספרים שאתה פותח או שומר."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "चुनता है कि यह डिवाइस सभी पुस्तकें डाउनलोड करे या केवल वे जिन्हें आप खोलते या रखते हैं।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Memilih apakah perangkat ini mengunduh semua buku atau hanya buku yang Anda buka atau simpan."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sceglie se questo dispositivo scarica tutti i libri o solo quelli che apri o mantieni."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "このデバイスですべてのブックをダウンロードするか、開くか保持するブックだけをダウンロードするかを選びます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이 기기에서 모든 책을 다운로드할지, 열거나 보관하는 책만 다운로드할지 선택합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kiest of dit apparaat alle boeken downloadt, of alleen de boeken die je opent of bewaart."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Wybiera, czy to urządzenie pobiera wszystkie książki, czy tylko te, które otwierasz lub zachowujesz."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Escolhe se este dispositivo baixa todos os livros ou apenas os que você abre ou mantém."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Выбирает, загружает ли это устройство все книги или только те, которые вы открываете или храните."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Väljer om den här enheten laddar ned alla böcker eller bara de böcker du öppnar eller behåller."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เลือกว่าอุปกรณ์เครื่องนี้จะดาวน์โหลดหนังสือทั้งหมด หรือเฉพาะหนังสือที่คุณเปิดหรือเก็บไว้"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bu aygıtın tüm kitapları mı, yoksa yalnızca açtığınız veya tuttuğunuz kitapları mı indireceğini seçer."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Визначає, чи завантажує цей пристрій усі книги, чи лише ті, які ви відкриваєте або зберігаєте."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "طے کرتا ہے کہ یہ آلہ تمام کتابیں ڈاؤن لوڈ کرے یا صرف وہ جو آپ کھولتے یا رکھتے ہیں۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Chọn việc thiết bị này tải về mọi sách hay chỉ những sách bạn mở hoặc giữ."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "选择此设备是下载所有图书，还是只下载你打开或保留的图书。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "選擇此裝置是下載所有書籍，還是只下載你打開或保留的書籍。"
+          }
+        }
+      }
+    },
+    "sync.booksOnDevice.label" : {
+      "comment" : "Label of the Sync setting that chooses which books this device keeps downloaded. The two choices follow it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "الكتب على هذا الجهاز"
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই ডিভাইসের বই"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bücher auf diesem Gerät"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Books on this device"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Libros en este dispositivo"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "کتاب‌ها در این دستگاه"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Livres sur cet appareil"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ספרים במכשיר הזה"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "इस डिवाइस पर पुस्तकें"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Buku di perangkat ini"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Libri su questo dispositivo"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "このデバイスのブック"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이 기기의 책"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Boeken op dit apparaat"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Książki na tym urządzeniu"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Livros neste dispositivo"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Книги на этом устройстве"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Böcker på den här enheten"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "หนังสือบนอุปกรณ์เครื่องนี้"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bu aygıttaki kitaplar"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Книги на цьому пристрої"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اس آلے پر کتابیں"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sách trên thiết bị này"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "此设备上的图书"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "此裝置上的書籍"
+          }
+        }
+      }
+    },
+    "sync.booksOnDevice.openedOrKept" : {
+      "comment" : "Choice of the Books on this device setting: this device downloads only the books the person opens or keeps.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "الكتب التي تفتحها أو تحتفظ بها"
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "আপনি যে বই খোলেন বা রাখেন"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bücher, die du öffnest oder behältst"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Books you open or keep"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Libros que abres o mantienes"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "کتاب‌هایی که باز می‌کنید یا نگه می‌دارید"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Livres que vous ouvrez ou conservez"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ספרים שאתה פותח או שומר"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "वे पुस्तकें जो आप खोलते या रखते हैं"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Buku yang Anda buka atau simpan"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Libri che apri o mantieni"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "開くか保持するブック"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "열거나 보관하는 책"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Boeken die je opent of bewaart"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Książki, które otwierasz lub zachowujesz"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Livros que você abre ou mantém"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Книги, которые вы открываете или храните"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Böcker du öppnar eller behåller"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "หนังสือที่คุณเปิดหรือเก็บไว้"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Açtığınız veya tuttuğunuz kitaplar"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Книги, які ви відкриваєте або зберігаєте"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "وہ کتابیں جو آپ کھولتے یا رکھتے ہیں"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sách bạn mở hoặc giữ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "你打开或保留的图书"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "你打開或保留的書籍"
           }
         }
       }
@@ -726949,6 +728041,2190 @@
         }
       }
     },
+    "sync.remove.changedHere" : {
+      "comment" : "Why Remove Download left a book's files on this device: the book was changed here since it was copied to iCloud Drive.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "في هذا الكتاب تغييرات لا يملكها iCloud Drive بعد، لذا يبقى تنزيله."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই বইয়ে এমন পরিবর্তন আছে যা iCloud Drive-এ এখনো নেই, তাই এর ডাউনলোড থেকে যাচ্ছে।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Dieses Buch hat Änderungen, die iCloud Drive noch nicht hat; daher bleibt sein Download."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This book has changes that iCloud Drive doesn't hold yet, so its download stays."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Este libro tiene cambios que iCloud Drive aún no tiene, así que su descarga se queda."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "این کتاب تغییراتی دارد که هنوز در iCloud Drive نیست، بنابراین بارگیری آن می‌ماند."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ce livre a des modifications qu’iCloud Drive n’a pas encore ; son téléchargement reste donc."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "בספר הזה יש שינויים ש-iCloud Drive עדיין אין לו, ולכן ההורדה שלו נשארת."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "इस पुस्तक में ऐसे बदलाव हैं जो iCloud Drive में अभी नहीं हैं, इसलिए इसका डाउनलोड बना रहता है।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Buku ini punya perubahan yang belum ada di iCloud Drive, jadi unduhannya tetap ada."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Questo libro ha modifiche che iCloud Drive non ha ancora, quindi il suo download resta."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "このブックには iCloud Drive にまだない変更があるため、ダウンロードは残ります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이 책에는 iCloud Drive에 아직 없는 변경 사항이 있어 다운로드가 그대로 남습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Dit boek heeft wijzigingen die iCloud Drive nog niet heeft, dus de download blijft staan."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ta książka ma zmiany, których iCloud Drive jeszcze nie ma, więc jej pobrany plik pozostaje."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Este livro tem alterações que o iCloud Drive ainda não tem; por isso, o download dele continua."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "В этой книге есть изменения, которых ещё нет в iCloud Drive, поэтому её загрузка остаётся."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Boken har ändringar som iCloud Drive ännu inte har, så nedladdningen finns kvar."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "หนังสือเล่มนี้มีการเปลี่ยนแปลงที่ iCloud Drive ยังไม่มี จึงเก็บการดาวน์โหลดไว้"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bu kitapta iCloud Drive'da henüz olmayan değişiklikler var; bu yüzden indirilen kopya kalıyor."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "У цій книзі є зміни, яких ще немає в iCloud Drive, тому її завантаження залишається."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اس کتاب میں ایسی تبدیلیاں ہیں جو iCloud Drive میں ابھی نہیں ہیں، اس لیے اس کا ڈاؤن لوڈ رہتا ہے۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sách này có thay đổi mà iCloud Drive chưa có, nên bản tải về được giữ lại."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "这本图书有 iCloud Drive 尚未保存的更改，因此保留其下载内容。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "這本書有 iCloud Drive 尚未保存的更動，因此保留其下載項目。"
+          }
+        }
+      }
+    },
+    "sync.remove.couldNotRemove" : {
+      "comment" : "Why Remove Download failed: a file could not be taken off the device.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تعذّر على TextMouth إزالة كل ملفات هذا الكتاب."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth এই বইয়ের সব ফাইল সরাতে পারেনি।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth konnte nicht alle Dateien dieses Buchs entfernen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "TextMouth couldn't remove all of this book's files."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth no pudo quitar todos los archivos de este libro."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth نتوانست همهٔ فایل‌های این کتاب را بردارد."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth n’a pas pu retirer tous les fichiers de ce livre."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth לא הצליח להסיר את כל הקבצים של הספר הזה."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth इस पुस्तक की सभी फ़ाइलें नहीं हटा सका।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth tidak dapat membuang semua berkas buku ini."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth non è riuscito a rimuovere tutti i file di questo libro."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth はこのブックのすべてのファイルを取り除けませんでした。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth가 이 책의 파일을 모두 제거하지 못했습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth kon niet alle bestanden van dit boek verwijderen."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth nie mógł usunąć wszystkich plików tej książki."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth não conseguiu remover todos os arquivos deste livro."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth не смог убрать все файлы этой книги."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth kunde inte ta bort alla filer för den här boken."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth นำไฟล์ทั้งหมดของหนังสือเล่มนี้ออกไม่ได้"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth bu kitabın tüm dosyalarını kaldıramadı."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth не зміг вилучити всі файли цієї книги."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth اس کتاب کی تمام فائلیں نہیں ہٹا سکا۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth không gỡ được hết các tệp của sách này."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 未能移除这本图书的所有文件。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 未能移除這本書的所有檔案。"
+          }
+        }
+      }
+    },
+    "sync.remove.doesNotMatch" : {
+      "comment" : "Why Remove Download left a book's files on this device: what iCloud Drive sent back is not the book.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "النسخة في iCloud Drive لا تطابق هذا الكتاب، لذا يبقى تنزيله."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive-এর কপি এই বইয়ের সঙ্গে মেলে না, তাই এর ডাউনলোড থেকে যাচ্ছে।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Die Kopie in iCloud Drive passt nicht zu diesem Buch; daher bleibt sein Download."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The copy in iCloud Drive doesn't match this book, so its download stays."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La copia de iCloud Drive no coincide con este libro, así que su descarga se queda."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "نسخهٔ iCloud Drive با این کتاب مطابقت ندارد، بنابراین بارگیری آن می‌ماند."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La copie dans iCloud Drive ne correspond pas à ce livre ; son téléchargement reste donc."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "העותק ב-iCloud Drive אינו תואם לספר הזה, ולכן ההורדה שלו נשארת."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive में मौजूद प्रति इस पुस्तक से मेल नहीं खाती, इसलिए इसका डाउनलोड बना रहता है।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Salinan di iCloud Drive tidak cocok dengan buku ini, jadi unduhannya tetap ada."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La copia in iCloud Drive non corrisponde a questo libro, quindi il suo download resta."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive のコピーがこのブックと一致しないため、ダウンロードは残ります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive의 사본이 이 책과 일치하지 않아 다운로드가 그대로 남습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "De kopie in iCloud Drive komt niet overeen met dit boek, dus de download blijft staan."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kopia w iCloud Drive nie zgadza się z tą książką, więc jej pobrany plik pozostaje."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "A cópia no iCloud Drive não corresponde a este livro; por isso, o download dele continua."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Копия в iCloud Drive не совпадает с этой книгой, поэтому её загрузка остаётся."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kopian i iCloud Drive stämmer inte med boken, så nedladdningen finns kvar."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "สำเนาใน iCloud Drive ไม่ตรงกับหนังสือเล่มนี้ จึงเก็บการดาวน์โหลดไว้"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive'daki kopya bu kitapla eşleşmiyor; bu yüzden indirilen kopya kalıyor."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Копія в iCloud Drive не збігається з цією книгою, тому її завантаження залишається."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive میں موجود کاپی اس کتاب سے مطابقت نہیں رکھتی، اس لیے اس کا ڈاؤن لوڈ رہتا ہے۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bản sao trong iCloud Drive không khớp với sách này, nên bản tải về được giữ lại."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive 中的副本与这本图书不一致，因此保留其下载内容。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive 中的副本與這本書不一致，因此保留其下載項目。"
+          }
+        }
+      }
+    },
+    "sync.remove.hint" : {
+      "comment" : "VoiceOver hint of the Remove Download button in Book Information: it frees this book's space on this device.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يحرر المساحة التي يشغلها هذا الكتاب على هذا الجهاز. يبقى الكتاب في iCloud Drive."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই ডিভাইসে এই বইয়ের জায়গা খালি করে। বইটি iCloud Drive-এ থাকে।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Gibt den Platz dieses Buchs auf diesem Gerät frei. Das Buch bleibt in iCloud Drive."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Frees this book's space on this device. The book stays in iCloud Drive."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Libera el espacio de este libro en este dispositivo. El libro sigue en iCloud Drive."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "فضای این کتاب را در این دستگاه آزاد می‌کند. کتاب در iCloud Drive می‌ماند."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Libère l’espace de ce livre sur cet appareil. Le livre reste dans iCloud Drive."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "מפנה את המקום שהספר הזה תופס במכשיר הזה. הספר נשאר ב-iCloud Drive."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "इस डिवाइस पर इस पुस्तक की जगह खाली करता है। पुस्तक iCloud Drive में बनी रहती है।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mengosongkan ruang yang dipakai buku ini di perangkat ini. Buku tetap ada di iCloud Drive."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Libera lo spazio di questo libro su questo dispositivo. Il libro resta in iCloud Drive."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "このデバイスでこのブックが使っている容量を空けます。ブックは iCloud Drive に残ります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이 기기에서 이 책이 차지하는 공간을 확보합니다. 책은 iCloud Drive에 남아 있습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Maakt de ruimte van dit boek op dit apparaat vrij. Het boek blijft in iCloud Drive."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zwalnia miejsce zajmowane przez tę książkę na tym urządzeniu. Książka pozostaje w iCloud Drive."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Libera o espaço deste livro neste dispositivo. O livro continua no iCloud Drive."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Освобождает место, занятое этой книгой на этом устройстве. Книга остаётся в iCloud Drive."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Frigör utrymmet som boken tar på den här enheten. Boken finns kvar i iCloud Drive."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "คืนพื้นที่ที่หนังสือเล่มนี้ใช้บนอุปกรณ์เครื่องนี้ หนังสือยังอยู่ใน iCloud Drive"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bu kitabın bu aygıtta kapladığı yeri boşaltır. Kitap iCloud Drive'da kalır."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Звільняє місце, яке ця книга займає на цьому пристрої. Книга залишається в iCloud Drive."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اس آلے پر اس کتاب کی جگہ خالی کرتا ہے۔ کتاب iCloud Drive میں رہتی ہے۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Giải phóng dung lượng sách này chiếm trên thiết bị này. Sách vẫn ở trong iCloud Drive."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "释放这本图书在此设备上占用的空间。这本图书仍保留在 iCloud Drive 中。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "釋放這本書在此裝置上佔用的空間。這本書仍保留在 iCloud Drive 中。"
+          }
+        }
+      }
+    },
+    "sync.remove.inUse" : {
+      "comment" : "Why Remove Download was refused: the book is being played, exported, transcribed, or edited.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "الكتاب قيد الاستخدام، لذا لا يمكن إزالة تنزيله."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বইটি ব্যবহার হচ্ছে, তাই এর ডাউনলোড সরানো যাবে না।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Das Buch wird verwendet, daher kann sein Download nicht entfernt werden."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The book is in use, so its download can't be removed."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El libro está en uso, así que no se puede quitar su descarga."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "کتاب در حال استفاده است، بنابراین بارگیری آن برداشته نمی‌شود."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Le livre est en cours d’utilisation ; son téléchargement ne peut donc pas être retiré."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הספר בשימוש, ולכן לא ניתן להסיר את ההורדה שלו."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "पुस्तक उपयोग में है, इसलिए उसका डाउनलोड नहीं हटाया जा सकता।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Buku sedang digunakan, jadi unduhannya tidak dapat dibuang."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Il libro è in uso, quindi il suo download non può essere rimosso."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ブックが使用中のため、ダウンロードを取り除けません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "책이 사용 중이므로 다운로드를 제거할 수 없습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Het boek is in gebruik, dus de download kan niet worden verwijderd."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Książka jest używana, więc nie można usunąć jej pobranego pliku."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "O livro está em uso; por isso, o download dele não pode ser removido."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Книга используется, поэтому её загрузку нельзя убрать."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Boken används, så nedladdningen kan inte tas bort."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "หนังสือกำลังใช้งานอยู่ จึงนำการดาวน์โหลดออกไม่ได้"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kitap kullanımda; bu yüzden indirilen kopya kaldırılamaz."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Книга використовується, тому її завантаження не можна вилучити."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "کتاب استعمال میں ہے، اس لیے اس کا ڈاؤن لوڈ نہیں ہٹایا جا سکتا۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sách đang được dùng, nên không thể gỡ bản tải về."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "这本图书正在使用，因此无法移除其下载内容。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "這本書正在使用，因此無法移除其下載項目。"
+          }
+        }
+      }
+    },
+    "sync.remove.keptOnAllDevices" : {
+      "comment" : "First sentence of why Remove Download was refused: the book is kept on all devices that sync. A sentence follows that names the command to choose.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "الكتاب محتفَظ به على جميع الأجهزة، لذا لا يمكن إزالة تنزيله."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বইটি সব ডিভাইসে রাখা আছে, তাই এর ডাউনলোড সরানো যাবে না।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Das Buch wird auf allen Geräten behalten, daher kann sein Download nicht entfernt werden."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The book is kept on all devices, so its download can't be removed."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El libro se mantiene en todos los dispositivos, así que no se puede quitar su descarga."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "کتاب در همه دستگاه‌ها نگه داشته شده است، بنابراین بارگیری آن برداشته نمی‌شود."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Le livre est conservé sur tous les appareils ; son téléchargement ne peut donc pas être retiré."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הספר נשמר בכל המכשירים, ולכן לא ניתן להסיר את ההורדה שלו."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "पुस्तक सभी डिवाइस पर रखी गई है, इसलिए उसका डाउनलोड नहीं हटाया जा सकता।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Buku disimpan di semua perangkat, jadi unduhannya tidak dapat dibuang."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Il libro è mantenuto su tutti i dispositivi, quindi il suo download non può essere rimosso."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ブックがすべてのデバイスに保持されているため、ダウンロードを取り除けません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "책이 모든 기기에 보관되어 있으므로 다운로드를 제거할 수 없습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Het boek wordt op alle apparaten bewaard, dus de download kan niet worden verwijderd."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Książka jest zachowana na wszystkich urządzeniach, więc nie można usunąć jej pobranego pliku."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "O livro é mantido em todos os dispositivos; por isso, o download dele não pode ser removido."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Книга хранится на всех устройствах, поэтому её загрузку нельзя убрать."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Boken behålls på alla enheter, så nedladdningen kan inte tas bort."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "หนังสือถูกเก็บไว้ในอุปกรณ์ทั้งหมด จึงนำการดาวน์โหลดออกไม่ได้"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kitap tüm aygıtlarda tutuluyor; bu yüzden indirilen kopya kaldırılamaz."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Книга зберігається на всіх пристроях, тому її завантаження не можна вилучити."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "کتاب تمام آلات پر رکھی گئی ہے، اس لیے اس کا ڈاؤن لوڈ نہیں ہٹایا جا سکتا۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sách được giữ trên mọi thiết bị, nên không thể gỡ bản tải về."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "这本图书已在所有设备上保留，因此无法移除其下载内容。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "這本書已在所有裝置上保留，因此無法移除其下載項目。"
+          }
+        }
+      }
+    },
+    "sync.remove.needsDownload" : {
+      "comment" : "Why a book's files stay on this device for now: checking the copy in iCloud Drive means downloading the book, which waits for Wi-Fi.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "سيحتاج TextMouth إلى تنزيل هذا الكتاب للتحقق من نسخته، لذا يبقى تنزيله الآن."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "কপি যাচাই করতে TextMouth-কে এই বইটি ডাউনলোড করতে হবে, তাই আপাতত এর ডাউনলোড থেকে যাচ্ছে।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth müsste dieses Buch herunterladen, um seine Kopie zu prüfen; daher bleibt sein Download vorerst."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "TextMouth would have to download this book to check its copy, so its download stays for now."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth tendría que descargar este libro para comprobar su copia, así que su descarga se queda por ahora."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth برای بررسی نسخهٔ این کتاب باید آن را بارگیری کند، بنابراین فعلاً بارگیری آن می‌ماند."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth devrait télécharger ce livre pour vérifier sa copie ; son téléchargement reste donc pour l’instant."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "כדי לבדוק את העותק של הספר הזה, TextMouth יצטרך להוריד אותו, ולכן ההורדה שלו נשארת לעת עתה."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "प्रति जाँचने के लिए TextMouth को यह पुस्तक डाउनलोड करनी पड़ेगी, इसलिए फ़िलहाल इसका डाउनलोड बना रहता है।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth harus mengunduh buku ini untuk memeriksa salinannya, jadi unduhannya tetap ada untuk sementara."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth dovrebbe scaricare questo libro per controllarne la copia, quindi per ora il suo download resta."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "コピーを確認するには TextMouth がこのブックをダウンロードする必要があるため、ダウンロードは当面残ります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "사본을 확인하려면 TextMouth가 이 책을 다운로드해야 하므로, 다운로드는 당분간 남아 있습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth zou dit boek moeten downloaden om de kopie te controleren, dus de download blijft voorlopig staan."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Aby sprawdzić kopię tej książki, TextMouth musiałby ją pobrać, więc na razie jej pobrany plik pozostaje."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth teria de baixar este livro para verificar a cópia; por isso, o download dele continua por enquanto."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Чтобы проверить копию этой книги, TextMouth пришлось бы загрузить её, поэтому пока её загрузка остаётся."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth skulle behöva ladda ned boken för att kontrollera kopian, så nedladdningen finns kvar tills vidare."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth ต้องดาวน์โหลดหนังสือเล่มนี้เพื่อตรวจสอบสำเนา จึงเก็บการดาวน์โหลดไว้ก่อนในตอนนี้"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth'un kopyayı denetlemek için bu kitabı indirmesi gerekirdi; bu yüzden indirilen kopya şimdilik kalıyor."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Щоб перевірити копію цієї книги, TextMouth довелося б її завантажити, тому поки що її завантаження залишається."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "کاپی جانچنے کے لیے TextMouth کو یہ کتاب ڈاؤن لوڈ کرنا پڑے گی، اس لیے فی الحال اس کا ڈاؤن لوڈ رہتا ہے۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth sẽ phải tải sách này về để kiểm tra bản sao, nên tạm thời giữ lại bản tải về."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 需要先下载这本图书来检查其副本，因此暂时保留其下载内容。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 需要先下載這本書來檢查其副本，因此暫時保留其下載項目。"
+          }
+        }
+      }
+    },
+    "sync.remove.notInDrive" : {
+      "comment" : "Why Remove Download left a book's files on this device: its copy in iCloud Drive is not confirmed yet.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لم يتأكد TextMouth من أن iCloud Drive يحتوي على كل ملفات هذا الكتاب، لذا يبقى تنزيله. حاول مرة أخرى بعد قليل."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive-এ এই বইয়ের সব ফাইল আছে কি না, TextMouth তা নিশ্চিত করেনি, তাই এর ডাউনলোড থেকে যাচ্ছে। কিছুক্ষণ পরে আবার চেষ্টা করুন।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth hat nicht bestätigt, dass iCloud Drive alle Dateien dieses Buchs enthält; daher bleibt sein Download. Versuche es gleich noch einmal."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "TextMouth hasn't confirmed that iCloud Drive holds every file of this book, so its download stays. Try again in a moment."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth no ha confirmado que iCloud Drive tenga todos los archivos de este libro, así que su descarga se queda. Inténtalo de nuevo en un momento."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth تأیید نکرده است که iCloud Drive همهٔ فایل‌های این کتاب را دارد، بنابراین بارگیری آن می‌ماند. کمی بعد دوباره تلاش کنید."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth n’a pas confirmé qu’iCloud Drive contient tous les fichiers de ce livre ; son téléchargement reste donc. Réessayez dans un instant."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth לא אישר ש-iCloud Drive מכיל את כל הקבצים של הספר הזה, ולכן ההורדה שלו נשארת. נסה שוב בעוד רגע."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth ने पुष्टि नहीं की है कि iCloud Drive में इस पुस्तक की सभी फ़ाइलें हैं, इसलिए इसका डाउनलोड बना रहता है। थोड़ी देर बाद फिर कोशिश करें।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth belum memastikan bahwa iCloud Drive memiliki semua berkas buku ini, jadi unduhannya tetap ada. Coba lagi sebentar lagi."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth non ha confermato che iCloud Drive contenga tutti i file di questo libro, quindi il suo download resta. Riprova tra un momento."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive にこのブックのすべてのファイルがあることを TextMouth が確認できていないため、ダウンロードは残ります。しばらくしてからもう一度お試しください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive에 이 책의 모든 파일이 있는지 TextMouth가 확인하지 못해 다운로드가 그대로 남습니다. 잠시 후 다시 시도하십시오."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth heeft niet bevestigd dat iCloud Drive alle bestanden van dit boek heeft, dus de download blijft staan. Probeer het zo meteen opnieuw."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth nie potwierdził, że iCloud Drive ma wszystkie pliki tej książki, więc jej pobrany plik pozostaje. Spróbuj ponownie za chwilę."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth não confirmou que o iCloud Drive tem todos os arquivos deste livro; por isso, o download dele continua. Tente de novo daqui a pouco."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth не подтвердил, что в iCloud Drive есть все файлы этой книги, поэтому её загрузка остаётся. Повторите попытку чуть позже."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth har inte bekräftat att iCloud Drive har alla filer för boken, så nedladdningen finns kvar. Försök igen om en stund."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth ยังไม่ยืนยันว่า iCloud Drive มีไฟล์ทั้งหมดของหนังสือเล่มนี้ จึงเก็บการดาวน์โหลดไว้ ลองอีกครั้งในอีกสักครู่"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth, iCloud Drive'ın bu kitabın tüm dosyalarını içerdiğini doğrulamadı; bu yüzden indirilen kopya kalıyor. Birazdan yeniden deneyin."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth не підтвердив, що в iCloud Drive є всі файли цієї книги, тому її завантаження залишається. Повторіть спробу трохи згодом."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth نے تصدیق نہیں کی کہ iCloud Drive میں اس کتاب کی تمام فائلیں ہیں، اس لیے اس کا ڈاؤن لوڈ رہتا ہے۔ کچھ دیر بعد دوبارہ کوشش کریں۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth chưa xác nhận iCloud Drive có đủ mọi tệp của sách này, nên bản tải về được giữ lại. Hãy thử lại sau giây lát."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 尚未确认 iCloud Drive 中有这本图书的所有文件，因此保留其下载内容。请稍后再试。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 尚未確認 iCloud Drive 中有這本書的所有檔案，因此保留其下載項目。請稍後再試。"
+          }
+        }
+      }
+    },
+    "sync.remove.nothing" : {
+      "comment" : "Said aloud when the Library menu's Remove Download finds that none of the selected books has a download on this device to remove.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ليس لأي من الكتب المحددة تنزيل يمكن إزالته."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "নির্বাচিত বইগুলোর কোনোটিরই সরানোর মতো ডাউনলোড নেই।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Keines der ausgewählten Bücher hat einen Download, der entfernt werden könnte."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "None of the selected books has a download to remove."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ninguno de los libros seleccionados tiene una descarga que quitar."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "هیچ‌یک از کتاب‌های انتخاب‌شده بارگیری‌ای برای برداشتن ندارد."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Aucun des livres sélectionnés n’a de téléchargement à retirer."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "לאף אחד מהספרים שנבחרו אין הורדה להסרה."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "चुनी गई किसी भी पुस्तक का कोई डाउनलोड हटाने के लिए नहीं है।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tidak ada buku terpilih yang memiliki unduhan untuk dibuang."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nessuno dei libri selezionati ha un download da rimuovere."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "選択したブックには、取り除けるダウンロードがありません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "선택한 책 중에 제거할 다운로드가 있는 책이 없습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Geen van de geselecteerde boeken heeft een download om te verwijderen."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Żadna z zaznaczonych książek nie ma pobranego pliku do usunięcia."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nenhum dos livros selecionados tem um download para remover."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ни у одной из выбранных книг нет загрузки, которую можно убрать."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ingen av de markerade böckerna har en nedladdning att ta bort."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "หนังสือที่เลือกไม่มีเล่มใดมีการดาวน์โหลดให้นำออก"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Seçilen kitapların hiçbirinde kaldırılacak bir indirme yok."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Жодна з вибраних книг не має завантаження, яке можна вилучити."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "منتخب کتابوں میں سے کسی کا بھی ہٹانے کے لیے کوئی ڈاؤن لوڈ نہیں ہے۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Không sách nào đã chọn có bản tải về để gỡ."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "所选图书都没有可移除的下载内容。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "所選書籍都沒有可移除的下載項目。"
+          }
+        }
+      }
+    },
+    "sync.remove.offline" : {
+      "comment" : "Why Remove Download left a book's files on this device: it is offline. %@ is \"this Mac\" or \"this iPhone\".",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لا يستطيع TextMouth التحقق من النسخة في iCloud Drive بينما %@ غير متصل بالإنترنت، لذا يبقى التنزيل."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ অফলাইন থাকলে TextMouth iCloud Drive-এর কপি যাচাই করতে পারে না, তাই ডাউনলোড থেকে যাচ্ছে।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth kann die Kopie in iCloud Drive nicht prüfen, solange %@ offline ist; daher bleibt der Download."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "TextMouth can't check the copy in iCloud Drive while %@ is offline, so the download stays."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth no puede comprobar la copia de iCloud Drive mientras %@ no tiene conexión, así que la descarga se queda."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تا زمانی که %@ آفلاین است، TextMouth نمی‌تواند نسخهٔ iCloud Drive را بررسی کند، بنابراین بارگیری می‌ماند."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth ne peut pas vérifier la copie dans iCloud Drive tant que %@ est hors connexion ; le téléchargement reste donc."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth לא יכול לבדוק את העותק ב-iCloud Drive כל עוד %@ לא מחובר לאינטרנט, ולכן ההורדה נשארת."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "जब तक %@ ऑफ़लाइन है, TextMouth iCloud Drive में मौजूद प्रति नहीं जाँच सकता, इसलिए डाउनलोड बना रहता है।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth tidak dapat memeriksa salinan di iCloud Drive saat %@ sedang offline, jadi unduhannya tetap ada."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth non può controllare la copia in iCloud Drive mentre %@ è offline, quindi il download resta."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@がオフラインの間は、TextMouth は iCloud Drive のコピーを確認できないため、ダウンロードは残ります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "오프라인 상태(%@)에서는 TextMouth가 iCloud Drive의 사본을 확인할 수 없어 다운로드가 그대로 남습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth kan de kopie in iCloud Drive niet controleren zolang %@ offline is, dus de download blijft staan."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth nie może sprawdzić kopii w iCloud Drive, gdy %@ jest offline, więc pobrany plik pozostaje."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth não consegue verificar a cópia no iCloud Drive enquanto %@ está off-line; por isso, o download continua."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth не может проверить копию в iCloud Drive, пока %@ не в сети, поэтому загрузка остаётся."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth kan inte kontrollera kopian i iCloud Drive medan %@ är offline, så nedladdningen finns kvar."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth ตรวจสอบสำเนาใน iCloud Drive ไม่ได้ขณะที่ %@ ออฟไลน์ จึงเก็บการดาวน์โหลดไว้"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ çevrimdışıyken TextMouth iCloud Drive'daki kopyayı denetleyemez; bu yüzden indirilen kopya kalıyor."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth не може перевірити копію в iCloud Drive, поки %@ не в мережі, тому завантаження залишається."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "جب تک %@ آف لائن ہے، TextMouth iCloud Drive میں موجود کاپی نہیں جانچ سکتا، اس لیے ڈاؤن لوڈ رہتا ہے۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth không thể kiểm tra bản sao trong iCloud Drive khi %@ đang ngoại tuyến, nên bản tải về được giữ lại."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ 离线时，TextMouth 无法检查 iCloud Drive 中的副本，因此保留下载内容。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ 離線時，TextMouth 無法檢查 iCloud Drive 中的副本，因此保留下載項目。"
+          }
+        }
+      }
+    },
+    "sync.removeAfter.announce.days" : {
+      "comment" : "Said aloud after the person set the days after which the downloads of unopened books are removed. %@ is a count of days, such as \"7 days\".",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تجري إزالة تنزيلات الكتب التي لم تُفتح خلال %@."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ ধরে না খোলা বইয়ের ডাউনলোড সরানো হচ্ছে।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Downloads von Büchern, die seit %@ nicht geöffnet wurden, werden entfernt."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Removing downloads of books unopened for %@."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Quitando las descargas de los libros sin abrir durante %@."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "بارگیری کتاب‌هایی که %@ باز نشده‌اند برداشته می‌شود."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Retrait des téléchargements des livres non ouverts depuis %@."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "מסיר הורדות של ספרים שלא נפתחו במשך %@."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ से न खोली गई पुस्तकों के डाउनलोड हटाए जा रहे हैं।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Membuang unduhan buku yang tidak dibuka selama %@."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Rimozione dei download dei libri non aperti da %@."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@以上開かれていないブックのダウンロードを取り除きます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ 동안 열지 않은 책의 다운로드를 제거합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Downloads worden verwijderd van boeken die %@ niet zijn geopend."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Usuwanie pobranych plików książek, których nie otwierano przez %@."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Removendo os downloads de livros não abertos há %@."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Убираются загрузки книг, которые не открывали %@."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nedladdningar av böcker som inte öppnats på %@ tas bort."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "กำลังนำการดาวน์โหลดของหนังสือที่ไม่ได้เปิดมา %@ ออก"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ boyunca açılmayan kitapların indirilen kopyaları kaldırılıyor."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Вилучаються завантаження книг, які не відкривали %@."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ سے نہ کھولی گئی کتابوں کے ڈاؤن لوڈ ہٹائے جا رہے ہیں۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Đang gỡ bản tải về của những sách không mở trong %@."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "正在移除 %@ 内未打开的图书的下载内容。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "正在移除 %@ 內未打開的書籍的下載項目。"
+          }
+        }
+      }
+    },
+    "sync.removeAfter.announce.off" : {
+      "comment" : "Said aloud after the person turned off removing the downloads of unopened books.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لا تُزال تنزيلات الكتب التي لم تُفتح."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "না খোলা বইয়ের ডাউনলোড সরানো হচ্ছে না।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Downloads ungeöffneter Bücher werden nicht entfernt."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not removing the downloads of unopened books."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se quitan las descargas de los libros sin abrir."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "بارگیری کتاب‌های بازنشده برداشته نمی‌شود."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Les téléchargements des livres non ouverts ne sont pas retirés."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הורדות של ספרים שלא נפתחו אינן מוסרות."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "न खोली गई पुस्तकों के डाउनलोड नहीं हटाए जा रहे।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Unduhan buku yang tidak dibuka tidak dibuang."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "I download dei libri non aperti non vengono rimossi."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "開かれていないブックのダウンロードは取り除きません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "열지 않은 책의 다운로드를 제거하지 않습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Downloads van ongeopende boeken worden niet verwijderd."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Pobrane pliki nieotwieranych książek nie są usuwane."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Os downloads de livros não abertos não são removidos."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Загрузки неоткрытых книг не убираются."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nedladdningar av oöppnade böcker tas inte bort."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่นำการดาวน์โหลดของหนังสือที่ยังไม่ได้เปิดออก"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Açılmayan kitapların indirilen kopyaları kaldırılmıyor."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Завантаження невідкритих книг не вилучаються."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "نہ کھولی گئی کتابوں کے ڈاؤن لوڈ نہیں ہٹائے جا رہے۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Không gỡ bản tải về của sách chưa mở."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "不移除未打开图书的下载内容。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "不移除未打開書籍的下載項目。"
+          }
+        }
+      }
+    },
+    "sync.removeAfter.hint" : {
+      "comment" : "VoiceOver hint of the setting that removes the downloads of books left unopened for some days.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يزيل تنزيل الكتاب من هذا الجهاز إذا لم تفتحه خلال هذه المدة. يبقى الكتاب في iCloud Drive."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "কোনো বই এত সময় না খুললে এই ডিভাইস থেকে তার ডাউনলোড সরিয়ে দেয়। বইটি iCloud Drive-এ থাকে।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Entfernt den Download eines Buchs von diesem Gerät, wenn du es so lange nicht geöffnet hast. Das Buch bleibt in iCloud Drive."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Removes a book's download from this device once you haven't opened it for this long. The book stays in iCloud Drive."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Quita la descarga de un libro de este dispositivo cuando no lo abres durante este tiempo. El libro sigue en iCloud Drive."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اگر کتابی را این مدت باز نکرده باشید، بارگیری آن را از این دستگاه برمی‌دارد. کتاب در iCloud Drive می‌ماند."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Retire le téléchargement d’un livre de cet appareil quand vous ne l’avez pas ouvert pendant ce délai. Le livre reste dans iCloud Drive."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "מסיר את ההורדה של ספר מהמכשיר הזה אם לא פתחת אותו במשך פרק הזמן הזה. הספר נשאר ב-iCloud Drive."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "अगर आपने कोई पुस्तक इतने समय तक नहीं खोली, तो इस डिवाइस से उसका डाउनलोड हटाता है। पुस्तक iCloud Drive में बनी रहती है।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Membuang unduhan buku dari perangkat ini jika Anda tidak membukanya selama itu. Buku tetap ada di iCloud Drive."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Rimuove il download di un libro da questo dispositivo quando non lo apri per questo periodo. Il libro resta in iCloud Drive."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "この期間ブックを開かなかった場合、このデバイスからそのブックのダウンロードを取り除きます。ブックは iCloud Drive に残ります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이 기간 동안 열지 않은 책의 다운로드를 이 기기에서 제거합니다. 책은 iCloud Drive에 남아 있습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Verwijdert de download van een boek van dit apparaat als je het zo lang niet hebt geopend. Het boek blijft in iCloud Drive."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Usuwa pobrany plik książki z tego urządzenia, jeśli nie otwierasz jej przez tak długi czas. Książka pozostaje w iCloud Drive."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Remove o download de um livro deste dispositivo quando você não o abre por este tempo. O livro continua no iCloud Drive."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Убирает загрузку книги с этого устройства, если вы не открывали её так долго. Книга остаётся в iCloud Drive."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tar bort en boks nedladdning från den här enheten när du inte har öppnat den så länge. Boken finns kvar i iCloud Drive."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "นำการดาวน์โหลดของหนังสือออกจากอุปกรณ์เครื่องนี้เมื่อคุณไม่ได้เปิดหนังสือเล่มนั้นมานานเท่านี้ หนังสือยังอยู่ใน iCloud Drive"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bir kitabı bu kadar süre açmadıysanız, indirilen kopyasını bu aygıttan kaldırır. Kitap iCloud Drive'da kalır."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Вилучає завантаження книги з цього пристрою, якщо ви не відкривали її так довго. Книга залишається в iCloud Drive."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "جو کتاب آپ نے اتنی مدت نہیں کھولی، اس کا ڈاؤن لوڈ اس آلے سے ہٹاتا ہے۔ کتاب iCloud Drive میں رہتی ہے۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Gỡ bản tải về của sách khỏi thiết bị này khi bạn không mở sách trong khoảng thời gian này. Sách vẫn ở trong iCloud Drive."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "图书在这段时间内一直未打开时，从此设备移除其下载内容。图书仍保留在 iCloud Drive 中。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "書籍在這段時間內一直未打開時，從此裝置移除其下載項目。書籍仍保留在 iCloud Drive 中。"
+          }
+        }
+      }
+    },
+    "sync.removeAfter.label" : {
+      "comment" : "Label of the setting that removes a book's download from this device after the book has been unopened for some days. Off, or 1 to 30 days, follows it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "إزالة التنزيلات غير المفتوحة بعد"
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "না খোলা ডাউনলোড সরানো হবে"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ungeöffnete Downloads entfernen nach"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove unopened downloads after"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Quitar descargas sin abrir después de"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "برداشتن بارگیری‌های بازنشده پس از"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Retirer les téléchargements non ouverts après"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הסר הורדות שלא נפתחו לאחר"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "न खोले गए डाउनलोड इतने समय बाद हटाएँ"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Buang unduhan yang tidak dibuka setelah"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Rimuovi i download non aperti dopo"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "開かれていないダウンロードを取り除くまでの期間"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "열지 않은 다운로드 제거 시점"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ongeopende downloads verwijderen na"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Usuwaj pobrane pliki nieotwieranych książek po"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Remover downloads não abertos após"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Убирать загрузки неоткрытых книг через"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ta bort oöppnade nedladdningar efter"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "นำการดาวน์โหลดที่ไม่ได้เปิดออกหลังจาก"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Açılmayan indirmeleri şu süre sonra kaldır"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Вилучати завантаження невідкритих книг через"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "نہ کھولے گئے ڈاؤن لوڈ اس کے بعد ہٹائیں"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Gỡ bản tải về chưa mở sau"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "移除未打开图书的下载内容，时间为"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "移除未打開書籍的下載項目，時間為"
+          }
+        }
+      }
+    },
     "sync.sectionSummary" : {
       "comment" : "Explains the Sync section: the library stays the same on the Mac and the iPhone, through iCloud Drive.",
       "extractionState" : "manual",
@@ -729009,6 +732285,318 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "iCloud Drive 已滿，因此 %@ 和 %@ 未上傳。你在 %@ 上的書庫維持原樣。"
+          }
+        }
+      }
+    },
+    "sync.status.removalsWaiting" : {
+      "comment" : "A line of the sync status: books stay on this device because their copies in iCloud Drive are not confirmed yet. %1$@ is a count of books, such as \"3 books\"; %2$@ is \"this Mac\" or \"this iPhone\".",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تبقى %1$@ الآن على %2$@: لم يؤكد TextMouth بعد نسخها في iCloud Drive."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ আপাতত %2$@-এ থাকছে: iCloud Drive-এ এগুলোর কপি TextMouth এখনো নিশ্চিত করেনি।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ bleiben vorerst (%2$@): TextMouth hat ihre Kopien in iCloud Drive noch nicht bestätigt."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ stay on %@ for now: TextMouth hasn't confirmed their copies in iCloud Drive."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ se quedan por ahora en %2$@: TextMouth no ha confirmado sus copias en iCloud Drive."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ فعلاً در %2$@ می‌مانند: TextMouth هنوز نسخه‌های آن‌ها را در iCloud Drive تأیید نکرده است."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ restent pour l’instant sur %2$@ : TextMouth n’a pas confirmé leurs copies dans iCloud Drive."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ נשארים לעת עתה ב-%2$@: TextMouth עדיין לא אישר את העותקים שלהם ב-iCloud Drive."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ फ़िलहाल %2$@ पर बनी रहती हैं: TextMouth ने iCloud Drive में उनकी प्रतियों की पुष्टि नहीं की है।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ tetap ada di %2$@ untuk sementara: TextMouth belum memastikan salinannya di iCloud Drive."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ restano per ora su %2$@: TextMouth non ha ancora confermato le loro copie in iCloud Drive."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@は、当面%2$@に残ります。iCloud Drive にあるコピーを TextMouth がまだ確認できていません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "당분간 남아 있는 책(%2$@): %1$@. iCloud Drive의 사본을 TextMouth가 아직 확인하지 못했습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ blijven voorlopig op %2$@: TextMouth heeft hun kopieën in iCloud Drive nog niet bevestigd."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ na razie pozostają (%2$@): TextMouth nie potwierdził ich kopii w iCloud Drive."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ continuam por enquanto (%2$@): TextMouth ainda não confirmou as cópias deles no iCloud Drive."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ пока остаются (%2$@): TextMouth не подтвердил их копии в iCloud Drive."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ finns kvar tills vidare (%2$@): TextMouth har ännu inte bekräftat deras kopior i iCloud Drive."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ ยังอยู่บน %2$@ ไปก่อน: TextMouth ยังไม่ยืนยันสำเนาของหนังสือเหล่านั้นใน iCloud Drive"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ şimdilik kalıyor (%2$@): TextMouth iCloud Drive'daki kopyalarını henüz doğrulamadı."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ поки залишаються (%2$@): TextMouth не підтвердив їхні копії в iCloud Drive."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ فی الحال %2$@ پر رہتی ہیں: TextMouth نے iCloud Drive میں ان کی کاپیوں کی تصدیق نہیں کی۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ tạm thời vẫn ở trên %2$@: TextMouth chưa xác nhận bản sao của chúng trong iCloud Drive."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ 暂时保留在 %2$@ 上：TextMouth 尚未确认它们在 iCloud Drive 中的副本。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ 暫時保留在 %2$@ 上：TextMouth 尚未確認它們在 iCloud Drive 中的副本。"
+          }
+        }
+      }
+    },
+    "sync.status.shortOfRoom" : {
+      "comment" : "A line of the sync status: this device has no room for books it would download. %1$@ is a count of books, such as \"3 books\"; %2$@ is \"this Mac\" or \"this iPhone\".",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لا توجد مساحة على %1$@ لتنزيل %2$@. تبقى الكتب الموجودة هنا بالفعل."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@-এ %2$@ ডাউনলোড করার মতো জায়গা নেই। যে বইগুলো আগে থেকেই এখানে আছে, সেগুলো থাকছে।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Es ist nicht genug Platz (%1$@), um %2$@ herunterzuladen. Die bereits vorhandenen Bücher bleiben."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "There isn't room on %@ to download %@. The books already here stay."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No hay espacio en %1$@ para descargar %2$@. Los libros que ya están aquí se quedan."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "در %1$@ جایی برای بارگیری %2$@ نیست. کتاب‌هایی که از قبل اینجا هستند می‌مانند."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Il n’y a pas assez de place sur %1$@ pour télécharger %2$@. Les livres déjà présents restent."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "אין מקום ב-%1$@ כדי להוריד %2$@. הספרים שכבר נמצאים כאן נשארים."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ पर %2$@ डाउनलोड करने की जगह नहीं है। जो पुस्तकें पहले से यहाँ हैं, वे बनी रहती हैं।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tidak ada cukup ruang di %1$@ untuk mengunduh %2$@. Buku yang sudah ada di sini tetap ada."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Su %1$@ non c'è spazio per scaricare %2$@. I libri già presenti restano."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@には、%2$@をダウンロードする空き容量がありません。すでにあるブックは残ります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "공간 부족(%1$@): 다운로드할 수 없는 책 %2$@. 이미 있는 책은 그대로 남습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Er is geen ruimte op %1$@ om %2$@ te downloaden. De boeken die er al zijn, blijven."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Brak miejsca (%1$@), by pobrać: %2$@. Książki, które już tu są, pozostają."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Não há espaço (%1$@) para baixar %2$@. Os livros que já estão aqui continuam."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Недостаточно места (%1$@), чтобы загрузить: %2$@. Уже загруженные книги остаются."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Det finns inte utrymme (%1$@) för att ladda ned %2$@. Böckerna som redan finns här finns kvar."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่มีพื้นที่พอบน %1$@ สำหรับดาวน์โหลด %2$@ หนังสือที่มีอยู่แล้วจะยังอยู่"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Yeterli yer yok (%1$@): %2$@ indirilemiyor. Zaten burada olan kitaplar kalıyor."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Недостатньо місця (%1$@), щоб завантажити: %2$@. Книги, які вже тут, залишаються."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ پر %2$@ ڈاؤن لوڈ کرنے کی جگہ نہیں ہے۔ جو کتابیں پہلے سے یہاں ہیں، وہ رہتی ہیں۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Không đủ dung lượng trên %1$@ để tải về %2$@. Những sách đã có ở đây vẫn được giữ."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ 没有足够空间下载 %2$@。已在此设备上的图书会保留。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ 沒有足夠空間下載 %2$@。已在此裝置上的書籍會保留。"
           }
         }
       }
