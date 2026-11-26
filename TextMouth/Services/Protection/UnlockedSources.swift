@@ -15,6 +15,9 @@ enum ProtectionScheme: String, Sendable, Equatable {
     case zip
     /// A PDF with a user password.
     case pdf
+    /// A Word document (and its kinds) saved with a password: not a ZIP but
+    /// a compound file holding an encrypted package (`OfficeCryptoDecryptor`).
+    case officeOpenXML
 }
 
 // MARK: - Detection
@@ -45,6 +48,7 @@ enum ProtectionDetector {
     /// for now does not matter here (`UnlockedSources.isUnlocked`).
     static func scheme(ofFileAt url: URL, format: BookFormat) -> ProtectionScheme? {
         guard format == .pdf || zipFormats.contains(format) else { return nil }
+        // (A .docx may be a ZIP archive with a password or an encrypted package.)
         let path = url.standardizedFileURL.path
         guard let attributes = try? FileManager.default.attributesOfItem(atPath: path),
               let size = (attributes[.size] as? NSNumber)?.uint64Value,
@@ -64,7 +68,13 @@ enum ProtectionDetector {
             // that restricts only copying or printing opens and reads as usual.
             return PDFDocument(url: url)?.isLocked == true ? .pdf : nil
         }
-        return EncryptedArchiveGuard.encryptedNames(inFileAt: url).isEmpty ? nil : .zip
+        if !EncryptedArchiveGuard.encryptedNames(inFileAt: url).isEmpty { return .zip }
+        // A password-protected Word document is a compound file, not a ZIP.
+        if format == .docx, let data = try? Data(contentsOf: url, options: .mappedIfSafe),
+           OfficeCryptoDecryptor.isEncryptedPackage(data) {
+            return .officeOpenXML
+        }
+        return nil
     }
 
     /// Forgets what was found about the file at `url`, after it was rewritten.
@@ -136,6 +146,19 @@ enum UnlockedSources {
                 case .unsupported: throw UnlockFailure.unsupported
                 case .damaged: throw UnlockFailure.damaged
                 }
+            }
+        case .officeOpenXML:
+            do {
+                let file = try Data(contentsOf: url, options: .mappedIfSafe)
+                held = .archive(try OfficeCryptoDecryptor.decrypt(file, password: password))
+            } catch let failure as OfficeCryptoDecryptor.Failure {
+                switch failure {
+                case .wrongPassword: throw UnlockFailure.wrongPassword
+                case .unsupported: throw UnlockFailure.unsupported
+                case .damaged: throw UnlockFailure.damaged
+                }
+            } catch {
+                throw UnlockFailure.damaged
             }
         case .pdf:
             guard let document = PDFDocument(url: url) else { throw UnlockFailure.damaged }

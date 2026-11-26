@@ -32,7 +32,7 @@ enum ProtectionRemoval {
         let temporary = url.deletingLastPathComponent().appendingPathComponent(".unprotecting-\(UUID().uuidString)")
         do {
             switch scheme {
-            case .zip:
+            case .zip, .officeOpenXML:
                 guard let plain = UnlockedSources.plainArchiveData(for: url) else { throw Failure.notUnlocked }
                 try plain.write(to: temporary)
             case .pdf:

@@ -350,6 +350,7 @@
 		18EF440AD235FB656A4E5665 /* DocumentTypeDeclarationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF21B735233AB52434401919 /* DocumentTypeDeclarationTests.swift */; };
 		19072AC1A28F52DCDEC10D37 /* LibrarySearchText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36A7A3CACC7A039FC1D852DA /* LibrarySearchText.swift */; };
 		191803B8E3ABF2C518999839 /* PhoneLaunchRequestTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F6072B65F36542B9EEA5170 /* PhoneLaunchRequestTests.swift */; };
+		191AC2F6A615F5DEFC735B9A /* OfficeCryptoDecryptorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 201C00DA82AD7FA1E3D017E4 /* OfficeCryptoDecryptorTests.swift */; };
 		192F7A5B55852BE86A384FE6 /* ReaderViewModel+SpeakInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DF6267C55345A0D7CFE278D /* ReaderViewModel+SpeakInfo.swift */; };
 		193AF56E1675B92DDCA441D3 /* RTFEncodings.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2BF53FD939B0E2B8245D85E /* RTFEncodings.swift */; };
 		1964198C25B5FDB290EE6308 /* SummaryPress.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90CC6CBA49002A776C2559F9 /* SummaryPress.swift */; };
@@ -524,6 +525,7 @@
 		2634E234B23650FE1EF30EAC /* AudioEditorPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BDAB9C2D9ACEB18926683E1 /* AudioEditorPrompt.swift */; };
 		26445E8F628F0ECE6BDE7F06 /* LibraryViewModel+Bookmarks.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6FA29359F70363F11224810 /* LibraryViewModel+Bookmarks.swift */; };
 		266CCB870E0A24A0389A669B /* XHTMLMarkup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55653D5D6ABCC85D8E69095D /* XHTMLMarkup.swift */; };
+		268967B81BA02E0EF1224AAB /* OfficeCryptoDecryptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 299D68125945603BFCB3E4E0 /* OfficeCryptoDecryptor.swift */; };
 		26C57841292D1B74301DAD12 /* KFXSidecar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58B58D11258B86C42708A762 /* KFXSidecar.swift */; };
 		26D10F0634D6082339B29A84 /* Evaluator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0C06CB3CCEB4F0CE1ADD837 /* Evaluator.swift */; };
 		26E330C223B57A39F702B43C /* BrailleTableCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0233D0E3D21B14FE80F00311 /* BrailleTableCatalog.swift */; };
@@ -1483,6 +1485,7 @@
 		70DC7D7E74950E2FAC55E471 /* PhoneAudioWording.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38E81DF35388D4C205C5DCDE /* PhoneAudioWording.swift */; };
 		710A0E057DC23854AF9966A4 /* PhoneMemoryPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6112F96DC48C89ADB7DB9F7 /* PhoneMemoryPolicy.swift */; };
 		71370DF49A5A469240FF8A0F /* LibraryLifecycleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12F62EE8E953CBC6B9AC9EED /* LibraryLifecycleTests.swift */; };
+		7141FBE73000417A4D25EA65 /* OfficeCryptoDecryptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 299D68125945603BFCB3E4E0 /* OfficeCryptoDecryptor.swift */; };
 		716927604687EEA84D3E8FAC /* MOBIIndex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 768374EE9564575D013BC0C5 /* MOBIIndex.swift */; };
 		716C9211FD52005EBA664AFA /* FeedRows.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DAE4B827D269FA614E95362 /* FeedRows.swift */; };
 		7177F3775DA5E599ED9598C8 /* SavedFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = C221A7F9E32DD87EF06B77F1 /* SavedFile.swift */; };
@@ -4002,6 +4005,7 @@
 		1FD61810A7AE68F15553FADA /* LibraryCopyReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryCopyReader.swift; sourceTree = "<group>"; };
 		2007A4B73B70F5B206C55CC0 /* SpeechBufferSynthesizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechBufferSynthesizer.swift; sourceTree = "<group>"; };
 		201335713BB975F161C5D653 /* KFXTestBook.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KFXTestBook.swift; sourceTree = "<group>"; };
+		201C00DA82AD7FA1E3D017E4 /* OfficeCryptoDecryptorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OfficeCryptoDecryptorTests.swift; sourceTree = "<group>"; };
 		204B41AB8BFCBDA4C779A441 /* TextEncodingImportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextEncodingImportTests.swift; sourceTree = "<group>"; };
 		20541DE46D0ECEF3744621A1 /* BrailleTablePrintOnlyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrailleTablePrintOnlyTests.swift; sourceTree = "<group>"; };
 		2083240FA39E9ECB82ACDD03 /* HostedTestIsolationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostedTestIsolationTests.swift; sourceTree = "<group>"; };
@@ -4100,6 +4104,7 @@
 		2978A59EB5FDE6F5FFB3746C /* ChapterPauses.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChapterPauses.swift; sourceTree = "<group>"; };
 		298322657FC7466EE151DC02 /* WavPackUnpack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WavPackUnpack.swift; sourceTree = "<group>"; };
 		2995810842903DC1972E1B29 /* KFXSetTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KFXSetTests.swift; sourceTree = "<group>"; };
+		299D68125945603BFCB3E4E0 /* OfficeCryptoDecryptor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OfficeCryptoDecryptor.swift; sourceTree = "<group>"; };
 		2A59C21227AE03ECE481F6FD /* FeedEpisodeExtrasTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedEpisodeExtrasTests.swift; sourceTree = "<group>"; };
 		2A5F1CA7CA6B9E661E25A08C /* Document.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Document.swift; sourceTree = "<group>"; };
 		2A60242E06B0099E26A9060A /* AudioEditorSelectingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEditorSelectingTests.swift; sourceTree = "<group>"; };
@@ -7207,6 +7212,7 @@
 				E7A190B74BE17301DFFE4503 /* ODTStyles.swift */,
 				327758B773CEE330B6E68D8A /* ODTXMLReader.swift */,
 				360647C79DEC437181319A7C /* OfficeBlockWriter.swift */,
+				299D68125945603BFCB3E4E0 /* OfficeCryptoDecryptor.swift */,
 				F967B7D3BEBECA08E657E6FE /* OfficeParagraph.swift */,
 				43954F93821F0F0ED9D7B354 /* OfficeStyleChain.swift */,
 				22D228E76780F65C44C5D714 /* OfficeXMLReader.swift */,
@@ -7899,6 +7905,7 @@
 				09EDB76336CF260A5F765436 /* ODTReaderTests.swift */,
 				E13F10E24C4398AD13253A9A /* ODTTestSupport.swift */,
 				2D03CB0B091114F92DF731C6 /* ODTTextutilComparisonTests.swift */,
+				201C00DA82AD7FA1E3D017E4 /* OfficeCryptoDecryptorTests.swift */,
 				39B970A7D0C5B4132FF4B3B2 /* OfficeXMLGuardTests.swift */,
 				03C1A5E058F2B552E025E5FE /* OggAfconvertTests.swift */,
 				82EF6AA631C0D72D6F54B9CA /* OggAudioConverterTests.swift */,
@@ -10249,6 +10256,7 @@
 				8A4EBDFA6411BF610455BCF5 /* ODTTestSupport.swift in Sources */,
 				A36B0DCC450819597B9B9DAC /* ODTTextutilComparisonTests.swift in Sources */,
 				8410C3A3F194B5F83D063A17 /* ObjCExceptionTests.swift in Sources */,
+				191AC2F6A615F5DEFC735B9A /* OfficeCryptoDecryptorTests.swift in Sources */,
 				B03586EFC959E94EA9AABD85 /* OfficeXMLGuardTests.swift in Sources */,
 				D76B14B5FE9FAF0A0FDD891D /* OffsetMapTests.swift in Sources */,
 				9A6CC47F8CDD79E27300AEF2 /* OggAfconvertTests.swift in Sources */,
@@ -11299,6 +11307,7 @@
 				D6E8C1A53CA721B7BCDE033F /* OPMLImportSheet.swift in Sources */,
 				C61A5C62122C4BC9157D05A0 /* ObjCException.swift in Sources */,
 				DE4A5F5E9028AD4DC6281868 /* OfficeBlockWriter.swift in Sources */,
+				7141FBE73000417A4D25EA65 /* OfficeCryptoDecryptor.swift in Sources */,
 				0783EAEC210CCB735CCFFE71 /* OfficeParagraph.swift in Sources */,
 				C2B142B396EDFA5607524416 /* OfficeStyleChain.swift in Sources */,
 				D1983B2192748E0A608AF135 /* OfficeXMLReader.swift in Sources */,
@@ -12356,6 +12365,7 @@
 				53F9085F027C846169DE0B48 /* OPMLImportSheet.swift in Sources */,
 				4FCE4B03416CB7DA80BAC853 /* ObjCException.swift in Sources */,
 				3E2FAD7FFD2A0B5B3F7A40FB /* OfficeBlockWriter.swift in Sources */,
+				268967B81BA02E0EF1224AAB /* OfficeCryptoDecryptor.swift in Sources */,
 				ECAB5599B8BB4BC8AFC8C85B /* OfficeParagraph.swift in Sources */,
 				60BDDFCA48A0388DD50A4D7C /* OfficeStyleChain.swift in Sources */,
 				8EB81D5135A5561647EFEBC5 /* OfficeXMLReader.swift in Sources */,
