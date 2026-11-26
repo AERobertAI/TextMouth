@@ -164,9 +164,9 @@ enum ODTDocumentReader {
         ///   spreadsheet with an `.odt` name, say).
         init(at url: URL) throws {
             // A password-protected package is refused in words that say so (B27).
-            try EncryptedArchiveGuard.refuseEncrypted(at: url)
+            try UnlockedSources.refuseIfLocked(at: url)
             do {
-                archive = try Archive(url: url, accessMode: .read, pathEncoding: nil)
+                archive = try UnlockedSources.openArchive(at: url)
             } catch {
                 throw TextutilConverter.Failure.unreadable(.odt)
             }

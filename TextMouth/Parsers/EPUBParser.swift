@@ -174,9 +174,9 @@ enum EPUBParser {
         }
         // A password-protected archive is refused in words that say so, since
         // ZIPFoundation would list it empty or short (B27).
-        try EncryptedArchiveGuard.refuseEncrypted(at: url)
+        try UnlockedSources.refuseIfLocked(at: url)
         do {
-            return try Archive(url: url, accessMode: .read)
+            return try UnlockedSources.openArchive(at: url)
         } catch {
             throw EPUBParserError.invalidArchive
         }

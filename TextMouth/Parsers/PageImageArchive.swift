@@ -67,7 +67,7 @@ struct PageImageArchive: PageImageBook {
     ///   `EncryptedArchiveError` when an entry is protected by a password.
     init(url: URL, maximumPages: Int = PageImageWording.maximumPages) throws {
         // A password-protected archive is refused in words that say so (B27).
-        try EncryptedArchiveGuard.refuseEncrypted(at: url)
+        try UnlockedSources.refuseIfLocked(at: url)
         guard let archive = Archive.openedForReading(at: url) else { throw PageImageError.notAnArchive }
         let contents = try Self.contents(of: archive, maximumPages: maximumPages)
         let comicInfo = contents.comicInfo.flatMap { Self.comicInfo(in: $0, of: archive) }

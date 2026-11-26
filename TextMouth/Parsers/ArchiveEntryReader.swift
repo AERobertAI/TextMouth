@@ -125,7 +125,7 @@ extension Archive {
     /// given only a URL and an access mode, `try?` resolves to the
     /// deprecated one.
     static func openedForReading(at url: URL) -> Archive? {
-        try? Archive(url: url, accessMode: .read, pathEncoding: nil)
+        UnlockedSources.archiveOpenedForReading(at: url)
     }
 }
 

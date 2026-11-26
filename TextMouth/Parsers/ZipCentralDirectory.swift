@@ -9,6 +9,16 @@ import Foundation
 struct ZipDirectoryRecord: Equatable, Sendable {
     /// The entry's path inside the archive.
     var name: String
+    /// The version that made the entry, whose high byte says which system
+    /// wrote its `externalAttributes` (3 is Unix, where they hold the mode).
+    var versionMadeBy: UInt16
+    /// The entry's modification time and date, in MS-DOS form. A ZipCrypto
+    /// entry's password check byte is the time's high byte when the entry
+    /// has a data descriptor.
+    var modTime: UInt16
+    var modDate: UInt16
+    /// The file attributes of the system that wrote the entry.
+    var externalAttributes: UInt32
     /// The general purpose bit flag. Bit 0 says the entry is encrypted, bit 6
     /// that it uses PKWARE's strong encryption, bit 13 that the central
     /// directory itself is masked.
@@ -125,6 +135,10 @@ enum ZipCentralDirectory {
 
             var record = ZipDirectoryRecord(
                 name: decodeName(nameBytes),
+                versionMadeBy: directory.u16(position + 4),
+                modTime: directory.u16(position + 12),
+                modDate: directory.u16(position + 14),
+                externalAttributes: directory.u32(position + 38),
                 flags: flags,
                 method: directory.u16(position + 10),
                 checksum: directory.u32(position + 16),
