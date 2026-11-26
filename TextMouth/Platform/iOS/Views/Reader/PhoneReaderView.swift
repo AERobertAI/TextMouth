@@ -85,8 +85,14 @@ struct PhoneReaderView: View {
 
     /// The column, or the Mac's load failure in place of the moving
     /// controls, with Back still working.
-    @ViewBuilder
     private var content: some View {
+        // While the book is got from the cloud its download view takes the place of all of it (FR43).
+        PhoneReaderCloudGate(reader: session.reader) { readerContent }
+    }
+
+    /// The column, or the load failure, once the book is on the phone.
+    @ViewBuilder
+    private var readerContent: some View {
         if let failure = loadFailure {
             ReaderLoadFailureView(message: failure)
                 .accessibilityFocused($failureFocused)
@@ -340,13 +346,14 @@ struct PhoneReaderView: View {
         guard let snapshot = session.snapshot else { return }
         await PhoneReaderArrival().run()
         PhoneAnnouncer.say(snapshot.title)
-        guard session.snapshot?.isLoading == true else { return }
+        guard session.snapshot?.isLoading == true, session.reader?.cloudPhase == nil else { return }
         try? await Task.sleep(for: .seconds(5))
         // Leaving the screen cancels this task, and `try?` swallows the
         // cancellation, so without this a book still loading and kept open
         // would be announced over the Library as the listener leaves.
         guard !Task.isCancelled else { return }
-        if session.snapshot?.bookID == snapshot.bookID, session.snapshot?.isLoading == true {
+        // A book that is being downloaded says so itself; "Loading" would be a second, wrong word for it.
+        if session.snapshot?.bookID == snapshot.bookID, session.snapshot?.isLoading == true, session.reader?.cloudPhase == nil {
             PhoneAnnouncer.say(PhoneReaderVocabulary.loading(snapshot.title))
         }
     }
