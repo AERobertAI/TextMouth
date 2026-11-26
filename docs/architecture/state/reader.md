@@ -196,6 +196,7 @@ Getting a book from the cloud: a reader's download, in a library in a cloud loca
 - How others observe it: the download's progress is recorded in BookCloudStates.shared between beginDownload and endDownload, so the library list shows it too, and after a cancel, a pause, or a close the state found afterwards is recorded.
   A part of the one file left that the sync service publishes gives the bar its percentage, and with it the milestones: VoiceOver hears the download start, 25, 50, and 75 percent, or the time waited every 30 seconds while there is no percentage, and the end.
   ReaderCloudWording words everything the view shows and speaks.
+- A placeholder of library sync opens through the same download view: StoreBookStorage answers its state and fetches its files from the sync folder ([Library sync: books and rules](library-sync-store.md)).
 
 ## The cloud working copy
 <!-- id: cloud-working-copy; keys: iCloud audiobook, APFS clone, local copy, playbackURL, package copy, MachineLocalPaths; src: TextMouth/Services/ReaderWorkingCopy.swift, TextMouth/ViewModels/ReaderViewModel+CloudDownload.swift, TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouth/ViewModels/ReaderViewModel+LibraryUpdates.swift, TextMouth/ViewModels/ReaderViewModel.swift, TextMouth/Models/CloudStorageContract.swift -->
