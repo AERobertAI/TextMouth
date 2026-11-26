@@ -534313,6 +534313,318 @@
         }
       }
     },
+    "phoneExport.anotherExportRuns" : {
+      "comment" : "The hint of the dimmed Export button on the iPhone's Export sheet while another export is running.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يجري تصدير آخر. بطاقته في أعلى المكتبة."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "আরেকটি রপ্তানি চলছে। তার কার্ড লাইব্রেরির উপরে আছে।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ein anderer Export läuft. Seine Karte steht oben in der Bibliothek."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Another export is running. Its card is at the top of the Library."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Hay otra exportación en curso. Su tarjeta está en la parte superior de la Biblioteca."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "صادر کردن دیگری در جریان است. کارت آن در بالای کتابخانه است."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Une autre exportation est en cours. Sa carte se trouve en haut de la Bibliothèque."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ייצוא אחר פועל. הכרטיס שלו נמצא בראש הספרייה."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "एक और निर्यात चल रहा है। उसका कार्ड लाइब्रेरी के सबसे ऊपर है।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ekspor lain sedang berjalan. Kartunya ada di bagian atas Pustaka."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "È in corso un’altra esportazione. La sua scheda è in cima alla Libreria."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "別の書き出しが実行中です。そのカードはライブラリの上部にあります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "다른 내보내기가 진행 중입니다. 그 카드는 보관함 맨 위에 있습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Er loopt een andere export. De kaart ervan staat bovenaan de Bibliotheek."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Trwa inny eksport. Jego karta jest na górze Biblioteki."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Outra exportação está em andamento. O cartão dela fica no topo da Biblioteca."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Идёт другой экспорт. Его карточка находится вверху Библиотеки."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "En annan export pågår. Dess kort ligger högst upp i Biblioteket."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "มีการส่งออกอีกรายการกำลังทำงานอยู่ การ์ดของมันอยู่ด้านบนสุดของไลบรารี"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Başka bir dışa aktarma sürüyor. Kartı Kitaplık’ın en üstünde."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Триває інший експорт. Його картка вгорі Бібліотеки."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ایک اور برآمد جاری ہے۔ اس کا کارڈ لائبریری کے اوپر ہے۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Một lần xuất khác đang chạy. Thẻ của nó ở đầu Thư viện."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "另一项导出正在进行。它的卡片位于资料库顶部。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "另一項輸出正在進行。它的卡片位於書庫頂部。"
+          }
+        }
+      }
+    },
+    "phoneExport.canCloseNow" : {
+      "comment" : "Said by VoiceOver on the iPhone's Export sheet when the spoken audio file is being made and the sheet may be closed.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يمكنك إغلاق هذا. يستمر التصدير."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "আপনি এটি বন্ধ করতে পারেন। রপ্তানি চলতে থাকে।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Du kannst dies schließen. Der Export läuft weiter."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You can close this. The export goes on."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Puedes cerrar esto. La exportación continúa."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "می‌توانید این را ببندید. صادر کردن ادامه می‌یابد."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Vous pouvez fermer ceci. L’exportation continue."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "אפשר לסגור את זה. הייצוא נמשך."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "आप इसे बंद कर सकते हैं। निर्यात जारी रहता है।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Anda dapat menutup ini. Ekspor terus berjalan."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Puoi chiudere questa schermata. L’esportazione continua."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "これを閉じても構いません。書き出しは続きます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이 화면을 닫아도 됩니다. 내보내기는 계속됩니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Je kunt dit sluiten. De export gaat door."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Możesz to zamknąć. Eksport trwa dalej."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Você pode fechar isto. A exportação continua."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Это окно можно закрыть. Экспорт продолжится."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Du kan stänga det här. Exporten fortsätter."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "คุณปิดหน้านี้ได้ การส่งออกจะทำต่อไป"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bunu kapatabilirsiniz. Dışa aktarma sürer."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Це вікно можна закрити. Експорт триває."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "آپ اسے بند کر سکتے ہیں۔ برآمد جاری رہتی ہے۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bạn có thể đóng mục này. Quá trình xuất vẫn tiếp tục."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "你可以关闭此内容。导出会继续进行。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "你可以關閉此內容。輸出會繼續進行。"
+          }
+        }
+      }
+    },
     "phoneExport.closeWhileExporting" : {
       "comment" : "The hint of the Close button of the Export sheet on the iPhone while a spoken audio export runs: the sheet closes, the export goes on, and the Library shows its progress.",
       "extractionState" : "manual",
@@ -534465,6 +534777,162 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "關閉輸出。輸出會繼續進行，書庫會顯示進度。"
+          }
+        }
+      }
+    },
+    "phoneExport.questionWithNoSheet" : {
+      "comment" : "Ends what an export says when it stopped because it needed to ask what to do with a chapter nested too deeply, and the Export sheet was closed.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "احتاج فصل متداخل بعمق زائد إلى سؤال، وكانت الشاشة مغلقة، فتوقف التصدير."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "অতিরিক্ত গভীরভাবে নেস্ট করা একটি অধ্যায় সম্পর্কে প্রশ্ন করার দরকার ছিল, কিন্তু শিটটি বন্ধ ছিল, তাই রপ্তানি বন্ধ হয়েছে।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zu einem zu tief verschachtelten Kapitel war eine Frage nötig, und das Blatt war geschlossen, deshalb wurde der Export gestoppt."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A chapter nested too deeply needed a question, and the sheet was closed, so the export stopped."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Un capítulo anidado con demasiada profundidad requería una pregunta, pero la hoja estaba cerrada, así que la exportación se detuvo."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "فصلی با تودرتویی بیش‌ازحد به پرسشی نیاز داشت و برگه بسته بود، پس صادر کردن متوقف شد."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Un chapitre trop imbriqué demandait une question, et la feuille était fermée : l’exportation s’est donc arrêtée."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "פרק מקונן עמוק מדי היה צריך שאלה, והגיליון היה סגור, ולכן הייצוא נעצר."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "बहुत गहराई में बसे एक अध्याय के बारे में सवाल पूछना था, पर शीट बंद थी, इसलिए निर्यात रुक गया।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sebuah bab yang bersarang terlalu dalam memerlukan pertanyaan, tetapi lembar sudah ditutup, jadi ekspor dihentikan."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Un capitolo annidato troppo in profondità richiedeva una domanda, ma il foglio era chiuso, quindi l’esportazione si è interrotta."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "深く入れ子になった章について確認が必要でしたが、シートが閉じていたため、書き出しを停止しました。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "너무 깊게 중첩된 챕터에 대해 질문이 필요했지만 시트가 닫혀 있어 내보내기를 중지했습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Voor een te diep genest hoofdstuk was een vraag nodig, maar het blad was gesloten, dus de export is gestopt."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Rozdział zagnieżdżony zbyt głęboko wymagał pytania, ale arkusz był zamknięty, więc eksport zatrzymano."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Um capítulo aninhado fundo demais precisava de uma pergunta, mas a folha estava fechada, então a exportação parou."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Для слишком глубоко вложенной главы был нужен вопрос, но лист был закрыт, поэтому экспорт остановлен."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ett för djupt nästlat kapitel behövde en fråga, men bladet var stängt, så exporten stoppades."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "บทที่ซ้อนลึกเกินไปต้องมีคำถาม แต่แผ่นงานถูกปิดอยู่ การส่งออกจึงหยุด"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Fazla derin iç içe geçmiş bir bölüm için soru sorulması gerekiyordu, ancak sayfa kapalıydı; bu yüzden dışa aktarma durdu."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Для надто глибоко вкладеного розділу потрібне було запитання, але аркуш було закрито, тож експорт зупинено."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "بہت گہرائی میں گھرے ایک باب کے بارے میں سوال پوچھنا تھا، مگر شیٹ بند تھی، اس لیے برآمد رک گئی۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Một chương lồng quá sâu cần được hỏi, nhưng trang đã đóng, nên quá trình xuất đã dừng."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "有一章嵌套过深，需要询问，但面板已关闭，所以导出已停止。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "有一章巢狀過深，需要詢問，但面板已關閉，所以輸出已停止。"
           }
         }
       }
@@ -534777,6 +535245,162 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "將剛剛輸出的檔案傳送給其他 App 或其他人。"
+          }
+        }
+      }
+    },
+    "phoneExport.stoppedBySystem" : {
+      "comment" : "Starts what an export says at its end when iOS stopped it, not the person. \"iOS\" is the name of the operating system.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "أوقف iOS هذا التصدير."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iOS এই রপ্তানি বন্ধ করেছে।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iOS hat diesen Export gestoppt."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iOS stopped this export."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iOS detuvo esta exportación."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iOS این صادر کردن را متوقف کرد."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iOS a arrêté cette exportation."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iOS עצר את הייצוא הזה."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iOS ने यह निर्यात रोक दिया।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iOS menghentikan ekspor ini."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iOS ha interrotto questa esportazione."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iOS がこの書き出しを停止しました。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iOS가 이 내보내기를 중지했습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iOS heeft deze export gestopt."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iOS zatrzymał ten eksport."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "O iOS interrompeu esta exportação."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iOS остановила этот экспорт."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iOS stoppade den här exporten."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iOS หยุดการส่งออกนี้"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iOS bu dışa aktarmayı durdurdu."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iOS зупинила цей експорт."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iOS نے یہ برآمد روک دی۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iOS đã dừng lần xuất này."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iOS 已停止此次导出。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iOS 已停止此次輸出。"
           }
         }
       }
