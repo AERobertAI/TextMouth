@@ -15,7 +15,7 @@ struct EncryptedArchiveError: LocalizedError, LogDescribing, Equatable {
     static let namesShown = 3
 
     /// The reason, naming the files that could not be read: "This ZIP archive
-    /// is protected by a password, which TextMouth can't open. It couldn't read
+    /// is protected by a password. It couldn't read
     /// “a.txt”, “b.txt”, “c.txt”, and others."
     var errorDescription: String? {
         let shown = names.prefix(Self.namesShown).map { "“\($0)”" }
@@ -24,7 +24,7 @@ struct EncryptedArchiveError: LocalizedError, LogDescribing, Equatable {
             ? InterfaceText.line("encryptedArchive.namesAndOthers", "\(shown.joined(separator: ", ")), and others")
             : CountWording.list(Array(shown))
         // Translators: Why a ZIP archive could not be imported: its files are protected by a password, which TextMouth cannot use. %@ is the names of the files it could not read, in quotes.
-        return InterfaceText.line("encryptedArchive.protected", "This ZIP archive is protected by a password, which TextMouth can't open. It couldn't read \(list).")
+        return InterfaceText.line("encryptedArchive.protected", "This ZIP archive is protected by a password. It couldn't read \(list).")
     }
 
     /// The error in English for the debug log: how many entries, and never
@@ -43,10 +43,11 @@ enum EncryptedArchiveGuard {
     /// encrypted, in the archive's order; empty for an archive with none,
     /// and for a file whose central directory cannot be read, which is some
     /// other kind of damage that the readers report in their own words.
-    /// Folders are skipped: they hold no data to protect.
+    /// A folder flagged encrypted counts: ZIPFoundation returns no entry for
+    /// it either, and ends its listing there.
     static func encryptedNames(inFileAt url: URL) -> [String] {
         (ZipCentralDirectory.records(ofFileAt: url) ?? [])
-            .filter { $0.isEncrypted && !$0.isFolder }
+            .filter(\.isEncrypted)
             .map(\.name)
     }
 

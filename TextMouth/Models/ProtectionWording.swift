@@ -108,6 +108,42 @@ enum ProtectionWording {
 
     // MARK: Outcomes
 
+    /// What is said once the password is off the book's file.
+    static var removed: String {
+        // Translators: Said after the password was taken off a book's file in the library.
+        InterfaceText.line("protection.removed", "Password removed.")
+    }
+
+    /// What is said when the password could not be taken off.
+    static var removeFailed: String {
+        // Translators: Said when taking the password off a book's file failed; the book stays as it was and opens for now.
+        InterfaceText.line("protection.removeFailed", "The password could not be removed. The book is as it was.")
+    }
+
+    /// What is said when the password could not be kept in the Keychain.
+    static var rememberFailed: String {
+        // Translators: Said when the Keychain would not keep a book's password; the book opens anyway.
+        InterfaceText.line("protection.rememberFailed", "The password could not be kept in the Keychain. The book is open.")
+    }
+
+    /// What is said when a section of a protected book is chosen to skip.
+    static var cannotSkipSections: String {
+        // Translators: Said when someone tries to skip a section of a book that has a password: a skipped section is saved with its words, which a protected book never keeps. Remove the password first.
+        InterfaceText.line("protection.cannotSkip", "Sections of a book with a password can't be skipped. Remove its password first.")
+    }
+
+    /// What is said while a password is being tried.
+    static var unlocking: String {
+        // Translators: Said while a typed password is being tried on a book.
+        InterfaceText.line("protection.unlocking", "Unlocking.")
+    }
+
+    /// The hint of the Show password checkbox.
+    static var showPasswordHint: String {
+        // Translators: Hint of the Show password checkbox: it lets the typed password be read back.
+        InterfaceText.line("protection.showHint", "Lets you read back what you typed.")
+    }
+
     /// What a wrong password says, on screen and aloud.
     static var wrongPassword: String {
         // Translators: Said and shown when a typed password does not open the book.

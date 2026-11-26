@@ -515,6 +515,8 @@ final class LibraryViewModel: ObservableObject {
         let madeIdentity = recordLibraryIdentity()
         // Clear what ZIP imports interrupted by a crash left extracted.
         removeLeftoverArchiveExtractions()
+        sweepPasswordRemovalLeftovers()
+        lookForProtectedBooks()
         // Clear the reading texts this Mac kept that went unused for a day,
         // off the main thread; they are this Mac's own, never in the cloud.
         ReadingTextCache.shared.removeExpiredInBackground()

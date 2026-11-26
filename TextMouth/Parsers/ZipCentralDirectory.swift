@@ -103,12 +103,13 @@ enum ZipCentralDirectory {
     }
 
     /// The offset in `tail` of the last end-of-central-directory record
-    /// whose comment length fits exactly to the tail's end, or nil.
+    /// whose comment fits inside the tail, or nil. Bytes after the comment
+    /// are allowed (a downloader's padding, a signature), as archive tools allow.
     private static func findEndRecord(in tail: [UInt8]) -> Int? {
         guard tail.count >= 22 else { return nil }
         var offset = tail.count - 22
         while offset >= 0 {
-            if tail.u32(offset) == endSignature, offset + 22 + Int(tail.u16(offset + 20)) == tail.count {
+            if tail.u32(offset) == endSignature, offset + 22 + Int(tail.u16(offset + 20)) <= tail.count {
                 return offset
             }
             offset -= 1

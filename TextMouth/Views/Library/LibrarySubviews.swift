@@ -722,7 +722,7 @@ struct BookRow: View {
                     }
 
                     // "Locked": the book has a password and is not open (FR41).
-                    if book.isLocked {
+                    if book.isLockedForDisplay {
                         RowNoteBadge(symbolName: "lock.fill", text: ProtectionWording.lockedState)
                     }
 
@@ -838,7 +838,7 @@ struct BookRow: View {
         }
         // A protected book says so, after its title and notes, so it is not
         // opened by surprise (FR41).
-        if book.isLocked {
+        if book.isLockedForDisplay {
             parts.append(ProtectionWording.lockedState)
         }
         if let transcriptionNote {

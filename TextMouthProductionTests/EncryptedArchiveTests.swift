@@ -52,13 +52,21 @@ final class EncryptedArchiveTests: XCTestCase {
         XCTAssertNoThrow(try EncryptedArchiveGuard.refuseEncrypted(at: url))
     }
 
-    /// A folder entry is not a file that a password protects.
-    func testAFolderEntryIsNotCounted() throws {
+    /// A folder flagged encrypted counts too: ZIPFoundation ends its listing at it.
+    func testAnEncryptedFolderEntryIsFound() throws {
         let made = try makeTemporaryZip(prefix: "encrypted", orderedEntries: [.folder("dir/"), TestZIPEntry("dir/a.txt", Data("x".utf8))])
         let url = folder.appendingPathComponent("folder.zip")
         try FileManager.default.moveItem(at: made, to: url)
         try markEncrypted(["dir/"], in: url)
-        XCTAssertEqual(EncryptedArchiveGuard.encryptedNames(inFileAt: url), [])
+        XCTAssertEqual(EncryptedArchiveGuard.encryptedNames(inFileAt: url), ["dir/"])
+    }
+
+    /// Bytes after the end record (padding, a signature) do not hide the directory.
+    func testTrailingBytesAfterTheEndRecordDoNotHideIt() throws {
+        let url = try makeZip(["a.txt"], locked: ["a.txt"])
+        let padded = folder.appendingPathComponent("padded.zip")
+        try (try Data(contentsOf: url) + Data(repeating: 0, count: 40)).write(to: padded)
+        XCTAssertEqual(EncryptedArchiveGuard.encryptedNames(inFileAt: padded), ["a.txt"])
     }
 
     /// A file that is not a ZIP, a ZIP cut short, and a missing file name nothing and throw nothing:
@@ -122,6 +130,7 @@ final class EncryptedArchiveTests: XCTestCase {
     func testTheRefusalNamesTheFilesItCouldNotRead() {
         let few = EncryptedArchiveError(names: ["a.txt", "b.txt"]).errorDescription ?? ""
         XCTAssertTrue(few.contains("password"), few)
+        XCTAssertFalse(few.contains("can't open"), "it says the ZIP needs a password, not what TextMouth cannot do: \(few)")
         XCTAssertTrue(few.contains("“a.txt”") && few.contains("“b.txt”"), few)
         let many = EncryptedArchiveError(names: ["a", "b", "c", "d", "e"]).errorDescription ?? ""
         XCTAssertTrue(many.contains("“a”") && many.contains("“c”"), many)

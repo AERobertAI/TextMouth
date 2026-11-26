@@ -30,15 +30,70 @@ enum ProtectionScheme: String, Sendable, Equatable {
 /// reads the same files without a surprise.
 enum ProtectionDetector {
 
-    /// What was found for a file at one size and date.
-    private struct Remembered {
+    /// What was found for a file at one size and date. Kept in this Mac's
+    /// caches between launches, so a library is looked at once, not at
+    /// every launch (the file is looked at again when its size or date
+    /// changes).
+    private struct Remembered: Codable {
         var size: UInt64
-        var date: Date
-        var scheme: ProtectionScheme?
+        var date: TimeInterval
+        var scheme: String?
     }
 
-    /// The answers kept, by file path.
-    private static let remembered = OSAllocatedUnfairLock<[String: Remembered]>(initialState: [:])
+    /// The answers kept, by file path, read from this Mac's caches the
+    /// first time they are asked for.
+    private static let remembered = OSAllocatedUnfairLock<[String: Remembered]>(initialState: loadRemembered())
+
+    /// The file the answers are kept in.
+    private static var rememberedFile: URL {
+        MachineLocalPaths.caches.appendingPathComponent("ProtectionLooks.json")
+    }
+
+    /// The answers saved by an earlier launch, or none.
+    private static func loadRemembered() -> [String: Remembered] {
+        guard let data = try? Data(contentsOf: rememberedFile),
+              let saved = try? JSONDecoder().decode([String: Remembered].self, from: data) else { return [:] }
+        return saved
+    }
+
+    /// Whether a save of the answers is already waiting.
+    private static let saveWaiting = OSAllocatedUnfairLock(initialState: false)
+
+    /// Saves the answers a few seconds from now, once for every look made
+    /// meanwhile. A cache that cannot be written is only slower next launch.
+    private static func saveSoon() {
+        guard !saveWaiting.withLock({ waiting -> Bool in
+            let was = waiting
+            waiting = true
+            return was
+        }) else { return }
+        DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + 3) {
+            saveWaiting.withLock { $0 = false }
+            let snapshot = remembered.withLock { $0 }
+            guard let data = try? JSONEncoder().encode(snapshot) else { return }
+            try? FileManager.default.createDirectory(at: MachineLocalPaths.caches, withIntermediateDirectories: true)
+            try? data.write(to: rememberedFile, options: .atomic)
+        }
+    }
+
+    /// The size and date a file's answer is kept against, or nil.
+    private static func stamp(of url: URL) -> (size: UInt64, date: TimeInterval)? {
+        guard !DatalessFiles.isDataless(url),
+              let attributes = try? FileManager.default.attributesOfItem(atPath: url.standardizedFileURL.path),
+              let size = (attributes[.size] as? NSNumber)?.uint64Value,
+              let date = attributes[.modificationDate] as? Date else { return nil }
+        return (size, date.timeIntervalSinceReferenceDate)
+    }
+
+    /// The answer already kept for the file at `url`, without looking at it:
+    /// for a list that must not wait on a file (nil when none is kept, which
+    /// reads as no password until `scheme(ofFileAt:format:)` has looked).
+    static func cachedScheme(ofFileAt url: URL) -> ProtectionScheme? {
+        guard let stamp = stamp(of: url),
+              let known = remembered.withLock({ $0[url.standardizedFileURL.path] }),
+              known.size == stamp.size, known.date == stamp.date else { return nil }
+        return known.scheme.flatMap(ProtectionScheme.init(rawValue:))
+    }
 
     /// The formats whose file is a ZIP archive that a password can lock.
     private static let zipFormats: Set<BookFormat> = [.epub, .daisy, .comic, .kfx, .docx, .odt]
@@ -52,15 +107,13 @@ enum ProtectionDetector {
         let path = url.standardizedFileURL.path
         // A file that is only in the cloud is not looked at: any read would
         // download it. It is looked at once it is here.
-        guard !DatalessFiles.isDataless(url) else { return nil }
-        guard let attributes = try? FileManager.default.attributesOfItem(atPath: path),
-              let size = (attributes[.size] as? NSNumber)?.uint64Value,
-              let date = attributes[.modificationDate] as? Date else { return nil }
-        if let known = remembered.withLock({ $0[path] }), known.size == size, known.date == date {
-            return known.scheme
+        guard let stamp = stamp(of: url) else { return nil }
+        if let known = remembered.withLock({ $0[path] }), known.size == stamp.size, known.date == stamp.date {
+            return known.scheme.flatMap(ProtectionScheme.init(rawValue:))
         }
         let found = DatalessFiles.withoutDownloading { look(at: url, format: format) }
-        remembered.withLock { $0[path] = Remembered(size: size, date: date, scheme: found) }
+        remembered.withLock { $0[path] = Remembered(size: stamp.size, date: stamp.date, scheme: found?.rawValue) }
+        saveSoon()
         return found
     }
 
@@ -83,6 +136,7 @@ enum ProtectionDetector {
     /// Forgets what was found about the file at `url`, after it was rewritten.
     static func forget(_ url: URL) {
         remembered.withLock { _ = $0.removeValue(forKey: url.standardizedFileURL.path) }
+        saveSoon()
     }
 }
 
@@ -152,7 +206,8 @@ enum UnlockedSources {
             }
         case .officeOpenXML:
             do {
-                let file = try Data(contentsOf: url, options: .mappedIfSafe)
+                // Held to the document limit every reader takes (64 MB).
+                let file = try DocumentByteLimit.contents(of: url)
                 held = .archive(try OfficeCryptoDecryptor.decrypt(file, password: password))
             } catch let failure as OfficeCryptoDecryptor.Failure {
                 switch failure {
@@ -160,13 +215,18 @@ enum UnlockedSources {
                 case .unsupported: throw UnlockFailure.unsupported
                 case .damaged: throw UnlockFailure.damaged
                 }
+            } catch is DocumentTooLargeError {
+                throw UnlockFailure.unsupported
             } catch {
                 throw UnlockFailure.damaged
             }
         case .pdf:
             guard let document = PDFDocument(url: url) else { throw UnlockFailure.damaged }
-            guard document.unlock(withPassword: password.text) else { throw UnlockFailure.wrongPassword }
-            held = .pdfPassword(password)
+            // As typed, then decomposed: a PDF's password was composed or not by its writer.
+            let typed = password.text
+            let forms = [typed, typed.decomposedStringWithCanonicalMapping, typed.precomposedStringWithCanonicalMapping]
+            guard let working = forms.first(where: { document.unlock(withPassword: $0) }) else { throw UnlockFailure.wrongPassword }
+            held = .pdfPassword(Secret(working))
         }
         entries.withLock { all in
             let path = key(url)

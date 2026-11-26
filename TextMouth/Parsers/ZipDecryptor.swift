@@ -47,21 +47,60 @@ enum ZipDecryptor {
     static func decrypt(archiveAt url: URL, password: Secret) throws -> Data {
         guard let attributes = try? FileManager.default.attributesOfItem(atPath: url.path),
               let size = attributes[.size] as? NSNumber, size.intValue <= largestArchive,
-              let data = try? Data(contentsOf: url, options: .alwaysMapped),
+              let data = try? Data(contentsOf: url, options: .mappedIfSafe),
               let records = ZipCentralDirectory.records(ofFileAt: url) else { throw Failure.damaged }
         return try decrypt(archive: data, records: records, password: password)
     }
 
+    /// The most entries an archive may hold to be made plain.
+    static let largestEntryCount = 10_000
+
+    /// The most bytes of names, in UTF-8, one entry may have: a name's length
+    /// is kept in 16 bits in the plain archive.
+    static let longestName = 0xFFFF
+
+    /// Refuses a hostile archive before any of it is decrypted: too many
+    /// entries, an entry or a total past the limits readers take (the
+    /// document limit for each entry, 256 MB for audio, and
+    /// `largestArchive` for the whole), a name too long to write, and
+    /// entries whose data overlap each other (one set of bytes standing for
+    /// two files). Every refusal is `Failure.unsupported` or `.damaged`, a
+    /// sentence of its own, and none can trap.
+    private static func admit(_ records: [ZipDirectoryRecord]) throws {
+        guard records.count <= largestEntryCount else { throw Failure.unsupported }
+        var total: UInt64 = 0
+        for record in records {
+            guard record.name.utf8.count <= longestName else { throw Failure.unsupported }
+            let limit = UInt64(max(0, ArchiveEntryLimits.current.limit(forEntryAt: record.name)))
+            guard record.uncompressedSize <= limit else { throw Failure.unsupported }
+            total += record.uncompressedSize
+            guard total <= UInt64(largestArchive) else { throw Failure.unsupported }
+        }
+        // Each entry's local header starts after the end of the one before it.
+        var end: UInt64 = 0
+        for record in records.sorted(by: { $0.localHeaderOffset < $1.localHeaderOffset }) {
+            guard record.localHeaderOffset >= end else { throw Failure.damaged }
+            let (next, overflow) = record.localHeaderOffset.addingReportingOverflow(30 + record.compressedSize)
+            guard !overflow else { throw Failure.damaged }
+            end = next
+        }
+    }
+
     /// The plain archive made from `archive`, whose central directory holds `records`.
     static func decrypt(archive: Data, records: [ZipDirectoryRecord], password: Secret) throws -> Data {
-        guard records.count <= 0xFFFF else { throw Failure.unsupported }
+        try admit(records)
         // The password bytes that opened the first encrypted entry serve the rest.
         var chosen: [UInt8]?
         var plain: [PlainEntry] = []
         for record in records {
             let stored = try storedBytes(of: record, in: archive)
-            guard record.isEncrypted, !record.isFolder else {
+            guard record.isEncrypted else {
                 plain.append(PlainEntry(record: record, method: record.method, checksum: record.checksum, data: stored))
+                continue
+            }
+            // A folder holds nothing to decrypt (a writer may flag one anyway).
+            guard !record.isFolder else {
+                plain.append(PlainEntry(record: record, method: 0, checksum: 0, data: Data()))
                 continue
             }
             // Strong encryption and a masked directory are not read.
@@ -171,6 +210,11 @@ enum ZipDecryptor {
         switch checksum(of: body, method: record.method, expectedSize: record.uncompressedSize) {
         case .value(let crc) where crc != record.checksum: return nil
         case .undecodable: return nil
+        case .unchecked:
+            // A method that cannot be inflated here cannot be checked: the
+            // one byte above would let a wrong password through (and Remove
+            // Password write garbage), so it is refused.
+            throw Failure.unsupported
         default: break
         }
         return PlainEntry(record: record, method: record.method, checksum: record.checksum, data: body)
@@ -216,7 +260,9 @@ enum ZipDecryptor {
 
         // The HMAC of the encrypted bytes, first ten bytes.
         let mac = HMAC<Insecure.SHA1>.authenticationCode(for: cipherText, using: SymmetricKey(data: authenticationKey))
-        guard Array(mac.prefix(10)) == authentication else { return nil }
+        // The password's check passed, so a failed authentication is damage to
+        // the entry, not a wrong password.
+        guard Array(mac.prefix(10)) == authentication else { throw Failure.damaged }
 
         let plain = try counterModeLittleEndian(cipherText, key: encryptionKey)
         let body = Data(plain)
@@ -326,7 +372,9 @@ enum PlainZipWriter {
         for entry in entries {
             let record = entry.record
             let name = Array(record.name.utf8)
-            guard entry.data.count < 0xFFFF_FFFF, record.uncompressedSize < 0xFFFF_FFFF, output.count < 0xFFFF_FFFF else {
+            // Nothing may pass 4 GB, headers included, or fill more than 16 bits.
+            guard name.count <= ZipDecryptor.longestName, record.uncompressedSize < 0xFFFF_FFFF,
+                  output.count + central.count + entry.data.count + 2 * name.count + 120 < 0xFFFF_FFFF else {
                 throw ZipDecryptor.Failure.unsupported
             }
             // Encryption's flags and the data descriptor go; UTF-8 names stay marked.

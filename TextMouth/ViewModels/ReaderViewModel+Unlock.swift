@@ -67,6 +67,7 @@ extension ReaderViewModel {
         prompt.isWorking = true
         prompt.failure = nil
         unlockPrompt = prompt
+        announceToVoiceOver(ProtectionWording.unlocking)
         let book = self.book
         loadQueue.async { [weak self] in
             var outcome: Result<Void, UnlockFailure> = .success(())
@@ -98,11 +99,16 @@ extension ReaderViewModel {
         case .success:
             holdsUnlockedBook = true
             unlockPrompt = nil
+            // The library's row stops saying "Locked".
+            libraryViewModel.objectWillChange.send()
+            // Remembered first, even when the password is about to come off,
+            // so a removal that fails leaves the book with its password saved.
+            var kept = true
+            if choice.remember { kept = CredentialStores.current.remember(choice.password, forBook: book.md5Hash) }
             if choice.removePassword {
-                removePasswordThenLoad()
+                removePasswordThenLoad(passwordWasKept: kept)
             } else {
-                if choice.remember { CredentialStores.current.remember(choice.password, forBook: book.md5Hash) }
-                announceToVoiceOver(ProtectionWording.unlocked)
+                announceToVoiceOver(kept ? ProtectionWording.unlocked : ProtectionWording.rememberFailed)
                 loadContent()
             }
         case .failure(let failure):
@@ -125,17 +131,25 @@ extension ReaderViewModel {
     /// Rewrites the book's file without its password, then loads the book as
     /// any other. A write that fails leaves the file as it was and the book
     /// unlocked for now, which loads as usual.
-    private func removePasswordThenLoad() {
+    private func removePasswordThenLoad(passwordWasKept: Bool) {
         let book = self.book
         loadQueue.async { [weak self] in
             let removed = (try? ProtectionRemoval.removePassword(fromFileAt: book.bookFileURL, format: book.format)) != nil
+            // The book is a new file now: it is known by its new checksum.
+            let newHash = removed ? try? FileImportService.importHash(of: book.bookFileURL) : nil
             DispatchQueue.main.async {
                 guard let self, !self.hasClosed else { return }
                 if removed {
-                    // An ordinary book now: nothing needs holding.
+                    // An ordinary book now: nothing needs holding, and no
+                    // password is kept for the file it was.
                     self.releaseUnlockedBook()
+                    self.libraryViewModel.passwordWasRemoved(bookID: book.id, oldHash: book.md5Hash, newHash: newHash)
+                    if let newHash { self.book.md5Hash = newHash }
+                    self.book.metadataReaderVersion = nil
+                    self.announceToVoiceOver(ProtectionWording.removed)
+                } else {
+                    self.announceToVoiceOver(ProtectionWording.removeFailed)
                 }
-                self.announceToVoiceOver(ProtectionWording.unlocked)
                 self.loadContent()
             }
         }
@@ -147,5 +161,7 @@ extension ReaderViewModel {
         guard holdsUnlockedBook else { return }
         holdsUnlockedBook = false
         UnlockedSources.release(book.bookFileURL)
+        // The row says "Locked" again once the last window lets go.
+        libraryViewModel.objectWillChange.send()
     }
 }

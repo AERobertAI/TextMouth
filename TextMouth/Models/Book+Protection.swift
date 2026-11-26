@@ -18,6 +18,16 @@ extension Book {
     /// its headings, no search text, and no words around a saved place.
     var isPasswordProtected: Bool { protectionScheme != nil }
 
+    /// Whether a list should show the book as locked: from the answer already
+    /// kept for its file, never by looking at the file, so a list never waits
+    /// on one. Books not looked at yet read as unlocked until the library's
+    /// background look (`LibraryViewModel.lookForProtectedBooks()`) has made
+    /// its pass and refreshed the list.
+    var isLockedForDisplay: Bool {
+        !format.isAudio && ProtectionDetector.cachedScheme(ofFileAt: bookFileURL) != nil
+            && !UnlockedSources.isUnlocked(bookFileURL)
+    }
+
     /// Whether the book is protected and not unlocked for now. Every
     /// background pass skips such a book (the launch re-reads, cache
     /// rebuilds, metadata refreshes, Redo Text Extraction, and search

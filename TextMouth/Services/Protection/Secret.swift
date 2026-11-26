@@ -6,7 +6,8 @@ import Foundation
 /// description say only "redacted", so a password interpolated into a log
 /// line, an error, or a test failure prints nothing of itself, and the
 /// type has no `Codable` conformance, so none can be written to a file by
-/// accident. `LogContentPolicyTests` refuses a log call that names one.
+/// accident. (There is no rule in `LogContentPolicyTests` for it: a
+/// `Secret` interpolates as "redacted", which is what keeps it out of a log.)
 ///
 /// Held as UTF-8 bytes, which `wipe()` overwrites with `memset_s` (a plain
 /// loop may be optimized away). A `String` made from it (`text`) lives only
@@ -33,8 +34,10 @@ struct Secret: Sendable, Equatable, CustomStringConvertible, CustomDebugStringCo
     /// `unlock(withPassword:)`). Keep it only for the call.
     var text: String { String(decoding: bytes, as: UTF8.self) }
 
-    /// Overwrites every byte with zero, and leaves the secret empty. A copy
-    /// of the secret made earlier keeps its own bytes: wipe each one you make.
+    /// Overwrites this value's bytes with zero, and leaves it empty. The
+    /// bytes are an array, which copies on write: a copy of the secret made
+    /// earlier keeps its own bytes until it is wiped too, so wipe each one
+    /// you make. (Swift cannot wipe the storage a copy shares.)
     mutating func wipe() {
         bytes.withUnsafeMutableBytes { buffer in
             if let base = buffer.baseAddress, buffer.count > 0 {

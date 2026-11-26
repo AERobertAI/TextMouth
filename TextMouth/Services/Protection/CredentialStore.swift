@@ -105,6 +105,15 @@ final class InMemoryCredentialStore: CredentialStore {
 /// the signing a paid team gives, and a remembered password is this
 /// device's alone (FR41).
 ///
+/// On the iPhone `kSecAttrAccessibleWhenUnlockedThisDeviceOnly` keeps an item
+/// off other devices. On the Mac the item goes in the login (file-based)
+/// keychain, which ignores that setting: the item stays this Mac's because
+/// iCloud Keychain is not asked for it (`kSecAttrSynchronizable` false), not
+/// because the setting holds. The data-protection keychain
+/// (`kSecUseDataProtectionKeychain`) would honor it, but needs a keychain
+/// access group that the self-signed and ad hoc builds do not have, so it
+/// is not used; a build signed by a paid team can switch to it.
+///
 /// No test calls this type: a signature that changes (ad hoc builds, the
 /// trains' builds) makes macOS ask for the keychain password. It is
 /// exercised by hand, once, on a signed build.
@@ -132,26 +141,33 @@ struct KeychainCredentialStore: CredentialStore {
         return Secret(bytes: [UInt8](data))
     }
 
-    func rememberedPasswords() -> [Secret] {
-        let request: [String: Any] = [
+    /// The query that lists every item of the service: attributes only.
+    /// `SecItemCopyMatching` does not allow `kSecReturnData` with
+    /// `kSecMatchLimitAll` for a password item (it answers errSecParam, and
+    /// the first version of this code got nothing back), so the data of
+    /// each item is fetched on its own (`password(forBook:)`).
+    static func listQuery() -> [String: Any] {
+        [
             kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: Self.service,
+            kSecAttrService as String: service,
             kSecAttrSynchronizable as String: false,
-            kSecReturnData as String: true,
             kSecReturnAttributes as String: true,
             kSecMatchLimit as String: kSecMatchLimitAll
         ]
+    }
+
+    func rememberedPasswords() -> [Secret] {
         var result: CFTypeRef?
-        guard SecItemCopyMatching(request as CFDictionary, &result) == errSecSuccess,
+        guard SecItemCopyMatching(Self.listQuery() as CFDictionary, &result) == errSecSuccess,
               let items = result as? [[String: Any]] else { return [] }
-        // Newest first, by the date each item was made.
-        let dated = items.compactMap { item -> (Date, Secret)? in
-            guard let data = item[kSecValueData as String] as? Data else { return nil }
-            let made = item[kSecAttrCreationDate as String] as? Date ?? .distantPast
-            return (made, Secret(bytes: [UInt8](data)))
+        // Newest first, by the date each item was made, then each one's data.
+        let dated = items.compactMap { item -> (Date, String)? in
+            guard let account = item[kSecAttrAccount as String] as? String else { return nil }
+            return (item[kSecAttrCreationDate as String] as? Date ?? .distantPast, account)
         }
         var unique: [Secret] = []
-        for (_, secret) in dated.sorted(by: { $0.0 > $1.0 }) where !unique.contains(secret) {
+        for (_, account) in dated.sorted(by: { $0.0 > $1.0 }) {
+            guard let secret = password(forBook: account), !unique.contains(secret) else { continue }
             unique.append(secret)
         }
         return unique

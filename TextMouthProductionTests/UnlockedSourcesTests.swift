@@ -1,5 +1,6 @@
 #if os(macOS)
 import PDFKit
+import Security
 import XCTest
 import ZIPFoundation
 @testable import TextMouth
@@ -161,6 +162,40 @@ final class UnlockedSourcesTests: XCTestCase {
         XCTAssertThrowsError(try EPUBParser.writeMetadata(metadata, to: url)) { XCTAssertTrue($0 is PasswordProtectedDocument, "\($0)") }
         XCTAssertEqual(try Data(contentsOf: url), before)
         XCTAssertEqual(try folderListing().filter { $0.hasSuffix(".epub") }, [], "no copy was left")
+    }
+
+    /// The detector's answer is kept by path, size, and date: asking for it without looking finds
+    /// nothing before the first look, the kept answer after, and nothing once the file is rewritten.
+    func testTheDetectorKeepsItsAnswerWithoutLookingAgain() throws {
+        let url = try lockedZIP()
+        XCTAssertNil(ProtectionDetector.cachedScheme(ofFileAt: url))
+        XCTAssertEqual(ProtectionDetector.scheme(ofFileAt: url, format: .epub), .zip)
+        XCTAssertEqual(ProtectionDetector.cachedScheme(ofFileAt: url), .zip)
+        ProtectionDetector.forget(url)
+        XCTAssertNil(ProtectionDetector.cachedScheme(ofFileAt: url))
+    }
+
+    /// A copy a crash left in a package is deleted by its exact name, and nothing else is.
+    func testALeftoverPlainCopyIsSweptAndNothingElse() throws {
+        let leftover = folder.appendingPathComponent(ProtectionRemoval.temporaryPrefix + UUID().uuidString)
+        let keeper = folder.appendingPathComponent("Book.pdf")
+        try Data("plain".utf8).write(to: leftover)
+        try Data("book".utf8).write(to: keeper)
+        XCTAssertEqual(ProtectionRemoval.removeLeftovers(inPackageAt: folder), 1)
+        XCTAssertEqual(try folderListing(), ["Book.pdf"])
+    }
+
+    /// The Keychain's list query follows the documented rules, which the in-memory fake cannot check:
+    /// it asks for attributes, never for data together with every match (errSecParam for a password item),
+    /// and it stays on this device's items.
+    func testTheKeychainListQueryFollowsTheDocumentedRules() {
+        let query = KeychainCredentialStore.listQuery()
+        XCTAssertEqual(query[kSecMatchLimit as String] as? String, kSecMatchLimitAll as String)
+        XCTAssertEqual(query[kSecReturnAttributes as String] as? Bool, true)
+        XCTAssertNil(query[kSecReturnData as String], "data with every match is not allowed for password items")
+        XCTAssertEqual(query[kSecAttrService as String] as? String, KeychainCredentialStore.service)
+        XCTAssertEqual(query[kSecAttrSynchronizable as String] as? Bool, false)
+        XCTAssertEqual(query[kSecClass as String] as? String, kSecClassGenericPassword as String)
     }
 
     // MARK: - Secrets and the store

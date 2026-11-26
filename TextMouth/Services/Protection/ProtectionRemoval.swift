@@ -21,9 +21,10 @@ enum ProtectionRemoval {
     ///
     /// The new file is written under a hidden name beside the old one, then
     /// put in place with one rename, so a crash leaves the protected file
-    /// whole, with a leftover that the library's usual sweep of hidden
-    /// import leftovers can remove. The space needed is one copy, for as
-    /// long as the write lasts.
+    /// whole, with a leftover. A failed write or rename removes its own
+    /// copy, which holds the book without its password, and the launch
+    /// sweeps up one a crash left (`removeLeftovers(inPackageAt:)`). The
+    /// space needed is one copy, for as long as the write lasts.
     /// - Throws: `Failure`.
     static func removePassword(fromFileAt url: URL, format: BookFormat) throws {
         guard UnlockedSources.isUnlocked(url), let scheme = ProtectionDetector.scheme(ofFileAt: url, format: format) else {
@@ -46,11 +47,37 @@ enum ProtectionRemoval {
             }
             try SavedFile.renameReplacing(temporary, url)
         } catch let failure as Failure {
+            discard(temporary)
             throw failure
         } catch {
+            discard(temporary)
             throw Failure.couldNotWrite
         }
         // What was found about the old file no longer holds.
         ProtectionDetector.forget(url)
+    }
+
+    /// The prefix of the hidden copy's name.
+    static let temporaryPrefix = ".unprotecting-"
+
+    /// Deletes a copy of the book without its password, which a failed
+    /// write or rename left. Its name is a path this code made itself.
+    private static func discard(_ temporary: URL) {
+        try? FileManager.default.removeItem(at: temporary)
+    }
+
+    /// Deletes the copies a crash left in the package at `package`, each by
+    /// its exact path, and returns how many. Looks at nothing in the cloud.
+    @discardableResult
+    static func removeLeftovers(inPackageAt package: URL) -> Int {
+        DatalessFiles.withoutDownloading {
+            guard !DatalessFiles.isDataless(package),
+                  let names = try? FileManager.default.contentsOfDirectory(atPath: package.path) else { return 0 }
+            var removed = 0
+            for name in names where name.hasPrefix(temporaryPrefix) {
+                if (try? FileManager.default.removeItem(at: package.appendingPathComponent(name))) != nil { removed += 1 }
+            }
+            return removed
+        }
     }
 }

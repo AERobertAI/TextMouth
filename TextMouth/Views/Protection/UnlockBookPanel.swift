@@ -84,6 +84,7 @@ struct UnlockBookPanel: View {
             }
 
             Toggle(ProtectionWording.showPassword, isOn: $showsPassword)
+                .accessibilityHint(ProtectionWording.showPasswordHint)
                 .accessibilityIdentifier("unlock.show")
             Toggle(ProtectionWording.remember, isOn: $remembers)
                 .accessibilityHint(ProtectionWording.rememberHint)
@@ -117,7 +118,11 @@ struct UnlockBookPanel: View {
             fieldFocused = true
         }
         // A wrong password keeps the person in the field.
-        .onChange(of: state.wrongAttempts) { _, _ in fieldFocused = true }
+        // and what was typed is cleared, so typing again replaces it.
+        .onChange(of: state.wrongAttempts) { _, _ in
+            typed = ""
+            fieldFocused = true
+        }
         // The field is replaced when the password is shown or hidden: keep focus in it.
         .onChange(of: showsPassword) { _, _ in fieldFocused = true }
     }
@@ -146,7 +151,8 @@ struct UnlockBookPanel: View {
 
     /// Hands the choice over, unless nothing was typed or an attempt is under way.
     private func submit() {
-        guard !state.isWorking else { return }
+        // Nothing is sent for an empty field, and nothing while an attempt is under way.
+        guard !state.isWorking, !typed.isEmpty else { return }
         onUnlock(UnlockChoice(password: Secret(typed), remember: remembers, removePassword: removes))
     }
 }

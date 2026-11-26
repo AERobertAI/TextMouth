@@ -1775,7 +1775,9 @@ final class ReaderViewModel: ObservableObject {
         // the reader takes the move into the row, which saves the row and
         // the record as any change is. All of it runs off the main thread,
         // where a large book's places are found.
-        if !format.isAudio {
+        // (Not for a protected book: finding a place by its words would copy
+        // them into its record, FR41.)
+        if !format.isAudio, !book.isPasswordProtected {
             if let moved = analysis.movedPlaces {
                 book.takeMovedPlaces(original: moved.original, moved: moved.moved)
             }

@@ -126,18 +126,73 @@ final class ZipDecryptorTests: XCTestCase {
         }
     }
 
+    /// A ZipCrypto entry whose method cannot be inflated here (bzip2) has only the one-byte check, which a wrong
+    /// password passes one time in 256: it is refused in words of its own, for any password.
+    func testZipCryptoWithAMethodThatCannotBeCheckedIsRefused() throws {
+        let url = folder.appendingPathComponent("bzip.zip")
+        try run("/usr/bin/zip", ["-q", "-Z", "bzip2", "-P", "secret", url.path, "b.txt"])
+        for typed in ["secret", "wrong"] {
+            XCTAssertThrowsError(try ZipDecryptor.decrypt(archiveAt: url, password: Secret(typed)), typed) {
+                XCTAssertEqual($0 as? ZipDecryptor.Failure, .unsupported, typed)
+            }
+        }
+    }
+
     // MARK: - Damage
 
-    /// A flipped byte in AES data fails its authentication: damage, never wrong text.
-    func testAFlippedByteInAESDataIsRefused() throws {
+    /// A flipped byte of AES ciphertext fails its authentication after the password's own check passed:
+    /// that is damage, never "wrong password". A flipped byte of the salt is a different key, so a wrong password.
+    func testAFlippedByteInAESDataIsDamageNotAWrongPassword() throws {
         let url = try aesArchive(password: "secret", strength: "aes256")
-        var bytes = [UInt8](try Data(contentsOf: url))
-        // The first entry's data starts after its 30-byte header, name, and extra field.
-        let dataStart = 30 + Int(bytes.u16(26)) + Int(bytes.u16(28))
-        bytes[dataStart + 12] ^= 0xFF
+        let original = [UInt8](try Data(contentsOf: url))
+        // The first entry's data starts after its 30-byte header, name, and extra field:
+        // a 16-byte salt, a 2-byte check, and then the ciphertext.
+        let dataStart = 30 + Int(original.u16(26)) + Int(original.u16(28))
+        var ciphertext = original
+        ciphertext[dataStart + 16 + 2 + 1] ^= 0xFF
         let damaged = folder.appendingPathComponent("damaged.zip")
-        try Data(bytes).write(to: damaged)
-        XCTAssertThrowsError(try ZipDecryptor.decrypt(archiveAt: damaged, password: Secret("secret")))
+        try Data(ciphertext).write(to: damaged)
+        XCTAssertThrowsError(try ZipDecryptor.decrypt(archiveAt: damaged, password: Secret("secret"))) {
+            XCTAssertEqual($0 as? ZipDecryptor.Failure, .damaged)
+        }
+        var salt = original
+        salt[dataStart + 3] ^= 0xFF
+        let resalted = folder.appendingPathComponent("resalted.zip")
+        try Data(salt).write(to: resalted)
+        XCTAssertThrowsError(try ZipDecryptor.decrypt(archiveAt: resalted, password: Secret("secret"))) {
+            XCTAssertEqual($0 as? ZipDecryptor.Failure, .wrongPassword)
+        }
+    }
+
+    // MARK: - Hostile archives
+
+    /// A record with the given name, offset, and sizes, for archives no tool would write.
+    private func record(_ name: String, offset: UInt64 = 0, compressed: UInt64 = 10, uncompressed: UInt64 = 10) -> ZipDirectoryRecord {
+        ZipDirectoryRecord(
+            name: name, versionMadeBy: 20, modTime: 0, modDate: 0, externalAttributes: 0, flags: 1, method: 0, checksum: 0,
+            compressedSize: compressed, uncompressedSize: uncompressed, localHeaderOffset: offset, extra: Data()
+        )
+    }
+
+    /// Too many entries, too large an entry or total, a name too long to write, and overlapping
+    /// entries are each refused with an error before anything is decrypted, never a trap or a hang.
+    func testHostileArchivesAreRefusedBeforeAnythingIsDecrypted() {
+        let secret = Secret("x")
+        func refused(_ records: [ZipDirectoryRecord], _ expected: ZipDecryptor.Failure, _ label: String) {
+            XCTAssertThrowsError(try ZipDecryptor.decrypt(archive: Data(), records: records, password: secret), label) {
+                XCTAssertEqual($0 as? ZipDecryptor.Failure, expected, label)
+            }
+        }
+        refused((0..<10_001).map { record("f\($0).txt", offset: UInt64($0) * 100) }, .unsupported, "too many entries")
+        refused([record("big.txt", uncompressed: 65_000_000)], .unsupported, "an entry over the document limit")
+        refused([record("a.txt", uncompressed: 60_000_000), record("b.txt", offset: 100, uncompressed: 60_000_000),
+                 record("c.txt", offset: 200, uncompressed: 60_000_000), record("d.txt", offset: 300, uncompressed: 60_000_000),
+                 record("e.txt", offset: 400, uncompressed: 60_000_000), record("f.txt", offset: 500, uncompressed: 60_000_000),
+                 record("g.txt", offset: 600, uncompressed: 60_000_000), record("h.txt", offset: 700, uncompressed: 60_000_000),
+                 record("i.txt", offset: 800, uncompressed: 60_000_000)], .unsupported, "a total over the budget")
+        refused([record(String(repeating: "n", count: 65_536))], .unsupported, "a name past 65,535 bytes")
+        refused([record("a.txt", offset: 0, compressed: 1_000), record("b.txt", offset: 500)], .damaged, "overlapping entries")
+        refused([record("a.txt", offset: 0), record("b.txt", offset: 0)], .damaged, "two entries at one place")
     }
 
     /// A plain archive passes through unchanged in content.

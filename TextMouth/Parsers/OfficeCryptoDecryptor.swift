@@ -173,12 +173,19 @@ enum OfficeCryptoDecryptor {
         )
     }
 
-    /// The key Agile makes from `password` for the purpose `blockKey` names.
-    private static func agileKey(_ password: [UInt8], _ d: AgileDescriptor, blockKey: [UInt8]) -> [UInt8] {
+    /// The hash chain Agile makes from `password`: the salt and password
+    /// hashed, then `spinCount` rounds. It is the costly part (up to
+    /// 10,000,000 rounds) and is the same for every purpose, so it is made
+    /// once per password and each block key finishes it.
+    private static func agileBase(_ password: [UInt8], _ d: AgileDescriptor) -> [UInt8] {
         var hash = d.hash.digest(d.salt + password)
         for round in 0..<d.spinCount { hash = d.hash.digest(le32(round) + hash) }
-        hash = d.hash.digest(hash + blockKey)
-        return fitted(hash, to: d.keyBits / 8)
+        return hash
+    }
+
+    /// The key Agile makes from the chain `base` for the purpose `blockKey` names.
+    private static func agileKey(_ base: [UInt8], _ d: AgileDescriptor, blockKey: [UInt8]) -> [UInt8] {
+        fitted(d.hash.digest(base + blockKey), to: d.keyBits / 8)
     }
 
     /// The three block keys that make the verifier's and the data key's keys.
@@ -192,11 +199,12 @@ enum OfficeCryptoDecryptor {
         let d = try parseAgile(info)
         let iv = fitted(d.salt, to: 16)
         for password in passwords {
-            let input = try aesDecrypt(d.verifierInput, key: agileKey(password, d, blockKey: verifierInputBlockKey), iv: iv, ecb: false)
-            let value = try aesDecrypt(d.verifierValue, key: agileKey(password, d, blockKey: verifierValueBlockKey), iv: iv, ecb: false)
+            let base = agileBase(password, d)
+            let input = try aesDecrypt(d.verifierInput, key: agileKey(base, d, blockKey: verifierInputBlockKey), iv: iv, ecb: false)
+            let value = try aesDecrypt(d.verifierValue, key: agileKey(base, d, blockKey: verifierValueBlockKey), iv: iv, ecb: false)
             let expected = d.hash.digest(Array(input.prefix(d.salt.count)))
             guard value.count >= expected.count, Array(value.prefix(expected.count)) == expected else { continue }
-            let dataKey = Array(try aesDecrypt(d.encryptedKey, key: agileKey(password, d, blockKey: keyValueBlockKey), iv: iv, ecb: false).prefix(d.keyBits / 8))
+            let dataKey = Array(try aesDecrypt(d.encryptedKey, key: agileKey(base, d, blockKey: keyValueBlockKey), iv: iv, ecb: false).prefix(d.keyBits / 8))
             return try decryptSegments(encrypted, size: size, key: dataKey, descriptor: d)
         }
         throw Failure.wrongPassword

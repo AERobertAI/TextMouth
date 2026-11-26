@@ -128,6 +128,53 @@ extension LibraryViewModel {
     }
 }
 
+// MARK: - After a Password Is Taken Off
+
+extension LibraryViewModel {
+    /// The row of the book whose file lost its password becomes the row of a
+    /// new book: the checksum of the file it is now, no password kept for the
+    /// file it was, and the metadata reader's version cleared so the next
+    /// refresh reads its real title and author (FR41). A device that syncs
+    /// the plain copy then finds a book that is not the protected one.
+    @MainActor
+    func passwordWasRemoved(bookID: UUID, oldHash: String, newHash: String?) {
+        CredentialStores.current.forget(forBook: oldHash)
+        guard let index = library.books.firstIndex(where: { $0.id == bookID }) else { return }
+        if let newHash { library.books[index].md5Hash = newHash }
+        library.books[index].metadataReaderVersion = nil
+        let updated = library.books[index]
+        save()
+        LibraryPersistenceService.saveBookInfo(for: updated)
+    }
+}
+
+// MARK: - Leftovers of a Password Removal
+
+extension LibraryViewModel {
+    /// Deletes, in the background, the plain copies a crash left in a
+    /// package while a password was being removed (FR41).
+    func sweepPasswordRemovalLeftovers() {
+        let packages = library.books.filter { !$0.tmbDirectoryName.isEmpty }.map(\.tmbDirectory)
+        DispatchQueue.global(qos: .utility).async {
+            for package in packages { ProtectionRemoval.removeLeftovers(inPackageAt: package) }
+        }
+    }
+
+    /// Looks, in the background, at every book's file for a password, so the
+    /// launch's passes and the list find the answers kept (they are saved
+    /// in this Mac's caches, so a later launch looks only at files that
+    /// changed), and then redraws the list for the "Locked" rows (FR41).
+    func lookForProtectedBooks() {
+        let books = library.books
+        DispatchQueue.global(qos: .utility).async { [weak self] in
+            var found = false
+            for book in books where book.protectionScheme != nil { found = true }
+            guard found else { return }
+            DispatchQueue.main.async { self?.objectWillChange.send() }
+        }
+    }
+}
+
 // MARK: - The Panel in the Library Window
 
 extension View {

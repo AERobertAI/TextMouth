@@ -169,9 +169,51 @@ final class ProtectedBookReaderTests: XCTestCase {
         XCTAssertNil(ProtectionDetector.scheme(ofFileAt: book.bookFileURL, format: .pdf))
         XCTAssertFalse(book.isPasswordProtected)
         XCTAssertNil(store.password(forBook: book.md5Hash), "a book with no password has none to remember")
+        // The book is a new file now: known by its new checksum, with its metadata to be read afresh.
+        XCTAssertNotEqual(reader.book.md5Hash, book.md5Hash)
+        XCTAssertEqual(reader.book.md5Hash, try FileImportService.importHash(of: book.bookFileURL))
+        XCTAssertNil(reader.book.metadataReaderVersion)
+        let spoken = VoiceOverAnnouncer.recordedAnnouncements.dropFirst(announcementsBefore).map(\.message)
+        XCTAssertTrue(spoken.contains(ProtectionWording.removed), "\(spoken)")
         let document = try XCTUnwrap(PDFDocument(url: book.bookFileURL))
         XCTAssertFalse(document.isLocked)
         XCTAssertTrue(document.string?.contains("sluice gate") == true)
+    }
+
+    /// A section of a protected book cannot be skipped: a skipped heading is saved with its words.
+    func testASectionOfAProtectedBookCannotBeSkipped() {
+        let reader = makeReader()
+        wait(for: reader, "the prompt") { $0.unlockPrompt != nil }
+        reader.submitUnlock(UnlockChoice(password: Secret("secret"), remember: false, removePassword: false))
+        wait(for: reader, "the book") { $0.content != nil }
+        reader.toggleHeadingSkip(Heading(level: 1, text: "Zebra Heading", chapterIndex: 0, characterOffset: 0))
+        XCTAssertTrue(reader.book.skippedHeadings?.isEmpty ?? true)
+        XCTAssertTrue(reader.book.skippedHeadingIDs?.isEmpty ?? true)
+        let spoken = VoiceOverAnnouncer.recordedAnnouncements.dropFirst(announcementsBefore).map(\.message)
+        XCTAssertTrue(spoken.contains(ProtectionWording.cannotSkipSections), "\(spoken)")
+    }
+
+    /// An attempt is announced as it begins, so a person who hears nothing else knows it is working.
+    func testTryingAPasswordIsAnnounced() {
+        let reader = makeReader()
+        wait(for: reader, "the prompt") { $0.unlockPrompt != nil }
+        reader.submitUnlock(UnlockChoice(password: Secret("nope"), remember: false, removePassword: false))
+        wait(for: reader, "the refusal") { $0.unlockPrompt?.failure != nil }
+        let spoken = VoiceOverAnnouncer.recordedAnnouncements.dropFirst(announcementsBefore).map(\.message)
+        XCTAssertEqual(spoken.firstIndex(of: ProtectionWording.unlocking).map { $0 < (spoken.firstIndex(of: ProtectionWording.wrongPassword) ?? 0) }, true, "\(spoken)")
+    }
+
+    /// A Keychain that will not keep the password says so once, and the book is open all the same.
+    func testAKeychainThatRefusesIsSaidAndTheBookStaysOpen() {
+        let restore = CredentialStores.use(RefusingCredentialStore())
+        addTeardownBlock { @MainActor in restore() }
+        let reader = makeReader()
+        wait(for: reader, "the prompt") { $0.unlockPrompt != nil }
+        reader.submitUnlock(UnlockChoice(password: Secret("secret"), remember: true, removePassword: false))
+        wait(for: reader, "the book") { $0.content != nil }
+        let spoken = VoiceOverAnnouncer.recordedAnnouncements.dropFirst(announcementsBefore).map(\.message)
+        XCTAssertTrue(spoken.contains(ProtectionWording.rememberFailed), "\(spoken)")
+        XCTAssertTrue(UnlockedSources.isUnlocked(book.bookFileURL))
     }
 
     // MARK: - The Backstops
@@ -192,5 +234,13 @@ final class ProtectedBookReaderTests: XCTestCase {
         XCTAssertTrue(LibraryViewModel.booksNeedingCacheUpdate([protected], access: .live).isEmpty)
         XCTAssertNil(try? MarkdownCacheService.generateReportedCacheContent(for: protected))
     }
+}
+
+/// A credential store whose Keychain refuses every item, as a locked or damaged one does.
+private final class RefusingCredentialStore: CredentialStore {
+    func password(forBook key: String) -> Secret? { nil }
+    func rememberedPasswords() -> [Secret] { [] }
+    func remember(_ secret: Secret, forBook key: String) -> Bool { false }
+    func forget(forBook key: String) {}
 }
 #endif
