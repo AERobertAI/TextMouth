@@ -56,6 +56,14 @@ struct PhoneFocusPolicy: Equatable, Sendable {
         }
     }
 
+    /// A locked book's password panel covers the reader (FR41): focus is the
+    /// panel's, in its password field, and Play is beneath it where VoiceOver
+    /// cannot reach it, so the policy stops for good and posts nothing more.
+    /// A new arrival runs once the book is unlocked.
+    mutating func panelCoversReader() {
+        isFinished = true
+    }
+
     /// What to post at `time`, by the caller's clock: at most one action a
     /// call, and nothing once the policy has stopped.
     mutating func action(at time: TimeInterval) -> Action? {

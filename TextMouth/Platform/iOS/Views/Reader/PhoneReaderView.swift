@@ -356,8 +356,11 @@ struct PhoneReaderView: View {
     private func arrive() async {
         guard let snapshot = session.snapshot else { return }
         // A book that is being downloaded has no Play to give focus to; the cloud view takes it, and the arrival runs when the
-        // controls come (`contentArrived`).
-        if session.reader?.cloudPhase == nil { await PhoneReaderArrival().run() }
+        // controls come (`contentArrived`). A locked book's password panel, which can come at any moment of the arrival, holds
+        // it back too, and the arrival runs again once the book is unlocked (`PhoneUnlockOverlay`).
+        if session.reader?.cloudPhase == nil {
+            await PhoneReaderArrival().run(heldBack: { session.reader?.unlockPrompt != nil })
+        }
         PhoneAnnouncer.say(snapshot.title)
         guard session.snapshot?.isLoading == true, session.reader?.cloudPhase == nil else { return }
         try? await Task.sleep(for: .seconds(5))
@@ -421,8 +424,10 @@ private final class PhoneReaderArrival {
     /// The focus observer, while the arrival runs.
     private var observer: NSObjectProtocol?
 
-    /// Runs the arrival to its end: at most 3 seconds.
-    func run() async {
+    /// Runs the arrival to its end: at most 3 seconds. While `heldBack` says
+    /// a panel covers the reader (a locked book's password panel), nothing is
+    /// posted and the arrival ends: focus is the panel's.
+    func run(heldBack: @escaping @MainActor () -> Bool = { false }) async {
         // Told on the main queue, then claims the main actor. Only the
         // element's identity crosses, which is Sendable. The observer holds
         // the arrival until the defer below removes it, as the run ends.
@@ -442,6 +447,10 @@ private final class PhoneReaderArrival {
             let wait = max(0, next - ProcessInfo.processInfo.systemUptime)
             try? await Task.sleep(for: .seconds(wait))
             if Task.isCancelled { return }
+            if heldBack() {
+                policy.panelCoversReader()
+                continue
+            }
             switch policy.action(at: ProcessInfo.processInfo.systemUptime) {
             case .postScreenChanged?:
                 UIAccessibility.post(notification: .screenChanged, argument: PhoneFocusRegistry.shared.view(for: .play))
@@ -465,22 +474,33 @@ private final class PhoneReaderArrival {
 /// The password panel over the phone's reader while its book is locked
 /// (FR41). It watches the reader itself, so the panel appears and goes as
 /// the reader's prompt does, and while it shows nothing beneath it is
-/// reachable by VoiceOver (a modal element).
+/// reachable by VoiceOver (a modal element). The reader's arrival holds back
+/// while it shows (`PhoneReaderArrival.run(heldBack:)`), and once the book is
+/// unlocked focus goes to Play, as when any book opens.
 private struct PhoneUnlockOverlay: View {
     @ObservedObject var reader: ReaderViewModel
     /// Goes back to the library, as Back does.
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        if let prompt = reader.unlockPrompt {
-            UnlockBookPanel(
-                title: reader.book.title,
-                state: prompt,
-                onUnlock: { reader.submitUnlock($0) },
-                onCancel: { dismiss() }
-            )
-            .background(Color(.systemBackground))
-            .accessibilityAddTraits(.isModal)
+        // A stack, not a Group: a Group hands its modifiers to its contents,
+        // and with no panel there would be nothing to watch the prompt go.
+        ZStack {
+            if let prompt = reader.unlockPrompt {
+                UnlockBookPanel(
+                    title: reader.book.title,
+                    state: prompt,
+                    onUnlock: { reader.submitUnlock($0) },
+                    onCancel: { dismiss() }
+                )
+                .background(Color(.systemBackground))
+                .accessibilityAddTraits(.isModal)
+            }
+        }
+        // Unlocked: the panel has gone, and focus goes to Play. (Cancel
+        // leaves the screen with the panel still up, so nothing runs then.)
+        .onChange(of: reader.unlockPrompt == nil) { _, unlocked in
+            if unlocked { Task { await PhoneReaderArrival().run() } }
         }
     }
 }
