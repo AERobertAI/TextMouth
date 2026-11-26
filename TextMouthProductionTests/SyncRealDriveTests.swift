@@ -186,6 +186,36 @@ final class SyncRealDriveTests: XCTestCase {
         }
     }
 
+    // MARK: - Case 7: how a large download shows its progress
+
+    /// A 64 MB file is uploaded, evicted, and requested; at each half second of the download the status, the bytes the file
+    /// system allocates, and the size it reports are logged. `SyncFolderIO.waitUntilHere` restarts its stall clock only when
+    /// the allocated size changes; this shows whether iCloud Drive moves it while a file downloads. Every wait is bounded.
+    func testCase7ADownloadsProgressAsTheFileSystemShowsIt() async throws {
+        await forEachCloudRoot(roots, label: "sync-spike-7") { root, run in
+            let blob = run.appendingPathComponent("large.bin")
+            try SyntheticPackage.randomBytes(count: 64_000_000).write(to: blob)
+            _ = try await waitUntilUploaded([blob], limit: .seconds(900))
+            try await evictAll([blob])
+            try items.requestDownload(of: blob)
+            let clock = ContinuousClock()
+            let started = clock.now
+            var lines: [String] = []
+            var changes = 0
+            var last: Int64?
+            while clock.now - started < CloudDriveWait.download {
+                let state = items.status(of: blob).state
+                let allocated = SyncFolderIO.allocatedBytes(of: blob)
+                if allocated != last { changes += 1; last = allocated }
+                lines.append(String(format: "%.1f s: %@, allocated %@, size %@", seconds(clock.now - started), "\(state)", allocated.map(String.init) ?? "nil", items.status(of: blob).byteCount.map(String.init) ?? "nil"))
+                if state == .downloaded { break }
+                try await Task.sleep(for: .milliseconds(500))
+            }
+            await note("case 7", "the allocated size changed \(changes) times during the download; the polls follow", on: root)
+            for line in lines { await note("case 7", line, on: root) }
+        }
+    }
+
     // MARK: - Case 4: a listing with evicted files
 
     /// A folder is listed while its files are evicted: under their own names,

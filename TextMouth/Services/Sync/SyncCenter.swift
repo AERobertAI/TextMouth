@@ -135,6 +135,8 @@ struct SyncCenterEnvironment {
     private var writers: [SyncKey: String] = [:]
     /// The names devices call themselves, by device ID, from what was read.
     private var deviceNames: [String: String] = [:]
+    /// The confirmation asked of the engine when Sync Now was pressed with removals held.
+    private var confirmation: Task<Void, Never>?
     /// Whether the host left keys alone at the last apply (a row it didn't touch, an open book's removal), so the
     /// next sync applies again even when nothing new arrives.
     private var applyAgain = false
@@ -369,6 +371,14 @@ struct SyncCenterEnvironment {
     func syncNow() {
         guard status.isOn else { return }
         environment.announce(SyncWording.announceSyncing)
+        // The removals held now are the ones the person is answering: the confirmation is asked of the engine at once,
+        // ahead of any record made after the press, and the run waits for it.
+        if status.heldRemovals > 0 {
+            confirmation = Task { [weak self] in
+                guard let engine = await self?.readyEngine() else { return }
+                await engine.confirmHeldRemovals()
+            }
+        }
         requestRun(.syncNow)
     }
 
@@ -572,8 +582,9 @@ struct SyncCenterEnvironment {
     /// One sync, with its Sync Now confirmation: a Sync Now chosen while removals are held back is the person's
     /// word that exactly those are meant, and it ends with the run, however the run ends.
     private func run(_ reason: SyncReason) async {
-        if reason == .syncNow, status.heldRemovals > 0, let engine = await readyEngine() {
-            await engine.confirmHeldRemovals()
+        if reason == .syncNow, let pending = confirmation {
+            confirmation = nil
+            await pending.value
         }
         await runOnce(reason)
         if let engine { await engine.clearConfirmation() }
