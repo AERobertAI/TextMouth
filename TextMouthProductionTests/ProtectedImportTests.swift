@@ -38,19 +38,22 @@ final class ProtectedImportTests: XCTestCase {
         return url
     }
 
-    /// The path of every file under `package`, relative to it, sorted.
+    /// The path of every file under `package`, relative to it, sorted. Both
+    /// sides are resolved first: the enumerator reports /private/var where
+    /// the package's URL says /var.
     private func files(in package: URL) throws -> [String] {
-        let enumerator = try XCTUnwrap(FileManager.default.enumerator(at: package, includingPropertiesForKeys: [.isRegularFileKey]))
-        return enumerator.compactMap { ($0 as? URL).flatMap { url in
-            (try? url.resourceValues(forKeys: [.isRegularFileKey]).isRegularFile) == true
-                ? String(url.path.dropFirst(package.path.count)) : nil
-        } }.sorted()
+        let root = package.resolvingSymlinksInPath().path
+        let enumerator = try XCTUnwrap(FileManager.default.enumerator(at: package.resolvingSymlinksInPath(), includingPropertiesForKeys: [.isRegularFileKey]))
+        return enumerator.compactMap { item -> String? in
+            guard let url = item as? URL, (try? url.resourceValues(forKeys: [.isRegularFileKey]).isRegularFile) == true else { return nil }
+            return String(url.resolvingSymlinksInPath().path.dropFirst(root.count))
+        }.sorted()
     }
 
     /// No file of `package` holds `words` in plain bytes.
     private func assertNoWords(in package: URL, _ message: String = "") throws {
         for name in try files(in: package) {
-            let data = try Data(contentsOf: URL(fileURLWithPath: package.path + name))
+            let data = try Data(contentsOf: URL(fileURLWithPath: package.resolvingSymlinksInPath().path + name))
             XCTAssertNil(data.range(of: Data("sluice".utf8)), "\(name) holds the book's words. \(message)")
         }
     }
