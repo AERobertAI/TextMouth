@@ -72,8 +72,8 @@ final class PhoneExportSession: ObservableObject {
     private var handle: (any PhoneExportTaskHandle)?
     /// What carries the model's progress to the task.
     private var watching: AnyCancellable?
-    /// What the task has been told, so that its bar never goes back: the model's own fraction does when the speech ends
-    /// and the bar returns to the items done.
+    /// What the task has been told, so that its bar never goes back: the whole export's fraction does for a moment when
+    /// the speech ends, before the file it made is counted as written.
     private var told = PhoneExportTaskMirror.NeverBackwards()
 
     /// The export under way, from the press of Export until it has ended. Nil while none runs; published, so that a sheet
@@ -130,7 +130,7 @@ final class PhoneExportSession: ObservableObject {
         current = model
         // A task only for spoken audio, and only for an export that can begin: Export dimmed asks for nothing.
         guard model.isChecked(.spokenAudio), model.canExport else { return }
-        let first = PhoneExportTaskMirror.update(title: model.title, progressText: model.progressText, fraction: model.progressFraction)
+        let first = taskUpdate(for: model)
         handle = tasking.begin(first.title, first.subtitle) { [weak self, weak model] in
             // The system's expiry, or Cancel in the Live Activity.
             Task { @MainActor in
@@ -159,10 +159,24 @@ final class PhoneExportSession: ObservableObject {
     /// Passes `model`'s progress on to the task while the export runs.
     func carry(_ model: BookExportModel) {
         guard model.isExporting else { return }
-        let update = PhoneExportTaskMirror.update(
-            title: model.title, progressText: model.progressText, fraction: model.progressFraction
+        handle?.update(told.next(taskUpdate(for: model)))
+    }
+
+    /// What the task shows of `model` now: the sheet's title, the progress words, and how far the whole export has come
+    /// (`PhoneExportTaskMirror.fraction(done:total:speech:)`), not the part under way that the sheet's bar shows, which
+    /// starts again at 0 for the encoding and would hold the task's bar still through it.
+    private func taskUpdate(for model: BookExportModel) -> PhoneExportTaskMirror.Update {
+        var done = 0
+        var total = 0
+        if case .exporting(let filesDone, let files) = model.phase {
+            done = filesDone
+            total = files
+        }
+        return PhoneExportTaskMirror.update(
+            title: model.title,
+            progressText: model.progressText,
+            fraction: PhoneExportTaskMirror.fraction(done: done, total: total, speech: model.speechProgress)
         )
-        handle?.update(told.next(update))
     }
 
     /// The export has ended, as `outcome` says (nil when it never began): the task ends with it, a success only when

@@ -873,6 +873,49 @@ final class SpeechExportDialogTests: XCTestCase {
         XCTAssertGreaterThan(units.last ?? 0, 0)
     }
 
+    /// The task's bar moves on through the encoding: the sheet's bar starts again at 0 when the file is encoded, and the
+    /// task's, which never goes back, measures the whole export, so it rises from where the speaking left it to the end
+    /// (the system expires a task that reports no progress, and a long book's encoding takes minutes). The export is held
+    /// in its last chapter while the test shows each stage, as the export would tell it.
+    func testTheTasksBarMovesOnThroughTheEncoding() async throws {
+        let gate = Gate()
+        defer { gate.open() }
+        let synthesizer = FakeSpeechBufferSynthesizer(framesPerUnit: 1_000, beforeWrite: { utterance in
+            if utterance.text.contains("Six") { gate.pass() }
+        })
+        let dialog = try await makeDialog("Speech Session Encoding Bar", synthesizer: synthesizer)
+        let model = dialog.model
+        checkOnlySpokenAudio(model)
+        let tasks = RecordedTasks()
+        let session = PhoneExportSession(tasking: tasks.tasking)
+        let run = ExportRun(of: model, through: session)
+        let reached = await eventually { model.progressText == "Speaking chapter 3 of 3…" }
+        XCTAssertTrue(reached, "the progress says \(String(describing: model.progressText))")
+
+        // Each stage as the export tells it, carried to the task at once: the last chapter spoken, then the encoding.
+        var units: [Int64] = []
+        for stage in [
+            SpeechExportProgress.speaking(done: 3, total: 3, fraction: 1),
+            .encoding(chapters: 3, fraction: 0),
+            .encoding(chapters: 3, fraction: 0.5),
+            .encoding(chapters: 3, fraction: 1)
+        ] {
+            model.showSpeechProgress(stage)
+            session.carry(model)
+            units.append(tasks.task.updates.last?.completedUnits ?? -1)
+        }
+
+        XCTAssertEqual(tasks.task.updates.last?.subtitle, "Encoding the audio file…")
+        XCTAssertLessThan(units[0], units[2], "the task's bar stood still through the encoding: \(units)")
+        XCTAssertLessThan(units[2], units[3], "the task's bar stood still through the encoding: \(units)")
+        XCTAssertEqual(units[3], PhoneExportTaskMirror.totalUnits, "the encoded file is not the whole bar: \(units)")
+        gate.open()
+        let outcome = try await end(of: run)
+        XCTAssertTrue(BookExportModel.didEverything(outcome))
+        let ended = await eventually { tasks.task.finishes == [true] }
+        XCTAssertTrue(ended, "the task's ends were \(tasks.task.finishes)")
+    }
+
     /// The system's expiry, or Cancel in its Live Activity, is Stop: the export ends stopped, its chapters kept, and the
     /// task ends as no success.
     func testTheTasksExpiryStopsTheExportAndEndsTheTaskAsNoSuccess() async throws {
