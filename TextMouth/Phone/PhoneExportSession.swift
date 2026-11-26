@@ -59,6 +59,9 @@ final class PhoneExportSession: ObservableObject {
         case ended
         /// The person closed the card.
         case closed
+        /// A new export, begun in a sheet over the Library or the reader, took the place of the card of one that had
+        /// ended: the person is in that sheet, so no Library screen behind it asks for VoiceOver's focus.
+        case replaced
     }
 
     /// The app's one session, which the sheets and the Library's card share.
@@ -122,10 +125,10 @@ final class PhoneExportSession: ObservableObject {
         watching = nil
         handle = nil
         told = PhoneExportTaskMirror.NeverBackwards()
-        // A card left from an earlier export, which has ended, goes with the new one.
+        // A card left from an earlier export, which has ended, goes with the new one, whose sheet the person is in.
         if cardModel != nil {
             cardModel = nil
-            cardEvents.send(.closed)
+            cardEvents.send(.replaced)
         }
         current = model
         // A task only for spoken audio, and only for an export that can begin: Export dimmed asks for nothing.
@@ -249,9 +252,11 @@ enum PhoneExportCardFocus {
     /// - Its export ending: nowhere, so that the person is not moved off what they are doing; the end is announced. Only
     ///   when focus was on the card's Stop, which has gone, it goes to the card's title.
     /// - The card closed: the Library's first row.
+    /// - The card replaced by a new export: nowhere, since the person is in that export's sheet, and a request from a
+    ///   Library screen behind it would ask for a row the sheet covers.
     static func target(for event: PhoneExportSession.CardEvent, focusWasOnStop: Bool) -> Target? {
         switch event {
-        case .appeared: return nil
+        case .appeared, .replaced: return nil
         case .ended: return focusWasOnStop ? .card : nil
         case .closed: return .firstRow
         }

@@ -216,6 +216,9 @@ final class PhoneExportSpeechTests: XCTestCase {
         XCTAssertNil(PhoneExportCardFocus.target(for: .ended, focusWasOnStop: false), "the end pulled focus off where the person was")
         XCTAssertEqual(PhoneExportCardFocus.target(for: .ended, focusWasOnStop: true), .card)
         XCTAssertEqual(PhoneExportCardFocus.target(for: .closed, focusWasOnStop: false), .firstRow)
+        // A new export replacing an ended card is begun in a sheet the person is in: no Library screen asks for focus.
+        XCTAssertNil(PhoneExportCardFocus.target(for: .replaced, focusWasOnStop: false), "focus was asked for behind the sheet")
+        XCTAssertNil(PhoneExportCardFocus.target(for: .replaced, focusWasOnStop: true))
     }
 
     /// The Library's dismissal of a sheet that closed on a card asks for the card, not the row that opened it; any other

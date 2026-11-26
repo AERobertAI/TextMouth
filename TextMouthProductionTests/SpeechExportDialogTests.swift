@@ -1127,6 +1127,38 @@ final class SpeechExportDialogTests: XCTestCase {
         XCTAssertNil(session.cardModel)
     }
 
+    /// A new export takes the place of a card whose export has ended, and says so as a replacement, not as the person's
+    /// close: it is begun in a sheet the person is in, and a close sends the Library's focus to its first row, behind that
+    /// sheet, on every Library screen in the stack. The replacement asks for no focus at all.
+    func testANewExportReplacesAnEndedCardWithoutAskingForFocus() async throws {
+        let gate = Gate()
+        defer { gate.open() }
+        let synthesizer = FakeSpeechBufferSynthesizer(framesPerUnit: 1_000, beforeWrite: { utterance in
+            if utterance.text.contains("Six") { gate.pass() }
+        })
+        let first = try await makeDialog("Speech Session Replaced First", synthesizer: synthesizer)
+        checkOnlySpokenAudio(first.model)
+        let second = try await makeDialog("Speech Session Replaced Second")
+        let session = PhoneExportSession(tasking: .none)
+        let events = CardEvents(session)
+        let run = ExportRun(of: first.model, through: session)
+        let reached = await eventually { first.model.progressText == "Speaking chapter 3 of 3…" }
+        XCTAssertTrue(reached)
+        session.sheetClosed(first.model)
+        gate.open()
+        _ = try await end(of: run)
+        XCTAssertTrue(session.cardModel === first.model, "the ended export's card went before the person closed it")
+        XCTAssertEqual(events.seen, [.appeared, .ended])
+
+        let outcome = try await end(of: ExportRun(of: second.model, through: session))
+
+        XCTAssertTrue(BookExportModel.didEverything(outcome))
+        XCTAssertNil(session.cardModel, "the ended export's card stayed under the new export")
+        XCTAssertEqual(events.seen, [.appeared, .ended, .replaced], "the card's replacement was told as \(events.seen.last.map { "\($0)" } ?? "nothing")")
+        let replacement = try XCTUnwrap(events.seen.last, "no event for the card's replacement")
+        XCTAssertNil(PhoneExportCardFocus.target(for: replacement, focusWasOnStop: false), "the replacement asked for focus behind the sheet")
+    }
+
     /// A file of the same book can follow the spoken audio: a transcript, an original recording or audio come after it in
     /// the dialog's order, and the plan writes them after it, so a question about a chapter nested too deeply can come
     /// with the sheet closed, which is why the iPhone's prompt answers Cancel Export at once then. A transcribed book is
