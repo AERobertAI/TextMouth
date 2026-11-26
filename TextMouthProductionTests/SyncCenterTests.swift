@@ -534,14 +534,33 @@ final class SyncCenterTests: XCTestCase {
         await world.center.waitUntilIdle()
         await world.center.waitUntilIdle()   // nothing runs: it returns at once
 
-        // A run held in its apply, until the test lets it go.
+        // A run held in its apply, until the test lets it go. The held run says when it is there, through the gate it waits
+        // on: the test waits for that signal (with a fixed timeout), and counts nothing.
         var release: CheckedContinuation<Void, Never>?
-        world.host.pauseApply = { await withCheckedContinuation { release = $0 } }
+        let reached = AsyncStream<Void>.makeStream()
+        world.host.pauseApply = {
+            await withCheckedContinuation { gate in
+                release = gate
+                reached.continuation.yield()
+            }
+        }
         world.center.applyAtNextSync()
         world.center.moment(.active)
-        var looks = 0
-        while release == nil, looks < 100_000 { looks += 1; await Task.yield() }
-        let held = try XCTUnwrap(release, "the run never reached its apply")
+        let signalled = await withTaskGroup(of: Bool.self) { group in
+            group.addTask {
+                for await _ in reached.stream { return true }
+                return false
+            }
+            group.addTask {
+                try? await Task.sleep(for: .seconds(60))
+                return false
+            }
+            let first = await group.next() ?? false
+            group.cancelAll()
+            return first
+        }
+        XCTAssertTrue(signalled, "the run never reached its apply")
+        let held = try XCTUnwrap(release, "the held run's gate")
 
         var finished = 0
         let first = Task { @MainActor in await world.center.waitUntilIdle(); finished += 1 }
