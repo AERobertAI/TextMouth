@@ -374,6 +374,31 @@ final class SyncLibraryHostTests: XCTestCase {
         XCTAssertNil(commands.downloadEvictedKeptBooks(in: model))
     }
 
+    /// Stopping to keep says so, once, only for the books whose keep it
+    /// removed; keeping says so for the books it newly keeps.
+    func testStoppingToKeepSaysSoOnlyForBooksThatWereKept() {
+        let kept = makeBook("Was Kept"), other = makeBook("Never Kept")
+        let before = KeptBooks.shared.syncedBookIDs
+        addTeardownBlock { @MainActor in KeptBooks.shared.setSyncedBooks(before) }
+        KeptBooks.shared.setSyncedBooks([kept.id])
+
+        let stopped = recordingAnnouncements {
+            LibraryCloudCommands.shared.setKeptOnAllDevices(false, [kept, other], from: nil)
+        }
+        XCTAssertEqual(stopped.announcements.map(\.message), [SyncWording.announceStoppedKeeping(title: "Was Kept")])
+        XCTAssertFalse(KeptBooks.shared.isKeptOnAllDevices(kept.id))
+
+        let again = recordingAnnouncements {
+            LibraryCloudCommands.shared.setKeptOnAllDevices(false, [kept, other], from: nil)
+        }
+        XCTAssertTrue(again.announcements.isEmpty, "nothing was kept, so nothing is said")
+
+        let keeping = recordingAnnouncements {
+            LibraryCloudCommands.shared.setKeptOnAllDevices(true, [other], from: nil)
+        }
+        XCTAssertEqual(keeping.announcements.map(\.message), [SyncWording.announceKeeping(title: "Never Kept")])
+    }
+
     /// The books kept on all devices are kept on this Mac too, and the
     /// listener's own keep is a different choice.
     func testSyncedBooksAreKept() {

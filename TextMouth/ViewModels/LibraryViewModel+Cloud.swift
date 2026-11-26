@@ -625,18 +625,23 @@ final class LibraryCloudCommands {
     /// (`LibraryViewModel.syncDidApply(keptBookIDs:mayDownload:)`).
     func setKeptOnAllDevices(_ keeping: Bool, _ books: [Book], from window: PlatformWindow?) {
         guard !books.isEmpty else { return }
+        // The books whose keep this changes: not kept yet to keep, kept to
+        // stop. VoiceOver hears only those, so a stop that removed no keep
+        // says nothing it did not do. Every way to the choice, a row's
+        // command, the Library menu, and Book Information's checkbox, comes here.
+        let before = KeptBooks.shared.syncedBookIDs
+        let changed = books.filter { keeping ? !before.contains($0.id) : before.contains($0.id) }
         SyncCenter.shared.setKeep(keeping, for: books.map(\.id))
         // The set follows at once, so the Book Information checkbox and the
         // rows read the new value as VoiceOver asks, before the sync's own
         // registers say so.
         let ids = Set(books.map(\.id))
-        KeptBooks.shared.setSyncedBooks(keeping ? KeptBooks.shared.syncedBookIDs.union(ids) : KeptBooks.shared.syncedBookIDs.subtracting(ids))
-        let titles = books.map(\.title)
-        DiagnosticLog.event(.storage, "KEEP_ON_ALL: \(keeping ? "keeping" : "stopped keeping") \(books.count) book(s) on all devices") // l10n: no (debug log, English)
+        KeptBooks.shared.setSyncedBooks(keeping ? before.union(ids) : before.subtracting(ids))
+        guard !changed.isEmpty else { return }
+        let titles = changed.map(\.title).joined(separator: ", ")
+        DiagnosticLog.event(.storage, "KEEP_ON_ALL: \(keeping ? "keeping" : "stopped keeping") \(changed.count) book(s) on all devices") // l10n: no (debug log, English)
         VoiceOverAnnouncer.announce(
-            keeping
-                ? SyncWording.announceKeeping(title: titles.joined(separator: ", "))
-                : LibraryCloudCommand.Kind.stopKeepingOnAllDevices.title(count: books.count, forSelection: books.count > 1),
+            keeping ? SyncWording.announceKeeping(title: titles) : SyncWording.announceStoppedKeeping(title: titles),
             from: window
         )
     }
