@@ -873,6 +873,44 @@ final class SpeechExportDialogTests: XCTestCase {
         XCTAssertGreaterThan(units.last ?? 0, 0)
     }
 
+    /// The task's bar measures the whole export, so it moves all through a spoken audio file: speaking fills four fifths
+    /// of the file's part and the encoding the rest, where the speech's own fraction starts again at 0 for the encoding and
+    /// a bar that never goes back would stand still through it, which the system takes for a stalled task. Files before
+    /// the spoken audio count as written, and until the first is written, the file under way stands for the whole.
+    /// (Here and not in the plain values' `PhoneExportSpeechTests`, which the iPhone's bundle shares: its sound census
+    /// reads the progress's `speaking` case as speech.)
+    func testTheTasksBarMeasuresTheWholeExportAndMovesThroughTheEncoding() {
+        typealias Mirror = PhoneExportTaskMirror
+        // The steps one spoken audio file goes through, alone in its export (its count not known yet).
+        let steps: [(SpeechExportProgress, Double)] = [
+            (.speaking(done: 0, total: 3, fraction: 0), 0),
+            (.speaking(done: 1, total: 3, fraction: 0.5), 0.4),
+            (.speaking(done: 3, total: 3, fraction: 1), 0.8),
+            (.encoding(chapters: 3, fraction: 0), 0.8),
+            (.encoding(chapters: 3, fraction: 0.5), 0.9),
+            (.encoding(chapters: 3, fraction: 1), 1)
+        ]
+        for (speech, expected) in steps {
+            XCTAssertEqual(Mirror.fraction(done: 0, total: 0, speech: speech), expected, accuracy: 1e-9, "\(speech)")
+        }
+        // Through the floor the session passes them through, the bar rises from the speaking's end through the encoding.
+        var told = Mirror.NeverBackwards()
+        let units = steps.map { step in
+            told.next(Mirror.update(title: "t", progressText: "w", fraction: Mirror.fraction(done: 0, total: 0, speech: step.0))).completedUnits
+        }
+        XCTAssertEqual(units, [0, 400, 800, 800, 900, 1_000], "the bar stood still through the encoding")
+
+        // One file written of two, the spoken audio second: its part is the second half of the bar.
+        XCTAssertEqual(Mirror.fraction(done: 1, total: 2, speech: nil), 0.5, accuracy: 1e-9)
+        XCTAssertEqual(Mirror.fraction(done: 1, total: 2, speech: .speaking(done: 0, total: 4, fraction: 0.5)), 0.7, accuracy: 1e-9)
+        XCTAssertEqual(Mirror.fraction(done: 1, total: 2, speech: .encoding(chapters: 4, fraction: 1)), 1, accuracy: 1e-9)
+        // An ended speech, or no speech, counts only the files written; a count out of range is held to it.
+        XCTAssertEqual(Mirror.fraction(done: 1, total: 4, speech: .ended(kept: 2, total: 3)), 0.25, accuracy: 1e-9)
+        XCTAssertEqual(Mirror.fraction(done: 0, total: 0, speech: nil), 0)
+        XCTAssertEqual(Mirror.fraction(done: 5, total: 2, speech: nil), 1)
+        XCTAssertEqual(Mirror.fraction(done: -1, total: 2, speech: .speaking(done: 0, total: 1, fraction: 7)), 0.4, accuracy: 1e-9)
+    }
+
     /// The task's bar moves on through the encoding: the sheet's bar starts again at 0 when the file is encoded, and the
     /// task's, which never goes back, measures the whole export, so it rises from where the speaking left it to the end
     /// (the system expires a task that reports no progress, and a long book's encoding takes minutes). The export is held
@@ -906,9 +944,12 @@ final class SpeechExportDialogTests: XCTestCase {
         }
 
         XCTAssertEqual(tasks.task.updates.last?.subtitle, "Encoding the audio file…")
-        XCTAssertLessThan(units[0], units[2], "the task's bar stood still through the encoding: \(units)")
-        XCTAssertLessThan(units[2], units[3], "the task's bar stood still through the encoding: \(units)")
-        XCTAssertEqual(units[3], PhoneExportTaskMirror.totalUnits, "the encoded file is not the whole bar: \(units)")
+        // The speaking fills its share of the bar, and the encoding moves it on from there to the whole.
+        let share = PhoneExportTaskMirror.speakingShare
+        let expected = [share, share, share + (1 - share) / 2, 1].map {
+            PhoneExportTaskMirror.update(title: "", progressText: nil, fraction: $0).completedUnits
+        }
+        XCTAssertEqual(units, expected, "the task's bar stood still through the encoding, or did not end whole")
         gate.open()
         let outcome = try await end(of: run)
         XCTAssertTrue(BookExportModel.didEverything(outcome))
