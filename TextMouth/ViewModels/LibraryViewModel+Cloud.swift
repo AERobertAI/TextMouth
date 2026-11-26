@@ -876,7 +876,8 @@ final class LibraryCloudCommands {
             } catch {
                 report.waiting += 1
                 let reason = (error as? BookCloudError)?.logReason ?? "an error" // l10n: no (debug log text)
-                DiagnosticLog.event(.storage, "UNOPENED_DOWNLOAD_KEPT: \(book.title): \(reason)")
+                // A sync's lines hold no title: the book's ID, shortened, is what finds it.
+                DiagnosticLog.event(.storage, "UNOPENED_DOWNLOAD_KEPT: book \(book.id.uuidString.prefix(8)): \(reason)")
                 // Files that did not match, or would not go, are looked at again tomorrow, not at each sync.
                 if case .syncRemoval(let refusal)? = error as? BookCloudError, Self.isCostly(refusal) {
                     unopenedRetryTimes[book.id] = time.addingTimeInterval(SyncSpacePolicy.secondsInDay)

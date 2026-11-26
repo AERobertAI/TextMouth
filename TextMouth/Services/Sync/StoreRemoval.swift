@@ -132,10 +132,12 @@ struct StoreRemoval: Sendable {
         // come before the files here are hashed and before anything is read back, so a book that is not backed up
         // yet costs nothing to refuse.
         let blobs = Self.uniqueBlobs(of: manifest)
+        // The names of the copy's every file in the folder: its blobs, and the manifest that lists them.
+        let copyNames = blobs.map(\.blob) + [pointer.manifest]
         for blob in blobs {
             guard listing[blob.blob] != nil else { throw SyncRemovalRefusal.missingFromFolder(blob.blob) }
         }
-        for name in blobs.map(\.blob) + [pointer.manifest] {
+        for name in copyNames {
             try Self.requireUploaded(folder.access.uploadState(of: bookFolder.appendingPathComponent(name)), name: name)
         }
         try Self.requireFilesHereAreTheStores(ownFiles, manifest: manifest)
@@ -158,7 +160,7 @@ struct StoreRemoval: Sendable {
         try checkpoint(.allRemoved)
 
         // Last, the folder's own copies of the blobs stop taking room here; a refusal is a wait, not a failure.
-        for name in blobs.map(\.blob) + [pointer.manifest] {
+        for name in copyNames {
             try? folder.access.evictLocalCopy(of: bookFolder.appendingPathComponent(name))
         }
         return Outcome(freedBytes: ownFiles.reduce(Int64(0)) { $0 + $1.size })
