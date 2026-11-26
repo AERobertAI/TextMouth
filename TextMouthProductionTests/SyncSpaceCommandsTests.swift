@@ -623,6 +623,112 @@ final class SyncSpaceCommandsTests: XCTestCase {
         XCTAssertFalse(fixture.states.canRemoveDownload(downloading))
     }
 
+    // MARK: - The book held busy while its files go
+
+    /// From the last look's yes to the row's change the book is held busy, for a person's command and for a sweep
+    /// alike: the library's `booksBeingFreed` holds it, a reader's load waits for it as for a package move, and a
+    /// sync's removal leaves it. Once its row says In Cloud the hold is over.
+    func testABookIsHeldBusyFromTheLastLookToTheRowsChange() async {
+        for path in ["command", "sweep"] {
+            let book = fixtureBook("Old", openedDaysAgo: 100)
+            let fixture = SpaceFixture(books: [book])
+            let seen = Box<[String]>([])
+            fixture.storage.afterTheLastLook { [fixture] id in
+                seen.value.append("freeing \(fixture.model.booksBeingFreed.contains(id))")
+                seen.value.append("moving \(fixture.model.bookUpdates.isPackageMoving(id))")
+                seen.value.append("busy \(fixture.model.isBookBusyForSync(id))")
+                seen.value.append("row \(fixture.states.state(of: id).map { "\($0)" } ?? "unchanged")")
+            }
+            if path == "command" {
+                _ = await fixture.commandsRemoving([book])
+            } else {
+                _ = await fixture.sweep(settings: fixture.settings(days: 7))
+            }
+            XCTAssertEqual(seen.value, ["freeing true", "moving true", "busy true", "row unchanged"], path)
+            XCTAssertEqual(fixture.states.state(of: book.id), .inCloud, path)
+            XCTAssertFalse(fixture.model.booksBeingFreed.contains(book.id), "\(path): the hold ended with the row's change")
+            XCTAssertFalse(fixture.model.bookUpdates.isPackageMoving(book.id), path)
+        }
+    }
+
+    /// A removal that fails after the last look said yes ends the hold all the same, and the row keeps its state; a
+    /// last look that says no never begins one.
+    func testTheHoldEndsHoweverTheRemovalEnds() async {
+        let failing = cloudTestBook("Fails")
+        let refused = cloudTestBook("Refused")
+        let fixture = SpaceFixture(books: [failing, refused])
+        fixture.fake.failRemoval(of: failing.id, with: .syncRemoval(.couldNotRemove("")))
+        let held = Box<[UUID]>([])
+        fixture.storage.afterTheLastLook { [fixture] id in
+            if fixture.model.booksBeingFreed.contains(id) { held.value.append(id) }
+        }
+        _ = await fixture.commandsRemoving([failing])
+        XCTAssertEqual(held.value, [failing.id])
+        XCTAssertFalse(fixture.model.booksBeingFreed.contains(failing.id))
+        XCTAssertFalse(fixture.model.bookUpdates.isPackageMoving(failing.id))
+        XCTAssertNil(fixture.states.state(of: failing.id))
+
+        // The person keeps the other book while its copy is checked: the last look says no, and nothing is held.
+        fixture.storage.duringTheProof { [fixture] id in
+            Task { @MainActor in _ = fixture.kept.keep([id]) }
+        }
+        _ = await fixture.commandsRemoving([refused])
+        XCTAssertEqual(fixture.storage.lastLookAnswers[refused.id], false)
+        XCTAssertEqual(held.value, [failing.id])
+        XCTAssertFalse(fixture.model.booksBeingFreed.contains(refused.id))
+    }
+
+    /// The audio editor waits while a book's files go: its render and its opening begin only once the removal is
+    /// over, then look at the book as it is (here gone from the library, which each says).
+    func testTheAudioEditorWaitsWhileABooksFilesGo() async {
+        let id = UUID()
+        let model = LibraryViewModel(initializeServices: false)
+        for step in ["render", "open"] {
+            let order = Box<[String]>([])
+            model.booksBeingFreed.begin(id)
+            let running = Task { @MainActor in
+                if step == "render" {
+                    _ = try? await model.saveAudioEdits(ofBook: id)
+                } else {
+                    _ = try? await AudioEditSession.open(bookID: id, in: model)
+                }
+                order.value.append("\(step) went on")
+            }
+            // Its first turns run it to its wait.
+            for _ in 0..<20 { await Task.yield() }
+            order.value.append("removal over")
+            model.booksBeingFreed.end(id)
+            await running.value
+            XCTAssertEqual(order.value, ["removal over", "\(step) went on"], step)
+        }
+    }
+
+    /// The hold's wait returns at once for books not being freed, outlasts every removal it waits for, and wakes when
+    /// the last of them ends.
+    func testWaitingForBooksBeingFreed() async {
+        let freed = BooksBeingFreed()
+        let one = UUID()
+        let two = UUID()
+        await freed.waitUntilFreed([one, two])
+        freed.begin(one)
+        freed.begin(two)
+        let order = Box<[String]>([])
+        let waiting = Task { @MainActor in
+            await freed.waitUntilFreed([one, two])
+            order.value.append("woke")
+        }
+        for _ in 0..<20 { await Task.yield() }
+        order.value.append("one ended")
+        freed.end(one)
+        for _ in 0..<20 { await Task.yield() }
+        order.value.append("two ended")
+        freed.end(two)
+        await waiting.value
+        XCTAssertEqual(order.value, ["one ended", "two ended", "woke"])
+        freed.end(two)
+        XCTAssertFalse(freed.contains(two), "ending twice changes nothing")
+    }
+
     // MARK: - The arrival date
 
     /// The date a book's files arrived is the pointer's last write; a package with no pointer has none.
@@ -659,8 +765,13 @@ private final class ProvingStorage: BookCloudStorage, @unchecked Sendable {
     private var refusals: [UUID: BookCloudError] = [:]
     private var lastLooks: [UUID: Bool] = [:]
     private var between: (@Sendable (UUID) -> Void)?
+    private var afterYes: (@MainActor @Sendable (UUID) -> Void)?
 
     init(_ fake: FakeBookCloudStorage) { self.fake = fake }
+
+    /// Runs `action` on the main actor after the last look said yes and before the files go, where the library holds
+    /// the book busy.
+    func afterTheLastLook(_ action: (@MainActor @Sendable (UUID) -> Void)?) { lock.withLock { afterYes = action } }
 
     /// What the library's last look (`FreeingCheck`) answered for each book at the moment its files would go.
     var lastLookAnswers: [UUID: Bool] { lock.withLock { lastLooks } }
@@ -693,6 +804,7 @@ private final class ProvingStorage: BookCloudStorage, @unchecked Sendable {
         let answer = await FreeingCheck.current?(package.url) ?? true
         lock.withLock { lastLooks[package.bookID] = answer }
         guard answer else { throw BookCloudError.syncRemoval(.busy) }
+        if let action = lock.withLock({ afterYes }) { await action(package.bookID) }
         try fake.removeDownload(of: package)
     }
 }

@@ -223,6 +223,10 @@ final class LibraryViewModel: ObservableObject {
     /// open in a reader (mirrored from `openBookIDs`), or being edited or
     /// rendered (FR04, `AudioOriginalSweep`).
     let audioEditActivity = AudioEditActivity()
+    /// The books whose downloads a synced library is taking off this
+    /// device now (FR46), which the editors, an export, a transcription,
+    /// and a sync's removal wait for.
+    let booksBeingFreed = BooksBeingFreed()
     /// The books being edited with Edit Text, whose feed downloads the
     /// feeds' rules leave for their next pass (`feedBooksInUse`): the app's
     /// sessions, unless a test gives the model sessions of its own.

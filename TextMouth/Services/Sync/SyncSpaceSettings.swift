@@ -129,3 +129,55 @@ final class BooksFreedOnPurpose {
         )
     }
 }
+
+// MARK: - Books Being Freed Now (FR46)
+
+/// The books whose downloads are going from this device now: from the library's last look, which said yes
+/// (`FreeingCheck`), to the book's row saying In Cloud (`LibraryCloudCommands`). The library keeps one
+/// (`LibraryViewModel.booksBeingFreed`), and nothing reads or writes such a book's files meanwhile: the audio editor's
+/// opening and its render, Edit Text, an export, and a transcription each wait for the removal to end
+/// (`waitUntilFreed(_:)`); a reader's load waits for the package move the library brackets the removal with
+/// (`LibraryBookUpdates.packagesWillMove(_:)`); and a sync's removal of the book waits for a later sync
+/// (`LibraryViewModel.isBookBusyForSync(_:)`).
+///
+/// Before the last look nothing waits. Whatever begins while the copy is checked is in use when the look is asked, and
+/// the look refuses, leaving the book whole: a person who opens, plays, edits, or exports the book goes on at once, and
+/// the removal is what gives way. Only the moment from the look to the row's change is waited for, in which a pointer
+/// is written and a few files are removed.
+@MainActor
+final class BooksBeingFreed {
+    /// The books being freed now.
+    private(set) var bookIDs: Set<UUID> = []
+    /// The callers waiting for a removal to end, all woken whenever one does, each then looking again.
+    private var waiters: [CheckedContinuation<Void, Never>] = []
+
+    /// Whether the book `id` is being freed now.
+    func contains(_ id: UUID) -> Bool {
+        bookIDs.contains(id)
+    }
+
+    /// Notes that the files of the book `id` begin to go.
+    func begin(_ id: UUID) {
+        bookIDs.insert(id)
+    }
+
+    /// Notes that the removal of the book `id` is over, whatever came of it, and wakes the callers waiting. A book not
+    /// being freed changes nothing.
+    func end(_ id: UUID) {
+        guard bookIDs.remove(id) != nil else { return }
+        let woken = waiters
+        waiters.removeAll()
+        for waiter in woken {
+            waiter.resume()
+        }
+    }
+
+    /// Returns once none of `ids` is being freed: at once when none is. The wait is as long as the removals', each of
+    /// which writes a pointer and removes a book's own files.
+    func waitUntilFreed(_ ids: some Sequence<UUID>) async {
+        let ids = Set(ids)
+        while !bookIDs.isDisjoint(with: ids) {
+            await withCheckedContinuation { waiters.append($0) }
+        }
+    }
+}

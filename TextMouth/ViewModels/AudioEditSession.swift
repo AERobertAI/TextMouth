@@ -113,6 +113,9 @@ final class AudioEditSession: ObservableObject {
         in library: LibraryViewModel,
         startingOver: Bool = false
     ) async throws -> AudioEditSession {
+        // A removal of the book's download whose last look has said yes ends first (FR46), so the session never reads
+        // audio that is going; it then opens the book as it is.
+        await library.booksBeingFreed.waitUntilFreed([bookID])
         guard let book = library.bookByID(bookID), book.format.isAudio, !book.tmbDirectoryName.isEmpty else {
             throw AudioEditError.bookNotInLibrary
         }

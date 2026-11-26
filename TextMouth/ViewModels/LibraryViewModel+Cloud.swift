@@ -908,6 +908,8 @@ final class LibraryCloudCommands {
             booksBeingRemoved.insert(book.id)
             defer { booksBeingRemoved.remove(book.id) }
             let lastLook = finalCheck(for: book.id, in: library, protecting: isProtected, requiringRemovalSetting: true)
+            // A yes of the last look holds the book busy until its row says what came of the removal, recorded below.
+            defer { endFreeing(book.id, in: library) }
             do {
                 try await FreeingCheck.$current.withValue(lastLook) {
                     try await storage.removeDownloadAsync(of: package, mayDownload: mayDownload)
@@ -945,6 +947,9 @@ final class LibraryCloudCommands {
     /// package is still its own (a book moved to another folder meanwhile is not freed from its old place); nothing
     /// protects it now; sync is on and the library may change; no reader has it open; and, for a sweep, the setting
     /// still removes unopened downloads.
+    ///
+    /// A yes holds the book busy at once, in the same step, until its row says what came of the removal
+    /// (`beginFreeing`, `endFreeing`): nothing the look asked about can begin between its answer and the files' going.
     private func finalCheck(
         for bookID: UUID,
         in library: LibraryViewModel,
@@ -956,9 +961,27 @@ final class LibraryCloudCommands {
             guard BookPackage(book).url.standardizedFileURL.path == package.standardizedFileURL.path else { return false }
             guard self.states.syncIsOn, library.maySyncNow, !library.isBookOpenNow(bookID) else { return false }
             guard !isProtected(book) else { return false }
-            if requiringRemovalSetting { return self.currentSettings().activeDays != nil }
+            if requiringRemovalSetting, self.currentSettings().activeDays == nil { return false }
+            self.beginFreeing(bookID, in: library)
             return true
         }
+    }
+
+    /// Holds the book `bookID` busy while its files go (`BooksBeingFreed`): the editors, an export, a transcription,
+    /// and a sync's removal wait, and a reader's load waits for the package move it is bracketed as, then loads the
+    /// book from wherever it is, as one opened during any package move does.
+    private func beginFreeing(_ bookID: UUID, in library: LibraryViewModel) {
+        guard !library.booksBeingFreed.contains(bookID) else { return }
+        library.booksBeingFreed.begin(bookID)
+        library.bookUpdates.packagesWillMove([bookID])
+    }
+
+    /// Ends what `beginFreeing` began for the book `bookID`, once its row says what came of the removal; nothing when
+    /// the last look never said yes.
+    private func endFreeing(_ bookID: UUID, in library: LibraryViewModel) {
+        guard library.booksBeingFreed.contains(bookID) else { return }
+        library.bookUpdates.packagesDidMove([bookID])
+        library.booksBeingFreed.end(bookID)
     }
 
     /// Whether looking at a book again is costly enough (its files were hashed, or read back) that a refusal
@@ -1479,29 +1502,20 @@ final class LibraryCloudCommands {
         } : nil
         defer { working?.cancel() }
         // One book at a time, since a synced library's removal reads the book's copy back first (FR46) and
-        // each waits on the network.
-        let failures = await Task.detached(priority: .userInitiated) { () -> [BookCloudError?] in
-            var results: [BookCloudError?] = []
-            for (request, lastLook) in zip(requests, lastLooks) {
-                switch request {
-                case .failure(let refusal):
-                    results.append(refusal)
-                case .success(let package):
-                    do {
-                        try await FreeingCheck.$current.withValue(lastLook) {
-                            try await storage.removeDownloadAsync(of: package, mayDownload: mayDownload)
-                        }
-                        results.append(nil)
-                    } catch {
-                        // Any other error is the removal's failure too, never a download's, which `.provider`
-                        // would say; in a synced library it is said in the app's own words, never the system's,
-                        // which can name a file.
-                        results.append((error as? BookCloudError) ?? (syncIsOn ? .syncRemoval(.couldNotRemove("")) : .removalFailed(error.localizedDescription)))
-                    }
-                }
+        // each waits on the network. Each book's row says In Cloud as soon as its own files are gone, which ends the
+        // hold its last look began (`endFreeing`), so a book freed first is never held busy for the books after it.
+        var failures: [BookCloudError?] = []
+        for (request, lastLook) in zip(requests, lastLooks) {
+            switch request {
+            case .failure(let refusal):
+                failures.append(refusal)
+            case .success(let package):
+                let failure = await Self.removeDownload(of: package, with: storage, mayDownload: mayDownload, syncIsOn: syncIsOn, lastLook: lastLook)
+                if failure == nil { states.record(.inCloud, for: package.bookID) }
+                endFreeing(package.bookID, in: library)
+                failures.append(failure)
             }
-            return results
-        }.value
+        }
         working?.cancel()
 
         var removed: [String] = []
@@ -1513,7 +1527,6 @@ final class LibraryCloudCommands {
                 DiagnosticLog.event(.storage, "REMOVE_DOWNLOAD_REFUSED: \(book.title): \(failure.logReason)")
             } else {
                 removed.append(book.title)
-                states.record(.inCloud, for: book.id)
                 // Under "All books" the next sync would download it again: it stays freed until it is opened.
                 if syncIsOn { freedOnPurpose().note(book.id, at: now()) }
             }
@@ -1542,6 +1555,30 @@ final class LibraryCloudCommands {
         let keepsEveryBook = syncIsOn && booksChoice() == .allBooks
         VoiceOverAnnouncer.announce(keepsEveryBook ? SentenceWording.joined([message, SyncWording.removedDownloadsAgainOnOpening]) : message, from: window)
         return nil
+    }
+
+    /// Removes one book's download for Remove Download, off the main thread (a cloud library's storage removes
+    /// synchronously, and a synced library's reads the copy back), with the last look set for the storage to ask.
+    /// - Returns: Why the download stayed; nil when it went. An error that is not the storage's own is the removal's
+    ///   failure, never a download's, which `.provider` would say; in a synced library it is said in the app's own
+    ///   words, never the system's, which can name a file.
+    private nonisolated static func removeDownload(
+        of package: BookPackage,
+        with storage: any BookCloudStorage,
+        mayDownload: Bool,
+        syncIsOn: Bool,
+        lastLook: @escaping @MainActor @Sendable (URL) -> Bool
+    ) async -> BookCloudError? {
+        await Task.detached(priority: .userInitiated) { () -> BookCloudError? in
+            do {
+                try await FreeingCheck.$current.withValue(lastLook) {
+                    try await storage.removeDownloadAsync(of: package, mayDownload: mayDownload)
+                }
+                return nil
+            } catch {
+                return (error as? BookCloudError) ?? (syncIsOn ? .syncRemoval(.couldNotRemove("")) : .removalFailed(error.localizedDescription))
+            }
+        }.value
     }
 
     /// Whether the library holds `book` now, so that its download is not removed: it is kept (by the listener, the

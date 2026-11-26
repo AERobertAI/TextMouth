@@ -210,9 +210,11 @@ extension LibraryViewModel: SyncLibraryHost {
     /// Whether the book `id` is busy now, so a removal waits: open in a
     /// reader (the synchronous truth, not the published set that follows a
     /// turn later), its audio being edited, being edited with Edit Text, in
-    /// use by a feed rule, being exported or transcribed, or being fetched.
+    /// use by a feed rule, being exported or transcribed, being fetched, or
+    /// having its download taken off this device (`booksBeingFreed`).
     func isBookBusyForSync(_ id: UUID) -> Bool {
         if isBookOpenNow(id) || audioEditActivity.isInUse(id) || feedBooksInUse.contains(id) { return true }
+        if booksBeingFreed.contains(id) { return true }
         if case .downloading? = BookCloudStates.shared.state(of: id) { return true }
         return false
     }

@@ -113,6 +113,9 @@ final class BookTextEditor {
     /// being read again in another encoding, or an editor that could not
     /// open it. `window` is where the dialogs and announcements appear.
     func edit(_ book: Book, choosingApp: Bool, in library: LibraryViewModel, from window: NSWindow?) async {
+        // A removal of the book's download whose last look has said yes ends first (FR46): a session never fingerprints
+        // the book's own file as it goes. Its text, content.md, stays with the book.
+        await library.booksBeingFreed.waitUntilFreed([book.id])
         guard await Self.hasText(book) else {
             files.announce(BookTextEditWording.noText(bookTitle: book.title), from: window)
             return
