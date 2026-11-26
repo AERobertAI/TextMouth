@@ -285,7 +285,7 @@ final class SyncSpaceCommandsTests: XCTestCase {
         XCTAssertNil(fixture.states.state(of: notYet.id))
 
         let second = await fixture.sweep(settings: fixture.settings(days: 7))
-        XCTAssertEqual(second.waiting, 1, "only the cheap look is made again at the next sync")
+        XCTAssertEqual(second.waiting, 2, "both still wait, the changed one out its day")
         XCTAssertEqual(fixture.storage.proofs.map(\.bookID).filter { $0 == changed.id }.count, 1)
 
         fixture.clock.advance(by: day)
@@ -478,6 +478,8 @@ final class SyncSpaceCommandsTests: XCTestCase {
         let books = (1...3).map { fixtureBook("Book \($0)", openedDaysAgo: 100) }
         let fixture = SpaceFixture(books: books)
         let first = Task { await fixture.sweep(settings: fixture.settings(days: 7)) }
+        // Let the first begin: it runs until its first wait, with its sweep marked as under way.
+        await Task.yield()
         let second = await fixture.sweep(settings: fixture.settings(days: 7))
         let done = await first.value
         XCTAssertEqual(second.removed, [], "the second found the first under way")

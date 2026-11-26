@@ -461,8 +461,13 @@ final class StoreRemovalTests: XCTestCase {
                 XCTAssertFalse(FileManager.default.fileExists(atPath: world.file("book.txt").path))
             }
 
-            // Starting again finishes the removal whatever the stop left.
-            _ = try await world.removal.removeDownload(of: world.package, bookID: bookID, mayDownload: true)
+            // Starting again finishes the removal whatever the stop left; a stop after the last file went has nothing left
+            // to remove, which is said as such.
+            do {
+                _ = try await world.removal.removeDownload(of: world.package, bookID: bookID, mayDownload: true)
+            } catch SyncRemovalRefusal.nothingToRemove {
+                XCTAssertFalse(FileManager.default.fileExists(atPath: world.file("book.txt").path), "nothing was left after \(stopAt)")
+            }
             XCTAssertFalse(FileManager.default.fileExists(atPath: world.file("book.txt").path), "finished after a stop at \(stopAt)")
             try assertNeitherLost(world, "finished after a stop at \(stopAt)")
 
