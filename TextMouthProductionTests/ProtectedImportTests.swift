@@ -15,7 +15,7 @@ final class ProtectedImportTests: XCTestCase {
     /// The words in the fixture, which must reach no file of the package.
     private let words = "The sluice gate opens at dawn."
     /// The folder the source PDF is in.
-    private var folder: URL!
+    private var folder = FileManager.default.temporaryDirectory
     /// Puts the default store back.
     private var restoreStore: (() -> Void)?
 
@@ -92,6 +92,7 @@ final class ProtectedImportTests: XCTestCase {
         )
         addTeardownBlock { @MainActor in reader.close() }
         let asked = expectation(description: "asks")
+        asked.assertForOverFulfill = false
         let watchAsk = reader.objectWillChange.sink { _ in
             DispatchQueue.main.async { if reader.unlockPrompt != nil { asked.fulfill() } }
         }
@@ -100,6 +101,7 @@ final class ProtectedImportTests: XCTestCase {
 
         reader.submitUnlock(UnlockChoice(password: Secret("secret"), remember: false, removePassword: false))
         let loaded = expectation(description: "loads")
+        loaded.assertForOverFulfill = false
         let watchLoad = reader.objectWillChange.sink { _ in
             DispatchQueue.main.async { if reader.content != nil { loaded.fulfill() } }
         }

@@ -11,7 +11,7 @@ import ZIPFoundation
 final class UnlockedSourcesTests: XCTestCase {
 
     /// The folder this test's files are made in.
-    private var folder: URL!
+    private var folder = FileManager.default.temporaryDirectory
 
     /// The words the fixtures hold.
     private let words = "The sluice gate opens at dawn."

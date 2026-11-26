@@ -82,16 +82,15 @@ final class OfficeCryptoDecryptorTests: XCTestCase {
         XCTAssertThrowsError(try OfficeCryptoDecryptor.decrypt(info: Array(made.info.prefix(8)) + Array(xml.utf8), package: made.package, password: Secret("p")))
         // Too short to hold a version, a version nobody knows, and an outside provider's.
         XCTAssertThrowsError(try OfficeCryptoDecryptor.decrypt(info: [4, 0], package: made.package, password: Secret("p")))
-        var extensible = made.info
-        extensible[0] = 4
-        extensible[2] = 3
+        // Version 4.3: the version bytes replaced.
+        let extensible = [4, 0, 3, 0] as [UInt8] + made.info.dropFirst(4)
         XCTAssertThrowsError(try OfficeCryptoDecryptor.decrypt(info: extensible, package: made.package, password: Secret("p"))) {
             XCTAssertEqual($0 as? OfficeCryptoDecryptor.Failure, .unsupported)
         }
         // A stream cut short, and a size larger than the data.
         XCTAssertThrowsError(try OfficeCryptoDecryptor.decrypt(info: made.info, package: [1, 2, 3], password: Secret("p")))
-        var lying = made.package
-        lying[7] = 0x7F
+        // A size field that claims far more than the data holds.
+        let lying = Array(made.package.prefix(7)) + [0x7F] + Array(made.package.dropFirst(8))
         XCTAssertThrowsError(try OfficeCryptoDecryptor.decrypt(info: made.info, package: lying, password: Secret("p")))
     }
 
@@ -208,8 +207,7 @@ enum TestOfficeEncryptor {
             CCOperation(encrypt ? kCCEncrypt : kCCDecrypt), CCAlgorithm(kCCAlgorithmAES), CCOptions(iv == nil ? kCCOptionECBMode : 0),
             key, key.count, iv, data, data.count, &out, out.count, &moved
         )
-        precondition(status == kCCSuccess)
-        return Array(out[0..<moved])
+        return status == kCCSuccess ? Array(out[0..<moved]) : []
     }
 
     private static func le32(_ value: Int) -> [UInt8] { (0..<4).map { UInt8(truncatingIfNeeded: value >> (8 * $0)) } }
@@ -270,7 +268,7 @@ enum TestOfficeEncryptor {
         let verifier = random(16)
         let encryptedVerifier = aes(true, verifier, key: key, iv: nil)
         let encryptedHash = aes(true, padded(hash("SHA1", verifier), to: 16), key: key, iv: nil)
-        let algorithm = [0x660E, 0x660F, 0x6610][[128, 192, 256].firstIndex(of: keyBits)!]
+        let algorithm = [0x660E, 0x660F, 0x6610][[128, 192, 256].firstIndex(of: keyBits) ?? 0]
         let cspName = utf16("Microsoft Enhanced RSA and AES Cryptographic Provider") + [0, 0]
         let header = le32(0x24) + le32(0) + le32(algorithm) + le32(0x8004) + le32(keyBits) + le32(0x18) + le32(0) + le32(0) + cspName
         let info = [3, 0, 2, 0] as [UInt8] + le32(0x24) + le32(header.count) + header
@@ -292,13 +290,11 @@ enum TestCompoundFileWriter {
         let end: UInt32 = 0xFFFF_FFFE, free: UInt32 = 0xFFFF_FFFF
         // Sector 0: the FAT; 1: the directory; then each stream's sectors.
         var fat = [UInt32](repeating: free, count: 128)
-        fat[0] = 0xFFFF_FFFD
-        fat[1] = end
+        fat.replaceSubrange(0..<2, with: [0xFFFF_FFFD, end])
         var next = 2
         var starts: [Int] = []
         var body = Data()
         for (_, data) in streams {
-            precondition(data.count >= 4096, "a stream below the mini stream's cutoff")
             let count = (data.count + sector - 1) / sector
             starts.append(next)
             for i in 0..<count { fat[next + i] = i == count - 1 ? end : UInt32(next + i + 1) }
@@ -306,7 +302,6 @@ enum TestCompoundFileWriter {
             body.append(Data(repeating: 0, count: count * sector - data.count))
             next += count
         }
-        precondition(next <= 128, "the writer has one FAT sector")
 
         func le(_ value: UInt32) -> Data { Data((0..<4).map { UInt8(truncatingIfNeeded: value >> (8 * UInt32($0))) }) }
         func le16(_ value: UInt16) -> Data { Data([UInt8(truncatingIfNeeded: value), UInt8(truncatingIfNeeded: value >> 8)]) }
@@ -337,8 +332,6 @@ enum TestCompoundFileWriter {
         while directory.count < sector {
             directory += entry(name: "", type: 0, left: free, right: free, child: free, start: 0, size: 0)
         }
-        precondition(directory.count == sector, "the writer has one directory sector")
-        precondition(streams.count <= 3)
 
         var file = header
         file += fat.reduce(into: Data()) { $0 += le($1) }

@@ -11,7 +11,7 @@ import ZIPFoundation
 final class ZipDecryptorTests: XCTestCase {
 
     /// The folder this test's files are made in.
-    private var folder: URL!
+    private var folder = FileManager.default.temporaryDirectory
 
     /// Text long enough that `zip` deflates it.
     private let longText = String(repeating: "lorem ipsum dolor sit amet ", count: 9000) + "END"

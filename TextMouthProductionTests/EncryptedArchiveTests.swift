@@ -9,7 +9,7 @@ import ZIPFoundation
 final class EncryptedArchiveTests: XCTestCase {
 
     /// The folder this test's files are made in, in the temporary directory.
-    private var folder: URL!
+    private var folder = FileManager.default.temporaryDirectory
 
     override func setUpWithError() throws {
         folder = FileManager.default.temporaryDirectory.appendingPathComponent("EncryptedArchiveTests-\(UUID().uuidString)")

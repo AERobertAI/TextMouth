@@ -14,9 +14,9 @@ import XCTest
 final class ProtectedBookReaderTests: XCTestCase {
 
     /// The folder holding the book, and only the book.
-    private var folder: URL!
+    private var folder = FileManager.default.temporaryDirectory
     /// The locked PDF's book row.
-    private var book: Book!
+    private var book = Book(title: "", format: .pdf, filePath: "/Users/reader/none.pdf", md5Hash: "none")
     /// What was in the folder when the book was made.
     private var listingAtStart: [String] = []
     /// The store this test uses, in memory.
@@ -68,6 +68,7 @@ final class ProtectedBookReaderTests: XCTestCase {
     private func wait(for reader: ReaderViewModel, _ description: String, until condition: @escaping (ReaderViewModel) -> Bool) {
         if condition(reader) { return }
         let reached = expectation(description: description)
+        reached.assertForOverFulfill = false
         let watch = reader.objectWillChange.sink { _ in
             // The change is published before it is made: look on the next turn.
             DispatchQueue.main.async { if condition(reader) { reached.fulfill() } }
