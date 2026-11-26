@@ -8,8 +8,8 @@ import Foundation
 enum SyncNames {
     static let folderName = "TextMouth Sync" // l10n: no (a folder's name on disk)
     static let storeFile = "store.json"
-    static let booksFolder = "Books"
-    static let devicesFolder = "Devices"
+    static let booksFolder = "Books" // l10n: no (a folder's name on disk)
+    static let devicesFolder = "Devices" // l10n: no (a folder's name on disk)
     static let deviceFile = "device.json"
 
     /// `000000000042.changes.json`, or `.snapshot.json`.

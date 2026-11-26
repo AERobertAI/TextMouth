@@ -39,7 +39,7 @@ struct SyncCenterEnvironment {
     /// The name this device gives itself in the store: its host name without ".local", or "Mac" or "iPhone".
     @MainActor static func deviceName(isPhone: Bool) -> String {
         let name = LibrarySessionLease.systemComputerName()
-        return name.isEmpty ? (isPhone ? "iPhone" : "Mac") : name
+        return name.isEmpty ? (isPhone ? "iPhone" : "Mac") : name // l10n: no (a device's name in the store, as the system gives it)
     }
 
     /// The app's own: the process's preferences, iCloud Drive's location, and the real clock and voice.
@@ -254,8 +254,29 @@ struct SyncCenterEnvironment {
 
     // MARK: Setting up, joining, stopping
 
+    /// The folder a Debug build's interface test names in `TEXTMOUTH_SYNC_FOLDER` as one it may sync into (a
+    /// sandbox folder, which R6 would refuse), as `TEXTMOUTH_EXPORT_TO` is for export. A Release build never
+    /// reads it: nothing here exists there.
+    static func seamFolder(environment: [String: String] = ProcessInfo.processInfo.environment) -> URL? {
+        #if DEBUG
+        guard let path = environment["TEXTMOUTH_SYNC_FOLDER"], !path.isEmpty else { return nil }
+        return URL(fileURLWithPath: path, isDirectory: true).standardizedFileURL
+        #else
+        return nil
+        #endif
+    }
+
+    /// Whether `url` is, or is inside, the folder the test seam names.
+    static func isSeamFolder(_ url: URL, environment: [String: String] = ProcessInfo.processInfo.environment) -> Bool {
+        guard let seam = seamFolder(environment: environment) else { return false }
+        let path = url.standardizedFileURL.path
+        return path == seam.path || path.hasPrefix(seam.path + "/")
+    }
+
     /// Refuses what R6 refuses: a library kept in a cloud location or on another volume.
     private func requireLocalLibrary() throws {
+        // A Debug build's interface test that names a sync folder has chosen to sync in a sandbox: the library is its own.
+        if Self.seamFolder() != nil { return }
         // On the iPhone the app's own container is local: `location(of:)` knows (it never says another volume there).
         guard let dataDirectory, environment.locate(dataDirectory) == .local else { throw SyncProblem.libraryNotLocal }
     }
@@ -263,7 +284,9 @@ struct SyncCenterEnvironment {
     /// Refuses a folder that isn't in iCloud Drive.
     private func requireICloudDrive(_ folder: URL) throws {
         // A folder in a trash (deleted in Finder or Files) is not a place to sync into.
-        guard !SyncFolderIO.isDeleted(folder), environment.locate(folder) == .cloud(.iCloudDrive) else { throw SyncProblem.notInICloudDrive }
+        guard !SyncFolderIO.isDeleted(folder), Self.isSeamFolder(folder) || environment.locate(folder) == .cloud(.iCloudDrive) else {
+            throw SyncProblem.notInICloudDrive
+        }
     }
 
     /// Makes TextMouth Sync and its store.json in `parent`, then joins it.
@@ -408,6 +431,7 @@ struct SyncCenterEnvironment {
     /// The network path changed: the scheduler decides whether it is "back".
     private func networkReport(_ report: NetworkPathReport) {
         lastPath = report
+        SyncActivity.setPathIsCostly(report.isExpensive || report.isConstrained)
         scheduler.notePath(satisfied: report.isSatisfied, at: environment.now())
         rearm()
     }
@@ -464,7 +488,7 @@ struct SyncCenterEnvironment {
         let locate = environment.locate
         let checked = await Task.detached { () -> (fresh: Data, refused: Bool)? in
             guard let fresh = renew(current) else { return nil }
-            if let target = PlainSyncFolderAccess.resolve(fresh)?.url, SyncFolderIO.isDeleted(target) || locate(target) != .cloud(.iCloudDrive) { return (fresh, true) }
+            if let target = PlainSyncFolderAccess.resolve(fresh)?.url, SyncFolderIO.isDeleted(target) || (!SyncCenter.isSeamFolder(target) && locate(target) != .cloud(.iCloudDrive)) { return (fresh, true) }
             return (fresh, false)
         }.value
         guard let checked, bookmark == current else { return true }
