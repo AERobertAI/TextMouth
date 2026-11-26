@@ -1,4 +1,5 @@
 import Foundation
+import os
 
 // SyncSeams.swift: the engine's seams, the library's side, and the app's one
 // sync (FR43): the last two parts of section 9 of
@@ -23,6 +24,44 @@ protocol SyncFolderAccess: Sendable {
     func uploadState(of file: URL) -> SyncUploadState
     /// Evicts the local copy; a refusal is a wait.
     func evictLocalCopy(of file: URL) throws
+    /// Removes the hidden half-made files a crash left in `folder` (one level), older than `age` seconds.
+    /// A default does nothing.
+    func sweepPartialFiles(in folder: URL, olderThan age: TimeInterval)
+    /// Copies `file` out of the sync folder to the local `destination`, waiting for it to download,
+    /// within `limit`: `.offline` at once, `.notDownloaded` at the limit. Unlike `read`, a large
+    /// blob never sits in memory whole. A default does it through `read` and `write`.
+    func fetch(_ file: URL, to destination: URL, within limit: Duration) async throws
+}
+
+extension SyncFolderAccess {
+    /// `copyIn`, run on the queue coordinated calls use and awaited, so a stuck iCloud Drive call holds neither the
+    /// engine actor nor a cooperative thread for the 30 seconds it may take (R2).
+    func copyInOffActor(_ local: URL, to file: URL) async throws {
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            SyncFolderIO.coordinationQueue.async {
+                continuation.resume(with: Result { try self.copyIn(local, to: file) })
+            }
+        }
+    }
+
+    /// `write`, run on the same queue and awaited.
+    func writeOffActor(_ data: Data, to file: URL, replacing: Bool) async throws {
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            SyncFolderIO.coordinationQueue.async {
+                continuation.resume(with: Result { try self.write(data, to: file, replacing: replacing) })
+            }
+        }
+    }
+
+    /// An access that stages nothing has nothing to sweep.
+    func sweepPartialFiles(in folder: URL, olderThan age: TimeInterval) {}
+
+    /// The default fetch: reads the file whole, then writes it. An access that can copy by streaming overrides this.
+    func fetch(_ file: URL, to destination: URL, within limit: Duration) async throws {
+        let data = try await read(file, within: limit)
+        try FileManager.default.createDirectory(at: destination.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try data.write(to: destination, options: .atomic)
+    }
 }
 
 /// One entry of a folder listing.
@@ -39,6 +78,8 @@ enum SyncUploadState: Equatable, Sendable { case uploaded, uploading, failed(Syn
 enum SyncProblem: Error, Equatable, Sendable {
     case offline, folderMissing, notASyncFolder, anotherStore, laterVersion, outOfSpace
     case notDownloaded(device: String), exists, damaged(file: String)
+    /// Set Up Sync was given a folder outside iCloud Drive, or the library is itself kept in a cloud folder (R6).
+    case notInICloudDrive, libraryNotLocal
 }
 
 /// What started a sync.
@@ -49,86 +90,76 @@ struct SyncStatus: Equatable, Sendable {
     var isOn = false, isSyncing = false, isOffline = false, pendingChanges = 0
     var lastSynced: Date?, lastHeard: [String: Date] = [:], problem: SyncProblem?
     var booksBackedUp: Int?, booksToBackUp: Int?
-}
-
-/// A stub of the folder access: every call does nothing, until sync-store builds it.
-struct PlainSyncFolderAccess: SyncFolderAccess {
-    /// The folder's bookmark.
-    let bookmark: Data
-
-    init(bookmark: Data) { self.bookmark = bookmark }
-
-    func withFolder<T: Sendable>(_ body: @Sendable (URL) async throws -> T) async throws -> T {
-        throw SyncProblem.folderMissing
-    }
-    func list(_ folder: URL) throws -> [SyncFolderItem] { [] }
-    func read(_ file: URL, within limit: Duration) async throws -> Data { throw SyncProblem.folderMissing }
-    func write(_ data: Data, to file: URL, replacing: Bool) throws {}
-    func copyIn(_ local: URL, to file: URL) throws {}
-    func uploadState(of file: URL) -> SyncUploadState { .notReported }
-    func evictLocalCopy(of file: URL) throws {}
+    /// How many book removals were held back, not sent, as a mass removal (index recovery, a wrong folder).
+    var heldRemovals = 0
 }
 
 /// Makes the folder access for a bookmark; the iPhone sets its own.
 enum SyncFolderAccessFactory {
     @MainActor static var make: (_ bookmark: Data) -> any SyncFolderAccess = { PlainSyncFolderAccess(bookmark: $0) }
-}
-
-/// A book not on this device, answered as a cloud book. Inert at `sync/base`:
-/// every call goes to the live storage.
-final class StoreBookStorage: BookCloudStorage {
-    private let live: any BookCloudStorage
-
-    /// Wraps the live storage, which answers for every book that is on this device.
-    init(wrapping live: any BookCloudStorage) { self.live = live }
-
-    func libraryLocation() -> StorageLocation { live.libraryLocation() }
-    func state(of package: BookPackage) -> BookCloudState { live.state(of: package) }
-    func state(of package: BookPackage, in location: StorageLocation) -> BookCloudState {
-        live.state(of: package, in: location)
+    /// Makes the bookmark of the folder a person chose; the iPhone sets its own (a folder picked in Files).
+    @MainActor static var makeBookmark: (_ folder: URL) -> Data? = { DataDirectoryPreferences.makeBookmark(of: $0) }
+    /// A fresh bookmark for `bookmark` when the system found it stale (the folder moved or was renamed, and the
+    /// bookmark still found it), nil when it is current; the center keeps the fresh one in `SyncPreferences`.
+    /// The iPhone sets its own, which opens the folder's scope to make it.
+    ///
+    /// Read when it is called, from any thread, so an override set after the center was built is used.
+    static var renewedBookmark: @Sendable (_ bookmark: Data) -> Data? {
+        get { renewal.withLock { $0 } }
+        set { renewal.withLock { $0 = newValue } }
     }
-    func download(_ package: BookPackage) -> AsyncThrowingStream<BookDownloadProgress, Error> {
-        live.download(package)
-    }
-    func removeDownload(of package: BookPackage) throws { try live.removeDownload(of: package) }
-    func bytesToDownload(of package: BookPackage) -> Int64? { live.bytesToDownload(of: package) }
+
+    private static let renewal = OSAllocatedUnfairLock<@Sendable (Data) -> Data?>(initialState: { bookmark in
+        guard let resolved = PlainSyncFolderAccess.resolve(bookmark), resolved.isStale else { return nil }
+        return DataDirectoryPreferences.makeBookmark(of: resolved.url)
+    })
 }
 
 // MARK: - The library's side, and the app's one sync
+
+/// Whether sync is on, readable from any thread: the book storage answers for a placeholder only while it is
+/// (R1: a library that never set sync up never has its packages' pointers read).
+enum SyncActivity {
+    private static let flag = OSAllocatedUnfairLock(initialState: false)
+    /// Whether sync is on now.
+    static var isOn: Bool { flag.withLock { $0 } }
+    /// Set by `SyncCenter` when it turns sync on or off.
+    static func set(_ on: Bool) { flag.withLock { $0 = on } }
+
+    private static let cellular = OSAllocatedUnfairLock(initialState: false)
+    /// Whether the network path is expensive (cellular, a hotspot) or constrained (Low Data Mode): a fetch that
+    /// stalls then adds section 7's hint about cellular data.
+    static var pathIsCostly: Bool { cellular.withLock { $0 } }
+    /// Set by `SyncCenter` from each path report.
+    static func setPathIsCostly(_ costly: Bool) { cellular.withLock { $0 = costly } }
+}
 
 /// What the library offers the sync; `LibraryViewModel` conforms (sync-mac).
 @MainActor protocol SyncLibraryHost: AnyObject {
     var library: Library { get }
     /// False while storage work is held, or the library is unavailable or recovering.
     var maySyncNow: Bool { get }
-    /// Applies a merge; returns the keys applied.
-    func applySync(_ application: SyncApplication) async -> Set<SyncKey>
+    /// Applies a merge, which was computed from `start`: the library as the center read it, recorded exactly as it
+    /// was. The host applies field by field onto its library as it is now, keeping any field changed since `start`;
+    /// returns the keys that landed. A key it left alone (a row it didn't touch, an open book's removal) is
+    /// applied again at the next sync.
+    func applySync(_ application: SyncApplication, from start: Library) async -> Set<SyncKey>
     /// Called after each run with the books kept on all devices; `mayDownload` is true on a satisfied
     /// path that is neither expensive nor constrained (section 16).
     func syncDidApply(keptBookIDs: Set<UUID>, mayDownload: Bool)
+    /// Called after a placeholder's files were fetched: `contentPath` is the content file's path in the package
+    /// as the store names it (the name it had where it was backed up), which the host sets as the row's
+    /// `filePath` if that differs. Nil when the manifest names no content file.
+    func syncDidFetch(bookID: UUID, contentPath: String?)
+    /// The IDs of the voices this device has, or nil for all: a voice a device lacks isn't applied to a row.
+    var availableVoiceIDs: Set<String>? { get }
 }
 
-/// The app's one sync; the interfaces and life cycles call it.
-@MainActor final class SyncCenter: ObservableObject {
-    static let shared = SyncCenter()
-    @Published private(set) var status = SyncStatus()
-    /// The books kept on all devices, from the registers (section 16). Empty until sync-store fills it.
-    @Published private(set) var keptBookIDs: Set<UUID> = []
+extension SyncLibraryHost {
+    /// A host that doesn't say has every voice.
+    var availableVoiceIDs: Set<String>? { nil }
 
-    /// Hands the sync its library and data directory.
-    func install(host: any SyncLibraryHost, dataDirectory: URL) {}
-    /// Makes TextMouth Sync and store.json, then joins.
-    func setUp(in parent: URL) async throws {}
-    /// Waits 60 seconds for store.json; never makes one.
-    func join(_ folder: URL) async throws {}
-    /// Announces "Syncing." and the outcome.
-    func syncNow() {}
-    /// A moment to sync at.
-    func moment(_ reason: SyncReason) {}
-    /// Called from `LibraryViewModel.library`'s `didSet`.
-    func libraryDidChange() {}
-    /// Forgets the folder; deletes nothing.
-    func stop() {}
-    /// Stamps Keep on All Devices on or off for `bookIDs`, as a person chose. Inert at `sync/base`.
-    func setKeep(_ keep: Bool, for bookIDs: [UUID]) {}
+    /// A host that keeps the row's file name as it made it has nothing to do.
+    func syncDidFetch(bookID: UUID, contentPath: String?) {}
 }
+

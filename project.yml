@@ -1205,6 +1205,7 @@ targets:
       - TextMouthProductionTests/PlaceRelocatorSharedRuleTests.swift
       - TextMouthProductionTests/PlaceRelocatorTestSupport.swift
       - TextMouthProductionTests/PlaceRelocatorTests.swift
+      - TextMouthProductionTests/PlainSyncFolderAccessTests.swift
       - TextMouthProductionTests/PlaybackFuzzOperations.swift
       - TextMouthProductionTests/PlaybackFuzzOperationsTests.swift
       - TextMouthProductionTests/PreferenceStoreTests.swift
@@ -1226,17 +1227,28 @@ targets:
       - TextMouthProductionTests/StorageGenerationTestSupport.swift
       - TextMouthProductionTests/StorageGenerationTests.swift
       - TextMouthProductionTests/StorageGenerationWorkTests.swift
+      - TextMouthProductionTests/StoreBackupTests.swift
+      - TextMouthProductionTests/StoreFetchTests.swift
       - TextMouthProductionTests/SubstitutionCompositionTests.swift
       - TextMouthProductionTests/SyncApplyTests.swift
       - TextMouthProductionTests/SyncBaselineTests.swift
+      - TextMouthProductionTests/SyncCenterTests.swift
+      - TextMouthProductionTests/SyncEngineTests.swift
+      - TextMouthProductionTests/SyncFolderIOTests.swift
+      - TextMouthProductionTests/SyncFolderTests.swift
       - TextMouthProductionTests/SyncFormatTests.swift
       - TextMouthProductionTests/SyncMergePropertyTests.swift
       - TextMouthProductionTests/SyncOrderKeyTests.swift
+      - TextMouthProductionTests/SyncOutboxTests.swift
       - TextMouthProductionTests/SyncProjectionTests.swift
       - TextMouthProductionTests/SyncRegistersTests.swift
       - TextMouthProductionTests/SyncReviewFixTests.swift
+      - TextMouthProductionTests/SyncSchedulerTests.swift
       - TextMouthProductionTests/SyncStampTests.swift
+      - TextMouthProductionTests/SyncStatusLineTests.swift
+      - TextMouthProductionTests/SyncTestDrive.swift
       - TextMouthProductionTests/SyncTestFixtures.swift
+      - TextMouthProductionTests/SyncTwoDeviceTests.swift
       - TextMouthProductionTests/SyncWordingTests.swift
       - TextMouthProductionTests/TMBNameTests.swift
       - TextMouthProductionTests/TestDataFiles.swift

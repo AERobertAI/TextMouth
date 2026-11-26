@@ -424,6 +424,8 @@ final class LogContentPolicyTests: XCTestCase {
         // Edit Interface Text… and Export Interface Text… that could not do their work, and why (a system error's domain
         // and code, never a path).
         "INTERFACE_TEXT_EDIT_FAILED", "INTERFACE_TEXT_EXPORT_FAILED",
+        // Syncing the library (FR43): the engine's runs and the backup's; their lines hold counts and a type name, never a title.
+        "SYNC_RUN", "SYNC_BACKUP",
     ]
 
     /// Each tag still begins a string literal in the app's code, so none was
