@@ -56,6 +56,7 @@ Every check and read of the repair leaves dataless files in the cloud, and nothi
 One MAINTENANCE_SKIPPED_IN_CLOUD line counts the books left as they were.
 The look for a removal marker, which is almost always absent, stops at the first folder above it that is there and not dataless, the package itself, rather than asking every folder up to the data directory.
 An unreadable index skips all of this and enters recovery instead (see [Index-write suspension](state/library-index.md)).
+- Library sync: once the library is loaded, LibraryViewModel hands SyncCenter the library (install(host:dataDirectory:)); with no sync folder set up it does nothing, and otherwise it starts the launch sync ([Library sync](state/library-sync.md)).
 
 ## Background book maintenance
 <!-- id: background-book-maintenance; keys: Books Finished, metadata refresh, text anchors, statistics, hand-edited title, caches; src: TextMouth/ViewModels/LibraryViewModel+Migration.swift, TextMouth/ViewModels/LibraryViewModel.swift, TextMouth/ViewModels/LibraryViewModel+TextAnchors.swift, TextMouth/ViewModels/LibraryViewModel+ManifestEdits.swift, TextMouth/Services/BookManifestEditing.swift, TextMouth/Services/ReadingStatsService.swift -->
