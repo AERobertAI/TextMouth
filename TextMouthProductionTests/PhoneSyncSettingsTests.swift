@@ -243,6 +243,22 @@ final class PhoneSyncSettingsTests: XCTestCase {
         XCTAssertEqual(titles(isKept: true), ["Book Info", "Add to Reading List", "Stop Keeping on All Devices", "Move to Folder...", "Remove from Library..."])
     }
 
+    /// A book only in the cloud offers Download Now, as the Mac does, before the keep commands; one on the phone offers none.
+    func testRowCommandsOfferDownloadNowForABookInTheCloud() {
+        func titles(canDownload: Bool) -> [String] {
+            PhoneLibraryOffer.bookCommands(
+                for: PhoneLibraryFixture.book("Dune"),
+                isInReadingList: false,
+                moves: nil,
+                removal: PhoneLibraryFixture.phoneRemoval,
+                isKeptOnAllDevices: false,
+                canDownload: canDownload
+            ).map(\.title)
+        }
+        XCTAssertEqual(titles(canDownload: true), ["Book Info", "Add to Reading List", "Download Now", "Keep on All Devices", "Move to Folder...", "Remove from Library..."])
+        XCTAssertEqual(titles(canDownload: false), ["Book Info", "Add to Reading List", "Keep on All Devices", "Move to Folder...", "Remove from Library..."])
+    }
+
     /// The choice follows at once, so the switch and the row read the new value as VoiceOver asks; one that is already so
     /// changes nothing and says nothing. (With sync off nothing is stamped, which the center's guard keeps.)
     func testKeepingFollowsAtOnceAndSaysNothingTwice() {

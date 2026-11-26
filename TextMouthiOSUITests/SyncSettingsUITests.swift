@@ -50,10 +50,13 @@ final class SyncSettingsUITests: TextMouthUITestCase {
         keepScreenshot(of: app, named: "Settings, Sync off")
     }
 
-    /// The library's summary line offers no Sync Now action while sync is off.
-    func testTheLibraryOffersNoSyncNowWhileOff() throws {
+    /// Nothing called Sync Now is on the library's screen while sync is off, of any kind: a VoiceOver action is never a
+    /// button, so every element's label is read, and the test fails if one says it. (That the summary line carries no such
+    /// action is `PhoneSyncSettingsTests`'s: this screen can't list a line's actions.)
+    func testTheLibraryShowsNothingCalledSyncNowWhileOff() throws {
         let app = try launch(sendingTheBook: false)
         XCTAssertTrue(app.buttons["Settings"].appears(within: Self.patience), "No library:\n\(app.debugDescription)")
-        XCTAssertFalse(app.buttons["Sync Now"].exists, "Sync Now is offered before sync is set up")
+        let elements = try elementsInOrder(of: app)
+        XCTAssertFalse(elements.contains { $0.label.contains("Sync Now") }, Self.describe(elements))
     }
 }

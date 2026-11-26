@@ -50,10 +50,13 @@ final class PhoneSyncLifeCycleTests: XCTestCase {
         return lifeCycle
     }
 
-    /// Becoming active is the active moment, each time.
-    func testEachActivationIsAMoment() {
+    /// The first activation is the launch, whose full sync the center has begun: it makes no second one. Each later
+    /// activation is the active moment.
+    func testEachActivationAfterTheFirstIsAMoment() {
         let record = Record()
         let lifeCycle = makeLifeCycle(record, isOn: true)
+        lifeCycle.sceneDidBecomeActive()
+        XCTAssertEqual(record.moments, [], "the launch's own sync is the first")
         lifeCycle.sceneDidBecomeActive()
         lifeCycle.sceneDidBecomeActive()
         XCTAssertEqual(record.moments, [.active, .active])
@@ -98,6 +101,7 @@ final class PhoneSyncLifeCycleTests: XCTestCase {
     func testNothingHappensWhileSyncIsOff() async {
         let record = Record()
         let lifeCycle = makeLifeCycle(record, isOn: false)
+        lifeCycle.sceneDidBecomeActive()
         lifeCycle.sceneDidBecomeActive()
         lifeCycle.sceneDidEnterBackground()
         await Task.yield()

@@ -30,7 +30,11 @@ enum PhoneSyncLifeCycle {
         hold: Duration = backgroundHold,
         wait: @escaping @MainActor (Duration) async -> Void = { try? await Task.sleep(for: $0) }
     ) {
+        // The first activation is the launch itself: the center's own launch moment has begun a full sync already, and a
+        // second one at once would read every other device's files again. Each later activation is a moment.
+        let activations = ActivationCount()
         lifeCycle.onDidBecomeActive {
+            guard activations.isNotTheFirst() else { return }
             guard isOn() else { return }
             moment(.active)
         }
@@ -52,6 +56,18 @@ enum PhoneSyncLifeCycle {
                 finish.end()
             }
         }
+    }
+}
+
+/// Counts a life cycle's activations, to tell the first, which is the launch.
+@MainActor
+private final class ActivationCount {
+    private var seen = 0
+
+    /// Notes one activation; whether it is a later one than the first.
+    func isNotTheFirst() -> Bool {
+        seen += 1
+        return seen > 1
     }
 }
 
