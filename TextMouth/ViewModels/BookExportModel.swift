@@ -577,6 +577,17 @@ final class BookExportModel: ObservableObject, Identifiable {
         isExporting && isChecked(.spokenAudio)
     }
 
+    /// How urgent the announcement of the export's end is: high while the sheet shows, low once the sheet has closed on
+    /// an export that goes on, whose end is a background result (`PhoneExportSession.sheetClosed(_:)`).
+    var announcementPriority: NSAccessibilityPriorityLevel = .high
+
+    /// Whether the spoken audio file is being made now: its chapters spoken, or the file encoded, which comes after
+    /// every other kind is written. Only then may the iPhone's sheet close and the export go on, since only the
+    /// other kinds can ask about a chapter nested too deeply, which needs the sheet.
+    var isMakingSpeech: Bool {
+        isExporting && speechProgress != nil
+    }
+
     // MARK: Converting
 
     /// The choices of the Convert to picker beside the checkbox of `kind`:
@@ -973,7 +984,7 @@ final class BookExportModel: ObservableObject, Identifiable {
         }
         summaryWording = Self.didEverything(outcome) ? nil : words
         finishedWording = words
-        VoiceOverAnnouncer.announce(words(), from: window)
+        VoiceOverAnnouncer.announce(words(), from: window, priority: announcementPriority)
         return outcome
     }
 

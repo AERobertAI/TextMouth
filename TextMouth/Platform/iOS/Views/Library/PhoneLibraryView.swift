@@ -117,6 +117,9 @@ struct PhoneLibraryView: View {
                 // after the title (the spec's "Progress"): it shows nothing
                 // while nothing imports, and observes only the import.
                 PhoneImportProgressCard()
+                // An export that goes on with its sheet closed (FR31, phase 2): the sheet's title, how far it has
+                // come, and Stop; then what it did, and Close. It shows nothing while no export has its card.
+                PhoneExportProgressCard()
                 // The Mac's Storage problems notice, as it is, at the top of
                 // the list while a write keeps failing: it observes only the
                 // failure center, and shows nothing until then. Each of its
@@ -345,6 +348,17 @@ struct PhoneLibraryView: View {
             if let book = library.bookByID(bookID) {
                 PhoneExportSheet(
                     books: [book],
+                    library: library,
+                    beginHold: { [lifeCycle = model.lifeCycle] name in lifeCycle.beginHold(name) }
+                )
+            }
+        case .exportFolder(let path):
+            // The folder's books as the library holds them now, each exported into a folder of its own (the Mac's way for
+            // several books); a folder emptied meanwhile has no sheet.
+            let books = library.library.booksInFolderTree(path)
+            if !books.isEmpty {
+                PhoneExportSheet(
+                    books: books,
                     library: library,
                     beginHold: { [lifeCycle = model.lifeCycle] name in lifeCycle.beginHold(name) }
                 )
@@ -580,7 +594,7 @@ struct PhoneLibraryView: View {
             } else {
                 remove(book)
             }
-        case .renameFolder, .moveFolder, .deleteFolder:
+        case .renameFolder, .moveFolder, .deleteFolder, .exportFolder:
             break
         }
     }
@@ -599,6 +613,10 @@ struct PhoneLibraryView: View {
         case .deleteFolder:
             guard PhoneFolderSheetModel.startDeleting(folder, in: library) == .asks else { return }
             shown = .delete(folder)
+        case .exportFolder:
+            // Not a folder sheet: the Export sheet, for the folder's books.
+            open(.exportFolder(folder.fullPath), from: .row(.folder(folderID)))
+            return
         default:
             return
         }

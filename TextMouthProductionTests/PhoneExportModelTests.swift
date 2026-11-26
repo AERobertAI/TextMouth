@@ -12,9 +12,8 @@ final class PhoneExportModelTests: XCTestCase {
 
     // MARK: - What Is Offered
 
-    /// Offering the iPhone's kinds leaves spoken audio out of the checkboxes,
-    /// the rest in the dialog's order, the first checked.
-    func testTheIPhonesKindsLeaveSpokenAudioOut() async throws {
+    /// Offering the iPhone's kinds lists every kind the Mac lists, in the dialog's order, the first checked.
+    func testTheIPhonesKindsAreTheMacsInTheMacsOrder() async throws {
         let world = try makeIntegrationWorld("Phone Export Offer")
         let book = try world.importBook(from: writeSource(named: "Harbour Pilots.md"))
         let model = BookExportModel(
@@ -25,7 +24,7 @@ final class PhoneExportModelTests: XCTestCase {
 
         await model.load()
 
-        XCTAssertEqual(model.choices.map(\.kind), [.originalFile, .markdown, .plainText])
+        XCTAssertEqual(model.choices.map(\.kind), [.originalFile, .markdown, .plainText, .spokenAudio])
         XCTAssertEqual(model.checked, [.originalFile])
     }
 

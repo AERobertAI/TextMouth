@@ -163,7 +163,9 @@ final class IOSInfoPlistTests: XCTestCase {
     ]
 
     /// The keys only iOS has, which Scripts/ios/sync-info-plist.py adds.
-    private static let iOSOnlyKeys: Set<String> = ["UIBackgroundModes", "UIApplicationSceneManifest"]
+    private static let iOSOnlyKeys: Set<String> = [
+        "UIBackgroundModes", "UIApplicationSceneManifest", "BGTaskSchedulerPermittedIdentifiers"
+    ]
 
     // MARK: - Document types
 
@@ -428,6 +430,22 @@ final class IOSInfoPlistTests: XCTestCase {
     func testTheBackgroundModesAreAudioAlone() throws {
         let modes = try XCTUnwrap(try iosPlist()["UIBackgroundModes"] as? [String])
         XCTAssertEqual(modes, ["audio"], "Without audio every book stops as the screen locks")
+    }
+
+    /// A spoken audio export's continued processing task is permitted by a wildcard (FR31, phase 2): the system takes
+    /// only an identifier the plist names, and each export's is made as it begins, so the name is a prefix and `.*`, and
+    /// the prefix is the one the task is made under (`PhoneExportBackgroundTask.identifierPrefix`, the bundle
+    /// identifier and ".export.").
+    func testTheContinuedExportTaskIsPermittedByAWildcard() throws {
+        let identifiers = try XCTUnwrap(try iosPlist()["BGTaskSchedulerPermittedIdentifiers"] as? [String])
+        let iOSTarget = try XCTUnwrap(block(ofTarget: "TextMouthiOS", in: try projectYAML()))
+
+        XCTAssertEqual(identifiers, ["com.textmouth.TextMouth.iOS.export.*"])
+        XCTAssertTrue(
+            iOSTarget.contains("PRODUCT_BUNDLE_IDENTIFIER: com.textmouth.TextMouth.iOS
+"),
+            "The wildcard's prefix is not the iPhone app's bundle identifier"
+        )
     }
 
     /// One scene at a time, also on an iPad, since one session cannot serve two

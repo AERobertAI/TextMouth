@@ -16,4 +16,23 @@ enum PhoneExportWording {
         // Translators: Why an export on the iPhone could not convert a book's text, after the file's name in a failure sentence: the iPhone has too little memory left for it.
         InterfaceText.line("phoneExport.tooLittleMemory", "The iPhone has too little memory free to convert this book now. Close other apps, then export again.")
     }
+
+    /// The hint of Close, which takes Stop's place in the sheet's bar while the spoken audio file is made: the sheet
+    /// closes and the export goes on, shown by a card at the top of the Library.
+    static var closeWhileExporting: String {
+        // Translators: The hint of the Close button of the Export sheet on the iPhone while a spoken audio export runs: the sheet closes, the export goes on, and the Library shows its progress.
+        InterfaceText.line("phoneExport.closeWhileExporting", "Closes Export. The export goes on, and the Library shows how far it has come.")
+    }
+
+    /// The title of the button after an export that opens the system's share sheet for the files just written.
+    static var share: String {
+        // Translators: The title of the button on the iPhone's Export sheet, after an export, that opens the share sheet for the files just written.
+        InterfaceText.line("phoneExport.share", "Share…")
+    }
+
+    /// What Share… does, for VoiceOver.
+    static var shareHint: String {
+        // Translators: The hint of the Share button on the iPhone's Export sheet, after an export.
+        InterfaceText.line("phoneExport.shareHint", "Sends the files just exported to another app or person.")
+    }
 }

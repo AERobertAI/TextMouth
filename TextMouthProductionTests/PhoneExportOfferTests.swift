@@ -8,10 +8,10 @@ final class PhoneExportOfferTests: XCTestCase {
 
     // MARK: - The Kinds
 
-    /// The iPhone offers every kind but spoken audio, which waits for phase 2.
-    func testTheIPhoneOffersEveryKindButSpokenAudio() {
-        XCTAssertEqual(PhoneExportOffer.kinds, Set(BookExportKind.allCases).subtracting([.spokenAudio]))
-        XCTAssertFalse(PhoneExportOffer.kinds.contains(.spokenAudio))
+    /// The iPhone offers every kind the Mac does, spoken audio included since phase 2.
+    func testTheIPhoneOffersEveryKind() {
+        XCTAssertEqual(PhoneExportOffer.kinds, Set(BookExportKind.allCases))
+        XCTAssertTrue(PhoneExportOffer.kinds.contains(.spokenAudio))
         XCTAssertTrue(PhoneExportOffer.kinds.isSuperset(of: [.originalFile, .markdown, .plainText, .audio, .headings, .bookmarks, .transcript]))
     }
 

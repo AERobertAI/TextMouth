@@ -452,7 +452,7 @@ struct PhoneSettingsView: View {
             }
         case .shareLogs:
             if let logsFile {
-                PhoneLogShareSheet(file: logsFile) { openRow = nil }
+                PhoneShareSheet(files: [logsFile]) { openRow = nil }
             }
         case .readingStatistics, .exportInterfaceText:
             // Pushed, or presented by the system's file exporter (`.fileExporter` below): never a sheet of this screen's.

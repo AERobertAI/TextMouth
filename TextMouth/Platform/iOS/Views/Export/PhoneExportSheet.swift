@@ -36,6 +36,33 @@ struct PhoneExportSheet: View {
         case folder
         /// A braille row of a kind that opens a choice sheet.
         case braille(BookExportKind, PhoneExportOffer.BrailleChoice)
+        /// A spoken audio row that opens a choice sheet.
+        case speech(PhoneExportOffer.SpeechChoice)
+        /// Share…, after an export.
+        case share
+    }
+
+    /// What the share sheet is given: the files an export wrote, and what lets go of their folder's scope.
+    private struct SharedFiles: Identifiable {
+        let id = UUID()
+        /// The files written.
+        let files: [URL]
+        /// Lets go of the folder's security scope, once the share sheet is done.
+        let letGo: @MainActor () -> Void
+    }
+
+    /// A choice sheet of the options rows, which the sheet presents from its list and not from a row (a row can scroll
+    /// away, and take its presenter with it): a braille row's, or a spoken audio row's.
+    private enum ChoiceRequest: Identifiable {
+        case braille(PhoneBrailleExportRequest)
+        case speech(PhoneSpeechExportRequest)
+
+        var id: String {
+            switch self {
+            case .braille(let request): return "braille." + request.id
+            case .speech(let request): return "speech." + request.id
+            }
+        }
     }
 
     /// A kind's Convert to choices, shown in a sheet of their own.
@@ -50,6 +77,8 @@ struct PhoneExportSheet: View {
     @StateObject private var model: BookExportModel
     /// The preferences the folder is kept in.
     private let defaults: UserDefaults
+    /// The export under way, which goes on with the sheet closed while the spoken audio file is made.
+    private let session: PhoneExportSession
     /// Closes the sheet.
     @Environment(\.dismiss) private var dismiss
     /// Where VoiceOver's focus is asked to go.
@@ -61,12 +90,15 @@ struct PhoneExportSheet: View {
     /// The kind whose Convert to choices were last opened, which focus returns
     /// to when they close.
     @State private var formatOpener: BookExportKind?
-    /// The braille choice on show, if any. Presented from the list, not from a braille row (`PhoneBrailleExportRows`).
-    @State private var brailleRequest: PhoneBrailleExportRequest?
+    /// The files being shared, while the share sheet shows, with the folder's scope held for as long as it does: the
+    /// files are in the folder the person chose, outside the app.
+    @State private var sharing: SharedFiles?
+    /// The options choice on show, if any. Presented from the list, not from a row (`PhoneBrailleExportRows`).
+    @State private var choiceRequest: ChoiceRequest?
     /// Counts the changes the braille options announce, which is what draws the braille rows again.
     @State private var brailleChanges = 0
-    /// The braille row whose choices were last opened, which focus returns to when they close.
-    @State private var brailleOpener: Focus?
+    /// The options row whose choices were last opened, which focus returns to when they close.
+    @State private var choiceOpener: Focus?
 
     /// A sheet exporting `books`, as `library` holds them when Export is
     /// pressed. `beginHold` is what keeps the app running while an export
@@ -75,9 +107,11 @@ struct PhoneExportSheet: View {
         books: [Book],
         library: LibraryViewModel,
         beginHold: @escaping @MainActor (_ name: String) -> (@MainActor () -> Void),
-        defaults: UserDefaults = TextMouthRuntime.current.preferences
+        defaults: UserDefaults = TextMouthRuntime.current.preferences,
+        session: PhoneExportSession = .shared
     ) {
         self.defaults = defaults
+        self.session = session
         // Made once, when the sheet first appears: the kept folder's bookmark is resolved on the main thread, which
         // every redraw of the screen behind the sheet would otherwise do again.
         _model = StateObject(wrappedValue: Self.makeModel(books: books, library: library, beginHold: beginHold, defaults: defaults))
@@ -153,14 +187,18 @@ struct PhoneExportSheet: View {
             .sheet(item: $formatSheet, onDismiss: formatSheetClosed) { shown in
                 formatChoices(for: shown.kind)
             }
-            // The braille choices are presented, and the options heard, here and not on a braille row: a row can
+            // The options' choices are presented, and the braille options heard, here and not on a row: a row can
             // scroll away, and take its presenter with it, at a large text size or on a small phone.
-            .sheet(item: $brailleRequest, onDismiss: brailleChoicesClosed) { request in
-                if let state = model.optionsState(for: request.kind) {
-                    PhoneBrailleExportChoices(state: state, choice: request.choice)
-                }
+            .sheet(item: $choiceRequest, onDismiss: optionChoicesClosed) { request in
+                optionChoices(for: request)
             }
             .onReceive(model.optionsChanged) { _ in brailleChanges &+= 1 }
+            .sheet(item: $sharing, onDismiss: { returnFocus(to: .share) }) { shared in
+                PhoneShareSheet(files: shared.files) {
+                    shared.letGo()
+                    sharing = nil
+                }
+            }
             .fileImporter(
                 isPresented: $isPickingFolder,
                 allowedContentTypes: [.folder],
@@ -170,15 +208,20 @@ struct PhoneExportSheet: View {
                 onCancellation: { returnFocus(to: .folder) }
             )
         }
-        // VoiceOver's escape gesture presses Stop while an export runs, and otherwise closes the sheet, as Escape does on
-        // the Mac. It is on the whole sheet and not on its list, since focus stays in the bar, on Stop, once Export is
-        // pressed, and the bar is no part of the list.
+        // VoiceOver's escape gesture presses the bar's first button: Stop while an export runs, Close while the spoken audio
+        // file is made, and otherwise Cancel or Close, as Escape does on the Mac. It is on the whole sheet and not on its
+        // list, since focus stays in the bar once Export is pressed, and the bar is no part of the list.
         .accessibilityAction(.escape) { escape() }
-        // No swipe may close the sheet while an export runs: Stop does.
-        .interactiveDismissDisabled(model.isExporting)
+        // No swipe may close the sheet while an export runs, unless it is making the spoken audio file, which goes on
+        // without it: Stop does.
+        .interactiveDismissDisabled(model.isExporting && !model.isMakingSpeech)
         .modifier(PhoneExportQuestionAlert(prompt: model.questionPrompt))
-        // However the sheet closes, an export still under way stops.
-        .onDisappear { model.stop() }
+        // However the sheet closes, an export still under way stops, but one making the spoken audio file, which goes on
+        // with a card in the Library.
+        .onDisappear {
+            if !session.letsGo(on: model) { model.stop() }
+            session.sheetClosed(model)
+        }
         .task { await arrive() }
     }
 
@@ -187,7 +230,7 @@ struct PhoneExportSheet: View {
     /// Cancel, Stop, or Close, then Export, as `PhoneExportOffer.bar` decides.
     @ToolbarContentBuilder
     private var bar: some ToolbarContent {
-        let buttons = PhoneExportOffer.bar(stage: stage, canExport: model.canExport)
+        let buttons = currentBar
         PhoneSheetButton(title: buttons.leading.title, hint: buttons.leading.hint, isEnabled: buttons.leading.isEnabled) {
             press(buttons.leading.role)
         }
@@ -196,22 +239,28 @@ struct PhoneExportSheet: View {
         }
     }
 
+    /// The bar as the model's state decides it.
+    private var currentBar: PhoneExportOffer.Bar {
+        PhoneExportOffer.bar(
+            stage: stage, canExport: model.canExport,
+            isExportingSpeech: model.isExportingSpeech, isMakingSpeech: model.isMakingSpeech
+        )
+    }
+
     /// What pressing a button of the bar does.
     private func press(_ role: PhoneExportOffer.BarButton.Role) {
         switch role {
         case .cancel, .close: dismiss()
         case .stop: model.stop()
-        case .export: Task { await model.export() }
+        // The session runs the export, so that a spoken audio export has the system's continued task.
+        case .export: Task { [session, model] in await session.export(model) }
         }
     }
 
-    /// The escape gesture: Stop while an export runs, else closing the sheet.
+    /// The escape gesture: the bar's first button, which is Stop while an export runs, Close while the spoken audio file
+    /// is made, and otherwise Cancel or Close.
     private func escape() {
-        if model.isExporting {
-            model.stop()
-        } else {
-            dismiss()
-        }
+        press(currentBar.leading.role)
     }
 
     // MARK: - The Kinds
@@ -268,7 +317,19 @@ struct PhoneExportSheet: View {
     /// braille's rows for a BRF or a PEF.
     @ViewBuilder
     private func optionRows(for kind: BookExportKind) -> some View {
-        if let state = model.optionsState(for: kind), state.brailleOptions != nil {
+        if kind == .spokenAudio {
+            if model.isChecked(.spokenAudio) {
+                PhoneSpeechExportRows(
+                    making: model.speechOptionsMaking,
+                    isExporting: model.isExporting,
+                    focus: $focus,
+                    open: { choice in
+                        choiceOpener = .speech(choice)
+                        choiceRequest = .speech(PhoneSpeechExportRequest(choice: choice))
+                    }
+                )
+            }
+        } else if let state = model.optionsState(for: kind), state.brailleOptions != nil {
             PhoneBrailleExportRows(
                 kind: kind,
                 state: state,
@@ -277,10 +338,42 @@ struct PhoneExportSheet: View {
                 revision: brailleChanges,
                 focus: $focus,
                 open: { choice in
-                    brailleOpener = .braille(kind, choice)
-                    brailleRequest = PhoneBrailleExportRequest(kind: kind, choice: choice)
+                    choiceOpener = .braille(kind, choice)
+                    choiceRequest = .braille(PhoneBrailleExportRequest(kind: kind, choice: choice))
                 }
             )
+        }
+    }
+
+    /// The sheet of the choice `request` asks for.
+    @ViewBuilder
+    private func optionChoices(for request: ChoiceRequest) -> some View {
+        switch request {
+        case .braille(let request):
+            if let state = model.optionsState(for: request.kind) {
+                PhoneBrailleExportChoices(state: state, choice: request.choice)
+            }
+        case .speech(let request):
+            if let state = model.speechOptions {
+                PhoneSpeechExportChoices(state: state, choice: request.choice)
+            }
+        }
+    }
+
+    /// An options choice closed: focus returns to the row that opened it.
+    private func optionChoicesClosed() {
+        guard let opener = choiceOpener else { return }
+        choiceOpener = nil
+        returnFocus(to: opener)
+    }
+
+    /// Stop, a row under the progress while the spoken audio file is made, where Close has taken its place in the bar: its
+    /// hint says the chapters spoken are kept.
+    @ViewBuilder
+    private var stopRow: some View {
+        if let stop = PhoneExportOffer.stopRow(stage: stage, isMakingSpeech: model.isMakingSpeech) {
+            Button(stop.title) { model.stop() }
+                .accessibilityHint(stop.hint)
         }
     }
 
@@ -292,13 +385,6 @@ struct PhoneExportSheet: View {
             selected: model.conversionID(for: kind),
             onChoose: { model.setConversionID($0, for: kind) }
         )
-    }
-
-    /// A braille choice closed: focus returns to the row that opened it.
-    private func brailleChoicesClosed() {
-        guard let opener = brailleOpener else { return }
-        brailleOpener = nil
-        returnFocus(to: opener)
     }
 
     /// The choices closed: focus returns to the row that opened them.
@@ -362,6 +448,7 @@ struct PhoneExportSheet: View {
                 }
                 .progressViewStyle(.linear)
                 .accessibilityLabel(text)
+                stopRow
             }
         }
     }
@@ -374,7 +461,23 @@ struct PhoneExportSheet: View {
         if let words = model.finishedWords ?? model.summary {
             Section {
                 Text(words)
+                shareButton
             }
+        }
+    }
+
+    /// Share… under what the export did, once it has written a file: it opens the system's share sheet for the files just
+    /// written, which are in the folder the person chose, so the folder's scope is held while it shows.
+    @ViewBuilder
+    private var shareButton: some View {
+        if case .finished(let outcome) = model.phase,
+           let share = PhoneExportOffer.shareButton(stage: stage, exportedCount: outcome.exported.count) {
+            Button(share.title) {
+                let letGo = PhoneExportFolder.holdAccess(to: outcome.destination)
+                sharing = SharedFiles(files: outcome.exported, letGo: letGo)
+            }
+            .accessibilityHint(share.hint)
+            .accessibilityFocused($focus, equals: .share)
         }
     }
 
