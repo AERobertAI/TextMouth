@@ -35,9 +35,6 @@ struct SyncCenterEnvironment {
     var pauseWhileJoining: @Sendable (Duration) async throws -> Void = { try await Task.sleep(for: $0) }
     /// A fresh bookmark for a stale one, or nil when it is current (`SyncFolderAccessFactory.renewedBookmark`).
     var renewedBookmark: @Sendable (Data) -> Data? = { _ in nil }
-    /// The app's own container, which counts as local whatever volume it is on: the iPhone's app container is on
-    /// the data volume, which `location(of:)` takes for another volume. Nil on the Mac.
-    var ownContainer: URL?
 
     /// The name this device gives itself in the store: its host name without ".local", or "Mac" or "iPhone".
     @MainActor static func deviceName(isPhone: Bool) -> String {
@@ -55,11 +52,6 @@ struct SyncCenterEnvironment {
         #endif
         // Told from the platform's name, so no constant is folded into a warning.
         let phone = platform == "ios"
-        #if os(iOS)
-        let ownContainer: URL? = TextMouthRuntime.current.homeDirectory
-        #else
-        let ownContainer: URL? = nil
-        #endif
         return SyncCenterEnvironment(
             preferences: TextMouthRuntime.current.preferences,
             deviceName: Self.deviceName(isPhone: phone),
@@ -77,8 +69,7 @@ struct SyncCenterEnvironment {
                 let values = try? url.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey])
                 return values?.volumeAvailableCapacityForImportantUsage ?? 0
             },
-            renewedBookmark: SyncFolderAccessFactory.renewedBookmark,
-            ownContainer: ownContainer
+            renewedBookmark: SyncFolderAccessFactory.renewedBookmark
         )
     }
 }
@@ -265,10 +256,8 @@ struct SyncCenterEnvironment {
 
     /// Refuses what R6 refuses: a library kept in a cloud location or on another volume.
     private func requireLocalLibrary() throws {
-        guard let dataDirectory else { throw SyncProblem.libraryNotLocal }
-        // The iPhone's own app container is the library's place: it is local though its volume is not the root's.
-        if let container = environment.ownContainer, dataDirectory.standardizedFileURL.path.hasPrefix(container.standardizedFileURL.path + "/") { return }
-        guard environment.locate(dataDirectory) == .local else { throw SyncProblem.libraryNotLocal }
+        // On the iPhone the app's own container is local: `location(of:)` knows (it never says another volume there).
+        guard let dataDirectory, environment.locate(dataDirectory) == .local else { throw SyncProblem.libraryNotLocal }
     }
 
     /// Refuses a folder that isn't in iCloud Drive.
