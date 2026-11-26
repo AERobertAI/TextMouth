@@ -66,13 +66,14 @@ final class PhoneSyncLifeCycleTests: XCTestCase {
     /// tied to the sync, not to a guessed time.
     func testTheHoldEndsWhenTheSendDoes() async {
         let record = Record()
-        record.ended = expectation(description: "the hold ends")
+        let ended = expectation(description: "the hold ends")
+        record.ended = ended
         let limit = Gate()
         let lifeCycle = makeLifeCycle(record, isOn: true, wait: { _ in await limit.wait() })
         lifeCycle.sceneDidEnterBackground()
         XCTAssertEqual(record.moments, [.background])
         XCTAssertEqual(record.holdsBegun, ["sync"])
-        await fulfillment(of: [record.ended!], timeout: 10)
+        await fulfillment(of: [ended], timeout: 10)
         XCTAssertEqual(record.holdsEnded, 1)
         // The limit coming later ends nothing twice.
         limit.open()
@@ -83,12 +84,13 @@ final class PhoneSyncLifeCycleTests: XCTestCase {
     /// A send that never finishes is cut off at the limit: the hold ends there, once.
     func testTheHoldEndsAtTheLimitWhenTheSendDoesNot() async {
         let record = Record()
-        record.ended = expectation(description: "the hold ends")
+        let ended = expectation(description: "the hold ends")
+        record.ended = ended
         let send = Gate()
         var limits: [Duration] = []
         let lifeCycle = makeLifeCycle(record, isOn: true, idle: { await send.wait() }, wait: { limits.append($0) })
         lifeCycle.sceneDidEnterBackground()
-        await fulfillment(of: [record.ended!], timeout: 10)
+        await fulfillment(of: [ended], timeout: 10)
         XCTAssertEqual(record.holdsEnded, 1)
         XCTAssertEqual(limits, [.seconds(20)])
         // The send finishing later ends nothing twice.
