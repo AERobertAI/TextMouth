@@ -517,7 +517,8 @@ enum DAISYParser {
             let ext = url.pathExtension.lowercased()
 
             if ext == "zip" || ext == "daisy" {
-                // ZIP archive
+                // ZIP archive; one with a password is refused in words that say so (B27).
+                try EncryptedArchiveGuard.refuseEncrypted(at: url)
                 do {
                     let archive = try Archive(url: url, accessMode: .read)
                     base = ArchiveFileProvider(archive: archive)

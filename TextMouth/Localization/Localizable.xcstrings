@@ -188029,6 +188029,318 @@
         }
       }
     },
+    "encryptedArchive.namesAndOthers" : {
+      "comment" : "The first three file names a ZIP archive's password kept TextMouth from reading, then a word that says there were others. %@ is the three names, in quotes, separated by commas.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@، وغيرها"
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ এবং আরও কিছু"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ und weitere"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, and others"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ y otros"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ و موارد دیگر"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ et d’autres"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ ועוד"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ और अन्य"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@, dan lainnya"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ e altri"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ ほか"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ 외 다수"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ en andere"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ i inne"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ e outros"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ и другие"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ och andra"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ และอื่น ๆ"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ ve diğerleri"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ та інші"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ اور دیگر"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ và các tệp khác"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ 等"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ 等"
+          }
+        }
+      }
+    },
+    "encryptedArchive.protected" : {
+      "comment" : "Why a ZIP archive could not be imported: its files are protected by a password, which TextMouth cannot use. %@ is the names of the files it could not read, in quotes.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "أرشيف ZIP هذا محمي بكلمة مرور، ولا يستطيع TextMouth فتحه. تعذّرت عليه قراءة %@."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই ZIP আর্কাইভটি পাসওয়ার্ড দিয়ে সুরক্ষিত, যা TextMouth খুলতে পারে না। এটি %@ পড়তে পারেনি।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Dieses ZIP-Archiv ist durch ein Passwort geschützt, das TextMouth nicht öffnen kann. %@ konnte nicht gelesen werden."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This ZIP archive is protected by a password, which TextMouth can't open. It couldn't read %@."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Este archivo ZIP está protegido con una contraseña y TextMouth no puede abrirlo. No pudo leer %@."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "این بایگانی ZIP با گذرواژه محافظت شده است و TextMouth نمی‌تواند آن را باز کند. خواندن %@ ممکن نبود."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Cette archive ZIP est protégée par un mot de passe, et TextMouth ne peut pas l’ouvrir. Il n’a pas pu lire %@."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ארכיון ה-ZIP הזה מוגן בסיסמה, ו-TextMouth לא יכול לפתוח אותו. לא ניתן היה לקרוא את %@."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "यह ZIP आर्काइव पासवर्ड से सुरक्षित है, जिसे TextMouth नहीं खोल सकता। यह %@ को नहीं पढ़ सका।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Arsip ZIP ini dilindungi kata sandi, dan TextMouth tidak dapat membukanya. TextMouth tidak dapat membaca %@."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Questo archivio ZIP è protetto da una password e TextMouth non può aprirlo. Non è riuscito a leggere %@."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "このZIPアーカイブはパスワードで保護されており、TextMouthでは開けません。%@を読み取れませんでした。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이 ZIP 보관 파일은 암호로 보호되어 있어 TextMouth에서 열 수 없습니다. %@을(를) 읽지 못했습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Dit ZIP-archief is beveiligd met een wachtwoord en TextMouth kan het niet openen. %@ kon niet worden gelezen."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "To archiwum ZIP jest chronione hasłem, którego TextMouth nie może otworzyć. Nie udało się odczytać: %@."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Este arquivo ZIP está protegido por senha, e o TextMouth não consegue abri-lo. Não foi possível ler %@."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Этот ZIP-архив защищён паролем, и TextMouth не может его открыть. Не удалось прочитать: %@."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Det här ZIP-arkivet är skyddat med ett lösenord som TextMouth inte kan öppna. Det gick inte att läsa %@."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไฟล์เก็บถาวร ZIP นี้ถูกป้องกันด้วยรหัสผ่าน และ TextMouth เปิดไม่ได้ จึงอ่าน %@ ไม่ได้"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bu ZIP arşivi bir parolayla korunuyor ve TextMouth onu açamıyor. %@ okunamadı."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Цей ZIP-архів захищено паролем, і TextMouth не може його відкрити. Не вдалося прочитати: %@."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "یہ ZIP آرکائیو پاس ورڈ سے محفوظ ہے، اور TextMouth اسے نہیں کھول سکتا۔ یہ %@ نہیں پڑھ سکا۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tệp lưu trữ ZIP này được bảo vệ bằng mật khẩu và TextMouth không mở được. Không đọc được %@."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "此 ZIP 压缩包受密码保护，TextMouth 无法打开。无法读取 %@。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "此 ZIP 壓縮檔受密碼保護，TextMouth 無法開啟。無法讀取 %@。"
+          }
+        }
+      }
+    },
     "endOfBook.downloadNotStartedReason" : {
       "comment" : "Why the download of a feed's next episode did not start: the app is quitting or the feed is being deleted. Said after \"The next episode could not be downloaded, so playback stopped.\"",
       "extractionState" : "manual",

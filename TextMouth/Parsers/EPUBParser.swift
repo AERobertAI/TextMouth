@@ -166,11 +166,15 @@ enum EPUBParser {
     /// Open the EPUB at `url` for reading.
     /// - Throws: `EPUBParserError.fileNotFound` when no file is there, checked
     ///   first so a missing file is not reported as `.invalidArchive`, which
-    ///   is thrown when the file cannot be opened as a ZIP archive.
+    ///   is thrown when the file cannot be opened as a ZIP archive, and
+    ///   `EncryptedArchiveError` when an entry is protected by a password.
     private static func openArchive(at url: URL) throws -> Archive {
         guard FileManager.default.fileExists(atPath: url.path) else {
             throw EPUBParserError.fileNotFound(url.path)
         }
+        // A password-protected archive is refused in words that say so, since
+        // ZIPFoundation would list it empty or short (B27).
+        try EncryptedArchiveGuard.refuseEncrypted(at: url)
         do {
             return try Archive(url: url, accessMode: .read)
         } catch {
