@@ -12,15 +12,18 @@ import SwiftUI
 struct PhoneExportProgressCard: View {
     /// The session that holds the export the card shows.
     @ObservedObject var session: PhoneExportSession
+    /// Where VoiceOver's focus is asked to go, the Library's: the card's title takes it when the card appears and ends.
+    let focus: AccessibilityFocusState<PhoneLibraryFocus?>.Binding
 
     /// The card for the app's session.
-    init(session: PhoneExportSession = .shared) {
+    init(session: PhoneExportSession = .shared, focus: AccessibilityFocusState<PhoneLibraryFocus?>.Binding) {
         self.session = session
+        self.focus = focus
     }
 
     var body: some View {
         if let model = session.cardModel {
-            CardContent(model: model, session: session)
+            CardContent(model: model, session: session, focus: focus)
         }
     }
 
@@ -30,6 +33,8 @@ struct PhoneExportProgressCard: View {
         @ObservedObject var model: BookExportModel
         /// The session, whose Stop and Close the buttons press.
         let session: PhoneExportSession
+        /// The Library's focus, which the title takes.
+        let focus: AccessibilityFocusState<PhoneLibraryFocus?>.Binding
 
         /// What the card says now.
         private var card: PhoneExportOffer.Card? {
@@ -48,6 +53,7 @@ struct PhoneExportProgressCard: View {
                     Text(card.title)
                         .font(.headline)
                         .accessibilityAddTraits(.isHeader)
+                        .accessibilityFocused(focus, equals: .exportCard)
                     if card.close == nil {
                         progressBar(card)
                     } else {

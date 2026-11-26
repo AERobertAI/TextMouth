@@ -138,4 +138,35 @@ final class PhoneExportQuestionTests: XCTestCase {
         }
         XCTAssertNotNil(prompt.pending, "the question was never shown", file: file, line: line)
     }
+
+    // MARK: - With the Sheet Closed
+
+    /// Once the sheet that shows the alert has closed, a question cannot be put to anyone: it is answered Cancel Export at
+    /// once, never waited on, and the end of the export says so. Before that the prompt waits for a person as ever, and
+    /// says nothing of it.
+    func testAQuestionWithTheSheetClosedIsAnsweredCancelExportAtOnce() async {
+        let prompt = PhoneExportQuestionPrompt()
+        XCTAssertNil(prompt.wordsAfterTheEnd, "words about a question that was never asked")
+
+        prompt.sheetClosed()
+        let answer = await prompt.ask(question(offersEveryOne: true))
+
+        XCTAssertEqual(answer, .cancelExport)
+        XCTAssertNil(prompt.pending, "a question was put on a sheet that is gone")
+        XCTAssertEqual(prompt.wordsAfterTheEnd, PhoneExportWording.questionWithNoSheet)
+    }
+
+    /// A sheet that closes after its question was answered leaves no words: only a question that came too late counts.
+    func testClosingTheSheetAfterAnAnswerSaysNothing() async {
+        let prompt = PhoneExportQuestionPrompt()
+        let asked = Task { await prompt.ask(question(offersEveryOne: false)) }
+        await eventuallyPending(prompt)
+
+        prompt.answer(.exportAsWritten)
+        let answer = await asked.value
+        prompt.sheetClosed()
+
+        XCTAssertEqual(answer, .exportAsWritten)
+        XCTAssertNil(prompt.wordsAfterTheEnd)
+    }
 }

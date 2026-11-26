@@ -16,6 +16,8 @@ enum PhoneLibraryFocus: Hashable, Sendable {
     case newFolder
     /// Sort, in the bottom bar.
     case sort
+    /// The title of the export card at the top of the list.
+    case exportCard
 }
 
 /// One iPhone Library screen (the iPhone interface spec, "The Library"): the
@@ -119,7 +121,7 @@ struct PhoneLibraryView: View {
                 PhoneImportProgressCard()
                 // An export that goes on with its sheet closed (FR31, phase 2): the sheet's title, how far it has
                 // come, and Stop; then what it did, and Close. It shows nothing while no export has its card.
-                PhoneExportProgressCard()
+                PhoneExportProgressCard(focus: $focus)
                 // The Mac's Storage problems notice, as it is, at the top of
                 // the list while a write keeps failing: it observes only the
                 // failure center, and shows nothing until then. Each of its
@@ -197,6 +199,8 @@ struct PhoneLibraryView: View {
                 bottomBar
             }
         }
+        // The export card appearing, ending, and being closed moves VoiceOver's focus.
+        .onReceive(PhoneExportSession.shared.cardEvents) { exportCardChanged($0) }
         .sheet(item: $sheet, onDismiss: { sheetClosed() }) { shown in
             sheetView(shown)
         }
@@ -504,6 +508,17 @@ struct PhoneLibraryView: View {
             requestFocus(.row(target))
         } else if rows.continueRow != nil {
             requestFocus(.continueRow)
+        }
+    }
+
+    /// What happened to the export card: VoiceOver's focus goes to its title when it appears and when its export ends, and,
+    /// once it is closed, to the Library's first row, so that it never rests on something that has gone.
+    private func exportCardChanged(_ event: PhoneExportSession.CardEvent) {
+        switch event {
+        case .appeared, .ended:
+            requestFocus(.exportCard)
+        case .closed:
+            if let first = rows.rowIDs.first { requestFocus(.row(first)) }
         }
     }
 

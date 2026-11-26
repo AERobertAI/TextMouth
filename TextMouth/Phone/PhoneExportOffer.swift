@@ -100,7 +100,16 @@ enum PhoneExportOffer {
     /// While spoken audio is exported, Stop's hint says its chapters are kept (`SpeechExportWording.stopHint`); while its
     /// file is made (`isMakingSpeech`), Close takes Stop's place, since the sheet may close and the export go on, and
     /// Stop moves to its own row (`stopRow`).
-    static func bar(stage: Stage, canExport: Bool, isExportingSpeech: Bool = false, isMakingSpeech: Bool = false) -> Bar {
+    ///
+    /// While another export runs (`anotherExportIsRunning`), Export is dimmed, and its hint says so and where the other's
+    /// card is: a second export would end the first's card and task (`PhoneExportSession`).
+    static func bar(
+        stage: Stage,
+        canExport: Bool,
+        isExportingSpeech: Bool = false,
+        isMakingSpeech: Bool = false,
+        anotherExportIsRunning: Bool = false
+    ) -> Bar {
         let leading: BarButton
         switch stage {
         case .listing, .ready:
@@ -118,8 +127,8 @@ enum PhoneExportOffer {
         let export = BarButton(
             role: .export,
             title: BookExportWording.exportTitle,
-            hint: BookExportWording.exportHint,
-            isEnabled: canExport
+            hint: anotherExportIsRunning ? PhoneExportWording.anotherExportRuns : BookExportWording.exportHint,
+            isEnabled: canExport && !anotherExportIsRunning
         )
         return Bar(leading: leading, export: export)
     }

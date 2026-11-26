@@ -40,6 +40,8 @@ struct PhoneExportSheet: View {
         case speech(PhoneExportOffer.SpeechChoice)
         /// Share…, after an export.
         case share
+        /// The Stop row, while the spoken audio file is made.
+        case stopRow
     }
 
     /// What the share sheet is given: the files an export wrote, and what lets go of their folder's scope.
@@ -77,8 +79,9 @@ struct PhoneExportSheet: View {
     @StateObject private var model: BookExportModel
     /// The preferences the folder is kept in.
     private let defaults: UserDefaults
-    /// The export under way, which goes on with the sheet closed while the spoken audio file is made.
-    private let session: PhoneExportSession
+    /// The export under way, which goes on with the sheet closed while the spoken audio file is made. Observed, so that
+    /// Export, dimmed while another export runs, lights again when that one ends.
+    @ObservedObject private var session: PhoneExportSession
     /// Closes the sheet.
     @Environment(\.dismiss) private var dismiss
     /// Where VoiceOver's focus is asked to go.
@@ -193,12 +196,6 @@ struct PhoneExportSheet: View {
                 optionChoices(for: request)
             }
             .onReceive(model.optionsChanged) { _ in brailleChanges &+= 1 }
-            .sheet(item: $sharing, onDismiss: { returnFocus(to: .share) }) { shared in
-                PhoneShareSheet(files: shared.files) {
-                    shared.letGo()
-                    sharing = nil
-                }
-            }
             .fileImporter(
                 isPresented: $isPickingFolder,
                 allowedContentTypes: [.folder],
@@ -215,6 +212,7 @@ struct PhoneExportSheet: View {
         // No swipe may close the sheet while an export runs, unless it is making the spoken audio file, which goes on
         // without it: Stop does.
         .interactiveDismissDisabled(model.isExporting && !model.isMakingSpeech)
+        .onChange(of: model.isMakingSpeech) { _, making in barChanged(isMakingSpeech: making) }
         .modifier(PhoneExportQuestionAlert(prompt: model.questionPrompt))
         // However the sheet closes, an export still under way stops, but one making the spoken audio file, which goes on
         // with a card in the Library.
@@ -243,7 +241,8 @@ struct PhoneExportSheet: View {
     private var currentBar: PhoneExportOffer.Bar {
         PhoneExportOffer.bar(
             stage: stage, canExport: model.canExport,
-            isExportingSpeech: model.isExportingSpeech, isMakingSpeech: model.isMakingSpeech
+            isExportingSpeech: model.isExportingSpeech, isMakingSpeech: model.isMakingSpeech,
+            anotherExportIsRunning: session.isBusy(for: model)
         )
     }
 
@@ -257,10 +256,24 @@ struct PhoneExportSheet: View {
         }
     }
 
-    /// The escape gesture: the bar's first button, which is Stop while an export runs, Close while the spoken audio file
-    /// is made, and otherwise Cancel or Close.
+    /// The escape gesture: Stop while an export runs, throughout, even where Close has taken Stop's place in the bar:
+    /// stopping is the safe meaning of a gesture that says to get out, and it keeps what was spoken. Otherwise it is the
+    /// bar's first button, Cancel or Close.
     private func escape() {
-        press(currentBar.leading.role)
+        if model.isExporting {
+            model.stop()
+        } else {
+            press(currentBar.leading.role)
+        }
+    }
+
+    /// The spoken audio file is being made: Close has taken Stop's place in the bar, which VoiceOver is told, and its focus
+    /// moves to the Stop row, so that it never rests on a button whose meaning changed under it. The announcement queues
+    /// after what the focus says.
+    private func barChanged(isMakingSpeech: Bool) {
+        guard isMakingSpeech else { return }
+        returnFocus(to: .stopRow)
+        PhoneAnnouncer.say(PhoneExportWording.canCloseNow)
     }
 
     // MARK: - The Kinds
@@ -374,6 +387,7 @@ struct PhoneExportSheet: View {
         if let stop = PhoneExportOffer.stopRow(stage: stage, isMakingSpeech: model.isMakingSpeech) {
             Button(stop.title) { model.stop() }
                 .accessibilityHint(stop.hint)
+                .accessibilityFocused($focus, equals: .stopRow)
         }
     }
 
@@ -478,6 +492,16 @@ struct PhoneExportSheet: View {
             }
             .accessibilityHint(share.hint)
             .accessibilityFocused($focus, equals: .share)
+            // Apple asks for a popover on an iPad, anchored to the button; on an iPhone it adapts to a sheet.
+            .popover(item: $sharing) { shared in
+                PhoneShareSheet(files: shared.files) {
+                    shared.letGo()
+                    sharing = nil
+                }
+            }
+            .onChange(of: sharing == nil) { _, closed in
+                if closed { returnFocus(to: .share) }
+            }
         }
     }
 

@@ -224,11 +224,57 @@ final class PhoneExportSpeechTests: XCTestCase {
         XCTAssertEqual(PhoneExportTaskMirror.update(title: "t", progressText: nil, fraction: 1).completedUnits, PhoneExportTaskMirror.totalUnits)
     }
 
-    /// The fraction only rises with the export: each later fraction gives no fewer units, so the task's bar never goes back.
+    /// The model's own fraction goes back when the speech ends and the bar returns to the items done, and the task's bar must
+    /// not: fed a backward step, the floor holds the most reported (the session passes every update through it).
     func testTheTaskProgressNeverGoesBack() {
-        let fractions = stride(from: 0.0, through: 1.0, by: 0.0173).map { $0 }
-        let units = fractions.map { PhoneExportTaskMirror.update(title: "t", progressText: nil, fraction: $0).completedUnits }
+        var told = PhoneExportTaskMirror.NeverBackwards()
+        let fractions: [Double?] = [0, 0.1, 0.4, 0.2, 1, nil, 0, 0.3]
 
-        XCTAssertEqual(units, units.sorted())
+        let units = fractions.map { fraction -> Int64 in
+            told.next(PhoneExportTaskMirror.update(title: "t", progressText: "w", fraction: fraction)).completedUnits
+        }
+
+        XCTAssertEqual(units, [0, 100, 400, 400, 1_000, 1_000, 1_000, 1_000])
+    }
+
+    /// The floor changes nothing but the units: the title and the words go through as they are.
+    func testTheFloorKeepsTheTitleAndTheWords() {
+        var told = PhoneExportTaskMirror.NeverBackwards()
+        _ = told.next(PhoneExportTaskMirror.update(title: "Export A", progressText: "one", fraction: 0.5))
+
+        let later = told.next(PhoneExportTaskMirror.update(title: "Export A", progressText: "two", fraction: 0.1))
+
+        XCTAssertEqual(later.subtitle, "two")
+        XCTAssertEqual(later.title, "Export A")
+        XCTAssertEqual(later.completedUnits, 500)
+    }
+
+    // MARK: - Another Export Is Running
+
+    /// While another export runs, Export is dimmed and its hint says so and where that export's card is; nothing else of the
+    /// bar changes, and with none running the hint is the Mac's.
+    func testExportIsDimmedWhileAnotherExportRuns() {
+        let blocked = PhoneExportOffer.bar(stage: .ready, canExport: true, anotherExportIsRunning: true)
+        XCTAssertFalse(blocked.export.isEnabled, "Export was offered with another export running")
+        XCTAssertEqual(blocked.export.hint, "Another export is running. Its card is at the top of the Library.")
+        XCTAssertEqual(blocked.leading.role, .cancel)
+
+        let free = PhoneExportOffer.bar(stage: .ready, canExport: true, anotherExportIsRunning: false)
+        XCTAssertTrue(free.export.isEnabled)
+        XCTAssertEqual(free.export.hint, BookExportWording.exportHint)
+        XCTAssertFalse(PhoneExportOffer.bar(stage: .ready, canExport: false).export.isEnabled)
+    }
+
+    // MARK: - The New Words
+
+    /// The sentences of the fix round, as the person hears them.
+    func testTheWordsOfTheFixRound() {
+        XCTAssertEqual(PhoneExportWording.canCloseNow, "You can close this. The export goes on.")
+        XCTAssertEqual(PhoneExportWording.stoppedBySystem, "iOS stopped this export.")
+        XCTAssertEqual(
+            PhoneExportWording.questionWithNoSheet,
+            "A chapter nested too deeply needed a question, and the sheet was closed, so the export stopped."
+        )
+        XCTAssertEqual(PhoneExportWording.anotherExportRuns, "Another export is running. Its card is at the top of the Library.")
     }
 }

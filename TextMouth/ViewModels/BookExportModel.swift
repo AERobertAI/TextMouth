@@ -577,6 +577,10 @@ final class BookExportModel: ObservableObject, Identifiable {
         isExporting && isChecked(.spokenAudio)
     }
 
+    /// Words that start the sentence of the export's end, set by the iPhone's session when iOS, not the person, stopped it
+    /// (`PhoneExportSession.stopBySystem(_:)`); nil for any other end. Taken, and cleared, as the export ends.
+    var wordsBeforeTheEnd: String?
+
     /// How urgent the announcement of the export's end is: high while the sheet shows, low once the sheet has closed on
     /// an export that goes on, whose end is a background result (`PhoneExportSession.sheetClosed(_:)`).
     var announcementPriority: NSAccessibilityPriorityLevel = .high
@@ -979,8 +983,18 @@ final class BookExportModel: ObservableObject, Identifiable {
         let latest = speechRecord.latest
         let format = speechFormat
         let folderName = knownFolderName
+        // What the iPhone adds to the end's sentence: that iOS stopped the export, and that a question came with no one to ask.
+        let before = wordsBeforeTheEnd
+        wordsBeforeTheEnd = nil
+        #if os(macOS)
+        let after: String? = nil
+        #else
+        let after = questionPrompt?.wordsAfterTheEnd
+        #endif
         let words: () -> String = {
-            Self.finishedWords(outcome, folderName: folderName, latest: latest, speechFormat: format)
+            (before.map { $0 + " " } ?? "")
+                + Self.finishedWords(outcome, folderName: folderName, latest: latest, speechFormat: format)
+                + (after.map { " " + $0 } ?? "")
         }
         summaryWording = Self.didEverything(outcome) ? nil : words
         finishedWording = words

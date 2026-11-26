@@ -64,6 +64,9 @@ final class PhoneExportBackgroundTask: PhoneExportTaskHandle {
             try BGTaskScheduler.shared.submit(request)
         } catch {
             DiagnosticLog.event(.app, "EXPORT_TASK refused")
+            // The handler stays registered, as the system lets none go; the task is ended, so that a launch it might still
+            // get completes at once and holds nothing.
+            task.finish(success: false)
             return nil
         }
         return task

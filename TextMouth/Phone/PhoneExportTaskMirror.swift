@@ -30,4 +30,18 @@ enum PhoneExportTaskMirror {
         let held = min(max(fraction ?? 0, 0), 1)
         return Update(title: title, subtitle: progressText ?? "", completedUnits: Int64((held * Double(totalUnits)).rounded()))
     }
+
+    /// What the task has been told, so that its bar never goes back: the model's own fraction does when the speech ends
+    /// and the bar returns to the items done, and the system's bar would show a book that is further from done than it
+    /// was. Each update goes out with the most units reported so far.
+    struct NeverBackwards: Sendable {
+        /// The most units any update has reported.
+        private var most: Int64 = 0
+
+        /// `update`, with its units raised to the most reported so far.
+        mutating func next(_ update: Update) -> Update {
+            most = max(most, update.completedUnits)
+            return Update(title: update.title, subtitle: update.subtitle, completedUnits: most)
+        }
+    }
 }

@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 import os
 import SwiftUI
 import XCTest
@@ -894,6 +895,8 @@ final class SpeechExportDialogTests: XCTestCase {
         let outcome = try await end(of: run)
 
         XCTAssertTrue(outcome.wasCancelled, "the expiry did not stop the export")
+        XCTAssertEqual(model.finishedWords?.hasPrefix("iOS stopped this export. Export stopped."), true, "\(String(describing: model.finishedWords))")
+        XCTAssertNil(model.wordsBeforeTheEnd, "the note outlived the export it was for")
         let ended = await eventually { tasks.task.finishes == [false] }
         XCTAssertTrue(ended, "the task's ends were \(tasks.task.finishes)")
         XCTAssertTrue(model.summary?.contains("Kept 2 of 3 chapters") == true, "\(String(describing: model.summary))")
@@ -989,6 +992,121 @@ final class SpeechExportDialogTests: XCTestCase {
 
         XCTAssertTrue(outcome.wasCancelled)
         XCTAssertEqual(model.announcementPriority, .low)
+        XCTAssertEqual(model.finishedWords?.hasPrefix("Export stopped."), true, "the person's own Stop was blamed on iOS: \(String(describing: model.finishedWords))")
+    }
+
+    /// A second export cannot begin while one runs: Export is dimmed in the second sheet (`isBusy`), and the session refuses
+    /// it, so the first export's task and card are left as they are. When the first ends, the second may begin.
+    func testASecondExportIsRefusedWhileOneRuns() async throws {
+        let gate = Gate()
+        defer { gate.open() }
+        let synthesizer = FakeSpeechBufferSynthesizer(framesPerUnit: 1_000, beforeWrite: { utterance in
+            if utterance.text.contains("Six") { gate.pass() }
+        })
+        let first = try await makeDialog("Speech Session First", synthesizer: synthesizer)
+        checkOnlySpokenAudio(first.model)
+        let second = try await makeDialog("Speech Session Second")
+        let tasks = RecordedTasks()
+        let session = PhoneExportSession(tasking: tasks.tasking)
+        XCTAssertFalse(session.isBusy(for: second.model), "busy with nothing running")
+
+        let run = ExportRun(of: first.model, through: session)
+        let reached = await eventually { first.model.progressText == "Speaking chapter 3 of 3…" }
+        XCTAssertTrue(reached)
+        session.sheetClosed(first.model)
+        let card = session.cardModel
+        XCTAssertTrue(session.isBusy(for: second.model), "the second sheet's Export is not dimmed")
+        XCTAssertFalse(session.isBusy(for: first.model), "the running export is busy with itself")
+
+        let refused = await session.export(second.model)
+
+        XCTAssertNil(refused, "a second export began while the first ran")
+        XCTAssertTrue(session.cardModel === card && card === first.model, "the first export's card was taken away")
+        XCTAssertEqual(tasks.begun.count, 1, "the second export asked for a task of its own")
+        XCTAssertEqual(tasks.task.finishes, [], "the first export's task was ended")
+        XCTAssertTrue(first.model.isExporting, "the first export was stopped")
+        XCTAssertFalse(second.model.isExporting)
+
+        gate.open()
+        let outcome = try await end(of: run)
+        XCTAssertTrue(BookExportModel.didEverything(outcome))
+        XCTAssertFalse(session.isBusy(for: second.model), "the second sheet's Export stayed dimmed after the first ended")
+        let again = await session.export(second.model)
+        XCTAssertNotNil(again, "the second export could not begin after the first ended")
+    }
+
+    /// The card's lifecycle: it appears when the sheet closes on an export under way, says when that export ends, and is
+    /// closed by the person once it has; each is told once, for VoiceOver's focus to follow, and a sheet that closes for
+    /// any other export, or twice, or after the end, leaves no card.
+    func testTheCardsLifecycleIsToldOnce() async throws {
+        let gate = Gate()
+        defer { gate.open() }
+        let synthesizer = FakeSpeechBufferSynthesizer(framesPerUnit: 1_000, beforeWrite: { utterance in
+            if utterance.text.contains("Six") { gate.pass() }
+        })
+        let dialog = try await makeDialog("Speech Session Lifecycle", synthesizer: synthesizer)
+        let model = dialog.model
+        checkOnlySpokenAudio(model)
+        let stranger = try await makeDialog("Speech Session Stranger").model
+        let session = PhoneExportSession(tasking: .none)
+        let events = CardEvents(session)
+
+        // No export yet: a sheet closing leaves no card, and closing none changes nothing.
+        session.sheetClosed(model)
+        session.closeCard()
+        XCTAssertNil(session.cardModel)
+        XCTAssertEqual(events.seen, [])
+
+        let run = ExportRun(of: model, through: session)
+        let reached = await eventually { model.progressText == "Speaking chapter 3 of 3…" }
+        XCTAssertTrue(reached)
+        // Another model's sheet closing is no concern of this export's.
+        session.sheetClosed(stranger)
+        XCTAssertNil(session.cardModel, "a sheet of no export under way made a card")
+        session.sheetClosed(model)
+        session.sheetClosed(model)
+        XCTAssertTrue(session.cardModel === model)
+        XCTAssertEqual(events.seen, [.appeared], "the card's appearing was told more than once")
+        session.closeCard()
+        XCTAssertTrue(session.cardModel === model, "the card closed while its export ran")
+        XCTAssertEqual(events.seen, [.appeared])
+
+        gate.open()
+        _ = try await end(of: run)
+        XCTAssertEqual(events.seen, [.appeared, .ended])
+        XCTAssertTrue(session.cardModel === model, "the card went when its export ended")
+        session.closeCard()
+        session.closeCard()
+        XCTAssertNil(session.cardModel)
+        XCTAssertEqual(events.seen, [.appeared, .ended, .closed], "the close was told twice, or not at all")
+        // A sheet closing after the end leaves no card.
+        session.sheetClosed(model)
+        XCTAssertNil(session.cardModel)
+    }
+
+    /// The question about a chapter nested too deeply cannot come after the sheet closes: spoken audio is the last file of
+    /// a book's export, and it is offered for one book alone, so every text file is walked, and every question put, before
+    /// the sheet may close. The iPhone's prompt answers Cancel Export at once should one ever come late; this pins the
+    /// order that makes that never happen.
+    func testSpokenAudioIsTheLastFileAndOfferedForOneBookAlone() async throws {
+        let dialog = try await makeDialog("Speech Session Order")
+        let model = dialog.model
+        for kind in model.choices.map(\.kind) { model.setChecked(true, for: kind) }
+        let conversions = model.conversions
+        XCTAssertNotNil(conversions[.spokenAudio], "spoken audio has no conversion to plan")
+
+        let plan = BookExportService.plan(
+            model.offers, kinds: model.checked, conversions: conversions, in: dialog.folder, fileExists: { _ in false }
+        ).files
+
+        XCTAssertGreaterThan(plan.count, 1, "the plan holds one file only")
+        XCTAssertEqual(plan.last?.target.pathExtension, "m4b", "spoken audio is not the last file: \(plan.map(\.target.lastPathComponent))")
+        XCTAssertEqual(plan.filter { $0.target.pathExtension == "m4b" }.count, 1)
+        // And two books are offered none.
+        let second = try makeUnlistedDialog("Speech Session Order Two").book
+        let two = BookExportModel(books: [dialog.book, second], library: dialog.world.library, destination: dialog.folder)
+        await two.load()
+        XCTAssertFalse(two.choices.contains { $0.kind == .spokenAudio }, "spoken audio is offered for two books")
     }
 
     // MARK: - Fixtures
@@ -1228,6 +1346,22 @@ private final class ExportRun {
             outcome = await session.export(model)
             hasEnded = true
         }
+    }
+}
+
+// MARK: - The Card's Events, Recorded
+
+/// What a session told about its card, in order.
+@MainActor
+private final class CardEvents {
+    /// The events seen.
+    private(set) var seen: [PhoneExportSession.CardEvent] = []
+    /// What listens.
+    private var listening: AnyCancellable?
+
+    /// Listens to `session`.
+    init(_ session: PhoneExportSession) {
+        listening = session.cardEvents.sink { [weak self] event in self?.seen.append(event) }
     }
 }
 

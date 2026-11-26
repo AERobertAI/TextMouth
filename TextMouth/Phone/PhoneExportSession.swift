@@ -42,29 +42,50 @@ struct PhoneExportTasking: Sendable {
 /// with the screen locked.
 ///
 /// The sheet gives the session its model when Export is pressed, which is the person's action the system requires
-/// before it will take a continued task (`begin(_:)`). From then on the session carries the task's progress, ends it
+/// before it will take a continued task (`export(_:)`). From then on the session carries the task's progress, ends it
 /// when the export ends, and, once the sheet has closed on an export still under way, keeps the model for the card
 /// until the person closes the card.
+///
+/// One export runs at a time: spoken audio holds the store of its chapters (`SpeechExportStore.claim()`), and the card
+/// and the task are one export's. A second Export is dimmed in its sheet, with a hint that says where the first is
+/// (`isBusy(for:)`), and refused here as a guard.
 @MainActor
 final class PhoneExportSession: ObservableObject {
+    /// What happened to the Library's card, which the Library moves VoiceOver's focus by.
+    enum CardEvent: Equatable, Sendable {
+        /// The card appeared: the sheet closed on an export that goes on.
+        case appeared
+        /// The export the card shows has ended: its words now say what it did.
+        case ended
+        /// The person closed the card.
+        case closed
+    }
+
     /// The app's one session, which the sheets and the Library's card share.
     static let shared = PhoneExportSession(tasking: .platform)
 
     /// How a task is started.
     private let tasking: PhoneExportTasking
-    /// The export most recently begun, until it has ended and its sheet is gone.
+    /// The export most recently begun, until it has ended and its card is closed.
     private var current: BookExportModel?
     /// The system's task for `current`, while there is one.
     private var handle: (any PhoneExportTaskHandle)?
     /// What carries the model's progress to the task.
     private var watching: AnyCancellable?
-    /// The most units of progress the task has been told, for the export under way: the task's bar never goes back, though
-    /// the model's own fraction does when the speech ends and the bar returns to the items done.
-    private var reportedUnits: Int64 = 0
+    /// What the task has been told, so that its bar never goes back: the model's own fraction does when the speech ends
+    /// and the bar returns to the items done.
+    private var told = PhoneExportTaskMirror.NeverBackwards()
+
+    /// The export under way, from the press of Export until it has ended. Nil while none runs; published, so that a sheet
+    /// that dims Export for another export's sake lights it again when that one ends.
+    @Published private(set) var running: BookExportModel?
 
     /// The export the Library's card shows: one whose sheet closed while it was still under way, until the person closes
     /// the card, which they can do once it has ended. Nil when there is no card.
     @Published private(set) var cardModel: BookExportModel?
+
+    /// Says what happens to the card, once for each event.
+    let cardEvents = PassthroughSubject<CardEvent, Never>()
 
     /// A session starting its tasks as `tasking` does.
     init(tasking: PhoneExportTasking = .none) {
@@ -73,34 +94,49 @@ final class PhoneExportSession: ObservableObject {
 
     // MARK: Exporting
 
+    /// Whether another export than `model`'s is under way, which dims Export in `model`'s sheet.
+    func isBusy(for model: BookExportModel) -> Bool {
+        guard let running else { return false }
+        return running !== model
+    }
+
     /// Runs `model`'s export, as Export is pressed: asks for the system's continued task if it exports spoken audio (a
     /// text export takes seconds, and the background task every export holds is enough), shows the export's progress to
     /// the task while it runs, and ends the task when the export ends, however it ends. Called with the person's press
     /// of Export, on the main actor, which the system requires before it takes a continued task.
-    /// - Returns: What the export did; nil when it could not start.
+    /// - Returns: What the export did; nil when it could not start, as when another export is under way.
     @discardableResult
     func export(_ model: BookExportModel) async -> BookExportOutcome? {
+        // One export at a time: a second would end the first's card and task, and fight it for the chapters' store.
+        guard running == nil else { return nil }
+        running = model
         begin(model)
         let outcome = await model.export()
         end(model, outcome: outcome)
+        running = nil
         return outcome
     }
 
     /// Begins to carry `model`'s export: asks for the task, and watches the model's progress.
     private func begin(_ model: BookExportModel) {
         watching = nil
-        // A task of an earlier export that nobody ended is let go.
-        handle?.finish(success: false)
         handle = nil
-        reportedUnits = 0
-        cardModel = nil
+        told = PhoneExportTaskMirror.NeverBackwards()
+        // A card left from an earlier export, which has ended, goes with the new one.
+        if cardModel != nil {
+            cardModel = nil
+            cardEvents.send(.closed)
+        }
         current = model
         // A task only for spoken audio, and only for an export that can begin: Export dimmed asks for nothing.
         guard model.isChecked(.spokenAudio), model.canExport else { return }
         let first = PhoneExportTaskMirror.update(title: model.title, progressText: model.progressText, fraction: model.progressFraction)
-        handle = tasking.begin(first.title, first.subtitle) { [weak model] in
-            // The system's expiry, or Cancel in the Live Activity: Stop, which keeps the chapters spoken.
-            Task { @MainActor in model?.stop() }
+        handle = tasking.begin(first.title, first.subtitle) { [weak self, weak model] in
+            // The system's expiry, or Cancel in the Live Activity.
+            Task { @MainActor in
+                guard let self, let model else { return }
+                self.stopBySystem(model)
+            }
         }
         guard handle != nil else { return }
         // The model changes its phase and its speech progress on the main actor; it is read after the change.
@@ -112,24 +148,31 @@ final class PhoneExportSession: ObservableObject {
             }
     }
 
+    /// iOS ended the task, by its expiry or by the person's Cancel in the Live Activity: the export stops as Stop stops
+    /// it, its chapters spoken kept, and its end says that iOS stopped it, which the person's own Stop never does.
+    func stopBySystem(_ model: BookExportModel) {
+        guard model.isExporting else { return }
+        model.wordsBeforeTheEnd = PhoneExportWording.stoppedBySystem
+        model.stop()
+    }
+
     /// Passes `model`'s progress on to the task while the export runs.
-    private func carry(_ model: BookExportModel) {
+    func carry(_ model: BookExportModel) {
         guard model.isExporting else { return }
         let update = PhoneExportTaskMirror.update(
             title: model.title, progressText: model.progressText, fraction: model.progressFraction
         )
-        // The task's bar only moves forward: what it was told stays as the least it will be told.
-        reportedUnits = max(reportedUnits, update.completedUnits)
-        handle?.update(PhoneExportTaskMirror.Update(title: update.title, subtitle: update.subtitle, completedUnits: reportedUnits))
+        handle?.update(told.next(update))
     }
 
     /// The export has ended, as `outcome` says (nil when it never began): the task ends with it, a success only when
-    /// every file was written; a Stop, a failure, or a refusal is not one.
+    /// every file was written; a Stop, a failure, or a refusal is not one. A card shows what it did.
     private func end(_ model: BookExportModel, outcome: BookExportOutcome?) {
         guard current === model else { return }
         watching = nil
         handle?.finish(success: outcome.map { $0.failures.isEmpty && !$0.wasCancelled } ?? false)
         handle = nil
+        if cardModel === model { cardEvents.send(.ended) }
     }
 
     // MARK: The Sheet Closing, and the Card
@@ -137,11 +180,15 @@ final class PhoneExportSession: ObservableObject {
     /// The sheet of `model` has closed. An export still under way goes on, with its card in the Library; one that has
     /// ended, or never began, leaves nothing.
     func sheetClosed(_ model: BookExportModel) {
-        if current === model, model.isExporting {
-            cardModel = model
-            // Its end is a background result now: announced, but never over what VoiceOver is saying.
-            model.announcementPriority = .low
-        }
+        guard current === model, model.isExporting, cardModel == nil else { return }
+        cardModel = model
+        // Its end is a background result now: announced, but never over what VoiceOver is saying.
+        model.announcementPriority = .low
+        // Nobody can answer a question now: the export asks no more (`PhoneExportQuestionPrompt.sheetClosed()`).
+        #if !os(macOS)
+        model.questionPrompt?.sheetClosed()
+        #endif
+        cardEvents.send(.appeared)
     }
 
     /// Whether the sheet may close without stopping `model`'s export: it is making the spoken audio file, whose sheet
@@ -150,7 +197,7 @@ final class PhoneExportSession: ObservableObject {
         current === model && model.isMakingSpeech
     }
 
-    /// Stops the export under way, from the card or the Live Activity's Cancel: its chapters spoken are kept.
+    /// Stops the export under way, from the card: its chapters spoken are kept.
     func stop() {
         cardModel?.stop()
     }
@@ -160,5 +207,6 @@ final class PhoneExportSession: ObservableObject {
         guard let cardModel, !cardModel.isExporting else { return }
         self.cardModel = nil
         if current === cardModel { current = nil }
+        cardEvents.send(.closed)
     }
 }
