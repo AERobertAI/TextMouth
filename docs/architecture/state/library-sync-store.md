@@ -101,6 +101,29 @@ After each run `LibraryViewModel.syncDidApply(keptBookIDs:mayDownload:)` calls `
 - a library in a cloud folder is left to the cloud refresher, and a synced library to this call alone;
 - the reading list's keeping is a choice of each device (`keepsReadingListBooks`), worked out and never written (`observeReadingListKeeping`).
 
+## Freeing a synced book
+<!-- id: library-sync-freeing; keys: StoreRemoval, SyncRemovalRefusal, FreeingCheck, removeDownloadAsync, BooksOnThisDevice, SyncDeviceSettings, BooksFreedOnPurpose, sweep; src: TextMouth/Services/Sync/StoreRemoval.swift, TextMouth/Services/Sync/StoreBookStorage.swift, TextMouth/Services/Sync/SyncCenter.swift, TextMouth/Services/Sync/StoreBackup.swift, TextMouth/Models/Sync/SyncDeviceSettings.swift, TextMouth/Services/Sync/SyncSpaceSettings.swift, TextMouth/ViewModels/LibraryViewModel+Cloud.swift -->
+
+`StoreRemoval.removeDownload(of:bookID:mayDownload:)` frees a book's own files (`StoreBackup.role` content) and leaves the record, the text, and every other file.
+Never the last copy.
+In order, each step before the next:
+- the pointer names this store and a manifest; the manifest read from the folder is what its name says;
+- every blob and the manifest are listed and `uploadState` is `.uploaded` (not `.uploading`, not `.notReported`), then each file here that would go is the manifest's by size and SHA-256;
+- each blob is read back into staging and matches the manifest;
+- the files are listed again and compared by size, time, and file number, and `FreeingCheck.current` is asked (the library's protections, row, setting, sync on, `maySyncNow`, on the main actor);
+- the pointer is written with the files away, then the entries are removed, then the folder's copies of the blobs are evicted.
+A refusal is a `SyncRemovalRefusal`, with the package unchanged; `SyncWording.removalRefusal` says it.
+`mayDownload` is false on a costly path, checked before anything is hashed.
+
+`SyncCenter.removeBookDownload` refuses while the backup has the book queued or awaiting its upload record, and unless the registers hold its content (`backupForbidsFreeing`).
+`StoreBackup.back(up:)` refuses a package whose pointer says a file is away, and `markUploaded` takes each file's `onThisDevice` from the files found.
+`BookCloudStorage.removeDownloadAsync` is the seam; `StoreBookStorage` answers it, refusing a book being fetched, and with sync off in a local library.
+
+The settings are `SyncPreferences.booksOnThisDevice`, `removeAfterDays`, and `removalsBeganAt`, with `freedOnPurpose`: machine-local keys, never in config.json.
+`SyncSpacePolicy` counts days in 24-hour units from the latest of the opening, the play, the pointer's last write, and `removalsBeganAt`.
+`LibraryCloudCommands.removeUnopenedDownloads` is the sweep after each sync: one at a time, at most 25 removals, one summary.
+`downloadMissingBooks` is All books: it checks `pathIsCostly` and the choice before each book, and skips what `BooksFreedOnPurpose` holds.
+
 ## The rules R1 to R9
 <!-- id: library-sync-rules; keys: R1 to R9, inert, outbox first, one writer, SyncLaunchHold, massRemovalLimit, SyncWording; src: TextMouth/Services/Sync/SyncCenter.swift, TextMouth/Services/Sync/SyncFolderIO.swift, TextMouth/Services/Sync/SyncEngine.swift, TextMouth/Models/Sync/SyncProjection.swift, TextMouth/Models/Sync/SyncWording.swift, TextMouthProductionTests/OnDiskContractTests.swift -->
 
