@@ -28,8 +28,18 @@ enum SpeechRenderFailure: LocalizedError, Equatable {
     case unusableVoice
 
     var errorDescription: String? {
+        description(onPhone: SpeechRefusalWording.runsOnPhone)
+    }
+
+    /// The failure in the words of the device: the Mac's, or, with `onPhone`, the iPhone's, whose speech engine is its
+    /// own. A parameter so that a test on the Mac reaches both.
+    func description(onPhone: Bool) -> String {
         switch self {
         case .refused(let title):
+            if onPhone {
+                // Translators: Why a chapter of a spoken audio export could not be spoken on the iPhone. %@ is the chapter's title.
+                return InterfaceText.line("speechRenderFailure.refused.iphone", "The iPhone's speech engine refused to speak part of “\(title)”, even with its brackets made silent.")
+            }
             // Translators: Why a chapter of a spoken audio export could not be spoken. %@ is the chapter's title.
             return InterfaceText.line("speechRenderFailure.refused", "The Mac's speech engine refused to speak part of “\(title)”, even with its brackets made silent.")
         case .noSound(let title):

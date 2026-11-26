@@ -13,9 +13,8 @@ import XCTest
 /// every decision about the bar is the plain types' own, which the Mac's
 /// test host tests (`PhoneExportOfferTests`). What a hosted view shows here is
 /// what UIKit draws of it: a switch for each kind, on or off. So these tests
-/// show that the sheet lists, finds the book's kinds, offers no spoken audio
-/// on the iPhone, starts with the first kind on, and still draws them at the
-/// largest text size.
+/// show that the sheet lists, finds the book's kinds, spoken audio among them,
+/// starts with the first kind on, and still draws them at the largest text size.
 ///
 /// Nothing here exports, plays, types, or speaks.
 @MainActor
@@ -147,16 +146,17 @@ final class PhoneExportSheetTests: XCTestCase {
     // MARK: - The Kinds
 
     /// The sheet lists the book's kinds as switches: its original file, its
-    /// Markdown, and its plain text, no spoken audio, the first on and the
+    /// Markdown, its plain text, and its spoken audio, the first on and the
     /// rest off, as the Mac's dialog starts.
     func testTheSheetListsASwitchForEachKindTheIPhoneOffers() throws {
         let controller = try host(try makeBook())
 
-        let toggles = switchesDrawn(by: controller, expected: 3)
+        let toggles = switchesDrawn(by: controller, expected: 4)
 
-        XCTAssertEqual(toggles.count, 3, "A fourth switch would be spoken audio, which waits for phase 2")
-        XCTAssertEqual(toggles.map(\.isOn), [true, false, false])
-        XCTAssertTrue(toggles.allSatisfy(\.isEnabled))
+        XCTAssertEqual(toggles.count, 4, "The fourth switch is spoken audio, offered since phase 2")
+        XCTAssertEqual(toggles.map(\.isOn), [true, false, false, false])
+        // The three the book's files give are enabled; spoken audio is as available as the book's text cache.
+        XCTAssertTrue(toggles.prefix(3).allSatisfy(\.isEnabled))
     }
 
     /// At the largest text size the sheet still draws its first switch, on:

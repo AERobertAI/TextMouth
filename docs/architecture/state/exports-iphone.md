@@ -57,10 +57,46 @@ A text conversion walks all of content.md into an `ExportDocument`, and HTML, RT
 
 The iPhone's sheet reads the shared `BookExportModel` and gives it these at its start (`PhoneExportSheet.makeModel`), each with a default that leaves the Mac as it was:
 
-- `offering`: `PhoneExportOffer.kinds`, every `BookExportKind` but `.spokenAudio`, so the model lists no spoken audio.
+- `offering`: `PhoneExportOffer.kinds`, every `BookExportKind`, spoken audio included (the model itself offers it for one text book alone).
 - `destination`, `destinationIsChosen`, and `destinationName`: the kept folder, or none, in which case Export stays dimmed until `chooseDestination(_:named:)`.
 - `delivery`: `.coordinatedCopy`; `memoryGuard`: `PhoneExportMemoryCheck.live`; `holdWhileExporting`: the folder's scope and a background task.
 - `deepChapterPrompting`: `.standard`, which on iOS makes a `PhoneExportQuestionPrompt`.
   It shows `PhoneExportQuestion` as an alert over the sheet and resumes the waiting export exactly once, whichever of a button, `dismiss()`, and a second question comes first, so an export never waits for ever.
   A dismissal by the escape gesture or by Stop answers Cancel Export.
 - `finishedWords` keeps the end's sentence for the sheet, which stays open after an export; the Mac's dialog closes.
+
+## Spoken audio and the session
+<!-- id: export-iphone-spoken-audio; keys: PhoneExportSession, PhoneExportBackgroundTask, BGContinuedProcessingTask, PhoneExportTaskMirror, PhoneExportProgressCard, SpeechExportStore, RunningClock, wordsBeforeTheEnd; src: TextMouth/Phone/PhoneExportSession.swift, TextMouth/Phone/PhoneExportTaskMirror.swift, TextMouth/Platform/iOS/Services/PhoneExportBackgroundTask.swift, TextMouth/Platform/iOS/Views/Library/PhoneExportProgressCard.swift, TextMouth/Platform/iOS/Views/Export/PhoneSpeechExportRows.swift, TextMouth/Services/SpeechExport/SpeechBufferSynthesizer.swift, TextMouth/Services/SpeechExport/SpeechExportStore.swift, Scripts/ios/sync-info-plist.py, TextMouthProductionTests/PhoneExportSpeechTests.swift -->
+
+The speech export is the Mac's code: `SpeechExportJob` speaks with `AVSpeechSynthesizer.write(_:toBufferCallback:)` and encodes through the audio editor's renderer.
+What differs is how it keeps running, who stops it, and what it says.
+
+- `SpeechBufferDelivery` times its stall limits by a `RunningClock`, which is `.app` on the iPhone and `.system` on the Mac, so a suspension is no stall; the write holds the clock's heartbeat.
+- `PhoneExportSession.shared` runs each export (`export(_:)`), one at a time (`running`, `isBusy(for:)`), so a second export is dimmed in its sheet and refused by the session.
+  For a spoken audio export it asks `PhoneExportTasking` for a continued processing task as Export is pressed, the person's action iOS requires.
+  `PhoneExportBackgroundTask` registers a handler under `com.textmouth.TextMouth.iOS.export.` and a UUID, which the plist's wildcard permits, then submits with the strategy `fail`.
+  When the system takes no task, the export goes on held by the background task every export has.
+- The task's progress is `PhoneExportTaskMirror.update`: the model's fraction in a thousand units, never going back (`NeverBackwards`; the model's fraction does when the speech ends), and the progress words as its subtitle.
+  The session ends the task with the export, a success only when every file was written.
+- The expiration handler, from iOS or from Cancel in the Live Activity, is `stopBySystem(_:)`: it sets `BookExportModel.wordsBeforeTheEnd` and stops, so the end begins "iOS stopped this export." and then says what is kept for a week.
+  An export that finished before the stop took effect does not begin so.
+- The card's focus has one owner (`PhoneExportCardFocus`): the dismissal of the sheet that closed on the card gives it the card's title, the end moves focus only off the card's Stop, and closing it goes to the Library's first row.
+- The sheet may close only while the audio file is made (`BookExportModel.isMakingSpeech`).
+  `sheetClosed(_:)` then makes the card (`cardModel`, told to the Library by `cardEvents`) and lowers the end's announcement.
+  A file of the same book can follow the spoken audio (a transcript, an original), and may ask about a chapter nested too deeply, so `PhoneExportQuestionPrompt` answers Cancel Export at once once the sheet has closed, and the end says so.
+  `testAFileCanFollowTheSpokenAudioSoThePromptHasToAnswerForAClosedSheet` pins the order.
+- `SpeechExportStore` keeps an export's chapters for a week on the iPhone (`keptOnPhone`), and the iPhone's launch sweep removes older ones (`sweep(keeping:)`, from the app delegate); the Mac keeps them until it quits.
+- The words that name the Mac take the iPhone's through an `onPhone` parameter whose default is `SpeechRefusalWording.runsOnPhone`: the two refusals, the engine's refusal, the licence line, Stop's hint, and the kept sentences.
+- Tests:
+  - the speech export's suites run on the Mac's host with a fake synthesizer that makes a tone in memory, never aloud;
+  - `PhoneExportSpeechTests` is plain-value tests shared with the iPhone's bundle, and the session's tests are in `SpeechExportDialogTests`;
+  - no test presses Export with spoken audio on the iPhone.
+
+## Several books and Share…
+<!-- id: export-iphone-several-share; keys: exportFolder, booksInFolderTree, PhoneShareSheet, shareButton, holdAccess, popover; src: TextMouth/Phone/PhoneLibraryOffer.swift, TextMouth/Platform/iOS/Views/Library/PhoneLibraryView.swift, TextMouth/Platform/iOS/Views/PhoneShareSheet.swift, TextMouth/Platform/iOS/Views/Export/PhoneExportSheet.swift, TextMouth/Phone/PhoneExportOffer.swift -->
+
+- A folder row's `.exportFolder` command, titled by `BookExportWording.commandTitle(count:)` for the books in the folder tree, opens `PhoneExportSheet` over `Library.booksInFolderTree(_:)`.
+  The shared service plans a folder for each book.
+- `PhoneExportOffer.shareButton(stage:exportedCount:)` offers Share… after an export that wrote a file.
+  The sheet holds the destination's scope (`PhoneExportFolder.holdAccess(to:)`) while `PhoneShareSheet` (a `UIActivityViewController`) shows.
+  It is a popover anchored to the button, which iOS adapts to a sheet in compact width.

@@ -302,14 +302,17 @@ Export on the iPhone (FR31, phase 1) is the shared `BookExportModel` under a she
   - `PhoneLibraryOffer`'s `.export` command, "Export…" (`BookExportWording.commandTitle(count: 1)`), in a book's row after Move to Folder... as on the Mac;
   - `PhoneReaderControl.export`, "Export this book", after Book Info, which opens `PhoneReaderSheet.export` over the reader, so a speech refusal's report waits for it to close.
 - `PhoneExportSheet` is a `NavigationStack` over one `List`, its buttons placed by `PhoneSheetButton`.
-  What it offers and says at each stage is decided in plain types the Mac's host tests: `PhoneExportOffer.kinds` (every kind but spoken audio), `Stage`, `content(stage:kindCount:)`, the `Bar` (Cancel, or Stop while exporting, or Close, then Export), and `folderRow(folderName:)`.
+  What it offers and says at each stage is decided in plain types the Mac's host tests: `PhoneExportOffer.kinds` (every kind), `Stage`, `content(stage:kindCount:)`, the `Bar`, the Stop row, the spoken audio and braille rows, `shareButton`, the card, and `folderRow(folderName:)`.
+  The bar is Cancel, or Stop while exporting, or Close, then Export; Close takes Stop's place while the spoken audio file is made, and Export is dimmed while another export runs.
   Every word is the Mac's (`BookExportWording`), except the memory sentence (`PhoneExportWording`).
 - Focus lands on the first kind `PhoneFocusPolicy.screenChangedDelay` after the books are listed.
   It returns to the opener after a Convert to list, the folder picker, or an alert closes (`returnFocus(to:)`, with `@AccessibilityFocusState`).
 - The folder row opens `fileImporter` for a folder, and `onCancellation` returns focus to the row, since a cancel never reaches `onCompletion`.
   `PhoneExportFolder.keep(_:in:)` keeps the choice (see [Exports on the iPhone](state/exports-iphone.md)).
 - While an export runs the sheet has `interactiveDismissDisabled`.
-  The accessibility escape action, on the whole sheet and not the list, presses Stop while it runs and otherwise closes the sheet.
+  While the spoken audio file is made it may be dismissed, and then goes on as a card in the Library (see [Exports on the iPhone](state/exports-iphone.md)).
+  The accessibility escape action, on the whole sheet and not the list, presses Stop while an export runs and otherwise closes the sheet.
+  Every options choice (braille's and spoken audio's) is presented from the sheet's list, never from a row, since a row that scrolls away takes its presenter with it.
   The sheet stays open after an export ends and shows the model's `finishedWords`.
 - `PhoneBrailleExportRows` draws the braille rows while BRF or PEF is chosen, over the writer's options through `TextExportOptionsEditing.brailleOptions`.
   The braille code is one choice row over the Braille setting's grouped list given `BrailleTableCatalog.exportCodes`, so print-only tables are offered.

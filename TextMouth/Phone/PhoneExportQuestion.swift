@@ -90,12 +90,34 @@ final class PhoneExportQuestionPrompt: ObservableObject {
     @Published private(set) var pending: PhoneExportQuestion?
     /// The export's wait for the answer to `pending`.
     private var continuation: CheckedContinuation<ExportDeepChapterAnswer, Never>?
+    /// Whether the sheet that shows the alert has closed, after which nobody can answer.
+    private var isSheetClosed = false
+    /// Whether a question came after that, and was answered Cancel Export at once.
+    private var wasAskedWithTheSheetClosed = false
+
+    /// What the end of the export says when a question came with the sheet closed, so that nobody could answer it; nil
+    /// when none did.
+    var wordsAfterTheEnd: String? {
+        wasAskedWithTheSheetClosed ? PhoneExportWording.questionWithNoSheet : nil
+    }
+
+    /// The sheet that shows the alert has closed, the spoken audio file being made: no question can be put now. One asked
+    /// from here on is answered Cancel Export at once, the safest answer, since the export would wait for ever for a
+    /// person who cannot see it (nobody can be asked, which the Mac's export meets with no question at all, but the walk's
+    /// choices for a chapter nested too deeply are to write it as it is or to stop).
+    func sheetClosed() {
+        isSheetClosed = true
+    }
 
     /// Shows `question` and returns the answer, once the person has pressed
     /// a button or the prompt was dismissed. A question asked while another
     /// waits cancels the export: an export asks one at a time, so this is
     /// only an export that went wrong, and none waits for ever.
     func ask(_ question: ExportDeepChapterQuestion) async -> ExportDeepChapterAnswer {
+        guard !isSheetClosed else {
+            wasAskedWithTheSheetClosed = true
+            return .cancelExport
+        }
         guard continuation == nil else { return .cancelExport }
         return await withCheckedContinuation { continuation in
             self.continuation = continuation

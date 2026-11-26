@@ -77,6 +77,28 @@ final class SpeechBufferSynthesizerTests: XCTestCase {
         XCTAssertEqual(handedOn.value, 1, "a stalled write handed a buffer on")
     }
 
+    /// The limits are timed by the clock the delivery is given: on the iPhone the app's running time, which leaves out
+    /// a suspension, so a chapter is not ended as stalled after a minute away (a system clock would). A script of the
+    /// clock's uptime skips an hour, which the delivery does not count, and then runs a minute, which it does.
+    func testASuspensionIsNoStallButRunningTimeIs() throws {
+        let uptime = OSAllocatedUnfairLock(initialState: 0.0)
+        let clock = RunningClock(uptime: { uptime.withLock { $0 } }, longestStep: 1, tick: nil)
+        let delivery = SpeechBufferDelivery(onBuffer: { _ in }, waking: DispatchSemaphore(value: 0), clock: clock)
+
+        // The app was suspended for an hour, and then ran again.
+        uptime.withLock { $0 += 3_600 }
+        XCTAssertFalse(delivery.endIfStalled(firstBufferLimit: 60, betweenBuffersLimit: 60), "a suspension ended the write as stalled")
+
+        // The app runs a second at a time; the write stalls once it has run a minute with no buffer.
+        var stalledAfter: Int?
+        for second in 1...70 where stalledAfter == nil {
+            uptime.withLock { $0 += 1 }
+            if delivery.endIfStalled(firstBufferLimit: 60, betweenBuffersLimit: 60) { stalledAfter = second }
+        }
+        XCTAssertNotNil(stalledAfter, "a minute of running time with no buffer never stalled the write")
+        XCTAssertGreaterThanOrEqual(stalledAfter ?? 0, 59, "the write stalled early: \(String(describing: stalledAfter))")
+    }
+
     // MARK: - The Limits
 
     /// The first buffer is waited for in proportion to the text, never less

@@ -269,6 +269,71 @@ final class SpeechExportSupportTests: XCTestCase {
         )
     }
 
+    /// On the iPhone each refusal names the iPhone's own settings and engine, never macOS or the Mac, and the rest are
+    /// the Mac's words, which name neither. A test on the Mac reaches both through the `onPhone` parameter.
+    func testTheIPhonesRefusalsNameNoMacSetting() {
+        XCTAssertEqual(
+            SpeechExportError.personalVoice(name: "Ottilie").description(onPhone: true),
+            "“Ottilie” is a Personal Voice, which the iPhone can't record to a file. Choose another voice with the "
+                + "Voice button in the reader, then export again."
+        )
+        XCTAssertEqual(
+            SpeechExportError.noVoice.description(onPhone: true),
+            "No voice is installed. Add one in Settings, Accessibility, Spoken Content, then export again."
+        )
+        XCTAssertEqual(
+            SpeechRenderFailure.refused("Ch. 2").description(onPhone: true),
+            "The iPhone's speech engine refused to speak part of “Ch. 2”, even with its brackets made silent."
+        )
+        // The Mac's words are as they were.
+        XCTAssertEqual(SpeechExportError.noVoice.description(onPhone: false), SpeechExportError.noVoice.errorDescription)
+        XCTAssertTrue(SpeechRenderFailure.refused("Ch. 2").description(onPhone: false).hasPrefix("The Mac's speech engine"))
+        // No refusal of the iPhone names the Mac or macOS.
+        let errors: [SpeechExportError] = [
+            .personalVoice(name: "Ottilie"), .noVoice, .notEnoughSpace(needed: 2_000_000_000), .busy, .nothingToSpeak, .headingsChanged
+        ]
+        for error in errors {
+            let words = error.description(onPhone: true)
+            XCTAssertFalse(words.contains("macOS") || words.contains("Mac") || words.contains("System Settings"), words)
+        }
+    }
+
+    /// The voice line and the licence line on the iPhone say the iPhone's voices, and its refusal in the iPhone's words.
+    func testTheVoiceAndLicenceLinesOnTheIPhone() {
+        XCTAssertEqual(
+            SpeechExportWording.licence(onPhone: true),
+            "Speech from the iPhone's voices is for personal, non-commercial use, under Apple's licence."
+        )
+        XCTAssertEqual(
+            SpeechExportWording.licence(onPhone: false),
+            "Speech from the Mac's voices is for personal, non-commercial use, under Apple's licence."
+        )
+        XCTAssertEqual(SpeechExportWording.voiceLine(nil, onPhone: true), SpeechExportError.noVoice.description(onPhone: true))
+        XCTAssertEqual(SpeechExportWording.voiceLine(nil, onPhone: false), SpeechExportError.noVoice.description(onPhone: false))
+    }
+
+    /// The iPhone keeps a stopped export's chapters for a week, so Stop's hint and what the end says name the week
+    /// where the Mac's name TextMouth quitting; the Mac's words are as they were.
+    func testTheIPhoneKeepsChaptersForAWeekInItsWords() {
+        XCTAssertTrue(SpeechExportWording.stopHint(onPhone: true).contains("for a week"))
+        XCTAssertFalse(SpeechExportWording.stopHint(onPhone: true).contains("quits"))
+        XCTAssertTrue(SpeechExportWording.stopHint(onPhone: false).contains("until TextMouth quits"))
+
+        for (done, total) in [(2, 5), (1, 1), (4, 4)] {
+            let phone = SpeechExportWording.kept(done: done, total: total, onPhone: true) ?? ""
+            let mac = SpeechExportWording.kept(done: done, total: total, onPhone: false) ?? ""
+            XCTAssertTrue(phone.contains("for a week"), "\(done) of \(total): \(phone)")
+            XCTAssertFalse(phone.contains("quits"), "\(done) of \(total): \(phone)")
+            XCTAssertTrue(mac.contains("until TextMouth quits"), "\(done) of \(total): \(mac)")
+        }
+        XCTAssertNil(SpeechExportWording.kept(done: 0, total: 5, onPhone: true), "nothing kept says nothing")
+        XCTAssertEqual(
+            SpeechExportWording.kept(done: 2, total: 5, onPhone: true),
+            "Chapters kept for a week: 2 of 5. They stay until a different spoken audio export starts, or until the book's "
+                + "voice, text, substitutions, or pauses change. To go on from chapter 3, export the same range at the same speed and pitch."
+        )
+    }
+
     /// The words for too little room give the room needed and the room
     /// TextMouth keeps free (1 GB), each as the Finder gives a size.
     func testTheWordsForTooLittleRoomGiveBothSizes() {
@@ -616,6 +681,45 @@ final class SpeechExportSupportTests: XCTestCase {
         }
         XCTAssertFalse(exists(store.root))
         XCTAssertTrue(claimedAfterSweep, "The sweep kept the store claimed")
+    }
+
+    /// With a time to keep (the iPhone's week), the launch sweep keeps an export's folder that changed within it, for the
+    /// export that may go on from it, removes one older, and removes a stray file; the Mac, which keeps nothing, removes
+    /// the root whole.
+    func testTheSweepKeepsAWeeksChaptersWhenToldTo() throws {
+        let store = try makeStore()
+        XCTAssertEqual(try store.open(), 0)
+        try writeChapter(at: store.chapterURL(0))
+        let stray = store.root.appendingPathComponent("stray.txt")
+        try Data("x".utf8).write(to: stray)
+        let now = Date()
+        // The folder last changed three days ago.
+        try FileManager.default.setAttributes([.modificationDate: now.addingTimeInterval(-3 * 86_400)], ofItemAtPath: store.folder.path)
+        try FileManager.default.setAttributes([.modificationDate: now.addingTimeInterval(-9 * 86_400)], ofItemAtPath: stray.path)
+
+        SpeechExportStore.sweep(root: store.root, keeping: SpeechExportStore.keptOnPhone, now: now)
+
+        XCTAssertTrue(exists(store.chapterURL(0)), "A chapter of three days ago was swept")
+        XCTAssertFalse(exists(stray), "A stray file older than the week was kept")
+
+        // Eight days on, the folder is a day too old.
+        SpeechExportStore.sweep(root: store.root, keeping: SpeechExportStore.keptOnPhone, now: now.addingTimeInterval(5 * 86_400))
+        XCTAssertFalse(exists(store.chapterURL(0)), "A chapter older than a week was kept")
+        XCTAssertFalse(exists(store.folder))
+    }
+
+    /// The week is the iPhone's, and the Mac keeps nothing past a launch; a sweep that keeps nothing removes everything,
+    /// as it always did.
+    func testTheWeekIsTheIPhonesAndTheMacKeepsNothing() throws {
+        XCTAssertEqual(SpeechExportStore.keptOnPhone, 7 * 24 * 60 * 60)
+        XCTAssertEqual(SpeechExportStore.launchKeepDuration, SpeechRefusalWording.runsOnPhone ? SpeechExportStore.keptOnPhone : 0)
+        let store = try makeStore()
+        XCTAssertEqual(try store.open(), 0)
+        try writeChapter(at: store.chapterURL(0))
+
+        SpeechExportStore.sweep(root: store.root)
+
+        XCTAssertFalse(exists(store.root))
     }
 
     /// At launch the sweep does nothing under a hosted test, and otherwise

@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 import os
 import SwiftUI
 import XCTest
@@ -836,6 +837,434 @@ final class SpeechExportDialogTests: XCTestCase {
         XCTAssertNil(SpeechExportProgress.ended(kept: 1, total: 3).fraction)
     }
 
+    // MARK: - The iPhone's Session
+
+    /// A spoken audio export run through the session (FR31, phase 2) asks for the system's continued task as it begins,
+    /// titled as the sheet is and subtitled before any progress, tells it the progress as the chapters are spoken, and
+    /// ends it, a success, with the export. Nothing is spoken aloud: the synthesizer is the fake.
+    func testTheSessionCarriesASpokenAudioExportThroughItsTask() async throws {
+        let gate = Gate()
+        defer { gate.open() }
+        let synthesizer = FakeSpeechBufferSynthesizer(framesPerUnit: 1_000, beforeWrite: { utterance in
+            if utterance.text.contains("Six") { gate.pass() }
+        })
+        let dialog = try await makeDialog("Speech Session Task", synthesizer: synthesizer)
+        let model = dialog.model
+        checkOnlySpokenAudio(model)
+        let tasks = RecordedTasks()
+        let session = PhoneExportSession(tasking: tasks.tasking)
+
+        let run = ExportRun(of: model, through: session)
+        let reached = await eventually { model.progressText == "Speaking chapter 3 of 3…" }
+        XCTAssertTrue(reached, "the progress says \(String(describing: model.progressText))")
+        let carried = await eventually { tasks.task.updates.contains { $0.subtitle == "Speaking chapter 3 of 3…" } }
+        XCTAssertTrue(carried, "the task heard \(tasks.task.updates.map(\.subtitle))")
+        XCTAssertEqual(tasks.begun.map(\.title), [model.title], "one task, titled as the sheet is")
+        XCTAssertEqual(tasks.task.finishes, [], "the task ended before the export did")
+
+        gate.open()
+        let outcome = try await end(of: run)
+
+        XCTAssertTrue(BookExportModel.didEverything(outcome))
+        let ended = await eventually { tasks.task.finishes == [true] }
+        XCTAssertTrue(ended, "the task's ends were \(tasks.task.finishes)")
+        let units = tasks.task.updates.map(\.completedUnits)
+        XCTAssertEqual(units, units.sorted(), "the task's progress went back: \(units)")
+        XCTAssertGreaterThan(units.last ?? 0, 0)
+    }
+
+    /// The task's bar measures the whole export, so it moves all through a spoken audio file: speaking fills four fifths
+    /// of the file's part and the encoding the rest, where the speech's own fraction starts again at 0 for the encoding and
+    /// a bar that never goes back would stand still through it, which the system takes for a stalled task. Files before
+    /// the spoken audio count as written, and until the first is written, the file under way stands for the whole.
+    /// (Here and not in the plain values' `PhoneExportSpeechTests`, which the iPhone's bundle shares: its sound census
+    /// reads the progress's `speaking` case as speech.)
+    func testTheTasksBarMeasuresTheWholeExportAndMovesThroughTheEncoding() {
+        typealias Mirror = PhoneExportTaskMirror
+        // The steps one spoken audio file goes through, alone in its export (its count not known yet).
+        let steps: [(SpeechExportProgress, Double)] = [
+            (.speaking(done: 0, total: 3, fraction: 0), 0),
+            (.speaking(done: 1, total: 3, fraction: 0.5), 0.4),
+            (.speaking(done: 3, total: 3, fraction: 1), 0.8),
+            (.encoding(chapters: 3, fraction: 0), 0.8),
+            (.encoding(chapters: 3, fraction: 0.5), 0.9),
+            (.encoding(chapters: 3, fraction: 1), 1)
+        ]
+        for (speech, expected) in steps {
+            XCTAssertEqual(Mirror.fraction(done: 0, total: 0, speech: speech), expected, accuracy: 1e-9, "\(speech)")
+        }
+        // Through the floor the session passes them through, the bar rises from the speaking's end through the encoding.
+        var told = Mirror.NeverBackwards()
+        let units = steps.map { step in
+            told.next(Mirror.update(title: "t", progressText: "w", fraction: Mirror.fraction(done: 0, total: 0, speech: step.0))).completedUnits
+        }
+        XCTAssertEqual(units, [0, 400, 800, 800, 900, 1_000], "the bar stood still through the encoding")
+
+        // One file written of two, the spoken audio second: its part is the second half of the bar.
+        XCTAssertEqual(Mirror.fraction(done: 1, total: 2, speech: nil), 0.5, accuracy: 1e-9)
+        XCTAssertEqual(Mirror.fraction(done: 1, total: 2, speech: .speaking(done: 0, total: 4, fraction: 0.5)), 0.7, accuracy: 1e-9)
+        XCTAssertEqual(Mirror.fraction(done: 1, total: 2, speech: .encoding(chapters: 4, fraction: 1)), 1, accuracy: 1e-9)
+        // An ended speech, or no speech, counts only the files written; a count out of range is held to it.
+        XCTAssertEqual(Mirror.fraction(done: 1, total: 4, speech: .ended(kept: 2, total: 3)), 0.25, accuracy: 1e-9)
+        XCTAssertEqual(Mirror.fraction(done: 0, total: 0, speech: nil), 0)
+        XCTAssertEqual(Mirror.fraction(done: 5, total: 2, speech: nil), 1)
+        XCTAssertEqual(Mirror.fraction(done: -1, total: 2, speech: .speaking(done: 0, total: 1, fraction: 7)), 0.4, accuracy: 1e-9)
+    }
+
+    /// The task's bar moves on through the encoding: the sheet's bar starts again at 0 when the file is encoded, and the
+    /// task's, which never goes back, measures the whole export, so it rises from where the speaking left it to the end
+    /// (the system expires a task that reports no progress, and a long book's encoding takes minutes). The export is held
+    /// in its last chapter while the test shows each stage, as the export would tell it.
+    func testTheTasksBarMovesOnThroughTheEncoding() async throws {
+        let gate = Gate()
+        defer { gate.open() }
+        let synthesizer = FakeSpeechBufferSynthesizer(framesPerUnit: 1_000, beforeWrite: { utterance in
+            if utterance.text.contains("Six") { gate.pass() }
+        })
+        let dialog = try await makeDialog("Speech Session Encoding Bar", synthesizer: synthesizer)
+        let model = dialog.model
+        checkOnlySpokenAudio(model)
+        let tasks = RecordedTasks()
+        let session = PhoneExportSession(tasking: tasks.tasking)
+        let run = ExportRun(of: model, through: session)
+        let reached = await eventually { model.progressText == "Speaking chapter 3 of 3…" }
+        XCTAssertTrue(reached, "the progress says \(String(describing: model.progressText))")
+
+        // Each stage as the export tells it, carried to the task at once: the last chapter spoken, then the encoding.
+        var units: [Int64] = []
+        for stage in [
+            SpeechExportProgress.speaking(done: 3, total: 3, fraction: 1),
+            .encoding(chapters: 3, fraction: 0),
+            .encoding(chapters: 3, fraction: 0.5),
+            .encoding(chapters: 3, fraction: 1)
+        ] {
+            model.showSpeechProgress(stage)
+            session.carry(model)
+            units.append(tasks.task.updates.last?.completedUnits ?? -1)
+        }
+
+        XCTAssertEqual(tasks.task.updates.last?.subtitle, "Encoding the audio file…")
+        // The speaking fills its share of the bar, and the encoding moves it on from there to the whole.
+        let share = PhoneExportTaskMirror.speakingShare
+        let expected = [share, share, share + (1 - share) / 2, 1].map {
+            PhoneExportTaskMirror.update(title: "", progressText: nil, fraction: $0).completedUnits
+        }
+        XCTAssertEqual(units, expected, "the task's bar stood still through the encoding, or did not end whole")
+        gate.open()
+        let outcome = try await end(of: run)
+        XCTAssertTrue(BookExportModel.didEverything(outcome))
+        let ended = await eventually { tasks.task.finishes == [true] }
+        XCTAssertTrue(ended, "the task's ends were \(tasks.task.finishes)")
+    }
+
+    /// The system's expiry, or Cancel in its Live Activity, is Stop: the export ends stopped, its chapters kept, and the
+    /// task ends as no success.
+    func testTheTasksExpiryStopsTheExportAndEndsTheTaskAsNoSuccess() async throws {
+        let gate = Gate()
+        defer { gate.open() }
+        let synthesizer = FakeSpeechBufferSynthesizer(framesPerUnit: 1_000, beforeWrite: { utterance in
+            if utterance.text.contains("Six") { gate.pass() }
+        })
+        let dialog = try await makeDialog("Speech Session Expiry", synthesizer: synthesizer)
+        let model = dialog.model
+        checkOnlySpokenAudio(model)
+        let tasks = RecordedTasks()
+        let session = PhoneExportSession(tasking: tasks.tasking)
+        let run = ExportRun(of: model, through: session)
+        let reached = await eventually { model.progressText == "Speaking chapter 3 of 3…" }
+        XCTAssertTrue(reached)
+
+        tasks.expire()
+        gate.open()
+        let outcome = try await end(of: run)
+
+        XCTAssertTrue(outcome.wasCancelled, "the expiry did not stop the export")
+        XCTAssertEqual(model.finishedWords?.hasPrefix("iOS stopped this export. Export stopped."), true, "\(String(describing: model.finishedWords))")
+        XCTAssertNil(model.wordsBeforeTheEnd, "the note outlived the export it was for")
+        let ended = await eventually { tasks.task.finishes == [false] }
+        XCTAssertTrue(ended, "the task's ends were \(tasks.task.finishes)")
+        XCTAssertTrue(model.summary?.contains("Kept 2 of 3 chapters") == true, "\(String(describing: model.summary))")
+    }
+
+    /// An export of no spoken audio asks for no task: it takes seconds, and the background task every export holds
+    /// is enough. One that cannot start, for want of a folder, asks for none either.
+    func testAnExportWithoutSpokenAudioOrWithoutAFolderAsksForNoTask() async throws {
+        let dialog = try await makeDialog("Speech Session No Task")
+        let model = dialog.model
+        let tasks = RecordedTasks()
+        let session = PhoneExportSession(tasking: tasks.tasking)
+
+        let text = try await end(of: ExportRun(of: model, through: session))
+
+        XCTAssertTrue(BookExportModel.didEverything(text))
+        XCTAssertEqual(tasks.begun.count, 0, "a text export asked for a task")
+
+        // No folder is chosen: Export cannot be pressed, and the session asks for no task.
+        let none = BookExportModel(books: [dialog.book], library: dialog.world.library, destinationIsChosen: false)
+        await none.load()
+        none.setChecked(true, for: .spokenAudio)
+        _ = await session.export(none)
+        XCTAssertEqual(tasks.begun.count, 0, "an export that cannot start asked for a task")
+    }
+
+    /// A task the system will not take leaves the export as it is: it goes on and ends, with nothing to tell.
+    func testAnExportGoesOnWhenTheSystemTakesNoTask() async throws {
+        let dialog = try await makeDialog("Speech Session Refused")
+        let model = dialog.model
+        checkOnlySpokenAudio(model)
+        let session = PhoneExportSession(tasking: .none)
+
+        let outcome = try await end(of: ExportRun(of: model, through: session))
+
+        XCTAssertTrue(BookExportModel.didEverything(outcome))
+    }
+
+    /// The sheet may close once the spoken audio file is made: the export then goes on, with a card, whose end is announced
+    /// low; before then, and for any other export, the sheet's closing stops it. The card closes only once the export
+    /// has ended.
+    func testTheSheetMayCloseOnlyWhileTheSpokenAudioFileIsMade() async throws {
+        let gate = Gate()
+        defer { gate.open() }
+        let synthesizer = FakeSpeechBufferSynthesizer(framesPerUnit: 1_000, beforeWrite: { utterance in
+            if utterance.text.contains("Six") { gate.pass() }
+        })
+        let dialog = try await makeDialog("Speech Session Close", synthesizer: synthesizer)
+        let model = dialog.model
+        checkOnlySpokenAudio(model)
+        let session = PhoneExportSession(tasking: .none)
+        XCTAssertFalse(session.letsGo(on: model), "nothing runs yet")
+
+        let run = ExportRun(of: model, through: session)
+        let reached = await eventually { model.progressText == "Speaking chapter 3 of 3…" }
+        XCTAssertTrue(reached)
+        XCTAssertTrue(model.isMakingSpeech)
+        XCTAssertTrue(session.letsGo(on: model))
+        XCTAssertNil(session.cardModel)
+
+        session.sheetClosed(model)
+        XCTAssertTrue(session.cardModel === model, "the sheet closed on a running export and left no card")
+        XCTAssertEqual(model.announcementPriority, .low)
+        session.closeCard()
+        XCTAssertTrue(session.cardModel === model, "the card closed while its export ran")
+
+        gate.open()
+        _ = try await end(of: run)
+        XCTAssertFalse(session.letsGo(on: model), "an ended export was let go on")
+        session.closeCard()
+        XCTAssertNil(session.cardModel, "the card did not close once the export had ended")
+    }
+
+    /// Stop from the card stops the export under way, its chapters kept.
+    func testStopFromTheCardStopsTheExport() async throws {
+        let gate = Gate()
+        defer { gate.open() }
+        let synthesizer = FakeSpeechBufferSynthesizer(framesPerUnit: 1_000, beforeWrite: { utterance in
+            if utterance.text.contains("Six") { gate.pass() }
+        })
+        let dialog = try await makeDialog("Speech Session Card Stop", synthesizer: synthesizer)
+        let model = dialog.model
+        checkOnlySpokenAudio(model)
+        let session = PhoneExportSession(tasking: .none)
+        let run = ExportRun(of: model, through: session)
+        let reached = await eventually { model.progressText == "Speaking chapter 3 of 3…" }
+        XCTAssertTrue(reached)
+        session.sheetClosed(model)
+
+        session.stop()
+        gate.open()
+        let outcome = try await end(of: run)
+
+        XCTAssertTrue(outcome.wasCancelled)
+        XCTAssertEqual(model.announcementPriority, .low)
+        XCTAssertEqual(model.finishedWords?.hasPrefix("Export stopped."), true, "the person's own Stop was blamed on iOS: \(String(describing: model.finishedWords))")
+    }
+
+    /// A second export cannot begin while one runs: Export is dimmed in the second sheet (`isBusy`), and the session refuses
+    /// it, so the first export's task and card are left as they are. When the first ends, the second may begin.
+    func testASecondExportIsRefusedWhileOneRuns() async throws {
+        let gate = Gate()
+        defer { gate.open() }
+        let synthesizer = FakeSpeechBufferSynthesizer(framesPerUnit: 1_000, beforeWrite: { utterance in
+            if utterance.text.contains("Six") { gate.pass() }
+        })
+        let first = try await makeDialog("Speech Session First", synthesizer: synthesizer)
+        checkOnlySpokenAudio(first.model)
+        let second = try await makeDialog("Speech Session Second")
+        let tasks = RecordedTasks()
+        let session = PhoneExportSession(tasking: tasks.tasking)
+        XCTAssertFalse(session.isBusy(for: second.model), "busy with nothing running")
+
+        let run = ExportRun(of: first.model, through: session)
+        let reached = await eventually { first.model.progressText == "Speaking chapter 3 of 3…" }
+        XCTAssertTrue(reached)
+        session.sheetClosed(first.model)
+        let card = session.cardModel
+        XCTAssertTrue(session.isBusy(for: second.model), "the second sheet's Export is not dimmed")
+        XCTAssertFalse(session.isBusy(for: first.model), "the running export is busy with itself")
+
+        let refused = await session.export(second.model)
+
+        XCTAssertNil(refused, "a second export began while the first ran")
+        XCTAssertTrue(session.cardModel === card && card === first.model, "the first export's card was taken away")
+        XCTAssertEqual(tasks.begun.count, 1, "the second export asked for a task of its own")
+        XCTAssertEqual(tasks.task.finishes, [], "the first export's task was ended")
+        XCTAssertTrue(first.model.isExporting, "the first export was stopped")
+        XCTAssertFalse(second.model.isExporting)
+
+        gate.open()
+        let outcome = try await end(of: run)
+        XCTAssertTrue(BookExportModel.didEverything(outcome))
+        XCTAssertFalse(session.isBusy(for: second.model), "the second sheet's Export stayed dimmed after the first ended")
+        let again = await session.export(second.model)
+        XCTAssertNotNil(again, "the second export could not begin after the first ended")
+    }
+
+    /// The card's lifecycle: it appears when the sheet closes on an export under way, says when that export ends, and is
+    /// closed by the person once it has; each is told once, for VoiceOver's focus to follow, and a sheet that closes for
+    /// any other export, or twice, or after the end, leaves no card.
+    func testTheCardsLifecycleIsToldOnce() async throws {
+        let gate = Gate()
+        defer { gate.open() }
+        let synthesizer = FakeSpeechBufferSynthesizer(framesPerUnit: 1_000, beforeWrite: { utterance in
+            if utterance.text.contains("Six") { gate.pass() }
+        })
+        let dialog = try await makeDialog("Speech Session Lifecycle", synthesizer: synthesizer)
+        let model = dialog.model
+        checkOnlySpokenAudio(model)
+        let stranger = try await makeDialog("Speech Session Stranger").model
+        let session = PhoneExportSession(tasking: .none)
+        let events = CardEvents(session)
+
+        // No export yet: a sheet closing leaves no card, and closing none changes nothing.
+        session.sheetClosed(model)
+        session.closeCard()
+        XCTAssertNil(session.cardModel)
+        XCTAssertEqual(events.seen, [])
+
+        let run = ExportRun(of: model, through: session)
+        let reached = await eventually { model.progressText == "Speaking chapter 3 of 3…" }
+        XCTAssertTrue(reached)
+        // Another model's sheet closing is no concern of this export's.
+        session.sheetClosed(stranger)
+        XCTAssertNil(session.cardModel, "a sheet of no export under way made a card")
+        session.sheetClosed(model)
+        session.sheetClosed(model)
+        XCTAssertTrue(session.cardModel === model)
+        XCTAssertEqual(events.seen, [.appeared], "the card's appearing was told more than once")
+        session.closeCard()
+        XCTAssertTrue(session.cardModel === model, "the card closed while its export ran")
+        XCTAssertEqual(events.seen, [.appeared])
+
+        gate.open()
+        _ = try await end(of: run)
+        XCTAssertEqual(events.seen, [.appeared, .ended])
+        XCTAssertTrue(session.cardModel === model, "the card went when its export ended")
+        session.closeCard()
+        session.closeCard()
+        XCTAssertNil(session.cardModel)
+        XCTAssertEqual(events.seen, [.appeared, .ended, .closed], "the close was told twice, or not at all")
+        // A sheet closing after the end leaves no card.
+        session.sheetClosed(model)
+        XCTAssertNil(session.cardModel)
+    }
+
+    /// A new export takes the place of a card whose export has ended, and says so as a replacement, not as the person's
+    /// close: it is begun in a sheet the person is in, and a close sends the Library's focus to its first row, behind that
+    /// sheet, on every Library screen in the stack. The replacement asks for no focus at all.
+    func testANewExportReplacesAnEndedCardWithoutAskingForFocus() async throws {
+        let gate = Gate()
+        defer { gate.open() }
+        let synthesizer = FakeSpeechBufferSynthesizer(framesPerUnit: 1_000, beforeWrite: { utterance in
+            if utterance.text.contains("Six") { gate.pass() }
+        })
+        let first = try await makeDialog("Speech Session Replaced First", synthesizer: synthesizer)
+        checkOnlySpokenAudio(first.model)
+        let second = try await makeDialog("Speech Session Replaced Second")
+        let session = PhoneExportSession(tasking: .none)
+        let events = CardEvents(session)
+        let run = ExportRun(of: first.model, through: session)
+        let reached = await eventually { first.model.progressText == "Speaking chapter 3 of 3…" }
+        XCTAssertTrue(reached)
+        session.sheetClosed(first.model)
+        gate.open()
+        _ = try await end(of: run)
+        XCTAssertTrue(session.cardModel === first.model, "the ended export's card went before the person closed it")
+        XCTAssertEqual(events.seen, [.appeared, .ended])
+
+        let outcome = try await end(of: ExportRun(of: second.model, through: session))
+
+        XCTAssertTrue(BookExportModel.didEverything(outcome))
+        XCTAssertNil(session.cardModel, "the ended export's card stayed under the new export")
+        XCTAssertEqual(events.seen, [.appeared, .ended, .replaced], "the card's replacement was told as \(events.seen.last.map { "\($0)" } ?? "nothing")")
+        let replacement = try XCTUnwrap(events.seen.last, "no event for the card's replacement")
+        XCTAssertNil(PhoneExportCardFocus.target(for: replacement, focusWasOnStop: false), "the replacement asked for focus behind the sheet")
+    }
+
+    /// A file of the same book can follow the spoken audio: a transcript, an original recording or audio come after it in
+    /// the dialog's order, and the plan writes them after it, so a question about a chapter nested too deeply can come
+    /// with the sheet closed, which is why the iPhone's prompt answers Cancel Export at once then. A transcribed book is
+    /// stood in for by its own offer with a transcript item added; spoken audio is offered for one book alone.
+    func testAFileCanFollowTheSpokenAudioSoThePromptHasToAnswerForAClosedSheet() async throws {
+        let dialog = try await makeDialog("Speech Session Order")
+        let model = dialog.model
+        model.setChecked(true, for: .spokenAudio)
+        let offer = try XCTUnwrap(model.offers.first)
+        let transcript = BookExportItem(
+            kind: .transcript, folderName: nil,
+            files: [BookExportFile(source: .copy(dialog.folder.appendingPathComponent("transcript.json")), path: "Harbour Pilots - Transcript.json", byteCount: 1)],
+            fileInCloud: nil
+        )
+        let withTranscript = BookExportOffer(
+            book: offer.book, items: (offer.items + [transcript]).sorted { $0.kind.order < $1.kind.order }, isPackageInCloud: false
+        )
+        for later in [BookExportKind.originalRecording, .originalAudio, .transcript] {
+            XCTAssertLessThan(BookExportKind.spokenAudio.order, later.order, "\(later) does not come after spoken audio")
+        }
+
+        let plan = BookExportService.plan(
+            [withTranscript], kinds: [.spokenAudio, .transcript], conversions: model.conversions, in: dialog.folder, fileExists: { _ in false }
+        ).files
+
+        let names = plan.map(\.target.lastPathComponent)
+        XCTAssertEqual(plan.map(\.target.pathExtension), ["m4b", "json"], "the plan holds \(names)")
+        // And two books are offered no spoken audio.
+        let second = try makeUnlistedDialog("Speech Session Order Two").book
+        let two = BookExportModel(books: [dialog.book, second], library: dialog.world.library, destination: dialog.folder)
+        await two.load()
+        XCTAssertFalse(two.choices.contains { $0.kind == .spokenAudio }, "spoken audio is offered for two books")
+    }
+
+    /// iOS's words start the end only for an export it stopped: one that finished before the stop took effect says it
+    /// finished, and the note is cleared for the next export.
+    func testIOSsWordsAreOnlyForAnExportItStopped() async throws {
+        let dialog = try await makeDialog("Speech Session Finished First")
+        let model = dialog.model
+        model.wordsBeforeTheEnd = PhoneExportWording.stoppedBySystem
+
+        let outcome = try await end(of: ExportRun(of: model))
+
+        XCTAssertFalse(outcome.wasCancelled)
+        XCTAssertEqual(model.finishedWords, "Exported 1 item to \(BookExportWording.folderName(of: dialog.folder)).")
+        XCTAssertNil(model.wordsBeforeTheEnd, "the note outlived the export it was for")
+    }
+
+    /// iOS's words do not outlive an export that never began: one the system stopped in its first moments, while it
+    /// waited for a braille table's check, returns without an end to take them, and the next export, stopped by the
+    /// person, would begin "iOS stopped this export." The session clears them however the export ended.
+    func testIOSsWordsDoNotOutliveAnExportThatNeverBegan() async throws {
+        let dialog = try await makeDialog("Speech Session Never Began")
+        // No folder chosen: the export returns at once, without an end, as one stopped before it began does.
+        let model = BookExportModel(books: [dialog.book], library: dialog.world.library, destinationIsChosen: false)
+        await model.load()
+        let session = PhoneExportSession(tasking: .none)
+        model.wordsBeforeTheEnd = PhoneExportWording.stoppedBySystem
+
+        let outcome = await session.export(model)
+
+        XCTAssertNil(outcome, "the export began")
+        XCTAssertNil(model.wordsBeforeTheEnd, "iOS's words outlived an export that never began, for the next one's end")
+    }
+
     // MARK: - Fixtures
 
     /// The words that say until when spoken chapters are kept, written out
@@ -1065,6 +1494,85 @@ private final class ExportRun {
             outcome = await model.export()
             hasEnded = true
         }
+    }
+
+    /// Begins the export of `model` through `session`, as the iPhone's sheet does when Export is pressed.
+    init(of model: BookExportModel, through session: PhoneExportSession) {
+        Task { [self] in
+            outcome = await session.export(model)
+            hasEnded = true
+        }
+    }
+}
+
+// MARK: - The Card's Events, Recorded
+
+/// What a session told about its card, in order.
+@MainActor
+private final class CardEvents {
+    /// The events seen.
+    private(set) var seen: [PhoneExportSession.CardEvent] = []
+    /// What listens.
+    private var listening: AnyCancellable?
+
+    /// Listens to `session`.
+    init(_ session: PhoneExportSession) {
+        listening = session.cardEvents.sink { [weak self] event in self?.seen.append(event) }
+    }
+}
+
+// MARK: - The System's Task, Recorded
+
+/// A continued task that records what the session tells it, in place of the system's: its title and subtitle as it began,
+/// each update, and how it ended. Never a real task.
+private final class RecordedTask: PhoneExportTaskHandle {
+    /// What was told, under one lock: the export tells from its own threads.
+    private let record = OSAllocatedUnfairLock(initialState: (updates: [PhoneExportTaskMirror.Update](), finishes: [Bool]()))
+
+    /// Every update, in order.
+    var updates: [PhoneExportTaskMirror.Update] { record.withLock { $0.updates } }
+    /// Every end told, which should be one.
+    var finishes: [Bool] { record.withLock { $0.finishes } }
+
+    func update(_ update: PhoneExportTaskMirror.Update) {
+        record.withLock { $0.updates.append(update) }
+    }
+
+    func finish(success: Bool) {
+        record.withLock { $0.finishes.append(success) }
+    }
+}
+
+/// The session's way to start a task, as the tests make it: it records what it was asked and gives one `RecordedTask`.
+private final class RecordedTasks: Sendable {
+    /// The task the session was given.
+    let task = RecordedTask()
+    /// What the session asked for and was given to call at an expiry, under one lock.
+    private struct Asked: Sendable {
+        var begun: [(title: String, subtitle: String)] = []
+        var expire: (@Sendable () -> Void)?
+    }
+
+    /// What was asked, which the session's main actor writes and a test reads.
+    private let asked = OSAllocatedUnfairLock(initialState: Asked())
+
+    /// What the session asked for, in order.
+    var begun: [(title: String, subtitle: String)] { asked.withLock { $0.begun } }
+
+    /// The tasking the session is made with.
+    var tasking: PhoneExportTasking {
+        PhoneExportTasking { [self] title, subtitle, onExpire in
+            asked.withLock {
+                $0.begun.append((title, subtitle))
+                $0.expire = onExpire
+            }
+            return task
+        }
+    }
+
+    /// The system expires the task: the expiration handler runs.
+    func expire() {
+        asked.withLock { $0.expire }?()
     }
 }
 

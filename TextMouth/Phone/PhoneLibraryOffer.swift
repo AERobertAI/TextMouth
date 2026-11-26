@@ -37,6 +37,8 @@ enum PhoneLibraryOffer {
         case renameFolder
         /// Moves the folder into another.
         case moveFolder
+        /// Opens the Export sheet for every book in the folder and below it, each into a folder of its own.
+        case exportFolder
         /// Deletes the folder, asking what becomes of what it holds.
         case deleteFolder
     }
@@ -111,13 +113,17 @@ enum PhoneLibraryOffer {
     }
 
     /// The commands of a folder's row, in the Mac's order: Rename Folder...,
-    /// Move Folder..., and Delete Folder... where the Mac offers it
-    /// (`LibraryViewModel.offersDeleteFolder(_:)`).
-    static func folderCommands(offersDelete: Bool) -> [Command] {
+    /// Move Folder..., Export 12 Books... where the folder holds books (FR31, phase 3), and Delete Folder... where the
+    /// Mac offers it (`LibraryViewModel.offersDeleteFolder(_:)`). `bookCount` is the books in the folder and every
+    /// folder below it, as the row says them, and names the Mac's own command ("Export…" for one book).
+    static func folderCommands(offersDelete: Bool, bookCount: Int = 0) -> [Command] {
         var commands = [
             Command(action: .renameFolder, title: PhoneLibraryVocabulary.renameFolder),
             Command(action: .moveFolder, title: PhoneLibraryVocabulary.moveFolder),
         ]
+        if bookCount > 0 {
+            commands.append(Command(action: .exportFolder, title: BookExportWording.commandTitle(count: bookCount)))
+        }
         if offersDelete {
             commands.append(Command(action: .deleteFolder, title: PhoneLibraryVocabulary.deleteFolder))
         }
