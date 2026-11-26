@@ -1,3 +1,4 @@
+import os
 import XCTest
 @testable import TextMouth
 
@@ -142,12 +143,20 @@ extension SyncInterruptionTests {
 
         // The Mac works until the stop. The stop throws at `step` wherever the step is reached.
         struct Stop: Error {}
-        await world.mac.engine.setStopAfter { reached in if reached == step { throw Stop() } }
+        let reachedIt = OSAllocatedUnfairLock(initialState: false)
+        await world.mac.engine.setStopAfter { reached in
+            if reached == step {
+                reachedIt.withLock { $0 = true }
+                throw Stop()
+            }
+        }
         _ = try? await world.mac.engine.record(library: library)
         try? await world.mac.engine.recordKeep(true, for: [keep])
         _ = try? await world.mac.engine.exchange(in: world.folder)
         let application = await world.mac.engine.application(for: library, voices: nil)
         try? await world.mac.engine.didApply(application, keys: application.appliedKeys)
+
+        XCTAssertTrue(reachedIt.withLock { $0 }, "the stop after \(step) was never reached")
 
         // Started afresh on the same files, as after a crash: the app records again, exchanges, and applies.
         try world.restart(\.mac)

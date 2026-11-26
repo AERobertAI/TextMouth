@@ -188,8 +188,11 @@ import XCTest
             makeBookmark: { _ in nil }, reachability: .online, now: { Date() },
             sleep: { _ in try await Task.sleep(for: .seconds(3600)) }, announce: { _ in }, freeSpace: { _ in 100_000_000_000 }, pauseWhileJoining: { _ in }
         ))
-        second.install(host: StubHost(), dataDirectory: world.dataDirectory)
+        let host = StubHost()
+        second.install(host: host, dataDirectory: world.dataDirectory)
+        await second.waitUntilIdle()
         XCTAssertTrue(second.status.isOn)
+        withExtendedLifetime(host) {}
     }
 
     // MARK: - Sync Now
@@ -388,6 +391,8 @@ import XCTest
         let own = SyncLocalFiles(syncFolder: world.dataDirectory.appendingPathComponent("Sync", isDirectory: true), storeID: storeID)
 
         // The device's folder cannot be written: the record in the apply throws.
+        // Restored however the test ends, so the sandbox can be cleared.
+        addTeardownBlock { try? FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: own.outboxFolder.path) }
         try FileManager.default.setAttributes([.posixPermissions: 0o555], ofItemAtPath: own.outboxFolder.path)
         let book = SyncTestFixtures.book()
         world.host.library = library([book])
@@ -414,6 +419,45 @@ import XCTest
         } catch { XCTAssertEqual(error as? SyncProblem, .notInICloudDrive) }
     }
 
+    /// An override of the renewal that is set after the center was built is the one used.
+    func testARenewalOverrideSetLaterIsUsed() async throws {
+        let original = SyncFolderAccessFactory.renewedBookmark
+        addTeardownBlock { SyncFolderAccessFactory.renewedBookmark = original }
+        let world = try makeWorld(renewedBookmark: SyncCenterEnvironment.renewalThroughFactory)
+        world.center.install(host: world.host, dataDirectory: world.dataDirectory)
+        try await world.center.setUp(in: world.parent)
+        await world.center.waitUntilIdle()
+        let folder = world.parent.appendingPathComponent("TextMouth Sync", isDirectory: true)
+        let fresh = try XCTUnwrap(DataDirectoryPreferences.makeBookmark(of: folder))
+        // Set after the center exists, as the iPhone's launch does.
+        SyncFolderAccessFactory.renewedBookmark = { _ in fresh }
+        world.center.moment(.active)
+        await world.center.waitUntilIdle()
+        XCTAssertEqual(SyncPreferences.bookmark.read(from: world.preferences), fresh)
+    }
+
+    /// A Sync Now that ends early does not leave a confirmation behind: the removals are still held afterwards.
+    func testASyncNowThatEndsEarlyConfirmsNothing() async throws {
+        let world = try makeWorld()
+        let books = (0..<6).map { _ in SyncTestFixtures.book() }
+        world.host.library = library(books)
+        world.center.install(host: world.host, dataDirectory: world.dataDirectory)
+        try await world.center.setUp(in: world.parent)
+        await world.center.waitUntilIdle()
+        world.host.library = library([])
+        await world.center.recordNow()
+        XCTAssertEqual(world.center.status.heldRemovals, 6)
+
+        // Sync Now while the library may not sync: the run ends at once.
+        world.host.maySyncNow = false
+        world.center.syncNow()
+        await world.center.waitUntilIdle()
+        world.host.maySyncNow = true
+        await world.center.recordNow()
+        XCTAssertEqual(world.center.status.heldRemovals, 6, "nothing was confirmed")
+        XCTAssertEqual(try presence(of: books[0], in: world), .bool(true))
+    }
+
     // MARK: - Installing again (sync-mac review item 9)
 
     /// A second center over the same preferences, as a later launch is.
@@ -437,6 +481,7 @@ import XCTest
         let later = laterLaunch(world)
         let host = StubHost()
         later.install(host: host, dataDirectory: other)
+        await later.waitUntilIdle()
         XCTAssertFalse(later.status.isOn)
         XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: other.path), [], "nothing was made there")
         withExtendedLifetime(host) {}
@@ -449,12 +494,13 @@ import XCTest
         try await world.center.setUp(in: world.parent)
         await world.center.waitUntilIdle()
         world.center.install(host: world.host, dataDirectory: world.dataDirectory)
-        XCTAssertTrue(world.center.status.isOn)
         await world.center.waitUntilIdle()
+        XCTAssertTrue(world.center.status.isOn)
 
         let moved = laterLaunch(world, library: .cloud(.iCloudDrive))
         let host = StubHost()
         moved.install(host: host, dataDirectory: world.dataDirectory)
+        await moved.waitUntilIdle()
         XCTAssertFalse(moved.status.isOn, "a library in a cloud folder is refused")
         withExtendedLifetime(host) {}
     }

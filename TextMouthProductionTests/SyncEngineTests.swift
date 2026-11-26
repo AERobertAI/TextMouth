@@ -207,6 +207,43 @@ final class SyncEngineTests: XCTestCase {
         XCTAssertEqual(removed.heldRemovals, 0)
     }
 
+    /// A confirmation is for the removals held when it was given: a different mass removal held later stays held.
+    func testAConfirmationIsForTheHeldRemovalsOnly() async throws {
+        let sandbox = try makeSandboxDirectory("sync-engine-confirm")
+        let engine = try SyncEngine(local: local(sandbox, "a"), identity: identity())
+        let first = (0..<6).map { _ in SyncTestFixtures.book() }
+        let second = (0..<6).map { _ in SyncTestFixtures.book() }
+        _ = try await engine.record(library: SyncTestFixtures.library(books: first))
+        try await engine.settleLaunch(library: SyncTestFixtures.library(books: first))
+        let held = try await engine.record(library: SyncTestFixtures.library())
+        XCTAssertEqual(held.heldRemovals, 6)
+
+        await engine.confirmHeldRemovals()
+        let sent = try await engine.record(library: SyncTestFixtures.library())
+        XCTAssertEqual(sent.heldRemovals, 0)
+        XCTAssertEqual(sent.recorded, 6, "the confirmed removals were sent")
+
+        // Another mass removal, not the one confirmed, is held although the confirmation is still in force.
+        _ = try await engine.record(library: SyncTestFixtures.library(books: second))
+        let other = try await engine.record(library: SyncTestFixtures.library())
+        XCTAssertEqual(other.heldRemovals, 6, "a removal that was not held when Sync Now was pressed is held again")
+    }
+
+    /// The confirmation ends with its run: after it is cleared the same removals are held again.
+    func testAConfirmationEndsWithItsRun() async throws {
+        let sandbox = try makeSandboxDirectory("sync-engine-confirm-ends")
+        let engine = try SyncEngine(local: local(sandbox, "a"), identity: identity())
+        let books = (0..<6).map { _ in SyncTestFixtures.book() }
+        _ = try await engine.record(library: SyncTestFixtures.library(books: books))
+        try await engine.settleLaunch(library: SyncTestFixtures.library(books: books))
+        _ = try await engine.record(library: SyncTestFixtures.library())
+        await engine.confirmHeldRemovals()
+        await engine.clearConfirmation()
+        let again = try await engine.record(library: SyncTestFixtures.library())
+        XCTAssertEqual(again.heldRemovals, 6, "the run ended; nothing is confirmed any more")
+        XCTAssertEqual(again.recorded, 0)
+    }
+
     /// A snapshot is due after 100 files, counted from the device's own record, so a restart doesn't forget them.
     func testASnapshotIsDueAfterManyFilesEvenAcrossRestarts() async throws {
         let sandbox = try makeSandboxDirectory("sync-engine-snapshots")
