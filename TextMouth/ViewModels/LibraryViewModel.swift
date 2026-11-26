@@ -515,8 +515,6 @@ final class LibraryViewModel: ObservableObject {
         let madeIdentity = recordLibraryIdentity()
         // Clear what ZIP imports interrupted by a crash left extracted.
         removeLeftoverArchiveExtractions()
-        sweepPasswordRemovalLeftovers()
-        lookForProtectedBooks()
         // Clear the reading texts this Mac kept that went unused for a day,
         // off the main thread; they are this Mac's own, never in the cloud.
         ReadingTextCache.shared.removeExpiredInBackground()
@@ -525,6 +523,12 @@ final class LibraryViewModel: ObservableObject {
         // enters recovery with a provisional library and saves nothing.
         loadLibraryIndex()
         saveIndexOfNewLibrary(madeIdentity: madeIdentity, hadIndex: hadIndex)
+        // Each package's plain copy a crash left while a password was being
+        // removed goes, and every book's file is looked at for a password,
+        // so the rows say "Locked" (FR41). Both go through the library's
+        // books, so they wait for the index: before it, the library has none.
+        sweepPasswordRemovalLeftovers()
+        lookForProtectedBooks()
         setupDataDirectoryChangeHandler()
         // Delete the originals of recordings and edited audiobooks whose
         // time is up, off the main thread, downloading nothing (FR04).

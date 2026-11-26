@@ -207,6 +207,28 @@ final class ProtectedImportTests: XCTestCase {
         try assertNoWords(in: package, "after the book was open")
     }
 
+    // MARK: - The Launch
+
+    /// The launch deletes the plain copy a crash left in a protected book's package while its
+    /// password was being removed. The sweep goes through the library's books, so it must wait
+    /// for the index: it ran before the index was read, over a library of no books, and left
+    /// every such copy in its package, where a cloud library uploads it.
+    func testTheLaunchSweepsThePlainCopyARemovalLeft() async throws {
+        try prepare()
+        let fixture = try LibraryFixture(test: self, label: "PasswordLeftover")
+        let book = try FileImportService.importFileWithReport(from: try lockedPDF()).book
+        try LibraryFixture.write(Library(books: [book], folders: [BookFolder(name: LibraryFixture.folderName)]), to: fixture.root)
+        let leftover = book.tmbDirectory.appendingPathComponent(ProtectionRemoval.temporaryPrefix + UUID().uuidString)
+        try Data(words.utf8).write(to: leftover)
+
+        let model = LibraryViewModel(dataDirectoryEnvironment: fixture.environment)
+        XCTAssertTrue(model.hasStartedLibrary, "the library did not start")
+        XCTAssertTrue(model.library.books.contains { $0.id == book.id }, "the index was not read")
+        let swept = await eventually(timeout: 10) { !FileManager.default.fileExists(atPath: leftover.path) }
+        XCTAssertTrue(swept, "the launch left the plain copy in the package")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: book.bookFileURL.path), "the book's own file stays")
+    }
+
     /// An unprotected PDF is added as it always was, with its text read and its cache written.
     func testAnOrdinaryPDFIsStillAddedWithItsText() throws {
         try prepare()

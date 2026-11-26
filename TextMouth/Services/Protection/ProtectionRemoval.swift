@@ -23,8 +23,10 @@ enum ProtectionRemoval {
     /// put in place with one rename, so a crash leaves the protected file
     /// whole, with a leftover. A failed write or rename removes its own
     /// copy, which holds the book without its password, and the launch
-    /// sweeps up one a crash left (`removeLeftovers(inPackageAt:)`). The
-    /// space needed is one copy, for as long as the write lasts.
+    /// sweeps up one a crash left, once the library's index is read
+    /// (`LibraryViewModel.sweepPasswordRemovalLeftovers()`,
+    /// `removeLeftovers(inPackageAt:)`). The space needed is one copy, for
+    /// as long as the write lasts.
     /// - Throws: `Failure`.
     static func removePassword(fromFileAt url: URL, format: BookFormat) throws {
         guard UnlockedSources.isUnlocked(url), let scheme = ProtectionDetector.scheme(ofFileAt: url, format: format) else {
