@@ -562669,6 +562669,630 @@
         }
       }
     },
+    "protection.importExplanation" : {
+      "comment" : "Under the heading of the panel shown when some books being added are protected by a password.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "بعض هذه الكتب محمية بكلمة مرور."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই বইগুলির কিছু পাসওয়ার্ড দিয়ে সুরক্ষিত।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Einige dieser Bücher sind durch ein Passwort geschützt."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Some of these books are protected by a password."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Algunos de estos libros están protegidos con una contraseña."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "برخی از این کتاب‌ها با گذرواژه محافظت شده‌اند."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Certains de ces livres sont protégés par un mot de passe."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "חלק מהספרים האלה מוגנים בסיסמה."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "इनमें से कुछ पुस्तकें पासवर्ड से सुरक्षित हैं।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sebagian buku ini dilindungi kata sandi."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Alcuni di questi libri sono protetti da una password."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "これらの本の一部はパスワードで保護されています。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이 책 중 일부는 암호로 보호되어 있습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sommige van deze boeken zijn beveiligd met een wachtwoord."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Niektóre z tych książek są chronione hasłem."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Alguns destes livros estão protegidos por senha."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Некоторые из этих книг защищены паролем."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Några av de här böckerna är skyddade med ett lösenord."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "หนังสือบางเล่มเหล่านี้ถูกป้องกันด้วยรหัสผ่าน"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bu kitapların bazıları parolayla korunuyor."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Деякі з цих книг захищено паролем."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ان میں سے کچھ کتابیں پاس ورڈ سے محفوظ ہیں۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Một số sách này được bảo vệ bằng mật khẩu."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "其中一些书受密码保护。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "其中一些書受密碼保護。"
+          }
+        }
+      }
+    },
+    "protection.importHeading" : {
+      "comment" : "The heading of the panel that asks for the password of books being added.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "إضافة كتب محمية"
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সুরক্ষিত বই যোগ করুন"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Geschützte Bücher hinzufügen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add protected books"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Añadir libros protegidos"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "افزودن کتاب‌های محافظت‌شده"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ajouter des livres protégés"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הוספת ספרים מוגנים"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "सुरक्षित पुस्तकें जोड़ें"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tambahkan buku terlindungi"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Aggiungi libri protetti"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "保護された本を追加"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "보호된 책 추가"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Beveiligde boeken toevoegen"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Dodaj chronione książki"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Adicionar livros protegidos"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Добавление защищённых книг"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Lägg till skyddade böcker"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เพิ่มหนังสือที่มีการป้องกัน"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Korumalı kitapları ekle"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Додавання захищених книг"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "محفوظ کتابیں شامل کریں"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Thêm sách được bảo vệ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "添加受保护的书"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "加入受保護的書"
+          }
+        }
+      }
+    },
+    "protection.importLocked" : {
+      "comment" : "Button that adds protected books to the library without their password; they stay locked.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "استيراد مقفلة"
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "লক করা অবস্থায় যোগ করুন"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Gesperrt importieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import Locked"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Importar bloqueados"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "درون‌ریزی قفل‌شده"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Importer verrouillés"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ייבוא כשהם נעולים"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "लॉक रखकर आयात करें"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Impor terkunci"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Importa bloccati"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ロックしたまま読み込む"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "잠긴 채로 가져오기"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Vergrendeld importeren"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Importuj zablokowane"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Importar bloqueados"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Импортировать заблокированными"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Importera låsta"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "นำเข้าแบบล็อก"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kilitli aktar"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Імпортувати заблокованими"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "مقفل درآمد کریں"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nhập ở trạng thái khóa"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "以锁定状态导入"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "以鎖定狀態匯入"
+          }
+        }
+      }
+    },
+    "protection.importLockedHint" : {
+      "comment" : "Hint of the Import Locked button: what it does and how to unlock the books later.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يضيف الكتب مقفلة. يمكنك فتح قفل كل كتاب عند فتحه."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বইগুলি লক করা অবস্থায় যোগ করে। প্রতিটি বই খোলার সময় আনলক করতে পারবেন।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Fügt die Bücher gesperrt hinzu. Sie können jedes beim Öffnen entsperren."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adds the books locked. You can unlock each one when you open it."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Añade los libros bloqueados. Puedes desbloquear cada uno al abrirlo."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "کتاب‌ها را قفل‌شده اضافه می‌کند. هنگام باز کردن هر کدام می‌توانید قفلش را باز کنید."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ajoute les livres verrouillés. Vous pourrez déverrouiller chacun à son ouverture."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "מוסיף את הספרים נעולים. אפשר לבטל את הנעילה של כל אחד בעת פתיחתו."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "पुस्तकों को लॉक करके जोड़ता है। हर पुस्तक खोलते समय आप उसे अनलॉक कर सकते हैं।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Menambahkan buku dalam keadaan terkunci. Anda dapat membuka kunci tiap buku saat membukanya."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Aggiunge i libri bloccati. Potrai sbloccare ciascuno quando lo apri."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "本をロックしたまま追加します。開くときに1冊ずつロックを解除できます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "책을 잠긴 상태로 추가합니다. 각 책을 열 때 잠금을 해제할 수 있습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Voegt de boeken vergrendeld toe. Je kunt elk boek ontgrendelen als je het opent."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Dodaje książki zablokowane. Każdą możesz odblokować przy otwarciu."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Adiciona os livros bloqueados. Você pode desbloquear cada um ao abri-lo."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Добавляет книги заблокированными. Каждую можно разблокировать при открытии."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Lägger till böckerna låsta. Du kan låsa upp varje bok när du öppnar den."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เพิ่มหนังสือแบบล็อก คุณปลดล็อกแต่ละเล่มได้เมื่อเปิด"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kitapları kilitli olarak ekler. Her birinin kilidini açarken açabilirsiniz."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Додає книги заблокованими. Кожну можна розблокувати під час відкриття."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "کتابوں کو مقفل شامل کرتا ہے۔ ہر کتاب کھولتے وقت آپ اسے ان لاک کر سکتے ہیں۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Thêm sách ở trạng thái khóa. Bạn có thể mở khóa từng cuốn khi mở."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "以锁定状态添加这些书。打开每本书时可以解锁。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "以鎖定狀態加入這些書。開啟每本書時可以解鎖。"
+          }
+        }
+      }
+    },
     "protection.locked" : {
       "comment" : "Why a book's text could not be read: it is protected by a password and has not been unlocked.",
       "extractionState" : "manual",
@@ -562977,6 +563601,162 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "已鎖定"
+          }
+        }
+      }
+    },
+    "protection.partlyOpened" : {
+      "comment" : "Said when a typed password opened some of the protected books being added but not all.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لم تفتح كلمة المرور هذه بعض الكتب. جرّب أخرى، أو اختر استيراد مقفلة."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই পাসওয়ার্ডে কিছু বই খোলেনি। অন্যটি চেষ্টা করুন, অথবা লক করা অবস্থায় যোগ করুন বেছে নিন।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mit diesem Passwort ließen sich einige Bücher nicht öffnen. Versuchen Sie ein anderes oder wählen Sie „Gesperrt importieren“."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Some books did not open with this password. Try another, or choose Import Locked."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Algunos libros no se abrieron con esta contraseña. Prueba otra o elige Importar bloqueados."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "برخی کتاب‌ها با این گذرواژه باز نشدند. گذرواژه دیگری امتحان کنید یا «درون‌ریزی قفل‌شده» را بزنید."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Certains livres ne se sont pas ouverts avec ce mot de passe. Essayez-en un autre ou choisissez Importer verrouillés."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "חלק מהספרים לא נפתחו עם הסיסמה הזו. נסו אחרת או בחרו ייבוא כשהם נעולים."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "कुछ पुस्तकें इस पासवर्ड से नहीं खुलीं। कोई और आज़माएँ, या लॉक रखकर आयात करें चुनें।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Beberapa buku tidak terbuka dengan kata sandi ini. Coba yang lain, atau pilih Impor terkunci."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Alcuni libri non si sono aperti con questa password. Provane un'altra o scegli Importa bloccati."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "このパスワードでは開けない本がありました。別のパスワードを試すか、「ロックしたまま読み込む」を選んでください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이 암호로 열리지 않은 책이 있습니다. 다른 암호를 시도하거나 ‘잠긴 채로 가져오기’를 선택하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sommige boeken gingen niet open met dit wachtwoord. Probeer een ander of kies Vergrendeld importeren."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Niektóre książki nie otworzyły się tym hasłem. Spróbuj innego lub wybierz Importuj zablokowane."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Alguns livros não abriram com esta senha. Tente outra ou escolha Importar bloqueados."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Некоторые книги не открылись с этим паролем. Попробуйте другой или выберите «Импортировать заблокированными»."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Vissa böcker gick inte att öppna med det här lösenordet. Försök med ett annat eller välj Importera låsta."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "หนังสือบางเล่มเปิดด้วยรหัสผ่านนี้ไม่ได้ ลองรหัสอื่น หรือเลือกนำเข้าแบบล็อก"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bazı kitaplar bu parolayla açılmadı. Başka bir parola deneyin veya Kilitli aktar’ı seçin."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Деякі книги не відкрилися з цим паролем. Спробуйте інший або виберіть «Імпортувати заблокованими»."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "کچھ کتابیں اس پاس ورڈ سے نہیں کھلیں۔ کوئی اور آزمائیں، یا مقفل درآمد کریں چنیں۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Một số sách không mở được bằng mật khẩu này. Hãy thử mật khẩu khác, hoặc chọn Nhập ở trạng thái khóa."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "有些书无法用此密码打开。请尝试其他密码，或选择“以锁定状态导入”。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "有些書無法用此密碼開啟。請嘗試其他密碼，或選擇「以鎖定狀態匯入」。"
           }
         }
       }

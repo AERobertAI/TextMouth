@@ -34,8 +34,18 @@ struct UnlockChoice {
 /// (Escape). A wrong password is a line of text, spoken too, and the field
 /// keeps focus; nothing depends on colour.
 struct UnlockBookPanel: View {
-    /// The book's title.
-    let title: String
+    /// The book's title, for the heading "Unlock “Title”" (a request to add
+    /// several protected books gives its own `heading` instead).
+    var title = ""
+    /// The heading and the line under it, when the panel is not for one
+    /// opened book.
+    var heading: String?
+    var explanation: String?
+    /// Whether the panel offers to remove the password from the book: not
+    /// when books are being added.
+    var offersRemoval = true
+    /// Import Locked: leave the books locked and carry on. Nil in a reader.
+    var importLocked: (() -> Void)?
     /// How the attempts have gone.
     let state: UnlockPromptState
     /// Whether Remember starts on (the choice's default is on).
@@ -58,10 +68,10 @@ struct UnlockBookPanel: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(ProtectionWording.heading(title: title))
+            Text(heading ?? ProtectionWording.heading(title: title))
                 .font(.title2)
                 .accessibilityAddTraits(.isHeader)
-            Text(ProtectionWording.explanation)
+            Text(explanation ?? ProtectionWording.explanation)
 
             passwordField
 
@@ -78,14 +88,21 @@ struct UnlockBookPanel: View {
             Toggle(ProtectionWording.remember, isOn: $remembers)
                 .accessibilityHint(ProtectionWording.rememberHint)
                 .accessibilityIdentifier("unlock.remember")
-            Toggle(ProtectionWording.removePassword, isOn: $removes)
-                .accessibilityHint(ProtectionWording.removePasswordHint)
-                .accessibilityIdentifier("unlock.remove")
+            if offersRemoval {
+                Toggle(ProtectionWording.removePassword, isOn: $removes)
+                    .accessibilityHint(ProtectionWording.removePasswordHint)
+                    .accessibilityIdentifier("unlock.remove")
+            }
 
             HStack {
                 Button(ProtectionWording.cancel, role: .cancel, action: onCancel)
                     .keyboardShortcut(.cancelAction)
                     .accessibilityIdentifier("unlock.cancel")
+                if let importLocked {
+                    Button(ProtectionWording.importLocked, action: importLocked)
+                        .accessibilityHint(ProtectionWording.importLockedHint)
+                        .accessibilityIdentifier("unlock.importLocked")
+                }
                 Button(ProtectionWording.unlock, action: submit)
                     .keyboardShortcut(.defaultAction)
                     .disabled(state.isWorking)

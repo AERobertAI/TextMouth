@@ -241,6 +241,10 @@ final class LibraryViewModel: ObservableObject {
     /// question (`ImportDecisionPresenter`).
     @Published var importDecisions = ImportDecisionQueue()
 
+    /// The question about protected books being added, while one waits for
+    /// its answer (FR41, `ImportPasswordRequest`); each Library window shows it as a sheet.
+    @Published var importPasswordRequest: ImportPasswordRequest?
+
     /// Book removal confirmation (supports single or multi-book removal)
     @Published var showRemoveBookDialog = false
     @Published var pendingRemoveBooks: [Book] = []

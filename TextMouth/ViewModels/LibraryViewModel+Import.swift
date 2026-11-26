@@ -132,7 +132,15 @@ extension LibraryViewModel {
     /// questions (TODO I01).
     ///
     /// - Parameter origin: The Library window importing the items.
-    func importAndOpenFiles(urls: [URL], from origin: ImportOrigin? = nil) {
+    func importAndOpenFiles(urls: [URL], from origin: ImportOrigin? = nil, askingForPasswords: Bool = true) {
+        // Protected books are asked about first (FR41); the import carries on
+        // from the answer.
+        if askingForPasswords,
+           askForPasswordsBeforeImporting(urls, proceed: { [weak self] in
+               self?.importAndOpenFiles(urls: urls, from: origin, askingForPasswords: false)
+           }) {
+            return
+        }
         // A WebVTT or SubRip file opened with its audio is attached to that
         // audio's book as it is imported, not refused as a book.
         for url in TranscriptPairing.droppingTranscriptsChosenWithTheirAudio(urls) {
@@ -907,8 +915,20 @@ extension LibraryViewModel {
         urls: [URL],
         toFolder folderPath: String = "",
         from origin: ImportOrigin? = nil,
-        addingToReadingList: Bool = false
+        addingToReadingList: Bool = false,
+        askingForPasswords: Bool = true
     ) {
+        // Protected books are asked about first (FR41); the import carries on
+        // from the answer.
+        if askingForPasswords,
+           askForPasswordsBeforeImporting(urls, proceed: { [weak self] in
+               self?.importFiles(
+                   urls: urls, toFolder: folderPath, from: origin,
+                   addingToReadingList: addingToReadingList, askingForPasswords: false
+               )
+           }) {
+            return
+        }
         // Only the first package opens a window; the others are imported.
         var hasOpenedPackage = false
         // A WebVTT or SubRip file chosen with its audio is attached to that

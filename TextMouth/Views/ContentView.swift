@@ -275,6 +275,7 @@ struct LibraryWindowView: View {
         // and are asked one at a time, each in the window its import started
         // in (TODO I01).
         .importDecisionSheet(for: libraryViewModel, in: hostWindow, router: libraryWindowRouter)
+        .importPasswordSheet(for: libraryViewModel)
         // While the library moves, its progress and Cancel, in a sheet that
         // keeps this window's library from changing until the move ends
         // (FR02). It closes by itself when the move does.

@@ -74,6 +74,38 @@ enum ProtectionWording {
         InterfaceText.line("protection.cancel", "Cancel")
     }
 
+    // MARK: Adding Protected Books
+
+    /// The heading of the panel that asks before protected books are added.
+    static var importHeading: String {
+        // Translators: The heading of the panel that asks for the password of books being added.
+        InterfaceText.line("protection.importHeading", "Add protected books")
+    }
+
+    /// The line under that heading.
+    static var importExplanation: String {
+        // Translators: Under the heading of the panel shown when some books being added are protected by a password.
+        InterfaceText.line("protection.importExplanation", "Some of these books are protected by a password.")
+    }
+
+    /// The button that adds the books without unlocking them.
+    static var importLocked: String {
+        // Translators: Button that adds protected books to the library without their password; they stay locked.
+        InterfaceText.line("protection.importLocked", "Import Locked")
+    }
+
+    /// Its hint.
+    static var importLockedHint: String {
+        // Translators: Hint of the Import Locked button: what it does and how to unlock the books later.
+        InterfaceText.line("protection.importLockedHint", "Adds the books locked. You can unlock each one when you open it.")
+    }
+
+    /// What is said when the password opened only some of the books.
+    static var partlyOpened: String {
+        // Translators: Said when a typed password opened some of the protected books being added but not all.
+        InterfaceText.line("protection.partlyOpened", "Some books did not open with this password. Try another, or choose Import Locked.")
+    }
+
     // MARK: Outcomes
 
     /// What a wrong password says, on screen and aloud.

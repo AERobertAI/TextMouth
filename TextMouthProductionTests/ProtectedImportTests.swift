@@ -58,6 +58,73 @@ final class ProtectedImportTests: XCTestCase {
         }
     }
 
+    // MARK: - Asking First
+
+    /// A plain PDF beside a locked one: only the locked one is found, and it is known by its import checksum.
+    func testOnlyProtectedFilesAreFound() throws {
+        let locked = try lockedPDF()
+        let open = try PDFFixtures.makePDF(for: self) { [words] context, _ in
+            PDFFixtures.drawText(words, size: 14, at: CGPoint(x: 72, y: 700), in: context)
+        }
+        let found = LibraryViewModel.protectedFiles(in: [open, locked, folder.appendingPathComponent("missing.pdf")])
+        XCTAssertEqual(found.map(\.url), [locked])
+        XCTAssertEqual(found.first?.key, try FileImportService.importHash(of: locked))
+    }
+
+    /// Waits until `condition` holds of `library`'s published changes.
+    private func wait(for library: LibraryViewModel, _ description: String, until condition: @escaping (LibraryViewModel) -> Bool) {
+        if condition(library) { return }
+        let reached = expectation(description: description)
+        reached.assertForOverFulfill = false
+        let watch = library.objectWillChange.sink { _ in
+            DispatchQueue.main.async { if condition(library) { reached.fulfill() } }
+        }
+        wait(for: [reached], timeout: 30)
+        watch.cancel()
+    }
+
+    /// The question is asked, a wrong password keeps it open and says so, the right one remembers
+    /// the password under the book's checksum and carries the import on exactly once.
+    func testTheQuestionAsksThenCarriesOn() throws {
+        let locked = try lockedPDF()
+        let library = LibraryViewModel(initializeServices: false)
+        var carriedOn = 0
+        XCTAssertTrue(library.askForPasswordsBeforeImporting([locked]) { carriedOn += 1 })
+        XCTAssertEqual(library.importPasswordRequest?.remaining.map(\.url), [locked])
+
+        library.submitImportPassword(UnlockChoice(password: Secret("nope"), remember: true, removePassword: false))
+        wait(for: library, "the refusal") { $0.importPasswordRequest?.state.failure != nil }
+        XCTAssertEqual(library.importPasswordRequest?.state.failure, ProtectionWording.wrongPassword)
+        XCTAssertEqual(carriedOn, 0)
+        XCTAssertTrue(CredentialStores.current.rememberedPasswords().isEmpty)
+
+        library.submitImportPassword(UnlockChoice(password: Secret("secret"), remember: true, removePassword: false))
+        wait(for: library, "the answer") { $0.importPasswordRequest == nil }
+        XCTAssertEqual(carriedOn, 1)
+        let key = try FileImportService.importHash(of: locked)
+        XCTAssertEqual(CredentialStores.current.password(forBook: key), Secret("secret"))
+        XCTAssertFalse(UnlockedSources.isUnlocked(locked), "checking the password holds nothing open")
+    }
+
+    /// Import Locked carries on with nothing remembered; Cancel adds nothing; a list with no protected book asks nothing.
+    func testImportLockedAndCancel() throws {
+        let locked = try lockedPDF()
+        let library = LibraryViewModel(initializeServices: false)
+        var carriedOn = 0
+        XCTAssertTrue(library.askForPasswordsBeforeImporting([locked]) { carriedOn += 1 })
+        library.importProtectedBooksLocked()
+        XCTAssertNil(library.importPasswordRequest)
+        XCTAssertEqual(carriedOn, 1)
+        XCTAssertTrue(CredentialStores.current.rememberedPasswords().isEmpty)
+
+        XCTAssertTrue(library.askForPasswordsBeforeImporting([locked]) { carriedOn += 1 })
+        library.cancelProtectedImport()
+        XCTAssertNil(library.importPasswordRequest)
+        XCTAssertEqual(carriedOn, 1, "Cancel adds nothing")
+
+        XCTAssertFalse(library.askForPasswordsBeforeImporting([folder.appendingPathComponent("missing.pdf")]) { carriedOn += 1 })
+    }
+
     // MARK: - Adding
 
     /// A locked PDF comes in locked: its file's name is its title, no cache or index of text is written, and its package holds none of its words.
