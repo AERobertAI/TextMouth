@@ -31,6 +31,9 @@ from pathlib import Path
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import shard  # noqa: E402
+# Scripts/test, for the lints' Swift masker (difflint.mask_swift), appended so a module of this folder always wins.
+sys.path.append(str(Path(__file__).resolve().parents[1] / "test"))
+import difflint  # noqa: E402
 
 # The repository's root, and the folders holding the two bundles' tests (each folder is named for its bundle).
 ROOT = Path(__file__).resolve().parents[2]
@@ -187,18 +190,66 @@ def without_mac_only(text):
     return "\n".join(kept)
 
 
+# A brace of the masked code (see _scope_runs).
+_BRACE = re.compile(r"[{}]")
+
+
+def _masked(text):
+    """`text` with its comments and string literals blanked (difflint.mask_swift's code view), every offset kept, so a
+    brace or a declaration inside them counts for nothing."""
+    return "\n".join(difflint.mask_swift(text).code)
+
+
+def _scope_runs(code):
+    """The stretches of the masked `code` (`_masked`) each class or extension holds itself, as [(start, end, name)] in
+    file order, `name` None outside them all. A scope's stretch runs from its declaration to its closing brace. A scope
+    declared inside another (a helper class inside a test class) holds only its own braces, and the outer one's stretch
+    resumes after them, so the tests after a nested helper still count for the class they are in. A scope whose closing
+    brace never comes runs to the end. The offsets index the unmasked text too."""
+    # Each opening brace's end: the offset just after its closing brace. A closing brace with none open is passed over.
+    ends, opened = {}, []
+    for brace in _BRACE.finditer(code):
+        if brace.group() == "{":
+            opened.append(brace.start())
+        elif opened:
+            ends[opened.pop()] = brace.end()
+    runs, inside, cursor = [], [], 0  # inside: (name, end) of the scopes open at the cursor, the innermost last
+
+    def leave_before(position):
+        """Closes every open scope that ends at or before `position`, each with the last stretch it holds."""
+        nonlocal cursor
+        while inside and inside[-1][1] <= position:
+            name, end = inside.pop()
+            runs.append((cursor, end, name))
+            cursor = end
+
+    for match in _SCOPE.finditer(code):
+        start = match.start()
+        leave_before(start)
+        runs.append((cursor, start, inside[-1][0] if inside else None))
+        brace = code.find("{", match.end())
+        inside.append((match.group("class") or match.group("ext").split(".")[-1],
+                       ends.get(brace, len(code)) if brace >= 0 else len(code)))
+        cursor = start
+    leave_before(len(code))
+    runs.append((cursor, len(code), None))
+    return [run for run in runs if run[0] < run[1]]
+
+
 def _counts_of(files, base):
     """How many test methods each test class declared in `files` (paths) holds, as {class: count}: a test class is one
     that inherits `base`, or inherits a class of these files that is one (so a shared helper base such as the Mac tests'
     `CloudMaintenanceTestCase` counts). A method counts for the class or extension it follows, wherever that is in the
     files: an extension of a test class adds to its count, an extension of any other type (or a class that inherits
-    something else) adds to none. The runner checks that at least this many results came back (a run that returns fewer
+    something else) adds to none, and a class nested in a test class holds only its own braces (`_scope_runs`). The
+    runner checks that at least this many results came back (a run that returns fewer
     has lost tests)."""
     texts = [without_mac_only(path.read_text(encoding="utf-8", errors="replace")) for path in files]
+    codes = [_masked(text) for text in texts]
     # First every test class of the files, so an extension may come before its class or in another file. A class that
     # inherits one found already is found in a later pass, so the order of the files does not matter.
     declared = [(match.group("class"), match.group("base").split(".")[-1])
-                for text in texts for match in _SCOPE.finditer(text) if match.group("class")]
+                for code in codes for match in _SCOPE.finditer(code) if match.group("class")]
     bases, counts = {base}, {}
     grown = True
     while grown:
@@ -208,13 +259,11 @@ def _counts_of(files, base):
                 counts[name] = 0
                 bases.add(name)
                 grown = True
-    for text in texts:
-        scopes = [(match.start(), match.group("class") or match.group("ext").split(".")[-1])
-                  for match in _SCOPE.finditer(text)]
-        for index, (start, name) in enumerate(scopes):
-            end = scopes[index + 1][0] if index + 1 < len(scopes) else len(text)
+    for text, code in zip(texts, codes):
+        for start, end, name in _scope_runs(code):
             if name in counts:
-                counts[name] += len(TEST_METHOD.findall(text[start:end]))
+                # pos and endpos, not a slice: `^` still matches only where a line of the file begins.
+                counts[name] += len(TEST_METHOD.findall(text, start, end))
     return counts
 
 
@@ -268,12 +317,9 @@ def methods_of(name, root=ROOT):
     methods = []
     for path in files:
         text = without_mac_only(path.read_text(encoding="utf-8", errors="replace"))
-        scopes = [(match.start(), match.group("class") or match.group("ext").split(".")[-1])
-                  for match in _SCOPE.finditer(text)]
-        for index, (start, scope) in enumerate(scopes):
-            end = scopes[index + 1][0] if index + 1 < len(scopes) else len(text)
+        for start, end, scope in _scope_runs(_masked(text)):
             if scope == name:
-                methods += TEST_METHOD.findall(text[start:end])
+                methods += TEST_METHOD.findall(text, start, end)
     return methods
 
 
