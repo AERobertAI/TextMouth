@@ -411,6 +411,14 @@ struct SyncCenterEnvironment {
         applyAgain = true
     }
 
+    /// Says how many books this device's choice of books left undone at the last sweep (FR45): books kept on
+    /// the device for want of a proven copy, and books not downloaded for want of room. Nothing changes when
+    /// the counts do not.
+    func noteSpace(removalsWaiting: Int? = nil, booksShortOfRoom: Int? = nil) {
+        if let removalsWaiting, status.removalsWaiting != removalsWaiting { status.removalsWaiting = removalsWaiting }
+        if let booksShortOfRoom, status.booksShortOfRoom != booksShortOfRoom { status.booksShortOfRoom = booksShortOfRoom }
+    }
+
     /// Stamps Keep on All Devices on or off for `bookIDs`, as a person chose.
     func setKeep(_ keep: Bool, for bookIDs: [UUID]) {
         guard status.isOn, !bookIDs.isEmpty else { return }
@@ -906,6 +914,25 @@ struct SyncCenterEnvironment {
                 }
             }
             continuation.onTermination = { _ in task.cancel() }
+        }
+    }
+
+    /// Removes `package`'s files from this device once the store holds them, proven (FR46), for `StoreBookStorage`.
+    /// Throws a `SyncRemovalRefusal` when it cannot be proven, with the book as it was.
+    nonisolated static func removeDownload(_ package: BookPackage, mayDownload: Bool) async throws {
+        try await SyncCenter.shared.removeBookDownload(package, mayDownload: mayDownload)
+    }
+
+    /// Runs the removal in the sync folder, off the main actor: the files are hashed and read back there.
+    private func removeBookDownload(_ package: BookPackage, mayDownload: Bool) async throws {
+        guard let access, let storeID, let local else { throw SyncRemovalRefusal.folderUnreachable }
+        do {
+            _ = try await access.withFolder { root in
+                let removal = StoreRemoval(folder: SyncFolder(root: root, access: access), storeID: storeID, staging: local.stagingFolder)
+                return try await removal.removeDownload(of: package.url, bookID: package.bookID, mayDownload: mayDownload)
+            }
+        } catch SyncProblem.folderMissing {
+            throw SyncRemovalRefusal.folderUnreachable
         }
     }
 

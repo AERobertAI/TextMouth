@@ -811,6 +811,9 @@ private extension BookCloudError {
         case .keptForReadingList: return "the book is kept on this Mac for the reading list"
         case .keptOnThisMacAndForReadingList: return "the book is kept on this Mac and for the reading list"
         case .packageMissing: return "the package is not on this Mac"
+        case .keptOnAllDevices: return "the book is kept on all devices"
+        case .bookInUse: return "the book is in use"
+        case .syncRemoval(let refusal): return refusal.logReason
         }
     }
 }

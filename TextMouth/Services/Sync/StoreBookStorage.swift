@@ -23,6 +23,8 @@ final class StoreBookStorage: BookCloudStorage {
     private let live: any BookCloudStorage
     /// Starts a fetch of a placeholder; the center's by default.
     private let fetcher: @Sendable (BookPackage) -> AsyncThrowingStream<BookDownloadProgress, Error>
+    /// Removes a whole book's files once the store is proven to hold them (FR46); the center's by default.
+    private let remover: @Sendable (BookPackage, _ mayDownload: Bool) async throws -> Void
     /// Whether sync is on: no pointer is read while it is not (R1, R2).
     private let isSyncOn: @Sendable () -> Bool
     /// The fetches in progress or failed, by book ID.
@@ -32,11 +34,13 @@ final class StoreBookStorage: BookCloudStorage {
     init(
         wrapping live: any BookCloudStorage,
         isSyncOn: @escaping @Sendable () -> Bool = { SyncActivity.isOn },
-        fetcher: @escaping @Sendable (BookPackage) -> AsyncThrowingStream<BookDownloadProgress, Error> = { SyncCenter.fetch($0) }
+        fetcher: @escaping @Sendable (BookPackage) -> AsyncThrowingStream<BookDownloadProgress, Error> = { SyncCenter.fetch($0) },
+        remover: @escaping @Sendable (BookPackage, Bool) async throws -> Void = { try await SyncCenter.removeDownload($0, mayDownload: $1) }
     ) {
         self.live = live
         self.isSyncOn = isSyncOn
         self.fetcher = fetcher
+        self.remover = remover
     }
 
     // MARK: The library's questions
@@ -69,6 +73,19 @@ final class StoreBookStorage: BookCloudStorage {
 
     func removeDownload(of package: BookPackage) throws {
         try live.removeDownload(of: package)
+    }
+
+    /// Frees a synced book's files while it stays in iCloud Drive (FR46): only once the sync folder is proven to
+    /// hold every one of them (`StoreRemoval`). A book being fetched now is refused, as one open is. With sync off the
+    /// live storage answers, as it does for every library not synced.
+    func removeDownloadAsync(of package: BookPackage, mayDownload: Bool) async throws {
+        guard isSyncOn() else { try live.removeDownload(of: package); return }
+        if case .fetching? = phases.withLock({ $0[package.bookID] }) { throw BookCloudError.bookInUse }
+        do {
+            try await remover(package, mayDownload)
+        } catch let refusal as SyncRemovalRefusal {
+            throw BookCloudError.syncRemoval(refusal)
+        }
     }
 
     // MARK: Downloading
