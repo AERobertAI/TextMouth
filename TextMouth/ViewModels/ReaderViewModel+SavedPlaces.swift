@@ -148,8 +148,8 @@ extension ReaderViewModel {
         guard book.readingPosition != before else { return }
         // The place itself, the chapter and the offset in it, not its date or
         // anchor: a newer date at the same place moves nothing and says nothing.
-        let moved = book.readingPosition.map { ($0.chapterIndex, $0.characterOffset) }
-            != before.map { ($0.chapterIndex, $0.characterOffset) }
+        let moved = book.readingPosition?.chapterIndex != before?.chapterIndex
+            || book.readingPosition?.characterOffset != before?.characterOffset
         // The place is within the text this reader shows, as a move of the
         // cursor keeps it.
         if let chapters = content?.chapters, !chapters.isEmpty {
