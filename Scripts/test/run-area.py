@@ -646,15 +646,23 @@ def selftest() -> int:
             check(f"{area.name}: {name} exists and has tests",
                   name in classes and classes[name].runnable)
 
-    # A bad areas file names the line.
+    # A bad areas file names the line. A class listed twice in one area counts
+    # once, since a union merge of areas.conf keeps both branches' copies of a
+    # line (testkit.parse_areas); an area listed twice is still an error.
     with tempfile.TemporaryDirectory() as folder:
         bad = Path(folder) / "bad.conf"
         bad.write_text("[ok] fine\nAThing\nAThing\n")
         try:
-            testkit.parse_areas(bad)
-            check("a class twice in one area is an error", False)
+            repeated = [area.classes for area in testkit.parse_areas(bad)]
+            check("a class twice in one area counts once", repeated == [("AThing",)], repeated)
         except testkit.AreasError as error:
-            check("a duplicate class names its line", ":3:" in str(error), error)
+            check("a class twice in one area counts once", False, error)
+        bad.write_text("[ok] fine\nAThing\n[ok] again\nOther\n")
+        try:
+            testkit.parse_areas(bad)
+            check("an area listed twice is an error", False)
+        except testkit.AreasError as error:
+            check("a repeated area names its line", ":3:" in str(error), error)
         bad.write_text("[Bad_Name] x\n")
         try:
             testkit.parse_areas(bad)
