@@ -58,6 +58,9 @@ final class PhoneExportSession: ObservableObject {
     private var handle: (any PhoneExportTaskHandle)?
     /// What carries the model's progress to the task.
     private var watching: AnyCancellable?
+    /// The most units of progress the task has been told, for the export under way: the task's bar never goes back, though
+    /// the model's own fraction does when the speech ends and the bar returns to the items done.
+    private var reportedUnits: Int64 = 0
 
     /// The export the Library's card shows: one whose sheet closed while it was still under way, until the person closes
     /// the card, which they can do once it has ended. Nil when there is no card.
@@ -89,6 +92,7 @@ final class PhoneExportSession: ObservableObject {
         // A task of an earlier export that nobody ended is let go.
         handle?.finish(success: false)
         handle = nil
+        reportedUnits = 0
         cardModel = nil
         current = model
         // A task only for spoken audio, and only for an export that can begin: Export dimmed asks for nothing.
@@ -111,9 +115,12 @@ final class PhoneExportSession: ObservableObject {
     /// Passes `model`'s progress on to the task while the export runs.
     private func carry(_ model: BookExportModel) {
         guard model.isExporting else { return }
-        handle?.update(PhoneExportTaskMirror.update(
+        let update = PhoneExportTaskMirror.update(
             title: model.title, progressText: model.progressText, fraction: model.progressFraction
-        ))
+        )
+        // The task's bar only moves forward: what it was told stays as the least it will be told.
+        reportedUnits = max(reportedUnits, update.completedUnits)
+        handle?.update(PhoneExportTaskMirror.Update(title: update.title, subtitle: update.subtitle, completedUnits: reportedUnits))
     }
 
     /// The export has ended, as `outcome` says (nil when it never began): the task ends with it, a success only when

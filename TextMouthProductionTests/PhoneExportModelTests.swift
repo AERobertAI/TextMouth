@@ -375,7 +375,7 @@ final class PhoneExportModelTests: XCTestCase {
 
         // The kinds, in the dialog's order, each named and hinted.
         let labels = model.choices.map { model.label(for: $0) }
-        let starts = ["Original file", "Text as Markdown", "Text as plain text"]
+        let starts = ["Original file", "Text as Markdown", "Text as plain text", "Text as spoken audio"]
         XCTAssertEqual(labels.count, starts.count, "\(labels)")
         for (label, start) in zip(labels, starts) {
             XCTAssertTrue(label.hasPrefix(start), "\(label) does not begin \(start)")
