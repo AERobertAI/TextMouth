@@ -477,11 +477,11 @@ final class PhoneLibraryRows: ObservableObject {
             book: book,
             isOpenInWindow: library.openBookIDs.contains(book.id),
             wpm: wordsPerMinute(),
-            // Said in every view but the Reading List, where every book is in it.
-            isInReadingList: !contents.atReadingList && inReadingList,
             // "In Cloud", "Downloading 40%", "Download failed", and "Waiting for Sync", said while sync is on (FR43), by the
             // Mac's own row: its label speaks the note.
-            cloudState: cloudState
+            cloudState: cloudState,
+            // Said in every view but the Reading List, where every book is in it.
+            isInReadingList: !contents.atReadingList && inReadingList
         )
         let progress = BookRow.progressText(for: book)?.visible
         // Whether the book is kept on all devices, said only with sync on (FR43).
