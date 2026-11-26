@@ -126,6 +126,28 @@ final class PhoneLibraryRows: ObservableObject {
                 }
             }
             .store(in: &subscriptions)
+        // The keep commands and the kept state follow sync being on and the set kept (FR43); rows are built afresh when they change.
+        // A book's cloud state changing (a download's progress, a book arriving) is read the same way.
+        BookCloudStates.shared.$states
+            .dropFirst()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                MainActor.assumeIsolated {
+                    self?.rebuild()
+                }
+            }
+            .store(in: &subscriptions)
+        KeptBooks.shared.$syncedBookIDs
+            .removeDuplicates()
+            .combineLatest(SyncCenter.shared.$status.map(\.isOn).removeDuplicates())
+            .dropFirst()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                MainActor.assumeIsolated {
+                    self?.rebuild()
+                }
+            }
+            .store(in: &subscriptions)
         listening
             .removeDuplicates()
             .receive(on: DispatchQueue.main)
@@ -450,24 +472,34 @@ final class PhoneLibraryRows: ObservableObject {
     private func bookRow(_ listed: Book, in contents: Contents) -> PhoneRowValue {
         let book = library.livePositions.applied(to: listed)
         let inReadingList = contents.inReadingList.contains(book.id)
+        let cloudState = BookCloudStates.shared.listedState(of: book.id)
         let macRow = BookRow(
             book: book,
             isOpenInWindow: library.openBookIDs.contains(book.id),
             wpm: wordsPerMinute(),
+            // "In Cloud", "Downloading 40%", "Download failed", and "Waiting for Sync", said while sync is on (FR43), by the
+            // Mac's own row: its label speaks the note.
+            cloudState: cloudState,
             // Said in every view but the Reading List, where every book is in it.
             isInReadingList: !contents.atReadingList && inReadingList
         )
         let progress = BookRow.progressText(for: book)?.visible
+        // Whether the book is kept on all devices, said only with sync on (FR43).
+        let isKept: Bool? = SyncCenter.shared.status.isOn ? PhoneKeepOnAllDevices.isKept(book.id) : nil
         return PhoneRowValue(
             id: .book(book.id),
-            label: macRow.rowAccessibilityLabel,
+            label: isKept == true
+                ? SentenceWording.commaJoined([macRow.rowAccessibilityLabel, SyncWording.keptState])
+                : macRow.rowAccessibilityLabel,
             title: book.title,
-            detail: [book.author, progress].compactMap { $0 }.joined(separator: ", "),
+            detail: [book.author, progress, cloudState?.visibleNote].compactMap { $0 }.joined(separator: ", "),
             commands: PhoneLibraryOffer.bookCommands(
                 for: book,
                 isInReadingList: inReadingList,
                 moves: contents.moves?[book.id],
-                removal: removalPreferences()
+                removal: removalPreferences(),
+                isKeptOnAllDevices: isKept,
+                canDownload: cloudState?.canDownload == true
             )
         )
     }

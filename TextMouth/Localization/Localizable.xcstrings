@@ -65605,6 +65605,162 @@
         }
       }
     },
+    "bookCloudError.offline.downloadedPhone" : {
+      "comment" : "First sentence of why a book can't be downloaded on an iPhone: the iPhone is offline. %@ is the cloud service's name, or \"the cloud service\" when it is unknown.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "هذا الـ iPhone غير متصل بالإنترنت، لذا لا يمكن تنزيل الكتاب من %@."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই iPhone অফলাইন, তাই %@ থেকে বইটি ডাউনলোড করা যাচ্ছে না।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Dieses iPhone ist offline, daher kann das Buch nicht von %@ heruntergeladen werden."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This iPhone is offline, so the book can't be downloaded from %@."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Este iPhone no tiene conexión, así que el libro no se puede descargar desde %@."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "این iPhone آفلاین است، بنابراین کتاب را نمی‌توان از %@ بارگیری کرد."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Cet iPhone est hors ligne ; le livre ne peut donc pas être téléchargé depuis %@."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ה-iPhone הזה לא מחובר לאינטרנט, ולכן אי אפשר להוריד את הספר דרך %@."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "यह iPhone ऑफ़लाइन है, इसलिए पुस्तक %@ से डाउनलोड नहीं की जा सकती।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iPhone ini sedang offline, jadi buku tidak dapat diunduh dari %@."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Questo iPhone è offline, quindi il libro non può essere scaricato tramite %@."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "この iPhone はオフラインのため、%@からブックをダウンロードできません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이 iPhone이 오프라인이므로 %@에서 책을 다운로드할 수 없습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Deze iPhone is offline, dus het boek kan niet worden gedownload van %@."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ten iPhone jest offline, więc nie można pobrać książki (źródło: %@)."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Este iPhone está off-line, então o livro não pode ser baixado via %@."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Этот iPhone не в сети, поэтому книгу нельзя загрузить (%@)."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Den här iPhone är offline, så boken kan inte hämtas från %@."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iPhone เครื่องนี้ออฟไลน์ จึงดาวน์โหลดหนังสือจาก %@ ไม่ได้"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bu iPhone çevrimdışı; bu yüzden kitap şuradan indirilemez: %@."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Цей iPhone не в мережі, тому книгу не можна завантажити (джерело: %@)."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "یہ iPhone آف لائن ہے، اس لیے کتاب %@ سے ڈاؤن لوڈ نہیں ہو سکتی۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iPhone này đang ngoại tuyến, nên không thể tải sách về từ %@."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "这部 iPhone 处于离线状态，因此无法从 %@ 下载这本图书。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "這部 iPhone 處於離線狀態，因此無法從 %@ 下載這本書。"
+          }
+        }
+      }
+    },
     "bookCloudError.offline.internet" : {
       "comment" : "Second sentence of why a book can't be downloaded: what to do about being offline.",
       "extractionState" : "manual",
@@ -65913,6 +66069,162 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "這本書的檔案尚未在這部 Mac 上。%@ 可能仍在同步。"
+          }
+        }
+      }
+    },
+    "bookCloudError.packageMissingPhone" : {
+      "comment" : "Why a book can't be used yet on an iPhone: its files have not arrived. %@ is the cloud service's name, or \"The cloud service\" when it is unknown.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ملفات الكتاب ليست على هذا الـ iPhone بعد. ربما لا يزال %@ يزامنها."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বইটির ফাইল এখনো এই iPhone-এ আসেনি। %@ হয়তো এখনো সেগুলো সিঙ্ক করছে।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Die Dateien des Buchs sind noch nicht auf diesem iPhone. %@ synchronisiert sie möglicherweise noch."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The book's files aren't on this iPhone yet. %@ may still be syncing them."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Los archivos del libro aún no están en este iPhone. Puede que %@ todavía los esté sincronizando."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "فایل‌های کتاب هنوز روی این iPhone نیستند. %@ ممکن است هنوز در حال همگام‌سازی آن‌ها باشد."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Les fichiers du livre ne sont pas encore sur cet iPhone. %@ est peut-être en train de les synchroniser."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "קבצי הספר עדיין לא נמצאים ב-iPhone הזה. %@ אולי עדיין מסנכרן אותם."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "पुस्तक की फ़ाइलें अभी इस iPhone पर नहीं हैं। हो सकता है कि उन्हें सिंक करने का काम %@ में अब भी चल रहा हो।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "File buku belum ada di iPhone ini. %@ mungkin masih menyinkronkannya."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "I file del libro non sono ancora su questo iPhone. %@ potrebbe ancora sincronizzarli."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ブックのファイルはまだこの iPhone にありません。%@が同期中の可能性があります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "책의 파일이 아직 이 iPhone에 없습니다. %@에서 아직 동기화 중일 수 있습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "De bestanden van het boek zijn nog niet op deze iPhone. %@ is ze misschien nog aan het synchroniseren."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Pliki książki nie są jeszcze na tym urządzeniu iPhone. %@ może je jeszcze synchronizować."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Os arquivos do livro ainda não estão neste iPhone. %@ ainda pode estar sincronizando."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Файлов книги ещё нет на этом iPhone. Возможно, %@ всё ещё синхронизирует их."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bokens filer finns inte på den här iPhone än. %@ kanske fortfarande synkar dem."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไฟล์ของหนังสือยังไม่อยู่ใน iPhone เครื่องนี้ %@ อาจกำลังซิงค์ไฟล์เหล่านั้นอยู่"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kitabın dosyaları henüz bu iPhone'da değil. %@ bunları hâlâ eşzamanlıyor olabilir."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Файлів книги ще немає на цьому iPhone. Можливо, їх ще синхронізує %@."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "کتاب کی فائلیں ابھی اس iPhone پر نہیں ہیں۔ %@ شاید انہیں اب بھی سنک کر رہا ہو۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Các tệp của sách chưa có trên iPhone này. %@ có thể vẫn đang đồng bộ chúng."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "这本图书的文件尚未传到这部 iPhone。%@ 可能仍在同步它们。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "這本書的檔案尚未在這部 iPhone 上。%@ 可能仍在同步。"
           }
         }
       }
@@ -547717,6 +548029,630 @@
         }
       }
     },
+    "phoneSync.libraryNotLocal" : {
+      "comment" : "Shown on an iPhone when syncing is refused because the library is kept in a cloud folder.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تتطلب المزامنة مكتبة محفوظة على هذا الـ iPhone، وهذه المكتبة ليست كذلك."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সিঙ্কের জন্য এই iPhone-এ রাখা লাইব্রেরি দরকার, আর এটি তা নয়।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Die Synchronisierung braucht eine Bibliothek, die auf diesem iPhone liegt, und diese liegt woanders."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sync needs a library kept on this iPhone, and this one isn't."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La sincronización necesita una biblioteca guardada en este iPhone, y esta no lo está."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "همگام‌سازی به کتابخانه‌ای نیاز دارد که روی این iPhone نگهداری شود و این کتابخانه چنین نیست."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La synchronisation exige une bibliothèque conservée sur cet iPhone, et celle-ci ne l’est pas."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "סנכרון דורש ספרייה ששמורה ב-iPhone הזה, והספרייה הזו אינה כזו."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "सिंक के लिए इस iPhone पर रखी लाइब्रेरी चाहिए, और यह लाइब्रेरी ऐसी नहीं है।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sinkronisasi membutuhkan pustaka yang disimpan di iPhone ini, dan pustaka ini tidak."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La sincronizzazione richiede una libreria conservata su questo iPhone, e questa non lo è."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "同期には、この iPhone に保存されたライブラリが必要ですが、このライブラリは違います。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "동기화에는 이 iPhone에 보관된 보관함이 필요한데, 이 보관함은 그렇지 않습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Synchronisatie heeft een bibliotheek nodig die op deze iPhone staat, en deze staat ergens anders."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Synchronizacja wymaga biblioteki przechowywanej na tym urządzeniu iPhone, a ta nie jest tu przechowywana."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "A sincronização precisa de uma biblioteca guardada neste iPhone, e esta não está."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Для синхронизации нужна библиотека, хранящаяся на этом iPhone, а эта хранится не здесь."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Synkronisering kräver ett bibliotek som finns på den här iPhone, och det här finns någon annanstans."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "การซิงค์ต้องใช้ไลบรารีที่เก็บอยู่ใน iPhone เครื่องนี้ แต่ไลบรารีนี้ไม่ได้เก็บไว้ที่นี่"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Eşzamanlama için bu iPhone'da tutulan bir kitaplık gerekir ve bu kitaplık burada tutulmuyor."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Для синхронізації потрібна бібліотека, що зберігається на цьому iPhone, а ця зберігається деінде."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "سنک کے لیے اس iPhone پر رکھی لائبریری درکار ہے، اور یہ لائبریری ایسی نہیں ہے۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Đồng bộ cần một thư viện được lưu trên iPhone này, mà thư viện này thì không."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "同步需要保存在这部 iPhone 上的资料库，而这个资料库不是。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "同步需要儲存在這部 iPhone 上的資料庫，而這個資料庫不是。"
+          }
+        }
+      }
+    },
+    "phoneSync.status.notDownloaded" : {
+      "comment" : "The Sync status on an iPhone when changes made on the Mac have not yet downloaded from iCloud Drive.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لم يتم تنزيل بعض التغييرات من الـ Mac بعد. سيحاول TextMouth مرة أخرى."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mac থেকে আসা কিছু পরিবর্তন এখনো ডাউনলোড হয়নি। TextMouth আবার চেষ্টা করবে।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Einige Änderungen vom Mac wurden noch nicht heruntergeladen. TextMouth versucht es erneut."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Some changes from your Mac haven't downloaded yet. TextMouth will try again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Algunos cambios de la Mac aún no se han descargado. TextMouth volverá a intentarlo."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "برخی تغییرها از Mac هنوز بارگیری نشده‌اند. TextMouth دوباره تلاش می‌کند."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Certaines modifications venant du Mac n’ont pas encore été téléchargées. TextMouth va réessayer."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "חלק מהשינויים מה-Mac עדיין לא הורדו. TextMouth ינסה שוב."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mac से आए कुछ बदलाव अभी डाउनलोड नहीं हुए हैं। TextMouth फिर से कोशिश करेगा।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Beberapa perubahan dari Mac belum diunduh. TextMouth akan mencoba lagi."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Alcune modifiche provenienti dal Mac non sono ancora state scaricate. TextMouth riproverà."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mac からの変更の一部がまだダウンロードされていません。TextMouth がもう一度試します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mac에서 온 일부 변경 사항이 아직 다운로드되지 않았습니다. TextMouth가 다시 시도합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sommige wijzigingen van de Mac zijn nog niet gedownload. TextMouth probeert het opnieuw."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Niektóre zmiany z komputera Mac nie zostały jeszcze pobrane. TextMouth spróbuje ponownie."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Algumas alterações do Mac ainda não foram baixadas. O TextMouth tentará novamente."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Некоторые изменения с Mac ещё не загружены. TextMouth повторит попытку."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Vissa ändringar från Mac har inte hämtats än. TextMouth försöker igen."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "การเปลี่ยนแปลงบางอย่างจาก Mac ยังดาวน์โหลดไม่เสร็จ TextMouth จะลองอีกครั้ง"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mac'ten gelen bazı değişiklikler henüz indirilmedi. TextMouth yeniden deneyecek."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Деякі зміни з Mac ще не завантажено. TextMouth спробує ще раз."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mac سے آنے والی کچھ تبدیلیاں ابھی ڈاؤن لوڈ نہیں ہوئیں۔ TextMouth دوبارہ کوشش کرے گا۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Một số thay đổi từ máy Mac chưa được tải về. TextMouth sẽ thử lại."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "来自 Mac 的部分更改尚未下载。TextMouth 会再试一次。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "來自 Mac 的部分更動尚未下載。TextMouth 會再試一次。"
+          }
+        }
+      }
+    },
+    "phoneSync.stopButton" : {
+      "comment" : "The button of the confirmation that stops syncing on an iPhone. Title case.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "إيقاف المزامنة"
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সিঙ্ক বন্ধ করুন"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Synchronisierung beenden"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stop Syncing"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Detener sincronización"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "توقف همگام‌سازی"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Arrêter la synchronisation"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הפסקת הסנכרון"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "सिंक रोकें"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Hentikan Sinkronisasi"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Interrompi sincronizzazione"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "同期を停止"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "동기화 중단"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Stop synchronisatie"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zatrzymaj synchronizację"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Parar sincronização"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Остановить синхронизацию"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Stoppa synkroniseringen"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "หยุดซิงค์"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Eşzamanlamayı Durdur"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Зупинити синхронізацію"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "سنک روکیں"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Dừng đồng bộ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "停止同步"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "停止同步"
+          }
+        }
+      }
+    },
+    "phoneSync.stopQuestion" : {
+      "comment" : "The confirmation asked on an iPhone before syncing stops. Nothing is deleted from the iPhone or from iCloud Drive.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "هل تريد إيقاف مزامنة هذه المكتبة؟ لن يُحذف شيء، لا على هذا الـ iPhone ولا في iCloud Drive."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই লাইব্রেরির সিঙ্ক কি বন্ধ করবেন? এই iPhone-এ বা iCloud Drive-এ কিছুই মোছা হবে না।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Synchronisierung dieser Bibliothek beenden? Es wird nichts gelöscht, weder auf diesem iPhone noch in iCloud Drive."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stop syncing this library? Nothing is deleted, on this iPhone or in iCloud Drive."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "¿Detener la sincronización de esta biblioteca? No se elimina nada, ni en este iPhone ni en iCloud Drive."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "همگام‌سازی این کتابخانه متوقف شود؟ هیچ چیزی حذف نمی‌شود، نه در این iPhone و نه در iCloud Drive."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Arrêter la synchronisation de cette bibliothèque ? Rien n’est supprimé, ni sur cet iPhone ni dans iCloud Drive."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "להפסיק לסנכרן את הספרייה הזו? שום דבר לא יימחק, לא ב-iPhone הזה ולא ב-iCloud Drive."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "क्या इस लाइब्रेरी का सिंक रोकें? इस iPhone पर या iCloud Drive में कुछ भी नहीं हटाया जाएगा।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Hentikan sinkronisasi pustaka ini? Tidak ada yang dihapus, baik di iPhone ini maupun di iCloud Drive."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Vuoi interrompere la sincronizzazione di questa libreria? Non viene eliminato nulla, né su questo iPhone né in iCloud Drive."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "このライブラリの同期を停止しますか？ この iPhone でも iCloud Drive でも、何も削除されません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이 보관함의 동기화를 중단하시겠습니까? 이 iPhone과 iCloud Drive 모두 아무것도 삭제되지 않습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Synchronisatie van deze bibliotheek stoppen? Er wordt niets verwijderd, niet op deze iPhone en niet in iCloud Drive."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zatrzymać synchronizację tej biblioteki? Nic nie zostanie usunięte, ani na tym urządzeniu iPhone, ani w iCloud Drive."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Parar a sincronização desta biblioteca? Nada será apagado, nem neste iPhone nem no iCloud Drive."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Остановить синхронизацию этой библиотеки? Ничего не будет удалено ни на этом iPhone, ни в iCloud Drive."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Vill du stoppa synkroniseringen av det här biblioteket? Ingenting raderas, varken på den här iPhone eller i iCloud Drive."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "หยุดซิงค์ไลบรารีนี้ไหม จะไม่มีอะไรถูกลบ ทั้งใน iPhone เครื่องนี้และใน iCloud Drive"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bu kitaplığın eşzamanlaması durdurulsun mu? Ne bu iPhone'da ne de iCloud Drive'da hiçbir şey silinmez."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Зупинити синхронізацію цієї бібліотеки? Нічого не буде видалено ні на цьому iPhone, ні в iCloud Drive."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "کیا اس لائبریری کا سنک روک دیا جائے؟ اس iPhone پر یا iCloud Drive میں کچھ بھی حذف نہیں ہوگا۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Dừng đồng bộ thư viện này? Sẽ không có gì bị xóa, cả trên iPhone này lẫn trong iCloud Drive."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "要停止同步这个资料库吗？这部 iPhone 和 iCloud Drive 中都不会删除任何内容。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "要停止同步這個資料庫嗎？這部 iPhone 和 iCloud Drive 上都不會刪除任何內容。"
+          }
+        }
+      }
+    },
     "phoneVoice.noVoices" : {
       "comment" : "What the iPhone's voice list says once the voices have loaded and none is installed. \"Settings, Accessibility, Read & Speak\" is the path in iOS's own Settings app, so keep those names as iOS shows them in the language.",
       "extractionState" : "manual",
@@ -561421,6 +562357,162 @@
         }
       }
     },
+    "readerCloud.downloadStarted.chapterPhone" : {
+      "comment" : "Spoken on an iPhone as a chapter's download starts. %@ is the chapter's number, an identifier written without digit grouping.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "الفصل %@ غير موجود على هذا الـ iPhone."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "অধ্যায় %@ এই iPhone-এ নেই।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kapitel %@ ist nicht auf diesem iPhone."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chapter %@ isn't on this iPhone."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El capítulo %@ no está en este iPhone."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "فصل %@ روی این iPhone نیست."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Le chapitre %@ n’est pas sur cet iPhone."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "פרק %@ לא נמצא ב-iPhone הזה."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "अध्याय %@ इस iPhone पर नहीं है।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bab %@ belum ada di iPhone ini."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Il capitolo %@ non è su questo iPhone."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "チャプタ%@はこの iPhone にありません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "챕터 %@은(는) 이 iPhone에 없습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Hoofdstuk %@ staat niet op deze iPhone."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Rozdziału %@ nie ma na tym urządzeniu iPhone."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "O capítulo %@ não está neste iPhone."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Глава %@ ещё не на этом iPhone."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kapitel %@ finns inte på den här iPhone."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "บทที่ %@ ไม่ได้อยู่ใน iPhone เครื่องนี้"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ numaralı bölüm bu iPhone'da değil."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Розділу %@ немає на цьому iPhone."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "باب %@ اس iPhone پر نہیں ہے۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Chương %@ chưa có trên iPhone này."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "第 %@ 章不在这部 iPhone 上。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "第 %@ 章不在這部 iPhone 上。"
+          }
+        }
+      }
+    },
     "readerCloud.downloadStarted.downloading" : {
       "comment" : "Spoken as a book's download starts. %1$@ is the book's title; %2$@ is the cloud service's name, or \"the cloud service\" when it is unknown.",
       "extractionState" : "manual",
@@ -562197,6 +563289,162 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%@ 的一部分不在這部 Mac 上。"
+          }
+        }
+      }
+    },
+    "readerCloud.partNotOnThisPhone" : {
+      "comment" : "Shown and spoken on an iPhone when a file of the book is only in the cloud again right after its download. %@ is the book's title.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "جزء من %@ ليس على هذا الـ iPhone."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@-এর একটি অংশ এই iPhone-এ নেই।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ein Teil von %@ ist nicht auf diesem iPhone."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Part of %@ isn't on this iPhone."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Una parte de %@ no está en este iPhone."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "بخشی از %@ روی این iPhone نیست."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Une partie de %@ n’est pas sur cet iPhone."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "חלק מ-%@ לא נמצא ב-iPhone הזה."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ का एक भाग इस iPhone पर नहीं है।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sebagian %@ belum ada di iPhone ini."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Una parte di %@ non è su questo iPhone."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@の一部がこの iPhone にありません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@의 일부가 이 iPhone에 없습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Een deel van %@ staat niet op deze iPhone."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Część plików książki %@ nie jest na tym urządzeniu iPhone."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Parte de %@ não está neste iPhone."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Часть книги «%@» не на этом iPhone."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "En del av %@ finns inte på den här iPhone."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "บางส่วนของ %@ ไม่ได้อยู่ใน iPhone เครื่องนี้"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kitabın bir kısmı bu iPhone'da değil: %@."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Частини %@ немає на цьому iPhone."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ کا کچھ حصہ اس iPhone پر نہیں ہے۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Một phần của %@ chưa có trên iPhone này."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ 的一部分不在这部 iPhone 上。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ 的一部分不在這部 iPhone 上。"
           }
         }
       }
@@ -563601,6 +564849,162 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%1$@ 尚未下載到這部 Mac 上。%2$@ 可能仍在同步。"
+          }
+        }
+      }
+    },
+    "readerCloud.waitingForSyncPhone" : {
+      "comment" : "Shown and spoken on an iPhone when the book's files have not arrived from the sync service. %1$@ is the book's title; %2$@ is the cloud service's name, or \"The cloud service\" when it is unknown.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لم يصل %1$@ إلى هذا الـ iPhone بعد. ربما لا يزال %2$@ يزامنه."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ এখনো এই iPhone-এ পৌঁছায়নি। %2$@ হয়তো এখনো এটি সিঙ্ক করছে।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ ist noch nicht auf diesem iPhone angekommen. %2$@ synchronisiert es möglicherweise noch."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ hasn't arrived on this iPhone yet. %@ may still be syncing it."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ aún no ha llegado a este iPhone. Puede que %2$@ todavía lo esté sincronizando."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ هنوز به این iPhone نرسیده است. %2$@ ممکن است هنوز در حال همگام‌سازی آن باشد."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ n’est pas encore arrivé sur cet iPhone. %2$@ est peut-être en train de le synchroniser."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ עדיין לא הגיע ל-iPhone הזה. %2$@ אולי עדיין מסנכרן אותו."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ अभी तक इस iPhone पर नहीं आया है। हो सकता है कि उसे सिंक करने का काम %2$@ में अब भी चल रहा हो।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ belum tiba di iPhone ini. %2$@ mungkin masih menyinkronkannya."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ non è ancora arrivato su questo iPhone. %2$@ potrebbe ancora sincronizzarlo."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@はまだこの iPhone に届いていません。%2$@が同期中の可能性があります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@은(는) 아직 이 iPhone에 도착하지 않았습니다. %2$@에서 아직 동기화 중일 수 있습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ is nog niet op deze iPhone aangekomen. %2$@ is het misschien nog aan het synchroniseren."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Pliki książki %1$@ nie są jeszcze na tym urządzeniu iPhone. %2$@ może je jeszcze synchronizować."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ ainda não chegou a este iPhone. %2$@ ainda pode estar sincronizando."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Книга «%1$@» ещё не появилась на этом iPhone. Возможно, %2$@ всё ещё синхронизирует её."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ har inte kommit till den här iPhone än. %2$@ kanske fortfarande synkar den."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ ยังมาไม่ถึง iPhone เครื่องนี้ %2$@ อาจกำลังซิงค์อยู่"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ henüz bu iPhone'a gelmedi. %2$@ hâlâ eşzamanlıyor olabilir."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Книга «%1$@» ще не надійшла на цей iPhone. Можливо, її ще синхронізує %2$@."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ کی فائلیں ابھی تک اس iPhone پر نہیں پہنچیں۔ %2$@ شاید اسے اب بھی سنک کر رہا ہو۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ chưa đến iPhone này. %2$@ có thể vẫn đang đồng bộ."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ 尚未传到这部 iPhone。%2$@ 可能仍在同步它。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ 尚未下載到這部 iPhone 上。%2$@ 可能仍在同步。"
           }
         }
       }
@@ -723477,6 +724881,162 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "這裡已有名為 TextMouth Sync 的檔案夾。若要使用，請選擇「加入同步檔案夾」。"
+          }
+        }
+      }
+    },
+    "sync.iCloudDriveFull" : {
+      "comment" : "Shown when Set Up Sync or Join Sync Folder fails because iCloud Drive has no room left.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "مساحة iCloud Drive ممتلئة. حرّر بعض المساحة في iCloud Drive ثم حاول مرة أخرى."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive ভরে গেছে। iCloud Drive-এ কিছু জায়গা খালি করে আবার চেষ্টা করুন।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive ist voll. Gib in iCloud Drive etwas Speicher frei und versuche es dann erneut."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iCloud Drive is full. Free some space in iCloud Drive, then try again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive está lleno. Libera espacio en iCloud Drive y vuelve a intentarlo."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive پر است. کمی فضا در iCloud Drive آزاد کنید و دوباره تلاش کنید."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive est plein. Libérez de l’espace dans iCloud Drive, puis réessayez."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive מלא. פנו מקום ב-iCloud Drive ונסו שוב."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive भर गया है। iCloud Drive में कुछ जगह खाली करें, फिर दोबारा कोशिश करें।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive penuh. Kosongkan sebagian ruang di iCloud Drive, lalu coba lagi."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive è pieno. Libera dello spazio in iCloud Drive e riprova."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive がいっぱいです。iCloud Drive の空き容量を増やしてから、もう一度お試しください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive가 가득 찼습니다. iCloud Drive에서 공간을 확보한 다음 다시 시도하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive is vol. Maak ruimte vrij in iCloud Drive en probeer het opnieuw."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive jest pełny. Zwolnij miejsce w iCloud Drive i spróbuj ponownie."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "O iCloud Drive está cheio. Libere espaço no iCloud Drive e tente de novo."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive заполнен. Освободите место в iCloud Drive и повторите попытку."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive är fullt. Frigör utrymme i iCloud Drive och försök igen."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive เต็มแล้ว ให้เพิ่มพื้นที่ว่างใน iCloud Drive แล้วลองอีกครั้ง"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive dolu. iCloud Drive'da biraz yer açıp yeniden deneyin."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive заповнено. Звільніть місце в iCloud Drive і повторіть спробу."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive بھر گیا ہے۔ iCloud Drive میں کچھ جگہ خالی کریں، پھر دوبارہ کوشش کریں۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive đã đầy. Hãy giải phóng bớt dung lượng trong iCloud Drive rồi thử lại."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive 已满。请在 iCloud Drive 中腾出一些空间，然后重试。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive 已滿。請在 iCloud Drive 中釋出一些空間，然後再試一次。"
           }
         }
       }

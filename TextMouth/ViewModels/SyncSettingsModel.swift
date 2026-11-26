@@ -33,6 +33,8 @@ final class SyncSettingsModel: ObservableObject {
     private let stopSync: () -> Void
     /// The command Sync Now gives the sync.
     private let syncNowCommand: () -> Void
+    /// Whether the words are the iPhone's ("this iPhone"); a Mac's by default there.
+    private let isPhone: Bool
 
     /// The name of the folder Set Up Sync makes in the folder chosen.
     static let folderName = "TextMouth Sync" // l10n: no (the folder's name; the words say it is not translated)
@@ -49,8 +51,10 @@ final class SyncSettingsModel: ObservableObject {
         setUp: @escaping (URL) async throws -> Void = { try await SyncCenter.shared.setUp(in: $0) },
         join: @escaping (URL) async throws -> Void = { try await SyncCenter.shared.join($0) },
         stop: @escaping () -> Void = { SyncCenter.shared.stop() },
-        syncNow: @escaping () -> Void = { SyncCenter.shared.syncNow() }
+        syncNow: @escaping () -> Void = { SyncCenter.shared.syncNow() },
+        isPhone: Bool = ThisDevice.isPhone
     ) {
+        self.isPhone = isPhone
         self.libraryLocation = libraryLocation
         self.locationOf = locationOf
         self.exists = exists
@@ -67,7 +71,7 @@ final class SyncSettingsModel: ObservableObject {
     /// be kept on this device (not in a cloud folder or on another volume),
     /// and the folder must be in iCloud Drive.
     func refusal(forChosen folder: URL) -> String? {
-        if libraryLocation() != .local { return SyncWording.libraryNotLocal }
+        if libraryLocation() != .local { return SyncWording.libraryNotLocal(isPhone: isPhone) }
         if locationOf(folder) != .cloud(.iCloudDrive) { return SyncWording.notInICloudDrive }
         return nil
     }
@@ -125,7 +129,7 @@ final class SyncSettingsModel: ObservableObject {
     // MARK: Helpers
 
     /// Says `sentence` as the section's message, announced.
-    private func say(_ sentence: String) {
+    func say(_ sentence: String) {
         message = sentence
         VoiceOverAnnouncer.announce(sentence)
     }
@@ -146,10 +150,17 @@ final class SyncSettingsModel: ObservableObject {
             message = nil
             return true
         } catch let problem as SyncProblem {
-            return refuse(Self.sentence(for: problem, isPhone: false))
+            return refuse(Self.sentence(for: problem, isPhone: isPhone))
         } catch {
-            return refuse(SyncWording.notASyncFolder)
+            return refuse(Self.sentence(for: error, isPhone: isPhone))
         }
+    }
+
+    /// The sentence for any error a setting up or joining ended in: a `SyncProblem`'s own, and for another error the
+    /// sentence that says the folder is not a usable sync folder, never the system's text.
+    static func sentence(for error: Error, isPhone: Bool) -> String {
+        guard let problem = error as? SyncProblem else { return SyncWording.notASyncFolder }
+        return sentence(for: problem, isPhone: isPhone)
     }
 
     /// The sentence that tells why a setting up or joining failed, on a Mac or an iPhone.
@@ -161,8 +172,9 @@ final class SyncSettingsModel: ObservableObject {
         case .notDownloaded: return SyncWording.waitingForFiles
         case .folderMissing, .offline: return SyncWording.statusFolderMissing(device: SyncWording.thisDevice(isPhone: isPhone))
         case .notInICloudDrive: return SyncWording.notInICloudDrive
-        case .libraryNotLocal: return SyncWording.libraryNotLocal
-        case .notASyncFolder, .damaged, .outOfSpace: return SyncWording.notASyncFolder
+        case .libraryNotLocal: return SyncWording.libraryNotLocal(isPhone: isPhone)
+        case .outOfSpace: return SyncWording.iCloudDriveFull
+        case .notASyncFolder, .damaged: return SyncWording.notASyncFolder
         }
     }
 }

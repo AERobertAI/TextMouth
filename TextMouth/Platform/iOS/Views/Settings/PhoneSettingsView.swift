@@ -225,6 +225,9 @@ struct PhoneSettingsView: View {
         case .about:
             versionRow
             shareLogsRow
+        case .sync:
+            // Its own view: the folder picker, the confirmation, and the failures are its own, and so is the focus they return.
+            PhoneSyncSettingsSection()
         }
     }
 

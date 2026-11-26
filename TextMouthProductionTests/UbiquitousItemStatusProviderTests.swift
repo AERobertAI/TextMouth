@@ -136,6 +136,19 @@ final class UbiquitousItemStatusProviderTests: XCTestCase {
         XCTAssertEqual(unnamed.location(of: folder), .otherVolume(name: "Archive Disk"))
     }
 
+    /// An iPhone's app container is on the data volume, which the startup volume's root does not name: the phone's own
+    /// library is local there, or every Set Up and Join would be refused (R6, FR43), while a Mac still calls the same
+    /// folder another volume.
+    func testAnIPhonesOwnContainerIsLocal() {
+        let provider = Self.provider(knowing: [
+            "/": Metadata(volumeURL: Self.startupVolume),
+            "/private/var/mobile/Containers/Data/Application/ABC/Library/Application Support/.TextMouth": Metadata(volumeURL: Self.archiveDisk, volumeName: "Data"),
+        ])
+        let container = URL(fileURLWithPath: "/private/var/mobile/Containers/Data/Application/ABC/Library/Application Support/.TextMouth")
+        XCTAssertEqual(provider.location(of: container, isPhone: true), .local)
+        XCTAssertEqual(provider.location(of: container, isPhone: false), .otherVolume(name: "Data"))
+    }
+
     /// A folder on the startup volume is local, also when its volume's URL
     /// is spelled with a trailing slash.
     func testAFolderOnTheStartupVolumeIsLocal() {

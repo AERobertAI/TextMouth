@@ -253,15 +253,18 @@ enum ReaderCloudWording {
     }
 
     /// Spoken as a download starts.
-    static func downloadStarted(title: String, provider: CloudProvider?, chapterNumber: Int?) -> String {
+    static func downloadStarted(title: String, provider: CloudProvider?, chapterNumber: Int?, isPhone: Bool = ThisDevice.isPhone) -> String {
         let service = CloudProvider.nameInSentence(provider)
         // Translators: Spoken as a book's download starts. %1$@ is the book's title; %2$@ is the cloud service's name, or "the cloud service" when it is unknown.
         let downloading = InterfaceText.line("readerCloud.downloadStarted.downloading", "Downloading \(title) from \(service).")
         guard let chapterNumber else { return downloading }
         return SentenceWording.joined([
             // A chapter's number names the chapter, so it is written without digit grouping.
-            // Translators: Spoken as a chapter's download starts. %@ is the chapter's number, an identifier written without digit grouping.
-            InterfaceText.line("readerCloud.downloadStarted.chapter", "Chapter \(String(chapterNumber)) isn't on this Mac."),
+            isPhone
+                // Translators: Spoken on an iPhone as a chapter's download starts. %@ is the chapter's number, an identifier written without digit grouping.
+                ? InterfaceText.line("readerCloud.downloadStarted.chapterPhone", "Chapter \(String(chapterNumber)) isn't on this iPhone.")
+                // Translators: Spoken as a chapter's download starts. %@ is the chapter's number, an identifier written without digit grouping.
+                : InterfaceText.line("readerCloud.downloadStarted.chapter", "Chapter \(String(chapterNumber)) isn't on this Mac."),
             downloading,
         ])
     }
@@ -304,16 +307,24 @@ enum ReaderCloudWording {
     }
 
     /// Shown and spoken when the book's package has not arrived yet.
-    static func waitingForSync(title: String, provider: CloudProvider?) -> String {
+    static func waitingForSync(title: String, provider: CloudProvider?, isPhone: Bool = ThisDevice.isPhone) -> String {
+        guard !isPhone else {
+            // Translators: Shown and spoken on an iPhone when the book's files have not arrived from the sync service. %1$@ is the book's title; %2$@ is the cloud service's name, or "The cloud service" when it is unknown.
+            return InterfaceText.line("readerCloud.waitingForSyncPhone", "\(title) hasn't arrived on this iPhone yet. \(CloudProvider.nameStartingSentence(provider)) may still be syncing it.")
+        }
         // Translators: Shown and spoken when the book's files have not arrived from the sync service. %1$@ is the book's title; %2$@ is the cloud service's name, or "The cloud service" when it is unknown.
-        InterfaceText.line("readerCloud.waitingForSync", "\(title) hasn't arrived on this Mac yet. \(CloudProvider.nameStartingSentence(provider)) may still be syncing it.")
+        return InterfaceText.line("readerCloud.waitingForSync", "\(title) hasn't arrived on this Mac yet. \(CloudProvider.nameStartingSentence(provider)) may still be syncing it.")
     }
 
     /// Shown and spoken when a file is only in the cloud again right after
     /// its download.
-    static func partNotOnThisMac(title: String) -> String {
+    static func partNotOnThisMac(title: String, isPhone: Bool = ThisDevice.isPhone) -> String {
+        guard !isPhone else {
+            // Translators: Shown and spoken on an iPhone when a file of the book is only in the cloud again right after its download. %@ is the book's title.
+            return InterfaceText.line("readerCloud.partNotOnThisPhone", "Part of \(title) isn't on this iPhone.")
+        }
         // Translators: Shown and spoken when a file of the book is only in the cloud again right after its download. %@ is the book's title.
-        InterfaceText.line("readerCloud.partNotOnThisMac", "Part of \(title) isn't on this Mac.")
+        return InterfaceText.line("readerCloud.partNotOnThisMac", "Part of \(title) isn't on this Mac.")
     }
 
     /// What `failure` is shown and spoken as.

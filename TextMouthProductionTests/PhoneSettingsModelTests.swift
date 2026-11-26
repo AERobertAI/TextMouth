@@ -18,7 +18,7 @@ final class PhoneSettingsModelTests: XCTestCase {
             PhoneSettingsSection.allCases.map(\.title),
             [
                 "Voice", "Navigation", "Rewind on Resume", "Punctuation Pauses", "End of Book", "Sleep Timer",
-                "Reading", "Braille", "Times", "Pages", "Removal Behavior", "Statistics", "Interface Language", "About",
+                "Reading", "Braille", "Times", "Pages", "Removal Behavior", "Statistics", "Interface Language", "About", "Sync",
             ]
         )
     }

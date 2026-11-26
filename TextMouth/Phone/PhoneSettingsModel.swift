@@ -32,6 +32,8 @@ enum PhoneSettingsSection: CaseIterable, Identifiable {
     case statistics
     case interfaceLanguage
     case about
+    /// Syncing the library with the Mac through iCloud Drive (FR43), after About as the build plan puts it.
+    case sync
 
     var id: Self { self }
 
@@ -52,6 +54,7 @@ enum PhoneSettingsSection: CaseIterable, Identifiable {
         case .statistics: return PhoneSettingsWording.statisticsSection
         case .interfaceLanguage: return InterfaceLanguagePickerWording.title
         case .about: return PhoneSettingsWording.aboutSection
+        case .sync: return SyncWording.sectionTitle
         }
     }
 }

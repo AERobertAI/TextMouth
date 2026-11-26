@@ -415,14 +415,17 @@ enum BookCloudError: Error, Equatable, Sendable {
     /// A sentence the interface shows and VoiceOver speaks, naming `provider`
     /// (or "the cloud service" when it is unknown, capitalized where it
     /// begins a sentence, as a braille display shows).
-    func explanation(in provider: CloudProvider?) -> String {
+    func explanation(in provider: CloudProvider?, isPhone: Bool = ThisDevice.isPhone) -> String {
         let service = CloudProvider.nameInSentence(provider)
         let serviceStartingSentence = CloudProvider.nameStartingSentence(provider)
         switch self {
         case .offline:
             return SentenceWording.joined([
-                // Translators: First sentence of why a book can't be downloaded: the Mac is offline. %@ is the cloud service's name, or "the cloud service" when it is unknown.
-                InterfaceText.line("bookCloudError.offline.downloaded", "This Mac is offline, so the book can't be downloaded from \(service)."),
+                isPhone
+                    // Translators: First sentence of why a book can't be downloaded on an iPhone: the iPhone is offline. %@ is the cloud service's name, or "the cloud service" when it is unknown.
+                    ? InterfaceText.line("bookCloudError.offline.downloadedPhone", "This iPhone is offline, so the book can't be downloaded from \(service).")
+                    // Translators: First sentence of why a book can't be downloaded: the Mac is offline. %@ is the cloud service's name, or "the cloud service" when it is unknown.
+                    : InterfaceText.line("bookCloudError.offline.downloaded", "This Mac is offline, so the book can't be downloaded from \(service)."),
                 // Translators: Second sentence of why a book can't be downloaded: what to do about being offline.
                 InterfaceText.line("bookCloudError.offline.internet", "Connect to the internet and try again."),
             ])
@@ -476,6 +479,10 @@ enum BookCloudError: Error, Equatable, Sendable {
             // Translators: Why Remove Download failed. %1$@ is the cloud service's name, or "The cloud service" when it is unknown; %2$@ is the service's own message.
             return InterfaceText.line("bookCloudError.removalFailed", "\(serviceStartingSentence) couldn't remove the book's download: \(message)")
         case .packageMissing:
+            if isPhone {
+                // Translators: Why a book can't be used yet on an iPhone: its files have not arrived. %@ is the cloud service's name, or "The cloud service" when it is unknown.
+                return InterfaceText.line("bookCloudError.packageMissingPhone", "The book's files aren't on this iPhone yet. \(serviceStartingSentence) may still be syncing them.")
+            }
             // Translators: Why a book can't be used yet: its files have not arrived. %@ is the cloud service's name, or "The cloud service" when it is unknown.
             return InterfaceText.line("bookCloudError.packageMissing", "The book's files aren't on this Mac yet. \(serviceStartingSentence) may still be syncing them.")
         }

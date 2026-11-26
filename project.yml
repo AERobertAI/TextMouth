@@ -1200,6 +1200,9 @@ targets:
       - TextMouthProductionTests/PhoneSettingsVocabularyTests.swift
       - TextMouthProductionTests/PhoneSleepDeadlineTests.swift
       - TextMouthProductionTests/PhoneSleepTimerModelTests.swift
+      - TextMouthProductionTests/PhoneReaderCloudPhaseTests.swift
+      - TextMouthProductionTests/PhoneSyncLifeCycleTests.swift
+      - TextMouthProductionTests/PhoneSyncSettingsTests.swift
       - TextMouthProductionTests/PlaceRelocatorBookTests.swift
       - TextMouthProductionTests/PlaceRelocatorHeadingTests.swift
       - TextMouthProductionTests/PlaceRelocatorSharedRuleTests.swift
