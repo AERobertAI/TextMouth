@@ -36,6 +36,16 @@ final class PhoneExportSpeechTests: XCTestCase {
 
     // MARK: - The Rows
 
+    /// The row of `control` among `rows`, nil when there is none.
+    private func row(_ control: PhoneExportOffer.SpeechRow.Control, in rows: [PhoneExportOffer.SpeechRow]) -> PhoneExportOffer.SpeechRow? {
+        rows.first { $0.control == control }
+    }
+
+    /// The notes among `rows`, in order.
+    private func notes(in rows: [PhoneExportOffer.SpeechRow]) -> [PhoneExportOffer.SpeechRow] {
+        rows.filter { $0.control == .note }
+    }
+
     /// A book with headings has the Mac's rows in the Mac's order, each with its label, its value, and its hint, and the
     /// licence line in the iPhone's words: the sheet draws these and nothing else, so this is what VoiceOver says.
     func testTheRowsAreTheMacsInTheMacsOrderWithTheirWords() {
@@ -45,20 +55,19 @@ final class PhoneExportSpeechTests: XCTestCase {
             .choice(.format), .choice(.from), .choice(.through), .speed, .pitch, .note, .note
         ])
         XCTAssertEqual(rows.map(\.label).prefix(5), ["Format", "From", "To", "Speed", "Pitch"])
-        XCTAssertTrue(rows[0].value?.hasPrefix("M4B") == true, "Format says \(String(describing: rows[0].value))")
-        XCTAssertEqual(rows[1].value, "Beginning of the book")
-        XCTAssertEqual(rows[2].value, "End of the book")
-        XCTAssertEqual(rows[3].value, "200 words per minute")
-        XCTAssertEqual(rows[4].value, SpeechExportWording.pitchValue(1.0))
-        XCTAssertEqual(rows.dropLast(2).map(\.hint), [
+        XCTAssertTrue(row(.choice(.format), in: rows)?.value?.hasPrefix("M4B") == true, "Format says \(String(describing: row(.choice(.format), in: rows)?.value))")
+        XCTAssertEqual(row(.choice(.from), in: rows)?.value, "Beginning of the book")
+        XCTAssertEqual(row(.choice(.through), in: rows)?.value, "End of the book")
+        XCTAssertEqual(row(.speed, in: rows)?.value, "200 words per minute")
+        XCTAssertEqual(row(.pitch, in: rows)?.value, SpeechExportWording.pitchValue(1.0))
+        XCTAssertEqual(rows.filter { $0.control != .note }.map(\.hint), [
             SpeechExportWording.formatHint, SpeechExportWording.fromHint, SpeechExportWording.throughHint,
             SpeechExportWording.speedHint, SpeechExportWording.pitchHint
         ])
-        XCTAssertEqual(rows[1].hint, "Where the audio begins: the book's beginning, or a heading.")
-        XCTAssertEqual(rows[2].hint, "The heading whose section ends the audio, with its subheadings, or the end of the book.")
+        XCTAssertEqual(row(.choice(.from), in: rows)?.hint, "Where the audio begins: the book's beginning, or a heading.")
+        XCTAssertEqual(row(.choice(.through), in: rows)?.hint, "The heading whose section ends the audio, with its subheadings, or the end of the book.")
         // The notes: the voice, then the licence in the iPhone's words (a test on the Mac asks for them).
-        XCTAssertEqual(rows[5].label, SpeechExportWording.voiceLine(moira))
-        XCTAssertEqual(rows[6].label, SpeechExportWording.licence)
+        XCTAssertEqual(notes(in: rows).map(\.label), [SpeechExportWording.voiceLine(moira), SpeechExportWording.licence])
         XCTAssertTrue(rows.allSatisfy { $0.control != .note || ($0.value == nil && $0.hint.isEmpty) })
     }
 
@@ -66,15 +75,19 @@ final class PhoneExportSpeechTests: XCTestCase {
     /// past the To moves the To with it, as on the Mac.
     func testTheFromAndToRowsFollowTheRangeInReadingOrder() throws {
         let state = makeState()
-        let notes = try XCTUnwrap(state.headings.dropFirst().first)
+        let first = try XCTUnwrap(state.headings.first)
+        let second = try XCTUnwrap(state.headings.dropFirst().first)
 
-        state.setFrom(notes.id)
+        state.setFrom(second.id)
 
         let rows = PhoneExportOffer.speechRows(state)
-        XCTAssertEqual(rows[1].value, SpeechExportWording.headingItem(notes, isSkipped: false))
-        XCTAssertEqual(rows[2].value, "End of the book")
-        state.setThrough(state.headings[0].id)
-        XCTAssertEqual(PhoneExportOffer.speechRows(state)[1].value, SpeechExportWording.headingItem(state.headings[0], isSkipped: false), "To before From moves From")
+        XCTAssertEqual(row(.choice(.from), in: rows)?.value, SpeechExportWording.headingItem(second, isSkipped: false))
+        XCTAssertEqual(row(.choice(.through), in: rows)?.value, "End of the book")
+        state.setThrough(first.id)
+        XCTAssertEqual(
+            row(.choice(.from), in: PhoneExportOffer.speechRows(state))?.value,
+            SpeechExportWording.headingItem(first, isSkipped: false), "To before From moves From"
+        )
     }
 
     /// A book without headings says the whole of it is exported, in place of From and To.
@@ -82,7 +95,7 @@ final class PhoneExportSpeechTests: XCTestCase {
         let rows = PhoneExportOffer.speechRows(makeState(headings: []))
 
         XCTAssertEqual(rows.map(\.control), [.choice(.format), .note, .speed, .pitch, .note, .note])
-        XCTAssertEqual(rows[1].label, "This book has no headings, so all of it is exported.")
+        XCTAssertEqual(notes(in: rows).first?.label, "This book has no headings, so all of it is exported.")
         XCTAssertFalse(rows.contains { $0.label == "From" || $0.label == "To" })
     }
 
@@ -95,8 +108,8 @@ final class PhoneExportSpeechTests: XCTestCase {
         state.format = .mp3
 
         let rows = PhoneExportOffer.speechRows(state)
-        XCTAssertEqual(rows[1].control, .note)
-        XCTAssertEqual(rows[1].label, SpeechExportWording.mp3ChapterLimit(headings: 300))
+        XCTAssertEqual(rows.dropFirst().first?.control, .note)
+        XCTAssertEqual(rows.dropFirst().first?.label, SpeechExportWording.mp3ChapterLimit(headings: 300))
     }
 
     /// A voice that cannot be recorded, or none at all, is the refusal's own sentence in the voice line, in the
@@ -106,7 +119,10 @@ final class PhoneExportSpeechTests: XCTestCase {
 
         let rows = PhoneExportOffer.speechRows(makeState(voice: personal))
 
-        XCTAssertEqual(rows[rows.count - 2].label, SpeechExportError.personalVoice(name: "Ottilie").description(onPhone: SpeechRefusalWording.runsOnPhone))
+        XCTAssertEqual(
+            notes(in: rows).first?.label,
+            SpeechExportError.personalVoice(name: "Ottilie").description(onPhone: SpeechRefusalWording.runsOnPhone)
+        )
     }
 
     /// The pitch steps as the reader's and Settings' pitch sliders do.
