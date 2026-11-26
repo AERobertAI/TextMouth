@@ -1,3 +1,4 @@
+import os
 import XCTest
 @testable import TextMouth
 
@@ -10,7 +11,7 @@ final class SyncFolderIOTests: XCTestCase {
         let presentedItemURL: URL?
         let presentedItemOperationQueue = OperationQueue()
         init(file: URL) { presentedItemURL = file }
-        func relinquishPresentedItem(toWriter writer: @escaping ((() -> Void)?) -> Void) {
+        func relinquishPresentedItem(toWriter writer: @escaping @Sendable ((@Sendable () -> Void)?) -> Void) {
             // Never calls `writer`: the coordinator waits on this.
         }
     }
@@ -34,6 +35,42 @@ final class SyncFolderIOTests: XCTestCase {
         let took = started.duration(to: ContinuousClock.now)
         XCTAssertLessThan(took, .seconds(10), "the call gave up at its limit")
         XCTAssertGreaterThanOrEqual(took, .milliseconds(400), "and not before it")
+    }
+
+    /// A download that stays `.downloading` with no byte arriving is stalled and times out; one whose bytes move is not.
+    func testADownloadStuckInDownloadingTimesOutButOneThatMovesDoesNot() async throws {
+        let file = URL(fileURLWithPath: "/Users/reader/Scratch/stuck.bin")
+        let polls = OSAllocatedUnfairLock(initialState: 0)
+        // Stuck: the state says downloading for ever, the bytes never change.
+        do {
+            try await SyncFolderIO.waitUntilHere(
+                file, within: .milliseconds(300), items: UbiquitousItemStatusProvider(), reachability: .online, pollInterval: .milliseconds(30),
+                state: { _ in polls.withLock { $0 += 1; return $0 == 1 ? .notDownloaded : .downloading } }, progress: { _ in 100 }
+            )
+            XCTFail("a stuck download must time out")
+        } catch { XCTAssertEqual(error as? SyncProblem, .notDownloaded(device: "Scratch")) }
+
+        // Moving: bytes grow at every look, so the clock restarts, until the file is here.
+        let looks = OSAllocatedUnfairLock(initialState: 0)
+        try await SyncFolderIO.waitUntilHere(
+            file, within: .milliseconds(300), items: UbiquitousItemStatusProvider(), reachability: .online, pollInterval: .milliseconds(30),
+            state: { _ in looks.withLock { $0 += 1; return $0 < 30 ? (($0 == 1) ? .notDownloaded : .downloading) : .downloaded } },
+            progress: { _ in Int64(looks.withLock { $0 }) }
+        )
+    }
+
+    /// The network going while a download waits is said at once, not at the limit.
+    func testGoingOfflineInsideTheWaitIsReportedAtOnce() async throws {
+        let file = URL(fileURLWithPath: "/Users/reader/Scratch/stuck.bin")
+        let asks = OSAllocatedUnfairLock(initialState: 0)
+        let reachability = NetworkReachability(isOnline: { asks.withLock { $0 += 1; return $0 < 3 } })
+        do {
+            try await SyncFolderIO.waitUntilHere(
+                file, within: .seconds(30), items: UbiquitousItemStatusProvider(), reachability: reachability, pollInterval: .milliseconds(10),
+                state: { _ in .notDownloaded }, progress: { _ in 1 }
+            )
+            XCTFail("offline")
+        } catch { XCTAssertEqual(error as? SyncProblem, .offline) }
     }
 
     /// The test seam names a folder only in a Debug build, and a folder inside it counts.

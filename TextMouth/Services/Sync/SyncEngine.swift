@@ -19,11 +19,12 @@ struct SyncExchangeResult: Equatable, Sendable {
     var tookNewIdentity = false
 }
 
-/// The steps of a run, in order, after each of which a test stops the engine to see what a crash there leaves
-/// (section 11): the record, the outbox write, the copy into the folder, the upload check, the read of other
-/// devices' files, the merge, the apply, and the saves of the registers, the clock, and the cursors.
+/// The steps of a run, in the order the code reaches them, after each of which a test stops the engine to see what a
+/// crash there leaves (section 11): the outbox write (inside a record), the end of the record, the copy into the
+/// folder, the upload check, the read of other devices' files, the merge, the saves of the registers, the clock,
+/// and the cursors, and then the apply.
 enum SyncStep: String, CaseIterable, Sendable {
-    case record, outboxWrite, copy, upload, read, merge, apply, registers, clock, cursors
+    case outboxWrite, record, copy, upload, read, merge, registers, clock, cursors, apply
 }
 
 /// What recording the library did.
@@ -81,6 +82,11 @@ actor SyncEngine {
     private let snapshotEvery = 100
     /// How long a snapshot may go without being renewed, in seconds.
     private let snapshotInterval: TimeInterval = 86_400
+    /// The book removals the last record held back, and the ones the person has confirmed.
+    private var heldKeys: Set<SyncKey> = []
+    private var confirmedKeys: Set<SyncKey> = []
+    /// How many runs in a row found a file of this device in the folder that could not be read.
+    private var unreadableRuns = 0
     /// The most book removals one record may send: more, or most of the library at once, is held back.
     static let massRemovalLimit = 20
 
@@ -214,7 +220,7 @@ actor SyncEngine {
     /// and none of those is reported removed until `settleLaunch` (R7). A record that would remove
     /// a great many books at once is held back and reported, not sent.
     @discardableResult
-    func record(library: Library, allowMassRemoval: Bool = false) throws -> SyncRecordResult {
+    func record(library: Library) throws -> SyncRecordResult {
         let projection = SyncProjection.of(library, contents: contents())
         launchHold.observeLaunch(baseline: baseline, now: projection)
         var changes = SyncMerge.changes(from: baseline, to: projection, hold: launchHold)
@@ -226,13 +232,16 @@ actor SyncEngine {
         }.keys
         let known = baseline.values.keys.filter { if case .book(_, .presence) = $0 { return true } else { return false } }.count
         var held = 0
-        // `allowMassRemoval` is the person's word, given with Sync Now, that the removals are meant.
-        if !allowMassRemoval, removals.count > Self.massRemovalLimit || (known >= 4 && removals.count * 2 > known) {
-            for key in removals { changes[key] = nil }
-            held = removals.count
+        // The removals the person confirmed with Sync Now (`confirmHeldRemovals`) are theirs; any other is held.
+        let unconfirmed = removals.filter { !confirmedKeys.contains($0) }
+        if removals.count > Self.massRemovalLimit || (known >= 4 && removals.count * 2 > known), !unconfirmed.isEmpty {
+            for key in unconfirmed { changes[key] = nil }
+            held = unconfirmed.count
+            heldKeys = Set(unconfirmed)
             DiagnosticLog.event(.storage, "SYNC_RUN: \(held) book removals were held back, not sent, as they are most of the library or too many at once") // l10n: no (debug log text)
         }
 
+        if held == 0 { heldKeys = [] }
         let ordered = changes.sorted { "\($0.key)" < "\($1.key)" }
         let joining = outbox.device.hasRecordedLibrary != true
         let recorded = try append(
@@ -244,6 +253,17 @@ actor SyncEngine {
         }
         try stopAfter?(.record)
         return SyncRecordResult(recorded: recorded, heldRemovals: held)
+    }
+
+    /// The person chose Sync Now while removals were held: exactly those removals are now theirs to send. Any other
+    /// removal, held later, stays held.
+    func confirmHeldRemovals() {
+        confirmedKeys = heldKeys
+    }
+
+    /// Takes the confirmation back, at the end of the run it was given for, however that run ended.
+    func clearConfirmation() {
+        confirmedKeys = []
     }
 
     /// Ends the launch hold, once the first apply after launch has had its chance to put books back:
@@ -330,25 +350,23 @@ actor SyncEngine {
             try takeNewIdentity()
             result.tookNewIdentity = true
         }
-        try publishDevice(in: folder)
+        try await publishDevice(in: folder)
         // Half-made files a crash left beside this device's own are cleared.
         folder.access.sweepPartialFiles(in: folder.deviceFolder(outbox.device.deviceID), olderThan: 3_600)
         try appendSnapshotIfDue()
         var deviceFolder = folder.deviceFolder(outbox.device.deviceID)
         do {
             do {
-                let verified = try await outbox.verifiedPresent(in: deviceFolder, using: folder.access)
-                result.filesCopied = try outbox.copyVerified(into: deviceFolder, using: folder.access, now: now(), verified: verified)
+                result.filesCopied = try await copyOutbox(into: deviceFolder, using: folder.access)
             } catch is SyncOutboxConflict {
                 // A file of a seq this device wrote is in the folder with other bytes: another writer holds this
                 // identity. This library takes a new one, sets the old outbox aside, and sends a snapshot.
                 try takeNewIdentity()
                 result.tookNewIdentity = true
-                try publishDevice(in: folder)
+                try await publishDevice(in: folder)
                 try appendSnapshotIfDue()
                 deviceFolder = folder.deviceFolder(outbox.device.deviceID)
-                let verified = try await outbox.verifiedPresent(in: deviceFolder, using: folder.access)
-                result.filesCopied = try outbox.copyVerified(into: deviceFolder, using: folder.access, now: now(), verified: verified)
+                result.filesCopied = try await copyOutbox(into: deviceFolder, using: folder.access)
             }
             try stopAfter?(.copy)
             result.uploadProblem = try outbox.refreshUploads(in: deviceFolder, using: folder.access)
@@ -387,8 +405,32 @@ actor SyncEngine {
     }
 
     /// Writes this device's `device.json`: its name, platform, version, last `seq`, and the time.
-    private func publishDevice(in folder: SyncFolder) throws {
-        try folder.publishDevice(SyncDeviceFile(
+    /// Copies the outbox's files into the device's folder: each copy runs off the actor and is awaited, and the
+    /// outbox is marked after, so no change to it spans a wait. A file in the folder under an outbox name is
+    /// compared with the outbox's own first; one that stays unreadable for several runs is logged.
+    private func copyOutbox(into deviceFolder: URL, using access: any SyncFolderAccess) async throws -> Int {
+        let verified = try await outbox.verifiedPresent(in: deviceFolder, using: access)
+        let plan = outbox.copyPlan(into: deviceFolder, using: access, verified: verified)
+        var done = plan.alreadyThere
+        do {
+            for item in plan.toCopy {
+                try await access.copyInOffActor(item.source, to: item.destination)
+                done.append(item.seq)
+            }
+        } catch {
+            try? outbox.markCopied(done, now: now())
+            throw error
+        }
+        try outbox.markCopied(done, now: now())
+        unreadableRuns = plan.unreadable.isEmpty ? 0 : unreadableRuns + 1
+        if unreadableRuns == 3 {
+            DiagnosticLog.event(.storage, "SYNC_RUN: \(plan.unreadable.count) files of this device in the sync folder have stayed unreadable for three runs") // l10n: no (debug log text)
+        }
+        return plan.toCopy.count
+    }
+
+    private func publishDevice(in folder: SyncFolder) async throws {
+        try await folder.publishDevice(SyncDeviceFile(
             formatVersion: SyncFormats.currentVersion, deviceID: outbox.device.deviceID, name: identity.name,
             platform: identity.platform, appVersion: identity.appVersion, lastSeq: outbox.device.lastSeq, updated: now()
         ))

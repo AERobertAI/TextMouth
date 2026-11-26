@@ -36,6 +36,10 @@ struct SyncCenterEnvironment {
     /// A fresh bookmark for a stale one, or nil when it is current (`SyncFolderAccessFactory.renewedBookmark`).
     var renewedBookmark: @Sendable (Data) -> Data? = { _ in nil }
 
+    /// A renewal that asks `SyncFolderAccessFactory` each time it is called, so an override the iPhone sets
+    /// after the center was built is used.
+    static let renewalThroughFactory: @Sendable (Data) -> Data? = { SyncFolderAccessFactory.renewedBookmark($0) }
+
     /// The name this device gives itself in the store: its host name without ".local", or "Mac" or "iPhone".
     @MainActor static func deviceName(isPhone: Bool) -> String {
         let name = LibrarySessionLease.systemComputerName()
@@ -69,7 +73,7 @@ struct SyncCenterEnvironment {
                 let values = try? url.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey])
                 return values?.volumeAvailableCapacityForImportantUsage ?? 0
             },
-            renewedBookmark: SyncFolderAccessFactory.renewedBookmark
+            renewedBookmark: Self.renewalThroughFactory
         )
     }
 }
@@ -117,6 +121,8 @@ struct SyncCenterEnvironment {
     private var isRunning = false
     private var pendingReason: SyncReason?
     private var runTask: Task<Void, Never>?
+    /// The launch's check of R6 and of this store's files, which happens off the main actor.
+    private var installTask: Task<Void, Never>?
     private var wakeTask: Task<Void, Never>?
     private var backupTask: Task<Void, Never>?
     /// Which backup task is current, so a stale one that ends late never clears a newer task.
@@ -125,8 +131,6 @@ struct SyncCenterEnvironment {
     /// missing at launch (an offline launch, a change made while the launch sync reads) is never reported
     /// removed before then (R7). The apply runs even when nothing changed while it is true.
     private var firstApplyPending = true
-    /// Whether the person chose Sync Now while removals were held back: that record sends them.
-    private var confirmHeldRemovals = false
     /// The device name of each applied key's winning writer, for the host to say.
     private var writers: [SyncKey: String] = [:]
     /// The names devices call themselves, by device ID, from what was read.
@@ -181,13 +185,18 @@ struct SyncCenterEnvironment {
         if status.isOn { deactivate() }
         self.dataDirectory = dataDirectory
         let preferences = environment.preferences
+        installTask?.cancel()
         guard let bookmark = SyncPreferences.bookmark.read(from: preferences),
               let storeID = SyncPreferences.storeID.read(from: preferences) else { return }
-        guard (try? requireLocalLibrary()) != nil else { return }
         let files = SyncLocalFiles(syncFolder: dataDirectory.appendingPathComponent(TextMouthPaths.syncFolderName, isDirectory: true), storeID: storeID)
-        guard FileManager.default.fileExists(atPath: files.deviceURL.path) else { return }
-        guard activate(bookmark: bookmark, storeID: storeID) else { return }
-        moment(.launch)
+        // R6 and this store's files are looked at off the main actor (R2); sync is on once they are found.
+        installTask = Task { [weak self] in
+            guard let self, await self.libraryIsLocal(dataDirectory) else { return }
+            let hasStoreFiles = await Task.detached { FileManager.default.fileExists(atPath: files.deviceURL.path) }.value
+            guard hasStoreFiles, !Task.isCancelled, self.dataDirectory == dataDirectory else { return }
+            guard self.activate(bookmark: bookmark, storeID: storeID) else { return }
+            self.moment(.launch)
+        }
     }
 
     /// Stops what runs for this library, keeping the preferences: the library is changing, not sync.
@@ -274,25 +283,31 @@ struct SyncCenterEnvironment {
     }
 
     /// Refuses what R6 refuses: a library kept in a cloud location or on another volume.
-    private func requireLocalLibrary() throws {
+    private func requireLocalLibrary() async throws {
+        guard let dataDirectory, await libraryIsLocal(dataDirectory) else { throw SyncProblem.libraryNotLocal }
+    }
+
+    /// Whether `dataDirectory` is a place a library may sync from (R6), looked at off the main actor.
+    private func libraryIsLocal(_ dataDirectory: URL) async -> Bool {
         // A Debug build's interface test that names a sync folder has chosen to sync in a sandbox: the library is its own.
-        if Self.seamFolder() != nil { return }
+        if Self.seamFolder() != nil { return true }
         // On the iPhone the app's own container is local: `location(of:)` knows (it never says another volume there).
-        guard let dataDirectory, environment.locate(dataDirectory) == .local else { throw SyncProblem.libraryNotLocal }
+        let locate = environment.locate
+        return await Task.detached { locate(dataDirectory) == .local }.value
     }
 
     /// Refuses a folder that isn't in iCloud Drive.
-    private func requireICloudDrive(_ folder: URL) throws {
+    private func requireICloudDrive(_ folder: URL) async throws {
         // A folder in a trash (deleted in Finder or Files) is not a place to sync into.
-        guard !SyncFolderIO.isDeleted(folder), Self.isSeamFolder(folder) || environment.locate(folder) == .cloud(.iCloudDrive) else {
-            throw SyncProblem.notInICloudDrive
-        }
+        let locate = environment.locate
+        let inDrive = await Task.detached { Self.isSeamFolder(folder) || locate(folder) == .cloud(.iCloudDrive) }.value
+        guard !SyncFolderIO.isDeleted(folder), inDrive else { throw SyncProblem.notInICloudDrive }
     }
 
     /// Makes TextMouth Sync and its store.json in `parent`, then joins it.
     func setUp(in parent: URL) async throws {
-        try requireLocalLibrary()
-        try requireICloudDrive(parent)
+        try await requireLocalLibrary()
+        try await requireICloudDrive(parent)
         let creator = environment.deviceName
         let version = environment.appVersion
         let created = environment.now()
@@ -303,8 +318,8 @@ struct SyncCenterEnvironment {
 
     /// Uses the TextMouth Sync folder another device made, waiting 60 seconds for its store.json and never making one.
     func join(_ folder: URL) async throws {
-        try requireLocalLibrary()
-        try requireICloudDrive(folder)
+        try await requireLocalLibrary()
+        try await requireICloudDrive(folder)
         guard let bookmark = environment.makeBookmark(folder) else { throw SyncProblem.folderMissing }
         let newAccess = environment.makeAccess(bookmark)
         let pause = environment.pauseWhileJoining
@@ -324,6 +339,7 @@ struct SyncCenterEnvironment {
 
     /// Forgets the folder; deletes nothing, on this device or in the cloud.
     func stop() {
+        installTask?.cancel()
         wakeTask?.cancel()
         backupTask?.cancel()
         engineTask?.cancel()
@@ -353,8 +369,6 @@ struct SyncCenterEnvironment {
     func syncNow() {
         guard status.isOn else { return }
         environment.announce(SyncWording.announceSyncing)
-        // Sync Now chosen while removals are held back is the person's word that they are meant.
-        if status.heldRemovals > 0 { confirmHeldRemovals = true }
         requestRun(.syncNow)
     }
 
@@ -464,6 +478,11 @@ struct SyncCenterEnvironment {
     /// Waits until no run is going or waiting, including the one a moment made during another. A test
     /// uses it instead of guessing a time.
     func waitUntilIdle() async {
+        // A launch's look at the library and its files comes first: sync is on only after it.
+        if let install = installTask {
+            await install.value
+            if installTask == install { installTask = nil }
+        }
         while true {
             if let task = runTask {
                 await task.value
@@ -528,10 +547,8 @@ struct SyncCenterEnvironment {
         }
         // The library is read after the flags are looked at, and nothing awaits in between.
         let library = host.library
-        let confirming = confirmHeldRemovals
-        confirmHeldRemovals = false
         // A record that throws leaves what was held as it was.
-        if let result = try? await engine.record(library: library, allowMassRemoval: confirming) {
+        if let result = try? await engine.record(library: library) {
             status.heldRemovals = result.heldRemovals
         }
         status.pendingChanges = await engine.pendingChanges()
@@ -552,8 +569,18 @@ struct SyncCenterEnvironment {
         }
     }
 
-    /// One sync: record, open the folder, copy and read, merge, apply, and let the backup go on.
+    /// One sync, with its Sync Now confirmation: a Sync Now chosen while removals are held back is the person's
+    /// word that exactly those are meant, and it ends with the run, however the run ends.
     private func run(_ reason: SyncReason) async {
+        if reason == .syncNow, status.heldRemovals > 0, let engine = await readyEngine() {
+            await engine.confirmHeldRemovals()
+        }
+        await runOnce(reason)
+        if let engine { await engine.clearConfirmation() }
+    }
+
+    /// One sync: record, open the folder, copy and read, merge, apply, and let the backup go on.
+    private func runOnce(_ reason: SyncReason) async {
         // The engine may still be opening; nothing is checked before it has, so two requests meet below.
         guard let engine = await readyEngine() else { return }
         // Two requests made before either began meet here: the later waits for the earlier.
@@ -655,9 +682,7 @@ struct SyncCenterEnvironment {
             // Reset however this ends: a record that throws must not leave recording off for good.
             defer { recorder?.isApplying = false }
             let source = host.library
-            let confirming = confirmHeldRemovals
-            confirmHeldRemovals = false
-            let recorded = try await engine.record(library: source, allowMassRemoval: confirming)
+            let recorded = try await engine.record(library: source)
             status.heldRemovals = recorded.heldRemovals
             let application = await engine.application(for: source, voices: host.availableVoiceIDs)
             // Who wrote each winning value, by name, for the host's words.

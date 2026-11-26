@@ -201,7 +201,7 @@ final class SyncFolderTests: XCTestCase {
     func testTheDevicesOwnLastSeqIsExpected() async throws {
         let (folder, _) = try makeFolder()
         try put(changeFile(device: "dev-b", seq: 1), in: folder)
-        try folder.publishDevice(SyncDeviceFile(formatVersion: 1, deviceID: "dev-b", name: "iPhone", platform: "ios", appVersion: "0.6.0", lastSeq: 2, updated: Date(timeIntervalSince1970: 1)))
+        try await folder.publishDevice(SyncDeviceFile(formatVersion: 1, deviceID: "dev-b", name: "iPhone", platform: "ios", appVersion: "0.6.0", lastSeq: 2, updated: Date(timeIntervalSince1970: 1)))
         let held = try await reader(folder).read(after: SyncCursors())
         XCTAssertEqual(held.cursors.merged["dev-b"], 1)
         XCTAssertEqual(held.notArrived, ["dev-b"], "seq 2 is promised but not listed")
@@ -249,7 +249,7 @@ final class SyncFolderTests: XCTestCase {
     func testLastHeardFromDeviceFile() async throws {
         let (folder, _) = try makeFolder()
         let updated = Date(timeIntervalSince1970: 1_700_000_000)
-        try folder.publishDevice(SyncDeviceFile(formatVersion: 1, deviceID: "dev-b", name: "iPhone", platform: "ios", appVersion: "0.6.0", lastSeq: 0, updated: updated))
+        try await folder.publishDevice(SyncDeviceFile(formatVersion: 1, deviceID: "dev-b", name: "iPhone", platform: "ios", appVersion: "0.6.0", lastSeq: 0, updated: updated))
         let result = try await reader(folder).read(after: SyncCursors())
         XCTAssertEqual(result.lastHeard["dev-b"], updated)
         XCTAssertEqual(result.names["dev-b"], "iPhone")
