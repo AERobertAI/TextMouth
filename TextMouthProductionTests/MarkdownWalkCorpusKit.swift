@@ -26,9 +26,9 @@ enum MarkdownWalkCorpusKit {
 
     // MARK: - Markers
 
-    /// A page marker as content.md carries it.
+    /// A page marker as content.md carries it (`MarkdownMarkers.page(_:)`).
     static func page(_ label: String) -> String {
-        "\(MarkdownPageMarker.prefix)\(label)\(MarkdownPageMarker.suffix)"
+        MarkdownMarkers.page(label)
     }
 
     /// A heading annotation as content.md carries it.

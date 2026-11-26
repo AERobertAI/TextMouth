@@ -6,8 +6,8 @@ import XCTest
 @MainActor
 final class PhoneLibraryOfferTests: XCTestCase {
     /// A book outside the reading list, in no arranged order, offers Book
-    /// Info, Add to Reading List, Move to Folder..., and the removal, in that
-    /// order, each by the Mac's name.
+    /// Info, Add to Reading List, Move to Folder..., Export..., and the
+    /// removal, in that order, each by the Mac's name.
     func testABooksCommandsInOrder() {
         let commands = PhoneLibraryOffer.bookCommands(
             for: PhoneLibraryFixture.book("Dune"),
@@ -16,8 +16,11 @@ final class PhoneLibraryOfferTests: XCTestCase {
             removal: PhoneLibraryFixture.phoneRemoval
         )
 
-        XCTAssertEqual(commands.map(\.action), [.bookInfo, .addToReadingList, .moveToFolder, .remove])
-        XCTAssertEqual(commands.map(\.title), ["Book Info", "Add to Reading List", "Move to Folder...", "Remove from Library..."])
+        XCTAssertEqual(commands.map(\.action), [.bookInfo, .addToReadingList, .moveToFolder, .export, .remove])
+        XCTAssertEqual(
+            commands.map(\.title),
+            ["Book Info", "Add to Reading List", "Move to Folder...", "Export…", "Remove from Library..."]
+        )
     }
 
     /// A book in the reading list offers Remove from Reading List instead,
@@ -32,7 +35,7 @@ final class PhoneLibraryOfferTests: XCTestCase {
 
         XCTAssertEqual(
             commands.map(\.title),
-            ["Book Info", "Remove from Reading List", "Move to Folder...", "Move Up", "Move Down", "Remove from Library..."]
+            ["Book Info", "Remove from Reading List", "Move to Folder...", "Export…", "Move Up", "Move Down", "Remove from Library..."]
         )
     }
 

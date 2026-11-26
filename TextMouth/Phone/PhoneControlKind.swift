@@ -41,4 +41,6 @@ enum PhoneControlKind: Hashable, Sendable, CaseIterable {
     case voice
     /// Book Info.
     case bookInfo
+    /// The Export sheet.
+    case export
 }

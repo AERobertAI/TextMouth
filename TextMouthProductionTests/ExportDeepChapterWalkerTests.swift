@@ -24,23 +24,6 @@ final class ExportDeepChapterWalkerTests: XCTestCase {
     /// The deepest nesting read (128).
     private var limit: Int { limits.deepestNesting }
 
-    /// The chapters a decider was asked about, kept under a lock since the
-    /// walk calls the decider on a thread of its own.
-    private final class Asked: Sendable {
-        private let chapters = OSAllocatedUnfairLock<[ExportDeepChapter]>(initialState: [])
-
-        /// A decider that records its chapter and says `decision`.
-        func deciding(_ decision: ExportDeepChapterDecision) -> ExportDeepChapterDecider {
-            { [self] chapter in
-                chapters.withLock { $0.append(chapter) }
-                return decision
-            }
-        }
-
-        /// The chapters asked about, in order.
-        var all: [ExportDeepChapter] { chapters.withLock { $0 } }
-    }
-
     /// The document of `markdown`, walked with `decider`.
     private func walk(
         _ markdown: String,
@@ -260,7 +243,7 @@ final class ExportDeepChapterWalkerTests: XCTestCase {
     /// and its page is kept; the words that follow are as written.
     func testAMarkerAtAQuotesOpeningIsAPlaceNotWords() throws {
         var content = String(repeating: "> ", count: limit + 1)
-        MarkdownMarkerWriter.write(MarkdownWalkCorpusKit.page("12"), inline: true, into: &content)
+        MarkdownMarkerWriter.write(MarkdownMarkers.page("12"), inline: true, into: &content)
         content += MarkdownLiteral.escaped(sampleWords)
         XCTAssertTrue(content.contains("<!-- page: 12 -->"), "the writer wrote the marker")
 
@@ -281,7 +264,7 @@ final class ExportDeepChapterWalkerTests: XCTestCase {
     /// the words, and no words.
     func testAMarkerWithinWordsIsAPlaceInTheWords() throws {
         var content = String(repeating: "> ", count: limit + 1) + MarkdownLiteral.escaped("so (or so);")
-        MarkdownMarkerWriter.write(MarkdownWalkCorpusKit.page("13"), inline: true, into: &content)
+        MarkdownMarkerWriter.write(MarkdownMarkers.page("13"), inline: true, into: &content)
         content += MarkdownLiteral.escaped(" then left.")
 
         let structured = try walk(content, options: .bookStructure, decider: Asked().deciding(.writeAsWritten))
@@ -305,7 +288,7 @@ final class ExportDeepChapterWalkerTests: XCTestCase {
     /// the line break between the words.
     func testAMarkerAtALinesEndKeepsTheLineBreak() throws {
         var content = String(repeating: "> ", count: limit + 1) + MarkdownLiteral.escaped("first line")
-        MarkdownMarkerWriter.write(MarkdownWalkCorpusKit.page("14"), inline: true, into: &content)
+        MarkdownMarkerWriter.write(MarkdownMarkers.page("14"), inline: true, into: &content)
         content += "\n" + String(repeating: "> ", count: limit + 1) + MarkdownLiteral.escaped("second line")
 
         let document = try walk(content, options: .bookStructure, decider: Asked().deciding(.writeAsWritten))
@@ -322,8 +305,8 @@ final class ExportDeepChapterWalkerTests: XCTestCase {
     /// the walk's own, in order.
     func testMarkersThatBeginABlockArePlacesBetweenBlocks() throws {
         let deep = DeepMarkdown.quotes(limit + 1)
-        let chapter = "\(marker("Notes"))\n\(MarkdownWalkCorpusKit.page("7"))\n\n\(deep)\n\n"
-            + "\(MarkdownWalkCorpusKit.page("8")) words after the marker\n"
+        let chapter = "\(marker("Notes"))\n\(MarkdownMarkers.page("7"))\n\n\(deep)\n\n"
+            + "\(MarkdownMarkers.page("8")) words after the marker\n"
 
         let structured = try walk(chapter, options: .bookStructure, decider: Asked().deciding(.writeAsWritten))
         let plain = try walk(chapter, decider: Asked().deciding(.writeAsWritten))
@@ -358,7 +341,7 @@ final class ExportDeepChapterWalkerTests: XCTestCase {
     /// the first number, not the second, and the paragraph is the whole line.
     func testAnAbandonedWalkLeavesNoPageNumberUsed() throws {
         let deep = DeepMarkdown.quotes(limit + 1)
-        let chapter = "\(marker("Notes"))\n\(MarkdownWalkCorpusKit.page("1"))\(deep)\n"
+        let chapter = "\(marker("Notes"))\n\(MarkdownMarkers.page("1"))\(deep)\n"
 
         let document = try walk(chapter, options: .bookStructure, decider: Asked().deciding(.writeAsWritten))
 
@@ -514,4 +497,23 @@ final class ExportDeepChapterWalkerTests: XCTestCase {
                 + "which TextMouth can't export safely. Choose Edit Text, flatten the nesting, and save; then export again."
         )
     }
+}
+
+// MARK: - Test Support
+
+/// The chapters a decider was asked about, kept under a lock since the
+/// walk calls the decider on a thread of its own.
+private final class Asked: Sendable {
+    private let chapters = OSAllocatedUnfairLock<[ExportDeepChapter]>(initialState: [])
+
+    /// A decider that records its chapter and says `decision`.
+    func deciding(_ decision: ExportDeepChapterDecision) -> ExportDeepChapterDecider {
+        { [self] chapter in
+            chapters.withLock { $0.append(chapter) }
+            return decision
+        }
+    }
+
+    /// The chapters asked about, in order.
+    var all: [ExportDeepChapter] { chapters.withLock { $0 } }
 }

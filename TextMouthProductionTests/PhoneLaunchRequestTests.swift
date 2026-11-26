@@ -52,6 +52,28 @@ final class PhoneLaunchRequestTests: XCTestCase {
         XCTAssertEqual(PhoneLaunchRequest.filesToOpen(["TEXTMOUTH_OPEN_AT_LAUNCH": "/tmp/a.epub"]).first?.isFileURL, true)
     }
 
+    // MARK: - The Export Folder
+
+    /// An absolute path names the folder exports go to, as a folder; anything
+    /// else names none.
+    func testOnlyAnAbsolutePathNamesTheExportFolder() {
+        let folder = PhoneLaunchRequest.exportFolder(["TEXTMOUTH_EXPORT_TO": "/tmp/exports/Harbour"])
+        XCTAssertEqual(folder, URL(fileURLWithPath: "/tmp/exports/Harbour", isDirectory: true))
+        XCTAssertEqual(folder?.hasDirectoryPath, true)
+        XCTAssertNil(PhoneLaunchRequest.exportFolder(["TEXTMOUTH_EXPORT_TO": "exports/Harbour"]))
+        XCTAssertNil(PhoneLaunchRequest.exportFolder(["TEXTMOUTH_EXPORT_TO": ""]))
+        XCTAssertNil(PhoneLaunchRequest.exportFolder([:]))
+    }
+
+    /// The Export sheet reads the folder in a debug build only: its one use is
+    /// inside `#if DEBUG`, so a release build holds no way to steer an export.
+    func testTheExportFolderIsReadOnlyInDebugBuilds() throws {
+        let sheet = try Self.source("Platform/iOS/Views/Export/PhoneExportSheet.swift")
+        let debug = try Self.text(from: "#if DEBUG", upTo: "#endif", in: sheet)
+        XCTAssertTrue(debug.contains("PhoneLaunchRequest.exportFolder(ProcessInfo.processInfo.environment)"))
+        XCTAssertEqual(sheet.components(separatedBy: "PhoneLaunchRequest.").count - 1, 1, "PhoneLaunchRequest is read outside #if DEBUG")
+    }
+
     // MARK: - Where It Is Read
 
     /// Each place that reads the request does so in a debug build of the
