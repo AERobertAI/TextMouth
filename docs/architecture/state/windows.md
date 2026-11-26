@@ -213,6 +213,7 @@ Menus.
   - Speak Import Progress, which posts speakImportProgress ([Import progress](imports.md)),
   - Speak Download Progress, which posts speakDownloadProgress ([Feed downloads' progress](feeds.md)),
   - Add to Reading List and Remove from Reading List, which post addToReadingList and removeFromReadingList ([The reading list](library-index-reading-feeds.md)),
+  - Sync Now, which calls SyncCenter.shared.syncNow(), and Keep on All Devices and Stop Keeping on All Devices, which post keepOnAllDevices and stopKeepingOnAllDevices, all three shown only while sync is on ([Library sync](library-sync.md)),
   - and Folder or Feed Settings, which posts showFolderOrFeedSettings ([The Folder Settings and Add to Library sheets](windows-sheets.md)).
 
   PlaybackCommands offers Where Am I?
