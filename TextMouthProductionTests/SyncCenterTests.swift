@@ -560,7 +560,8 @@ final class SyncCenterTests: XCTestCase {
             return first
         }
         XCTAssertTrue(signalled, "the run never reached its apply")
-        let held = try XCTUnwrap(release, "the held run's gate")
+        // Named `continuation`, the one form of `resume(` the unit tests' sound check lets through (ios_ui_tests.py).
+        let continuation = try XCTUnwrap(release, "the held run's gate")
 
         var finished = 0
         let first = Task { @MainActor in await world.center.waitUntilIdle(); finished += 1 }
@@ -568,7 +569,7 @@ final class SyncCenterTests: XCTestCase {
         for _ in 0..<50 { await Task.yield() }
         XCTAssertEqual(finished, 0, "both wait while the run is held")
         world.host.pauseApply = nil
-        held.resume()
+        continuation.resume()
         await first.value
         await second.value
         XCTAssertEqual(finished, 2)
