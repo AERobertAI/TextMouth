@@ -318,7 +318,8 @@ struct LibraryBookInfoSheet: View {
                 if cloudStates.syncIsOn {
                     Toggle(SyncWording.keptState, isOn: Binding(
                         get: { keptBooks.isKeptOnAllDevices(book.id) },
-                        set: { LibraryCloudCommands.shared.setKeptOnAllDevices($0, [book], from: nil) }
+                        set: { // VoiceOver reads the checkbox's new value: no announcement besides.
+                        LibraryCloudCommands.shared.setKeptOnAllDevices($0, [book], from: nil, announcing: false) }
                     ))
                     .accessibilityHint(SyncWording.keepHint)
                 }

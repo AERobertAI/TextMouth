@@ -62,6 +62,7 @@ struct SyncRowMerge: Equatable {
         applying application: SyncApplication, start: Library, current: Library, added: [Book]
     ) -> SyncRowMerge {
         var result = SyncRowMerge(library: current)
+        let folderPaths = Set(current.folders.map(\.fullPath))
         let startRows = Dictionary(start.books.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         var currentIndexes: [UUID: Int] = [:]
         for (index, book) in current.books.enumerated() where currentIndexes[book.id] == nil {
@@ -70,7 +71,7 @@ struct SyncRowMerge: Equatable {
         for merged in application.library.books {
             guard let startRow = startRows[merged.id], let index = currentIndexes[merged.id], merged != startRow else { continue }
             var row = current.books[index]
-            let outcome = mergeFields(from: startRow, merged: merged, into: &row)
+            let outcome = mergeFields(from: startRow, merged: merged, into: &row, folderPaths: folderPaths)
             if outcome.changed {
                 result.library.books[index] = row
                 result.changedBookIDs.insert(merged.id)
@@ -111,7 +112,7 @@ struct SyncRowMerge: Equatable {
     /// Sets into `row` each field `merged` changed from `start`, when `row`'s
     /// is still `start`'s (or already the merge's). Returns whether any field
     /// was set, and whether any was left alone because it changed meanwhile.
-    private static func mergeFields(from start: Book, merged: Book, into row: inout Book) -> (changed: Bool, stale: Bool) {
+    private static func mergeFields(from start: Book, merged: Book, into row: inout Book, folderPaths: Set<String>) -> (changed: Bool, stale: Bool) {
         var changed = false, stale = false
         for field in SyncBookValues.rowFields {
             guard let before = SyncBookValues.value(of: field, in: start),
@@ -129,7 +130,7 @@ struct SyncRowMerge: Equatable {
         }
         // The folder, so a rename that moved the merged row still moves this one.
         if merged.folderPath != start.folderPath, row.folderPath != merged.folderPath {
-            if row.folderPath == start.folderPath {
+            if row.folderPath == start.folderPath, merged.folderPath.isEmpty || folderPaths.contains(merged.folderPath) {
                 row.folderPath = merged.folderPath
                 changed = true
             } else {
@@ -276,7 +277,7 @@ extension LibraryViewModel: SyncLibraryHost {
         for id in merge.changedBookIDs where isBookOpenNow(id) {
             guard let row = bookByID(id), let before = startRows[id],
                   row.readingState != before.readingState else { continue }
-            syncedReadingStates.send(SyncedReadingState(bookID: id, state: row.readingState, device: Self.otherDeviceName()))
+            syncedReadingStates.send(SyncedReadingState(bookID: id, state: row.readingState, device: syncDeviceName(.book(id, .position)) ?? Self.otherDeviceName()))
         }
 
         // 5. Removals: a busy book, or one changed since the merge was made,
@@ -284,12 +285,11 @@ extension LibraryViewModel: SyncLibraryHost {
         for id in application.booksToRemove {
             guard let book = bookByID(id) else { continue }
             guard !isBookBusyForSync(id), startRows[id].map({ $0 == book }) ?? true else { failed.insert(id); continue }
-            do {
-                try FileImportService.deleteBookPackage(book)
-                removeDeletedBook(book)
-            } catch {
+            // The way a person's removal goes, for each kind of book: a feed
+            // item's is its Delete Download, and the feed's own state agrees.
+            if !removeBooksAndDeleteReturningOutcome([book]).succeeded {
                 failed.insert(id)
-                DiagnosticLog.event(.storage, "SYNC_MERGE: book \(id.uuidString.prefix(8)) could not be removed (\(type(of: error)))") // l10n: no (debug log, English)
+                DiagnosticLog.event(.storage, "SYNC_MERGE: book \(id.uuidString.prefix(8)) could not be removed") // l10n: no (debug log, English)
             }
         }
         if !application.booksToRemove.isEmpty { save() }
@@ -305,12 +305,27 @@ extension LibraryViewModel: SyncLibraryHost {
     private func applyFolderChanges(of application: SyncApplication, start: Library) async -> Bool {
         var proposed = library
         if library.folders == start.folders { proposed.folders = application.library.folders }
+        let mergedFolderPaths = Dictionary(
+            application.library.folders.map { ($0.fullPath, $0) }, uniquingKeysWith: { first, _ in first }
+        )
         let startRows = Dictionary(start.books.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         var moved: Set<UUID> = []
         for merged in application.library.books {
             guard let before = startRows[merged.id], merged.folderPath != before.folderPath,
                   let index = proposed.books.firstIndex(where: { $0.id == merged.id }),
                   proposed.books[index].folderPath == before.folderPath else { continue }
+            // The folders it moves into, and the ones above them, are in the
+            // list, though the person changed folders meanwhile: a row never
+            // lands in a folder the library does not hold.
+            let held = Set(proposed.folders.map(\.fullPath))
+            var needed: [String] = []
+            var path = merged.folderPath
+            while !path.isEmpty, !held.contains(path) {
+                needed.append(path)
+                path = (path as NSString).deletingLastPathComponent
+            }
+            guard needed.allSatisfy({ mergedFolderPaths[$0] != nil }) else { continue }
+            proposed.folders.append(contentsOf: needed.reversed().compactMap { mergedFolderPaths[$0] })
             proposed.books[index].folderPath = merged.folderPath
             moved.insert(merged.id)
         }

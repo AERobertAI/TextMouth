@@ -78,6 +78,48 @@ final class SyncReaderPlaceTests: XCTestCase {
         XCTAssertEqual(saved?.lastUpdated, merged.readingPosition?.lastUpdated)
     }
 
+    /// The same place with a newer date moves nothing and says nothing: only a
+    /// move of the place itself is "Moved" (round 2, item 1).
+    func testANewerDateAtTheSamePlaceSaysNothing() {
+        let (reader, library, book) = makeReader()
+        var same = book
+        var place = ReadingPosition(chapterIndex: 0, characterOffset: 10)
+        place.lastUpdated = Date(timeIntervalSince1970: 1_790_000_000 + 600)
+        same.readingPosition = place
+        let recorder = recordingAnnouncements {
+            library.syncedReadingStates.send(SyncedReadingState(bookID: book.id, state: same.readingState, device: "iPhone"))
+        }
+        XCTAssertEqual(reader.currentChapterIndex, 0)
+        XCTAssertEqual(reader.currentCharacterOffset, 10)
+        XCTAssertTrue(recorder.announcements.isEmpty)
+    }
+
+    /// A place past the end of the text is kept within it, as a move of the cursor keeps it.
+    func testAPlacePastTheEndIsClampedToTheText() {
+        let (reader, library, book) = makeReader()
+        library.syncedReadingStates.send(
+            SyncedReadingState(bookID: book.id, state: state(of: book, offset: 90_000, savedAfter: 60), device: "iPhone")
+        )
+        XCTAssertEqual(reader.currentChapterIndex, 1)
+        XCTAssertEqual(reader.currentCharacterOffset, 500)
+    }
+
+    /// A paused reader is never moved either: a pause leaves the speech where
+    /// it is, and a place saved elsewhere does not pull it away.
+    func testAPausedReaderIsNeverMoved() {
+        let (reader, library, book) = makeReader()
+        reader.isCurrentlyPlaying = false
+        reader.isCurrentlyPaused = true
+        let recorder = recordingAnnouncements {
+            library.syncedReadingStates.send(
+                SyncedReadingState(bookID: book.id, state: state(of: book, offset: 200, savedAfter: 60), device: "iPhone")
+            )
+        }
+        XCTAssertEqual(reader.currentChapterIndex, 0)
+        XCTAssertEqual(reader.currentCharacterOffset, 10)
+        XCTAssertTrue(recorder.announcements.isEmpty)
+    }
+
     /// A playing reader plays on: its place and its words stay as they were.
     func testAPlayingReaderPlaysOn() {
         let (reader, library, book) = makeReader()

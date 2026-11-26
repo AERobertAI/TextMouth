@@ -151,6 +151,9 @@ final class LibraryViewModel: ObservableObject {
     let bookUpdates = LibraryBookUpdates()
     /// Keeps the cloud notes saying whether sync is on (`observeSyncStatus()`, FR43).
     var syncStatusSubscription: AnyCancellable?
+    /// The name of the device that wrote the winning value of a sync key in the
+    /// last merge (`SyncCenter.deviceName(forKey:)`); a test gives its own.
+    var syncDeviceName: @MainActor (SyncKey) -> String? = { SyncCenter.shared.deviceName(forKey: $0) }
     /// Keeps the books kept on all devices current (`observeSyncStatus()`, FR43).
     var syncKeptSubscription: AnyCancellable?
     /// The reading list (FR09), as the library holds it: its books in

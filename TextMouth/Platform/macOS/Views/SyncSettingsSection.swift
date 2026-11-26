@@ -73,6 +73,7 @@ struct SyncSettingsSection: View {
         .alert(SyncWording.stopQuestion, isPresented: $confirmingStop) {
             // Cancel is first, so Return presses the safe choice.
             Button(StorageSettingsWording.cancelTitle, role: .cancel) {}
+                .keyboardShortcut(.defaultAction)
             Button(Self.withoutEllipsis(SyncWording.stopTitle), role: .destructive) { model.stop() }
         }
         // The controls change when sync turns on or off; focus goes to the
@@ -132,12 +133,15 @@ struct SyncSettingsSection: View {
         let handle: (NSApplication.ModalResponse) -> Void = { response in
             guard response == .OK, let folder = panel.url else { return }
             isWorking = true
+            // Set before the run starts, so a run that ends at once is heard.
+            awaitingFirstRun = true
             Task { @MainActor in
                 let worked = joining ? await model.join(folder) : await model.setUp(in: folder)
                 isWorking = false
                 if worked {
-                    awaitingFirstRun = true
                     VoiceOverAnnouncer.announce(SyncWording.statusSyncing)
+                } else {
+                    awaitingFirstRun = false
                 }
             }
         }
