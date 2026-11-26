@@ -306,6 +306,10 @@ extension LibraryViewModel {
             // made, the unreadable file itself, which is only read.
             try? Data(contentsOf: failure.quarantineURL ?? failure.indexURL)
         }
+        // Recovery is on before the library is emptied, so the sync's
+        // `maySyncNow` is false from the first change: an emptied library
+        // must never be recorded as the removal of every book (FR43).
+        indexRecovery = LibraryIndexRecovery(failure: failure, arrangementNotKept: arrangement.notKept)
         library = Library(
             folderSortSettings: arrangement.sortSettings,
             readingList: arrangement.readingList,
@@ -318,7 +322,6 @@ extension LibraryViewModel {
         // this one does not know: the session's, or at launch, when the
         // session read nothing, the unreadable index's own (V04).
         library.unknownKeys = arrangement.unknownSections
-        indexRecovery = LibraryIndexRecovery(failure: failure, arrangementNotKept: arrangement.notKept)
         showIndexRecoveryOptions = true
     }
 

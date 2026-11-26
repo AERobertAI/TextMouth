@@ -692,9 +692,28 @@ final class BookCloudStates: ObservableObject {
     /// their own.
     init() {}
 
-    /// Whether the library list says each book's cloud state.
+    /// Whether sync between devices is on (FR43): a book another device has
+    /// shows as In Cloud until it is fetched, though the library itself is on
+    /// this device's disk.
+    @Published private(set) var syncIsOn = false
+
+    /// Whether the library list says each book's cloud state: in a cloud
+    /// library, and while sync is on.
     var showsCloudNotes: Bool {
+        libraryLocation.isCloud || syncIsOn
+    }
+
+    /// Whether the library itself is in a cloud folder, which Keep on This Mac
+    /// and Remove Download are for; a library synced between devices is on
+    /// this device's disk and has neither.
+    var isCloudLibrary: Bool {
         libraryLocation.isCloud
+    }
+
+    /// Records whether sync is on, publishing only a change.
+    func setSyncIsOn(_ isOn: Bool) {
+        guard isOn != syncIsOn else { return }
+        syncIsOn = isOn
     }
 
     /// The latest known state of the book `bookID`, or nil when it has not

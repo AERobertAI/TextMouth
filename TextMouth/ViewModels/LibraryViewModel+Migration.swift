@@ -295,6 +295,9 @@ extension LibraryViewModel {
                 return found
             }
             guard presence(of: book.bookFileURL) == .absent else { continue }
+            // A book another device has, not fetched yet, has no file to
+            // find (FR43): its package is where it is.
+            if SyncPlaceholder.isPlaceholder(package: book.tmbDirectory, contentFile: book.bookFileURL) { continue }
             let fileName = book.bookFileURL.lastPathComponent
 
             // First try the expected folder location
@@ -1838,6 +1841,10 @@ extension LibraryViewModel {
             if let progress {
                 dataDirectoryMove = nil
                 progress.end()
+                // The library is in another folder: the sync is installed
+                // again for it, which checks it afresh (FR43, R6) and joins
+                // only a folder whose Sync/ holds this store's files.
+                SyncCenter.shared.install(host: self, dataDirectory: TextMouthPaths.root)
             }
         }
         var waited = false

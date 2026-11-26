@@ -376,6 +376,11 @@ struct LibraryCloudCommand: Identifiable, Equatable {
         /// Stop Keeping on This Mac: leaves books' downloads to the sync
         /// service and Remove Download again.
         case stopKeepingOnThisMac
+        /// Keep on All Devices (FR43): every device that syncs keeps the
+        /// books' files, offered only while sync is on.
+        case keepOnAllDevices
+        /// Stop Keeping on All Devices: ends that for the books.
+        case stopKeepingOnAllDevices
         /// Show in Finder: selects the books' packages in Finder, where the
         /// sync service's own commands are, such as Keep Downloaded.
         case showInFinder
@@ -392,6 +397,10 @@ struct LibraryCloudCommand: Identifiable, Equatable {
                 return LibraryCloudWording.keepTitle(count: count, forSelection: forSelection)
             case .stopKeepingOnThisMac:
                 return LibraryCloudWording.stopKeepingTitle(count: count, forSelection: forSelection)
+            case .keepOnAllDevices:
+                return forSelection ? SyncWording.keepTitle(count: count) : SyncWording.keepTitle
+            case .stopKeepingOnAllDevices:
+                return forSelection ? SyncWording.stopKeepingTitle(count: count) : SyncWording.stopKeepingTitle
             case .showInFinder:
                 return LibraryCloudWording.showInFinderTitle(count: count, forSelection: forSelection)
             }
@@ -430,20 +439,29 @@ struct LibraryCloudCommand: Identifiable, Equatable {
     ///     so the titles count the books each command acts on.
     ///   - states: The books' recorded cloud states.
     ///   - kept: The IDs of the books this Mac keeps downloaded.
+    ///   - keptOnAllDevices: The IDs of the books kept on all devices that
+    ///     sync (FR43), whose Keep on All Devices and Stop Keeping on All
+    ///     Devices are offered only while sync is on.
     @MainActor
     static func commands(
         for targets: [Book],
         isSelection: Bool,
         states: BookCloudStates,
-        kept: Set<UUID>
+        kept: Set<UUID>,
+        keptOnAllDevices: Set<UUID> = []
     ) -> [LibraryCloudCommand] {
         let listed = targets.map { (book: $0, state: states.listedState(of: $0.id)) }
-        let inCloudLibrary = states.showsCloudNotes ? targets : []
+        // Keep on This Mac and Remove Download are for a library in a cloud
+        // folder; a synced library has Keep on All Devices instead.
+        let inCloudLibrary = states.isCloudLibrary ? targets : []
+        let synced = states.syncIsOn ? targets : []
         let offered: [(kind: Kind, books: [Book])] = [
             (.download, listed.filter { $0.state?.canDownload == true }.map(\.book)),
-            (.removeDownload, listed.filter { $0.state?.canRemoveDownload == true }.map(\.book)),
+            (.removeDownload, states.isCloudLibrary ? listed.filter { $0.state?.canRemoveDownload == true }.map(\.book) : []),
             (.keepOnThisMac, inCloudLibrary.filter { !kept.contains($0.id) }),
             (.stopKeepingOnThisMac, inCloudLibrary.filter { kept.contains($0.id) }),
+            (.keepOnAllDevices, synced.filter { !keptOnAllDevices.contains($0.id) }),
+            (.stopKeepingOnAllDevices, synced.filter { keptOnAllDevices.contains($0.id) }),
             (.showInFinder, listed.filter { $0.state != .waitingForSync }.map(\.book)),
         ]
         // A command is offered only for the books it suits, and only when
@@ -589,10 +607,38 @@ final class LibraryCloudCommands {
             keep(command.books, in: library, from: window)
         case .stopKeepingOnThisMac:
             stopKeeping(command.books, from: window)
+        case .keepOnAllDevices:
+            setKeptOnAllDevices(true, command.books, from: window)
+        case .stopKeepingOnAllDevices:
+            setKeptOnAllDevices(false, command.books, from: window)
         case .showInFinder:
             showInFinder(command.books)
         }
         return nil
+    }
+
+    // MARK: Keep on All Devices (FR43)
+
+    /// Keeps `books` on all devices that sync, or stops: the choice is
+    /// stamped in the sync (`SyncCenter.setKeep`), which every device reads,
+    /// and VoiceOver hears which books. The downloads follow the next sync
+    /// (`LibraryViewModel.syncDidApply(keptBookIDs:mayDownload:)`).
+    func setKeptOnAllDevices(_ keeping: Bool, _ books: [Book], from window: PlatformWindow?) {
+        guard !books.isEmpty else { return }
+        SyncCenter.shared.setKeep(keeping, for: books.map(\.id))
+        // The set follows at once, so the Book Information checkbox and the
+        // rows read the new value as VoiceOver asks, before the sync's own
+        // registers say so.
+        let ids = Set(books.map(\.id))
+        KeptBooks.shared.setSyncedBooks(keeping ? KeptBooks.shared.syncedBookIDs.union(ids) : KeptBooks.shared.syncedBookIDs.subtracting(ids))
+        let titles = books.map(\.title)
+        DiagnosticLog.event(.storage, "KEEP_ON_ALL: \(keeping ? "keeping" : "stopped keeping") \(books.count) book(s) on all devices") // l10n: no (debug log, English)
+        VoiceOverAnnouncer.announce(
+            keeping
+                ? SyncWording.announceKeeping(title: titles.joined(separator: ", "))
+                : LibraryCloudCommand.Kind.stopKeepingOnAllDevices.title(count: books.count, forSelection: books.count > 1),
+            from: window
+        )
     }
 
     // MARK: Keep on This Mac
@@ -665,7 +711,7 @@ final class LibraryCloudCommands {
                 LibraryCloudWording.keepMenuRefusal(
                     keeping: keeping,
                     selected: selection.map(\.title),
-                    inCloudLibrary: states.showsCloudNotes,
+                    inCloudLibrary: states.isCloudLibrary,
                     keptOnlyForReadingList: selection.filter { kept.isKeptOnlyForReadingList($0.id) }.count
                 ),
                 from: window
@@ -700,7 +746,12 @@ final class LibraryCloudCommands {
     /// - Returns: The task running the downloads, which tests await; nil
     ///   when no kept book needed downloading.
     @discardableResult
-    func downloadEvictedKeptBooks(in library: LibraryViewModel) -> Task<Void, Never>? {
+    func downloadEvictedKeptBooks(in library: LibraryViewModel, afterSync: Bool = false) -> Task<Void, Never>? {
+        // In a library that is not in a cloud folder, only the call a sync
+        // makes downloads (`LibraryViewModel.syncDidApply`), once it has found
+        // the network allows it; the cloud refresher's own call, which knows
+        // nothing of the network's cost, leaves a synced library alone.
+        guard states.isCloudLibrary || afterSync else { return nil }
         guard states.showsCloudNotes, kept.keepsAnyBook else { return nil }
         let time = now()
         let evicted = library.library.books.filter { book in

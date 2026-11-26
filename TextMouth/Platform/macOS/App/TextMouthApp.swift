@@ -17,6 +17,9 @@ struct TextMouthApp: App {
         // The interface-text engine's problems (a missing or damaged pack, an unknown ID) go to the debug log.
         InterfaceText.reportProblemsToDiagnosticLog()
         CloudServices.installSystemServices()
+        // A book another device has and this Mac has not fetched answers as a
+        // cloud book: In Cloud, Download Now (FR43).
+        CloudServices.bookStorage = StoreBookStorage(wrapping: CloudServices.bookStorage)
     }
 
     var body: some Scene {

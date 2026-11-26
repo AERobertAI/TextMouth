@@ -2832,23 +2832,8 @@ enum FileImportService {
     ///   RTFD is one), which is never opened; the error opening the file;
     ///   or the first error `readChunk` throws.
     static func md5Hash(of url: URL, readingChunksWith readChunk: (FileHandle) throws -> Data?) throws -> String {
-        // A folder (an RTFD is one) is refused with its own error before it
-        // is opened.
-        guard !isFolder(url) else { throw ContentFingerprintError.notARegularFile }
-        let handle = try FileHandle(forReadingFrom: url)
-        // A file only read from loses nothing if closing it fails, and the
-        // legacy `closeFile()` would raise an exception there too.
-        defer { try? handle.close() }
-
-        var hasher = Insecure.MD5()
-        // Each read runs in its own autorelease pool, so what it autoreleases
-        // is freed before the next read and a large file never fills memory.
-        while let chunk = try autoreleasepool(invoking: { try readChunk(handle) }), !chunk.isEmpty {
-            hasher.update(data: chunk)
-        }
-
-        let digest = hasher.finalize()
-        return digest.map { String(format: "%02hhx", $0) }.joined()
+        // The streaming loop is shared with the sync folder's SHA-256 (`FileDigest`).
+        try FileDigest.hex(of: url, using: Insecure.MD5.self, readingChunksWith: readChunk)
     }
 
     /// Import a DAISY audio ZIP as a multi-chapter audio book.
@@ -4099,10 +4084,17 @@ enum FileImportService {
             ? recordedName
             : tmbContents.first(where: isPackageContentName)
 
-        guard let fileName = bookFileName else { return nil }
+        // A package that holds a sync pointer and no book file is a book
+        // another device has, not fetched yet (FR43): it is kept as a
+        // placeholder, its file named as its record names it.
+        let isPlaceholder = bookFileName == nil
+            && isPackageContentName(recordedName)
+            && StoreFetch.pointer(in: url) != nil
+        guard let fileName = bookFileName ?? (isPlaceholder ? recordedName : nil) else { return nil }
         let bookFile = url.appendingPathComponent(fileName)
         switch access.presence(of: bookFile) {
         case .absent:
+            if isPlaceholder { break }
             return nil
         case .inCloud:
             throw MaintenanceFileAccess.refusal(of: bookFile)
