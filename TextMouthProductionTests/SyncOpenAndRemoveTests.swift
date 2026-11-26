@@ -47,24 +47,53 @@ final class SyncOpenAndRemoveTests: XCTestCase {
 
     // MARK: - Opening a placeholder
 
-    /// A placeholder opened in a library that is not in a cloud folder takes
-    /// the reader's download path, through `StoreBookStorage`, as a cloud
-    /// book does: the fetch starts. Without the reader's check for missing
-    /// files while sync is on, the reader reads the absent file and no fetch
-    /// is ever asked for.
-    func testAPlaceholderOpenedInALocalLibraryIsFetched() throws {
-        let book = try makePlaceholder("Opened Away")
-        let fetched = expectation(description: "the fetch of the placeholder starts")
-        // The reader may ask for the fetch more than once while it loads.
-        fetched.assertForOverFulfill = false
-        let asked = LockedBookIDs()
+    /// A reader of a placeholder in a library that is not in a cloud folder,
+    /// the fetches `StoreBookStorage` was asked for, and when each was ended.
+    private final class Fetches: @unchecked Sendable {
+        private let lock = NSLock()
+        private var asked: [UUID] = []
+        private var ended = 0
+
+        /// Notes that a fetch of `bookID` began.
+        func began(_ bookID: UUID) {
+            lock.lock(); defer { lock.unlock() }
+            asked.append(bookID)
+        }
+
+        /// Notes that a fetch's stream was ended: cancelled by its reader or finished.
+        func endedOne() {
+            lock.lock(); defer { lock.unlock() }
+            ended += 1
+        }
+
+        var askedBooks: [UUID] {
+            lock.lock(); defer { lock.unlock() }
+            return asked
+        }
+
+        var endedCount: Int {
+            lock.lock(); defer { lock.unlock() }
+            return ended
+        }
+    }
+
+    /// Opens `book`, a placeholder, in a reader over a `StoreBookStorage`
+    /// whose fetches never finish by themselves, as a fetch from iCloud Drive
+    /// takes its time, and are recorded in `fetches`; each fulfils
+    /// `started` as it begins. The reader's own loading asks (it starts in
+    /// its initializer): no test asks again unless it says so.
+    private func openPlaceholder(
+        _ book: Book, fetches: Fetches, started: XCTestExpectation
+    ) -> ReaderViewModel {
         let storage = StoreBookStorage(
             wrapping: LocalBookStorage(),
             isSyncOn: { true },
             fetcher: { package in
-                asked.add(package.bookID)
-                fetched.fulfill()
-                return AsyncThrowingStream { $0.finish() }
+                fetches.began(package.bookID)
+                started.fulfill()
+                return AsyncThrowingStream { continuation in
+                    continuation.onTermination = { _ in fetches.endedOne() }
+                }
             }
         )
         let states = BookCloudStates()
@@ -78,10 +107,44 @@ final class SyncOpenAndRemoveTests: XCTestCase {
             cloud: ReaderCloudServices(storage: storage, states: states, isDataless: { _ in false })
         )
         addTeardownBlock { @MainActor in reader.close() }
+        return reader
+    }
+
+    /// A placeholder opened in a library that is not in a cloud folder takes
+    /// the reader's download path, through `StoreBookStorage`, as a cloud
+    /// book does, and one open fetches the book once. Without the reader's
+    /// check for missing files while sync is on, the reader reads the absent
+    /// file and no fetch is asked for; were one open to ask twice, two
+    /// fetches of one book's files would be asked for, and this fails.
+    func testAPlaceholderOpenedInALocalLibraryIsFetchedOnce() throws {
+        let book = try makePlaceholder("Opened Away")
+        let fetches = Fetches()
+        let started = expectation(description: "the fetch of the placeholder starts")
+        started.assertForOverFulfill = true
+        let reader = openPlaceholder(book, fetches: fetches, started: started)
+        wait(for: [started], timeout: 20)
+        XCTAssertEqual(fetches.askedBooks, [book.id], "one open asks for one fetch of the one book")
+        XCTAssertNotNil(reader.cloudPhase, "the reader shows the download")
+    }
+
+    /// Were the reader asked to load again while its fetch runs (a retry, a
+    /// library change), the first fetch is ended before the second begins:
+    /// two fetches of one book never run at once.
+    func testASecondRequestEndsTheFirstFetchOfTheBook() throws {
+        let book = try makePlaceholder("Asked Twice")
+        let fetches = Fetches()
+        let started = expectation(description: "both fetches start")
+        started.expectedFulfillmentCount = 2
+        let reader = openPlaceholder(book, fetches: fetches, started: started)
+        // The opening's own fetch is under way once the reader shows it.
+        let showing = expectation(description: "the reader shows the first download")
+        let watch = reader.$cloudPhase.sink { if $0 != nil { showing.fulfill() } }
+        wait(for: [showing], timeout: 20)
+        watch.cancel()
         reader.loadContent()
-        wait(for: [fetched], timeout: 20)
-        XCTAssertFalse(asked.ids.isEmpty)
-        XCTAssertEqual(Set(asked.ids), [book.id], "only the placeholder is fetched")
+        wait(for: [started], timeout: 20)
+        XCTAssertEqual(fetches.askedBooks, [book.id, book.id])
+        XCTAssertGreaterThanOrEqual(fetches.endedCount, 1, "the first fetch was ended when the second was asked for")
     }
 
     // MARK: - A feed item removed by sync
@@ -159,23 +222,5 @@ final class SyncOpenAndRemoveTests: XCTestCase {
 
         XCTAssertNotNil(library.bookByID(book.id))
         XCTAssertFalse(applied.contains(key))
-    }
-}
-
-/// Book IDs noted from any thread, for a test's fake that is called on another.
-private final class LockedBookIDs: @unchecked Sendable {
-    private let lock = NSLock()
-    private var noted: [UUID] = []
-
-    func add(_ id: UUID) {
-        lock.lock()
-        noted.append(id)
-        lock.unlock()
-    }
-
-    var ids: [UUID] {
-        lock.lock()
-        defer { lock.unlock() }
-        return noted
     }
 }
