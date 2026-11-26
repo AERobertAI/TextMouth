@@ -191,7 +191,7 @@ final class CloudStorageContractTests: XCTestCase {
         let drive = CloudProvider.googleDrive
 
         XCTAssertEqual(
-            BookCloudError.offline.explanation(in: drive),
+            BookCloudError.offline.explanation(in: drive, isPhone: false),
             "This Mac is offline, so the book can't be downloaded from Google Drive. "
                 + "Connect to the internet and try again."
         )
@@ -261,7 +261,7 @@ final class CloudStorageContractTests: XCTestCase {
             "Google Drive couldn't remove the book's download: The file is locked."
         )
         XCTAssertEqual(
-            BookCloudError.packageMissing.explanation(in: drive),
+            BookCloudError.packageMissing.explanation(in: drive, isPhone: false),
             "The book's files aren't on this Mac yet. Google Drive may still be syncing them."
         )
     }
@@ -269,7 +269,7 @@ final class CloudStorageContractTests: XCTestCase {
     /// Another drive is named by its folder's name.
     func testAnExplanationNamesAnotherDriveByItsFolder() {
         XCTAssertEqual(
-            BookCloudError.offline.explanation(in: .other("OneDrive")),
+            BookCloudError.offline.explanation(in: .other("OneDrive"), isPhone: false),
             "This Mac is offline, so the book can't be downloaded from OneDrive. Connect to the internet and try again."
         )
     }
@@ -279,7 +279,7 @@ final class CloudStorageContractTests: XCTestCase {
     /// display shows the difference.
     func testEveryExplanationWithoutAProviderSaysTheCloudService() {
         XCTAssertEqual(
-            BookCloudError.offline.explanation(in: nil),
+            BookCloudError.offline.explanation(in: nil, isPhone: false),
             "This Mac is offline, so the book can't be downloaded from the cloud service. "
                 + "Connect to the internet and try again."
         )
@@ -305,7 +305,7 @@ final class CloudStorageContractTests: XCTestCase {
             "The cloud service couldn't remove the book's download: Access denied."
         )
         XCTAssertEqual(
-            BookCloudError.packageMissing.explanation(in: nil),
+            BookCloudError.packageMissing.explanation(in: nil, isPhone: false),
             "The book's files aren't on this Mac yet. The cloud service may still be syncing them."
         )
     }

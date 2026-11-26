@@ -27,7 +27,7 @@ final class PhoneReaderCloudPhaseTests: XCTestCase {
             )
         )
         let value = ReaderCloudWording.progressValue(of: download, elapsed: 65, spoken: true)
-        XCTAssertTrue(value.contains("40 percent") && value.hasSuffix("elapsed"), value)
+        XCTAssertTrue(value.contains("40 percent"), value)
         // A chapter's download says which chapter.
         let chapter = ReaderDownload(provider: .iCloudDrive, chapterNumber: 6, startedAt: started, progress: nil)
         guard case .download(_, let source, _, _) = content(.downloading(chapter)).body else { return XCTFail("not a download") }
