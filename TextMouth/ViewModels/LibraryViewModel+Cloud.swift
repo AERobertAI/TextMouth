@@ -551,6 +551,9 @@ final class LibraryCloudCommands {
     /// Told how many books `All books` could not download for want of room, after each plan (FR45): the sync's
     /// status line says it.
     private let roomNotice: @MainActor (Int) -> Void
+    /// When the files of the book at a package last arrived on this device (`SyncPlaceholder.arrivedAt`), read off
+    /// the main thread; a test supplies its own.
+    private let packageArrival: @Sendable (URL) -> Date?
     /// The books whose size and room a plan is reading now, which a second
     /// refresh must not plan again.
     private(set) var booksBeingPlanned: Set<UUID> = []
@@ -577,6 +580,7 @@ final class LibraryCloudCommands {
     ///   - freeSpaceReserve: The bytes downloads leave free on that volume.
     ///   - booksChoice: Which books this device keeps (FR45).
     ///   - roomNotice: Told how many books could not download for want of room.
+    ///   - packageArrival: When a package's files last arrived on this device.
     init(
         states: BookCloudStates = .shared,
         kept: KeptBooks = .shared,
@@ -592,7 +596,8 @@ final class LibraryCloudCommands {
         freeSpace: @escaping @Sendable (URL) -> Int64? = { ArchiveLimits.volumeFreeSpace(at: $0) },
         freeSpaceReserve: Int64 = ArchiveLimits.standard.freeSpaceReserve,
         booksChoice: @escaping @MainActor () -> BooksOnThisDevice = { SyncSpaceSettings.shared.settings.books },
-        roomNotice: @escaping @MainActor (Int) -> Void = { SyncCenter.shared.noteSpace(booksShortOfRoom: $0) }
+        roomNotice: @escaping @MainActor (Int) -> Void = { SyncCenter.shared.noteSpace(booksShortOfRoom: $0) },
+        packageArrival: @escaping @Sendable (URL) -> Date? = { SyncPlaceholder.arrivedAt($0) }
     ) {
         self.states = states
         self.kept = kept
@@ -604,6 +609,7 @@ final class LibraryCloudCommands {
         self.freeSpaceReserve = freeSpaceReserve
         self.booksChoice = booksChoice
         self.roomNotice = roomNotice
+        self.packageArrival = packageArrival
     }
 
     /// Runs `command` for the Library window `window` shows, announcing
@@ -856,7 +862,8 @@ final class LibraryCloudCommands {
             // Looked at now, as the library is now: a book opened or kept meanwhile stays.
             guard !isProtected(book), !booksBeingRemoved.contains(book.id), states.canRemoveDownload(book) else { continue }
             let package = BookPackage(book)
-            let arrived = await Task.detached(priority: .utility) { SyncPlaceholder.arrivedAt(package.url) }.value
+            let arrival = packageArrival
+            let arrived = await Task.detached(priority: .utility) { arrival(package.url) }.value
             let lastInUse = SyncSpacePolicy.lastInUse(opened: book.lastOpened, played: book.lastPlaybackStopped, arrived: arrived, removalsBeganAt: began)
             guard SyncSpacePolicy.isDue(lastInUse: lastInUse, days: days, now: time) else { continue }
             taken += 1
