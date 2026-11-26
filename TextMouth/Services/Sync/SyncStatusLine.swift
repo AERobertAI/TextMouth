@@ -39,7 +39,7 @@ enum SyncStatusLine {
         }
         if status.isOffline { return SyncWording.statusOffline(changes: status.pendingChanges, device: device) }
         if status.pendingChanges > 0 { return SyncWording.statusUploading(changes: status.pendingChanges) }
-        if case .notDownloaded? = status.problem { return SyncWording.statusNotDownloaded }
+        if case .notDownloaded? = status.problem { return SyncWording.statusNotDownloaded(isPhone: isPhone) }
         guard let last = status.lastSynced else { return SyncWording.statusSyncing }
         return SyncWording.statusUpToDate(at: time(last))
     }

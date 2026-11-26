@@ -549,10 +549,8 @@ struct PhoneLibraryView: View {
                 requestFocus(.row(neighbor))
             }
         case .keepOnAllDevices, .stopKeepingOnAllDevices:
-            // Stamped on this device and synced; the rows are built again by the change, and the person is told.
-            let keeps = action == .keepOnAllDevices
-            SyncCenter.shared.setKeep(keeps, for: [bookID])
-            PhoneAnnouncer.say(keeps ? SyncWording.announceKeeping(title: book.title) : PhoneSyncWording.announceStoppedKeeping(title: book.title))
+            // Stamped on this device and synced, the set following at once; the person is told, and the rows are built again.
+            PhoneKeepOnAllDevices.set(action == .keepOnAllDevices, book)
             rows.rebuild()
         case .moveToFolder:
             open(.folder(.moveBook(bookID)), from: .row(.book(bookID)))

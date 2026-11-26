@@ -2,10 +2,10 @@ import XCTest
 @testable import TextMouth
 
 /// The iPhone's Sync section (FR43, sync-iphone): which controls it holds in
-/// each state, the words of its status line in the plan's order, the refusals,
-/// and each step of setting up, joining, and stopping, run with stand-in
-/// services so that nothing here touches iCloud Drive, a folder picker, or the
-/// user's library.
+/// each state, the status line in the iPhone's words (the Mac's own function), the
+/// Mac's model run for the phone, with the picker's scope kept open around it,
+/// and Keep on All Devices. Everything runs with stand-in services, so nothing
+/// here touches iCloud Drive, a folder picker, or the user's library.
 @MainActor
 final class PhoneSyncSettingsTests: XCTestCase {
     /// Writes a date as a fixed time, so no test depends on the machine's locale.
@@ -13,7 +13,7 @@ final class PhoneSyncSettingsTests: XCTestCase {
 
     // MARK: - The Controls
 
-    /// Off, the section offers Set Up Sync… and Join Sync Folder…; on, Sync Now and Stop Syncing…, each with its title and hint.
+    /// Off, the section offers Set Up Sync… and Join Sync Folder…; on, Sync Now and Stop Syncing…, each with its title and a hint.
     func testControlsFollowWhetherSyncIsOn() {
         XCTAssertEqual(PhoneSyncSettingsModel.controls(isOn: false), [.setUp, .join])
         XCTAssertEqual(PhoneSyncSettingsModel.controls(isOn: true), [.syncNow, .stop])
@@ -23,8 +23,9 @@ final class PhoneSyncSettingsTests: XCTestCase {
         XCTAssertEqual(PhoneSyncControl.stop.title, "Stop Syncing…")
         XCTAssertEqual(PhoneSyncControl.setUp.hint, SyncWording.setUpHint)
         XCTAssertEqual(PhoneSyncControl.join.hint, SyncWording.joinHint)
-        XCTAssertNil(PhoneSyncControl.syncNow.hint)
-        XCTAssertNil(PhoneSyncControl.stop.hint)
+        // Sync Now has a hint too, as the Mac's has: what sync does.
+        XCTAssertEqual(PhoneSyncControl.syncNow.hint, SyncWording.sectionSummary)
+        XCTAssertFalse(PhoneSyncControl.stop.hint.isEmpty)
     }
 
     /// The library's summary offers Sync Now only once sync is on (R1: nothing before a folder is chosen).
@@ -35,63 +36,44 @@ final class PhoneSyncSettingsTests: XCTestCase {
 
     // MARK: - The Status Line
 
-    /// Each state says its words, in the plan's order, in the iPhone's form.
-    func testHeadlineSaysTheFirstStateThatHolds() {
-        func headline(_ status: SyncStatus) -> String { PhoneSyncSettingsModel.headline(for: status, time: time) }
-        XCTAssertEqual(headline(SyncStatus()), "Sync is off.")
-        XCTAssertEqual(headline(SyncStatus(isOn: true, isSyncing: true, isOffline: true)), "Syncing…")
+    /// The section's lines are the Mac's function in the iPhone's words: this iPhone, and the Mac named as the other device.
+    func testLinesAreTheSharedFunctionInThePhonesWords() {
+        func lines(_ status: SyncStatus) -> [String] { PhoneSyncSettingsModel.lines(for: status, isPhone: true, time: time) }
+        XCTAssertEqual(lines(SyncStatus()), ["Sync is off."])
         XCTAssertEqual(
-            headline(SyncStatus(isOn: true, isOffline: true, pendingChanges: 3)),
-            "Offline. 3 changes wait on this iPhone, and will be sent when the network is back."
+            lines(SyncStatus(isOn: true, isOffline: true, pendingChanges: 3, problem: .offline)),
+            ["Offline. 3 changes wait on this iPhone, and will be sent when the network is back."]
         )
         XCTAssertEqual(
-            headline(SyncStatus(isOn: true, problem: .folderMissing)),
-            "TextMouth can't find the TextMouth Sync folder in iCloud Drive. It may have been moved or deleted, or iCloud Drive signed out. Your library on this iPhone is as it was."
+            lines(SyncStatus(isOn: true, problem: .folderMissing)),
+            ["TextMouth can't find the TextMouth Sync folder in iCloud Drive. It may have been moved or deleted, or iCloud Drive signed out. Your library on this iPhone is as it was."]
         )
         XCTAssertEqual(
-            headline(SyncStatus(isOn: true, pendingChanges: 3, problem: .outOfSpace, booksBackedUp: 612, booksToBackUp: 750)),
-            "iCloud Drive is full, so 3 changes and 138 books aren't uploaded. Your library on this iPhone is as it was."
+            lines(SyncStatus(isOn: true, problem: .notDownloaded(device: "x"))),
+            ["Some changes from your Mac haven't downloaded yet. TextMouth will try again."]
         )
-        XCTAssertEqual(headline(SyncStatus(isOn: true, problem: .laterVersion)), "A later TextMouth made this sync folder. Update TextMouth to use it.")
-        XCTAssertEqual(headline(SyncStatus(isOn: true, pendingChanges: 3)), "3 changes are waiting for iCloud Drive to upload them.")
         XCTAssertEqual(
-            headline(SyncStatus(isOn: true, problem: .notDownloaded(device: "x"))),
+            lines(SyncStatus(isOn: true, lastSynced: Date(timeIntervalSince1970: 0), lastHeard: ["Study Mac": Date(timeIntervalSince1970: 1)], booksBackedUp: 612, booksToBackUp: 750)),
+            ["Up to date. Last synced at 9:41 AM.", "Last heard from Study Mac at 9:41 AM.", "Backing up books: 612 of 750."]
+        )
+        // After Sync Now the center speaks the same line: the Mac's function with the phone flag says the same.
+        XCTAssertEqual(
+            SyncStatusLine.text(for: SyncStatus(isOn: true, problem: .notDownloaded(device: "x")), isPhone: true, time: time),
             "Some changes from your Mac haven't downloaded yet. TextMouth will try again."
         )
-        XCTAssertEqual(headline(SyncStatus(isOn: true, lastSynced: Date(timeIntervalSince1970: 0))), "Up to date. Last synced at 9:41 AM.")
-        // On, with no sync finished yet: one is on its way, not "up to date" with no time.
-        XCTAssertEqual(headline(SyncStatus(isOn: true)), "Syncing…")
-    }
-
-    /// Who was last heard from, and the backup's count, follow the headline; with sync off nothing but the headline.
-    func testLinesAddWhoWasHeardAndTheBackup() {
-        let status = SyncStatus(
-            isOn: true,
-            lastSynced: Date(timeIntervalSince1970: 0),
-            lastHeard: ["Mac": Date(timeIntervalSince1970: 1)],
-            booksBackedUp: 612,
-            booksToBackUp: 750
-        )
         XCTAssertEqual(
-            PhoneSyncSettingsModel.lines(for: status, time: time),
-            ["Up to date. Last synced at 9:41 AM.", "Last heard from Mac at 9:41 AM.", "Backing up books: 612 of 750."]
+            SyncStatusLine.text(for: SyncStatus(isOn: true, problem: .notDownloaded(device: "x")), isPhone: false, time: time),
+            SyncWording.statusNotDownloaded
         )
-        XCTAssertEqual(PhoneSyncSettingsModel.lines(for: SyncStatus(), time: time), ["Sync is off."])
-        // A finished backup says nothing more.
-        var done = status
-        done.booksBackedUp = 750
-        XCTAssertEqual(PhoneSyncSettingsModel.lines(for: done, time: time).count, 2)
-        // A device with no name is the Mac, which is the only other kind a phone hears from.
-        XCTAssertEqual(PhoneSyncSettingsModel.heardDeviceName(""), "Mac")
-        XCTAssertEqual(PhoneSyncSettingsModel.heardDeviceName("Study Mac"), "Study Mac")
     }
 
     // MARK: - Wording
 
     /// The iPhone's own sentences, and the cloud sentences that name this device, in both forms.
     func testSentencesNameThisDevice() {
-        XCTAssertEqual(PhoneSyncWording.stopQuestion, "Stop syncing this library? Nothing is deleted, on this iPhone or in iCloud Drive.")
-        XCTAssertEqual(PhoneSyncWording.stopButton, "Stop Syncing")
+        XCTAssertEqual(SyncWording.stopQuestion(isPhone: true), "Stop syncing this library? Nothing is deleted, on this iPhone or in iCloud Drive.")
+        XCTAssertEqual(SyncWording.stopQuestion(isPhone: false), SyncWording.stopQuestion)
+        XCTAssertEqual(SyncWording.stopButton, "Stop Syncing")
         XCTAssertEqual(ReaderCloudWording.partNotOnThisMac(title: "Tides", isPhone: true), "Part of Tides isn't on this iPhone.")
         XCTAssertEqual(ReaderCloudWording.partNotOnThisMac(title: "Tides", isPhone: false), "Part of Tides isn't on this Mac.")
         XCTAssertEqual(
@@ -102,12 +84,8 @@ final class PhoneSyncSettingsTests: XCTestCase {
             ReaderCloudWording.waitingForSync(title: "Tides", provider: .iCloudDrive, isPhone: false),
             "Tides hasn't arrived on this Mac yet. iCloud Drive may still be syncing it."
         )
-        XCTAssertTrue(
-            ReaderCloudWording.downloadStarted(title: "Tides", provider: nil, chapterNumber: 6, isPhone: true).contains("Chapter 6 isn't on this iPhone.")
-        )
-        XCTAssertTrue(
-            ReaderCloudWording.downloadStarted(title: "Tides", provider: nil, chapterNumber: 6, isPhone: false).contains("Chapter 6 isn't on this Mac.")
-        )
+        XCTAssertTrue(ReaderCloudWording.downloadStarted(title: "Tides", provider: nil, chapterNumber: 6, isPhone: true).contains("Chapter 6 isn't on this iPhone."))
+        XCTAssertTrue(ReaderCloudWording.downloadStarted(title: "Tides", provider: nil, chapterNumber: 6, isPhone: false).contains("Chapter 6 isn't on this Mac."))
         XCTAssertEqual(
             BookCloudError.offline.explanation(in: .iCloudDrive, isPhone: true),
             "This iPhone is offline, so the book can't be downloaded from iCloud Drive. Connect to the internet and try again."
@@ -122,43 +100,24 @@ final class PhoneSyncSettingsTests: XCTestCase {
         )
     }
 
-    /// Each problem a step can end in has words, the system's own for an error that is not one of ours.
-    func testMessagesForProblems() {
-        XCTAssertEqual(PhoneSyncSettingsModel.message(for: SyncProblem.exists), SyncWording.folderAlreadyThere)
-        XCTAssertEqual(PhoneSyncSettingsModel.message(for: SyncProblem.notASyncFolder), SyncWording.notASyncFolder)
-        XCTAssertEqual(PhoneSyncSettingsModel.message(for: SyncProblem.anotherStore), SyncWording.anotherStore)
-        XCTAssertEqual(PhoneSyncSettingsModel.message(for: SyncProblem.laterVersion), SyncWording.statusLaterVersion)
-        XCTAssertEqual(PhoneSyncSettingsModel.message(for: SyncProblem.offline), SyncWording.waitingForFiles)
-        XCTAssertEqual(PhoneSyncSettingsModel.message(for: SyncProblem.damaged(file: "a")), SyncWording.notASyncFolder)
-        XCTAssertTrue(PhoneSyncSettingsModel.message(for: SyncProblem.folderMissing).hasSuffix("Your library on this iPhone is as it was."))
-        XCTAssertEqual(PhoneSyncSettingsModel.message(for: CocoaError(.fileReadUnknown)), CocoaError(.fileReadUnknown).localizedDescription)
-    }
-
-    // MARK: - Where the Folder Is
-
-    /// A folder is in iCloud Drive by its path through `Mobile Documents`; one elsewhere is refused with the plan's words.
-    func testRefusesAFolderOutsideICloudDrive() {
-        let inDrive = URL(fileURLWithPath: "/Users/reader/Library/Mobile Documents/com~apple~CloudDocs/Books", isDirectory: true)
-        let elsewhere = URL(fileURLWithPath: "/Users/reader/Documents/Books", isDirectory: true)
-        XCTAssertTrue(PhoneSyncSettingsModel.isInICloudDrive(inDrive))
-        XCTAssertFalse(PhoneSyncSettingsModel.isInICloudDrive(elsewhere))
-        XCTAssertNil(PhoneSyncSettingsModel.refusal(forFolderInICloudDrive: true))
-        XCTAssertEqual(PhoneSyncSettingsModel.refusal(forFolderInICloudDrive: false), "That folder isn't in iCloud Drive. Choose a folder in iCloud Drive.")
-    }
-
     // MARK: - The Steps
 
-    /// What the stand-in services were asked and said, in order.
+    /// What the stand-in services were asked, in order.
     private final class Record {
         var calls: [String] = []
-        var heard: [String] = []
         var scopesOpen = 0
         var failure: Error?
+        var listing = ["store.json"]
+        var isInICloudDrive = true
     }
 
-    /// A controller over stand-in services that record what they are asked.
-    private func controller(_ record: Record, inICloudDrive: Bool = true) -> PhoneSyncSettingsController {
-        PhoneSyncSettingsController(services: .init(
+    /// A controller over the Mac's model with stand-in services that record what they are asked.
+    private func controller(_ record: Record) -> PhoneSyncSettingsController {
+        let model = SyncSettingsModel(
+            libraryLocation: { .local },
+            locationOf: { _ in record.isInICloudDrive ? .cloud(.iCloudDrive) : .local },
+            exists: { _ in false },
+            listFolder: { _ in record.listing },
             setUp: { url in
                 record.calls.append("setUp \(url.lastPathComponent) scope \(record.scopesOpen)")
                 if let failure = record.failure { throw failure }
@@ -167,28 +126,28 @@ final class PhoneSyncSettingsTests: XCTestCase {
                 record.calls.append("join \(url.lastPathComponent) scope \(record.scopesOpen)")
                 if let failure = record.failure { throw failure }
             },
-            syncNow: { record.calls.append("syncNow") },
             stop: { record.calls.append("stop") },
-            isInICloudDrive: { _ in inICloudDrive },
-            openScope: { _ in
-                record.scopesOpen += 1
-                return { record.scopesOpen -= 1 }
-            },
-            announce: { record.heard.append($0) }
-        ))
+            syncNow: { record.calls.append("syncNow") },
+            isPhone: true
+        )
+        return PhoneSyncSettingsController(model: model, openScope: { _ in
+            record.scopesOpen += 1
+            return { record.scopesOpen -= 1 }
+        })
     }
 
     private let folder = URL(fileURLWithPath: "/Users/reader/Library/Mobile Documents/com~apple~CloudDocs/Books", isDirectory: true)
+    private let syncFolder = URL(fileURLWithPath: "/Users/reader/Library/Mobile Documents/com~apple~CloudDocs/TextMouth Sync", isDirectory: true)
 
-    /// Set Up makes the folder with the picked folder's scope open, closes it after, and says "Syncing.".
-    func testSetUpKeepsTheScopeOpenAndAnnounces() async {
+    /// Set Up makes the folder with the picked folder's scope open, and closes it after.
+    func testSetUpKeepsTheScopeOpen() async {
         let record = Record()
         let steps = controller(record)
-        await steps.picked(.success([folder]), for: .setUp)
+        let worked = await steps.picked(.success([folder]), for: .setUp)
+        XCTAssertTrue(worked)
         XCTAssertEqual(record.calls, ["setUp Books scope 1"])
         XCTAssertEqual(record.scopesOpen, 0)
-        XCTAssertEqual(record.heard, ["Syncing."])
-        XCTAssertNil(steps.alertMessage)
+        XCTAssertNil(steps.model.message)
         XCTAssertFalse(steps.isWorking)
     }
 
@@ -196,48 +155,62 @@ final class PhoneSyncSettingsTests: XCTestCase {
     func testJoinJoinsThePickedFolder() async {
         let record = Record()
         let steps = controller(record)
-        await steps.picked(.success([folder]), for: .join)
-        XCTAssertEqual(record.calls, ["join Books scope 1"])
-        XCTAssertEqual(record.heard, ["Waiting for the sync folder's files to arrive from iCloud Drive.", "Syncing."])
-    }
-
-    /// A folder outside iCloud Drive is refused, with nothing made, in an alert and by voice.
-    func testRefusesAFolderOutsideICloudDriveBeforeMakingAnything() async {
-        let record = Record()
-        let steps = controller(record, inICloudDrive: false)
-        await steps.picked(.success([folder]), for: .setUp)
-        XCTAssertEqual(record.calls, [])
-        XCTAssertEqual(steps.alertMessage, SyncWording.notInICloudDrive)
-        XCTAssertEqual(record.heard, [SyncWording.notInICloudDrive])
+        let worked = await steps.picked(.success([syncFolder]), for: .join)
+        XCTAssertTrue(worked)
+        XCTAssertEqual(record.calls, ["join TextMouth Sync scope 1"])
         XCTAssertEqual(record.scopesOpen, 0)
     }
 
-    /// A failing step says why, in an alert and by voice, and is not announced as syncing.
-    func testAFailedStepSaysWhy() async {
+    /// A folder that is no sync folder is refused at once, not after the minute joining waits (the Mac's model does it).
+    func testJoinRefusesAFolderThatIsNoSyncFolderAtOnce() async {
         let record = Record()
-        record.failure = SyncProblem.exists
+        record.listing = ["notes.txt"]
+        let steps = controller(record)
+        let worked = await steps.picked(.success([folder]), for: .join)
+        XCTAssertFalse(worked)
+        XCTAssertEqual(record.calls, [])
+        XCTAssertEqual(steps.model.message, SyncWording.notASyncFolder)
+    }
+
+    /// A folder outside iCloud Drive is refused, with nothing made, in words, and the scope is closed.
+    func testRefusesAFolderOutsideICloudDrive() async {
+        let record = Record()
+        record.isInICloudDrive = false
+        let steps = controller(record)
+        let worked = await steps.picked(.success([folder]), for: .setUp)
+        XCTAssertFalse(worked)
+        XCTAssertEqual(record.calls, [])
+        XCTAssertEqual(steps.model.message, "That folder isn't in iCloud Drive. Choose a folder in iCloud Drive.")
+        XCTAssertEqual(record.scopesOpen, 0)
+    }
+
+    /// A step that fails says why in the iPhone's words, and any other error says the folder is no sync folder, never the system's text.
+    func testAFailedStepSaysWhyInThePhonesWords() async {
+        let record = Record()
+        record.failure = SyncProblem.folderMissing
         let steps = controller(record)
         await steps.picked(.success([folder]), for: .setUp)
-        XCTAssertEqual(steps.alertMessage, SyncWording.folderAlreadyThere)
-        XCTAssertEqual(record.heard, [SyncWording.folderAlreadyThere])
+        XCTAssertEqual(steps.model.message, SyncWording.statusFolderMissing(device: "this iPhone"))
         XCTAssertFalse(steps.isWorking)
-        XCTAssertEqual(record.scopesOpen, 0)
+
+        record.failure = CocoaError(.fileReadUnknown)
+        await steps.picked(.success([folder]), for: .setUp)
+        XCTAssertEqual(steps.model.message, SyncWording.notASyncFolder)
     }
 
-    /// A cancelled picker says nothing; a picker that failed says why; no folder chosen does nothing.
+    /// A cancelled picker says nothing; a picker that failed says it is no sync folder; no folder chosen does nothing.
     func testPickerCancelAndFailure() async {
         let record = Record()
         let steps = controller(record)
         await steps.picked(.failure(CocoaError(.userCancelled)), for: .setUp)
         await steps.picked(.success([]), for: .join)
         XCTAssertEqual(record.calls, [])
-        XCTAssertEqual(record.heard, [])
-        XCTAssertNil(steps.alertMessage)
+        XCTAssertNil(steps.model.message)
         await steps.picked(.failure(CocoaError(.fileReadNoPermission)), for: .join)
-        XCTAssertEqual(steps.alertMessage, CocoaError(.fileReadNoPermission).localizedDescription)
+        XCTAssertEqual(steps.model.message, SyncWording.notASyncFolder)
     }
 
-    /// Sync Now goes to the center, which announces its own outcome; Stop Syncing asks first, and nothing stops until yes.
+    /// Sync Now goes to the sync, which announces its own outcome; Stop Syncing asks first, and nothing stops until yes.
     func testSyncNowAndStop() {
         let record = Record()
         let steps = controller(record)
@@ -249,7 +222,6 @@ final class PhoneSyncSettingsTests: XCTestCase {
         steps.confirmStop()
         XCTAssertFalse(steps.isAskingToStop)
         XCTAssertEqual(record.calls, ["syncNow", "stop"])
-        XCTAssertEqual(record.heard, ["Sync is off."])
     }
 
     // MARK: - Keep on All Devices
@@ -267,19 +239,29 @@ final class PhoneSyncSettingsTests: XCTestCase {
             ).map(\.title)
         }
         XCTAssertEqual(titles(isKept: nil), ["Book Info", "Add to Reading List", "Move to Folder...", "Remove from Library..."])
-        XCTAssertEqual(
-            titles(isKept: false),
-            ["Book Info", "Add to Reading List", "Keep on All Devices", "Move to Folder...", "Remove from Library..."]
-        )
-        XCTAssertEqual(
-            titles(isKept: true),
-            ["Book Info", "Add to Reading List", "Stop Keeping on All Devices", "Move to Folder...", "Remove from Library..."]
-        )
+        XCTAssertEqual(titles(isKept: false), ["Book Info", "Add to Reading List", "Keep on All Devices", "Move to Folder...", "Remove from Library..."])
+        XCTAssertEqual(titles(isKept: true), ["Book Info", "Add to Reading List", "Stop Keeping on All Devices", "Move to Folder...", "Remove from Library..."])
+    }
+
+    /// The choice follows at once, so the switch and the row read the new value as VoiceOver asks; one that is already so
+    /// changes nothing and says nothing. (With sync off nothing is stamped, which the center's guard keeps.)
+    func testKeepingFollowsAtOnceAndSaysNothingTwice() {
+        let book = PhoneLibraryFixture.book("Dune")
+        let before = KeptBooks.shared.syncedBookIDs
+        defer { KeptBooks.shared.setSyncedBooks(before) }
+        KeptBooks.shared.setSyncedBooks([])
+        XCTAssertFalse(PhoneKeepOnAllDevices.isKept(book.id))
+        XCTAssertTrue(PhoneKeepOnAllDevices.set(true, book))
+        XCTAssertTrue(PhoneKeepOnAllDevices.isKept(book.id))
+        XCTAssertFalse(PhoneKeepOnAllDevices.set(true, book), "keeping a kept book changes nothing")
+        XCTAssertTrue(PhoneKeepOnAllDevices.set(false, book))
+        XCTAssertFalse(PhoneKeepOnAllDevices.isKept(book.id))
+        XCTAssertFalse(PhoneKeepOnAllDevices.set(false, book))
     }
 
     /// What is said when keeping ends.
     func testStoppedKeepingIsSaid() {
-        XCTAssertEqual(PhoneSyncWording.announceStoppedKeeping(title: "Dune"), "Stopped keeping Dune on all devices.")
+        XCTAssertEqual(SyncWording.announceStoppedKeeping(title: "Dune"), "Stopped keeping Dune on all devices.")
         XCTAssertEqual(SyncWording.announceKeeping(title: "Dune"), "Keeping Dune on all devices.")
         XCTAssertEqual(SyncWording.keptState, "Kept on all devices")
     }

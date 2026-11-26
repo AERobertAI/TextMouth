@@ -127,7 +127,7 @@ final class PhoneLibraryRows: ObservableObject {
             }
             .store(in: &subscriptions)
         // The keep commands and the kept state follow sync being on and the set kept (FR43); rows are built afresh when they change.
-        SyncCenter.shared.$keptBookIDs
+        KeptBooks.shared.$syncedBookIDs
             .removeDuplicates()
             .combineLatest(SyncCenter.shared.$status.map(\.isOn).removeDuplicates())
             .dropFirst()
@@ -471,7 +471,7 @@ final class PhoneLibraryRows: ObservableObject {
         )
         let progress = BookRow.progressText(for: book)?.visible
         // Whether the book is kept on all devices, said only with sync on (FR43).
-        let isKept: Bool? = SyncCenter.shared.status.isOn ? SyncCenter.shared.keptBookIDs.contains(book.id) : nil
+        let isKept: Bool? = SyncCenter.shared.status.isOn ? PhoneKeepOnAllDevices.isKept(book.id) : nil
         return PhoneRowValue(
             id: .book(book.id),
             label: isKept == true

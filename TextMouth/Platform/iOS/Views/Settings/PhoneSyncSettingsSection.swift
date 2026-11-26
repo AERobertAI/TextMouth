@@ -4,14 +4,15 @@ import UniformTypeIdentifiers
 /// The rows of Settings' Sync section (FR43): what sync does, the status line
 /// and the lines after it, and the section's buttons. With sync off they are
 /// Set Up Sync… and Join Sync Folder…, each opening the system's folder picker
-/// (Files), and with it on, Sync Now and Stop Syncing…. Every decision is in
-/// `PhoneSyncSettingsModel` and `PhoneSyncSettingsController`, which tests run;
-/// this view only draws them. Nothing here has run on a phone.
+/// (Files), and with it on, Sync Now and Stop Syncing…. The words and the steps are
+/// the Mac's own (`SyncSettingsModel`, `SyncStatusLine`), in the iPhone's forms;
+/// this view draws them and keeps what is the phone's alone: the picker, the
+/// confirmation, and VoiceOver's focus. Nothing here has run on a phone.
 ///
 /// Each state is words, never colour or position: the status is static text
-/// that VoiceOver and braille read where it stands, a press that fails is an
-/// alert and is spoken, and VoiceOver's focus comes back to the button that
-/// opened the picker, the confirmation, or the alert.
+/// that VoiceOver and braille read where it stands, a refusal or failure is a line
+/// of words (and is spoken), and VoiceOver's focus comes back to the status line
+/// when the controls change under it.
 struct PhoneSyncSettingsSection: View {
     /// What the app's one sync reports; the rows are drawn again when it changes.
     @ObservedObject private var center = SyncCenter.shared
@@ -21,13 +22,16 @@ struct PhoneSyncSettingsSection: View {
     @State private var pick: PhoneSyncPick = .setUp
     /// Whether the folder picker is up.
     @State private var isPicking = false
-    /// The button VoiceOver's focus returns to once what it opened has closed.
-    @AccessibilityFocusState private var focusedControl: PhoneSyncControl?
+    /// Whether Set Up or Join has just worked and its first run's outcome is still to be said.
+    @State private var awaitingFirstRun = false
+    /// VoiceOver's focus in the section: on the status line when the controls change under it, so the button just
+    /// pressed leaving does not lose it.
+    @AccessibilityFocusState private var statusIsFocused: Bool
 
     var body: some View {
-        // What sync is for, left where VoiceOver and braille can read it. The picker and the alerts hang on this one row
-        // (never on all of them, which would present each of them once for each row), and apart from the screen's own file
-        // exporter, since two of the system's file dialogs on one view are not known to work together.
+        // What sync is for, left where VoiceOver and braille can read it. The picker and the confirmation hang on this one
+        // row (never on all of them, which would present each of them once for each row), and apart from the screen's own
+        // file exporter, since two of the system's file dialogs on one view are not known to work together.
         PhoneReadableCaption(SyncWording.sectionSummary)
             .background {
                 Color.clear
@@ -37,40 +41,44 @@ struct PhoneSyncSettingsSection: View {
                         allowsMultipleSelection: false,
                         onCompletion: { picked($0) },
                         // A cancel never reaches `onCompletion`: without this, focus would not come back.
-                        onCancellation: { returnFocus(to: pick == .setUp ? .setUp : .join) }
+                        onCancellation: { statusIsFocused = true }
                     )
             }
-            .alert(SyncWording.sectionTitle, isPresented: isShowingFailure) {
-            } message: {
-                Text(steps.alertMessage ?? "")
+            .alert(SyncWording.stopQuestion(isPhone: true), isPresented: $steps.isAskingToStop) {
+                // Cancel is first, so the safe choice is the one VoiceOver reaches first.
+                Button(PhoneAppWording.cancel, role: .cancel) {}
+                Button(SyncWording.stopButton, role: .destructive) { steps.confirmStop() }
             }
-            .alert(PhoneSyncWording.stopQuestion, isPresented: $steps.isAskingToStop) {
-                Button(PhoneSyncWording.stopButton, role: .destructive) {
-                    steps.confirmStop()
-                    returnFocus(to: .setUp)
-                }
-                Button(PhoneAppWording.cancel, role: .cancel) { returnFocus(to: .stop) }
-            }
-        statusLines
-        ForEach(PhoneSyncSettingsModel.controls(isOn: center.status.isOn)) { control in
-            PhoneActionButton(title: control.title) { press(control) }
-                .disabled(steps.isWorking)
-                .accessibilityHint(control.hint ?? "")
-                .accessibilityFocused($focusedControl, equals: control)
-        }
-    }
-
-    /// The status line, then who was last heard from and the books' backup,
-    /// each its own static line; while a step waits, the words for the wait.
-    @ViewBuilder
-    private var statusLines: some View {
-        if steps.isWorking {
-            Text(SyncWording.waitingForFiles).phonePrimaryText()
-        } else {
-            ForEach(Array(PhoneSyncSettingsModel.lines(for: center.status).enumerated()), id: \.offset) { _, line in
+        // The status line and its details are one element, so VoiceOver reads where sync stands in one go.
+        VStack(alignment: .leading, spacing: 2) {
+            ForEach(Array(lines.enumerated()), id: \.offset) { _, line in
                 Text(line).phonePrimaryText()
             }
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityFocused($statusIsFocused)
+        // These hang on the one status element, not on each button. The controls change when sync turns on or off; focus goes to the status line, not to nothing.
+        .onChange(of: center.status.isOn) { _, _ in statusIsFocused = true }
+        // The first run's outcome, after Set Up or Join, is said when it ends.
+        .onChange(of: center.status.isSyncing) { _, syncing in
+            guard !syncing, awaitingFirstRun, center.status.isOn else { return }
+            awaitingFirstRun = false
+            VoiceOverAnnouncer.announce(lines.first ?? "")
+        }
+        if let message = steps.model.message {
+            // The words say what went wrong, so the color is never the only sign.
+            Text(message).phonePrimaryText()
+        }
+        ForEach(PhoneSyncSettingsModel.controls(isOn: center.status.isOn)) { control in
+            PhoneActionButton(title: control.title) { press(control) }
+                .disabled(steps.isWorking || (control == .syncNow && center.status.isSyncing))
+                .accessibilityHint(control.hint)
+        }
+    }
+
+    /// The status line, then who was last heard from and the books' backup; while a step runs, the words for the wait.
+    private var lines: [String] {
+        steps.isWorking ? [SyncWording.waitingForFiles] : PhoneSyncSettingsModel.lines(for: center.status)
     }
 
     /// What pressing `control` does.
@@ -89,37 +97,17 @@ struct PhoneSyncSettingsSection: View {
         }
     }
 
-    /// The picker returned: makes or joins the folder, then gives focus back.
+    /// The picker returned: makes or joins the folder, says what came of it, and leaves VoiceOver on the status line.
     private func picked(_ result: Result<[URL], Error>) {
         let kind = pick
         Task {
-            await steps.picked(result, for: kind)
-            // The failure alert, if one is up, returns focus itself when it closes.
-            if steps.alertMessage == nil { returnFocus(to: kind == .setUp ? .setUp : .join) }
-        }
-    }
-
-    /// Asks for VoiceOver's focus on `control`, after what covered it has gone:
-    /// a request made at once is lost, as `PhoneListFocus` says.
-    private func returnFocus(to control: PhoneSyncControl) {
-        Task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(600))
-            // With sync now on, the button may be another: the first one stands in.
-            let shown = PhoneSyncSettingsModel.controls(isOn: center.status.isOn)
-            focusedControl = shown.contains(control) ? control : shown.first
-        }
-    }
-
-    /// Whether the failure alert is up; closing it brings focus back.
-    private var isShowingFailure: Binding<Bool> {
-        Binding(
-            get: { steps.alertMessage != nil },
-            set: { isShowing in
-                guard !isShowing else { return }
-                steps.alertMessage = nil
-                returnFocus(to: pick == .setUp ? .setUp : .join)
+            let worked = await steps.picked(result, for: kind)
+            if worked {
+                awaitingFirstRun = true
+                VoiceOverAnnouncer.announce(SyncWording.statusSyncing)
             }
-        )
+            statusIsFocused = true
+        }
     }
 }
 
@@ -137,7 +125,7 @@ struct PhoneLibrarySummaryText: View {
             .font(.subheadline)
             .phoneSecondaryText()
             .frame(maxWidth: .infinity, alignment: .leading)
-            // Nothing is added before sync is set up (R1): no action, and no words, until it is on.
+            // Nothing is added before sync is set up (R1): no action until it is on.
             .accessibilityActions {
                 if PhoneSyncSettingsModel.offersSyncNowOnSummary(center.status) {
                     Button(SyncWording.syncNowTitle) { center.syncNow() }

@@ -2,17 +2,19 @@ import Foundation
 
 // PhoneSyncSettingsModel.swift: the decisions of the iPhone's Sync section
 // (FR43, sync-iphone), in plain types the Mac's test host can run, as
-// `PhoneSettingsModel` does for the rest of Settings: which controls the
-// section holds in each state, what each says, what the status says, and what
-// each step of setting up, joining, and stopping does. `PhoneSyncSettingsSection`,
-// on iOS, only draws them. Every state is words, so VoiceOver and a braille
-// display read all of it (rule R9 of research/CLOUD-SYNC-BUILD-PLAN-2026-11-25.md).
+// `PhoneSettingsModel` does for the rest of Settings. What the section says is the
+// Mac's own: the commands and their refusals are `SyncSettingsModel`'s, the
+// status line and the lines after it are `SyncStatusLine`'s, both with the iPhone's
+// words under one platform flag (`ThisDevice`), so the two never differ (R9). What
+// is the phone's alone is here: which controls show, the folder picker's scope, and
+// Keep on All Devices. Every state is words, so VoiceOver and a braille display read
+// all of it (rule R9 of research/CLOUD-SYNC-BUILD-PLAN-2026-11-25.md).
 
 // MARK: - Which Device This Is
 
 /// Which kind of device this build runs on, for the sentences that name it
-/// ("this Mac", "this iPhone"). A test passes the kind it wants to a
-/// function's `isPhone` instead, so both sentences are pinned on the Mac.
+/// ("this Mac", "this iPhone"): the one platform flag. A test passes the kind it
+/// wants to a function's `isPhone` instead, so both sentences are pinned on the Mac.
 enum ThisDevice {
     /// Whether this build is the iPhone's.
     static let isPhone: Bool = {
@@ -24,26 +26,26 @@ enum ThisDevice {
     }()
 }
 
-// MARK: - Wording the iPhone alone Needs
+// MARK: - The iPhone's Forms of the Sync Lines
 
-/// The lines of the Sync section that differ on the iPhone from the Mac's in
-/// `SyncWording`: a sentence that names the other device, or this one.
-enum PhoneSyncWording {
-    /// The status when another device's changes haven't downloaded: the Mac's
-    /// line names the iPhone, so the iPhone's names the Mac.
-    static var statusNotDownloaded: String {
+/// The lines of the Sync section that differ on the iPhone from the Mac's: a sentence that names the other device, or this
+/// one. They are `SyncWording`'s, with the Mac's lines beside them; each chooses by the platform flag.
+extension SyncWording {
+    /// The status when another device's changes haven't downloaded: the Mac's line names the iPhone, so the iPhone's names the Mac.
+    static func statusNotDownloaded(isPhone: Bool) -> String {
+        guard isPhone else { return statusNotDownloaded }
         // Translators: The Sync status on an iPhone when changes made on the Mac have not yet downloaded from iCloud Drive.
-        InterfaceText.line("phoneSync.status.notDownloaded", "Some changes from your Mac haven't downloaded yet. TextMouth will try again.")
+        return InterfaceText.line("phoneSync.status.notDownloaded", "Some changes from your Mac haven't downloaded yet. TextMouth will try again.")
     }
 
-    /// The question asked before syncing stops: the Mac's names "this Mac".
-    static var stopQuestion: String {
+    /// The question asked before syncing stops: the Mac's names "this Mac", the iPhone's "this iPhone".
+    static func stopQuestion(isPhone: Bool) -> String {
+        guard isPhone else { return stopQuestion }
         // Translators: The confirmation asked on an iPhone before syncing stops. Nothing is deleted from the iPhone or from iCloud Drive.
-        InterfaceText.line("phoneSync.stopQuestion", "Stop syncing this library? Nothing is deleted, on this iPhone or in iCloud Drive.")
+        return InterfaceText.line("phoneSync.stopQuestion", "Stop syncing this library? Nothing is deleted, on this iPhone or in iCloud Drive.")
     }
 
-    /// The alert's button that stops syncing, with no ellipsis: the question
-    /// has been asked.
+    /// The confirmation's button that stops syncing, with no ellipsis: the question has been asked.
     static var stopButton: String {
         // Translators: The button of the confirmation that stops syncing on an iPhone. Title case.
         InterfaceText.line("phoneSync.stopButton", "Stop Syncing")
@@ -53,13 +55,6 @@ enum PhoneSyncWording {
     static func announceStoppedKeeping(title: String) -> String {
         // Translators: Said aloud after the person chooses Stop Keeping on All Devices. %@ is the book's title.
         InterfaceText.line("phoneSync.announce.stoppedKeeping", "Stopped keeping \(title) on all devices.")
-    }
-
-    /// The name of the other device in "Last heard from …": the iPhone hears
-    /// from the Mac.
-    static var otherDeviceName: String {
-        // Translators: The name of the Mac, in the line "Last heard from Mac at 9:40 AM." shown on an iPhone.
-        InterfaceText.line("phoneSync.otherDeviceName", "Mac")
     }
 }
 
@@ -84,18 +79,18 @@ enum PhoneSyncControl: Hashable, Identifiable {
         }
     }
 
-    /// What the control does, as its VoiceOver hint; none for Sync Now and
-    /// Stop Syncing, whose titles say it.
-    var hint: String? {
+    /// What the control does, as its VoiceOver hint.
+    var hint: String {
         switch self {
         case .setUp: return SyncWording.setUpHint
         case .join: return SyncWording.joinHint
-        case .syncNow, .stop: return nil
+        case .syncNow: return SyncWording.sectionSummary
+        case .stop: return SyncWording.stopQuestion(isPhone: ThisDevice.isPhone)
         }
     }
 }
 
-/// What the Sync section holds, and what its status says.
+/// What the Sync section holds.
 enum PhoneSyncSettingsModel {
     /// The controls to show, in order: with sync off, Set Up Sync and Join Sync
     /// Folder; with it on, Sync Now and Stop Syncing.
@@ -109,89 +104,15 @@ enum PhoneSyncSettingsModel {
         status.isOn
     }
 
-    // MARK: The Status Lines
-
-    /// The status line, then the lines that follow it (who was last heard
-    /// from, and the books' backup), as the section reads them. The first line
-    /// is the first state that holds, in the plan's order (section 7).
-    /// - Parameters:
-    ///   - status: What `SyncCenter` reports.
-    ///   - time: How a date is written as a time of day; the system's by
-    ///     default, and a test's own.
-    static func lines(for status: SyncStatus, time: (Date) -> String = { $0.formatted(date: .omitted, time: .shortened) }) -> [String] {
-        var lines = [headline(for: status, time: time)]
-        guard status.isOn else { return lines }
-        for (device, date) in status.lastHeard.sorted(by: { $0.key < $1.key }) {
-            lines.append(SyncWording.lastHeard(from: heardDeviceName(device), at: time(date)))
-        }
-        if let toBackUp = status.booksToBackUp, let done = status.booksBackedUp, done < toBackUp {
-            lines.append(SyncWording.backingUp(done: done, total: toBackUp))
-        }
-        return lines
+    /// The status line for the iPhone, and the lines after it, as the section reads them: the shared function, in the
+    /// iPhone's words.
+    static func lines(for status: SyncStatus, isPhone: Bool = ThisDevice.isPhone, time: (Date) -> String = timeOfDay) -> [String] {
+        [SyncStatusLine.text(for: status, isPhone: isPhone, time: time)] + SyncStatusLine.detailLines(for: status, time: time)
     }
 
-    /// The first state that holds. Only the Mac backs up books, so the books
-    /// the phone counts as not uploaded are the Mac's backlog.
-    static func headline(for status: SyncStatus, time: (Date) -> String) -> String {
-        let device = SyncWording.thisDevice(isPhone: true)
-        if !status.isOn { return SyncWording.statusOff }
-        if status.isSyncing { return SyncWording.statusSyncing }
-        if status.isOffline { return SyncWording.statusOffline(changes: status.pendingChanges, device: device) }
-        switch status.problem {
-        case .folderMissing?:
-            return SyncWording.statusFolderMissing(device: device)
-        case .outOfSpace?:
-            let books = max(0, (status.booksToBackUp ?? 0) - (status.booksBackedUp ?? 0))
-            return SyncWording.statusOutOfSpace(changes: status.pendingChanges, books: books, device: device)
-        case .laterVersion?:
-            return SyncWording.statusLaterVersion
-        case .anotherStore?:
-            return SyncWording.anotherStore
-        case .notASyncFolder?:
-            return SyncWording.notASyncFolder
-        default:
-            break
-        }
-        if status.pendingChanges > 0 { return SyncWording.statusUploading(changes: status.pendingChanges) }
-        if case .notDownloaded? = status.problem { return PhoneSyncWording.statusNotDownloaded }
-        if let last = status.lastSynced { return SyncWording.statusUpToDate(at: time(last)) }
-        // On, with no sync finished yet: one is on its way.
-        return SyncWording.statusSyncing
-    }
-
-    /// How a device is named in "Last heard from …": the one other kind of
-    /// device a phone hears from is a Mac, whatever its own name.
-    static func heardDeviceName(_ device: String) -> String {
-        device.isEmpty ? PhoneSyncWording.otherDeviceName : device
-    }
-
-    // MARK: Refusals
-
-    /// What a folder chosen outside iCloud Drive is told, or nil for one in it.
-    static func refusal(forFolderInICloudDrive isInICloudDrive: Bool) -> String? {
-        isInICloudDrive ? nil : SyncWording.notInICloudDrive
-    }
-
-    /// Whether the folder at `folder` is in iCloud Drive: by the path through
-    /// `Mobile Documents`, or by a sync service managing it.
-    static func isInICloudDrive(_ folder: URL) -> Bool {
-        if UbiquitousItemStatusProvider.provider(forPath: folder) == .iCloudDrive { return true }
-        return (try? folder.resourceValues(forKeys: [.isUbiquitousItemKey]).isUbiquitousItem) == true
-    }
-
-    /// The words for a step that failed: a `SyncProblem` has its own, any other
-    /// error says what the system said.
-    static func message(for error: Error) -> String {
-        guard let problem = error as? SyncProblem else { return error.localizedDescription }
-        switch problem {
-        case .offline, .notDownloaded: return SyncWording.waitingForFiles
-        case .folderMissing: return SyncWording.statusFolderMissing(device: SyncWording.thisDevice(isPhone: true))
-        case .notASyncFolder, .damaged: return SyncWording.notASyncFolder
-        case .anotherStore: return SyncWording.anotherStore
-        case .laterVersion: return SyncWording.statusLaterVersion
-        case .outOfSpace: return SyncWording.statusOutOfSpace(changes: 0, books: 0, device: SyncWording.thisDevice(isPhone: true))
-        case .exists: return SyncWording.folderAlreadyThere
-        }
+    /// A date as a time of day, as the system writes one: "9:41 AM".
+    static func timeOfDay(_ date: Date) -> String {
+        date.formatted(date: .omitted, time: .shortened)
     }
 }
 
@@ -205,119 +126,99 @@ enum PhoneSyncPick: Equatable {
     case join
 }
 
-/// The Sync section's steps, which the view calls: choosing a folder, Sync
-/// Now, and Stop Syncing. Each step says what happened through `announce`,
-/// and a failure also through `alertMessage`, which the view shows in an
-/// alert. The services are passed in, so a test runs every step with none of
-/// the real ones (and never touches iCloud Drive).
+/// The Sync section's steps, which the view calls: choosing a folder, Sync Now, and Stop Syncing. The Mac's own model
+/// (`SyncSettingsModel`) refuses a folder, runs the command, says what came of it, and announces it; this adds what the
+/// phone alone does: the picked folder's security scope is held open while the sync makes its bookmark and reads it.
+/// The services are passed in, so a test runs every step with none of the real ones (and never touches iCloud Drive).
 @MainActor
 final class PhoneSyncSettingsController: ObservableObject {
-    /// What the steps use of the rest of the app.
-    struct Services {
-        /// Makes TextMouth Sync in the folder and joins (`SyncCenter.setUp(in:)`).
-        var setUp: (URL) async throws -> Void
-        /// Joins the sync folder (`SyncCenter.join(_:)`).
-        var join: (URL) async throws -> Void
-        /// Syncs now (`SyncCenter.syncNow()`).
-        var syncNow: @MainActor () -> Void
-        /// Stops syncing (`SyncCenter.stop()`).
-        var stop: @MainActor () -> Void
-        /// Whether a folder is in iCloud Drive.
-        var isInICloudDrive: (URL) -> Bool
-        /// Opens the security scope of a URL from the picker and returns what closes it.
-        var openScope: (URL) -> () -> Void
-        /// Speaks a line to VoiceOver.
-        var announce: @MainActor (String) -> Void
+    /// The Mac's commands and the words they end in, for the iPhone.
+    let model: SyncSettingsModel
+    /// Opens the security scope of a URL from the picker and returns what closes it.
+    private let openScope: (URL) -> () -> Void
 
-        /// The app's own: `SyncCenter`, the path check, and VoiceOver.
-        static var app: Services {
-            Services(
-                setUp: { try await SyncCenter.shared.setUp(in: $0) },
-                join: { try await SyncCenter.shared.join($0) },
-                syncNow: { SyncCenter.shared.syncNow() },
-                stop: { SyncCenter.shared.stop() },
-                isInICloudDrive: { PhoneSyncSettingsModel.isInICloudDrive($0) },
-                openScope: { url in
-                    let opened = url.startAccessingSecurityScopedResource()
-                    return { if opened { url.stopAccessingSecurityScopedResource() } }
-                },
-                announce: { VoiceOverAnnouncer.announce($0) }
-            )
-        }
-    }
-
-    /// Whether a Set Up or Join is under way, so a second press does nothing.
-    @Published private(set) var isWorking = false
-    /// The words of the failure an alert shows, or nil for none.
-    @Published var alertMessage: String?
     /// Whether the question before Stop Syncing is showing.
     @Published var isAskingToStop = false
+    /// Whether a Set Up or Join is under way, so a second press does nothing.
+    @Published private(set) var isWorking = false
 
-    private let services: Services
-
-    init(services: Services = .app) {
-        self.services = services
+    /// - Parameters:
+    ///   - model: The commands; the app's own by default, for the iPhone.
+    ///   - openScope: Opens the picked folder's scope; the system's by default.
+    init(
+        model: SyncSettingsModel = SyncSettingsModel(isPhone: true),
+        openScope: @escaping (URL) -> () -> Void = { url in
+            let opened = url.startAccessingSecurityScopedResource()
+            return { if opened { url.stopAccessingSecurityScopedResource() } }
+        }
+    ) {
+        self.model = model
+        self.openScope = openScope
     }
 
-    /// The picker returned: makes or joins the sync folder, keeping the
-    /// folder's scope open while `SyncCenter` makes its bookmark and reads it.
-    /// A picker that failed or was dismissed (no URL) does nothing but say a
-    /// failure. A folder outside iCloud Drive is refused, with nothing made.
-    func picked(_ result: Result<[URL], Error>, for pick: PhoneSyncPick) async {
-        guard !isWorking else { return }
+    /// The picker returned: sets up in the folder, or joins it, with the folder's scope open throughout.
+    /// A picker the person cancelled, or that gave no folder, does nothing; one that failed is said.
+    /// - Returns: Whether sync is now set up.
+    @discardableResult
+    func picked(_ result: Result<[URL], Error>, for pick: PhoneSyncPick) async -> Bool {
+        guard !isWorking else { return false }
         let folder: URL
         switch result {
         case .failure(let error):
-            // A person cancelling the picker is not a failure worth an alert.
-            if (error as NSError).code != NSUserCancelledError { fail(PhoneSyncSettingsModel.message(for: error)) }
-            return
+            // A person cancelling the picker is not a failure worth a word.
+            if (error as NSError).code != NSUserCancelledError {
+                model.say(SyncSettingsModel.sentence(for: error, isPhone: true))
+            }
+            return false
         case .success(let urls):
-            guard let first = urls.first else { return }
+            guard let first = urls.first else { return false }
             folder = first
         }
-        let closeScope = services.openScope(folder)
+        let closeScope = openScope(folder)
         defer { closeScope() }
-        if let refusal = PhoneSyncSettingsModel.refusal(forFolderInICloudDrive: services.isInICloudDrive(folder)) {
-            fail(refusal)
-            return
-        }
         isWorking = true
         defer { isWorking = false }
-        do {
-            switch pick {
-            case .setUp: try await services.setUp(folder)
-            case .join:
-                // Joining may wait a minute for the folder's first file: say so, then say what came of it.
-                services.announce(SyncWording.waitingForFiles)
-                try await services.join(folder)
-            }
-            // Sync is on; the first sync is under way.
-            services.announce(SyncWording.announceSyncing)
-        } catch {
-            fail(PhoneSyncSettingsModel.message(for: error))
+        switch pick {
+        case .setUp: return await model.setUp(in: folder)
+        case .join: return await model.join(folder)
         }
     }
 
-    /// Sync Now: the center announces "Syncing." and the outcome itself.
-    func syncNow() {
-        services.syncNow()
-    }
+    /// Sync Now: the center announces "Syncing." and what came of it.
+    func syncNow() { model.syncNow() }
 
     /// Stop Syncing was pressed: asks first.
-    func askToStop() {
-        isAskingToStop = true
-    }
+    func askToStop() { isAskingToStop = true }
 
     /// The question was answered yes: stops, deleting nothing, and says sync is off.
     func confirmStop() {
         isAskingToStop = false
-        services.stop()
-        services.announce(SyncWording.statusOff)
+        model.stop()
+    }
+}
+
+// MARK: - Keep on All Devices
+
+/// Keep on All Devices (section 16), as the Mac does it: the choice is stamped in the sync, the set it reads follows at once,
+/// and VoiceOver is told only when something changed.
+@MainActor
+enum PhoneKeepOnAllDevices {
+    /// Whether `bookID` is kept on all devices that sync, as the rows and the switch read it.
+    static func isKept(_ bookID: UUID) -> Bool {
+        KeptBooks.shared.isKeptOnAllDevices(bookID)
     }
 
-    /// Shows `message` in the alert and speaks it.
-    private func fail(_ message: String) {
-        alertMessage = message
-        services.announce(message)
+    /// Keeps `book` on all devices, or stops. A choice that is already so changes nothing and says nothing.
+    /// - Returns: Whether anything was stamped.
+    @discardableResult
+    static func set(_ keeping: Bool, _ book: Book) -> Bool {
+        guard isKept(book.id) != keeping else { return false }
+        SyncCenter.shared.setKeep(keeping, for: [book.id])
+        // The set follows at once, so the switch and the rows read the new value as VoiceOver asks, before the sync's own
+        // registers say so.
+        let ids = KeptBooks.shared.syncedBookIDs
+        KeptBooks.shared.setSyncedBooks(keeping ? ids.union([book.id]) : ids.subtracting([book.id]))
+        PhoneAnnouncer.say(keeping ? SyncWording.announceKeeping(title: book.title) : SyncWording.announceStoppedKeeping(title: book.title))
+        return true
     }
 }

@@ -305,18 +305,17 @@ private struct PhoneBookInfoFacts: View {
 /// and takes effect when it is flipped, not on Save, since it is no field of the book. Its hint says what it does, once.
 private struct PhoneBookInfoKeep: View {
     let book: Book
-    /// What the app's one sync reports: the switch shows with sync on, and follows the set kept.
+    /// What the app's one sync reports: the switch shows with sync on.
     @ObservedObject private var center = SyncCenter.shared
+    /// The books kept on all devices, which the switch reads and follows as they change.
+    @ObservedObject private var kept = KeptBooks.shared
 
     var body: some View {
         if center.status.isOn {
             Section {
                 Toggle(isOn: Binding(
-                    get: { center.keptBookIDs.contains(book.id) },
-                    set: { keeps in
-                        center.setKeep(keeps, for: [book.id])
-                        PhoneAnnouncer.say(keeps ? SyncWording.announceKeeping(title: book.title) : PhoneSyncWording.announceStoppedKeeping(title: book.title))
-                    }
+                    get: { kept.isKeptOnAllDevices(book.id) },
+                    set: { PhoneKeepOnAllDevices.set($0, book) }
                 )) {
                     Text(SyncWording.keptState).phoneWholeWords()
                 }
