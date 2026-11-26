@@ -146,7 +146,7 @@ final class PhoneSyncSettingsController: ObservableObject {
     ///   - model: The commands; the app's own by default, for the iPhone.
     ///   - openScope: Opens the picked folder's scope; the system's by default.
     init(
-        model: SyncSettingsModel = SyncSettingsModel(isPhone: true),
+        model: SyncSettingsModel = PhoneSyncSettingsController.appModel(),
         openScope: @escaping (URL) -> () -> Void = { url in
             let opened = url.startAccessingSecurityScopedResource()
             return { if opened { url.stopAccessingSecurityScopedResource() } }
@@ -154,6 +154,21 @@ final class PhoneSyncSettingsController: ObservableObject {
     ) {
         self.model = model
         self.openScope = openScope
+    }
+
+    /// The app's model for the iPhone. A Debug build's interface test that names a sandbox folder in `TEXTMOUTH_SYNC_FOLDER`
+    /// (`SyncCenter.seamFolder()`) has chosen to sync there, so the model's own refusals (R6) let that folder and the
+    /// library pass, as the center's do; a Release build has no such folder, and these are the ordinary checks.
+    static func appModel() -> SyncSettingsModel {
+        SyncSettingsModel(
+            libraryLocation: {
+                SyncCenter.seamFolder() != nil ? .local : CloudServices.itemStatus.location(of: TextMouthPaths.root)
+            },
+            locationOf: { folder in
+                SyncCenter.isSeamFolder(folder) ? .cloud(.iCloudDrive) : CloudServices.itemStatus.location(of: folder)
+            },
+            isPhone: true
+        )
     }
 
     /// The picker returned: sets up in the folder, or joins it, with the folder's scope open throughout.

@@ -86,14 +86,24 @@ struct PhoneSyncSettingsSection: View {
         switch control {
         case .setUp:
             pick = .setUp
-            isPicking = true
+            choose()
         case .join:
             pick = .join
-            isPicking = true
+            choose()
         case .syncNow:
             steps.syncNow()
         case .stop:
             steps.askToStop()
+        }
+    }
+
+    /// Opens the folder picker; in a Debug build whose interface test names a sandbox folder (`TEXTMOUTH_SYNC_FOLDER`), the
+    /// folder is taken as if it had been picked, since a test can't drive the system's picker.
+    private func choose() {
+        if let folder = SyncCenter.seamFolder() {
+            picked(.success([folder]))
+        } else {
+            isPicking = true
         }
     }
 

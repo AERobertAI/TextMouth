@@ -72,8 +72,14 @@ class TextMouthUITestCase: XCTestCase {
     /// at `path`, a file of this test bundle, when it is not nil: another
     /// book than Alice, such as a braille one (BrailleUITests). `arguments`
     /// are added to the launch's, as `-AppleLanguages (es)` starts the app in
-    /// Spanish (SpanishUITests).
-    func launch(sendingBookAt path: String?, textSize: String? = nil, arguments: [String] = []) throws -> XCUIApplication {
+    /// Spanish (SpanishUITests), and `environment` to its environment, as a Debug
+    /// seam such as TEXTMOUTH_SYNC_FOLDER (SyncSettingsUITests) is named.
+    func launch(
+        sendingBookAt path: String?,
+        textSize: String? = nil,
+        arguments: [String] = [],
+        environment: [String: String] = [:]
+    ) throws -> XCUIApplication {
         continueAfterFailure = false
         let app = XCUIApplication()
         app.launchEnvironment["TEXTMOUTH_UI_TEST"] = "1"
@@ -81,6 +87,7 @@ class TextMouthUITestCase: XCTestCase {
             app.launchArguments += ["-UIPreferredContentSizeCategoryName", textSize]
         }
         app.launchArguments += arguments
+        for (name, value) in environment { app.launchEnvironment[name] = value }
         if let path {
             app.launchEnvironment["TEXTMOUTH_OPEN_AT_LAUNCH"] = path
         }
