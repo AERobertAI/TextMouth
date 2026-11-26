@@ -166,6 +166,13 @@ struct UbiquitousItemStatusProvider: SyncFlagReporting {
     /// another volume, or on the startup disk. A folder that does not exist
     /// yet is judged by its path and its nearest existing ancestor.
     func location(of folder: URL) -> StorageLocation {
+        location(of: folder, isPhone: ThisDevice.isPhone)
+    }
+
+    /// `location(of:)` for a Mac or an iPhone. An iPhone has no other volume a library could be kept on, and its app's own
+    /// container is on the data volume, not the startup volume the root names: comparing them would call the phone's own
+    /// library "on another volume", and refuse every Set Up and Join (R6, FR43).
+    func location(of folder: URL, isPhone: Bool) -> StorageLocation {
         DatalessFiles.withoutDownloading {
             let folder = folder.standardizedFileURL
             if let provider = Self.provider(forPath: folder) {
@@ -185,7 +192,7 @@ struct UbiquitousItemStatusProvider: SyncFlagReporting {
             if metadata.isUbiquitousItem == true {
                 return .cloud(.iCloudDrive)
             }
-            if let volume = metadata.volumeURL, let startup = startupVolume(), !Self.isSameFolder(volume, startup) {
+            if !isPhone, let volume = metadata.volumeURL, let startup = startupVolume(), !Self.isSameFolder(volume, startup) {
                 return .otherVolume(name: metadata.volumeName ?? volume.lastPathComponent)
             }
             return .local
