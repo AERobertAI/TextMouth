@@ -7,14 +7,14 @@ priority: P2
 platform: mac
 assignee:
 created: 2026-10-17
-updated: 2026-11-16
+updated: 2026-11-26
 found-by: the research of 2026-10-17
 branch:
 merged:
 reason:
 related:
 docs:
-labels:
+labels: release-0-7-0
 ---
 
 ## Description
