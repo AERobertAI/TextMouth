@@ -19,6 +19,8 @@ enum PhoneLibraryOffer {
         case removeFromReadingList
         /// Asks for a folder, and moves the book there.
         case moveToFolder
+        /// Downloads the book's files from the cloud now (FR43: a book not on this device yet).
+        case downloadNow
         /// Keeps the book's files on every device that syncs (FR43, section 16).
         case keepOnAllDevices
         /// Ends keeping the book's files on every device that syncs.
@@ -63,12 +65,14 @@ enum PhoneLibraryOffer {
     ///   - isKeptOnAllDevices: Whether the book is kept on all devices, or nil
     ///     while sync is off, when neither keep command is offered (R1: nothing
     ///     is added before a folder is chosen).
+    ///   - canDownload: Whether the book's files are only in the cloud, so Download Now is offered (FR43).
     static func bookCommands(
         for book: Book,
         isInReadingList: Bool,
         moves: LibraryManualMoves?,
         removal: RemovalPreferences,
-        isKeptOnAllDevices: Bool? = nil
+        isKeptOnAllDevices: Bool? = nil,
+        canDownload: Bool = false
     ) -> [Command] {
         var commands = [Command(action: .bookInfo, title: PhoneLibraryVocabulary.bookInfo)]
         // The Mac's own rule: a book is offered exactly one of the two, by
@@ -77,6 +81,10 @@ enum PhoneLibraryOffer {
         for listCommand in ReadingListCommand.commands(for: [book], isSelection: false, inList: inList) {
             let action: Action = listCommand.kind == .add ? .addToReadingList : .removeFromReadingList
             commands.append(Command(action: action, title: listCommand.title))
+        }
+        // Download Now for a book not on this device, as the Mac offers it.
+        if canDownload {
+            commands.append(Command(action: .downloadNow, title: LibraryCloudWording.downloadTitle(count: 1, forSelection: false)))
         }
         // One of the two keep commands, with sync on.
         if let isKept = isKeptOnAllDevices {

@@ -548,6 +548,12 @@ struct PhoneLibraryView: View {
             if let neighbor {
                 requestFocus(.row(neighbor))
             }
+        case .downloadNow:
+            // The Mac's own command, on the book alone: it asks the cloud for the files, and the row shows the progress.
+            let commands = LibraryCloudCommand.commands(for: [book], isSelection: false, states: .shared, kept: [])
+            if let download = commands.first(where: { $0.kind == .download }) {
+                Task { await library.cloudCommands.perform(download, in: library, from: nil) }
+            }
         case .keepOnAllDevices, .stopKeepingOnAllDevices:
             // Stamped on this device and synced, the set following at once; the person is told, and the rows are built again.
             PhoneKeepOnAllDevices.set(action == .keepOnAllDevices, book)
