@@ -194,6 +194,33 @@ final class ProtectedBookReaderTests: XCTestCase {
         XCTAssertTrue(spoken.contains(ProtectionWording.cannotSkipSections), "\(spoken)")
     }
 
+    /// The package metadata read from a protected EPUB's file is kept nowhere: its package
+    /// document is one of the entries the password encrypts. The reader kept the publisher,
+    /// the identifier, and the rest on the book's row and in its record, in plain text.
+    func testAProtectedEPUBsMetadataIsNotKeptOnItsRow() throws {
+        try prepare()
+        let made = try makeTemporaryZip(prefix: "ProtectedEPUB", orderedEntries: [
+            TestZIPEntry("mimetype", Data("application/epub+zip".utf8)),
+            TestZIPEntry("OEBPS/content.opf", Data("<package/>".utf8))
+        ])
+        let url = folder.appendingPathComponent("Weir Log.epub")
+        try FileManager.default.moveItem(at: made, to: url)
+        try markEncrypted(["OEBPS/content.opf"], in: url)
+        book = Book(title: "Weir Log", format: .epub, filePath: url.path, md5Hash: "hash-\(UUID().uuidString)")
+        XCTAssertTrue(book.isPasswordProtected)
+        let reader = makeReader()
+
+        reader.keepEPUBMetadataReadFromFile(EPUBMetadata(
+            title: "Weir Log", author: "A. Keeper", publisher: "Zebra House", publicationDate: "2001",
+            isbn: "9780000000002", language: "en", identifier: "urn:zebra:1", epubVersion: "3.0"
+        ))
+        let row = try XCTUnwrap(reader.libraryViewModel.bookByID(book.id))
+        XCTAssertNil(row.epubPublisher, "the row kept the protected book's publisher")
+        XCTAssertNil(row.epubIdentifier)
+        XCTAssertNil(row.epubISBN)
+        XCTAssertNil(reader.book.epubPublisher, "the reader's copy, which its saves write, kept it")
+    }
+
     /// An attempt is announced as it begins, so a person who hears nothing else knows it is working.
     func testTryingAPasswordIsAnnounced() {
         XCTAssertNoThrow(try prepare())

@@ -2058,7 +2058,14 @@ final class ReaderViewModel: ObservableObject {
     /// not written; the library index alone takes the fields then, as for
     /// any save (`LibraryPersistenceService`). The reader's own copy of the
     /// book takes the same fields.
-    private func keepEPUBMetadataReadFromFile(_ metadata: EPUBMetadata) {
+    ///
+    /// A book with a password keeps none of it (FR41): its package document
+    /// is one of the entries its password encrypts, so the publisher, the
+    /// identifier, and the rest are shown while the book is open, and never
+    /// written to its row, its record, or the sync folder in plain text.
+    /// Internal, not private, so a test can hand it metadata.
+    func keepEPUBMetadataReadFromFile(_ metadata: EPUBMetadata) {
+        guard !book.isPasswordProtected else { return }
         book.keepEPUBMetadata(readFromFile: metadata)
         guard let row = libraryViewModel.bookByID(book.id), row.format == .epub,
               row.keptEPUBMetadata == nil else { return }
