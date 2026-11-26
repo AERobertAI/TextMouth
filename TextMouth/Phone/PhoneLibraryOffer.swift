@@ -21,6 +21,8 @@ enum PhoneLibraryOffer {
         case moveToFolder
         /// Downloads the book's files from the cloud now (FR43: a book not on this device yet).
         case downloadNow
+        /// Removes the book's download from this iPhone while it stays in iCloud Drive (FR46).
+        case removeDownload
         /// Keeps the book's files on every device that syncs (FR43, section 16).
         case keepOnAllDevices
         /// Ends keeping the book's files on every device that syncs.
@@ -68,13 +70,15 @@ enum PhoneLibraryOffer {
     ///     while sync is off, when neither keep command is offered (R1: nothing
     ///     is added before a folder is chosen).
     ///   - canDownload: Whether the book's files are only in the cloud, so Download Now is offered (FR43).
+    ///   - canRemoveDownload: Whether the book is whole on this device in a synced library, so Remove Download is offered (FR46).
     static func bookCommands(
         for book: Book,
         isInReadingList: Bool,
         moves: LibraryManualMoves?,
         removal: RemovalPreferences,
         isKeptOnAllDevices: Bool? = nil,
-        canDownload: Bool = false
+        canDownload: Bool = false,
+        canRemoveDownload: Bool = false
     ) -> [Command] {
         var commands = [Command(action: .bookInfo, title: PhoneLibraryVocabulary.bookInfo)]
         // The Mac's own rule: a book is offered exactly one of the two, by
@@ -87,6 +91,10 @@ enum PhoneLibraryOffer {
         // Download Now for a book not on this device, as the Mac offers it.
         if canDownload {
             commands.append(Command(action: .downloadNow, title: LibraryCloudWording.downloadTitle(count: 1, forSelection: false)))
+        }
+        // Remove Download for a book whole on this device in a synced library, in the Mac's place after Download Now.
+        if canRemoveDownload {
+            commands.append(Command(action: .removeDownload, title: LibraryCloudWording.removeDownloadTitle(count: 1, forSelection: false)))
         }
         // One of the two keep commands, with sync on.
         if let isKept = isKeptOnAllDevices {

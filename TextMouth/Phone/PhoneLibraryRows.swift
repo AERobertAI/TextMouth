@@ -499,7 +499,8 @@ final class PhoneLibraryRows: ObservableObject {
                 moves: contents.moves?[book.id],
                 removal: removalPreferences(),
                 isKeptOnAllDevices: isKept,
-                canDownload: cloudState?.canDownload == true
+                canDownload: cloudState?.canDownload == true,
+                canRemoveDownload: BookCloudStates.shared.canRemoveDownload(book)
             )
         )
     }

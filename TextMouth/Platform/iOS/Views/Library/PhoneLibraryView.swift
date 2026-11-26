@@ -59,6 +59,8 @@ struct PhoneLibraryView: View {
     @State private var sayAfterSheet: String?
     /// The book the removal question is about.
     @State private var removalCandidate: Book?
+    /// Why Remove Download left a book's download, as the alert says it (FR46); nil when no alert shows.
+    @State private var removeDownloadRefusal: LibraryCloudRefusal?
     /// The row left for a book's or a folder's screen, which focus returns to.
     @State private var rowLeft: PhoneRowID?
     /// The rows as they were when that row was left, for the row that takes
@@ -211,6 +213,19 @@ struct PhoneLibraryView: View {
             Button(PhoneAppWording.cancel, role: .cancel) {}
         } message: { _ in
             Text(PhoneRowWording.removalMessage)
+        }
+        // Why Remove Download kept a book's download, in words, as an alert (FR46), as the Mac shows it.
+        .alert(
+            removeDownloadRefusal?.title ?? "",
+            isPresented: Binding(
+                get: { removeDownloadRefusal != nil },
+                set: { if !$0 { removeDownloadRefusal = nil } }
+            ),
+            presenting: removeDownloadRefusal
+        ) { _ in
+            Button(PhoneAppWording.close, role: .cancel) {}
+        } message: { refusal in
+            Text(refusal.message)
         }
     }
 
@@ -563,6 +578,16 @@ struct PhoneLibraryView: View {
             let commands = LibraryCloudCommand.commands(for: [book], isSelection: false, states: .shared, kept: [])
             if let download = commands.first(where: { $0.kind == .download }) {
                 Task { await library.cloudCommands.perform(download, in: library, from: nil) }
+            }
+        case .removeDownload:
+            // The Mac's own command, on the book alone: it proves the copy in iCloud Drive first, says what came of it, and the row
+            // shows In Cloud. A refusal is an alert, spoken once by VoiceOver as it appears.
+            let commands = LibraryCloudCommand.commands(for: [book], isSelection: false, states: .shared, kept: [])
+            if let removal = commands.first(where: { $0.kind == .removeDownload }) {
+                Task {
+                    removeDownloadRefusal = await library.cloudCommands.perform(removal, in: library, from: nil)
+                    rows.rebuild()
+                }
             }
         case .keepOnAllDevices, .stopKeepingOnAllDevices:
             // Stamped on this device and synced, the set following at once; the person is told, and the rows are built again.
