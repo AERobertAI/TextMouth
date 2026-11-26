@@ -19,15 +19,12 @@ final class ProtectedImportTests: XCTestCase {
     /// Puts the default store back.
     private var restoreStore: (() -> Void)?
 
-    override func setUpWithError() throws {
+    /// Puts an in-memory store in use and makes the source folder; each test begins with it.
+    private func prepare() throws {
         restoreStore = CredentialStores.use(InMemoryCredentialStore())
+        addTeardownBlock { @MainActor [weak self] in self?.restoreStore?() }
         folder = FileManager.default.temporaryDirectory.appendingPathComponent("ProtectedImportTests-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-    }
-
-    override func tearDown() {
-        restoreStore?()
-        super.tearDown()
     }
 
     /// A PDF holding `words`, locked with the user password "secret".
@@ -62,6 +59,7 @@ final class ProtectedImportTests: XCTestCase {
 
     /// A plain PDF beside a locked one: only the locked one is found, and it is known by its import checksum.
     func testOnlyProtectedFilesAreFound() throws {
+        try prepare()
         let locked = try lockedPDF()
         let open = try PDFFixtures.makePDF(for: self) { [words] context, _ in
             PDFFixtures.drawText(words, size: 14, at: CGPoint(x: 72, y: 700), in: context)
@@ -86,6 +84,7 @@ final class ProtectedImportTests: XCTestCase {
     /// The question is asked, a wrong password keeps it open and says so, the right one remembers
     /// the password under the book's checksum and carries the import on exactly once.
     func testTheQuestionAsksThenCarriesOn() throws {
+        try prepare()
         let locked = try lockedPDF()
         let library = LibraryViewModel(initializeServices: false)
         var carriedOn = 0
@@ -108,6 +107,7 @@ final class ProtectedImportTests: XCTestCase {
 
     /// Import Locked carries on with nothing remembered; Cancel adds nothing; a list with no protected book asks nothing.
     func testImportLockedAndCancel() throws {
+        try prepare()
         let locked = try lockedPDF()
         let library = LibraryViewModel(initializeServices: false)
         var carriedOn = 0
@@ -129,6 +129,7 @@ final class ProtectedImportTests: XCTestCase {
 
     /// A locked PDF comes in locked: its file's name is its title, no cache or index of text is written, and its package holds none of its words.
     func testAProtectedPDFIsAddedLockedWithNothingRead() throws {
+        try prepare()
         let source = try lockedPDF()
         let imported = try FileImportService.importFileWithReport(from: source)
         let book = imported.book
@@ -146,6 +147,7 @@ final class ProtectedImportTests: XCTestCase {
 
     /// A book already added locked opens with its password, reads from memory, and writes nothing into its package.
     func testOpeningAnAddedBookWritesNothingIntoItsPackage() throws {
+        try prepare()
         let imported = try FileImportService.importFileWithReport(from: try lockedPDF())
         let book = imported.book
         let package = book.tmbDirectory
@@ -183,6 +185,7 @@ final class ProtectedImportTests: XCTestCase {
 
     /// An unprotected PDF is added as it always was, with its text read and its cache written.
     func testAnOrdinaryPDFIsStillAddedWithItsText() throws {
+        try prepare()
         let open = try PDFFixtures.makePDF(for: self) { [words] context, _ in
             PDFFixtures.drawText(words, size: 14, at: CGPoint(x: 72, y: 700), in: context)
         }

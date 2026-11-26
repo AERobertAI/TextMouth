@@ -26,8 +26,11 @@ final class ProtectedBookReaderTests: XCTestCase {
     /// The announcements made before the test, so only its own are read.
     private var announcementsBefore = 0
 
-    override func setUpWithError() throws {
+    /// Makes the book and puts the in-memory store in use; each test begins
+    /// with it (a main-actor setUp is not available to a main-actor class).
+    private func prepare() throws {
         restoreStore = CredentialStores.use(store)
+        addTeardownBlock { @MainActor [weak self] in self?.restoreStore?() }
         folder = FileManager.default.temporaryDirectory.appendingPathComponent("ProtectedBookReaderTests-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let open = try PDFFixtures.makePDF(for: self) { context, _ in
@@ -39,11 +42,6 @@ final class ProtectedBookReaderTests: XCTestCase {
         book = Book(title: "Sluice Notes", format: .pdf, filePath: url.path, md5Hash: "hash-\(UUID().uuidString)")
         listingAtStart = try listing()
         announcementsBefore = VoiceOverAnnouncer.recordedAnnouncements.count
-    }
-
-    override func tearDown() {
-        restoreStore?()
-        super.tearDown()
     }
 
     /// The names in the folder.
@@ -81,6 +79,7 @@ final class ProtectedBookReaderTests: XCTestCase {
 
     /// A locked book shows the password panel, not the book, and reads nothing.
     func testALockedBookAsksForItsPassword() {
+        XCTAssertNoThrow(try prepare())
         let reader = makeReader()
         wait(for: reader, "the prompt") { $0.unlockPrompt != nil }
         XCTAssertNil(reader.content)
@@ -90,6 +89,7 @@ final class ProtectedBookReaderTests: XCTestCase {
 
     /// A wrong password is said aloud and shown, the field is asked to take focus again, and the book stays locked.
     func testAWrongPasswordIsSaidAndKeepsTheField() {
+        XCTAssertNoThrow(try prepare())
         let reader = makeReader()
         wait(for: reader, "the prompt") { $0.unlockPrompt != nil }
         reader.submitUnlock(UnlockChoice(password: Secret("nope"), remember: true, removePassword: false))
@@ -107,6 +107,7 @@ final class ProtectedBookReaderTests: XCTestCase {
 
     /// The right password loads the book from memory, remembers the password, and writes nothing.
     func testTheRightPasswordOpensTheBookAndWritesNothing() throws {
+        try prepare()
         let reader = makeReader()
         wait(for: reader, "the prompt") { $0.unlockPrompt != nil }
         reader.submitUnlock(UnlockChoice(password: Secret("secret"), remember: true, removePassword: false))
@@ -122,6 +123,7 @@ final class ProtectedBookReaderTests: XCTestCase {
 
     /// With Remember off, the password is not kept.
     func testRememberOffKeepsNothing() {
+        XCTAssertNoThrow(try prepare())
         let reader = makeReader()
         wait(for: reader, "the prompt") { $0.unlockPrompt != nil }
         reader.submitUnlock(UnlockChoice(password: Secret("secret"), remember: false, removePassword: false))
@@ -132,6 +134,7 @@ final class ProtectedBookReaderTests: XCTestCase {
 
     /// A remembered password opens the book at once, with no prompt, and another book's remembered password serves too.
     func testARememberedPasswordOpensWithoutAsking() {
+        XCTAssertNoThrow(try prepare())
         store.remember(Secret("other"), forBook: "another-book")
         store.remember(Secret("secret"), forBook: "a-third-book")
         let reader = makeReader()
@@ -141,6 +144,7 @@ final class ProtectedBookReaderTests: XCTestCase {
 
     /// Closing the last reader locks the book again, and the reader itself drops its hold once.
     func testClosingTheReaderLocksTheBookAgain() {
+        XCTAssertNoThrow(try prepare())
         let reader = makeReader()
         wait(for: reader, "the prompt") { $0.unlockPrompt != nil }
         reader.submitUnlock(UnlockChoice(password: Secret("secret"), remember: false, removePassword: false))
@@ -156,6 +160,7 @@ final class ProtectedBookReaderTests: XCTestCase {
     /// Remove the password rewrites the book's own file, in place, with no second copy,
     /// and the book is an ordinary book afterwards that opens without a password.
     func testRemovingThePasswordRewritesTheFileInPlace() throws {
+        try prepare()
         let reader = makeReader()
         wait(for: reader, "the prompt") { $0.unlockPrompt != nil }
         reader.submitUnlock(UnlockChoice(password: Secret("secret"), remember: true, removePassword: true))
@@ -173,6 +178,7 @@ final class ProtectedBookReaderTests: XCTestCase {
 
     /// A locked book asked for its text by any other reader is refused, and writes no cache.
     func testALockedBookIsRefusedByTheAnalysisAndGetsNoCache() throws {
+        try prepare()
         XCTAssertThrowsError(try BookContentAnalysisService.load(book: book)) { XCTAssertTrue($0 is BookLockedError) }
         XCTAssertEqual(try listing(), listingAtStart)
         XCTAssertNil(try MarkdownCacheService.generateReportedCacheContent(for: book))
@@ -180,6 +186,7 @@ final class ProtectedBookReaderTests: XCTestCase {
 
     /// The launch passes leave a protected book out.
     func testBackgroundPassesSkipAProtectedBook() {
+        XCTAssertNoThrow(try prepare())
         let protected = Book(title: book.title, format: .pdf, filePath: book.filePath, md5Hash: book.md5Hash, tmbDirectoryName: "Sluice.tmb")
         XCTAssertFalse(LibraryViewModel.needsMetadataRefresh(protected))
         XCTAssertTrue(LibraryViewModel.booksNeedingCacheUpdate([protected], access: .live).isEmpty)

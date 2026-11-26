@@ -270,9 +270,19 @@ enum TestOfficeEncryptor {
         let encryptedHash = aes(true, padded(hash("SHA1", verifier), to: 16), key: key, iv: nil)
         let algorithm = [0x660E, 0x660F, 0x6610][[128, 192, 256].firstIndex(of: keyBits) ?? 0]
         let cspName = utf16("Microsoft Enhanced RSA and AES Cryptographic Provider") + [0, 0]
-        let header = le32(0x24) + le32(0) + le32(algorithm) + le32(0x8004) + le32(keyBits) + le32(0x18) + le32(0) + le32(0) + cspName
-        let info = [3, 0, 2, 0] as [UInt8] + le32(0x24) + le32(header.count) + header
-            + le32(16) + salt + encryptedVerifier + le32(20) + encryptedHash
+        // The header: flags, size extra, algorithm, hash algorithm, key size,
+        // provider type, two reserved numbers, and the provider's name.
+        let fields: [[UInt8]] = [le32(0x24), le32(0), le32(algorithm), le32(0x8004), le32(keyBits), le32(0x18), le32(0), le32(0)]
+        let header: [UInt8] = fields.flatMap { $0 } + cspName
+        var info: [UInt8] = [3, 0, 2, 0]
+        info += le32(0x24)
+        info += le32(header.count)
+        info += header
+        info += le32(16)
+        info += salt
+        info += encryptedVerifier
+        info += le32(20)
+        info += encryptedHash
         let plain = [UInt8](package)
         let body = aes(true, padded(plain, to: 16), key: key, iv: nil)
         return Made(info: info, package: le64(plain.count) + body)
@@ -308,9 +318,11 @@ enum TestCompoundFileWriter {
 
         var header = Data([0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1])
         header += Data(count: 16)
-        header += le16(0x3E) + le16(3) + le16(0xFFFE) + le16(9) + le16(6) + Data(count: 6)
-        header += le(0) + le(1) + le(1) + le(0) + le(4096) + le(end) + le(0) + le(end) + le(0)
-        header += le(0)
+        // Version 3 (minor 0x3E), little-endian, 512-byte and 64-byte sectors.
+        for field in [le16(0x3E), le16(3), le16(0xFFFE), le16(9), le16(6), Data(count: 6)] { header += field }
+        // Directory sectors, FAT sectors, first directory sector, transaction
+        // number, mini stream cutoff, mini FAT (none), DIFAT (none).
+        for number in [0, 1, 1, 0, 4096, end, 0, end, 0, 0] as [UInt32] { header += le(number) }
         for _ in 1..<109 { header += le(free) }
 
         func entry(name: String, type: UInt8, left: UInt32, right: UInt32, child: UInt32, start: UInt32, size: Int) -> Data {
