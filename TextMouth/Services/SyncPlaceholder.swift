@@ -58,7 +58,7 @@ enum SyncPlaceholder {
         try FileManager.default.createDirectory(at: package, withIntermediateDirectories: true)
         try book.saveBookInfoThrowing(inPackageAt: package)
         let pointer = StorePointer(
-            formatVersion: 1, storeID: storeID, bookID: book.id, manifest: content.manifest, uploaded: nil, files: []
+            formatVersion: SyncFormats.currentVersion, storeID: storeID, bookID: book.id, manifest: content.manifest, uploaded: nil, files: []
         )
         try StoreFetch.write(pointer, in: package)
         return book

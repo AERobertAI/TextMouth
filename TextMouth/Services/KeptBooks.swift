@@ -129,9 +129,34 @@ final class KeptBooks: ObservableObject {
     /// say; nothing is saved here. A book that stops being kept on all
     /// devices stops being kept for it, and nothing is removed by that.
     func setSyncedBooks(_ ids: Set<UUID>) {
-        guard ids != syncedBookIDs else { return }
-        syncedBookIDs = ids
+        // A change a person just made, which the sync has not recorded yet,
+        // stays over a set that does not hold it, as a run that ended before
+        // the record hands back; it goes once the set agrees.
+        var result = ids
+        for (id, keeping) in pendingSyncedChanges {
+            if ids.contains(id) == keeping {
+                pendingSyncedChanges[id] = nil
+            } else if keeping {
+                result.insert(id)
+            } else {
+                result.remove(id)
+            }
+        }
+        guard result != syncedBookIDs else { return }
+        syncedBookIDs = result
     }
+
+    /// A person's change to the books kept on all devices: it shows at once,
+    /// and holds over the sync's own sets until one agrees with it.
+    func noteSyncedChange(keeping: Bool, _ ids: Set<UUID>) {
+        for id in ids { pendingSyncedChanges[id] = keeping }
+        var result = syncedBookIDs
+        if keeping { result.formUnion(ids) } else { result.subtract(ids) }
+        if result != syncedBookIDs { syncedBookIDs = result }
+    }
+
+    /// What a person changed that no set of the sync's has agreed with yet.
+    private var pendingSyncedChanges: [UUID: Bool] = [:]
 
     /// Whether the book `bookID` is kept only because of the reading list:
     /// the listener's own choice does not keep it, so Stop Keeping on This

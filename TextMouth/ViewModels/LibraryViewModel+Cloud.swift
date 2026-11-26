@@ -623,7 +623,7 @@ final class LibraryCloudCommands {
     /// stamped in the sync (`SyncCenter.setKeep`), which every device reads,
     /// and VoiceOver hears which books. The downloads follow the next sync
     /// (`LibraryViewModel.syncDidApply(keptBookIDs:mayDownload:)`).
-    func setKeptOnAllDevices(_ keeping: Bool, _ books: [Book], from window: PlatformWindow?) {
+    func setKeptOnAllDevices(_ keeping: Bool, _ books: [Book], from window: PlatformWindow?, announcing: Bool = true) {
         guard !books.isEmpty else { return }
         // The books whose keep this changes: not kept yet to keep, kept to
         // stop. VoiceOver hears only those, so a stop that removed no keep
@@ -635,9 +635,8 @@ final class LibraryCloudCommands {
         // The set follows at once, so the Book Information checkbox and the
         // rows read the new value as VoiceOver asks, before the sync's own
         // registers say so.
-        let ids = Set(books.map(\.id))
-        KeptBooks.shared.setSyncedBooks(keeping ? before.union(ids) : before.subtracting(ids))
-        guard !changed.isEmpty else { return }
+        KeptBooks.shared.noteSyncedChange(keeping: keeping, Set(books.map(\.id)))
+        guard announcing, !changed.isEmpty else { return }
         let titles = changed.map(\.title).joined(separator: ", ")
         DiagnosticLog.event(.storage, "KEEP_ON_ALL: \(keeping ? "keeping" : "stopped keeping") \(changed.count) book(s) on all devices") // l10n: no (debug log, English)
         VoiceOverAnnouncer.announce(

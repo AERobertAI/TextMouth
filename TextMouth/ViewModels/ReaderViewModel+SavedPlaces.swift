@@ -143,9 +143,13 @@ extension ReaderViewModel {
     /// one changes nothing and says nothing.
     func takeSyncedReadingState(_ synced: SyncedReadingState) {
         guard !isCurrentlyPlaying else { return }
-        let placeBefore = book.readingPosition
+        let before = book.readingPosition
         takeNewerRecordedState(synced.state)
-        guard book.readingPosition != placeBefore else { return }
+        guard book.readingPosition != before else { return }
+        // The place itself, the chapter and the offset in it, not its date or
+        // anchor: a newer date at the same place moves nothing and says nothing.
+        let moved = book.readingPosition.map { ($0.chapterIndex, $0.characterOffset) }
+            != before.map { ($0.chapterIndex, $0.characterOffset) }
         // The place is within the text this reader shows, as a move of the
         // cursor keeps it.
         if let chapters = content?.chapters, !chapters.isEmpty {
@@ -157,7 +161,9 @@ extension ReaderViewModel {
         // so it never outranks later reading on the other device (as opening
         // a book notes its place, `noteOpenedPlace()`).
         noteOpenedPlace()
-        VoiceOverAnnouncer.announce(SyncWording.announceMovedToPlace(from: synced.device))
+        if moved {
+            VoiceOverAnnouncer.announce(SyncWording.announceMovedToPlace(from: synced.device))
+        }
     }
 
     // MARK: Places Moved by a Rebuild of the Text

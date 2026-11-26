@@ -285,6 +285,103 @@ final class SyncLibraryHostTests: XCTestCase {
         XCTAssertFalse(applied.contains(key))
     }
 
+    /// The device a reader hears the place came from is the writer of the
+    /// place's own key, not the device heard from last (round 2, item 2).
+    func testTheDeviceNamedIsTheWriterOfThePlace() async throws {
+        let model = LibraryViewModel(initializeServices: false)
+        let book = try makePlaceholder("Written Elsewhere")
+        model.library = Library(books: [book])
+        model.audioEditActivity.setOpenInReaders([book.id])
+        model.syncDeviceName = { key in key == .book(book.id, .position) ? "iPad" : "iPhone" }
+        var heard: [String] = []
+        let subscription = model.syncedReadingStates.sink { heard.append($0.device) }
+        defer { subscription.cancel() }
+        var merged = model.library
+        var place = ReadingPosition(chapterIndex: 0, characterOffset: 40)
+        place.lastUpdated = Date(timeIntervalSince1970: 1_790_000_500)
+        merged.books[0].readingPosition = place
+        let key = SyncKey.book(book.id, .position)
+        let applied = await model.applySync(makeApplication(library: merged, keys: [key]), from: model.library)
+        XCTAssertEqual(applied, [key])
+        XCTAssertEqual(heard, ["iPad"])
+    }
+
+    /// A folder changed meanwhile never leaves a row in a folder the list
+    /// lacks: the folders the moved rows need are added (round 2, item 5).
+    func testARowNeverMovesIntoAFolderTheListLacks() async throws {
+        let model = LibraryViewModel(initializeServices: false)
+        let book = try makePlaceholder("Moved Into New")
+        let own = BookFolder(name: "Own Shelf \(UUID().uuidString.prefix(6))")
+        made.append(TextMouthPaths.libraryDir.appendingPathComponent(own.fullPath, isDirectory: true))
+        let start = Library(books: [book])
+        model.library = start
+        // The person makes a folder after the merge was computed.
+        var edited = start
+        edited.folders = [own]
+        model.library = edited
+        let landing = BookFolder(name: "Landing \(UUID().uuidString.prefix(6))")
+        made.append(TextMouthPaths.libraryDir.appendingPathComponent(landing.fullPath, isDirectory: true))
+        var merged = start
+        merged.folders = [landing]
+        merged.books[0].folderPath = landing.fullPath
+        _ = await model.applySync(makeApplication(library: merged, moves: true, keys: [.book(book.id, .folder)]), from: start)
+        let paths = Set(model.library.folders.map(\.fullPath))
+        XCTAssertTrue(paths.contains(own.fullPath), "the person's folder stays")
+        for row in model.library.books where !row.folderPath.isEmpty {
+            XCTAssertTrue(paths.contains(row.folderPath), "\(row.folderPath) is in the list")
+        }
+    }
+
+    /// A key left alone lands at the next sync: a row changed meanwhile is
+    /// merged again once it is as it was, and an open book is removed once
+    /// it is closed (round 2, item 10).
+    func testADeferredRemovalLandsAtTheNextSync() async throws {
+        keepDeletionsOutOfTheTrash()
+        let model = LibraryViewModel(initializeServices: false)
+        let book = try makePlaceholder("Open Then Closed")
+        model.library = Library(books: [book])
+        let key = SyncKey.book(book.id, .presence)
+        let removal = makeApplication(library: Library(), remove: [book.id], keys: [key])
+        model.audioEditActivity.setOpenInReaders([book.id])
+        let first = await model.applySync(removal)
+        XCTAssertFalse(first.contains(key))
+        model.audioEditActivity.setOpenInReaders([])
+        let second = await model.applySync(removal)
+        XCTAssertTrue(second.contains(key))
+        XCTAssertNil(model.bookByID(book.id))
+    }
+
+    /// A book being fetched (downloading) is not removed.
+    func testABookBeingFetchedIsNotRemoved() async throws {
+        keepDeletionsOutOfTheTrash()
+        let model = LibraryViewModel(initializeServices: false)
+        let book = try makePlaceholder("Being Fetched")
+        model.library = Library(books: [book])
+        BookCloudStates.shared.record(.downloading(.notStarted), for: book.id)
+        addTeardownBlock { @MainActor in BookCloudStates.shared.record(.inCloud, for: book.id) }
+        let key = SyncKey.book(book.id, .presence)
+        let applied = await model.applySync(makeApplication(library: Library(), remove: [book.id], keys: [key]))
+        XCTAssertNotNil(model.bookByID(book.id))
+        XCTAssertFalse(applied.contains(key))
+    }
+
+    /// A keep a person just made stays over a set from a run that ended
+    /// before it was recorded, and goes once a set agrees (round 2, item 3).
+    func testAKeepStaysOverAnOlderRunsSet() {
+        let kept = KeptBooks(file: nil)
+        let book = UUID()
+        kept.noteSyncedChange(keeping: true, [book])
+        kept.setSyncedBooks([])
+        XCTAssertTrue(kept.isKeptOnAllDevices(book), "the old run's set does not undo it")
+        kept.setSyncedBooks([book])
+        XCTAssertTrue(kept.isKeptOnAllDevices(book))
+        kept.setSyncedBooks([])
+        XCTAssertFalse(kept.isKeptOnAllDevices(book), "once agreed, the sync's set rules")
+        kept.noteSyncedChange(keeping: false, [book])
+        kept.setSyncedBooks([book])
+        XCTAssertFalse(kept.isKeptOnAllDevices(book), "a stop stays over an older set too")
+    }
+
     /// A merge that puts a book in a new folder moves its package there,
     /// through the library transition, and the keys are applied.
     func testApplyMovesAPackageIntoANewFolder() async throws {
