@@ -617,7 +617,9 @@ enum LibraryPersistenceService {
 
     static func saveBookInfo(for book: Book, contentIndex: BookContentIndex) {
         guard !book.tmbDirectoryName.isEmpty else { return }
-        enqueueBookInfoSave(book: book, contentIndex: contentIndex)
+        // A protected book's headings are never written (FR41): its record
+        // keeps the empty index it was added with.
+        enqueueBookInfoSave(book: book, contentIndex: book.isPasswordProtected ? nil : contentIndex)
     }
 
     /// Commits a completed content analysis immediately and returns the book
@@ -715,6 +717,8 @@ enum LibraryPersistenceService {
         brailleTable: BrailleTableDecision? = nil
     ) throws -> Book? {
         guard !analyzed.tmbDirectoryName.isEmpty else { return nil }
+        // Nothing of a protected book's text or headings is saved (FR41).
+        guard !analyzed.isPasswordProtected else { return nil }
 
         return try bookInfoSaveQueue.sync { () throws -> Book? in
             guard let state = latestDurableState(of: analyzed) else {

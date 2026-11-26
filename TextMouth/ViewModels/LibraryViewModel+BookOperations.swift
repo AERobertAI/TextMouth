@@ -935,6 +935,8 @@ extension LibraryViewModel {
         cacheFormatVersion: String? = nil
     ) {
         guard let bookIndex = library.books.firstIndex(where: { $0.id == bookID }) else { return }
+        // A protected book's headings are never saved (FR41).
+        guard !library.books[bookIndex].isPasswordProtected else { return }
         library.books[bookIndex].applyContentAnalysis(index, cacheFormatVersion: cacheFormatVersion)
         let updatedBook = library.books[bookIndex]
         save()

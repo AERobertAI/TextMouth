@@ -1819,11 +1819,12 @@ final class ReaderViewModel: ObservableObject {
             audioFiles: analysis.audioFilePaths,
             audioSegments: analysis.audioSegments,
             audioTags: audioTags,
-            shouldPersistContentIndex: !analysis.usedPersistedIndex
+            // Never for a protected book, whose headings stay out of its record (FR41).
+            shouldPersistContentIndex: !book.isPasswordProtected && (!analysis.usedPersistedIndex
                 || transcriptIndexChanged
                 || book.contentIndexVersion != BookContentIndex.currentVersion
                 || (!format.isAudio
-                    && book.cacheFormatVersion != MarkdownCacheService.currentCacheVersion),
+                    && book.cacheFormatVersion != MarkdownCacheService.currentCacheVersion)),
             cacheFormatVersion: analysis.cacheFormatVersion,
             movedPlaces: movedPlaces,
             // The manifest is read afresh, so a load from the saved index

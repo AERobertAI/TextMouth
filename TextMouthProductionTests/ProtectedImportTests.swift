@@ -34,6 +34,13 @@ final class ProtectedImportTests: XCTestCase {
         }
         let url = folder.appendingPathComponent("Sluice Notes.pdf")
         let document = try XCTUnwrap(PDFDocument(url: open))
+        // A heading, so what the reader makes of the book has one to leak.
+        let entry = PDFOutline()
+        entry.label = "Zebra Heading"
+        entry.destination = PDFDestination(page: try XCTUnwrap(document.page(at: 0)), at: CGPoint(x: 0, y: 700))
+        let root = PDFOutline()
+        root.insertChild(entry, at: 0)
+        document.outlineRoot = root
         XCTAssertTrue(document.write(to: url, withOptions: [.userPasswordOption: "secret", .ownerPasswordOption: "owner"]))
         return url
     }
@@ -48,6 +55,15 @@ final class ProtectedImportTests: XCTestCase {
             guard let url = item as? URL, (try? url.resourceValues(forKeys: [.isRegularFileKey]).isRegularFile) == true else { return nil }
             return String(url.resolvingSymlinksInPath().path.dropFirst(root.count))
         }.sorted()
+    }
+
+    /// No file of `package` holds the fixture's heading, in any case, and its record's index is empty.
+    private func assertNoZebra(in package: URL) throws {
+        for name in try files(in: package) {
+            let data = try Data(contentsOf: URL(fileURLWithPath: package.resolvingSymlinksInPath().path + name))
+            XCTAssertNil(String(decoding: data, as: UTF8.self).lowercased().range(of: "zebra"), "\(name) holds a heading")
+        }
+        XCTAssertEqual(try BookInfo.load(from: package).contentIndex?.chapters.count, 0)
     }
 
     /// No file of `package` holds `words` in plain bytes.
@@ -180,6 +196,11 @@ final class ProtectedImportTests: XCTestCase {
         wait(for: [loaded], timeout: 30)
         watchLoad.cancel()
         XCTAssertTrue(reader.content?.chapters.map(\.text).joined().contains("sluice gate") == true)
+        // The fixture has a heading in memory, and the saves that follow a load are flushed:
+        // (the load queues its save before it shows the book) none of it may reach the package, the record included (the review's serious finding).
+        XCTAssertTrue(reader.content?.contentIndex.allHeadings.contains { $0.text.lowercased().contains("zebra") } == true)
+        LibraryPersistenceService.flushPendingSave()
+        try assertNoZebra(in: package)
 
         reader.close()
         XCTAssertEqual(try files(in: package), before, "opening, reading, and closing wrote no file")
