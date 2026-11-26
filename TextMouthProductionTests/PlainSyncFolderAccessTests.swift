@@ -65,6 +65,34 @@ final class PlainSyncFolderAccessTests: XCTestCase {
         XCTAssertEqual(raw, ["a.json", "b.bin"])
     }
 
+    /// What counts as a deleted folder, and that the access reports one as missing.
+    func testAFolderInATrashIsMissing() async throws {
+        XCTAssertTrue(SyncFolderIO.isDeleted(URL(fileURLWithPath: "/Users/reader/.Trash/TextMouth Sync")))
+        XCTAssertTrue(SyncFolderIO.isDeleted(URL(fileURLWithPath: "/private/var/mobile/Recently Deleted/TextMouth Sync")))
+        XCTAssertFalse(SyncFolderIO.isDeleted(URL(fileURLWithPath: "/Users/reader/Documents/TextMouth Sync")))
+        let trashed = try makeSandboxDirectory("plain-trash").appendingPathComponent(".Trash/TextMouth Sync", isDirectory: true)
+        try FileManager.default.createDirectory(at: trashed, withIntermediateDirectories: true)
+        let access = PlainSyncFolderAccess(bookmark: try XCTUnwrap(DataDirectoryPreferences.makeBookmark(of: trashed)))
+        do {
+            _ = try await access.withFolder { $0 }
+            XCTFail("in a trash")
+        } catch { XCTAssertEqual(error as? SyncProblem, .folderMissing) }
+    }
+
+    /// The shared helper sweeps old half-made files and leaves recent ones and every other file.
+    func testSweepingPartialFiles() throws {
+        let (access, folder) = try makeAccess()
+        let old = folder.appendingPathComponent(".partial-old")
+        let recent = folder.appendingPathComponent(".partial-recent")
+        let kept = folder.appendingPathComponent("a.json")
+        for url in [old, recent, kept] { try Data("x".utf8).write(to: url) }
+        try FileManager.default.setAttributes([.modificationDate: Date(timeIntervalSinceNow: -7_200)], ofItemAtPath: old.path)
+        access.sweepPartialFiles(in: folder, olderThan: 3_600)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: old.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: recent.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: kept.path))
+    }
+
     /// A copy in makes the folders above it, and is refused over a file.
     func testCopyInMakesFoldersAndRefusesOverAFile() throws {
         let (access, folder) = try makeAccess()

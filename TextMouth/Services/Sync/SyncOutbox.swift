@@ -128,6 +128,33 @@ struct SyncOutbox: Sendable {
     /// files copied so far are recorded.
     @discardableResult
     mutating func copy(into deviceFolder: URL, using access: any SyncFolderAccess, now: Date = Date()) async throws -> Int {
+        let verified = try await verifiedPresent(in: deviceFolder, using: access)
+        return try copyVerified(into: deviceFolder, using: access, now: now, verified: verified)
+    }
+
+    /// The names of outbox files that are in the device's folder with the outbox's own bytes. A file there
+    /// with other bytes is another writer's (a library restored on the same install writes seqs the folder
+    /// holds already): `SyncOutboxConflict.anotherWriter`. One that can't be read yet is left out: not known to
+    /// be ours. This reads, so it is done before `copyVerified`, which changes the outbox; an actor calls the two
+    /// in turn, never holding the outbox across a wait.
+    func verifiedPresent(in deviceFolder: URL, using access: any SyncFolderAccess) async throws -> Set<String> {
+        let present = Set(((try? access.list(deviceFolder)) ?? []).map(\.name))
+        var verified: Set<String> = []
+        for item in index.items where item.state != .uploaded {
+            let name = SyncNames.changeFile(seq: item.seq, kind: item.kind)
+            guard present.contains(name), item.state != .copied else { continue }
+            guard let remote = try? await access.read(deviceFolder.appendingPathComponent(name), within: .seconds(10)) else { continue }
+            guard let mine = try? Data(contentsOf: fileURL(item.seq, item.kind)), mine == remote else {
+                throw SyncOutboxConflict.anotherWriter(seq: item.seq)
+            }
+            verified.insert(name)
+        }
+        return verified
+    }
+
+    /// Copies what is not in the folder, and marks as copied what `verified` says is there already.
+    @discardableResult
+    mutating func copyVerified(into deviceFolder: URL, using access: any SyncFolderAccess, now: Date = Date(), verified: Set<String>) throws -> Int {
         // A device folder not made yet lists as empty: `copyIn` makes it.
         let present = Set(((try? access.list(deviceFolder)) ?? []).map(\.name))
         var copied = 0
@@ -138,14 +165,9 @@ struct SyncOutbox: Sendable {
             if item.state == .copied, present.contains(name) { continue }
             do {
                 if present.contains(name) {
-                    // A file of this name is there already. It is the same file, sent before, only if its bytes
-                    // are the outbox's: any other is another writer's (a library restored on the same install
-                    // writes seqs the folder holds already), and nothing is sent over it. A file that can't be
-                    // read yet is not known to be ours, so it stays unsent.
-                    guard let remote = try? await access.read(deviceFolder.appendingPathComponent(name), within: .seconds(10)) else { continue }
-                    guard let mine = try? Data(contentsOf: fileURL(item.seq, item.kind)), mine == remote else {
-                        throw SyncOutboxConflict.anotherWriter(seq: item.seq)
-                    }
+                    // A file of this name is there already: it is ours, sent before, only if `verified` says its
+                    // bytes are the outbox's. One not known to be ours stays unsent.
+                    guard verified.contains(name) else { continue }
                 } else {
                     try access.copyIn(fileURL(item.seq, item.kind), to: deviceFolder.appendingPathComponent(name))
                     copied += 1
