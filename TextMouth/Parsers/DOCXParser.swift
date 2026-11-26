@@ -281,7 +281,12 @@ enum DOCXParser {
             throw DOCXParserError.fileNotFound(url.path)
         }
         // A password-protected archive is refused in words that say so (B27).
-        try UnlockedSources.refuseIfLocked(at: url)
+        do {
+            try UnlockedSources.refuseIfLocked(at: url)
+        } catch is EncryptedArchiveError {
+            // The reader's own refusal for a package with a password.
+            throw PasswordProtectedDocument()
+        }
         do {
             return try UnlockedSources.openArchive(at: url)
         } catch {

@@ -155,7 +155,7 @@ final class EncryptedArchiveTests: XCTestCase {
         let epub = try makeZip(["mimetype", "META-INF/container.xml"], locked: ["META-INF/container.xml"], file: "book.epub")
         XCTAssertThrowsError(try EPUBParser.readMetadata(url: epub)) { XCTAssertTrue($0 is EncryptedArchiveError, "\($0)") }
         let docx = try makeZip(["[Content_Types].xml", "word/document.xml"], locked: ["word/document.xml"], file: "book.docx")
-        XCTAssertThrowsError(try DOCXParser.parse(url: docx)) { XCTAssertTrue($0 is EncryptedArchiveError, "\($0)") }
+        XCTAssertThrowsError(try DOCXParser.parse(url: docx)) { XCTAssertTrue($0 is PasswordProtectedDocument, "\($0)") }
         let daisy = try makeZip(["ncc.html", "a.smil"], locked: ["ncc.html"], file: "daisy.zip")
         XCTAssertThrowsError(try DAISYParser.parse(url: daisy)) { XCTAssertTrue($0 is EncryptedArchiveError, "\($0)") }
         let comic = try makeZip(["001.png", "002.png"], locked: ["001.png", "002.png"], file: "book.cbz")

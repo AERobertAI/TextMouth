@@ -164,7 +164,12 @@ enum ODTDocumentReader {
         ///   spreadsheet with an `.odt` name, say).
         init(at url: URL) throws {
             // A password-protected package is refused in words that say so (B27).
-            try UnlockedSources.refuseIfLocked(at: url)
+            do {
+                try UnlockedSources.refuseIfLocked(at: url)
+            } catch is EncryptedArchiveError {
+                // The reader's own refusal for a package with a password.
+                throw PasswordProtectedDocument()
+            }
             do {
                 archive = try UnlockedSources.openArchive(at: url)
             } catch {

@@ -16,7 +16,7 @@ final class ODTHostileReaderTests: XCTestCase {
 
     /// Reads the package at `url` and returns the HTML, or nil when the
     /// reader refused it with an error it names (the sentence for an
-    /// unreadable document, for one too large, or for one a password protects); fails the test if the
+    /// unreadable document, or for one too large); fails the test if the
     /// read took too long or threw any other error. Reaching the return at
     /// all is the test that nothing trapped.
     @discardableResult
@@ -34,9 +34,7 @@ final class ODTHostileReaderTests: XCTestCase {
         do {
             return try outcome.get()
         } catch {
-            // A flipped byte can set an entry's encrypted flag, which is then named as a password (B27).
-            let known = error is TextutilConverter.Failure || error is DocumentTooLargeError || error is FileImportError
-                || error is EncryptedArchiveError
+            let known = error is TextutilConverter.Failure || error is DocumentTooLargeError || error is FileImportError || error is PasswordProtectedDocument
             XCTAssertTrue(known, "\(label) threw an error the reader does not name: \(error)", file: file, line: line)
             return nil
         }
