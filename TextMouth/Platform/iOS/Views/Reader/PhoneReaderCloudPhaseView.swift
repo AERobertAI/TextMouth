@@ -1,3 +1,4 @@
+import Combine
 import SwiftUI
 
 /// The reader's screen while its book is got from the cloud (FR43, as the Mac's
@@ -99,33 +100,48 @@ struct PhoneReaderCloudPhaseView: View {
     }
 }
 
-/// The reader's content, or the cloud phase in its place while the book isn't on the phone: a view that watches the reader's
-/// phase, which the screen above it, watching only the session, would not see change.
+/// The reader's content, or the cloud phase in its place while the book isn't on the phone. It watches the reader's
+/// `cloudPhase` alone, never the reader itself: the reader publishes at every word it speaks, and the reader screen is
+/// built to be drawn again only when the session's snapshot changes ("never as the place moves"). Watching the whole reader
+/// here drew the screen's controls again at each word, and a sheet presented from it (Export, for one) was not safe. The
+/// views swap inside a stack, so the stack, which the screen's sheets hang on, keeps one identity for every phase.
 struct PhoneReaderCloudGate<Normal: View>: View {
     /// The open reader, or none.
     let reader: ReaderViewModel?
     /// What shows when the book is ready.
     @ViewBuilder let normal: () -> Normal
+    /// The reader's phase, changing only when the phase does.
+    @StateObject private var watcher = PhoneCloudPhaseWatcher()
 
     var body: some View {
-        if let reader {
-            Watching(reader: reader, normal: normal)
-        } else {
-            normal()
-        }
-    }
-
-    /// The part that observes `reader`.
-    private struct Watching: View {
-        @ObservedObject var reader: ReaderViewModel
-        let normal: () -> Normal
-
-        var body: some View {
-            if let phase = reader.cloudPhase {
+        ZStack {
+            if let reader, let phase = watcher.phase {
                 PhoneReaderCloudPhaseView(reader: reader, phase: phase)
             } else {
                 normal()
             }
         }
+        // The same reader keeps the same watch; the next book's is a new one.
+        .task(id: reader.map(ObjectIdentifier.init)) { watcher.watch(reader) }
+    }
+}
+
+/// The cloud phase of one reader, republished when it changes, and not when anything else of the reader does.
+@MainActor
+final class PhoneCloudPhaseWatcher: ObservableObject {
+    /// The phase of the reader being watched; nil when the book is ready, or no reader is open.
+    @Published private(set) var phase: ReaderCloudPhase?
+    /// The subscription to the reader's `cloudPhase`.
+    private var subscription: AnyCancellable?
+
+    /// Watches `reader`, or nothing.
+    func watch(_ reader: ReaderViewModel?) {
+        phase = reader?.cloudPhase
+        subscription = reader?.$cloudPhase
+            .removeDuplicates()
+            .sink { [weak self] new in
+                // `$cloudPhase` publishes just before the change, with the new value.
+                MainActor.assumeIsolated { self?.phase = new }
+            }
     }
 }
