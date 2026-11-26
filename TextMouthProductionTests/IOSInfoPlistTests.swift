@@ -442,8 +442,7 @@ final class IOSInfoPlistTests: XCTestCase {
 
         XCTAssertEqual(identifiers, ["com.textmouth.TextMouth.iOS.export.*"])
         XCTAssertTrue(
-            iOSTarget.contains("PRODUCT_BUNDLE_IDENTIFIER: com.textmouth.TextMouth.iOS
-"),
+            iOSTarget.contains("PRODUCT_BUNDLE_IDENTIFIER: com.textmouth.TextMouth.iOS\n"),
             "The wildcard's prefix is not the iPhone app's bundle identifier"
         )
     }
