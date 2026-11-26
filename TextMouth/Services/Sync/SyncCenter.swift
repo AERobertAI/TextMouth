@@ -150,6 +150,9 @@ struct SyncCenterEnvironment {
     private var awaitingUpload: [UUID: AwaitingBook] = [:]
     /// Books refused by the backup (a symbolic link, an error), not tried again this launch.
     private var refusedBackups: Set<UUID> = []
+    /// Books the backup has scanned and not finished with: from the scan to the book's copy being recorded (or
+    /// the book refused). A book here has no copy in the registers yet, so its files must stay (FR46).
+    private var backupQueued: Set<UUID> = []
 
     /// A book copied into the store whose upload is awaited: what the backup made, and what is
     /// needed to finish it without the library.
@@ -773,6 +776,7 @@ struct SyncCenterEnvironment {
         // The books to back up are found in one scan, off the main actor: the library's rows are read here, and
         // the packages (their pointers, their existence, their sizes) are looked at there, once for the run.
         let scanned = await scanBooksForBackup(engine: engine)
+        backupQueued = Set(scanned.map(\.bookID))
         do {
             try await access.withFolder { root in
                 var queue = scanned
@@ -793,6 +797,7 @@ struct SyncCenterEnvironment {
                         let waiting = AwaitingBook(result: result, bytes: result.bytesCopied, package: next.package, content: next.content(result.manifestName))
                         await self.noteCopied(next.bookID, waiting)
                         await self.finishUpload(of: next.bookID, waiting, backup: backup, engine: engine)
+                        await self.noteBackupDone(next.bookID)
                     } catch let problem as SyncProblem where problem == .outOfSpace {
                         // The drive refused for room: the status says so (the local budget is checked above, not thrown).
                         throw problem
@@ -800,6 +805,7 @@ struct SyncCenterEnvironment {
                         // Any other error refuses the book for this launch, so a run never stops at it again; it is logged.
                         DiagnosticLog.event(.storage, "SYNC_BACKUP: a book could not be backed up and is passed by for this launch (\(type(of: error)))") // l10n: no (debug log text)
                         await self.refuse(next.bookID)
+                        await self.noteBackupDone(next.bookID)
                     }
                 }
             }
@@ -808,6 +814,23 @@ struct SyncCenterEnvironment {
         } catch {
             DiagnosticLog.event(.storage, "SYNC_BACKUP: the backup stopped (\(type(of: error)))") // l10n: no (debug log text)
         }
+        // Whatever stopped it, no book is queued now: the next run scans again.
+        backupQueued = []
+    }
+
+    /// The backup is done with the book `id` for this run: its copy is recorded or awaited (`awaitingUpload`), or it
+    /// was refused.
+    private func noteBackupDone(_ id: UUID) {
+        backupQueued.remove(id)
+    }
+
+    /// Whether the backup's state forbids freeing the book `bookID` now (FR46). Its files must stay while the backup
+    /// still has it queued or is awaiting its upload, and unless the registers already hold its content: a manifest
+    /// made later from the files left would omit the one that was freed, and be taken for the book's copy everywhere.
+    nonisolated static func backupForbidsFreeing(
+        _ bookID: UUID, queued: Set<UUID>, awaiting: Set<UUID>, recordedContent: Set<UUID>
+    ) -> Bool {
+        queued.contains(bookID) || awaiting.contains(bookID) || !recordedContent.contains(bookID)
     }
 
     /// Remembers a copied book while its upload is awaited.
@@ -926,9 +949,18 @@ struct SyncCenterEnvironment {
     /// Runs the removal in the sync folder, off the main actor: the files are hashed and read back there.
     private func removeBookDownload(_ package: BookPackage, mayDownload: Bool) async throws {
         guard let access, let storeID, let local else { throw SyncRemovalRefusal.folderUnreachable }
+        // The library's last word, which the command or sweep set for this call (`FreeingCheck`).
+        let lastLook = FreeingCheck.current
+        // The backup's own state, on the main actor, before anything is read: a book it has not finished with stays.
+        guard let engine = await readyEngine() else { throw SyncRemovalRefusal.folderUnreachable }
+        let recorded = Set(await engine.contents().keys)
+        if Self.backupForbidsFreeing(package.bookID, queued: backupQueued, awaiting: Set(awaitingUpload.keys), recordedContent: recorded) {
+            throw SyncRemovalRefusal.notUploaded("backup")
+        }
         do {
             _ = try await access.withFolder { root in
-                let removal = StoreRemoval(folder: SyncFolder(root: root, access: access), storeID: storeID, staging: local.stagingFolder)
+                var removal = StoreRemoval(folder: SyncFolder(root: root, access: access), storeID: storeID, staging: local.stagingFolder)
+                removal.finalCheck = lastLook
                 return try await removal.removeDownload(of: package.url, bookID: package.bookID, mayDownload: mayDownload)
             }
         } catch SyncProblem.folderMissing {

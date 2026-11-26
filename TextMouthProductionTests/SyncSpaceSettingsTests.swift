@@ -223,8 +223,11 @@ final class SyncSpaceSettingsTests: XCTestCase {
             (.changedHere("x"), "This book has changes that iCloud Drive doesn't hold yet, so its download stays."),
             (.doesNotMatch("x"), "The copy in iCloud Drive doesn't match this book, so its download stays."),
             (.offline, "TextMouth can't check the copy in iCloud Drive while this Mac is offline, so the download stays."),
-            (.needsDownload, "TextMouth would have to download this book to check its copy, so its download stays for now."),
+            (.needsDownload, "To free this book, TextMouth first checks its copy in iCloud Drive. That needs room for one more copy of the book, and Wi-Fi on cellular data. Its download stays for now."),
+            (.needsRoom, "To free this book, TextMouth first checks its copy in iCloud Drive. That needs room for one more copy of the book, and Wi-Fi on cellular data. Its download stays for now."),
             (.couldNotRemove("x"), "TextMouth couldn't remove all of this book's files."),
+            (.busy, "The book is in use, so its download can't be removed."),
+            (.nothingToRemove, "None of the selected books has a download to remove."),
         ]
         for (refusal, words) in cases {
             XCTAssertEqual(SyncWording.removalRefusal(refusal, isPhone: false), words, "\(refusal)")
@@ -245,7 +248,7 @@ final class SyncSpaceSettingsTests: XCTestCase {
     func testTheSummaryOfARemovalIsOneSentence() {
         XCTAssertEqual(
             SyncWording.announceRemovedUnopened(books: 3, days: 7),
-            "Removed the downloads of 3 books you hadn't opened in 7 days; they stay in iCloud Drive."
+            "Removed downloads of 3 books not opened in 7 days. All stay in iCloud Drive."
         )
     }
 
@@ -260,7 +263,7 @@ final class SyncSpaceSettingsTests: XCTestCase {
         status.removalsWaiting = 3
         status.booksShortOfRoom = 2
         XCTAssertEqual(SyncStatusLine.detailLines(for: status, time: { _ in "9:41 AM" }, isPhone: false), [
-            "3 books stay on this Mac for now: TextMouth hasn't confirmed their copies in iCloud Drive.",
+            "Staying on this Mac for now, until iCloud Drive's copies are confirmed: 3 books.",
             "There isn't room on this Mac to download 2 books. The books already here stay.",
         ])
         XCTAssertEqual(

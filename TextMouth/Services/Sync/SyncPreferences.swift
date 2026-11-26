@@ -69,9 +69,19 @@ enum SyncPreferences {
         }
     )
 
+    /// The books a person freed with Remove Download, each with the time it was freed (seconds since 1970), by the
+    /// book's ID: under "All books" such a book is not downloaded again until it is opened (`BooksFreedOnPurpose`).
+    static let freedOnPurpose = StoredPreference<[String: Double]>(
+        key: "textMouthSyncFreedOnPurpose",
+        read: { store, key in store.dictionary(forKey: key) as? [String: Double] ?? [:] },
+        write: { value, store, key in
+            if value.isEmpty { store.removeObject(forKey: key) } else { store.set(value, forKey: key) }
+        }
+    )
+
     /// Every key above, for the machine-local list and for tests that put
     /// them back.
-    static let keys = [bookmark.key, storeID.key, installID.key, booksOnThisDevice.key, removeAfterDays.key, removalsBeganAt.key]
+    static let keys = [bookmark.key, storeID.key, installID.key, booksOnThisDevice.key, removeAfterDays.key, removalsBeganAt.key, freedOnPurpose.key]
 
     /// This install's ID, made and saved on first use.
     static func installIDCreatingIfNeeded(in store: UserDefaults) -> String {

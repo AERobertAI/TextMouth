@@ -410,8 +410,8 @@ extension LibraryViewModel: SyncLibraryHost {
         guard SyncActivity.isOn else { return }
         settings.beginRemovalsIfNeeded()
         let report = await cloudCommands.removeUnopenedDownloads(
-            of: library.books, settings: settings.settings, mayDownload: mayDownload
-        ) { self.isProtectedFromUnopenedRemoval($0) }
+            of: library.books, in: self, settings: settings.settings, mayDownload: mayDownload
+        ) { [weak self] in self?.isProtectedFromUnopenedRemoval($0) ?? true }
         SyncCenter.shared.noteSpace(removalsWaiting: report.waiting)
     }
 

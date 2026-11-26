@@ -73,7 +73,7 @@ final class SyncSpaceCommandsTests: XCTestCase {
             refusal = await fixture.commands.removeDownloads(of: [book], in: fixture.model, from: nil)
         }
         XCTAssertNil(refusal)
-        XCTAssertEqual(said, ["Removed the download of Moby-Dick. It stays in iCloud Drive."])
+        XCTAssertEqual(said, ["Removed the download of Moby-Dick. It stays in iCloud Drive. Opening a book downloads it again."], "under All books, which the fixture has, it says the book is not downloaded again until opened")
         XCTAssertEqual(fixture.storage.proofs, [SpaceFixture.Proof(bookID: book.id, mayDownload: true)])
         XCTAssertEqual(fixture.states.state(of: book.id), .inCloud)
         XCTAssertEqual(fixture.refreshRequests.count, 1)
@@ -137,7 +137,7 @@ final class SyncSpaceCommandsTests: XCTestCase {
             refusal = await fixture.commands.removeDownloads(of: books, in: fixture.model, from: nil)
         }
         XCTAssertNil(refusal)
-        XCTAssertEqual(said, ["Removed the downloads of 3 books. They stay in iCloud Drive."])
+        XCTAssertEqual(said, ["Removed the downloads of 3 books. They stay in iCloud Drive. Opening a book downloads it again."])
         XCTAssertEqual(fixture.storage.proofs.map(\.bookID), books.map(\.id), "in list order")
     }
 
@@ -312,7 +312,7 @@ final class SyncSpaceCommandsTests: XCTestCase {
         let said = await announcements {
             _ = await fixture.sweep(settings: fixture.settings(days: 7))
         }
-        XCTAssertEqual(said, ["Removed the downloads of 3 books you hadn't opened in 7 days; they stay in iCloud Drive."])
+        XCTAssertEqual(said, ["Removed downloads of 3 books not opened in 7 days. All stay in iCloud Drive."])
         XCTAssertEqual(fixture.refreshRequests.count, 1)
     }
 
@@ -414,6 +414,213 @@ final class SyncSpaceCommandsTests: XCTestCase {
         XCTAssertEqual(fixture.fake.downloadsStarted, [book.id, book.id])
     }
 
+    // MARK: - The review's fixes
+
+    /// The library's last look runs right before the files go, and says no when the book was kept, opened, or its
+    /// setting turned off meanwhile: the book stays, and nothing is recorded as removed.
+    func testTheLastLookStopsABookThatBecameProtectedMeanwhile() async {
+        let book = fixtureBook("Old", openedDaysAgo: 100)
+        let other = fixtureBook("Other", openedDaysAgo: 101)
+        let fixture = SpaceFixture(books: [book, other])
+        let protected = Box<Set<UUID>>([])
+        // While the proof runs on the book, the person keeps it.
+        fixture.storage.duringTheProof { id in
+            if id == book.id { Task { @MainActor in protected.value.insert(id) } }
+        }
+        let report = await fixture.sweep(settings: fixture.settings(days: 7), isProtected: { protected.value.contains($0.id) })
+        XCTAssertEqual(report.removed, [other.id])
+        XCTAssertEqual(fixture.storage.lastLookAnswers[other.id], true)
+        XCTAssertEqual(fixture.storage.lastLookAnswers[book.id], false, "kept after the proof, so the last look said no")
+        XCTAssertNil(fixture.states.state(of: book.id), "and it is still whole here")
+    }
+
+    /// The setting turned off between the proof and the removal stops it, and so does a book that left the library.
+    func testTheLastLookStopsARemovalWhoseSettingChanged() async {
+        let book = fixtureBook("Old", openedDaysAgo: 100)
+        let fixture = SpaceFixture(books: [book])
+        fixture.storage.duringTheProof { [fixture] _ in
+            // The person turns the removal off while the copy is read back.
+            Task { @MainActor in fixture.settingsNow.value.removeAfterDays = nil }
+        }
+        let report = await fixture.sweep(settings: fixture.settings(days: 7))
+        XCTAssertEqual(report.removed, [])
+        XCTAssertEqual(fixture.storage.lastLookAnswers[book.id], false)
+        XCTAssertNil(fixture.states.state(of: book.id), "still whole here")
+    }
+
+    /// A person's own Remove Download is looked at again too: a book kept while its copy was read back stays.
+    func testTheLastLookStopsAPersonsRemovalOfABookKeptMeanwhile() async {
+        let book = cloudTestBook()
+        let fixture = SpaceFixture(books: [book])
+        fixture.storage.duringTheProof { [fixture] id in
+            Task { @MainActor in _ = fixture.kept.keep([id]) }
+        }
+        let refusal = await fixture.commandsRemoving([book])
+        XCTAssertEqual(fixture.storage.lastLookAnswers[book.id], false)
+        XCTAssertEqual(refusal?.message, SyncWording.removeBookInUse)
+        XCTAssertNil(fixture.states.state(of: book.id))
+    }
+
+    /// Only removals count toward the sweep's 25: books that cannot be proven are looked at and left, and never keep
+    /// the books behind them from going.
+    func testBooksThatCannotBeProvenDoNotStarveTheRest() async {
+        let stuck = (1...30).map { fixtureBook("Stuck \($0)", openedDaysAgo: Double(200 + $0)) }
+        let good = (1...25).map { fixtureBook("Good \($0)", openedDaysAgo: Double(100 + $0)) }
+        let fixture = SpaceFixture(books: stuck + good)
+        for book in stuck { fixture.storage.refuse(book.id, with: .syncRemoval(.notUploaded("a blob"))) }
+        let report = await fixture.sweep(settings: fixture.settings(days: 7))
+        XCTAssertEqual(report.removed.count, LibraryCloudCommands.unopenedBooksPerSweep)
+        XCTAssertEqual(report.waiting, 30)
+    }
+
+    /// Two sweeps never overlap: one asked for while another is under way does nothing.
+    func testSweepsRunOneAtATime() async {
+        let books = (1...3).map { fixtureBook("Book \($0)", openedDaysAgo: 100) }
+        let fixture = SpaceFixture(books: books)
+        let first = Task { await fixture.sweep(settings: fixture.settings(days: 7)) }
+        let second = await fixture.sweep(settings: fixture.settings(days: 7))
+        let done = await first.value
+        XCTAssertEqual(second.removed, [], "the second found the first under way")
+        XCTAssertEqual(done.removed.count, 3)
+        XCTAssertEqual(fixture.storage.proofs.count, 3, "no book was asked about twice")
+    }
+
+    /// The count of books waiting stays the same while a book waits out its day, and is not asked again until then.
+    func testTheWaitingCountIsSteadyThroughTheBooksDay() async {
+        let changed = fixtureBook("Changed here", openedDaysAgo: 100)
+        let fixture = SpaceFixture(books: [changed])
+        fixture.storage.refuse(changed.id, with: .syncRemoval(.changedHere("book.txt")))
+        let first = await fixture.sweep(settings: fixture.settings(days: 7))
+        let second = await fixture.sweep(settings: fixture.settings(days: 7))
+        XCTAssertEqual(first.waiting, 1)
+        XCTAssertEqual(second.waiting, 1, "it waits out its day, and is still counted")
+        XCTAssertEqual(fixture.storage.proofs.count, 1, "and is not read again until then")
+    }
+
+    /// A book with no file of its own here (a placeholder no row said so of yet) was not removed: it is recorded In
+    /// Cloud, counted neither removed nor waiting, and nothing is said.
+    func testABookAlreadyAwayIsNotCountedRemoved() async {
+        let away = fixtureBook("Away", openedDaysAgo: 100)
+        let fixture = SpaceFixture(books: [away])
+        fixture.storage.refuse(away.id, with: .syncRemoval(.nothingToRemove))
+        let said = await announcements {
+            let report = await fixture.sweep(settings: fixture.settings(days: 7))
+            XCTAssertEqual(report.removed, [])
+            XCTAssertEqual(report.waiting, 0)
+        }
+        XCTAssertEqual(said, [])
+        XCTAssertEqual(fixture.states.state(of: away.id), .inCloud)
+    }
+
+    /// Under "All books" a book a person freed stays freed: the next sync does not download it again until it is
+    /// opened, and then it does.
+    func testAllBooksLeavesWhatAPersonFreedUntilItIsOpened() async {
+        // Never opened, so nothing opens it after the removal until the test says so.
+        var book = cloudTestBook()
+        book.lastOpened = nil
+        let fixture = SpaceFixture(books: [book])
+        _ = await fixture.commands.removeDownloads(of: [book], in: fixture.model, from: nil)
+        XCTAssertEqual(fixture.states.state(of: book.id), .inCloud)
+
+        // The next sync records the placeholder and asks for the missing books.
+        XCTAssertNil(fixture.commands.downloadMissingBooks(in: fixture.model), "freed on purpose: left")
+        XCTAssertEqual(fixture.fake.downloadsStarted, [])
+
+        // The person opens it: a later opening, then it is an ordinary missing book again.
+        fixture.clock.advance(by: 60)
+        var opened = book
+        opened.lastOpened = fixture.clock.now.addingTimeInterval(1)
+        fixture.model.library = Library(books: [opened])
+        await fixture.commands.downloadMissingBooks(in: fixture.model)?.value
+        XCTAssertEqual(fixture.fake.downloadsStarted, [book.id])
+    }
+
+    /// "All books" goes on only while the path does not cost and it is still the choice: a path that began to cost, or a
+    /// choice changed, after the queue started stops the books still queued, and their rows say In Cloud.
+    func testAllBooksChecksThePathAndTheChoiceBeforeEachBook() async {
+        for change in ["path", "choice"] {
+            let books = [cloudTestBook("One"), cloudTestBook("Two"), cloudTestBook("Three")]
+            let fixture = SpaceFixture(books: books, recorded: .inCloud)
+            let task = fixture.commands.downloadMissingBooks(in: fixture.model)
+            // The queue has begun planning; nothing has downloaded yet. Then the world changes.
+            if change == "path" { fixture.costly.value = true } else { fixture.choice.value = .openedOrKept }
+            await task?.value
+            XCTAssertEqual(fixture.fake.downloadsStarted, [], change)
+            for book in books { XCTAssertEqual(fixture.states.state(of: book.id), .inCloud, "\(change): \(book.title)") }
+        }
+        // And nothing starts at all while the path costs.
+        let book = cloudTestBook()
+        let fixture = SpaceFixture(books: [book], recorded: .inCloud)
+        fixture.costly.value = true
+        XCTAssertNil(fixture.commands.downloadMissingBooks(in: fixture.model))
+    }
+
+    /// A person's Remove Download on a path that costs asks for no download: it says the copy needs Wi-Fi.
+    func testRemoveDownloadOnACostlyPathDoesNotDownloadToProve() async {
+        let book = cloudTestBook()
+        let fixture = SpaceFixture(books: [book])
+        fixture.costly.value = true
+        _ = await fixture.commands.removeDownloads(of: [book], in: fixture.model, from: nil)
+        XCTAssertEqual(fixture.storage.proofs, [SpaceFixture.Proof(bookID: book.id, mayDownload: false)])
+    }
+
+    /// An unexpected error is said in the app's words, never the system's, which can name a file of the book.
+    func testAnUnexpectedErrorIsSaidInTheAppsWords() async {
+        let book = cloudTestBook()
+        let fixture = SpaceFixture(books: [book])
+        fixture.storage.refuse(book.id, with: .syncRemoval(.couldNotRemove("")))
+        let refusal = await fixture.commands.removeDownloads(of: [book], in: fixture.model, from: nil)
+        XCTAssertEqual(refusal?.message, "TextMouth couldn't remove all of this book's files.")
+    }
+
+    /// Stop Syncing's question counts the books only in iCloud Drive, and says they need the sync folder.
+    func testStopSyncingCountsTheBooksOnlyInTheSyncFolder() {
+        let states = BookCloudStates()
+        states.setSyncIsOn(true)
+        XCTAssertEqual(states.countOnlyInTheSyncFolder, 0)
+        for state in [BookCloudState.inCloud, .inCloud, .downloading(.notStarted), .downloaded, .local] { states.record(state, for: UUID()) }
+        XCTAssertEqual(states.countOnlyInTheSyncFolder, 3)
+        let question = SyncWording.stopQuestion(isPhone: false, onlyInCloud: 3)
+        XCTAssertEqual(
+            question,
+            "Stop syncing this library? Nothing is deleted, on this Mac or in iCloud Drive. 3 books: only in iCloud Drive. Keep the TextMouth Sync folder to open them."
+        )
+        XCTAssertEqual(SyncWording.stopQuestion(isPhone: false, onlyInCloud: 0), SyncWording.stopQuestion(isPhone: false))
+        XCTAssertEqual(BookCloudStates().countOnlyInTheSyncFolder, 0, "sync off")
+    }
+
+    /// The backup's own state forbids freeing a book it still has queued or awaits, and one the registers do not hold.
+    func testTheBackupForbidsFreeingABookItHasNotFinishedWith() {
+        let id = UUID()
+        let other = UUID()
+        XCTAssertTrue(SyncCenter.backupForbidsFreeing(id, queued: [id], awaiting: [], recordedContent: [id]), "queued")
+        XCTAssertTrue(SyncCenter.backupForbidsFreeing(id, queued: [], awaiting: [id], recordedContent: [id]), "awaiting its upload record")
+        XCTAssertTrue(SyncCenter.backupForbidsFreeing(id, queued: [], awaiting: [], recordedContent: [other]), "content not recorded")
+        XCTAssertFalse(SyncCenter.backupForbidsFreeing(id, queued: [other], awaiting: [other], recordedContent: [id]))
+    }
+
+    /// Each way a book can be in use refuses its removal: open, in the audio editor, downloading; and a book being
+    /// exported, transcribed, or text edited is in `feedBooksInUse`, which `isBookBusyForSync` reads too.
+    func testABookInUseIsRefused() async {
+        let editing = cloudTestBook("Editing audio")
+        let open = cloudTestBook("Open")
+        let fixture = SpaceFixture(books: [editing, open])
+        fixture.model.audioEditActivity.beginUse(of: editing.id)
+        fixture.model.openBookIDs = [open.id]
+        XCTAssertTrue(fixture.model.isBookBusyForSync(editing.id))
+
+        let editingRefusal = await fixture.commands.removeDownloads(of: [editing], in: fixture.model, from: nil)
+        XCTAssertEqual(editingRefusal?.message, BookCloudError.bookInUse.explanation(in: .iCloudDrive))
+        let openRefusal = await fixture.commands.removeDownloads(of: [open], in: fixture.model, from: nil)
+        XCTAssertEqual(openRefusal?.message, BookCloudError.bookIsOpen.explanation(in: .iCloudDrive))
+        XCTAssertEqual(fixture.storage.proofs, [])
+
+        // A book downloading has nothing to remove: the command is not offered for it.
+        let downloading = cloudTestBook("Downloading")
+        fixture.states.record(.downloading(.notStarted), for: downloading.id)
+        XCTAssertFalse(fixture.states.canRemoveDownload(downloading))
+    }
+
     // MARK: - The arrival date
 
     /// The date a book's files arrived is the pointer's last write; a package with no pointer has none.
@@ -448,8 +655,16 @@ private final class ProvingStorage: BookCloudStorage, @unchecked Sendable {
     private let lock = NSLock()
     private var asked: [SpaceFixture.Proof] = []
     private var refusals: [UUID: BookCloudError] = [:]
+    private var lastLooks: [UUID: Bool] = [:]
+    private var between: (@Sendable (UUID) -> Void)?
 
     init(_ fake: FakeBookCloudStorage) { self.fake = fake }
+
+    /// What the library's last look (`FreeingCheck`) answered for each book at the moment its files would go.
+    var lastLookAnswers: [UUID: Bool] { lock.withLock { lastLooks } }
+
+    /// Runs `action` after the proof and before the last look, as a book opened during a read-back would.
+    func duringTheProof(_ action: (@Sendable (UUID) -> Void)?) { lock.withLock { between = action } }
 
     /// Every removal asked for, in order.
     var proofs: [SpaceFixture.Proof] { lock.withLock { asked } }
@@ -469,6 +684,12 @@ private final class ProvingStorage: BookCloudStorage, @unchecked Sendable {
             return refusals[package.bookID]
         }
         if let refusal { throw refusal }
+        let action = lock.withLock { between }
+        action?(package.bookID)
+        // The storage asks the last look right before it deletes; the double records its answer, and deletes only on yes.
+        let answer = await FreeingCheck.current?() ?? true
+        lock.withLock { lastLooks[package.bookID] = answer }
+        guard answer else { throw BookCloudError.syncRemoval(.busy) }
         try fake.removeDownload(of: package)
     }
 }
@@ -484,6 +705,16 @@ private final class Box<Value> {
 @MainActor
 private final class RoomLog {
     var counts: [Int] = []
+}
+
+/// Whether the network path costs, which a test sets.
+private final class CostlyStandIn: @unchecked Sendable {
+    private let lock = NSLock()
+    private var costly = false
+    var value: Bool {
+        get { lock.withLock { costly } }
+        set { lock.withLock { costly = newValue } }
+    }
 }
 
 /// The arrival date the commands read for every package, which a test sets.
@@ -518,6 +749,12 @@ private final class SpaceFixture {
     let rooms = RoomLog()
     let choice = Box(BooksOnThisDevice.allBooks)
     let arrivals = ArrivalStandIn()
+    /// Whether the network path costs, as the commands read it.
+    let costly = CostlyStandIn()
+    /// The settings the commands read again just before a removal deletes.
+    let settingsNow = Box(SyncDeviceSettings(books: .openedOrKept, removeAfterDays: 7, removalsBeganAt: nil))
+    /// The books a person freed, kept in a sandbox.
+    let freed: BooksFreedOnPurpose
 
     /// A synced library of `books`, each recorded as `recorded` when one is given.
     init(books: [Book], recorded: BookCloudState? = nil) {
@@ -530,6 +767,10 @@ private final class SpaceFixture {
         let rooms = rooms
         let choice = choice
         let arrivals = arrivals
+        let costly = costly
+        let settingsNow = settingsNow
+        let freed = BooksFreedOnPurpose(store: UserDefaults(suiteName: "SyncSpaceFixture-\(UUID().uuidString)") ?? .standard)
+        self.freed = freed
         commands = LibraryCloudCommands(
             states: states,
             kept: kept,
@@ -540,7 +781,10 @@ private final class SpaceFixture {
             freeSpace: { _ in space.next() },
             booksChoice: { choice.value },
             roomNotice: { rooms.counts.append($0) },
-            packageArrival: { _ in arrivals.current }
+            packageArrival: { _ in arrivals.current },
+            pathIsCostly: { costly.value },
+            currentSettings: { settingsNow.value },
+            freedOnPurpose: { freed }
         )
         clock.now = Self.start
         model.library = Library(books: books)
@@ -558,10 +802,18 @@ private final class SpaceFixture {
         SyncDeviceSettings(books: .openedOrKept, removeAfterDays: days, removalsBeganAt: began ?? Self.start.addingTimeInterval(-30 * SyncSpacePolicy.secondsInDay))
     }
 
+    /// Runs the person's Remove Download for `books`.
+    func commandsRemoving(_ books: [Book]) async -> LibraryCloudRefusal? {
+        await commands.removeDownloads(of: books, in: model, from: nil)
+    }
+
     /// One sweep over the model's books.
     func sweep(
-        settings: SyncDeviceSettings, mayDownload: Bool = true, isProtected: @MainActor (Book) -> Bool = { _ in false }
+        settings: SyncDeviceSettings, mayDownload: Bool = true, isProtected: @escaping @MainActor @Sendable (Book) -> Bool = { _ in false }
     ) async -> LibraryCloudCommands.UnopenedRemovalReport {
-        await commands.removeUnopenedDownloads(of: model.library.books, settings: settings, mayDownload: mayDownload, isProtected: isProtected)
+        settingsNow.value = settings
+        return await commands.removeUnopenedDownloads(
+            of: model.library.books, in: model, settings: settings, mayDownload: mayDownload, isProtected: isProtected
+        )
     }
 }

@@ -134,14 +134,12 @@ final class StoreRemovalTests: XCTestCase {
         XCTAssertTrue(world.drive.readLimits.allSatisfy { $0 == world.removal.perFile })
     }
 
-    /// A book whose files are already away has nothing to remove and changes nothing.
-    func testABookAlreadyAwayIsLeftAlone() async throws {
+    /// A book whose files are already away has nothing to remove: it is refused as such, never counted as removed
+    /// with 0 bytes, and nothing changes.
+    func testABookAlreadyAwayIsRefusedAsNothingToRemove() async throws {
         let world = try makeWorld()
         _ = try await world.removal.removeDownload(of: world.package, bookID: bookID, mayDownload: true)
-        let before = try snapshot(of: world.package)
-        let again = try await world.removal.removeDownload(of: world.package, bookID: bookID, mayDownload: true)
-        XCTAssertEqual(again.freedBytes, 0)
-        XCTAssertEqual(try snapshot(of: world.package), before)
+        try await assertRefused(.nothingToRemove, in: world)
     }
 
     /// A book of tracks (its own files in a folder) goes as a folder, and one stray file in it blocks the removal.
@@ -159,6 +157,131 @@ final class StoreRemovalTests: XCTestCase {
         XCTAssertEqual(outcome.freedBytes, Int64(tracks["tracks/01.mp3"]?.count ?? 0) + Int64(tracks["tracks/02.mp3"]?.count ?? 0))
         XCTAssertFalse(FileManager.default.fileExists(atPath: world.file("tracks").path))
         XCTAssertTrue(FileManager.default.fileExists(atPath: world.file("bookInfo.json").path))
+    }
+
+    // MARK: - The review's fixes
+
+    /// An edit rendered into the book's own file while its copy was read back is the only copy of that change: the
+    /// removal stops, leaving the new file and the pointer as they were.
+    func testAFileEditedDuringTheReadBackIsNotRemoved() async throws {
+        let world = try makeWorld()
+        let pointerBefore = try Data(contentsOf: world.file(StorePointer.fileName))
+        var removal = world.removal
+        let edited = world.file("book.txt")
+        removal.checkpoint = { step in
+            // After the read-back: the editor writes a new render over the file.
+            if step == .proven { try Data("a new render, written meanwhile".utf8).write(to: edited) }
+        }
+        do {
+            _ = try await removal.removeDownload(of: world.package, bookID: bookID, mayDownload: true)
+            XCTFail("an edited file was removed")
+        } catch let refusal as SyncRemovalRefusal {
+            XCTAssertEqual(refusal, .changedHere("book.txt"))
+        }
+        XCTAssertEqual(try Data(contentsOf: edited), Data("a new render, written meanwhile".utf8))
+        XCTAssertEqual(try Data(contentsOf: world.file(StorePointer.fileName)), pointerBefore, "the pointer was never written")
+    }
+
+    /// A file changed in place without a new size (only its time), a file replaced by another, and a track added
+    /// during the read-back each stop the removal too.
+    func testAnyChangeToTheBooksFilesDuringTheReadBackStopsTheRemoval() async throws {
+        let tracks: [String: Data] = ["tracks/01.mp3": Data("track one".utf8), "bookInfo.json": Data("{}".utf8)]
+        let changes: [(String, @Sendable (World) throws -> Void)] = [
+            ("its time", { world in
+                try FileManager.default.setAttributes([.modificationDate: Date(timeIntervalSince1970: 1_000)], ofItemAtPath: world.file("tracks/01.mp3").path)
+            }),
+            ("replaced", { world in
+                let data = try Data(contentsOf: world.file("tracks/01.mp3"))
+                try FileManager.default.removeItem(at: world.file("tracks/01.mp3"))
+                try data.write(to: world.file("tracks/01.mp3"))
+            }),
+            ("a track added", { world in try Data("track two".utf8).write(to: world.file("tracks/02.mp3")) }),
+        ]
+        for (name, change) in changes {
+            let world = try makeWorld(content: tracks)
+            var removal = world.removal
+            removal.checkpoint = { step in if step == .proven { try change(world) } }
+            do {
+                _ = try await removal.removeDownload(of: world.package, bookID: bookID, mayDownload: true)
+                XCTFail("\(name): the removal went on")
+            } catch let refusal as SyncRemovalRefusal {
+                guard case .changedHere = refusal else { return XCTFail("\(name): \(refusal)") }
+            }
+            XCTAssertTrue(FileManager.default.fileExists(atPath: world.file("tracks/01.mp3").path), name)
+        }
+    }
+
+    /// A file of the book that is gone by the last look is not a change: there is nothing of it left to lose.
+    func testAFileDeletedHereDuringTheReadBackIsNotAChange() async throws {
+        let world = try makeWorld()
+        var removal = world.removal
+        let gone = world.file("book.txt")
+        removal.checkpoint = { step in if step == .proven { try FileManager.default.removeItem(at: gone) } }
+        _ = try await removal.removeDownload(of: world.package, bookID: bookID, mayDownload: true)
+        XCTAssertTrue(StoreFetch.isMissingFiles(world.package))
+    }
+
+    /// The library's last word stops the removal before the pointer is written: nothing here changes. With a yes it goes.
+    func testTheLibrarysLastWordStopsTheRemoval() async throws {
+        let world = try makeWorld()
+        var no = world.removal
+        no.finalCheck = { false }
+        try await assertRefused(.busy, in: world, removal: no)
+
+        var yes = world.removal
+        yes.finalCheck = { true }
+        let outcome = try await yes.removeDownload(of: world.package, bookID: bookID, mayDownload: true)
+        XCTAssertEqual(outcome.freedBytes, Int64(text.count))
+    }
+
+    /// On a connection that costs, the refusal comes before anything is hashed: a changed file does not hide it.
+    func testTheCostlyConnectionIsSaidBeforeAnythingIsHashed() async throws {
+        let world = try makeWorld()
+        try Data("edited here".utf8).write(to: world.file("book.txt"))
+        world.drive.setNotDownloaded(try XCTUnwrap(world.blob(of: "content.md")).blob)
+        try await assertRefused(.needsDownload, in: world, mayDownload: false)
+    }
+
+    /// A file's name is the book's title: no refusal's log line holds one.
+    func testNoLogReasonNamesAFile() {
+        let refusals: [SyncRemovalRefusal] = [
+            .missingFromFolder("Secret Title.epub"), .notUploaded("Secret Title.epub"), .uploadFailed("Secret Title.epub"),
+            .changedHere("Secret Title.epub"), .doesNotMatch("Secret Title.epub"), .couldNotRemove("Secret Title.epub"),
+        ]
+        for refusal in refusals { XCTAssertFalse(refusal.logReason.contains("Secret"), "\(refusal)") }
+    }
+
+    /// A backup never makes a manifest from a package whose pointer says a file is away: the file would be left out
+    /// of what every device takes for the book's copy.
+    func testABackupRefusesAPackageWithAFileAway() async throws {
+        let world = try makeWorld()
+        _ = try await world.removal.removeDownload(of: world.package, bookID: bookID, mayDownload: true)
+        let backup = StoreBackup(folder: world.folder, storeID: world.storeID, staging: world.staging)
+        XCTAssertThrowsError(try backup.back(up: world.package, bookID: bookID)) { error in
+            XCTAssertEqual(error as? StoreBackup.FilesAreAway, StoreBackup.FilesAreAway())
+        }
+    }
+
+    /// Recording that a book's copy has uploaded, after its own file was freed, does not mark the file as here: the
+    /// row still says In Cloud, and Download Now still has the file to fetch.
+    func testMarkingAnUploadAfterARemovalKeepsTheFileAway() async throws {
+        let world = try makeWorld()
+        _ = try await world.removal.removeDownload(of: world.package, bookID: bookID, mayDownload: true)
+        let backup = StoreBackup(folder: world.folder, storeID: world.storeID, staging: world.staging)
+        try backup.markUploaded(package: world.package, bookID: bookID, result: world.backup)
+        let pointer = try XCTUnwrap(StoreFetch.pointer(in: world.package))
+        XCTAssertEqual(pointer.files.first { $0.path == "book.txt" }?.onThisDevice, false)
+        XCTAssertEqual(pointer.files.first { $0.path == "bookInfo.json" }?.onThisDevice, true)
+        XCTAssertTrue(StoreFetch.isMissingFiles(world.package))
+    }
+
+    /// A book the backup still has queued, or whose upload is awaited, or that the registers do not hold, is not freed.
+    func testTheBackupsStateForbidsFreeing() {
+        let id = UUID()
+        XCTAssertTrue(SyncCenter.backupForbidsFreeing(id, queued: [id], awaiting: [], recordedContent: [id]))
+        XCTAssertTrue(SyncCenter.backupForbidsFreeing(id, queued: [], awaiting: [id], recordedContent: [id]))
+        XCTAssertTrue(SyncCenter.backupForbidsFreeing(id, queued: [], awaiting: [], recordedContent: []))
+        XCTAssertFalse(SyncCenter.backupForbidsFreeing(id, queued: [], awaiting: [], recordedContent: [id]))
     }
 
     // MARK: - The proof's every failure
@@ -394,6 +517,33 @@ final class StoreRemovalTests: XCTestCase {
         try await storage.removeDownloadAsync(of: package(URL(fileURLWithPath: "/Users/reader/A.tmb")), mayDownload: true)
         XCTAssertEqual(live.downloadsRemoved, [bookID])
         XCTAssertEqual(asked.count, 0, "no proof is made for a library that is not synced")
+    }
+
+    /// With sync off, a library that is not in a cloud folder has nothing to prove: the removal is refused, never
+    /// reported done when nothing was removed.
+    func testWithSyncOffALocalLibraryRefusesInsteadOfReportingSuccess() async throws {
+        let live = FakeBookCloudStorage(location: .local)
+        let storage = storage(isSyncOn: false, live: live) { _, _ in }
+        do {
+            try await storage.removeDownloadAsync(of: package(URL(fileURLWithPath: "/Users/reader/A.tmb")), mayDownload: true)
+            XCTFail("nothing was removed, and success was reported")
+        } catch let error as BookCloudError {
+            XCTAssertEqual(error, .syncRemoval(.notBackedUp))
+        }
+        XCTAssertEqual(live.downloadsRemoved, [])
+    }
+
+    /// An error that is none of the proof's is said in the app's words, never the system's, which names a file.
+    func testAnUnexpectedErrorBecomesTheAppsWords() async throws {
+        struct Odd: LocalizedError { var errorDescription: String? { "The file “Secret Title.epub” could not be opened." } }
+        let storage = storage { _, _ in throw Odd() }
+        do {
+            try await storage.removeDownloadAsync(of: package(URL(fileURLWithPath: "/Users/reader/A.tmb")), mayDownload: true)
+            XCTFail("the removal threw")
+        } catch let error as BookCloudError {
+            XCTAssertEqual(error, .syncRemoval(.couldNotRemove("")))
+            XCTAssertFalse(error.explanation(in: nil, isPhone: false).contains("Secret"))
+        }
     }
 
     /// A proof that falls short reaches the caller as the cloud error that names it, whose words are the sync's.

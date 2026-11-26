@@ -30,22 +30,44 @@ enum SyncRemovalRefusal: Error, Equatable, Sendable {
     case folderUnreachable
     /// A file of the book could not be taken off this device.
     case couldNotRemove(String)
+    /// The book became busy (opened, played, kept, listed, edited, exported) or the setting changed, or sync stopped,
+    /// between the proof and the removal: nothing was removed.
+    case busy
+    /// Reading the copy back needs room on this device for one more copy of the book, and there is none.
+    case needsRoom
+    /// The book has no file of its own on this device to remove: it is away already.
+    case nothingToRemove
 
-    /// The reason in a few English words for a debug log line, which stays English.
+    /// The reason in a few English words for a debug log line, which stays English. It names no file: a path in a
+    /// package holds the book's title, which a sync's lines never carry.
     var logReason: String {
         switch self {
         case .notBackedUp: return "the book has no copy in the sync folder" // l10n: no (debug log text)
-        case .missingFromFolder(let file): return "the sync folder lacks \(file)" // l10n: no (debug log text)
-        case .notUploaded(let file): return "\(file) is not reported uploaded" // l10n: no (debug log text)
-        case .uploadFailed(let file): return "the upload of \(file) failed" // l10n: no (debug log text)
-        case .changedHere(let file): return "\(file) here is not the backed-up one" // l10n: no (debug log text)
-        case .doesNotMatch(let file): return "\(file) read back does not match" // l10n: no (debug log text)
+        case .missingFromFolder: return "the sync folder lacks a file of the copy" // l10n: no (debug log text)
+        case .notUploaded: return "a file of the copy is not reported uploaded" // l10n: no (debug log text)
+        case .uploadFailed: return "an upload of the copy failed" // l10n: no (debug log text)
+        case .changedHere: return "a file here is not the backed-up one" // l10n: no (debug log text)
+        case .doesNotMatch: return "a file read back does not match" // l10n: no (debug log text)
         case .offline: return "offline" // l10n: no (debug log text)
         case .needsDownload: return "reading it back would download over a costly connection" // l10n: no (debug log text)
         case .folderUnreachable: return "the sync folder did not answer" // l10n: no (debug log text)
-        case .couldNotRemove(let file): return "\(file) could not be removed" // l10n: no (debug log text)
+        case .couldNotRemove: return "a file could not be removed" // l10n: no (debug log text)
+        case .busy: return "the book became busy before its files went" // l10n: no (debug log text)
+        case .needsRoom: return "no room to read the copy back" // l10n: no (debug log text)
+        case .nothingToRemove: return "the book has no file of its own here" // l10n: no (debug log text)
         }
     }
+}
+
+// MARK: - The Last Look Before Files Go (FR46)
+
+/// What the library checks again, on its own thread, right before a removal writes its pointer: the book's rows,
+/// its protections, the setting, and whether sync is on and the library may change. A command or sweep sets it
+/// around its call into the storage (a task-local value, so it reaches the removal however deep the call goes);
+/// with none set, nothing more is asked.
+enum FreeingCheck {
+    /// Answers whether the book may still be freed now.
+    @TaskLocal static var current: (@Sendable () async -> Bool)?
 }
 
 // MARK: - Removing a Synced Book's Download (FR46)
@@ -81,6 +103,9 @@ struct StoreRemoval: Sendable {
     let staging: URL
     /// How long one file may take to arrive (section 7).
     var perFile: Duration = .seconds(60)
+    /// Asked right before the pointer is written, after the files have been looked at again: false stops the removal
+    /// (`.busy`). The library's last word (`FreeingCheck`).
+    var finalCheck: (@Sendable () async -> Bool)? = nil
     /// Called after each step; a test throws from it to stop the run there, as a crash would.
     var checkpoint: @Sendable (Step) throws -> Void = { _ in }
 
@@ -119,7 +144,7 @@ struct StoreRemoval: Sendable {
 
         // The book's own files here. A package with none is already away.
         let ownFiles = try ownFilesHere(in: package)
-        guard !ownFiles.isEmpty else { return Outcome(freedBytes: 0) }
+        guard !ownFiles.isEmpty else { throw SyncRemovalRefusal.nothingToRemove }
 
         // Step 1: the manifest the pointer names, read and checked.
         let bookFolder = folder.bookFolder(bookID)
@@ -132,6 +157,8 @@ struct StoreRemoval: Sendable {
         // come before the files here are hashed and before anything is read back, so a book that is not backed up
         // yet costs nothing to refuse.
         let blobs = Self.uniqueBlobs(of: manifest)
+        // A costly connection reads back only what is already on this device: said before anything is hashed.
+        if !mayDownload, blobs.contains(where: { listing[$0.blob]?.isOnThisDevice != true }) { throw SyncRemovalRefusal.needsDownload }
         // The names of the copy's every file in the folder: its blobs, and the manifest that lists them.
         let copyNames = blobs.map(\.blob) + [pointer.manifest]
         for blob in blobs {
@@ -142,15 +169,17 @@ struct StoreRemoval: Sendable {
         }
         try Self.requireFilesHereAreTheStores(ownFiles, manifest: manifest)
 
-        // Step 3: each blob read back, and its size and SHA-256 are the manifest's. A costly connection reads
-        // back only what is already on this device.
-        if !mayDownload, blobs.contains(where: { listing[$0.blob]?.isOnThisDevice != true }) { throw SyncRemovalRefusal.needsDownload }
+        // Step 3: each blob read back, and its size and SHA-256 are the manifest's.
         for blob in blobs {
             try Task.checkCancellation()
             try await readBack(blob, in: bookFolder)
         }
         try checkpoint(.proven)
 
+        // The last look, since the read-back can take minutes: the book's own files are the same files, and the
+        // library agrees the book may go. An edit rendered, a track added, a book opened or kept meanwhile stops it.
+        try Self.requireUnchanged(ownFiles, then: try ownFilesHere(in: package))
+        if let finalCheck, await finalCheck() == false { throw SyncRemovalRefusal.busy }
         // Step 4: the pointer says the book's own files are away, before the first goes.
         try writePointer(for: manifest, manifestName: pointer.manifest, in: package, previous: pointer)
         try checkpoint(.pointerWritten)
@@ -173,6 +202,10 @@ struct StoreRemoval: Sendable {
         var path: String
         var url: URL
         var size: Int64
+        /// When the file was last changed, and which file it is on the volume: with its size, what tells the file
+        /// that was hashed from one an editor wrote over, or replaced, while the copy was read back.
+        var modified: Date?
+        var fileNumber: UInt64?
     }
 
     /// The files of the package that are the book's own (its file or tracks), found without following a link.
@@ -186,7 +219,23 @@ struct StoreRemoval: Sendable {
         }
         return files.filter { StoreBackup.role(of: $0.path) == "content" }.map { file in
             let size = (try? file.url.resourceValues(forKeys: [.fileSizeKey]).fileSize).map(Int64.init) ?? 0
-            return OwnFile(path: file.path, url: file.url, size: size)
+            let attributes = try? FileManager.default.attributesOfItem(atPath: file.url.path)
+            return OwnFile(
+                path: file.path, url: file.url, size: size,
+                modified: attributes?[.modificationDate] as? Date,
+                fileNumber: (attributes?[.systemFileNumber] as? NSNumber)?.uint64Value
+            )
+        }
+    }
+
+    /// The files are the ones that were hashed: none was changed, replaced, or added. A file that is gone is not a
+    /// change (there is nothing of it left to lose); `current` is what is there now.
+    private static func requireUnchanged(_ hashed: [OwnFile], then current: [OwnFile]) throws {
+        let before = Dictionary(hashed.map { ($0.path, $0) }, uniquingKeysWith: { first, _ in first })
+        for file in current {
+            guard let was = before[file.path], was.size == file.size, was.modified == file.modified, was.fileNumber == file.fileNumber else {
+                throw SyncRemovalRefusal.changedHere(file.path)
+            }
         }
     }
 
@@ -275,6 +324,9 @@ struct StoreRemoval: Sendable {
     /// The refusal for an error a read of the folder threw.
     private static func refusal(for error: Error, file: String) -> Error {
         if error is CancellationError { return error }
+        // A copy staged for the read-back that finds the disk full is a need for room, not a damaged copy.
+        let nsError = error as NSError
+        if nsError.domain == NSCocoaErrorDomain, nsError.code == NSFileWriteOutOfSpaceError { return SyncRemovalRefusal.needsRoom }
         switch error as? SyncProblem {
         case .offline: return SyncRemovalRefusal.offline
         case .damaged: return SyncRemovalRefusal.doesNotMatch(file)

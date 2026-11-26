@@ -722282,157 +722282,157 @@
       }
     },
     "sync.announce.removedUnopened" : {
-      "comment" : "Said aloud once after a sync removed downloads of books not opened for some days. %1$@ is a count of books, such as \"3 books\"; %2$@ is a count of days, such as \"7 days\".",
+      "comment" : "Said aloud once after a sync removed downloads of books not opened for some days. %1$@ is a count of books, such as \"3 books\"; %2$@ is a count of days, such as \"7 days\". Every book stays in iCloud Drive.",
       "extractionState" : "manual",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "أُزيلت تنزيلات %1$@ التي لم تفتحها خلال %2$@؛ وتبقى في iCloud Drive."
+            "value" : "أُزيلت تنزيلات %1$@ التي لم تُفتح خلال %2$@. تبقى جميعها في iCloud Drive."
           }
         },
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%2$@ ধরে না খোলা %1$@-এর ডাউনলোড সরানো হয়েছে; সেগুলো iCloud Drive-এ থাকছে।"
+            "value" : "%2$@ ধরে না খোলা %1$@-এর ডাউনলোড সরানো হয়েছে। সবগুলো iCloud Drive-এ থাকছে।"
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Die Downloads von %1$@, die du seit %2$@ nicht geöffnet hast, wurden entfernt; sie bleiben in iCloud Drive."
+            "value" : "Downloads von %1$@ entfernt, die seit %2$@ nicht geöffnet wurden. Alle bleiben in iCloud Drive."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Removed the downloads of %@ you hadn't opened in %@; they stay in iCloud Drive."
+            "value" : "Removed downloads of %@ not opened in %@. All stay in iCloud Drive."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Se quitaron las descargas de %1$@ que no habías abierto en %2$@; siguen en iCloud Drive."
+            "value" : "Se quitaron las descargas de %1$@ sin abrir en %2$@. Todos siguen en iCloud Drive."
           }
         },
         "fa" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "بارگیری %1$@ که %2$@ باز نشده بودند برداشته شد؛ آن‌ها در iCloud Drive می‌مانند."
+            "value" : "بارگیری %1$@ که %2$@ باز نشده بودند برداشته شد. همه در iCloud Drive می‌مانند."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Les téléchargements de %1$@ non ouverts depuis %2$@ ont été retirés ; ils restent dans iCloud Drive."
+            "value" : "Téléchargements retirés pour %1$@ non ouverts depuis %2$@. Tous restent dans iCloud Drive."
           }
         },
         "he" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "הורדות של %1$@ שלא נפתחו במשך %2$@ הוסרו; הן נשארות ב-iCloud Drive."
+            "value" : "הורדות של %1$@ שלא נפתחו במשך %2$@ הוסרו. כולם נשארים ב-iCloud Drive."
           }
         },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%2$@ से न खोली गई %1$@ के डाउनलोड हटाए गए; वे iCloud Drive में बने रहते हैं।"
+            "value" : "%2$@ से न खोली गई %1$@ के डाउनलोड हटाए गए। सभी iCloud Drive में बनी रहती हैं।"
           }
         },
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Unduhan %1$@ yang tidak dibuka selama %2$@ dibuang; buku-buku itu tetap ada di iCloud Drive."
+            "value" : "Unduhan %1$@ yang tidak dibuka selama %2$@ dibuang. Semuanya tetap ada di iCloud Drive."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Rimossi i download di %1$@ non aperti da %2$@; restano in iCloud Drive."
+            "value" : "Rimossi i download di %1$@ non aperti da %2$@. Tutti restano in iCloud Drive."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%2$@以上開かれていない%1$@のダウンロードを取り除きました。iCloud Drive には残っています。"
+            "value" : "%2$@以上開かれていない%1$@のダウンロードを取り除きました。すべて iCloud Drive に残っています。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%2$@ 동안 열지 않은 %1$@의 다운로드를 제거했습니다. iCloud Drive에는 남아 있습니다."
+            "value" : "%2$@ 동안 열지 않은 %1$@의 다운로드를 제거했습니다. 모두 iCloud Drive에 남아 있습니다."
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "De downloads van %1$@ die je %2$@ niet hebt geopend, zijn verwijderd; ze blijven in iCloud Drive."
+            "value" : "De downloads van %1$@ die je %2$@ niet hebt geopend, zijn verwijderd. Alles blijft in iCloud Drive."
           }
         },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Usunięto pobrane pliki dla %1$@, których nie otwierano przez %2$@; pozostają w iCloud Drive."
+            "value" : "Usunięto pobrane pliki dla %1$@, których nie otwierano przez %2$@. Wszystkie pozostają w iCloud Drive."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Foram removidos os downloads de %1$@ não abertos há %2$@; eles continuam no iCloud Drive."
+            "value" : "Downloads removidos de %1$@ não abertos há %2$@. Todos continuam no iCloud Drive."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Убраны загрузки (%1$@), которые вы не открывали %2$@; они остаются в iCloud Drive."
+            "value" : "Убраны загрузки (%1$@), которые не открывали %2$@. Все остаются в iCloud Drive."
           }
         },
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nedladdningarna av %1$@ som du inte har öppnat på %2$@ har tagits bort; de finns kvar i iCloud Drive."
+            "value" : "Nedladdningarna av %1$@ som inte öppnats på %2$@ har tagits bort. Alla finns kvar i iCloud Drive."
           }
         },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "นำการดาวน์โหลดของ %1$@ ที่ไม่ได้เปิดมา %2$@ ออกแล้ว หนังสือยังอยู่ใน iCloud Drive"
+            "value" : "นำการดาวน์โหลดของ %1$@ ที่ไม่ได้เปิดมา %2$@ ออกแล้ว ทั้งหมดยังอยู่ใน iCloud Drive"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%2$@ boyunca açılmayan %1$@ için indirilen kopyalar kaldırıldı; kitaplar iCloud Drive'da duruyor."
+            "value" : "%2$@ boyunca açılmayan %1$@ için indirilen kopyalar kaldırıldı. Hepsi iCloud Drive'da duruyor."
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Вилучено завантаження (%1$@), які ви не відкривали %2$@; вони залишаються в iCloud Drive."
+            "value" : "Вилучено завантаження (%1$@), які не відкривали %2$@. Усі залишаються в iCloud Drive."
           }
         },
         "ur" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "جو %1$@ %2$@ سے نہیں کھولی گئیں، ان کے ڈاؤن لوڈ ہٹا دیے گئے؛ وہ iCloud Drive میں رہتی ہیں۔"
+            "value" : "جو %1$@ %2$@ سے نہیں کھولی گئیں، ان کے ڈاؤن لوڈ ہٹا دیے گئے۔ سب iCloud Drive میں رہتی ہیں۔"
           }
         },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Đã gỡ bản tải về của %1$@ không mở trong %2$@; chúng vẫn ở trong iCloud Drive."
+            "value" : "Đã gỡ bản tải về của %1$@ không mở trong %2$@. Tất cả vẫn ở trong iCloud Drive."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "已移除 %2$@ 内未打开的 %1$@ 的下载内容；它们仍保留在 iCloud Drive 中。"
+            "value" : "已移除 %2$@ 内未打开的 %1$@ 的下载内容。它们都仍保留在 iCloud Drive 中。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "已移除 %2$@ 內未打開的 %1$@ 的下載項目；它們仍保留在 iCloud Drive 中。"
+            "value" : "已移除 %2$@ 內未打開的 %1$@ 的下載項目。它們都仍保留在 iCloud Drive 中。"
           }
         }
       }
@@ -728197,6 +728197,162 @@
         }
       }
     },
+    "sync.remove.checking" : {
+      "comment" : "Said aloud when Remove Download is still checking the copy of the book in iCloud Drive after a few seconds.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "جارٍ فحص النسخة في iCloud Drive."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive-এর কপি যাচাই করা হচ্ছে।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Die Kopie in iCloud Drive wird geprüft."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Checking the copy in iCloud Drive."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Comprobando la copia en iCloud Drive."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "نسخهٔ iCloud Drive در حال بررسی است."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Vérification de la copie dans iCloud Drive."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "בודק את העותק ב-iCloud Drive."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive में प्रति जाँची जा रही है।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Memeriksa salinan di iCloud Drive."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Controllo della copia in iCloud Drive."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive のコピーを確認しています。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive의 사본을 확인하는 중입니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "De kopie in iCloud Drive wordt gecontroleerd."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sprawdzanie kopii w iCloud Drive."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Verificando a cópia no iCloud Drive."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Проверяется копия в iCloud Drive."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kopian i iCloud Drive kontrolleras."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "กำลังตรวจสอบสำเนาใน iCloud Drive"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive'daki kopya denetleniyor."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Перевіряється копія в iCloud Drive."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive میں کاپی جانچی جا رہی ہے۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Đang kiểm tra bản sao trong iCloud Drive."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "正在检查 iCloud Drive 中的副本。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "正在檢查 iCloud Drive 中的副本。"
+          }
+        }
+      }
+    },
     "sync.remove.couldNotRemove" : {
       "comment" : "Why Remove Download failed: a file could not be taken off the device.",
       "extractionState" : "manual",
@@ -728978,157 +729134,157 @@
       }
     },
     "sync.remove.needsDownload" : {
-      "comment" : "Why a book's files stay on this device for now: checking the copy in iCloud Drive means downloading the book, which waits for Wi-Fi.",
+      "comment" : "Why a book's files stay on this device for now: to free the book TextMouth first checks its copy in iCloud Drive, which means downloading it again, so it needs room for one more copy of the book and, on cellular data, Wi-Fi.",
       "extractionState" : "manual",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "سيحتاج TextMouth إلى تنزيل هذا الكتاب للتحقق من نسخته، لذا يبقى تنزيله الآن."
+            "value" : "لتحرير هذا الكتاب، يفحص TextMouth أولًا نسخته في iCloud Drive. يتطلب ذلك مساحة لنسخة إضافية من الكتاب، وWi-Fi عند استخدام بيانات الجوال. يبقى تنزيله الآن."
           }
         },
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "কপি যাচাই করতে TextMouth-কে এই বইটি ডাউনলোড করতে হবে, তাই আপাতত এর ডাউনলোড থেকে যাচ্ছে।"
+            "value" : "এই বই খালি করতে TextMouth আগে iCloud Drive-এ এর কপি যাচাই করে। এর জন্য বইয়ের আরও একটি কপির জায়গা লাগে, আর মোবাইল ডেটায় Wi-Fi লাগে। আপাতত এর ডাউনলোড থেকে যাচ্ছে।"
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth müsste dieses Buch herunterladen, um seine Kopie zu prüfen; daher bleibt sein Download vorerst."
+            "value" : "Um dieses Buch freizugeben, prüft TextMouth zuerst seine Kopie in iCloud Drive. Dafür ist Platz für eine weitere Kopie des Buchs nötig, bei Mobilfunkdaten außerdem WLAN. Sein Download bleibt vorerst."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "TextMouth would have to download this book to check its copy, so its download stays for now."
+            "value" : "To free this book, TextMouth first checks its copy in iCloud Drive. That needs room for one more copy of the book, and Wi-Fi on cellular data. Its download stays for now."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth tendría que descargar este libro para comprobar su copia, así que su descarga se queda por ahora."
+            "value" : "Para liberar este libro, TextMouth comprueba antes su copia en iCloud Drive. Eso necesita espacio para una copia más del libro y Wi-Fi si usas datos móviles. Su descarga se queda por ahora."
           }
         },
         "fa" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth برای بررسی نسخهٔ این کتاب باید آن را بارگیری کند، بنابراین فعلاً بارگیری آن می‌ماند."
+            "value" : "برای آزاد کردن این کتاب، TextMouth ابتدا نسخهٔ آن را در iCloud Drive بررسی می‌کند. این کار به جا برای یک نسخهٔ دیگر از کتاب و در داده‌های همراه به Wi-Fi نیاز دارد. فعلاً بارگیری آن می‌ماند."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth devrait télécharger ce livre pour vérifier sa copie ; son téléchargement reste donc pour l’instant."
+            "value" : "Pour libérer ce livre, TextMouth vérifie d’abord sa copie dans iCloud Drive. Il faut pour cela de la place pour une copie de plus du livre, et le Wi-Fi avec les données cellulaires. Son téléchargement reste pour l’instant."
           }
         },
         "he" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "כדי לבדוק את העותק של הספר הזה, TextMouth יצטרך להוריד אותו, ולכן ההורדה שלו נשארת לעת עתה."
+            "value" : "כדי לפנות את הספר הזה, TextMouth בודק קודם את העותק שלו ב-iCloud Drive. לשם כך נדרש מקום לעותק נוסף של הספר, ו-Wi-Fi בנתונים סלולריים. ההורדה שלו נשארת לעת עתה."
           }
         },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "प्रति जाँचने के लिए TextMouth को यह पुस्तक डाउनलोड करनी पड़ेगी, इसलिए फ़िलहाल इसका डाउनलोड बना रहता है।"
+            "value" : "इस पुस्तक की जगह खाली करने के लिए TextMouth पहले iCloud Drive में उसकी प्रति जाँचता है। इसके लिए पुस्तक की एक और प्रति जितनी जगह चाहिए, और मोबाइल डेटा पर Wi-Fi। फ़िलहाल इसका डाउनलोड बना रहता है।"
           }
         },
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth harus mengunduh buku ini untuk memeriksa salinannya, jadi unduhannya tetap ada untuk sementara."
+            "value" : "Untuk mengosongkan buku ini, TextMouth lebih dulu memeriksa salinannya di iCloud Drive. Itu memerlukan ruang untuk satu salinan buku lagi, dan Wi-Fi jika memakai data seluler. Unduhannya tetap ada untuk sementara."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth dovrebbe scaricare questo libro per controllarne la copia, quindi per ora il suo download resta."
+            "value" : "Per liberare questo libro, TextMouth controlla prima la sua copia in iCloud Drive. Serve spazio per un'altra copia del libro e il Wi-Fi con i dati cellulare. Il suo download resta per ora."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "コピーを確認するには TextMouth がこのブックをダウンロードする必要があるため、ダウンロードは当面残ります。"
+            "value" : "このブックを解放するには、TextMouth がまず iCloud Drive のコピーを確認します。そのためには、ブックをもう1つ置ける空き容量が必要で、モバイルデータ通信では Wi-Fi が必要です。ダウンロードは当面残ります。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "사본을 확인하려면 TextMouth가 이 책을 다운로드해야 하므로, 다운로드는 당분간 남아 있습니다."
+            "value" : "이 책을 비우려면 TextMouth가 먼저 iCloud Drive의 사본을 확인합니다. 그러려면 책 사본 하나를 더 둘 공간이 필요하고, 셀룰러 데이터에서는 Wi-Fi가 필요합니다. 다운로드는 당분간 남아 있습니다."
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth zou dit boek moeten downloaden om de kopie te controleren, dus de download blijft voorlopig staan."
+            "value" : "Om dit boek vrij te maken controleert TextMouth eerst de kopie in iCloud Drive. Daarvoor is ruimte nodig voor nog een kopie van het boek, en wifi bij mobiele data. De download blijft voorlopig staan."
           }
         },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Aby sprawdzić kopię tej książki, TextMouth musiałby ją pobrać, więc na razie jej pobrany plik pozostaje."
+            "value" : "Aby zwolnić tę książkę, TextMouth najpierw sprawdza jej kopię w iCloud Drive. Potrzeba na to miejsca na jeszcze jedną kopię książki, a przy danych komórkowych — Wi-Fi. Jej pobrany plik na razie pozostaje."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth teria de baixar este livro para verificar a cópia; por isso, o download dele continua por enquanto."
+            "value" : "Para liberar este livro, TextMouth verifica antes a cópia dele no iCloud Drive. Isso exige espaço para mais uma cópia do livro e Wi-Fi em dados móveis. O download dele continua por enquanto."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Чтобы проверить копию этой книги, TextMouth пришлось бы загрузить её, поэтому пока её загрузка остаётся."
+            "value" : "Чтобы освободить эту книгу, TextMouth сначала проверяет её копию в iCloud Drive. Для этого нужно место ещё под одну копию книги, а при мобильных данных — Wi-Fi. Пока её загрузка остаётся."
           }
         },
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth skulle behöva ladda ned boken för att kontrollera kopian, så nedladdningen finns kvar tills vidare."
+            "value" : "För att frigöra den här boken kontrollerar TextMouth först kopian i iCloud Drive. Det kräver utrymme för ännu en kopia av boken, och Wi-Fi vid mobildata. Nedladdningen finns kvar tills vidare."
           }
         },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth ต้องดาวน์โหลดหนังสือเล่มนี้เพื่อตรวจสอบสำเนา จึงเก็บการดาวน์โหลดไว้ก่อนในตอนนี้"
+            "value" : "เพื่อคืนพื้นที่ของหนังสือเล่มนี้ TextMouth จะตรวจสอบสำเนาใน iCloud Drive ก่อน ซึ่งต้องมีพื้นที่สำหรับสำเนาหนังสืออีกหนึ่งชุด และต้องใช้ Wi-Fi เมื่อใช้ข้อมูลเซลลูลาร์ จึงเก็บการดาวน์โหลดไว้ก่อนในตอนนี้"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth'un kopyayı denetlemek için bu kitabı indirmesi gerekirdi; bu yüzden indirilen kopya şimdilik kalıyor."
+            "value" : "Bu kitabı boşaltmak için TextMouth önce iCloud Drive'daki kopyasını denetler. Bunun için kitabın bir kopyası daha kadar yer, hücresel verideyse Wi-Fi gerekir. İndirilen kopya şimdilik kalıyor."
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Щоб перевірити копію цієї книги, TextMouth довелося б її завантажити, тому поки що її завантаження залишається."
+            "value" : "Щоб звільнити цю книгу, TextMouth спершу перевіряє її копію в iCloud Drive. Для цього потрібне місце ще для однієї копії книги, а за мобільних даних — Wi-Fi. Поки що її завантаження залишається."
           }
         },
         "ur" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "کاپی جانچنے کے لیے TextMouth کو یہ کتاب ڈاؤن لوڈ کرنا پڑے گی، اس لیے فی الحال اس کا ڈاؤن لوڈ رہتا ہے۔"
+            "value" : "اس کتاب کی جگہ خالی کرنے کے لیے TextMouth پہلے iCloud Drive میں اس کی کاپی جانچتا ہے۔ اس کے لیے کتاب کی ایک اور کاپی جتنی جگہ چاہیے، اور موبائل ڈیٹا پر Wi-Fi۔ فی الحال اس کا ڈاؤن لوڈ رہتا ہے۔"
           }
         },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth sẽ phải tải sách này về để kiểm tra bản sao, nên tạm thời giữ lại bản tải về."
+            "value" : "Để giải phóng sách này, TextMouth kiểm tra trước bản sao của nó trong iCloud Drive. Việc đó cần chỗ cho thêm một bản sao của sách, và Wi-Fi nếu dùng dữ liệu di động. Tạm thời giữ lại bản tải về."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth 需要先下载这本图书来检查其副本，因此暂时保留其下载内容。"
+            "value" : "要释放这本图书，TextMouth 会先检查它在 iCloud Drive 中的副本。这需要再有一本图书副本的空间，使用蜂窝数据时还需要 Wi-Fi。暂时保留其下载内容。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth 需要先下載這本書來檢查其副本，因此暫時保留其下載項目。"
+            "value" : "要釋放這本書，TextMouth 會先檢查它在 iCloud Drive 中的副本。這需要再有一本書副本的空間，使用行動數據時還需要 Wi-Fi。暫時保留其下載項目。"
           }
         }
       }
@@ -729597,6 +729753,162 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%@ 離線時，TextMouth 無法檢查 iCloud Drive 中的副本，因此保留下載項目。"
+          }
+        }
+      }
+    },
+    "sync.remove.reopensToDownload" : {
+      "comment" : "Said after Remove Download when this device keeps every book: the book is not downloaded again until the person opens it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "فتح الكتاب ينزّله مرة أخرى."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বই খুললে তা আবার ডাউনলোড হয়।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Beim Öffnen eines Buchs wird es erneut geladen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opening a book downloads it again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Al abrir un libro, se descarga de nuevo."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "باز کردن کتاب آن را دوباره بارگیری می‌کند."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ouvrir un livre le télécharge de nouveau."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "פתיחת ספר מורידה אותו שוב."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "पुस्तक खोलने पर वह फिर डाउनलोड होती है।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Membuka buku mengunduhnya lagi."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Aprire un libro lo scarica di nuovo."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ブックを開くと、もう一度ダウンロードされます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "책을 열면 다시 다운로드됩니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Een boek openen downloadt het opnieuw."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Otwarcie książki pobiera ją ponownie."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Abrir um livro o baixa de novo."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "При открытии книга загружается снова."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Att öppna en bok laddar ned den igen."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "การเปิดหนังสือจะดาวน์โหลดหนังสือนั้นอีกครั้ง"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kitabı açmak onu yeniden indirir."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Після відкриття книга завантажується знову."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "کتاب کھولنے پر وہ دوبارہ ڈاؤن لوڈ ہوتی ہے۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mở sách sẽ tải sách về lại."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "打开图书会再次下载它。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "打開書籍會再次下載它。"
           }
         }
       }
@@ -732290,157 +732602,157 @@
       }
     },
     "sync.status.removalsWaiting" : {
-      "comment" : "A line of the sync status: books stay on this device because their copies in iCloud Drive are not confirmed yet. %1$@ is a count of books, such as \"3 books\"; %2$@ is \"this Mac\" or \"this iPhone\".",
+      "comment" : "A line of the sync status: books stay on this device because their copies in iCloud Drive are not confirmed yet. %1$@ is \"this Mac\" or \"this iPhone\"; %2$@ is a count of books, such as \"3 books\".",
       "extractionState" : "manual",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "تبقى %1$@ الآن على %2$@: لم يؤكد TextMouth بعد نسخها في iCloud Drive."
+            "value" : "تبقى الآن على %1$@ إلى أن تُؤكَّد نسخها في iCloud Drive: %2$@."
           }
         },
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ আপাতত %2$@-এ থাকছে: iCloud Drive-এ এগুলোর কপি TextMouth এখনো নিশ্চিত করেনি।"
+            "value" : "iCloud Drive-এর কপি নিশ্চিত না হওয়া পর্যন্ত আপাতত %1$@-এ থাকছে: %2$@।"
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ bleiben vorerst (%2$@): TextMouth hat ihre Kopien in iCloud Drive noch nicht bestätigt."
+            "value" : "Bleiben vorerst (%1$@), bis die Kopien in iCloud Drive bestätigt sind: %2$@."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ stay on %@ for now: TextMouth hasn't confirmed their copies in iCloud Drive."
+            "value" : "Staying on %@ for now, until iCloud Drive's copies are confirmed: %@."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ se quedan por ahora en %2$@: TextMouth no ha confirmado sus copias en iCloud Drive."
+            "value" : "Se quedan en %1$@ por ahora, hasta confirmar las copias de iCloud Drive: %2$@."
           }
         },
         "fa" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ فعلاً در %2$@ می‌مانند: TextMouth هنوز نسخه‌های آن‌ها را در iCloud Drive تأیید نکرده است."
+            "value" : "تا تأیید نسخه‌ها در iCloud Drive، فعلاً در %1$@ می‌مانند: %2$@."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ restent pour l’instant sur %2$@ : TextMouth n’a pas confirmé leurs copies dans iCloud Drive."
+            "value" : "Restent sur %1$@ pour l’instant, jusqu’à la confirmation des copies d’iCloud Drive : %2$@."
           }
         },
         "he" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ נשארים לעת עתה ב-%2$@: TextMouth עדיין לא אישר את העותקים שלהם ב-iCloud Drive."
+            "value" : "נשארים לעת עתה ב-%1$@, עד שהעותקים ב-iCloud Drive יאושרו: %2$@."
           }
         },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ फ़िलहाल %2$@ पर बनी रहती हैं: TextMouth ने iCloud Drive में उनकी प्रतियों की पुष्टि नहीं की है।"
+            "value" : "iCloud Drive की प्रतियों की पुष्टि होने तक फ़िलहाल %1$@ पर बनी रहती हैं: %2$@।"
           }
         },
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ tetap ada di %2$@ untuk sementara: TextMouth belum memastikan salinannya di iCloud Drive."
+            "value" : "Tetap ada di %1$@ untuk sementara, sampai salinan di iCloud Drive dipastikan: %2$@."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ restano per ora su %2$@: TextMouth non ha ancora confermato le loro copie in iCloud Drive."
+            "value" : "Restano su %1$@ per ora, finché le copie in iCloud Drive non sono confermate: %2$@."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@は、当面%2$@に残ります。iCloud Drive にあるコピーを TextMouth がまだ確認できていません。"
+            "value" : "iCloud Drive のコピーが確認できるまで、%1$@には当面残ります: %2$@。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "당분간 남아 있는 책(%2$@): %1$@. iCloud Drive의 사본을 TextMouth가 아직 확인하지 못했습니다."
+            "value" : "iCloud Drive의 사본이 확인될 때까지 당분간 남아 있는 책(%1$@): %2$@."
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ blijven voorlopig op %2$@: TextMouth heeft hun kopieën in iCloud Drive nog niet bevestigd."
+            "value" : "Blijven voorlopig (%1$@), tot de kopieën in iCloud Drive zijn bevestigd: %2$@."
           }
         },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ na razie pozostają (%2$@): TextMouth nie potwierdził ich kopii w iCloud Drive."
+            "value" : "Na razie pozostają (%1$@), dopóki kopie w iCloud Drive nie zostaną potwierdzone: %2$@."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ continuam por enquanto (%2$@): TextMouth ainda não confirmou as cópias deles no iCloud Drive."
+            "value" : "Continuam por enquanto (%1$@), até as cópias no iCloud Drive serem confirmadas: %2$@."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ пока остаются (%2$@): TextMouth не подтвердил их копии в iCloud Drive."
+            "value" : "Пока остаются (%1$@), пока копии в iCloud Drive не подтверждены: %2$@."
           }
         },
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ finns kvar tills vidare (%2$@): TextMouth har ännu inte bekräftat deras kopior i iCloud Drive."
+            "value" : "Finns kvar tills vidare (%1$@), tills kopiorna i iCloud Drive är bekräftade: %2$@."
           }
         },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ ยังอยู่บน %2$@ ไปก่อน: TextMouth ยังไม่ยืนยันสำเนาของหนังสือเหล่านั้นใน iCloud Drive"
+            "value" : "ยังอยู่บน %1$@ ไปก่อน จนกว่าจะยืนยันสำเนาใน iCloud Drive: %2$@"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ şimdilik kalıyor (%2$@): TextMouth iCloud Drive'daki kopyalarını henüz doğrulamadı."
+            "value" : "iCloud Drive'daki kopyalar doğrulanana kadar şimdilik kalıyor (%1$@): %2$@."
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ поки залишаються (%2$@): TextMouth не підтвердив їхні копії в iCloud Drive."
+            "value" : "Поки залишаються (%1$@), доки копії в iCloud Drive не підтверджено: %2$@."
           }
         },
         "ur" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ فی الحال %2$@ پر رہتی ہیں: TextMouth نے iCloud Drive میں ان کی کاپیوں کی تصدیق نہیں کی۔"
+            "value" : "iCloud Drive میں کاپیوں کی تصدیق ہونے تک فی الحال %1$@ پر رہتی ہیں: %2$@۔"
           }
         },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ tạm thời vẫn ở trên %2$@: TextMouth chưa xác nhận bản sao của chúng trong iCloud Drive."
+            "value" : "Tạm thời vẫn ở trên %1$@, cho đến khi bản sao trong iCloud Drive được xác nhận: %2$@."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ 暂时保留在 %2$@ 上：TextMouth 尚未确认它们在 iCloud Drive 中的副本。"
+            "value" : "暂时保留在 %1$@ 上，直到确认 iCloud Drive 中的副本：%2$@。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ 暫時保留在 %2$@ 上：TextMouth 尚未確認它們在 iCloud Drive 中的副本。"
+            "value" : "暫時保留在 %1$@ 上，直到確認 iCloud Drive 中的副本：%2$@。"
           }
         }
       }
@@ -734229,6 +734541,162 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "要停止同步這個書庫嗎？這部 Mac 和 iCloud Drive 上的內容都不會被刪除。"
+          }
+        }
+      }
+    },
+    "sync.stopQuestion.onlyInCloud" : {
+      "comment" : "Added to the question before syncing stops, when some books' files are only in iCloud Drive. %@ is a count of books, such as \"12 books\".",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@: في iCloud Drive فقط. احتفظ بمجلد TextMouth Sync لفتحها."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@: শুধু iCloud Drive-এ আছে। এগুলো খুলতে TextMouth Sync ফোল্ডারটি রেখে দিন।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@: nur in iCloud Drive. Behalte den Ordner TextMouth Sync, um sie zu öffnen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@: only in iCloud Drive. Keep the TextMouth Sync folder to open them."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@: solo en iCloud Drive. Conserva la carpeta TextMouth Sync para abrirlos."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@: فقط در iCloud Drive. برای باز کردن آن‌ها پوشهٔ TextMouth Sync را نگه دارید."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ : uniquement dans iCloud Drive. Conservez le dossier TextMouth Sync pour les ouvrir."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@: רק ב-iCloud Drive. שמור את התיקייה TextMouth Sync כדי לפתוח אותם."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@: केवल iCloud Drive में। इन्हें खोलने के लिए TextMouth Sync फ़ोल्डर रखें।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@: hanya di iCloud Drive. Simpan folder TextMouth Sync untuk membukanya."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@: solo in iCloud Drive. Conserva la cartella TextMouth Sync per aprirli."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@: iCloud Drive にのみあります。開くには TextMouth Sync フォルダを残しておいてください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@: iCloud Drive에만 있습니다. 열려면 TextMouth Sync 폴더를 유지하십시오."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@: alleen in iCloud Drive. Bewaar de map TextMouth Sync om ze te openen."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@: tylko w iCloud Drive. Zachowaj folder TextMouth Sync, aby je otwierać."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@: só no iCloud Drive. Mantenha a pasta TextMouth Sync para abri-los."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@: только в iCloud Drive. Сохраните папку TextMouth Sync, чтобы открывать их."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@: bara i iCloud Drive. Behåll mappen TextMouth Sync för att öppna dem."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@: มีเฉพาะใน iCloud Drive เก็บโฟลเดอร์ TextMouth Sync ไว้เพื่อเปิดหนังสือเหล่านั้น"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@: yalnızca iCloud Drive'da. Açmak için TextMouth Sync klasörünü tutun."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@: лише в iCloud Drive. Збережіть папку TextMouth Sync, щоб відкривати їх."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@: صرف iCloud Drive میں۔ انہیں کھولنے کے لیے TextMouth Sync فولڈر رکھیں۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@: chỉ có trong iCloud Drive. Hãy giữ thư mục TextMouth Sync để mở chúng."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@：仅在 iCloud Drive 中。请保留 TextMouth Sync 文件夹以便打开它们。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@：僅在 iCloud Drive 中。請保留 TextMouth Sync 資料夾以便打開它們。"
           }
         }
       }

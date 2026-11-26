@@ -69,6 +69,18 @@ extension BookCloudStates {
         }
     }
 
+    /// How many books have their files only in the sync folder (FR46): the books Stop Syncing leaves needing that
+    /// folder to open. Zero while sync is off.
+    var countOnlyInTheSyncFolder: Int {
+        guard syncIsOn else { return 0 }
+        return states.values.filter { state in
+            switch state {
+            case .inCloud, .downloading, .downloadFailed: return true
+            case .local, .downloaded, .waitingForSync: return false
+            }
+        }.count
+    }
+
     /// How many of `books` the list's summary counts as in the cloud: in a
     /// cloud location, the books whose known state leaves some of their
     /// files off this Mac; always 0 elsewhere.

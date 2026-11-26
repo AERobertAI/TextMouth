@@ -27,9 +27,13 @@ extension SyncWording {
         case .offline:
             // Translators: Why Remove Download left a book's files on this device: it is offline. %@ is "this Mac" or "this iPhone".
             return InterfaceText.line("sync.remove.offline", "TextMouth can't check the copy in iCloud Drive while \(thisDevice(isPhone: isPhone)) is offline, so the download stays.")
-        case .needsDownload:
-            // Translators: Why a book's files stay on this device for now: checking the copy in iCloud Drive means downloading the book, which waits for Wi-Fi.
-            return InterfaceText.line("sync.remove.needsDownload", "TextMouth would have to download this book to check its copy, so its download stays for now.")
+        case .needsDownload, .needsRoom:
+            // Translators: Why a book's files stay on this device for now: to free the book TextMouth first checks its copy in iCloud Drive, which means downloading it again, so it needs room for one more copy of the book and, on cellular data, Wi-Fi.
+            return InterfaceText.line("sync.remove.needsDownload", "To free this book, TextMouth first checks its copy in iCloud Drive. That needs room for one more copy of the book, and Wi-Fi on cellular data. Its download stays for now.")
+        case .busy:
+            return removeBookInUse
+        case .nothingToRemove:
+            return nothingToRemove
         case .couldNotRemove:
             // Translators: Why Remove Download failed: a file could not be taken off the device.
             return InterfaceText.line("sync.remove.couldNotRemove", "TextMouth couldn't remove all of this book's files.")
@@ -64,8 +68,8 @@ extension SyncWording {
 
     /// Said once after a sync removed the downloads of books left unopened.
     static func announceRemovedUnopened(books: Int, days: Int) -> String {
-        // Translators: Said aloud once after a sync removed downloads of books not opened for some days. %1$@ is a count of books, such as "3 books"; %2$@ is a count of days, such as "7 days".
-        InterfaceText.line("sync.announce.removedUnopened", "Removed the downloads of \(CountWording.books(books)) you hadn't opened in \(daysPhrase(days)); they stay in iCloud Drive.")
+        // Translators: Said aloud once after a sync removed downloads of books not opened for some days. %1$@ is a count of books, such as "3 books"; %2$@ is a count of days, such as "7 days". Every book stays in iCloud Drive.
+        InterfaceText.line("sync.announce.removedUnopened", "Removed downloads of \(CountWording.books(books)) not opened in \(daysPhrase(days)). All stay in iCloud Drive.")
     }
 
     /// A count of days, such as "7 days".
@@ -76,8 +80,8 @@ extension SyncWording {
 
     /// Books left on this device for now, in the status's details.
     static func removalsWaiting(books: Int, device: String) -> String {
-        // Translators: A line of the sync status: books stay on this device because their copies in iCloud Drive are not confirmed yet. %1$@ is a count of books, such as "3 books"; %2$@ is "this Mac" or "this iPhone".
-        InterfaceText.line("sync.status.removalsWaiting", "\(CountWording.books(books)) stay on \(device) for now: TextMouth hasn't confirmed their copies in iCloud Drive.")
+        // Translators: A line of the sync status: books stay on this device because their copies in iCloud Drive are not confirmed yet. %1$@ is "this Mac" or "this iPhone"; %2$@ is a count of books, such as "3 books".
+        InterfaceText.line("sync.status.removalsWaiting", "Staying on \(device) for now, until iCloud Drive's copies are confirmed: \(CountWording.books(books)).")
     }
 
     /// Downloads stopped for want of room, in the status's details.
@@ -153,5 +157,32 @@ extension SyncWording {
         }
         // Translators: Said aloud after the person set the days after which the downloads of unopened books are removed. %@ is a count of days, such as "7 days".
         return InterfaceText.line("sync.removeAfter.announce.days", "Removing downloads of books unopened for \(daysPhrase(days)).")
+    }
+
+    // MARK: - After a removal, and while it is checked
+
+    /// Said after Remove Download under "All books", which downloads every book: a book a person freed stays freed until
+    /// it is opened again.
+    static var removedDownloadsAgainOnOpening: String {
+        // Translators: Said after Remove Download when this device keeps every book: the book is not downloaded again until the person opens it.
+        InterfaceText.line("sync.remove.reopensToDownload", "Opening a book downloads it again.")
+    }
+
+    /// Said when checking a book's copy takes a while.
+    static var checkingTheCopy: String {
+        // Translators: Said aloud when Remove Download is still checking the copy of the book in iCloud Drive after a few seconds.
+        InterfaceText.line("sync.remove.checking", "Checking the copy in iCloud Drive.")
+    }
+
+    // MARK: - Stop Syncing
+
+    /// The question before syncing stops, with the books whose files are only in iCloud Drive counted: they will not open
+    /// without the TextMouth Sync folder.
+    static func stopQuestion(isPhone: Bool, onlyInCloud: Int) -> String {
+        let question = stopQuestion(isPhone: isPhone)
+        guard onlyInCloud > 0 else { return question }
+        // Translators: Added to the question before syncing stops, when some books' files are only in iCloud Drive. %@ is a count of books, such as "12 books".
+        let note = InterfaceText.line("sync.stopQuestion.onlyInCloud", "\(CountWording.books(onlyInCloud)): only in iCloud Drive. Keep the TextMouth Sync folder to open them.")
+        return SentenceWording.joined([question, note])
     }
 }

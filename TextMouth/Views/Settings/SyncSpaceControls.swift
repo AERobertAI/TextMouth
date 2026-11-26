@@ -33,9 +33,20 @@ struct SyncSpaceControls: View {
                     Text(Self.value(of: settings.settings.removeAfterDays))
                 }
             }
+            // One adjustable element, as the app's other steppers are (`SteppedAdjustment`): VoiceOver reads its
+            // label, value, and hint once, and each step it adjusts says the new value once.
+            .accessibilityElement(children: .ignore)
             .accessibilityLabel(SyncWording.removeAfterLabel)
             .accessibilityValue(Self.value(of: settings.settings.removeAfterDays))
             .accessibilityHint(SyncWording.removeAfterHint)
+            .accessibilityAdjustableAction { direction in
+                let days = settings.settings.removeAfterDays ?? 0
+                switch direction {
+                case .increment: settings.setRemoveAfterDays(Self.step(days, by: 1))
+                case .decrement: settings.setRemoveAfterDays(Self.step(days, by: -1))
+                @unknown default: break
+                }
+            }
         }
     }
 
@@ -47,6 +58,12 @@ struct SyncSpaceControls: View {
     /// The days as a binding, 0 for Off.
     private var daysBinding: Binding<Int> {
         Binding(get: { settings.settings.removeAfterDays ?? 0 }, set: { settings.setRemoveAfterDays($0 == 0 ? nil : $0) })
+    }
+
+    /// One step from `days` (0 is Off), held within Off and the longest wait; nil for Off.
+    static func step(_ days: Int, by change: Int) -> Int? {
+        let next = min(max(days + change, 0), SyncDeviceSettings.longestWait)
+        return next == 0 ? nil : next
     }
 
     /// The days as they are shown and spoken: "Off" or "7 days".

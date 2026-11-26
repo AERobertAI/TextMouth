@@ -13,6 +13,8 @@ struct SyncSettingsSection: View {
     @ObservedObject private var center = SyncCenter.shared
     /// This Mac's own choice of books to keep, and the days a book may stay unopened (FR45).
     @ObservedObject private var space = SyncSpaceSettings.shared
+    /// Which books are only in the sync folder, which Stop Syncing's question counts.
+    @ObservedObject private var cloudStates = BookCloudStates.shared
     /// Whether Stop Syncing's question is up.
     @State private var confirmingStop = false
     /// Whether a command is running, which holds the others back.
@@ -59,7 +61,7 @@ struct SyncSettingsSection: View {
                     .accessibilityHint(SyncWording.sectionSummary)
                 Button(SyncWording.stopTitle) { confirmingStop = true }
                     .accessibilityLabel(SyncWording.stopTitle)
-                    .accessibilityHint(SyncWording.stopQuestion)
+                    .accessibilityHint(stopQuestion)
             } else {
                 Button(SyncWording.setUpTitle) { choose(joining: false) }
                     .disabled(isWorking)
@@ -73,7 +75,7 @@ struct SyncSettingsSection: View {
         } header: {
             Text(SyncWording.sectionTitle)
         }
-        .alert(SyncWording.stopQuestion, isPresented: $confirmingStop) {
+        .alert(stopQuestion, isPresented: $confirmingStop) {
             // Cancel is first, so Return presses the safe choice.
             Button(StorageSettingsWording.cancelTitle, role: .cancel) {}
                 .keyboardShortcut(.defaultAction)
@@ -88,6 +90,11 @@ struct SyncSettingsSection: View {
             awaitingFirstRun = false
             VoiceOverAnnouncer.announce(statusSentence)
         }
+    }
+
+    /// The question before syncing stops, with the books only in iCloud Drive counted.
+    private var stopQuestion: String {
+        SyncWording.stopQuestion(isPhone: false, onlyInCloud: cloudStates.countOnlyInTheSyncFolder)
     }
 
     /// The status line's sentence now.

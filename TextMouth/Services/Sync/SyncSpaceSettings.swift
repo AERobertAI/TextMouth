@@ -75,3 +75,57 @@ final class SyncSpaceSettings: ObservableObject {
         new.write(to: store)
     }
 }
+
+// MARK: - Books a Person Freed (FR46)
+
+/// The books a person freed with Remove Download on this device. Under "All books" the next sync would download
+/// them again and undo what was asked, so each stays freed until it is opened again: its row says In Cloud, and
+/// opening it downloads it. This device's own, kept in its preferences (`SyncPreferences.freedOnPurpose`, among the
+/// machine-local keys), and forgotten once the book is opened after it was freed.
+@MainActor
+final class BooksFreedOnPurpose {
+    /// The device's own.
+    static let shared = BooksFreedOnPurpose()
+
+    /// Where the books are kept.
+    private let store: UserDefaults
+    /// When each book was freed.
+    private var freed: [UUID: Date]
+
+    /// The books `store` holds; the app's own preferences by default.
+    init(store: UserDefaults? = nil) {
+        let store = store ?? TextMouthRuntime.current.preferences
+        self.store = store
+        freed = Dictionary(
+            SyncPreferences.freedOnPurpose.read(from: store).compactMap { key, seconds in
+                UUID(uuidString: key).map { ($0, Date(timeIntervalSince1970: seconds)) }
+            },
+            uniquingKeysWith: { first, _ in first }
+        )
+    }
+
+    /// Notes that the book `id` was freed at `date`.
+    func note(_ id: UUID, at date: Date) {
+        freed[id] = date
+        save()
+    }
+
+    /// Whether `book` was freed by a person and not opened since: it is left in the cloud. A book opened after it
+    /// was freed is forgotten, and downloads as any other.
+    func isHeld(_ book: Book) -> Bool {
+        guard let at = freed[book.id] else { return false }
+        if let opened = book.lastOpened, opened > at {
+            freed[book.id] = nil
+            save()
+            return false
+        }
+        return true
+    }
+
+    /// Keeps the books in the preferences.
+    private func save() {
+        SyncPreferences.freedOnPurpose.write(
+            Dictionary(uniqueKeysWithValues: freed.map { ($0.key.uuidString, $0.value.timeIntervalSince1970) }), to: store
+        )
+    }
+}

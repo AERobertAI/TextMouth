@@ -79,12 +79,24 @@ final class StoreBookStorage: BookCloudStorage {
     /// hold every one of them (`StoreRemoval`). A book being fetched now is refused, as one open is. With sync off the
     /// live storage answers, as it does for every library not synced.
     func removeDownloadAsync(of package: BookPackage, mayDownload: Bool) async throws {
-        guard isSyncOn() else { try live.removeDownload(of: package); return }
+        guard isSyncOn() else {
+            // A library in a cloud folder is the live storage's. A library that is not, with sync off, has no copy in
+            // any folder to prove: it is refused, never reported removed when nothing was.
+            if live.libraryLocation().isCloud { try live.removeDownload(of: package); return }
+            throw BookCloudError.syncRemoval(.notBackedUp)
+        }
         if case .fetching? = phases.withLock({ $0[package.bookID] }) { throw BookCloudError.bookInUse }
         do {
             try await remover(package, mayDownload)
         } catch let refusal as SyncRemovalRefusal {
             throw BookCloudError.syncRemoval(refusal)
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch let error as BookCloudError {
+            throw error
+        } catch {
+            // Never the system's words, which can name a file of the book.
+            throw BookCloudError.syncRemoval(.couldNotRemove(""))
         }
     }
 
