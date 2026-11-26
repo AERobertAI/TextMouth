@@ -234,13 +234,37 @@ struct SpeechExportStore: Sendable {
 
     // MARK: - The Launch Sweep
 
+    /// How long the iPhone keeps an export's spoken chapters, through a close of the app: a week (the design's
+    /// question 6). iOS may end the app, or the person close it, in the middle of a ten-hour book, and the export then
+    /// goes on from its chapters at the next launch. The Mac keeps them until TextMouth quits (0).
+    static let keptOnPhone: TimeInterval = 7 * 24 * 60 * 60
+
+    /// How long the launch sweep keeps chapters on this device: `keptOnPhone` on the iPhone, none on the Mac.
+    static var launchKeepDuration: TimeInterval {
+        SpeechRefusalWording.runsOnPhone ? keptOnPhone : 0
+    }
+
     /// Removes the chapters every export kept at `root`, unless an export
     /// holds the store and is using them: a quit or a crash leaves kept
     /// chapters behind, which outlive only the session that spoke them.
-    static func sweep(root: URL = liveRoot) {
+    ///
+    /// With `keeping` above 0 (the iPhone), an export's folder last changed within that many seconds of `now` is left
+    /// for the export that may go on from it, and any older is removed, as is any other file in `root`.
+    static func sweep(root: URL = liveRoot, keeping: TimeInterval = 0, now: Date = Date()) {
         guard claim() else { return }
         defer { release() }
-        try? FileManager.default.removeItem(at: root)
+        let files = FileManager.default
+        guard keeping > 0 else {
+            try? files.removeItem(at: root)
+            return
+        }
+        // Each entry is kept or removed by when it last changed: a chapter made, or finished, changes its folder.
+        let entries = (try? files.contentsOfDirectory(at: root, includingPropertiesForKeys: [.contentModificationDateKey])) ?? []
+        for entry in entries {
+            let changed = (try? entry.resourceValues(forKeys: [.contentModificationDateKey]))?.contentModificationDate
+            if let changed, now.timeIntervalSince(changed) <= keeping { continue }
+            try? files.removeItem(at: entry)
+        }
     }
 
     /// Runs `sweep()` once, off the main thread at utility priority. It does
@@ -256,7 +280,7 @@ struct SpeechExportStore: Sendable {
     ) {
         guard !isHostedTest else { return }
         DispatchQueue.global(qos: .utility).async {
-            sweep()
+            sweep(keeping: launchKeepDuration)
             completion?()
         }
     }
