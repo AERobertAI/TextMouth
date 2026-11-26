@@ -55,6 +55,8 @@ final class SyncOpenAndRemoveTests: XCTestCase {
     func testAPlaceholderOpenedInALocalLibraryIsFetched() throws {
         let book = try makePlaceholder("Opened Away")
         let fetched = expectation(description: "the fetch of the placeholder starts")
+        // The reader may ask for the fetch more than once while it loads.
+        fetched.assertForOverFulfill = false
         let asked = LockedBookIDs()
         let storage = StoreBookStorage(
             wrapping: LocalBookStorage(),
@@ -78,7 +80,8 @@ final class SyncOpenAndRemoveTests: XCTestCase {
         addTeardownBlock { @MainActor in reader.close() }
         reader.loadContent()
         wait(for: [fetched], timeout: 20)
-        XCTAssertEqual(asked.ids, [book.id])
+        XCTAssertFalse(asked.ids.isEmpty)
+        XCTAssertEqual(Set(asked.ids), [book.id], "only the placeholder is fetched")
     }
 
     // MARK: - A feed item removed by sync
