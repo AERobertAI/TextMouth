@@ -526,6 +526,35 @@ final class SyncCenterTests: XCTestCase {
         XCTAssertEqual(world.center.deviceName(forKey: .book(book, .keep)), "Phone Name")
     }
 
+    /// `waitUntilIdle` sleeps until a run ends, for as many callers as there are, and returns at once when nothing runs.
+    func testWaitUntilIdleSleepsUntilTheRunEnds() async throws {
+        let world = try makeWorld()
+        world.center.install(host: world.host, dataDirectory: world.dataDirectory)
+        try await world.center.setUp(in: world.parent)
+        await world.center.waitUntilIdle()
+        await world.center.waitUntilIdle()   // nothing runs: it returns at once
+
+        // A run held in its apply, until the test lets it go.
+        var release: CheckedContinuation<Void, Never>?
+        world.host.pauseApply = { await withCheckedContinuation { release = $0 } }
+        world.center.applyAtNextSync()
+        world.center.moment(.active)
+        var looks = 0
+        while release == nil, looks < 100_000 { looks += 1; await Task.yield() }
+        let held = try XCTUnwrap(release, "the run never reached its apply")
+
+        var finished = 0
+        let first = Task { @MainActor in await world.center.waitUntilIdle(); finished += 1 }
+        let second = Task { @MainActor in await world.center.waitUntilIdle(); finished += 1 }
+        for _ in 0..<50 { await Task.yield() }
+        XCTAssertEqual(finished, 0, "both wait while the run is held")
+        world.host.pauseApply = nil
+        held.resume()
+        await first.value
+        await second.value
+        XCTAssertEqual(finished, 2)
+    }
+
     /// The host's voices are asked for when a merge is applied.
     func testTheHostsVoicesAreAskedFor() async throws {
         let world = try makeWorld()

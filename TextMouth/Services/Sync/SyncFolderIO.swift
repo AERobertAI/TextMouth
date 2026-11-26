@@ -152,9 +152,12 @@ enum SyncFolderIO {
         let progressOf = progress ?? { SyncFolderIO.allocatedBytes(of: $0) }
         let nowInstant = now ?? { ContinuousClock.now }
         let pause = sleep ?? { try await Task.sleep(for: $0) }
-        guard stateOf(file) == .notDownloaded else { return }
+        // A file iCloud Drive is fetching already (it started on its own) is waited for by the same rule as one this call
+        // asks for: its progress, not the time since the call. Only a file that is here, or none, returns at once.
+        let starting = stateOf(file)
+        guard starting == .notDownloaded || starting == .downloading else { return }
         guard reachability.isOnline() else { throw SyncProblem.offline }
-        try? items.requestDownload(of: file)
+        if starting == .notDownloaded { try? items.requestDownload(of: file) }
         var started = nowInstant()
         var seen = progressOf(file)
         while true {
