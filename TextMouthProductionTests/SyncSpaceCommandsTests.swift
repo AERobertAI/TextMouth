@@ -605,20 +605,42 @@ final class SyncSpaceCommandsTests: XCTestCase {
         XCTAssertEqual(refusal?.message, "TextMouth couldn't remove all of this book's files.")
     }
 
-    /// Stop Syncing's question counts the books only in iCloud Drive, and says they need the sync folder.
-    func testStopSyncingCountsTheBooksOnlyInTheSyncFolder() {
-        let states = BookCloudStates()
-        states.setSyncIsOn(true)
-        XCTAssertEqual(states.countOnlyInTheSyncFolder, 0)
-        for state in [BookCloudState.inCloud, .inCloud, .downloading(.notStarted), .downloaded, .local] { states.record(state, for: UUID()) }
-        XCTAssertEqual(states.countOnlyInTheSyncFolder, 3)
+    /// Stop Syncing's question counts the books only in iCloud Drive, from their packages, not from the rows' recorded
+    /// states (which a launch has not filled yet, and which keep books removed since): a placeholder, a book freed or
+    /// fetched only in part, and a placeholder whose pointer lists no files yet count; a whole book and one never
+    /// backed up (no pointer) do not. It says they need the sync folder.
+    func testStopSyncingCountsTheBooksOnlyInTheSyncFolder() throws {
+        let sandbox = try makeSandboxDirectory("space-stop-count")
+        let storeID = UUID()
+        func package(_ name: String, here: [Bool]?) throws -> URL {
+            let url = sandbox.appendingPathComponent("\(name).tmb", isDirectory: true)
+            try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+            guard let here else { return url }
+            let files = here.enumerated().map { index, isHere in
+                StorePointer.File(path: "file\(index)", sha256: String(repeating: "a", count: 64), size: 1, modified: 0, onThisDevice: isHere)
+            }
+            let pointer = StorePointer(
+                formatVersion: SyncFormats.currentVersion, storeID: storeID, bookID: UUID(),
+                manifest: "m.json", uploaded: "m.json", files: files
+            )
+            try StoreFetch.write(pointer, in: url)
+            return url
+        }
+        let packages = [
+            try package("Placeholder", here: [false, false]),
+            try package("Freed", here: [false, true]),
+            try package("Listed later", here: []),
+            try package("Whole", here: [true, true]),
+            try package("Never backed up", here: nil),
+        ]
+        XCTAssertEqual(StoreFetch.countMissingFiles(in: packages), 3)
+        XCTAssertEqual(StoreFetch.countMissingFiles(in: []), 0)
         let question = SyncWording.stopQuestion(isPhone: false, onlyInCloud: 3)
         XCTAssertEqual(
             question,
             "Stop syncing this library? Nothing is deleted, on this Mac or in iCloud Drive. 3 books: only in iCloud Drive. Keep the TextMouth Sync folder to open them."
         )
         XCTAssertEqual(SyncWording.stopQuestion(isPhone: false, onlyInCloud: 0), SyncWording.stopQuestion(isPhone: false))
-        XCTAssertEqual(BookCloudStates().countOnlyInTheSyncFolder, 0, "sync off")
     }
 
     /// The backup's own state forbids freeing a book it still has queued or awaits, and one the registers do not hold.

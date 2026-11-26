@@ -109,6 +109,7 @@ final class PhoneSyncSettingsTests: XCTestCase {
         var failure: Error?
         var listing = ["store.json"]
         var isInICloudDrive = true
+        var onlyInCloud = 0
     }
 
     /// A controller over the Mac's model with stand-in services that record what they are asked.
@@ -133,6 +134,9 @@ final class PhoneSyncSettingsTests: XCTestCase {
         return PhoneSyncSettingsController(model: model, openScope: { _ in
             record.scopesOpen += 1
             return { record.scopesOpen -= 1 }
+        }, countOnlyInCloud: {
+            record.calls.append("count")
+            return record.onlyInCloud
         })
     }
 
@@ -246,18 +250,21 @@ final class PhoneSyncSettingsTests: XCTestCase {
         XCTAssertEqual(steps.model.message, SyncWording.notASyncFolder)
     }
 
-    /// Sync Now goes to the sync, which announces its own outcome; Stop Syncing asks first, and nothing stops until yes.
-    func testSyncNowAndStop() {
+    /// Sync Now goes to the sync, which announces its own outcome; Stop Syncing counts the books only in the sync folder,
+    /// then asks, its question naming them, and nothing stops until yes.
+    func testSyncNowAndStop() async {
         let record = Record()
+        record.onlyInCloud = 12
         let steps = controller(record)
         steps.syncNow()
         XCTAssertEqual(record.calls, ["syncNow"])
-        steps.askToStop()
+        await steps.askToStop()
         XCTAssertTrue(steps.isAskingToStop)
-        XCTAssertEqual(record.calls, ["syncNow"])
+        XCTAssertEqual(steps.onlyInCloud, 12, "counted as Stop was pressed, for the question")
+        XCTAssertEqual(record.calls, ["syncNow", "count"])
         steps.confirmStop()
         XCTAssertFalse(steps.isAskingToStop)
-        XCTAssertEqual(record.calls, ["syncNow", "stop"])
+        XCTAssertEqual(record.calls, ["syncNow", "count", "stop"])
     }
 
     // MARK: - Keep on All Devices

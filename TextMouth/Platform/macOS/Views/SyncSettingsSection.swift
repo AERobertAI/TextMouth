@@ -13,10 +13,11 @@ struct SyncSettingsSection: View {
     @ObservedObject private var center = SyncCenter.shared
     /// This Mac's own choice of books to keep, and the days a book may stay unopened (FR45).
     @ObservedObject private var space = SyncSpaceSettings.shared
-    /// Which books are only in the sync folder, which Stop Syncing's question counts.
-    @ObservedObject private var cloudStates = BookCloudStates.shared
     /// Whether Stop Syncing's question is up.
     @State private var confirmingStop = false
+    /// How many books have files only in the sync folder, counted from their packages as Stop Syncing was pressed,
+    /// which its question names.
+    @State private var onlyInCloud = 0
     /// Whether a command is running, which holds the others back.
     @State private var isWorking = false
     /// Whether Set Up or Join has just worked and its first run's outcome is
@@ -59,9 +60,9 @@ struct SyncSettingsSection: View {
                     .disabled(center.status.isSyncing)
                     .accessibilityLabel(SyncWording.syncNowTitle)
                     .accessibilityHint(SyncWording.sectionSummary)
-                Button(SyncWording.stopTitle) { confirmingStop = true }
+                Button(SyncWording.stopTitle) { askToStop() }
                     .accessibilityLabel(SyncWording.stopTitle)
-                    .accessibilityHint(stopQuestion)
+                    .accessibilityHint(SyncWording.stopQuestion(isPhone: false))
             } else {
                 Button(SyncWording.setUpTitle) { choose(joining: false) }
                     .disabled(isWorking)
@@ -94,7 +95,15 @@ struct SyncSettingsSection: View {
 
     /// The question before syncing stops, with the books only in iCloud Drive counted.
     private var stopQuestion: String {
-        SyncWording.stopQuestion(isPhone: false, onlyInCloud: cloudStates.countOnlyInTheSyncFolder)
+        SyncWording.stopQuestion(isPhone: false, onlyInCloud: onlyInCloud)
+    }
+
+    /// Counts the books only in the sync folder, from their packages, then asks whether to stop.
+    private func askToStop() {
+        Task {
+            onlyInCloud = await center.countBooksOnlyInTheSyncFolder()
+            confirmingStop = true
+        }
     }
 
     /// The status line's sentence now.

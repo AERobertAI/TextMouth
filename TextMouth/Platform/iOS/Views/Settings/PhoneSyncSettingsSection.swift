@@ -20,8 +20,6 @@ struct PhoneSyncSettingsSection: View {
     @StateObject private var steps = PhoneSyncSettingsController()
     /// This iPhone's own choice of books to keep, and the days a book may stay unopened (FR45).
     @ObservedObject private var space = SyncSpaceSettings.shared
-    /// Which books are only in the sync folder, which Stop Syncing's question counts.
-    @ObservedObject private var cloudStates = BookCloudStates.shared
     /// What the folder picker now showing is for.
     @State private var pick: PhoneSyncPick = .setUp
     /// Whether the folder picker is up.
@@ -48,7 +46,7 @@ struct PhoneSyncSettingsSection: View {
                         onCancellation: { statusIsFocused = true }
                     )
             }
-            .alert(SyncWording.stopQuestion(isPhone: true, onlyInCloud: cloudStates.countOnlyInTheSyncFolder), isPresented: $steps.isAskingToStop) {
+            .alert(SyncWording.stopQuestion(isPhone: true, onlyInCloud: steps.onlyInCloud), isPresented: $steps.isAskingToStop) {
                 // Cancel is first, so the safe choice is the one VoiceOver reaches first.
                 Button(PhoneAppWording.cancel, role: .cancel) {}
                 Button(SyncWording.stopButton, role: .destructive) { steps.confirmStop() }
@@ -101,7 +99,7 @@ struct PhoneSyncSettingsSection: View {
         case .syncNow:
             steps.syncNow()
         case .stop:
-            steps.askToStop()
+            Task { await steps.askToStop() }
         }
     }
 

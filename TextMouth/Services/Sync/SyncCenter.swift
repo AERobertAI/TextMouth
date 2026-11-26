@@ -414,6 +414,16 @@ struct SyncCenterEnvironment {
         applyAgain = true
     }
 
+    /// How many of the library's books have files only in the sync folder now (FR46), which Stop Syncing's question
+    /// counts: each package whose pointer says a file is away, looked at off the main actor without downloading
+    /// anything. Counted from the packages, never from the rows' recorded states, which a launch (an offline one above
+    /// all) has not filled yet, and which keep books removed since. 0 while sync is off.
+    func countBooksOnlyInTheSyncFolder() async -> Int {
+        guard status.isOn, let host else { return 0 }
+        let packages = host.library.libraryBooks.filter { !$0.tmbDirectoryName.isEmpty }.map(\.tmbDirectory)
+        return await OffMainWork.run { StoreFetch.countMissingFiles(in: packages) }
+    }
+
     /// Says how many books this device's choice of books left undone at the last sweep (FR45): books kept on
     /// the device for want of a proven copy, and books not downloaded for want of room. Nothing changes when
     /// the counts do not.
