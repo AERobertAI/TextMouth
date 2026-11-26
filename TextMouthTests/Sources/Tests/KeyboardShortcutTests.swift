@@ -306,10 +306,12 @@ test("Library category includes all library actions") {
     // whose keys became editable (FR12's branch D), Move to Library…
     // (FR11's branch D), Folder or Feed Settings (FR19), Go to View 1
     // to Go to View 9 (the Library views of October 30, 2026), and Search
-    // Library… (November 13, 2026: Edit > Find, listed with the Library group).
-    try assertEqual(libraryActions.count, 25, "Should have 25 library actions")
+    // Library… (November 13, 2026: Edit > Find, listed with the Library group),
+    // and Sync Now (FR43, November 25, 2026: in the menu while sync is on).
+    try assertEqual(libraryActions.count, 26, "Should have 26 library actions")
     let names = libraryActions.map { $0.rawValue }
     try assertTrue(names.contains("Search Library…"))
+    try assertTrue(names.contains("Sync Now"))
     try assertTrue(names.contains("Remove from Library"))
     try assertTrue(names.contains("New Folder"))
     try assertTrue(names.contains("Move to Folder"))

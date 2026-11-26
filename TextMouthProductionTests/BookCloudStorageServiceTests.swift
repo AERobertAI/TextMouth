@@ -1302,10 +1302,16 @@ final class BookCloudStorageServiceTests: XCTestCase {
 
     /// The app installs the real services at launch, and the hosted tests'
     /// library, in their sandbox on the startup disk, still reads as local.
+    /// The book storage is the real one wrapped in sync's (`StoreBookStorage`,
+    /// which answers for a book another device has and for every other asks
+    /// the real one), or the real one itself where nothing wrapped it.
     @MainActor
     func testTheInstalledServicesSeeALocalLibrary() async throws {
         XCTAssertTrue(CloudServices.itemStatus is UbiquitousItemStatusProvider)
-        XCTAssertTrue(CloudServices.bookStorage is BookCloudStorageService)
+        XCTAssertTrue(
+            CloudServices.bookStorage is StoreBookStorage || CloudServices.bookStorage is BookCloudStorageService,
+            "the installed storage is neither the real one nor sync's wrapper of it"
+        )
         let items = CloudServices.itemStatus
         let storage = CloudServices.bookStorage
         let book = try makePackage(["content.md"])
