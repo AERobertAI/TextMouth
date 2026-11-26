@@ -102,6 +102,17 @@ struct StoreFetch: Sendable {
         if let unsafe = manifest.files.first(where: { !Self.isSafe($0) }) { throw SyncProblem.damaged(file: unsafe.path) }
         try FileManager.default.createDirectory(at: staging, withIntermediateDirectories: true)
 
+        // The pointer lists every file of the manifest before the first is fetched, each `onThisDevice: false` until it
+        // lands, so a fetch that stops part way (Stop, Cancel, offline, a damaged file) always reads as missing files:
+        // the book is not taken for whole, and the next fetch goes on from there.
+        let hereAlready = Set(pointer.files.filter(\.onThisDevice).map(\.path))
+        pointer.files = manifest.files.map { file in
+            let here = hereAlready.contains(file.path)
+            let known = pointer.files.first { $0.path == file.path }
+            return StorePointer.File(path: file.path, sha256: file.sha256, size: file.size, modified: known?.modified ?? 0, onThisDevice: here)
+        }
+        try Self.write(pointer, in: package)
+
         let totalBytes = manifest.files.reduce(Int64(0)) { $0 + $1.size }
         var completedFiles = pointer.files.filter(\.onThisDevice).count
         var completedBytes = pointer.files.filter(\.onThisDevice).reduce(Int64(0)) { $0 + $1.size }
