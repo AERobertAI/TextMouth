@@ -78,7 +78,7 @@ struct PhoneSyncSettingsSection: View {
 
     /// The status line, then who was last heard from and the books' backup; while a step runs, the words for the wait.
     private var lines: [String] {
-        steps.isWorking ? [SyncWording.waitingForFiles] : PhoneSyncSettingsModel.lines(for: center.status)
+        steps.working.map { [PhoneSyncSettingsController.workingLine(for: $0)] } ?? PhoneSyncSettingsModel.lines(for: center.status)
     }
 
     /// What pressing `control` does.

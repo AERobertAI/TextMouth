@@ -548029,6 +548029,162 @@
         }
       }
     },
+    "phoneSync.libraryNotLocal" : {
+      "comment" : "Shown on an iPhone when syncing is refused because the library is kept in a cloud folder.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تتطلب المزامنة مكتبة محفوظة على هذا الـ iPhone، وهذه المكتبة ليست كذلك."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সিঙ্কের জন্য এই iPhone-এ রাখা লাইব্রেরি দরকার, আর এটি তা নয়।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Die Synchronisierung braucht eine Bibliothek, die auf diesem iPhone liegt, und diese liegt woanders."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sync needs a library kept on this iPhone, and this one isn't."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La sincronización necesita una biblioteca guardada en este iPhone, y esta no lo está."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "همگام‌سازی به کتابخانه‌ای نیاز دارد که روی این iPhone نگهداری شود و این کتابخانه چنین نیست."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La synchronisation exige une bibliothèque conservée sur cet iPhone, et celle-ci ne l’est pas."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "סנכרון דורש ספרייה ששמורה ב-iPhone הזה, והספרייה הזו אינה כזו."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "सिंक के लिए इस iPhone पर रखी लाइब्रेरी चाहिए, और यह लाइब्रेरी ऐसी नहीं है।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sinkronisasi membutuhkan pustaka yang disimpan di iPhone ini, dan pustaka ini tidak."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La sincronizzazione richiede una libreria conservata su questo iPhone, e questa non lo è."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "同期には、この iPhone に保存されたライブラリが必要ですが、このライブラリは違います。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "동기화에는 이 iPhone에 보관된 보관함이 필요한데, 이 보관함은 그렇지 않습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Synchronisatie heeft een bibliotheek nodig die op deze iPhone staat, en deze staat ergens anders."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Synchronizacja wymaga biblioteki przechowywanej na tym urządzeniu iPhone, a ta nie jest tu przechowywana."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "A sincronização precisa de uma biblioteca guardada neste iPhone, e esta não está."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Для синхронизации нужна библиотека, хранящаяся на этом iPhone, а эта хранится не здесь."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Synkronisering kräver ett bibliotek som finns på den här iPhone, och det här finns någon annanstans."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "การซิงค์ต้องใช้ไลบรารีที่เก็บอยู่ใน iPhone เครื่องนี้ แต่ไลบรารีนี้ไม่ได้เก็บไว้ที่นี่"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Eşzamanlama için bu iPhone'da tutulan bir kitaplık gerekir ve bu kitaplık burada tutulmuyor."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Для синхронізації потрібна бібліотека, що зберігається на цьому iPhone, а ця зберігається деінде."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "سنک کے لیے اس iPhone پر رکھی لائبریری درکار ہے، اور یہ لائبریری ایسی نہیں ہے۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Đồng bộ cần một thư viện được lưu trên iPhone này, mà thư viện này thì không."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "同步需要保存在这部 iPhone 上的资料库，而这个资料库不是。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "同步需要儲存在這部 iPhone 上的資料庫，而這個資料庫不是。"
+          }
+        }
+      }
+    },
     "phoneSync.status.notDownloaded" : {
       "comment" : "The Sync status on an iPhone when changes made on the Mac have not yet downloaded from iCloud Drive.",
       "extractionState" : "manual",
@@ -724725,6 +724881,162 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "這裡已有名為 TextMouth Sync 的檔案夾。若要使用，請選擇「加入同步檔案夾」。"
+          }
+        }
+      }
+    },
+    "sync.iCloudDriveFull" : {
+      "comment" : "Shown when Set Up Sync or Join Sync Folder fails because iCloud Drive has no room left.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "مساحة iCloud Drive ممتلئة. حرّر بعض المساحة في iCloud Drive ثم حاول مرة أخرى."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive ভরে গেছে। iCloud Drive-এ কিছু জায়গা খালি করে আবার চেষ্টা করুন।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive ist voll. Gib in iCloud Drive etwas Speicher frei und versuche es dann erneut."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iCloud Drive is full. Free some space in iCloud Drive, then try again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive está lleno. Libera espacio en iCloud Drive y vuelve a intentarlo."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive پر است. کمی فضا در iCloud Drive آزاد کنید و دوباره تلاش کنید."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive est plein. Libérez de l’espace dans iCloud Drive, puis réessayez."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive מלא. פנו מקום ב-iCloud Drive ונסו שוב."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive भर गया है। iCloud Drive में कुछ जगह खाली करें, फिर दोबारा कोशिश करें।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive penuh. Kosongkan sebagian ruang di iCloud Drive, lalu coba lagi."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive è pieno. Libera dello spazio in iCloud Drive e riprova."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive がいっぱいです。iCloud Drive の空き容量を増やしてから、もう一度お試しください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive가 가득 찼습니다. iCloud Drive에서 공간을 확보한 다음 다시 시도하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive is vol. Maak ruimte vrij in iCloud Drive en probeer het opnieuw."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive jest pełny. Zwolnij miejsce w iCloud Drive i spróbuj ponownie."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "O iCloud Drive está cheio. Libere espaço no iCloud Drive e tente de novo."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive заполнен. Освободите место в iCloud Drive и повторите попытку."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive är fullt. Frigör utrymme i iCloud Drive och försök igen."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive เต็มแล้ว ให้เพิ่มพื้นที่ว่างใน iCloud Drive แล้วลองอีกครั้ง"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive dolu. iCloud Drive'da biraz yer açıp yeniden deneyin."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive заповнено. Звільніть місце в iCloud Drive і повторіть спробу."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive بھر گیا ہے۔ iCloud Drive میں کچھ جگہ خالی کریں، پھر دوبارہ کوشش کریں۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive đã đầy. Hãy giải phóng bớt dung lượng trong iCloud Drive rồi thử lại."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive 已满。请在 iCloud Drive 中腾出一些空间，然后重试。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive 已滿。請在 iCloud Drive 中釋出一些空間，然後再試一次。"
           }
         }
       }

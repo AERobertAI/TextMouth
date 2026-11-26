@@ -161,6 +161,42 @@ final class PhoneSyncSettingsTests: XCTestCase {
         XCTAssertEqual(record.scopesOpen, 0)
     }
 
+    /// While a step runs, the status says what the step does: Set Up begins to sync, and only Join waits for the folder's files.
+    func testTheWorkingLineIsForTheStepThatRuns() async {
+        XCTAssertEqual(PhoneSyncSettingsController.workingLine(for: .setUp), "Syncing…")
+        XCTAssertEqual(PhoneSyncSettingsController.workingLine(for: .join), "Waiting for the sync folder's files to arrive from iCloud Drive.")
+        // And the controller says which step it is in while the sync's own call runs.
+        let record = Record()
+        var during: [PhoneSyncPick?] = []
+        var steps: PhoneSyncSettingsController?
+        let model = SyncSettingsModel(
+            libraryLocation: { .local },
+            locationOf: { _ in .cloud(.iCloudDrive) },
+            exists: { _ in false },
+            listFolder: { _ in ["store.json"] },
+            setUp: { _ in during.append(steps?.working) },
+            join: { _ in during.append(steps?.working) },
+            isPhone: true
+        )
+        steps = PhoneSyncSettingsController(model: model, openScope: { _ in { record.scopesOpen -= 1 } })
+        await steps?.picked(.success([folder]), for: .setUp)
+        await steps?.picked(.success([syncFolder]), for: .join)
+        XCTAssertEqual(during, [.setUp, .join])
+        XCTAssertNil(steps?.working)
+    }
+
+    /// iCloud Drive full is said so; a library kept elsewhere is said in the iPhone's words, with no Mac or Change Location.
+    func testRefusalsInThePhonesWords() {
+        XCTAssertEqual(SyncSettingsModel.sentence(for: SyncProblem.outOfSpace, isPhone: true), SyncWording.iCloudDriveFull)
+        XCTAssertEqual(SyncWording.iCloudDriveFull, "iCloud Drive is full. Free some space in iCloud Drive, then try again.")
+        XCTAssertEqual(SyncSettingsModel.sentence(for: SyncProblem.libraryNotLocal, isPhone: true), "Sync needs a library kept on this iPhone, and this one isn't.")
+        XCTAssertEqual(SyncSettingsModel.sentence(for: SyncProblem.libraryNotLocal, isPhone: false), SyncWording.libraryNotLocal)
+        XCTAssertEqual(
+            SyncStatusLine.text(for: SyncStatus(isOn: true, problem: .libraryNotLocal), isPhone: true, time: time),
+            "Sync needs a library kept on this iPhone, and this one isn't."
+        )
+    }
+
     /// A folder that is no sync folder is refused at once, not after the minute joining waits (the Mac's model does it).
     func testJoinRefusesAFolderThatIsNoSyncFolderAtOnce() async {
         let record = Record()

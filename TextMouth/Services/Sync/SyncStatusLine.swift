@@ -33,7 +33,7 @@ enum SyncStatusLine {
         case .notInICloudDrive:
             return SyncWording.notInICloudDrive
         case .libraryNotLocal:
-            return SyncWording.libraryNotLocal
+            return SyncWording.libraryNotLocal(isPhone: isPhone)
         case .notDownloaded, .exists, .damaged, nil:
             break
         }

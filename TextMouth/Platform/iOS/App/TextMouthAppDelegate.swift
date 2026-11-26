@@ -79,7 +79,8 @@ final class TextMouthAppDelegate: UIResponder, UIApplicationDelegate {
         }
         PhoneBackgroundWork.install(on: model)
         PhoneImportCopier.shared.install()
-        PhoneSyncLifeCycle.install(on: model.lifeCycle)
+        // A launch with no screen (a remote Play) has no foreground yet: its first opening is a moment of its own.
+        PhoneSyncLifeCycle.install(on: model.lifeCycle, launchedInBackground: UIApplication.shared.applicationState == .background)
         _ = PhoneReaderModel.attached(to: model.session)
     }
 

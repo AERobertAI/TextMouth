@@ -58,13 +58,8 @@ struct PhoneSyncFolderAccess: SyncFolderAccess {
         } catch {
             throw SyncProblem.folderMissing
         }
-        guard !isDeleted(url) else { throw SyncProblem.folderMissing }
+        guard !SyncFolderIO.isDeleted(url) else { throw SyncProblem.folderMissing }
         return (url, isStale)
-    }
-
-    /// Whether `url` is in the place Files keeps deleted items: a `.Trash` folder, or Recently Deleted.
-    static func isDeleted(_ url: URL) -> Bool {
-        url.standardizedFileURL.pathComponents.contains { $0 == ".Trash" || $0 == ".Trashes" || $0 == "Recently Deleted" } // l10n: no (path components)
     }
 
     /// A fresh bookmark of the folder `bookmark` names, when the system found it stale (the folder was moved or renamed, and

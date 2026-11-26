@@ -16,6 +16,8 @@ enum PhoneSyncLifeCycle {
     /// Registers the handlers on `lifeCycle`, once for the process.
     /// - Parameters:
     ///   - lifeCycle: The phone's life cycle.
+    ///   - launchedInBackground: Whether the app was launched with no screen (a remote Play, say). Its first activation is then
+    ///     its first real opening, and a moment like any other; one launched to the screen has its launch sync already.
     ///   - isOn: Whether sync is set up. With it off every handler does nothing,
     ///     so no task, file, or word comes before a folder is chosen (R1).
     ///   - moment: Tells the sync of a moment (`SyncCenter.moment(_:)`).
@@ -24,6 +26,7 @@ enum PhoneSyncLifeCycle {
     ///   - wait: Waits for a duration; a test's own ends at once or never.
     static func install(
         on lifeCycle: PhoneLifeCycle,
+        launchedInBackground: Bool = false,
         isOn: @escaping @MainActor () -> Bool = { SyncCenter.shared.status.isOn },
         moment: @escaping @MainActor (SyncReason) -> Void = { SyncCenter.shared.moment($0) },
         idle: @escaping @MainActor () async -> Void = { await SyncCenter.shared.waitUntilIdle() },
@@ -32,7 +35,7 @@ enum PhoneSyncLifeCycle {
     ) {
         // The first activation is the launch itself: the center's own launch moment has begun a full sync already, and a
         // second one at once would read every other device's files again. Each later activation is a moment.
-        let activations = ActivationCount()
+        let activations = ActivationCount(skipsTheFirst: !launchedInBackground)
         lifeCycle.onDidBecomeActive {
             guard activations.isNotTheFirst() else { return }
             guard isOn() else { return }
@@ -63,17 +66,21 @@ enum PhoneSyncLifeCycle {
 @MainActor
 private final class ActivationCount {
     private var seen = 0
+    /// Whether the first activation is the launch itself.
+    private let skipsTheFirst: Bool
+
+    init(skipsTheFirst: Bool) { self.skipsTheFirst = skipsTheFirst }
 
     /// Notes one activation; whether it is a later one than the first.
     func isNotTheFirst() -> Bool {
         seen += 1
-        return seen > 1
+        return seen > 1 || !skipsTheFirst
     }
 }
 
 /// A background hold's end, which runs once however many times it is asked.
 @MainActor
-private final class HoldEnd {
+final class HoldEnd {
     /// What ends the hold.
     private let ending: @MainActor () -> Void
     /// Whether it has ended.

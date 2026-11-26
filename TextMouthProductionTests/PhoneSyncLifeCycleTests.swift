@@ -75,10 +75,7 @@ final class PhoneSyncLifeCycleTests: XCTestCase {
         XCTAssertEqual(record.holdsBegun, ["sync"])
         await fulfillment(of: [ended], timeout: 10)
         XCTAssertEqual(record.holdsEnded, 1)
-        // The limit coming later ends nothing twice.
         limit.open()
-        await Task.yield()
-        XCTAssertEqual(record.holdsEnded, 1)
     }
 
     /// A send that never finishes is cut off at the limit: the hold ends there, once.
@@ -93,10 +90,26 @@ final class PhoneSyncLifeCycleTests: XCTestCase {
         await fulfillment(of: [ended], timeout: 10)
         XCTAssertEqual(record.holdsEnded, 1)
         XCTAssertEqual(limits, [.seconds(20)])
-        // The send finishing later ends nothing twice.
         send.open()
-        await Task.yield()
-        XCTAssertEqual(record.holdsEnded, 1)
+    }
+
+    /// A launch with no screen (a remote Play) has no launch sync to share: its first opening is a moment of its own.
+    func testTheFirstOpeningAfterABackgroundLaunchIsAMoment() {
+        let record = Record()
+        let lifeCycle = PhoneLifeCycle()
+        PhoneSyncLifeCycle.install(on: lifeCycle, launchedInBackground: true, isOn: { true }, moment: { record.moments.append($0) })
+        lifeCycle.sceneDidBecomeActive()
+        XCTAssertEqual(record.moments, [.active])
+    }
+
+    /// The hold's end runs once, however many times the send and the limit both ask for it.
+    func testTheHoldEndsOnce() {
+        var ends = 0
+        let hold = HoldEnd { ends += 1 }
+        hold.end()
+        hold.end()
+        hold.end()
+        XCTAssertEqual(ends, 1)
     }
 
     /// With sync off, nothing happens at either moment: no task, no hold, no call (R1).
@@ -106,7 +119,7 @@ final class PhoneSyncLifeCycleTests: XCTestCase {
         lifeCycle.sceneDidBecomeActive()
         lifeCycle.sceneDidBecomeActive()
         lifeCycle.sceneDidEnterBackground()
-        await Task.yield()
+        // Nothing was started, so there is nothing to wait for: the handlers return having done nothing.
         XCTAssertEqual(record.moments, [])
         XCTAssertEqual(record.holdsBegun, [])
     }

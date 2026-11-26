@@ -122,9 +122,6 @@ final class PhoneSyncFolderAccessTests: XCTestCase {
         } catch {
             XCTAssertEqual(error as? SyncProblem, .folderMissing)
         }
-        XCTAssertTrue(PhoneSyncFolderAccess.isDeleted(URL(fileURLWithPath: "/private/var/mobile/Library/Mobile Documents/.Trash/a")))
-        XCTAssertTrue(PhoneSyncFolderAccess.isDeleted(URL(fileURLWithPath: "/x/Recently Deleted/a")))
-        XCTAssertFalse(PhoneSyncFolderAccess.isDeleted(URL(fileURLWithPath: "/private/var/mobile/Library/Mobile Documents/a")))
     }
 
     // MARK: - Listing

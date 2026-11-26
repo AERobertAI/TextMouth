@@ -71,7 +71,7 @@ final class SyncSettingsModel: ObservableObject {
     /// be kept on this device (not in a cloud folder or on another volume),
     /// and the folder must be in iCloud Drive.
     func refusal(forChosen folder: URL) -> String? {
-        if libraryLocation() != .local { return SyncWording.libraryNotLocal }
+        if libraryLocation() != .local { return SyncWording.libraryNotLocal(isPhone: isPhone) }
         if locationOf(folder) != .cloud(.iCloudDrive) { return SyncWording.notInICloudDrive }
         return nil
     }
@@ -172,8 +172,9 @@ final class SyncSettingsModel: ObservableObject {
         case .notDownloaded: return SyncWording.waitingForFiles
         case .folderMissing, .offline: return SyncWording.statusFolderMissing(device: SyncWording.thisDevice(isPhone: isPhone))
         case .notInICloudDrive: return SyncWording.notInICloudDrive
-        case .libraryNotLocal: return SyncWording.libraryNotLocal
-        case .notASyncFolder, .damaged, .outOfSpace: return SyncWording.notASyncFolder
+        case .libraryNotLocal: return SyncWording.libraryNotLocal(isPhone: isPhone)
+        case .outOfSpace: return SyncWording.iCloudDriveFull
+        case .notASyncFolder, .damaged: return SyncWording.notASyncFolder
         }
     }
 }

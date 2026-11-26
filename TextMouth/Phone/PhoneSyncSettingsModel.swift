@@ -45,6 +45,20 @@ extension SyncWording {
         return InterfaceText.line("phoneSync.stopQuestion", "Stop syncing this library? Nothing is deleted, on this iPhone or in iCloud Drive.")
     }
 
+    /// A library kept in a cloud folder: the Mac's line names this Mac and Change Location, which the iPhone has not, so the
+    /// iPhone's says the library must be kept on it.
+    static func libraryNotLocal(isPhone: Bool) -> String {
+        guard isPhone else { return libraryNotLocal }
+        // Translators: Shown on an iPhone when syncing is refused because the library is kept in a cloud folder.
+        return InterfaceText.line("phoneSync.libraryNotLocal", "Sync needs a library kept on this iPhone, and this one isn't.")
+    }
+
+    /// Set Up or Join found iCloud Drive full: no room to make or use the sync folder.
+    static var iCloudDriveFull: String {
+        // Translators: Shown when Set Up Sync or Join Sync Folder fails because iCloud Drive has no room left.
+        InterfaceText.line("sync.iCloudDriveFull", "iCloud Drive is full. Free some space in iCloud Drive, then try again.")
+    }
+
     /// The confirmation's button that stops syncing, with no ellipsis: the question has been asked.
     static var stopButton: String {
         // Translators: The button of the confirmation that stops syncing on an iPhone. Title case.
@@ -133,8 +147,17 @@ final class PhoneSyncSettingsController: ObservableObject {
 
     /// Whether the question before Stop Syncing is showing.
     @Published var isAskingToStop = false
-    /// Whether a Set Up or Join is under way, so a second press does nothing.
-    @Published private(set) var isWorking = false
+    /// Which of Set Up or Join is under way, so a second press does nothing; nil when neither is.
+    @Published private(set) var working: PhoneSyncPick?
+
+    /// Whether a Set Up or Join is under way.
+    var isWorking: Bool { working != nil }
+
+    /// What the status line says while a step is under way: Set Up makes the folder and begins to sync ("Syncing…"), and only
+    /// Join waits, for the folder's files to arrive.
+    static func workingLine(for pick: PhoneSyncPick) -> String {
+        pick == .join ? SyncWording.waitingForFiles : SyncWording.statusSyncing
+    }
 
     /// - Parameters:
     ///   - model: The commands; the app's own by default, for the iPhone.
@@ -185,8 +208,8 @@ final class PhoneSyncSettingsController: ObservableObject {
         }
         let closeScope = openScope(folder)
         defer { closeScope() }
-        isWorking = true
-        defer { isWorking = false }
+        working = pick
+        defer { working = nil }
         switch pick {
         case .setUp: return await model.setUp(in: folder)
         case .join: return await model.join(folder)
