@@ -105,7 +105,11 @@ struct StoreFetch: Sendable {
         // The pointer lists every file of the manifest before the first is fetched, each `onThisDevice: false` until it
         // lands, so a fetch that stops part way (Stop, Cancel, offline, a damaged file) always reads as missing files:
         // the book is not taken for whole, and the next fetch goes on from there.
-        let hereAlready = Set(pointer.files.filter(\.onThisDevice).map(\.path))
+        // A file counts as here only when what the pointer recorded for it is the manifest's own digest: a book edited on
+        // another device (the same path, new bytes) is not taken for whole because the old text is there.
+        let hereAlready = Set(pointer.files.filter { entry in
+            entry.onThisDevice && manifest.files.contains { $0.path == entry.path && $0.sha256 == entry.sha256 }
+        }.map(\.path))
         pointer.files = manifest.files.map { file in
             let here = hereAlready.contains(file.path)
             let known = pointer.files.first { $0.path == file.path }
@@ -121,8 +125,11 @@ struct StoreFetch: Sendable {
             let existing = pointer.files.firstIndex { $0.path == file.path }
             if let existing, pointer.files[existing].onThisDevice { continue }
             let destination = package.appendingPathComponent(file.path)
-            // The device's own record, and anything already there, stays as it is.
-            if !FileManager.default.fileExists(atPath: destination.path) {
+            // The device's own record stays as it is. Any other file already there is present only if its digest is the
+            // manifest's; otherwise it is the old version, and the new one is fetched over it.
+            let there = FileManager.default.fileExists(atPath: destination.path)
+            let isWhole = there && (file.role == "record" || (try? FileDigest.sha256(of: destination)) == file.sha256)
+            if !isWhole {
                 let staged = staging.appendingPathComponent(UUID().uuidString.lowercased())
                 try await folder.access.fetch(bookFolder.appendingPathComponent(file.blob), to: staged, within: perFile)
                 let size = (try staged.resourceValues(forKeys: [.fileSizeKey]).fileSize).map(Int64.init) ?? -1
@@ -130,7 +137,12 @@ struct StoreFetch: Sendable {
                     throw SyncProblem.damaged(file: file.blob)
                 }
                 try FileManager.default.createDirectory(at: destination.deletingLastPathComponent(), withIntermediateDirectories: true)
-                try FileManager.default.moveItem(at: staged, to: destination)
+                if there {
+                    // Over the old version, in one step: the book never has a half file under its name.
+                    _ = try FileManager.default.replaceItemAt(destination, withItemAt: staged)
+                } else {
+                    try FileManager.default.moveItem(at: staged, to: destination)
+                }
             }
             let entry = StorePointer.File(path: file.path, sha256: file.sha256, size: file.size, modified: Self.modified(destination), onThisDevice: true)
             if let existing { pointer.files[existing] = entry } else { pointer.files.append(entry) }

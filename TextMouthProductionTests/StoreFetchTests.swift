@@ -211,6 +211,33 @@ final class StoreFetchTests: XCTestCase {
         XCTAssertEqual(storage.state(of: package), .local)
     }
 
+    /// A book edited on another device (the same path, new bytes) is fetched again: the old text is never marked present
+    /// under the new digest.
+    func testAChangedFileIsFetchedAgainAndTheOldBytesAreNotMarkedPresent() async throws {
+        let world = try makeWorld()
+        try await world.fetch.fetch(package: world.placeholder)
+        let old = try Data(contentsOf: world.placeholder.appendingPathComponent("book.txt"))
+        XCTAssertEqual(old, Data("the book's text, long enough to matter".utf8))
+
+        // The text is edited where the book came from, and backed up again: a new manifest.
+        try Data("the edited text".utf8).write(to: world.original.appendingPathComponent("book.txt"))
+        let backup = StoreBackup(folder: world.fetch.folder, storeID: world.fetch.storeID, staging: world.fetch.staging.appendingPathComponent("again"))
+        let second = try backup.back(up: world.original, bookID: bookID)
+        XCTAssertNotEqual(second.manifestName, world.backup.manifestName)
+        var pointer = try XCTUnwrap(StoreFetch.pointer(in: world.placeholder))
+        pointer.manifest = second.manifestName
+        try StoreFetch.write(pointer, in: world.placeholder)
+
+        let reported = ProgressLog()
+        try await world.fetch.fetch(package: world.placeholder) { files, bytes, _, _ in reported.add(files, bytes) }
+        XCTAssertEqual(try Data(contentsOf: world.placeholder.appendingPathComponent("book.txt")), Data("the edited text".utf8))
+        let listed = try XCTUnwrap(StoreFetch.pointer(in: world.placeholder)).files
+        let book = try XCTUnwrap(listed.first { $0.path == "book.txt" })
+        XCTAssertEqual(book.sha256, second.manifest.files.first { $0.path == "book.txt" }?.sha256, "recorded under the new digest")
+        XCTAssertTrue(book.onThisDevice)
+        XCTAssertEqual(reported.files, [3], "only the changed file was fetched again: the other two already matched the manifest")
+    }
+
     /// While sync is off the book storage reads no pointer: a placeholder's package is answered as the live storage does.
     func testNoPointerIsReadWhileSyncIsOff() throws {
         let world = try makeWorld()
