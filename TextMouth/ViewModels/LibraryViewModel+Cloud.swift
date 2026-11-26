@@ -926,6 +926,10 @@ final class LibraryCloudCommands {
                 // Away already, though no row said so: the row says it now, and nothing was removed.
                 states.record(.inCloud, for: book.id)
                 unopenedHeld.remove(book.id)
+            } catch BookCloudError.syncRemoval(.busy) {
+                // The last look said no (opened, kept, in use, or no longer due): the book stays as a protected book
+                // does, and the status line never counts it as waiting for its copy in iCloud Drive.
+                unopenedHeld.remove(book.id)
             } catch {
                 unopenedHeld.insert(book.id)
                 // Said once for each book, and never with a title or a path (a package's names hold the title).

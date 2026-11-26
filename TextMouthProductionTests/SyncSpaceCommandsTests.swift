@@ -463,6 +463,7 @@ final class SyncSpaceCommandsTests: XCTestCase {
         }
         let report = await fixture.sweep(settings: fixture.settings(days: 7))
         XCTAssertEqual(report.removed, [])
+        XCTAssertEqual(report.waiting, 0, "a book the last look turned away is not waiting for its copy in iCloud Drive")
         XCTAssertEqual(fixture.storage.lastLookAnswers[opened.id], false)
         XCTAssertNil(fixture.states.state(of: opened.id), "still whole here")
 
