@@ -31,6 +31,13 @@ final class StoreRemovalTests: XCTestCase {
 
         /// The manifest's blob for `path`.
         func blob(of path: String) -> StoreManifest.File? { backup.manifest.files.first { $0.path == path } }
+
+        /// Lets the files of the book's copy arrive again after a removal gave them up: the stand-in drive, unlike
+        /// iCloud Drive, never downloads a file by being read, so a test that fetches says when it arrives.
+        func letTheCopyArrive() {
+            for entry in backup.manifest.files { drive.setNotDownloaded(entry.blob, false) }
+            drive.setNotDownloaded(backup.manifestName, false)
+        }
     }
 
     /// The book's own file, long enough to matter.
@@ -337,6 +344,7 @@ final class StoreRemovalTests: XCTestCase {
             try assertNeitherLost(world, "finished after a stop at \(stopAt)")
 
             // And a fetch brings the whole book back, byte for byte.
+            world.letTheCopyArrive()
             let fetch = StoreFetch(folder: world.folder, storeID: world.storeID, staging: world.staging)
             try await fetch.fetch(package: world.package)
             XCTAssertEqual(try Data(contentsOf: world.file("book.txt")), text, "reopened after a stop at \(stopAt)")
@@ -453,6 +461,7 @@ final class StoreRemovalTests: XCTestCase {
         XCTAssertEqual(storage.state(of: target), .inCloud)
         XCTAssertEqual(storage.bytesToDownload(of: target), Int64(text.count))
 
+        world.letTheCopyArrive()
         for try await _ in storage.download(target) {}
         XCTAssertEqual(try Data(contentsOf: world.file("book.txt")), text)
         XCTAssertEqual(storage.state(of: target), .downloaded, "whole again")
