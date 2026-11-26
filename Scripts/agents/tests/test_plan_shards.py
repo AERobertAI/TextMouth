@@ -29,8 +29,17 @@ class PlanShardsTests(unittest.TestCase):
                 status = plan_shards.main([str(path)])
         return status, out.getvalue().splitlines()
 
+    def counting_ios_as(self, total_seconds):
+        """A patch that counts the iPhone classes a request asks for as `total_seconds` in all, spread evenly, so a plan rests
+        on the figure a test names rather than on the tree's measured times (ios-class-times.json), which every branch that
+        adds an iPhone test moves."""
+        spread = lambda classes, *args, **kwargs: {name: total_seconds / max(1, len(classes)) for name in classes}  # noqa: E731
+        return mock.patch.object(ios_ui_tests, "estimated_seconds", spread)
+
     def test_a_request_for_three_shards_gives_three_in_the_matrix(self):
-        status, lines = self.plan({"areas": ["all"], "shards": 3})
+        # 856 seconds of iPhone tests are two jobs, which leave the Mac its three of the five macOS slots.
+        with self.counting_ios_as(856):
+            status, lines = self.plan({"areas": ["all"], "shards": 3})
         self.assertEqual(status, 0)
         self.assertEqual(lines[:2], ["shards=3", 'matrix={"shard":[1,2,3]}'])
 
@@ -121,28 +130,27 @@ class PlanShardsTests(unittest.TestCase):
         out = self.output({"classes": ["ChatterTests"], "shards": 4})
         self.assertEqual((out["shards"], out["ios_shards"]), ("4", "1"))
 
-    def planned_ios_jobs(self, request, seconds_each):
-        """The ios_shards the plan gives `request` when every iPhone class it asks for is counted as `seconds_each` seconds."""
-        counted = lambda classes, *args, **kwargs: {name: seconds_each for name in classes}  # noqa: E731
-        with mock.patch.object(ios_ui_tests, "estimated_seconds", counted):
+    def planned_ios_jobs(self, request, total_seconds):
+        """The ios_shards the plan gives `request` when the iPhone classes it asks for come to `total_seconds` in all."""
+        with self.counting_ios_as(total_seconds):
             return int(self.output(request)["ios_shards"])
 
     def test_one_mac_shard_leaves_room_for_four_iphone_jobs(self):
-        # With 214 classes at 20 seconds, the tests are 4,280 seconds: 6 jobs at the plain target, so the most decides.
+        # 4,280 seconds of tests are 6 jobs at the plain target, so the most decides.
         full = {"full": True, "shards": 1}
-        self.assertEqual(self.planned_ios_jobs(full, 20.0), ios_ui_tests.MAX_SHARDS_WITH_ROOM)
-        self.assertEqual(self.planned_ios_jobs({**full, "shards": 2}, 20.0), ios_ui_tests.MAX_SHARDS, "two Mac shards leave 3")
+        self.assertEqual(self.planned_ios_jobs(full, 4280), ios_ui_tests.MAX_SHARDS_WITH_ROOM)
+        self.assertEqual(self.planned_ios_jobs({**full, "shards": 2}, 4280), ios_ui_tests.MAX_SHARDS, "two Mac shards leave 3")
         out = self.output({**full, "ios_shards": 99})
         self.assertEqual((out["shards"], out["ios_shards"]), ("1", "4"))
 
     def test_with_room_the_tests_are_split_finer_than_without(self):
-        # 214 classes at 4 seconds are 856 seconds: 2 jobs at either target (ceil 1.07 and 1.43).
+        # 856 seconds are 2 jobs at either target (ceil 1.07 and 1.43).
         full = {"full": True, "shards": 1}
-        self.assertEqual(self.planned_ios_jobs(full, 4.0), 2)
-        self.assertEqual(self.planned_ios_jobs({**full, "shards": 2}, 4.0), 2)
+        self.assertEqual(self.planned_ios_jobs(full, 856), 2)
+        self.assertEqual(self.planned_ios_jobs({**full, "shards": 2}, 856), 2)
         # 1,300 seconds: 2 jobs at the plain target (1.63), 3 at the finer one (2.17).
-        self.assertEqual(self.planned_ios_jobs({**full, "shards": 2}, 1300 / 214), 2)
-        self.assertEqual(self.planned_ios_jobs(full, 1300 / 214), 3)
+        self.assertEqual(self.planned_ios_jobs({**full, "shards": 2}, 1300), 2)
+        self.assertEqual(self.planned_ios_jobs(full, 1300), 3)
 
     def test_a_request_with_no_iphone_tests_is_one_job_whatever_the_room(self):
         self.assertEqual(self.output({"classes": ["ChatterTests"], "shards": 1})["ios_shards"], "1")
