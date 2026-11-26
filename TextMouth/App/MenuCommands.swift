@@ -457,6 +457,8 @@ struct LibraryCommands: Commands {
     /// The window in front, observed so those items act only where their
     /// commands work (FR12's branch E).
     @ObservedObject private var front = FrontWindowKind.shared
+    /// Whether sync is on, observed so Sync Now is in the menu only then (FR43, R1).
+    @ObservedObject private var sync = SyncCenter.shared
 
     /// The Library menu, its keys in force those of `shortcuts`.
     init(shortcuts: KeyboardShortcutManager) {
@@ -569,6 +571,15 @@ struct LibraryCommands: Commands {
             }
             // Cmd+Shift+M handled by KeyboardShortcutManager for window targeting
 
+            // Syncs the library with the iPhone now, and says what came of
+            // it (FR43). Not in the menu until a sync folder is set up.
+            if sync.status.isOn {
+                Button(ShortcutAction.syncNow.title) {
+                    SyncCenter.shared.syncNow()
+                }
+                .menuCommandKey(.syncNow, shortcuts: shortcuts, frontKind: front.kind)
+            }
+
             Divider()
 
             // Only a Library window takes these two, and says what it did or
@@ -627,6 +638,20 @@ struct LibraryCommands: Commands {
 
             Button(LibraryCloudWording.stopKeepingName) {
                 NotificationCenter.default.post(name: .stopKeepingOnThisMac, object: nil)
+            }
+
+            // Keeps the selected books on every device that syncs, or stops
+            // (FR43, section 16). Not in the menu until a sync folder is set
+            // up; it has no key, and the key Library window acts on its
+            // selection.
+            if sync.status.isOn {
+                Button(SyncWording.keepTitle) {
+                    NotificationCenter.default.post(name: .keepOnAllDevices, object: nil)
+                }
+
+                Button(SyncWording.stopKeepingTitle) {
+                    NotificationCenter.default.post(name: .stopKeepingOnAllDevices, object: nil)
+                }
             }
 
             Divider()
@@ -1077,6 +1102,12 @@ extension Notification.Name {
     /// Posted by Library > Stop Keeping on This Mac: the key Library window
     /// stops keeping its selected books on this Mac.
     static let stopKeepingOnThisMac = Notification.Name("stopKeepingOnThisMac")
+    /// Posted by Library > Keep on All Devices: the key Library window keeps
+    /// its selected books on every device that syncs (FR43).
+    static let keepOnAllDevices = Notification.Name("keepOnAllDevices")
+    /// Posted by Library > Stop Keeping on All Devices: the key Library
+    /// window stops keeping its selected books on all devices (FR43).
+    static let stopKeepingOnAllDevices = Notification.Name("stopKeepingOnAllDevices")
     static let showHeadingList = Notification.Name("showHeadingList")
     static let showBookmarkList = Notification.Name("showBookmarkList")
     static let showSleepTimer = Notification.Name("showSleepTimer")

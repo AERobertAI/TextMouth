@@ -162,6 +162,7 @@ final class OnDiskContractTests: XCTestCase {
                 "Import Folder…",
                 "Add Feed…",
                 "Search Library…",
+                "Sync Now",
                 "Open Book…",
                 "New from Text…",
                 "New Recording…",

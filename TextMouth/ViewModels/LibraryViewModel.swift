@@ -137,6 +137,10 @@ final class LibraryViewModel: ObservableObject {
         didSet {
             listCache.libraryDidChange(from: oldValue, to: library)
             bookUpdates.libraryDidChange(library)
+            // The sync's recorder compares the library with what it last
+            // recorded, a moment after the last change; inert until a sync
+            // folder is set up (FR43).
+            SyncCenter.shared.libraryDidChange()
         }
     }
     /// The lists Library windows show, each derived once and kept until a
@@ -145,6 +149,13 @@ final class LibraryViewModel: ObservableObject {
     let listCache = LibraryListCache()
     /// Tells open readers when the library changes or moves their book.
     let bookUpdates = LibraryBookUpdates()
+    /// Keeps the cloud notes saying whether sync is on (`observeSyncStatus()`, FR43).
+    var syncStatusSubscription: AnyCancellable?
+    /// The name of the device that wrote the winning value of a sync key in the
+    /// last merge (`SyncCenter.deviceName(forKey:)`); a test gives its own.
+    var syncDeviceName: @MainActor (SyncKey) -> String? = { SyncCenter.shared.deviceName(forKey: $0) }
+    /// Keeps the books kept on all devices current (`observeSyncStatus()`, FR43).
+    var syncKeptSubscription: AnyCancellable?
     /// The reading list (FR09), as the library holds it: its books in
     /// reading order and its options. Changed only through the functions in
     /// LibraryViewModel+ReadingList, each of which saves the index.
@@ -443,6 +454,11 @@ final class LibraryViewModel: ObservableObject {
     /// on it, as at a book's end (`holdFinishedBookOnReadingList()`). Sent
     /// synchronously, so the holds are made before the list decides.
     let bookMarkedPlayedByHand = PassthroughSubject<UUID, Never>()
+    /// Tells the readers that a sync merge gave a book another reading state
+    /// (FR43): an open reader at rest moves to the place and says so; a
+    /// playing one plays on, and its next checkpoint wins. Sent
+    /// synchronously, after the merge's rows are in the library.
+    let syncedReadingStates = PassthroughSubject<SyncedReadingState, Never>()
 
     /// Combine subscriptions shared across extension files
     var cancellables = Set<AnyCancellable>()
@@ -545,6 +561,10 @@ final class LibraryViewModel: ObservableObject {
         // In a cloud library, a conflict copy a sync service set aside of
         // the index or a record is reported, once (Phase 0, compare0).
         reportConflictCopiesInBackground()
+        // With a sync folder set up, the library syncs now, as install begins
+        // the launch's sync itself (FR43); with none, it does nothing.
+        SyncCenter.shared.install(host: self, dataDirectory: TextMouthPaths.root)
+        observeSyncStatus()
     }
 
     /// What follows the startup maintenance, once every pass that rebuilds

@@ -47,6 +47,8 @@ final class KeyboardReachabilityTests: XCTestCase {
         "FeedWording.exportCommand": "A Library menu command that exports the feeds as a list; it has no shortcut action and is reached from the menu bar.",
         "LibraryCloudWording.keepName": "A Library menu command that keeps the selected books on this Mac; it has no shortcut action and is reached from the menu bar.",
         "LibraryCloudWording.stopKeepingName": "A Library menu command that stops keeping the selected books on this Mac; it has no shortcut action and is reached from the menu bar.",
+        "SyncWording.keepTitle": "A Library menu command, in the menu only while sync is on, that keeps the selected books on every device that syncs; it has no shortcut action and is reached from the menu bar.",
+        "SyncWording.stopKeepingTitle": "A Library menu command, in the menu only while sync is on, that stops keeping the selected books on all devices; it has no shortcut action and is reached from the menu bar.",
         "LibraryRemoveCommandWording.menuBarTitle(preferences: removal.preferences, selection: removalSelection)":
             "A Library menu command whose title follows the selection and the removal preferences; its shortcut is Remove from Library's, which acts on the same selection.",
         "BookExportWording.commandTitle": "A File menu command that exports a book; it has no shortcut action and is reached from the menu bar.",

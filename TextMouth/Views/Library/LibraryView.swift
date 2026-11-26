@@ -693,7 +693,8 @@ struct LibraryView: View {
             token: cloudRefreshToken,
             library: libraryViewModel,
             refusal: $cloudRefusal,
-            performKeepMenuCommand: performKeepMenuCommand
+            performKeepMenuCommand: performKeepMenuCommand,
+            performKeepOnAllDevicesMenuCommand: performKeepOnAllDevicesMenuCommand
         ))
         // File > Export… for the selection, and the Export dialog (FR05).
         .modifier(LibraryExportSupport(
@@ -1048,6 +1049,8 @@ struct LibraryView: View {
                 skipsFinished: list.skipsFinished,
                 removesFinished: list.removesFinished,
                 keepsBooks: keptBooks.keepsReadingListBooks,
+                // Shown in a cloud library, and while sync is on: it drives the
+                // downloads after every sync (FR43, section 16).
                 showsKeepChoice: cloudStates.showsCloudNotes,
                 chooseContinuation: { libraryViewModel.setReadingListContinuation($0) },
                 chooseSkipsFinished: { libraryViewModel.setReadingListSkipsFinished($0) },
@@ -1192,7 +1195,8 @@ struct LibraryView: View {
             for: selection,
             isSelection: selection.count > 1,
             states: cloudStates,
-            kept: keptBooks.bookIDs
+            kept: keptBooks.bookIDs,
+            keptOnAllDevices: keptBooks.syncedBookIDs
         )
         // Every book's moves in the order the list shows, read from that
         // order rather than by sorting the folder again for each row.
@@ -1241,7 +1245,8 @@ struct LibraryView: View {
                     for: targets,
                     isSelection: false,
                     states: cloudStates,
-                    kept: keptBooks.bookIDs
+                    kept: keptBooks.bookIDs,
+                    keptOnAllDevices: keptBooks.syncedBookIDs
                 ),
             // Move Up and Move Down move the row's own book alone (TODO A06).
             manualMoves: isSelectionRow ? nil : context.manualMoves[book.id],
@@ -1687,6 +1692,31 @@ struct LibraryView: View {
     private func performKeepMenuCommand(_ keeping: Bool, _ notification: Notification) {
         guard takesCommand(notification) else { return }
         LibraryCloudCommands.shared.setKeptFromMenu(keeping, for: selectedBooks, in: libraryViewModel, from: hostWindow)
+    }
+
+    /// Runs Library > Keep on All Devices (`keeping`) or Stop Keeping on All
+    /// Devices, which `notification` carried, for the books selected here,
+    /// when this window takes the command: on the books that command is
+    /// offered for (`LibraryCloudCommand.commands`). VoiceOver hears why
+    /// when nothing changes: no book is selected, or each is kept already.
+    private func performKeepOnAllDevicesMenuCommand(_ keeping: Bool, _ notification: Notification) {
+        guard takesCommand(notification) else { return }
+        let kind: LibraryCloudCommand.Kind = keeping ? .keepOnAllDevices : .stopKeepingOnAllDevices
+        let offered = LibraryCloudCommand.commands(
+            for: selectedBooks,
+            isSelection: selectedBooks.count > 1,
+            states: cloudStates,
+            kept: keptBooks.bookIDs,
+            keptOnAllDevices: keptBooks.syncedBookIDs
+        )
+        if let command = offered.first(where: { $0.kind == kind }) {
+            LibraryCloudCommands.shared.setKeptOnAllDevices(keeping, command.books, from: hostWindow)
+        } else if selectedBooks.isEmpty {
+            VoiceOverAnnouncer.announce(LibraryCloudWording.noBooksSelected, from: hostWindow)
+        } else if keeping {
+            // Every selected book is kept already.
+            VoiceOverAnnouncer.announce(SyncWording.keptState, from: hostWindow)
+        }
     }
 
     // MARK: - Moving Books
@@ -2428,6 +2458,8 @@ private struct LibraryCloudWindowSupport: ViewModifier {
     /// the Library menu, with the notification that carried it, which says
     /// whether this window takes it.
     let performKeepMenuCommand: (_ keeping: Bool, _ notification: Notification) -> Void
+    /// The same for Keep on All Devices and Stop Keeping on All Devices (FR43).
+    let performKeepOnAllDevicesMenuCommand: (_ keeping: Bool, _ notification: Notification) -> Void
 
     func body(content: Content) -> some View {
         content
@@ -2442,6 +2474,12 @@ private struct LibraryCloudWindowSupport: ViewModifier {
             }
             .onReceive(NotificationCenter.default.publisher(for: .stopKeepingOnThisMac)) { notification in
                 performKeepMenuCommand(false, notification)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .keepOnAllDevices)) { notification in
+                performKeepOnAllDevicesMenuCommand(true, notification)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .stopKeepingOnAllDevices)) { notification in
+                performKeepOnAllDevicesMenuCommand(false, notification)
             }
             // Why Remove Download kept a book's download. This alert is the
             // only place the refusal is said: nothing announces it besides

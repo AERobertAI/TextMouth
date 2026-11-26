@@ -474,6 +474,7 @@ final class ShortcutConfigFileTests: XCTestCase {
             "Copy Reading Position": "default in reader windows: shift+command+p",
             "Search in Book": "default in reader windows: command+f",
             "Search Library…": "default: option+command+f",
+            "Sync Now": "default: option+command+s",
             "New Recording: Record": "default: command+r",
             "New Recording: Pause or Resume": "default: command+p",
             "New Recording: Stop": "default: command+.",
