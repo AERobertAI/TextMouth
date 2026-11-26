@@ -487,17 +487,21 @@ class ShardingTests(TreeCase):
         self.assertGreater(ui.shard_count(ui.all_classes(ROOT), ROOT), 1)
         self.assertIsInstance(ui.load_times(), dict)
 
-    def test_the_full_suite_is_two_jobs_that_end_within_ten_percent_of_each_other(self):
-        """The real tree's measured times (ios-class-times.json, the runs of November 23, 2026) come to about 1,350 seconds of
-        tests, which two jobs run. Two jobs leave the Mac tests three shards of the 5 macOS slots; a third iPhone job would cost
-        the Mac one, and a slower run."""
+    def test_the_full_suite_is_dealt_into_jobs_that_end_within_ten_percent_of_each_other(self):
+        """The real tree's measured times (ios-class-times.json) are more than one job's share, and the jobs they are dealt
+        into end within 10 percent of each other, each class in exactly one. How many jobs is not pinned here, since every
+        branch that adds an iPhone test moves the total; the plan's tests pin counts on figures of their own
+        (test_plan_shards.py)."""
         classes = ui.all_classes(ROOT)
-        self.assertEqual(ui.shard_count(classes, ROOT), 2)
+        count = ui.shard_count(classes, ROOT)
+        self.assertGreaterEqual(count, 2, "the full suite's iPhone tests are more than one job's share")
+        self.assertLessEqual(count, ui.MAX_SHARDS)
         seconds = ui.estimated_seconds(classes, ROOT)
-        shares = [sum(seconds[name] for name in ui.slice_for(classes, number, 2, ROOT)) for number in (1, 2)]
-        self.assertLess(abs(shares[0] - shares[1]), 0.10 * max(shares), shares)
+        jobs = range(1, count + 1)
+        shares = [sum(seconds[name] for name in ui.slice_for(classes, number, count, ROOT)) for number in jobs]
+        self.assertLess(max(shares) - min(shares), 0.10 * max(shares), shares)
         # Every class is in exactly one job.
-        dealt = [name for number in (1, 2) for name in ui.slice_for(classes, number, 2, ROOT)]
+        dealt = [name for number in jobs for name in ui.slice_for(classes, number, count, ROOT)]
         self.assertEqual(sorted(dealt), sorted(classes))
 
 
