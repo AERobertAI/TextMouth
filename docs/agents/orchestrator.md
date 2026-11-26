@@ -150,6 +150,7 @@ The jobs that wait go first come, first served: a waiting job takes a ticket in 
 `python3 -I Scripts/agents/run_locked.py NAME COMMAND...` runs one command under the lock and exits with its status.
 `python3 -I Scripts/agents/run_suite.py NAME LOG` runs the full hosted suite under the lock from the checkout to test (as a background task), ends an xcodebuild that outlives its tests, prints the log's Executed line, and exits 0 only when every test passed.
 `run_suite.py --remote COMMIT NAME LOG` runs the same suite on GitHub for COMMIT's tree, takes no heavy-work lock, writes the run's log to LOG, and judges it the same way (exit 4: the push or the run failed, not the tests; exit 3: a train held TestBuild throughout).
+It also measures the iPhone app's size, as the release check; `--no-ios-size` after COMMIT leaves that out for a merge's gate, whose branches each measured it on their last train, and ends about 14 minutes sooner.
 `python3 -I Scripts/agents/copy_phases.py A.pbxproj B.pbxproj` says whether two projects copy the same files to the same places.
 `Scripts/agents/regenerate-project.py` is what `make generate` runs.
 Their tests are in `Scripts/agents/tests`.
