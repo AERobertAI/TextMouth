@@ -4,6 +4,21 @@ Part of [TextMouth's documentation](../../README.md).
 
 Every version of TextMouth, newest first, and what changed for you in each.
 
+## 0.6.0 (November 26, 2026)
+
+### Your library on your Mac and your iPhone
+- TextMouth can keep your library in step between your Mac and your iPhone through a TextMouth Sync folder in iCloud Drive: Set Up Sync on the first device, in the Sync section of Settings, and Join Sync Folder on each other one.
+- Sync carries the books you add and remove, each book's place, bookmarks, details, and voice and speed settings, your folders, and the reading list with its order.
+- A book's files stay only on the devices where you download it or keep it; on the others it says In Cloud until you open it or choose Download Now.
+- Sync runs at launch, every hour, when the network comes back, a few minutes after a change, and when you choose Sync Now: Command-Option-S or the Library menu on the Mac, and a VoiceOver action on the Library's summary on the iPhone.
+- Keep on All Devices, in a book's commands, the Mac's Library menu, and Book Information, keeps a book's files on every device, and the reading list's books are kept too; they download after a sync on Wi-Fi or Ethernet, never on cellular data or in Low Data Mode.
+- When a sync would remove many books at once, TextMouth holds the removal and says so until you choose Sync Now.
+- Sync is off until you set it up, and it needs a library kept on the device itself, not one in a cloud folder; update every device to this version first.
+- Removing the downloads of books you haven't opened for some days, and freeing a book's space while it stays in iCloud Drive, come in a later version; "Syncing your library between your devices" lists what isn't synced yet.
+
+### Export on the iPhone
+- Export… in a book's actions and Export this book in the reader write the book into a folder you choose once, in every format but spoken audio and Word 97-2003, braille's BRF and PEF included.
+
 ## 0.5.12 (November 25, 2026)
 
 ### Braille in many languages on the iPhone
