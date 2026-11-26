@@ -61,6 +61,8 @@ COMMAND = test_command.full_suite_command("build/DerivedData")
 TRAIN_WAIT_SECONDS = github_run.RUN_LIMIT_MINUTES * 60
 # How often it looks for the train lock to be free, in seconds.
 TRAIN_POLL_SECONDS = 20
+# The option that leaves the iPhone app's size out of a remote suite (run_remote's `ios_size`).
+NO_IOS_SIZE = "--no-ios-size"
 
 
 def stop_if_it_outlives_its_tests(process, log, finished):
@@ -80,15 +82,19 @@ def stop_if_it_outlives_its_tests(process, log, finished):
 def main():
     """Takes the lock, runs the suite, and exits by what the log says of the tests."""
     arguments = sys.argv[1:]
+    # --no-ios-size, anywhere on the line, is a merge's gate rather than the release check (see run_remote).
+    ios_size = NO_IOS_SIZE not in arguments
+    arguments = [argument for argument in arguments if argument != NO_IOS_SIZE]
     remote = None
     if len(arguments) == 4 and arguments[0] == "--remote":
         remote, arguments = arguments[1], arguments[2:]
-    if len(arguments) != 2:
-        print("usage: run_suite.py [--remote COMMIT] NAME LOG", file=sys.stderr)
+    # The size is the remote suite's alone: a local suite builds no iPhone app.
+    if len(arguments) != 2 or (not ios_size and not remote):
+        print(f"usage: run_suite.py [--remote COMMIT [{NO_IOS_SIZE}]] NAME LOG", file=sys.stderr)
         return 2
     name, log = arguments
     if remote:
-        return run_remote(name, log, remote)
+        return run_remote(name, log, remote, ios_size=ios_size)
     with heavy_lock.held(name, WAIT_SECONDS, heavy_lock.say_wait) as taken:
         if not taken:
             print(f"run_suite: {name} did not get the lock in time", file=sys.stderr)
@@ -204,11 +210,12 @@ def report_iphone_build(folder):
         print(f"run_suite:   and {len(per_file) - IOS_FILES_NAMED} more files, in {Path(folder) / 'ios-errors.txt'}", flush=True)
 
 
-def run_remote(name, log, commit, cwd=None):
+def run_remote(name, log, commit, cwd=None, ios_size=True):
     """Runs the full suite on GitHub Actions for `commit`'s tree, writes the run's log
     to `log`, and returns the exit status: as a local run's, or 3 when a train held
     TestBuild throughout, or 4 when the push or the run failed and so says nothing
-    about the tests. `cwd` is the checkout that holds `commit` (by default, the current folder)."""
+    about the tests. `cwd` is the checkout that holds `commit` (by default, the current folder).
+    `ios_size` False leaves out the iPhone app's size (see the request below)."""
     if not take_train_lock():
         print(f"run_suite: {name} found a train on GitHub for {TRAIN_WAIT_SECONDS // 60} minutes", file=sys.stderr)
         return 3
@@ -219,8 +226,11 @@ def run_remote(name, log, commit, cwd=None):
         # The full suite is long, so it runs as the most shards there are. It names "all" as well as "full" so
         # the runner can deal its classes out: the area "all" is every test of the scheme (11,854 counted in
         # the sources, 11,853 run on the Mac on November 9, 2026), so the shards' classes add up to the suite.
-        # It also asks for the iPhone app's size (a device build, measured), since this is the release check.
-        request = {"areas": ["all"], "classes": [], "full": True, "shards": shard.MAX_SHARDS, "ios_size": True,
+        # It also asks for the iPhone app's size (a device build, measured), since this is the release check, unless
+        # `ios_size` is False: a merge's gate, whose branches each measured the size on their last train. In the workflow
+        # on main every iPhone job makes that device build when asked (14.6, 14.4, and 12.7 minutes in the three of run
+        # 45729639701), so a gate without it ends about a quarter of an hour sooner.
+        request = {"areas": ["all"], "classes": [], "full": True, "shards": shard.MAX_SHARDS, "ios_size": ios_size,
                    "requests": [{"agent": name, "head": commit}]}
         try:
             result = github_run.run_remotely(cwd or os.getcwd(), commit, request, folder,
