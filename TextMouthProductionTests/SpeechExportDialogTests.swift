@@ -1207,6 +1207,23 @@ final class SpeechExportDialogTests: XCTestCase {
         XCTAssertNil(model.wordsBeforeTheEnd, "the note outlived the export it was for")
     }
 
+    /// iOS's words do not outlive an export that never began: one the system stopped in its first moments, while it
+    /// waited for a braille table's check, returns without an end to take them, and the next export, stopped by the
+    /// person, would begin "iOS stopped this export." The session clears them however the export ended.
+    func testIOSsWordsDoNotOutliveAnExportThatNeverBegan() async throws {
+        let dialog = try await makeDialog("Speech Session Never Began")
+        // No folder chosen: the export returns at once, without an end, as one stopped before it began does.
+        let model = BookExportModel(books: [dialog.book], library: dialog.world.library, destinationIsChosen: false)
+        await model.load()
+        let session = PhoneExportSession(tasking: .none)
+        model.wordsBeforeTheEnd = PhoneExportWording.stoppedBySystem
+
+        let outcome = await session.export(model)
+
+        XCTAssertNil(outcome, "the export began")
+        XCTAssertNil(model.wordsBeforeTheEnd, "iOS's words outlived an export that never began, for the next one's end")
+    }
+
     // MARK: - Fixtures
 
     /// The words that say until when spoken chapters are kept, written out

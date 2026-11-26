@@ -185,6 +185,10 @@ final class PhoneExportSession: ObservableObject {
     /// The export has ended, as `outcome` says (nil when it never began): the task ends with it, a success only when
     /// every file was written; a Stop, a failure, or a refusal is not one. A card shows what it did.
     private func end(_ model: BookExportModel, outcome: BookExportOutcome?) {
+        // iOS's words are the end's, which takes them as it says what the export did. An export that never began, as one
+        // stopped in its first moments, while it waits for a braille table's check, has no end to take them: they would
+        // begin the next export's end, a Stop of the person's own.
+        model.wordsBeforeTheEnd = nil
         guard current === model else { return }
         watching = nil
         handle?.finish(success: outcome.map { $0.failures.isEmpty && !$0.wasCancelled } ?? false)
