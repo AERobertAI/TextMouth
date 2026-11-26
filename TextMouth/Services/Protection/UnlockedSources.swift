@@ -150,6 +150,17 @@ enum ProtectionDetector {
         return nil
     }
 
+    /// Whether the file at `url`, read as `format`, is protected by a
+    /// password: unlocked for now, or found so by a look. A file unlocked for
+    /// now is protected whatever a look says meanwhile, since only a
+    /// protected file is ever unlocked (`UnlockedSources.unlock`) and its
+    /// plain form is in memory: a look that finds nothing while it is open
+    /// (its file only in the cloud, replaced by a sync, or not readable for
+    /// a moment) can never let that plain form be written to a file.
+    static func isProtected(fileAt url: URL, format: BookFormat) -> Bool {
+        UnlockedSources.isUnlocked(url) || scheme(ofFileAt: url, format: format) != nil
+    }
+
     /// Forgets what was found about the file at `url`, after it was rewritten.
     static func forget(_ url: URL) {
         remembered.withLock { _ = $0.removeValue(forKey: url.standardizedFileURL.path) }

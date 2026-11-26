@@ -135,7 +135,7 @@ final class OfficeCryptoDecryptorTests: XCTestCase {
     func testAProtectedDocumentUnlocksAndReads() throws {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("OfficeCrypto-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        let docx = try makeMinimalDocx(text: "The sluice gate opens at dawn.")
+        let docx = try minimalDocx(text: "The sluice gate opens at dawn.")
         let made = TestOfficeEncryptor.agile(package: docx, password: "secret", hash: "SHA512", spinCount: 100, padInfoTo: 4200, padPackageTo: 4200)
         let url = folder.appendingPathComponent("Notes.docx")
         try TestCompoundFileWriter.file(streams: [("EncryptionInfo", Data(made.info)), ("EncryptedPackage", Data(made.package))]).write(to: url)
@@ -157,26 +157,34 @@ final class OfficeCryptoDecryptorTests: XCTestCase {
         XCTAssertTrue(try DOCXParser.parse(url: url).chapters.map(\.text).joined().contains("sluice gate"))
         XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: folder.path), ["Notes.docx"], "one file, no copy")
     }
+}
 
-    /// A small, valid .docx holding `text`.
-    private func makeMinimalDocx(text: String) throws -> Data {
-        let types = """
-        <?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>
-        """
-        let rels = """
-        <?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>
-        """
-        let body = """
-        <?xml version="1.0" encoding="UTF-8"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>\(text)</w:t></w:r></w:p></w:body></w:document>
-        """
-        let url = try makeTemporaryZip(prefix: "docx", orderedEntries: [
-            TestZIPEntry("[Content_Types].xml", Data(types.utf8)),
-            TestZIPEntry("_rels/.rels", Data(rels.utf8)),
-            TestZIPEntry("word/document.xml", Data(body.utf8))
-        ], compressionMethod: .deflate)
-        defer { try? FileManager.default.removeItem(at: url) }
-        return try Data(contentsOf: url)
-    }
+// MARK: - A Small Word Document
+
+/// The parts of a small, valid .docx holding `text`, in the order Word writes
+/// them: for a test that zips them itself, as with the `zip` tool's password.
+func minimalDocxEntries(text: String) -> [TestZIPEntry] {
+    let types = """
+    <?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>
+    """
+    let rels = """
+    <?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>
+    """
+    let body = """
+    <?xml version="1.0" encoding="UTF-8"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>\(text)</w:t></w:r></w:p></w:body></w:document>
+    """
+    return [
+        TestZIPEntry("[Content_Types].xml", Data(types.utf8)),
+        TestZIPEntry("_rels/.rels", Data(rels.utf8)),
+        TestZIPEntry("word/document.xml", Data(body.utf8))
+    ]
+}
+
+/// A small, valid .docx holding `text`, its parts deflated.
+func minimalDocx(text: String) throws -> Data {
+    let url = try makeTemporaryZip(prefix: "docx", orderedEntries: minimalDocxEntries(text: text), compressionMethod: .deflate)
+    defer { try? FileManager.default.removeItem(at: url) }
+    return try Data(contentsOf: url)
 }
 
 // MARK: - The Test-Only Encryptor

@@ -45,6 +45,31 @@ final class ProtectedImportTests: XCTestCase {
         return url
     }
 
+    /// A .docx holding `words`, its parts zipped with the password "secret"
+    /// (ZipCrypto) by the `zip` tool macOS ships; the test is skipped without it.
+    private func zipLockedDocx() throws -> URL {
+        let tool = "/usr/bin/zip"
+        guard FileManager.default.isExecutableFile(atPath: tool) else { throw XCTSkip("zip is not here") }
+        let parts = folder.appendingPathComponent("Parts", isDirectory: true)
+        for entry in minimalDocxEntries(text: words) {
+            let part = parts.appendingPathComponent(entry.path)
+            try FileManager.default.createDirectory(at: part.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try entry.data.write(to: part)
+        }
+        let url = folder.appendingPathComponent("Sluice Notes.docx")
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: tool)
+        // The folder's whole contents, so no name is read as a pattern ("[Content_Types].xml").
+        process.arguments = ["-q", "-r", "-P", "secret", url.path, "."]
+        process.currentDirectoryURL = parts
+        process.standardOutput = FileHandle.nullDevice
+        process.standardError = FileHandle.nullDevice
+        try process.run()
+        process.waitUntilExit()
+        if process.terminationStatus != 0 { throw XCTSkip("zip could not make the fixture") }
+        return url
+    }
+
     /// The path of every file under `package`, relative to it, sorted. Both
     /// sides are resolved first: the enumerator reports /private/var where
     /// the package's URL says /var.
@@ -205,6 +230,27 @@ final class ProtectedImportTests: XCTestCase {
         reader.close()
         XCTAssertEqual(try files(in: package), before, "opening, reading, and closing wrote no file")
         try assertNoWords(in: package, "after the book was open")
+    }
+
+    /// A book unlocked for now is protected whatever a look at its file finds meanwhile. Here
+    /// its file is replaced by a plain one, as a sync can, while the plain form of the
+    /// protected one is in memory: a load still writes no text cache. It took the book for
+    /// plain and wrote content.md from what memory held, the protected words and all.
+    func testAnUnlockedBookStaysProtectedWhenItsFileIsReplaced() throws {
+        try prepare()
+        let book = try FileImportService.importFileWithReport(from: try zipLockedDocx()).book
+        XCTAssertTrue(book.isLocked)
+        try UnlockedSources.unlock(fileAt: book.bookFileURL, format: .docx, password: Secret("secret"))
+        defer { UnlockedSources.release(book.bookFileURL) }
+        try minimalDocx(text: "Nothing here but gravel.").write(to: book.bookFileURL)
+        XCTAssertNil(ProtectionDetector.scheme(ofFileAt: book.bookFileURL, format: .docx), "a look finds the new file plain")
+        XCTAssertTrue(book.isPasswordProtected, "unlocked for now, the book is protected")
+
+        let loaded = try BookContentAnalysisService.load(book: book)
+        XCTAssertTrue(loaded.content.chapters.map(\.text).joined().contains("sluice gate"), "read from memory")
+        LibraryPersistenceService.flushPendingSave()
+        try assertNoWords(in: book.tmbDirectory, "after a load while the book was unlocked")
+        XCTAssertFalse(try files(in: book.tmbDirectory).contains { $0.hasSuffix("content.md") })
     }
 
     // MARK: - The Launch

@@ -260,8 +260,9 @@ enum EPUBParser {
     ) throws -> String {
         // A protected book's file is never rewritten: its archive keeps only the
         // entries before the first encrypted one when an entry is removed,
-        // so the copy would lose the rest of the book (FR41).
-        if ProtectionDetector.scheme(ofFileAt: url, format: .epub) != nil {
+        // so the copy would lose the rest of the book (FR41). One unlocked for
+        // now is protected whatever a look at its file says meanwhile.
+        if ProtectionDetector.isProtected(fileAt: url, format: .epub) {
             throw PasswordProtectedDocument()
         }
         // A file that is not there is said to be missing, not to be a damaged

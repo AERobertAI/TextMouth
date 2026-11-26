@@ -15,8 +15,12 @@ extension Book {
 
     /// Whether the book's file has a password. While it does, TextMouth
     /// keeps no plain copy of its text on disk: no text cache, no index of
-    /// its headings, no search text, and no words around a saved place.
-    var isPasswordProtected: Bool { protectionScheme != nil }
+    /// its headings, no search text, and no words around a saved place. A
+    /// book unlocked for now always has one, whatever its file looks like
+    /// meanwhile (`ProtectionDetector.isProtected(fileAt:format:)`).
+    var isPasswordProtected: Bool {
+        !format.isAudio && ProtectionDetector.isProtected(fileAt: bookFileURL, format: format)
+    }
 
     /// Whether a list should show the book as locked: from the answer already
     /// kept for its file, never by looking at the file, so a list never waits

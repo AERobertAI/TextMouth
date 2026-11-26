@@ -128,7 +128,7 @@ struct StoreBackup: Sendable {
         let isProtected = files.contains { file in
             guard !file.path.contains("/"), !derivedTextNames.contains(file.path),
                   let format = BookFormat.detect(from: file.url) else { return false }
-            return ProtectionDetector.scheme(ofFileAt: file.url, format: format) != nil
+            return ProtectionDetector.isProtected(fileAt: file.url, format: format)
         }
         guard isProtected else { return files }
         return files.filter { !derivedTextNames.contains($0.path) && !$0.path.hasPrefix("content.md.") }
