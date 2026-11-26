@@ -37,25 +37,40 @@ final class SyncFolderIOTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(took, .milliseconds(400), "and not before it")
     }
 
+    /// A virtual clock for the wait: sleeping moves it on at once, so no real time decides a test.
+    ///
+    /// `@unchecked Sendable`: `offset` is read and changed only under `lock`.
+    private final class VirtualTime: @unchecked Sendable {
+        private let lock = NSLock()
+        private let origin = ContinuousClock.now
+        private var offset = Duration.zero
+        var now: ContinuousClock.Instant { lock.lock(); defer { lock.unlock() }; return origin + offset }
+        func advance(_ duration: Duration) { lock.lock(); offset += duration; lock.unlock() }
+    }
+
     /// A download that stays `.downloading` with no byte arriving is stalled and times out; one whose bytes move is not.
+    /// Time is virtual: each poll moves the clock 30 ms, and nothing waits for real.
     func testADownloadStuckInDownloadingTimesOutButOneThatMovesDoesNot() async throws {
         let file = URL(fileURLWithPath: "/Users/reader/Scratch/stuck.bin")
+        let time = VirtualTime()
         let polls = OSAllocatedUnfairLock(initialState: 0)
         // Stuck: the state says downloading for ever, the bytes never change.
         do {
             try await SyncFolderIO.waitUntilHere(
                 file, within: .milliseconds(300), items: UbiquitousItemStatusProvider(), reachability: .online, pollInterval: .milliseconds(30),
-                state: { _ in polls.withLock { $0 += 1; return $0 == 1 ? .notDownloaded : .downloading } }, progress: { _ in 100 }
+                state: { _ in polls.withLock { $0 += 1; return $0 == 1 ? .notDownloaded : .downloading } }, progress: { _ in 100 },
+                now: { time.now }, sleep: { time.advance($0) }
             )
             XCTFail("a stuck download must time out")
         } catch { XCTAssertEqual(error as? SyncProblem, .notDownloaded(device: "Scratch")) }
 
-        // Moving: bytes grow at every look, so the clock restarts, until the file is here.
+        // Moving: bytes grow at every look, so the clock restarts, until the file is here (far past the 300 ms limit in virtual time).
         let looks = OSAllocatedUnfairLock(initialState: 0)
         try await SyncFolderIO.waitUntilHere(
             file, within: .milliseconds(300), items: UbiquitousItemStatusProvider(), reachability: .online, pollInterval: .milliseconds(30),
             state: { _ in looks.withLock { $0 += 1; return $0 < 30 ? (($0 == 1) ? .notDownloaded : .downloading) : .downloaded } },
-            progress: { _ in Int64(looks.withLock { $0 }) }
+            progress: { _ in Int64(looks.withLock { $0 }) },
+            now: { time.now }, sleep: { time.advance($0) }
         )
     }
 

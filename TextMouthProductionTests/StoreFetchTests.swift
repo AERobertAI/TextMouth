@@ -178,6 +178,66 @@ final class StoreFetchTests: XCTestCase {
         XCTAssertEqual(storage.state(of: package), .local)
     }
 
+    /// A fetch stopped part way still reads as missing files, goes on from where it stopped, and fetches only the rest;
+    /// until then opening the book takes the download path (the storage says In Cloud).
+    func testAPartialFetchReadsAsMissingAndResumes() async throws {
+        let world = try makeWorld()
+        var pointer = try XCTUnwrap(StoreFetch.pointer(in: world.placeholder))
+        pointer.files = []
+        try StoreFetch.write(pointer, in: world.placeholder)
+        let storage = StoreBookStorage(wrapping: LocalBookStorage(), isSyncOn: { true })
+        let package = BookPackage(bookID: bookID, url: world.placeholder, isPackage: true, isAudio: false)
+
+        // The last file's blob has not arrived: the fetch stops after the others.
+        let last = try XCTUnwrap(world.backup.manifest.files.last)
+        world.drive.setNotDownloaded(last.blob)
+        do {
+            try await world.fetch.fetch(package: world.placeholder)
+            XCTFail("the last blob is not here")
+        } catch { XCTAssertEqual(error as? SyncProblem, .notDownloaded(device: bookID.uuidString.lowercased())) }
+
+        XCTAssertTrue(StoreFetch.isMissingFiles(world.placeholder), "a stopped fetch is not a whole book")
+        XCTAssertEqual(storage.state(of: package), .inCloud, "opening it takes the download path")
+        let listed = try XCTUnwrap(StoreFetch.pointer(in: world.placeholder)).files
+        XCTAssertEqual(listed.count, world.backup.manifest.files.count, "every file is listed from the start")
+        XCTAssertEqual(listed.filter(\.onThisDevice).count, listed.count - 1)
+
+        // It arrives: the next fetch fetches only the rest.
+        world.drive.setNotDownloaded(last.blob, false)
+        let reported = ProgressLog()
+        try await world.fetch.fetch(package: world.placeholder) { files, bytes, _, _ in reported.add(files, bytes) }
+        XCTAssertEqual(reported.files, [world.backup.manifest.files.count], "only the last file was fetched")
+        XCTAssertFalse(StoreFetch.isMissingFiles(world.placeholder))
+        XCTAssertEqual(storage.state(of: package), .local)
+    }
+
+    /// A book edited on another device (the same path, new bytes) is fetched again: the old text is never marked present
+    /// under the new digest.
+    func testAChangedFileIsFetchedAgainAndTheOldBytesAreNotMarkedPresent() async throws {
+        let world = try makeWorld()
+        try await world.fetch.fetch(package: world.placeholder)
+        let old = try Data(contentsOf: world.placeholder.appendingPathComponent("book.txt"))
+        XCTAssertEqual(old, Data("the book's text, long enough to matter".utf8))
+
+        // The text is edited where the book came from, and backed up again: a new manifest.
+        try Data("the edited text".utf8).write(to: world.original.appendingPathComponent("book.txt"))
+        let backup = StoreBackup(folder: world.fetch.folder, storeID: world.fetch.storeID, staging: world.fetch.staging.appendingPathComponent("again"))
+        let second = try backup.back(up: world.original, bookID: bookID)
+        XCTAssertNotEqual(second.manifestName, world.backup.manifestName)
+        var pointer = try XCTUnwrap(StoreFetch.pointer(in: world.placeholder))
+        pointer.manifest = second.manifestName
+        try StoreFetch.write(pointer, in: world.placeholder)
+
+        let reported = ProgressLog()
+        try await world.fetch.fetch(package: world.placeholder) { files, bytes, _, _ in reported.add(files, bytes) }
+        XCTAssertEqual(try Data(contentsOf: world.placeholder.appendingPathComponent("book.txt")), Data("the edited text".utf8))
+        let listed = try XCTUnwrap(StoreFetch.pointer(in: world.placeholder)).files
+        let book = try XCTUnwrap(listed.first { $0.path == "book.txt" })
+        XCTAssertEqual(book.sha256, second.manifest.files.first { $0.path == "book.txt" }?.sha256, "recorded under the new digest")
+        XCTAssertTrue(book.onThisDevice)
+        XCTAssertEqual(reported.files, [3], "only the changed file was fetched again: the other two already matched the manifest")
+    }
+
     /// While sync is off the book storage reads no pointer: a placeholder's package is answered as the live storage does.
     func testNoPointerIsReadWhileSyncIsOff() throws {
         let world = try makeWorld()

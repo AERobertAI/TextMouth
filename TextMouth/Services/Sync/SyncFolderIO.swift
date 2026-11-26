@@ -145,15 +145,17 @@ enum SyncFolderIO {
     /// are the file system's by default; a test passes its own.
     static func waitUntilHere(
         _ file: URL, within limit: Duration, items: UbiquitousItemStatusProvider, reachability: NetworkReachability, pollInterval: Duration,
-        state: ((URL) -> CloudItemState)? = nil, progress: ((URL) -> Int64?)? = nil
+        state: ((URL) -> CloudItemState)? = nil, progress: ((URL) -> Int64?)? = nil,
+        now: (() -> ContinuousClock.Instant)? = nil, sleep: ((Duration) async throws -> Void)? = nil
     ) async throws {
         let stateOf = state ?? { items.status(of: $0).state }
         let progressOf = progress ?? { SyncFolderIO.allocatedBytes(of: $0) }
+        let nowInstant = now ?? { ContinuousClock.now }
+        let pause = sleep ?? { try await Task.sleep(for: $0) }
         guard stateOf(file) == .notDownloaded else { return }
         guard reachability.isOnline() else { throw SyncProblem.offline }
         try? items.requestDownload(of: file)
-        let clock = ContinuousClock()
-        var started = clock.now
+        var started = nowInstant()
         var seen = progressOf(file)
         while true {
             let now = stateOf(file)
@@ -164,12 +166,12 @@ enum SyncFolderIO {
             let bytes = progressOf(file)
             if bytes != seen {
                 seen = bytes
-                started = clock.now
+                started = nowInstant()
             }
-            if clock.now - started >= limit {
+            if started.duration(to: nowInstant()) >= limit {
                 throw SyncProblem.notDownloaded(device: file.deletingLastPathComponent().lastPathComponent)
             }
-            try await Task.sleep(for: pollInterval)
+            try await pause(pollInterval)
         }
     }
 

@@ -278,6 +278,29 @@ final class SyncEngineTests: XCTestCase {
         XCTAssertNotNil(phoneFiles.loadRegisters().entries[.book(book, .keep)])
     }
 
+    /// A save that fails after the outbox file was written does not make the next snapshot leave the change out: the
+    /// same engine, not restarted, writes a snapshot, and a device that starts at it holds the change.
+    func testASnapshotAfterAFailedSaveHoldsTheChange() async throws {
+        let sandbox = try makeSandboxDirectory("sync-engine-snapshot-after-failed-save")
+        let (_, folder) = makeDrive(sandbox)
+        let mac = try SyncEngine(local: local(sandbox, "mac"), identity: identity("Mac", install: "m"))
+        let phone = try SyncEngine(local: local(sandbox, "phone"), identity: identity("iPhone", install: "p"))
+        let book = UUID()
+        struct Stop: Error {}
+        await mac.setStopAfter { step in if step == .outboxWrite { throw Stop() } }
+        do {
+            try await mac.recordKeep(true, for: [book])
+            XCTFail("the save was stopped")
+        } catch is Stop {}
+        await mac.setStopAfter(nil)
+
+        // Not restarted: its next exchange writes the snapshot a new device starts at.
+        _ = try await mac.exchange(in: folder)
+        _ = try await phone.exchange(in: folder)
+        let kept = await phone.keptBookIDs()
+        XCTAssertEqual(kept, [book], "the snapshot held the change the failed save left in memory")
+    }
+
     /// A restore on the same install and the same incarnation, whose new records reach seqs the folder holds
     /// already with other bytes, is told from a copy of itself: it takes a new identity, and its changes are sent.
     func testARestoreThatRecordsPastTheFoldersNewestSeqIsHeard() async throws {
