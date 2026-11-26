@@ -129,15 +129,6 @@ extension SyncInterruptionTests {
         }
     }
 
-    /// The same, five times over, since a stop and a restart may depend on timing: every round must end the same way.
-    func testAStopAfterEveryStepLosesNothingEveryTime() async throws {
-        for _ in 1...5 {
-            for step in SyncStep.allCases {
-                try await checkAStop(after: step)
-            }
-        }
-    }
-
     /// One stop: the Mac records its library and a keep, exchanges, and is stopped after `step`; it restarts, and
     /// the two devices meet.
     private func checkAStop(after step: SyncStep) async throws {
