@@ -534313,6 +534313,474 @@
         }
       }
     },
+    "phoneExport.closeWhileExporting" : {
+      "comment" : "The hint of the Close button of the Export sheet on the iPhone while a spoken audio export runs: the sheet closes, the export goes on, and the Library shows its progress.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يغلق التصدير. يستمر التصدير وتعرض المكتبة مدى تقدّمه."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "রপ্তানি বন্ধ করে। রপ্তানি চলতে থাকে, আর লাইব্রেরি দেখায় তা কতদূর এগিয়েছে।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Schließt den Export. Der Export läuft weiter, und die Bibliothek zeigt, wie weit er ist."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Closes Export. The export goes on, and the Library shows how far it has come."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Cierra Exportar. La exportación continúa y la Biblioteca muestra cuánto ha avanzado."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "صادر کردن را می‌بندد. صادر کردن ادامه می‌یابد و کتابخانه نشان می‌دهد چقدر پیش رفته است."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ferme Exporter. L’exportation continue, et la Bibliothèque montre où elle en est."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "סוגר את הייצוא. הייצוא נמשך, והספרייה מראה כמה הוא התקדם."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "निर्यात बंद करता है। निर्यात जारी रहता है, और लाइब्रेरी दिखाती है कि वह कितना आगे बढ़ा है।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Menutup Ekspor. Ekspor terus berjalan, dan Pustaka menunjukkan sejauh mana kemajuannya."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Chiude Esporta. L’esportazione continua e la Libreria mostra a che punto è."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "書き出しを閉じます。書き出しは続き、ライブラリに進み具合が表示されます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "내보내기를 닫습니다. 내보내기는 계속되고, 보관함에서 진행 상황을 볼 수 있습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sluit Exporteer. De export gaat door en de Bibliotheek laat zien hoe ver hij is."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zamyka eksport. Eksport trwa dalej, a Biblioteka pokazuje, jak daleko zaszedł."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Fecha Exportar. A exportação continua, e a Biblioteca mostra até onde ela foi."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Закрывает экспорт. Экспорт продолжается, а Библиотека показывает, как далеко он продвинулся."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Stänger Exportera. Exporten fortsätter, och Biblioteket visar hur långt den har kommit."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ปิดการส่งออก การส่งออกจะดำเนินต่อไป และไลบรารีจะแสดงว่าคืบหน้าไปแค่ไหน"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Dışa Aktar’ı kapatır. Dışa aktarma sürer ve Kitaplık ne kadar ilerlediğini gösterir."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Закриває експорт. Експорт триває, а Бібліотека показує, як далеко він просунувся."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "برآمد بند کرتا ہے۔ برآمد جاری رہتی ہے، اور لائبریری دکھاتی ہے کہ وہ کتنی آگے بڑھی ہے۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Đóng Xuất. Quá trình xuất vẫn tiếp tục, và Thư viện cho biết nó đã đi được bao xa."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "关闭导出。导出会继续进行，资料库会显示进度。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "關閉輸出。輸出會繼續進行，書庫會顯示進度。"
+          }
+        }
+      }
+    },
+    "phoneExport.share" : {
+      "comment" : "The title of the button on the iPhone's Export sheet, after an export, that opens the share sheet for the files just written.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "مشاركة…"
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "শেয়ার করুন…"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Teilen …"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Share…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Compartir…"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اشتراک‌گذاری…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Partager…"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "שתף…"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "साझा करें…"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bagikan…"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Condividi…"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "共有…"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "공유…"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Deel…"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Udostępnij…"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Compartilhar…"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Поделиться…"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Dela…"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "แชร์…"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Paylaş…"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Поділитися…"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "شیئر کریں…"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Chia sẻ…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "共享…"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "分享…"
+          }
+        }
+      }
+    },
+    "phoneExport.shareHint" : {
+      "comment" : "The hint of the Share button on the iPhone's Export sheet, after an export.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يرسل الملفات التي صُدّرت للتو إلى تطبيق آخر أو شخص آخر."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এইমাত্র রপ্তানি করা ফাইলগুলো অন্য কোনো অ্যাপ বা ব্যক্তির কাছে পাঠায়।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sendet die gerade exportierten Dateien an eine andere App oder Person."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sends the files just exported to another app or person."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Envía los archivos recién exportados a otra app o a otra persona."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "فایل‌هایی را که همین حالا صادر شده‌اند به برنامه یا شخص دیگری می‌فرستد."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Envoie les fichiers qui viennent d’être exportés à une autre app ou à une autre personne."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "שולח את הקבצים שיוצאו זה עתה לאפליקציה אחרת או לאדם אחר."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "अभी निर्यात की गई फ़ाइलें किसी दूसरे ऐप या व्यक्ति को भेजता है।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mengirim file yang baru saja diekspor ke app atau orang lain."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Invia i file appena esportati a un’altra app o a un’altra persona."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "書き出したばかりのファイルを、ほかのAppや人に送ります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "방금 내보낸 파일을 다른 앱이나 사람에게 보냅니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Stuurt de zojuist geëxporteerde bestanden naar een andere app of persoon."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Wysyła właśnie wyeksportowane pliki do innej aplikacji lub osoby."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Envia os arquivos recém-exportados para outro app ou outra pessoa."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Отправляет только что экспортированные файлы в другое приложение или другому человеку."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Skickar de filer som just exporterats till en annan app eller person."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ส่งไฟล์ที่เพิ่งส่งออกไปยังแอปอื่นหรือบุคคลอื่น"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Az önce dışa aktarılan dosyaları başka bir uygulamaya veya kişiye gönderir."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Надсилає щойно експортовані файли в інший застосунок або іншій людині."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ابھی برآمد کی گئی فائلیں کسی دوسری ایپ یا شخص کو بھیجتا ہے۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Gửi các tệp vừa xuất đến một ứng dụng hoặc một người khác."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "将刚刚导出的文件发送给其他 App 或其他人。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "將剛剛輸出的檔案傳送給其他 App 或其他人。"
+          }
+        }
+      }
+    },
     "phoneExport.tooLittleMemory" : {
       "comment" : "Why an export on the iPhone could not convert a book's text, after the file's name in a failure sentence: the iPhone has too little memory left for it.",
       "extractionState" : "manual",
@@ -677701,6 +678169,162 @@
         }
       }
     },
+    "speechExport.kept.chapter.iphone" : {
+      "comment" : "What the Export sheet says after a spoken audio export ended without its file and kept its only chapter, on the iPhone.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يُحتفظ بالفصل المنطوق لمدة أسبوع، حتى يبدأ تصدير صوتي منطوق مختلف، أو حتى يتغير صوت الكتاب أو نصه أو بدائله أو وقفاته. لإنشاء الملف الصوتي منه، صدّر النطاق نفسه بالسرعة وطبقة الصوت نفسيهما."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পড়ে শোনানো অধ্যায়টি এক সপ্তাহ রাখা হয়, যতক্ষণ না অন্য একটি পড়ে শোনানো অডিও রপ্তানি শুরু হয়, বা বইয়ের ভয়েস, টেক্সট, প্রতিস্থাপন বা বিরতি বদলায়। এটি থেকে অডিও ফাইল বানাতে একই গতি ও পিচে একই পরিসর রপ্তানি করুন।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Das gesprochene Kapitel wird eine Woche lang aufbewahrt, bis ein anderer gesprochener Audioexport beginnt oder Stimme, Text, Ersetzungen oder Pausen des Buchs sich ändern. Um daraus die Audiodatei zu erstellen, exportiere denselben Bereich mit derselben Geschwindigkeit und Tonhöhe."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The spoken chapter is kept for a week, until a different spoken audio export starts, or until the book's voice, text, substitutions, or pauses change. To make the audio file from it, export the same range at the same speed and pitch."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El capítulo hablado se conserva durante una semana, hasta que comience otra exportación de audio hablado o cambien la voz, el texto, las sustituciones o las pausas del libro. Para crear el archivo de audio a partir de él, exporta el mismo intervalo con la misma velocidad y el mismo tono."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "فصل گفته‌شده یک هفته نگه داشته می‌شود، تا زمانی که صادر کردن صدای گفتاری دیگری شروع شود، یا صدا، متن، جایگزینی‌ها یا وقفه‌های کتاب تغییر کنند. برای ساختن فایل صوتی از آن، همان بازه را با همان سرعت و زیر و بمی صادر کنید."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Le chapitre parlé est conservé pendant une semaine, jusqu’à ce qu’une autre exportation audio parlée démarre, ou que la voix, le texte, les substitutions ou les pauses du livre changent. Pour créer le fichier audio à partir de celui-ci, exportez la même plage à la même vitesse et à la même hauteur."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הפרק המוקרא נשמר למשך שבוע, עד להתחלת ייצוא שמע מוקרא אחר או לשינוי של הקול, הטקסט, ההחלפות או ההפסקות של הספר. כדי ליצור ממנו את קובץ השמע, ייצא את אותו טווח באותה מהירות ובאותו גובה צליל."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "बोला गया अध्याय एक सप्ताह तक रखा जाता है, जब तक कोई दूसरा बोला गया ऑडियो निर्यात शुरू न हो, या पुस्तक की आवाज़, टेक्स्ट, प्रतिस्थापन या विराम न बदलें। इससे ऑडियो फ़ाइल बनाने के लिए उसी गति और पिच पर वही रेंज निर्यात करें।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bab ucapan dipertahankan selama seminggu, hingga ekspor audio ucapan yang berbeda dimulai, atau suara, teks, substitusi, atau jeda buku berubah. Untuk membuat file audio darinya, ekspor rentang yang sama dengan kecepatan dan nada yang sama."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Il capitolo letto viene conservato per una settimana, fino a quando non inizia un’altra esportazione dell’audio parlato o non cambiano la voce, il testo, le sostituzioni o le pause del libro. Per creare da esso il file audio, esporta lo stesso intervallo con la stessa velocità e lo stesso tono."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "読み上げた章を、別の読み上げオーディオの書き出しを始めるか、ブックの声、テキスト、置換、間が変わるまで、1週間保持します。そこからオーディオファイルを作るには、同じ範囲を同じ速度とピッチで書き出してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "다른 음성 오디오 내보내기가 시작되거나 책의 음성, 텍스트, 대체 규칙 또는 정지 구간이 바뀔 때까지 최대 1주일 동안 음성 챕터를 보관합니다. 이 챕터로 오디오 파일을 만들려면 같은 속도와 음높이로 같은 범위를 내보내십시오."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Het gesproken hoofdstuk wordt een week bewaard, totdat een andere gesproken audio-export begint of de stem, de tekst, de vervangingen of de pauzes van het boek veranderen. Om er het audiobestand van te maken, exporteer je hetzelfde bereik met dezelfde snelheid en toonhoogte."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Odczytany rozdział jest zachowywany przez tydzień, do czasu rozpoczęcia innego eksportu dźwięku mówionego albo zmiany głosu, tekstu, podstawień lub przerw książki. Aby utworzyć z niego plik audio, wyeksportuj ten sam zakres z taką samą prędkością i wysokością głosu."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "O capítulo falado é mantido por uma semana, até outra exportação de áudio falado começar ou a voz, o texto, as substituições ou as pausas do livro mudarem. Para criar o arquivo de áudio a partir dele, exporte o mesmo intervalo com a mesma velocidade e o mesmo tom."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Озвученная глава сохраняется на неделю, до начала другого экспорта озвученного аудио или изменения голоса, текста, замен или пауз книги. Чтобы создать из неё аудиофайл, экспортируйте тот же диапазон с теми же скоростью и высотой тона."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Det upplästa kapitlet sparas i en vecka, tills en annan export av uppläst ljud startar eller bokens röst, text, ersättningar eller pauser ändras. Om du vill göra ljudfilen av det exporterar du samma intervall med samma hastighet och tonhöjd."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เก็บบทที่อ่านออกเสียงไว้หนึ่งสัปดาห์ จนกว่าการส่งออกเสียงอ่านครั้งอื่นจะเริ่ม หรือเสียง ข้อความ การแทนที่ หรือช่วงหยุดของหนังสือเปลี่ยนไป หากต้องการสร้างไฟล์เสียงจากบทนั้น ให้ส่งออกช่วงเดียวกันด้วยความเร็วและความสูงต่ำของเสียงเท่าเดิม"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Seslendirilmiş bölüm, farklı bir seslendirilmiş ses dışa aktarması başlayana veya kitabın sesi, metni, değiştirmeleri ya da duraklamaları değişene kadar bir hafta saklanır. Bundan ses dosyasını oluşturmak için aynı aralığı aynı hız ve perdeyle dışa aktarın."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Озвучений розділ зберігається тиждень, до початку іншого експорту озвученого аудіо або зміни голосу, тексту, замін чи пауз книги. Щоб створити з нього аудіофайл, експортуйте той самий діапазон з тією самою швидкістю й висотою тону."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "بولا گیا باب ایک ہفتے تک رکھا جاتا ہے، جب تک کوئی دوسری بولی گئی آڈیو برآمد شروع نہ ہو یا کتاب کی آواز، متن، تبدیلی کے اصول یا وقفے نہ بدلیں۔ اس سے آڈیو فائل بنانے کے لیے اسی رفتار اور پچ پر وہی حد برآمد کریں۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Chương đã đọc được giữ trong một tuần, cho đến khi một lần xuất âm thanh đọc khác bắt đầu, hoặc giọng nói, văn bản, quy tắc thay thế hay quãng nghỉ của sách thay đổi. Để tạo tệp âm thanh từ chương này, hãy xuất cùng phạm vi với cùng tốc độ và cao độ."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "已朗读的章节会保留一周，直到开始另一次朗读音频导出，或图书的语音、文本、替换或停顿发生变化。若要用它制作音频文件，请以同样的速度和音调导出相同范围。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "已朗讀的章節會保留一週，直到開始另一次語音音訊輸出，或書籍的語音、文字、取代規則或停頓更改為止。若要用它製作音訊檔案，請以相同的速度和音調輸出相同範圍。"
+          }
+        }
+      }
+    },
     "speechExport.kept.chaptersGo" : {
       "comment" : "What the Export dialog says after a spoken audio export ended without its file and kept some of its chapters. %1$@ is how many chapters are kept, %2$lld how many there are, and %3$@ the number of the chapter to go on from, both written without digit grouping.",
       "extractionState" : "manual",
@@ -678201,6 +678825,162 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "speechExport.kept.chaptersGo.iphone" : {
+      "comment" : "What the Export sheet says after a spoken audio export ended without its file and kept some of its chapters, on the iPhone. %1$@ is how many chapters are kept, %2$@ how many there are, and %3$@ the number of the chapter to go on from, each written without digit grouping. The counts follow a label, so no word has to agree with them.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "الفصول المحتفظ بها لمدة أسبوع: %1$@ من %2$@. تبقى حتى يبدأ تصدير صوتي منطوق مختلف، أو حتى يتغير صوت الكتاب أو نصه أو بدائله أو وقفاته. للمتابعة من الفصل %3$@، صدّر النطاق نفسه بالسرعة وطبقة الصوت نفسيهما."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এক সপ্তাহ রাখা অধ্যায়: %2$@-এর মধ্যে %1$@। এগুলো থাকে যতক্ষণ না অন্য একটি পড়ে শোনানো অডিও রপ্তানি শুরু হয়, বা বইয়ের ভয়েস, টেক্সট, প্রতিস্থাপন বা বিরতি বদলায়। %3$@ নম্বর অধ্যায় থেকে চালিয়ে যেতে একই গতি ও পিচে একই পরিসর রপ্তানি করুন।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Eine Woche lang aufbewahrte Kapitel: %1$@ von %2$@. Sie bleiben, bis ein anderer gesprochener Audioexport beginnt oder Stimme, Text, Ersetzungen oder Pausen des Buchs sich ändern. Um bei Kapitel %3$@ weiterzumachen, exportiere denselben Bereich mit derselben Geschwindigkeit und Tonhöhe."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chapters kept for a week: %@ of %@. They stay until a different spoken audio export starts, or until the book's voice, text, substitutions, or pauses change. To go on from chapter %@, export the same range at the same speed and pitch."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Capítulos conservados durante una semana: %1$@ de %2$@. Se conservan hasta que comience otra exportación de audio hablado o cambien la voz, el texto, las sustituciones o las pausas del libro. Para continuar desde el capítulo %3$@, exporta el mismo intervalo con la misma velocidad y el mismo tono."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "فصل‌های نگه‌داشته‌شده برای یک هفته: %1$@ از %2$@. آن‌ها می‌مانند تا زمانی که صادر کردن صدای گفتاری دیگری شروع شود، یا صدا، متن، جایگزینی‌ها یا وقفه‌های کتاب تغییر کنند. برای ادامه از فصل %3$@، همان بازه را با همان سرعت و زیر و بمی صادر کنید."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Chapitres conservés pendant une semaine : %1$@ sur %2$@. Ils restent jusqu’à ce qu’une autre exportation audio parlée démarre, ou que la voix, le texte, les substitutions ou les pauses du livre changent. Pour reprendre au chapitre %3$@, exportez la même plage à la même vitesse et à la même hauteur."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "פרקים שנשמרו למשך שבוע: %1$@ מתוך %2$@. הם נשארים עד להתחלת ייצוא שמע מוקרא אחר או לשינוי של הקול, הטקסט, ההחלפות או ההפסקות של הספר. כדי להמשיך מפרק %3$@, ייצא את אותו טווח באותה מהירות ובאותו גובה צליל."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "एक सप्ताह के लिए रखे गए अध्याय: %2$@ में से %1$@। ये तब तक रहते हैं जब तक कोई दूसरा बोला गया ऑडियो निर्यात शुरू न हो, या पुस्तक की आवाज़, टेक्स्ट, प्रतिस्थापन या विराम न बदलें। अध्याय %3$@ से आगे बढ़ने के लिए उसी गति और पिच पर वही रेंज निर्यात करें।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bab yang dipertahankan selama seminggu: %1$@ dari %2$@. Bab-bab ini tetap ada hingga ekspor audio ucapan yang berbeda dimulai, atau suara, teks, substitusi, atau jeda buku berubah. Untuk melanjutkan dari bab %3$@, ekspor rentang yang sama dengan kecepatan dan nada yang sama."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Capitoli conservati per una settimana: %1$@ su %2$@. Restano fino a quando non inizia un’altra esportazione dell’audio parlato o non cambiano la voce, il testo, le sostituzioni o le pause del libro. Per proseguire dal capitolo %3$@, esporta lo stesso intervallo con la stessa velocità e lo stesso tono."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "1週間保持される章: %2$@章のうち%1$@章。別の読み上げオーディオの書き出しを始めるか、ブックの声、テキスト、置換、間が変わるまで残ります。%3$@章から続けるには、同じ範囲を同じ速度とピッチで書き出してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "1주일 동안 보관된 챕터: %2$@개 중 %1$@개. 다른 음성 오디오 내보내기가 시작되거나 책의 음성, 텍스트, 대체 규칙 또는 정지 구간이 바뀔 때까지 남아 있습니다. %3$@번 챕터부터 이어서 하려면 같은 속도와 음높이로 같은 범위를 내보내십시오."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Een week bewaarde hoofdstukken: %1$@ van %2$@. Ze blijven staan totdat een andere gesproken audio-export begint of de stem, de tekst, de vervangingen of de pauzes van het boek veranderen. Om verder te gaan vanaf hoofdstuk %3$@, exporteer je hetzelfde bereik met dezelfde snelheid en toonhoogte."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Rozdziały zachowane na tydzień: %1$@ z %2$@. Pozostają do czasu rozpoczęcia innego eksportu dźwięku mówionego albo zmiany głosu, tekstu, podstawień lub przerw książki. Aby kontynuować od rozdziału %3$@, wyeksportuj ten sam zakres z taką samą prędkością i wysokością głosu."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Capítulos mantidos por uma semana: %1$@ de %2$@. Eles ficam até outra exportação de áudio falado começar ou a voz, o texto, as substituições ou as pausas do livro mudarem. Para continuar a partir do capítulo %3$@, exporte o mesmo intervalo com a mesma velocidade e o mesmo tom."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Главы, сохранённые на неделю: %1$@ из %2$@. Они остаются до начала другого экспорта озвученного аудио или изменения голоса, текста, замен или пауз книги. Чтобы продолжить с главы %3$@, экспортируйте тот же диапазон с теми же скоростью и высотой тона."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kapitel som sparas i en vecka: %1$@ av %2$@. De finns kvar tills en annan export av uppläst ljud startar eller bokens röst, text, ersättningar eller pauser ändras. Om du vill fortsätta från kapitel %3$@ exporterar du samma intervall med samma hastighet och tonhöjd."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "บทที่เก็บไว้หนึ่งสัปดาห์: %1$@ จาก %2$@ บทเหล่านี้จะอยู่จนกว่าการส่งออกเสียงอ่านครั้งอื่นจะเริ่ม หรือเสียง ข้อความ การแทนที่ หรือช่วงหยุดของหนังสือเปลี่ยนไป หากต้องการทำต่อจากบทที่ %3$@ ให้ส่งออกช่วงเดียวกันด้วยความเร็วและความสูงต่ำของเสียงเท่าเดิม"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bir hafta saklanan bölümler: %2$@ bölümden %1$@. Farklı bir seslendirilmiş ses dışa aktarması başlayana veya kitabın sesi, metni, değiştirmeleri ya da duraklamaları değişene kadar kalırlar. %3$@. bölümden devam etmek için aynı aralığı aynı hız ve perdeyle dışa aktarın."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Розділи, збережені на тиждень: %1$@ з %2$@. Вони залишаються до початку іншого експорту озвученого аудіо або зміни голосу, тексту, замін чи пауз книги. Щоб продовжити з розділу %3$@, експортуйте той самий діапазон з тією самою швидкістю й висотою тону."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ایک ہفتے کے لیے رکھے گئے ابواب: %2$@ میں سے %1$@۔ یہ اس وقت تک رہتے ہیں جب تک کوئی دوسری بولی گئی آڈیو برآمد شروع نہ ہو یا کتاب کی آواز، متن، تبدیلی کے اصول یا وقفے نہ بدلیں۔ باب %3$@ سے آگے بڑھنے کے لیے اسی رفتار اور پچ پر وہی حد برآمد کریں۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Các chương được giữ trong một tuần: %1$@ trên %2$@. Chúng được giữ cho đến khi một lần xuất âm thanh đọc khác bắt đầu, hoặc giọng nói, văn bản, quy tắc thay thế hay quãng nghỉ của sách thay đổi. Để tiếp tục từ chương %3$@, hãy xuất cùng phạm vi với cùng tốc độ và cao độ."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "保留一周的章节：共 %2$@ 章中的 %1$@ 章。它们会保留到开始另一次朗读音频导出，或图书的语音、文本、替换或停顿发生变化。若要从第 %3$@ 章继续，请以同样的速度和音调导出相同范围。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "保留一週的章節：共 %2$@ 章中的 %1$@ 章。它們會保留到開始另一次語音音訊輸出，或書籍的語音、文字、取代規則或停頓更改為止。若要從第 %3$@ 章繼續，請以相同的速度和音調輸出相同範圍。"
           }
         }
       }
@@ -678709,6 +679489,162 @@
         }
       }
     },
+    "speechExport.kept.them.iphone" : {
+      "comment" : "What the Export sheet says after a spoken audio export ended without its file and kept every one of its chapters, on the iPhone. %@ is the number of chapters, more than one, written without digit grouping. The count follows a label, so no word has to agree with it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "الفصول المحتفظ بها لمدة أسبوع: الكل، %@. تبقى حتى يبدأ تصدير صوتي منطوق مختلف، أو حتى يتغير صوت الكتاب أو نصه أو بدائله أو وقفاته. لإنشاء الملف الصوتي منها، صدّر النطاق نفسه بالسرعة وطبقة الصوت نفسيهما."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এক সপ্তাহ রাখা অধ্যায়: সবগুলো, %@টি। এগুলো থাকে যতক্ষণ না অন্য একটি পড়ে শোনানো অডিও রপ্তানি শুরু হয়, বা বইয়ের ভয়েস, টেক্সট, প্রতিস্থাপন বা বিরতি বদলায়। এগুলো থেকে অডিও ফাইল বানাতে একই গতি ও পিচে একই পরিসর রপ্তানি করুন।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Eine Woche lang aufbewahrte Kapitel: alle, nämlich %@. Sie bleiben, bis ein anderer gesprochener Audioexport beginnt oder Stimme, Text, Ersetzungen oder Pausen des Buchs sich ändern. Um daraus die Audiodatei zu erstellen, exportiere denselben Bereich mit derselben Geschwindigkeit und Tonhöhe."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chapters kept for a week: all %@. They stay until a different spoken audio export starts, or until the book's voice, text, substitutions, or pauses change. To make the audio file from them, export the same range at the same speed and pitch."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Capítulos conservados durante una semana: todos, %@. Se conservan hasta que comience otra exportación de audio hablado o cambien la voz, el texto, las sustituciones o las pausas del libro. Para crear el archivo de audio a partir de ellos, exporta el mismo intervalo con la misma velocidad y el mismo tono."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "فصل‌های نگه‌داشته‌شده برای یک هفته: همه، یعنی %@. آن‌ها می‌مانند تا زمانی که صادر کردن صدای گفتاری دیگری شروع شود، یا صدا، متن، جایگزینی‌ها یا وقفه‌های کتاب تغییر کنند. برای ساختن فایل صوتی از آن‌ها، همان بازه را با همان سرعت و زیر و بمی صادر کنید."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Chapitres conservés pendant une semaine : tous, soit %@. Ils restent jusqu’à ce qu’une autre exportation audio parlée démarre, ou que la voix, le texte, les substitutions ou les pauses du livre changent. Pour créer le fichier audio à partir d’eux, exportez la même plage à la même vitesse et à la même hauteur."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "פרקים שנשמרו למשך שבוע: כולם, %@. הם נשארים עד להתחלת ייצוא שמע מוקרא אחר או לשינוי של הקול, הטקסט, ההחלפות או ההפסקות של הספר. כדי ליצור מהם את קובץ השמע, ייצא את אותו טווח באותה מהירות ובאותו גובה צליל."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "एक सप्ताह के लिए रखे गए अध्याय: सभी, यानी %@। ये तब तक रहते हैं जब तक कोई दूसरा बोला गया ऑडियो निर्यात शुरू न हो, या पुस्तक की आवाज़, टेक्स्ट, प्रतिस्थापन या विराम न बदलें। इनसे ऑडियो फ़ाइल बनाने के लिए उसी गति और पिच पर वही रेंज निर्यात करें।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bab yang dipertahankan selama seminggu: semuanya, %@. Bab-bab ini tetap ada hingga ekspor audio ucapan yang berbeda dimulai, atau suara, teks, substitusi, atau jeda buku berubah. Untuk membuat file audio darinya, ekspor rentang yang sama dengan kecepatan dan nada yang sama."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Capitoli conservati per una settimana: tutti, cioè %@. Restano fino a quando non inizia un’altra esportazione dell’audio parlato o non cambiano la voce, il testo, le sostituzioni o le pause del libro. Per creare da essi il file audio, esporta lo stesso intervallo con la stessa velocità e lo stesso tono."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "1週間保持される章: すべて(%@章)。別の読み上げオーディオの書き出しを始めるか、ブックの声、テキスト、置換、間が変わるまで残ります。そこからオーディオファイルを作るには、同じ範囲を同じ速度とピッチで書き出してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "1주일 동안 보관된 챕터: 전체 %@개. 다른 음성 오디오 내보내기가 시작되거나 책의 음성, 텍스트, 대체 규칙 또는 정지 구간이 바뀔 때까지 남아 있습니다. 이 챕터들로 오디오 파일을 만들려면 같은 속도와 음높이로 같은 범위를 내보내십시오."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Een week bewaarde hoofdstukken: alle, dat zijn er %@. Ze blijven staan totdat een andere gesproken audio-export begint of de stem, de tekst, de vervangingen of de pauzes van het boek veranderen. Om er het audiobestand van te maken, exporteer je hetzelfde bereik met dezelfde snelheid en toonhoogte."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Rozdziały zachowane na tydzień: wszystkie, czyli %@. Pozostają do czasu rozpoczęcia innego eksportu dźwięku mówionego albo zmiany głosu, tekstu, podstawień lub przerw książki. Aby utworzyć z nich plik audio, wyeksportuj ten sam zakres z taką samą prędkością i wysokością głosu."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Capítulos mantidos por uma semana: todos, ou seja, %@. Eles ficam até outra exportação de áudio falado começar ou a voz, o texto, as substituições ou as pausas do livro mudarem. Para criar o arquivo de áudio a partir deles, exporte o mesmo intervalo com a mesma velocidade e o mesmo tom."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Главы, сохранённые на неделю: все, то есть %@. Они остаются до начала другого экспорта озвученного аудио или изменения голоса, текста, замен или пауз книги. Чтобы создать из них аудиофайл, экспортируйте тот же диапазон с теми же скоростью и высотой тона."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kapitel som sparas i en vecka: alla, det vill säga %@. De finns kvar tills en annan export av uppläst ljud startar eller bokens röst, text, ersättningar eller pauser ändras. Om du vill göra ljudfilen av dem exporterar du samma intervall med samma hastighet och tonhöjd."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "บทที่เก็บไว้หนึ่งสัปดาห์: ทั้งหมด คือ %@ บทเหล่านี้จะอยู่จนกว่าการส่งออกเสียงอ่านครั้งอื่นจะเริ่ม หรือเสียง ข้อความ การแทนที่ หรือช่วงหยุดของหนังสือเปลี่ยนไป หากต้องการสร้างไฟล์เสียงจากบทเหล่านั้น ให้ส่งออกช่วงเดียวกันด้วยความเร็วและความสูงต่ำของเสียงเท่าเดิม"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bir hafta saklanan bölümler: hepsi, yani %@. Farklı bir seslendirilmiş ses dışa aktarması başlayana veya kitabın sesi, metni, değiştirmeleri ya da duraklamaları değişene kadar kalırlar. Bunlardan ses dosyasını oluşturmak için aynı aralığı aynı hız ve perdeyle dışa aktarın."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Розділи, збережені на тиждень: усі, тобто %@. Вони залишаються до початку іншого експорту озвученого аудіо або зміни голосу, тексту, замін чи пауз книги. Щоб створити з них аудіофайл, експортуйте той самий діапазон з тією самою швидкістю й висотою тону."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ایک ہفتے کے لیے رکھے گئے ابواب: تمام، یعنی %@۔ یہ اس وقت تک رہتے ہیں جب تک کوئی دوسری بولی گئی آڈیو برآمد شروع نہ ہو یا کتاب کی آواز، متن، تبدیلی کے اصول یا وقفے نہ بدلیں۔ ان سے آڈیو فائل بنانے کے لیے اسی رفتار اور پچ پر وہی حد برآمد کریں۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Các chương được giữ trong một tuần: tất cả, tức là %@. Chúng được giữ cho đến khi một lần xuất âm thanh đọc khác bắt đầu, hoặc giọng nói, văn bản, quy tắc thay thế hay quãng nghỉ của sách thay đổi. Để tạo tệp âm thanh từ các chương này, hãy xuất cùng phạm vi với cùng tốc độ và cao độ."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "保留一周的章节：全部，共 %@ 章。它们会保留到开始另一次朗读音频导出，或图书的语音、文本、替换或停顿发生变化。若要用它们制作音频文件，请以同样的速度和音调导出相同范围。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "保留一週的章節：全部，共 %@ 章。它們會保留到開始另一次語音音訊輸出，或書籍的語音、文字、取代規則或停頓更改為止。若要用它們製作音訊檔案，請以相同的速度和音調輸出相同範圍。"
+          }
+        }
+      }
+    },
     "speechExport.licence" : {
       "comment" : "The line in the Export dialog's spoken audio options about the licence the Mac's voices come with.",
       "extractionState" : "manual",
@@ -678861,6 +679797,162 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Mac 語音的朗讀內容僅供個人非商業用途，須遵守 Apple 的授權。"
+          }
+        }
+      }
+    },
+    "speechExport.licence.iphone" : {
+      "comment" : "The line in the Export sheet's spoken audio options about the licence the iPhone's voices come with.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "نطق أصوات iPhone مخصص للاستخدام الشخصي غير التجاري، بموجب ترخيص Apple."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iPhone-এর ভয়েস থেকে স্পিচ Apple-এর লাইসেন্সের অধীনে ব্যক্তিগত, অবাণিজ্যিক ব্যবহারের জন্য।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Die Sprachausgabe der Stimmen des iPhone ist für den persönlichen, nicht kommerziellen Gebrauch bestimmt, gemäß der Lizenz von Apple."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Speech from the iPhone's voices is for personal, non-commercial use, under Apple's licence."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El audio de las voces del iPhone es para uso personal y no comercial, según la licencia de Apple."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "گفتار صداهای iPhone برای استفاده شخصی و غیرتجاری است، تحت مجوز Apple."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Les voix de l’iPhone sont destinées à un usage personnel et non commercial, selon la licence d’Apple."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "דיבור מהקולות של iPhone מיועד לשימוש אישי ולא מסחרי, לפי הרישיון של Apple."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iPhone की आवाज़ों से बनी स्पीच व्यक्तिगत, गैर-व्यावसायिक उपयोग के लिए है, Apple के लाइसेंस के तहत।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ucapan dari suara iPhone hanya untuk penggunaan pribadi dan nonkomersial, berdasarkan lisensi Apple."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La sintesi vocale delle voci dell’iPhone è per uso personale e non commerciale, secondo la licenza di Apple."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iPhone の声による読み上げは、Apple のライセンスに基づき、個人的かつ非営利の目的でのみ使用できます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iPhone의 음성으로 만든 오디오는 Apple 라이선스에 따라 개인적인 비상업적 용도로만 사용할 수 있습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Spraak van de stemmen van de iPhone is voor persoonlijk, niet-commercieel gebruik, onder de licentie van Apple."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mowa generowana przez głosy iPhone’a jest przeznaczona do użytku osobistego i niekomercyjnego, zgodnie z licencją Apple."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "A fala das vozes do iPhone é para uso pessoal e não comercial, sob a licença da Apple."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Речь, созданная голосами iPhone, предназначена для личного некоммерческого использования по лицензии Apple."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tal från iPhones röster är för personligt, icke-kommersiellt bruk, enligt licensen från Apple."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "การอ่านออกเสียงจากเสียงของ iPhone ใช้ส่วนตัวและไม่ใช่เชิงพาณิชย์ตามใบอนุญาตของ Apple"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iPhone’un seslerinden gelen konuşma, Apple lisansı uyarınca kişisel ve ticari olmayan kullanım içindir."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Озвучення голосами iPhone призначене для особистого некомерційного використання згідно з ліцензією Apple."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iPhone کی آوازوں کی اسپیچ Apple کے لائسنس کے تحت ذاتی، غیر تجارتی استعمال کے لیے ہے۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Giọng đọc từ các giọng nói của iPhone chỉ dành cho mục đích cá nhân, phi thương mại, theo giấy phép của Apple."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iPhone 语音的朗读内容仅供个人非商业用途，须遵循 Apple 的许可。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iPhone 語音的朗讀內容僅供個人非商業用途，須遵守 Apple 的授權。"
           }
         }
       }
@@ -680965,6 +682057,162 @@
         }
       }
     },
+    "speechExport.stopHint.iphone" : {
+      "comment" : "The hint of the Stop button in the Export sheet while a spoken audio export runs, on the iPhone.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يوقف التصدير ويحتفظ بالفصول المنطوقة بالفعل لمدة أسبوع، حتى يبدأ تصدير صوتي منطوق مختلف، أو حتى يتغير صوت الكتاب أو نصه أو بدائله أو وقفاته. وتصدير النطاق نفسه بالسرعة وطبقة الصوت نفسيهما يتابع منها."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "রপ্তানি বন্ধ করে এবং ইতিমধ্যে পড়ে শোনানো অধ্যায়গুলো এক সপ্তাহ রাখে, যতক্ষণ না অন্য একটি পড়ে শোনানো অডিও রপ্তানি শুরু হয়, বা বইয়ের ভয়েস, টেক্সট, প্রতিস্থাপন বা বিরতি বদলায়। একই গতি ও পিচে একই পরিসর রপ্তানি করলে সেখান থেকে চলে।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Stoppt den Export und behält die bereits gesprochenen Kapitel eine Woche lang, bis ein anderer gesprochener Audioexport beginnt oder Stimme, Text, Ersetzungen oder Pausen des Buchs sich ändern. Ein Export desselben Bereichs mit derselben Geschwindigkeit und Tonhöhe macht dort weiter."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stops the export and keeps the chapters already spoken for a week, until a different spoken audio export starts, or until the book's voice, text, substitutions, or pauses change. Exporting the same range at the same speed and pitch goes on from them."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Detiene la exportación y conserva durante una semana los capítulos ya leídos, hasta que comience otra exportación de audio hablado o cambien la voz, el texto, las sustituciones o las pausas del libro. Si exportas el mismo intervalo con la misma velocidad y el mismo tono, continúa desde ellos."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "صادر کردن را متوقف می‌کند و فصل‌های گفته‌شده را یک هفته نگه می‌دارد، تا زمانی که صادر کردن صدای گفتاری دیگری شروع شود، یا صدا، متن، جایگزینی‌ها یا وقفه‌های کتاب تغییر کنند. صادر کردن همان بازه با همان سرعت و زیر و بمی از آن‌ها ادامه می‌یابد."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Arrête l’exportation et conserve pendant une semaine les chapitres déjà lus, jusqu’à ce qu’une autre exportation audio parlée démarre, ou que la voix, le texte, les substitutions ou les pauses du livre changent. Exporter la même plage à la même vitesse et à la même hauteur reprend à partir d’eux."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "עוצר את הייצוא ושומר את הפרקים שכבר הוקראו למשך שבוע, עד להתחלת ייצוא שמע מוקרא אחר או לשינוי של הקול, הטקסט, ההחלפות או ההפסקות של הספר. ייצוא של אותו טווח באותה מהירות ובאותו גובה צליל ממשיך מהם."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "निर्यात रोकता है और अब तक बोले गए अध्याय एक सप्ताह तक रखता है, जब तक कोई दूसरा बोला गया ऑडियो निर्यात शुरू न हो, या पुस्तक की आवाज़, टेक्स्ट, प्रतिस्थापन या विराम न बदलें। उसी गति और पिच पर वही रेंज निर्यात करने पर वहीं से आगे बढ़ा जाता है।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Menghentikan ekspor dan menyimpan bab yang sudah diucapkan selama seminggu, hingga ekspor audio ucapan yang berbeda dimulai, atau suara, teks, substitusi, atau jeda buku berubah. Mengekspor rentang yang sama dengan kecepatan dan nada yang sama akan dilanjutkan dari bab tersebut."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Interrompe l’esportazione e conserva per una settimana i capitoli già letti, fino a quando non inizia un’altra esportazione dell’audio parlato o non cambiano la voce, il testo, le sostituzioni o le pause del libro. Esportando lo stesso intervallo con la stessa velocità e lo stesso tono si prosegue da quelli."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "書き出しを停止し、読み上げ済みの章を1週間保持します。保持は、別の読み上げオーディオの書き出しを始めるか、ブックの声、テキスト、置換、間が変わるまでです。同じ範囲を同じ速度とピッチで書き出すと、その続きから進みます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "내보내기를 중지하고, 다른 음성 오디오 내보내기가 시작되거나 책의 음성, 텍스트, 대체 규칙 또는 정지 구간이 바뀔 때까지 최대 1주일 동안 이미 음성으로 만든 챕터를 보관합니다. 같은 속도와 음높이로 같은 범위를 내보내면 이어서 진행됩니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Stopt de export en bewaart de hoofdstukken die al zijn uitgesproken een week, totdat een andere gesproken audio-export begint of de stem, de tekst, de vervangingen of de pauzes van het boek veranderen. Als je hetzelfde bereik met dezelfde snelheid en toonhoogte exporteert, ga je daarmee verder."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zatrzymuje eksport i zachowuje już odczytane rozdziały na tydzień, do czasu rozpoczęcia innego eksportu dźwięku mówionego albo zmiany głosu, tekstu, podstawień lub przerw książki. Eksport tego samego zakresu z taką samą prędkością i wysokością głosu kontynuuje od nich."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Interrompe a exportação e mantém por uma semana os capítulos já falados, até outra exportação de áudio falado começar ou a voz, o texto, as substituições ou as pausas do livro mudarem. Exportar o mesmo intervalo com a mesma velocidade e o mesmo tom continua a partir deles."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Останавливает экспорт и сохраняет уже озвученные главы на неделю, до начала другого экспорта озвученного аудио или изменения голоса, текста, замен или пауз книги. Экспорт того же диапазона с теми же скоростью и высотой тона продолжится с них."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Stoppar exporten och behåller de redan upplästa kapitlen i en vecka, tills en annan export av uppläst ljud startar eller bokens röst, text, ersättningar eller pauser ändras. En export av samma intervall med samma hastighet och tonhöjd fortsätter från dem."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "หยุดการส่งออกและเก็บบทที่อ่านออกเสียงแล้วไว้หนึ่งสัปดาห์ จนกว่าการส่งออกเสียงอ่านครั้งอื่นจะเริ่ม หรือเสียง ข้อความ การแทนที่ หรือช่วงหยุดของหนังสือเปลี่ยนไป การส่งออกช่วงเดียวกันด้วยความเร็วและความสูงต่ำของเสียงเท่าเดิมจะทำต่อจากบทเหล่านั้น"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Dışa aktarmayı durdurur ve seslendirilmiş bölümleri, farklı bir seslendirilmiş ses dışa aktarması başlayana veya kitabın sesi, metni, değiştirmeleri ya da duraklamaları değişene kadar bir hafta saklar. Aynı aralığı aynı hız ve perdeyle dışa aktarmak onlardan devam eder."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Зупиняє експорт і зберігає вже озвучені розділи на тиждень, до початку іншого експорту озвученого аудіо або зміни голосу, тексту, замін чи пауз книги. Експорт того самого діапазону з тією самою швидкістю й висотою тону продовжується з них."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "برآمد روکتا ہے اور اب تک بولے گئے ابواب کو ایک ہفتے تک رکھتا ہے، جب تک کوئی دوسری بولی گئی آڈیو برآمد شروع نہ ہو یا کتاب کی آواز، متن، تبدیلی کے اصول یا وقفے نہ بدلیں۔ اسی رفتار اور پچ پر وہی حد برآمد کرنے سے کام انہی سے آگے بڑھتا ہے۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Dừng quá trình xuất và giữ các chương đã đọc trong một tuần, cho đến khi một lần xuất âm thanh đọc khác bắt đầu, hoặc giọng nói, văn bản, quy tắc thay thế hay quãng nghỉ của sách thay đổi. Nếu xuất cùng phạm vi với cùng tốc độ và cao độ, quá trình xuất sẽ tiếp tục từ các chương đó."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "停止导出，并将已朗读的章节保留一周，直到开始另一次朗读音频导出，或图书的语音、文本、替换或停顿发生变化。以同样的速度和音调导出相同范围，会从这些章节继续。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "停止輸出，並將已朗讀的章節保留一週，直到開始另一次語音音訊輸出，或書籍的語音、文字、取代規則或停頓更改為止。以相同的速度和音調輸出相同範圍，會從這些章節繼續。"
+          }
+        }
+      }
+    },
     "speechExport.throughHint" : {
       "comment" : "The hint of the To pop-up in the Export dialog's spoken audio options.",
       "extractionState" : "manual",
@@ -682057,6 +683305,162 @@
         }
       }
     },
+    "speechExportError.noVoice.iphone" : {
+      "comment" : "Why a spoken audio export was refused on the iPhone: no voice is installed. Settings, Accessibility, and Spoken Content are the names of iOS settings.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لا يوجد صوت مثبّت. أضف صوتًا في الإعدادات، تسهيلات الاستخدام، المحتوى المنطوق، ثم صدّر مرة أخرى."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "কোনো ভয়েস ইনস্টল করা নেই। সেটিংস, অ্যাক্সেসিবিলিটি, স্পোকেন কনটেন্টে একটি যোগ করুন, তারপর আবার রপ্তানি করুন।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Es ist keine Stimme installiert. Füge in den Einstellungen unter „Bedienungshilfen“, „Gesprochene Inhalte“ eine hinzu und exportiere dann erneut."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No voice is installed. Add one in Settings, Accessibility, Spoken Content, then export again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No hay ninguna voz instalada. Agrega una en Ajustes, Accesibilidad, Contenido leído, y vuelve a exportar."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "هیچ صدایی نصب نشده است. یکی را در Settings، Accessibility، Spoken Content اضافه کنید، سپس دوباره صادر کنید."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Aucune voix n’est installée. Ajoutez-en une dans Réglages, Accessibilité, Contenu énoncé, puis exportez de nouveau."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "אין קול מותקן. הוסף קול בהגדרות, “נגישות”, “תוכן מדובר”, ואז ייצא שוב."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "कोई आवाज़ इंस्टॉल नहीं है। सेटिंग, एक्सेसिबिलिटी, बोली जाने वाली सामग्री में एक जोड़ें, फिर दोबारा निर्यात करें।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tidak ada suara yang terpasang. Tambahkan satu di Pengaturan, Aksesibilitas, Konten Ucapan, lalu ekspor lagi."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nessuna voce installata. Aggiungine una in Impostazioni, Accessibilità, Contenuti letti ad alta voce, poi esporta di nuovo."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "インストールされている声がありません。「設定」の「アクセシビリティ」の「読み上げコンテンツ」で追加してから、もう一度書き出してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "설치된 음성이 없습니다. 설정, 손쉬운 사용, 읽기 및 말하기에서 음성을 추가한 다음 다시 내보내십시오."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Er is geen stem geïnstalleerd. Voeg er een toe in Instellingen, Toegankelijkheid, Gesproken materiaal, en exporteer daarna opnieuw."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nie zainstalowano żadnego głosu. Dodaj go w: Ustawienia, Dostępność, Treść mówiona, a potem wyeksportuj ponownie."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nenhuma voz está instalada. Adicione uma em Ajustes, Acessibilidade, Conteúdo falado e exporte novamente."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Не установлено ни одного голоса. Добавьте голос в «Настройки», «Универсальный доступ», «Устный контент», затем экспортируйте снова."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ingen röst är installerad. Lägg till en i ”Inställningar”, ”Hjälpmedel”, ”Uppläst innehåll”, och exportera sedan igen."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่ได้ติดตั้งเสียงใด เพิ่มเสียงในการตั้งค่า การช่วยการเข้าถึง เนื้อหาที่พูด แล้วส่งออกอีกครั้ง"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Yüklü ses yok. Ayarlar, Erişilebilirlik, Konuşulan İçerik bölümünden bir ses ekleyin, sonra yeniden dışa aktarın."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Жодного голосу не встановлено. Додайте голос: Параметри, Доступність, Усний вміст, а потім експортуйте знову."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "کوئی آواز انسٹال نہیں ہے۔ ترتیبات، رسائی، بولا جانے والا مواد میں ایک شامل کریں، پھر دوبارہ برآمد کریں۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Chưa cài đặt giọng nói nào. Hãy thêm một giọng trong Cài đặt, Trợ năng, Nội dung được đọc, rồi xuất lại."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "未安装语音。请在“设置”的“辅助功能”中，于“朗读内容”添加，然后再次导出。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "尚未安裝語音。請在「設定」的「輔助使用」中，於「語音內容」加入語音，然後再次輸出。"
+          }
+        }
+      }
+    },
     "speechExportError.notEnoughSpace" : {
       "comment" : "Why a spoken audio export was refused: the disk is too full. %1$@ is the space the export needs and %2$@ the space TextMouth always keeps free, each a size such as 1 GB.",
       "extractionState" : "manual",
@@ -682521,6 +683925,162 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "「%1$@」是個人語音，macOS 無法將其錄製到檔案。請用閱讀器中的「%2$@」按鈕選擇其他語音，然後再次輸出。"
+          }
+        }
+      }
+    },
+    "speechExportError.personalVoice.iphone" : {
+      "comment" : "Why a spoken audio export was refused on the iPhone: the book's voice is a Personal Voice. %1$@ is the voice's name and %2$@ the name of the Voice button in the book's reader.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%1$@” صوت شخصي لا يستطيع iPhone تسجيله في ملف. اختر صوتًا آخر بزر %2$@ في القارئ، ثم صدّر مرة أخرى."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%1$@” একটি Personal Voice, যা iPhone ফাইলে রেকর্ড করতে পারে না। রিডারের %2$@ বোতাম দিয়ে অন্য একটি ভয়েস বেছে নিন, তারপর আবার রপ্তানি করুন।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "„%1$@“ ist eine „Eigene Stimme“, die das iPhone nicht in eine Datei aufnehmen kann. Wähle mit der Taste „%2$@“ in der Leseansicht eine andere Stimme und exportiere dann erneut."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“%@” is a Personal Voice, which the iPhone can't record to a file. Choose another voice with the %@ button in the reader, then export again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%1$@” es una Voz personal, que el iPhone no puede grabar en un archivo. Elige otra voz con el botón %2$@ del lector y vuelve a exportar."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "«%1$@» یک Personal Voice است که iPhone نمی‌تواند در فایل ضبط کند. با دکمه %2$@ در کتاب‌خوان صدای دیگری انتخاب کنید، سپس دوباره صادر کنید."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "« %1$@ » est une Voix personnelle, que l’iPhone ne peut pas enregistrer dans un fichier. Choisissez une autre voix avec le bouton %2$@ du lecteur, puis exportez de nouveau."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%1$@” הוא Personal Voice, ש-iPhone לא יכול להקליט לקובץ. בחר קול אחר עם הלחצן %2$@ בקורא, ואז ייצא שוב."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%1$@” एक Personal Voice है, जिसे iPhone फ़ाइल में रिकॉर्ड नहीं कर सकता। रीडर में %2$@ बटन से कोई दूसरी आवाज़ चुनें, फिर दोबारा निर्यात करें।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%1$@” adalah Personal Voice, yang tidak dapat direkam iPhone ke file. Pilih suara lain dengan tombol %2$@ di pembaca, lalu ekspor lagi."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%1$@” è una Voce personale, che l’iPhone non può registrare in un file. Scegli un’altra voce con il pulsante %2$@ nel lettore, poi esporta di nuovo."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "「%1$@」はパーソナルボイスで、iPhone ではファイルに録音できません。リーダの「%2$@」ボタンで別の声を選んでから、もう一度書き出してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%1$@”은(는) 개인 음성이며 iPhone은 이를 파일로 녹음할 수 없습니다. 리더의 %2$@ 버튼으로 다른 음성을 선택한 다음 다시 내보내십시오."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%1$@” is een Personal Voice, die de iPhone niet naar een bestand kan opnemen. Kies een andere stem met de knop %2$@ in de lezer en exporteer daarna opnieuw."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "„%1$@” to Głos osobisty, którego iPhone nie może nagrać do pliku. Wybierz inny głos przyciskiem %2$@ w czytniku, a potem wyeksportuj ponownie."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%1$@” é uma Voz Pessoal, que o iPhone não pode gravar em um arquivo. Escolha outra voz com o botão %2$@ no leitor e exporte de novo."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "«%1$@» — личный голос, который iPhone не может записать в файл. Выберите другой голос кнопкой «%2$@» в окне чтения, затем экспортируйте снова."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "”%1$@” är en Personlig röst, som iPhone inte kan spela in till en fil. Välj en annan röst med knappen ”%2$@” i läsaren och exportera sedan igen."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%1$@” เป็น Personal Voice ซึ่ง iPhone บันทึกลงไฟล์ไม่ได้ เลือกเสียงอื่นด้วยปุ่ม %2$@ ในตัวอ่าน แล้วส่งออกอีกครั้ง"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%1$@” bir Kişisel Ses ve iPhone bir Kişisel Sesi dosyaya kaydedemez. Okuyucudaki “%2$@” düğmesiyle başka bir ses seçin, sonra yeniden dışa aktarın."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "«%1$@» — це Власний голос, який iPhone не може записати у файл. Виберіть інший голос кнопкою «%2$@» у вікні читання, а потім експортуйте знову."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%1$@” ایک Personal Voice ہے، جسے iPhone فائل میں ریکارڈ نہیں کر سکتا۔ ریڈر میں “%2$@” بٹن سے کوئی دوسری آواز منتخب کریں، پھر دوبارہ برآمد کریں۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%1$@” là Giọng nói cá nhân, mà iPhone không thể ghi vào tệp. Hãy chọn giọng khác bằng nút %2$@ trong trình đọc, rồi xuất lại."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%1$@”是个人声音，iPhone 无法将其录制到文件。请使用阅读器中的“%2$@”按钮选取另一种语音，然后再次导出。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "「%1$@」是個人語音，iPhone 無法將其錄製到檔案。請用閱讀器中的「%2$@」按鈕選擇其他語音，然後再次輸出。"
           }
         }
       }
@@ -690309,6 +691869,162 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Mac 的語音引擎拒絕朗讀「%@」的部分內容，即使已將其角括號靜音。"
+          }
+        }
+      }
+    },
+    "speechRenderFailure.refused.iphone" : {
+      "comment" : "Why a chapter of a spoken audio export could not be spoken on the iPhone. %@ is the chapter's title.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "رفض محرك النطق في iPhone نطق جزء من “%@”، حتى مع كتم أقواسه."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iPhone-এর স্পিচ ইঞ্জিন ব্র্যাকেট নীরব করার পরেও “%@”-এর একটি অংশ পড়তে অস্বীকার করেছে।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Die Sprachausgabe des iPhone weigerte sich, einen Teil von „%@“ zu sprechen, selbst mit stumm geschalteten Klammern."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The iPhone's speech engine refused to speak part of “%@”, even with its brackets made silent."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El motor de voz del iPhone se negó a leer una parte de “%@”, incluso con sus corchetes en silencio."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "موتور گفتار iPhone از گفتن بخشی از «%@» امتناع کرد، حتی با بی‌صدا کردن براکت‌هایش."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Le moteur vocal de l’iPhone a refusé de lire une partie de « %@ », même avec ses chevrons rendus silencieux."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "מנוע הדיבור של iPhone סירב להקריא חלק מ-“%@”, גם כשהסוגריים שלו הושתקו."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iPhone के स्पीच इंजन ने “%@” का एक हिस्सा बोलने से इनकार कर दिया, ब्रैकेट मौन करने के बाद भी।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mesin ucapan iPhone menolak mengucapkan sebagian dari “%@”, bahkan saat tanda kurungnya disenyapkan."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Il motore vocale dell’iPhone ha rifiutato di leggere una parte di “%@”, anche con le parentesi silenziate."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "「%@」の一部を、山かっこを無音にしても、iPhone の読み上げエンジンが読み上げられませんでした。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iPhone 음성 엔진이 꺾쇠괄호를 무음으로 처리했는데도 “%@”의 일부를 말하기를 거부했습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "De spraakengine van de iPhone weigerde een deel van “%@” uit te spreken, zelfs met stilgemaakte punthaken."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mechanizm mowy iPhone’a odmówił odczytania części „%@”, nawet z wyciszonymi nawiasami."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "O mecanismo de fala do iPhone se recusou a falar parte de “%@”, mesmo com os colchetes silenciados."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Речевой движок iPhone отказался озвучивать часть главы «%@», даже с отключёнными скобками."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iPhones talmotor vägrade läsa upp en del av ”%@”, även med vinkelparenteserna tystade."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เครื่องมืออ่านออกเสียงของ iPhone ปฏิเสธที่จะอ่านบางส่วนของ “%@” แม้จะทำให้วงเล็บเงียบแล้วก็ตาม"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iPhone’un konuşma motoru, ayraçları sessize alındığında bile “%@” bölümünün bir kısmını seslendirmeyi reddetti."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Система озвучення iPhone відмовилася озвучити частину «%@», навіть коли її дужки було зроблено безмовними."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iPhone کے اسپیچ انجن نے “%@” کے ایک حصے کو بولنے سے انکار کر دیا، حالانکہ اس کے بریکٹ خاموش کر دیے گئے تھے۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bộ máy đọc của iPhone từ chối đọc một phần của “%@”, kể cả khi đã tắt tiếng các dấu ngoặc."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iPhone 的朗读引擎拒绝朗读“%@”的一部分，即使已将其尖括号设为不发声。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iPhone 的語音引擎拒絕朗讀「%@」的部分內容，即使已將其角括號靜音。"
           }
         }
       }
