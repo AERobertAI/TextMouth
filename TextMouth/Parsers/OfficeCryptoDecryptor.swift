@@ -119,12 +119,16 @@ enum OfficeCryptoDecryptor {
 
     // MARK: Agile
 
+    /// The key sizes AES takes, in bits.
+    private static let aesKeyBits: Set<Int> = [128, 192, 256]
+
     /// What the Agile descriptor says, from its XML attributes.
     private struct AgileDescriptor {
-        /// The data's own parameters (the `keyData` element).
+        /// The data's own parameters (the `keyData` element), the data key's size among them.
         var dataSalt: [UInt8]
         var dataBlockSize: Int
         var dataHash: HashKind
+        var dataKeyBits: Int
         /// The password key encryptor's parameters (the `encryptedKey` element).
         var salt: [UInt8]
         var spinCount: Int
@@ -164,9 +168,15 @@ enum OfficeCryptoDecryptor {
         let spin = try number(key, "spinCount")
         // The specification allows up to 10,000,000 rounds; more is a hostile file.
         guard spin <= 10_000_000, try number(key, "blockSize") == 16, try number(data, "blockSize") == 16 else { throw Failure.unsupported }
+        // AES keys are 128, 192, or 256 bits. Any other size is refused here,
+        // before a key is made: the key is cut or padded to the size named
+        // (`fitted`), so a hostile size would ask for a buffer that large.
+        let keyBits = try number(key, "keyBits")
+        let dataKeyBits = try number(data, "keyBits")
+        guard Self.aesKeyBits.contains(keyBits), Self.aesKeyBits.contains(dataKeyBits) else { throw Failure.unsupported }
         return AgileDescriptor(
-            dataSalt: try bytes(data, "saltValue"), dataBlockSize: 16, dataHash: dataHash,
-            salt: try bytes(key, "saltValue"), spinCount: spin, keyBits: try number(key, "keyBits"), blockSize: 16, hash: hash,
+            dataSalt: try bytes(data, "saltValue"), dataBlockSize: 16, dataHash: dataHash, dataKeyBits: dataKeyBits,
+            salt: try bytes(key, "saltValue"), spinCount: spin, keyBits: keyBits, blockSize: 16, hash: hash,
             verifierInput: try bytes(key, "encryptedVerifierHashInput"),
             verifierValue: try bytes(key, "encryptedVerifierHashValue"),
             encryptedKey: try bytes(key, "encryptedKeyValue")
@@ -204,7 +214,8 @@ enum OfficeCryptoDecryptor {
             let value = try aesDecrypt(d.verifierValue, key: agileKey(base, d, blockKey: verifierValueBlockKey), iv: iv, ecb: false)
             let expected = d.hash.digest(Array(input.prefix(d.salt.count)))
             guard value.count >= expected.count, Array(value.prefix(expected.count)) == expected else { continue }
-            let dataKey = Array(try aesDecrypt(d.encryptedKey, key: agileKey(base, d, blockKey: keyValueBlockKey), iv: iv, ecb: false).prefix(d.keyBits / 8))
+            // The data key is as long as the data's own key size says.
+            let dataKey = Array(try aesDecrypt(d.encryptedKey, key: agileKey(base, d, blockKey: keyValueBlockKey), iv: iv, ecb: false).prefix(d.dataKeyBits / 8))
             return try decryptSegments(encrypted, size: size, key: dataKey, descriptor: d)
         }
         throw Failure.wrongPassword

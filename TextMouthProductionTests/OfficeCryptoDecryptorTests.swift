@@ -94,6 +94,42 @@ final class OfficeCryptoDecryptorTests: XCTestCase {
         XCTAssertThrowsError(try OfficeCryptoDecryptor.decrypt(info: made.info, package: lying, password: Secret("p")))
     }
 
+    /// The descriptor of `made` with its first `keyBits="256"` (the data's own key size) or both
+    /// of them (the password key's too) given `bits` instead.
+    private func descriptor(of made: TestOfficeEncryptor.Made, keyBits bits: String, both: Bool) throws -> [UInt8] {
+        let xml = String(decoding: made.info.dropFirst(8), as: UTF8.self)
+        let named = "keyBits=\"256\""
+        let changed = both
+            ? xml.replacingOccurrences(of: named, with: "keyBits=\"\(bits)\"")
+            : xml.replacingCharacters(in: try XCTUnwrap(xml.range(of: named)), with: "keyBits=\"\(bits)\"")
+        return Array(made.info.prefix(8)) + Array(changed.utf8)
+    }
+
+    /// A key size AES does not take is unsupported, in the data's key and the password's alike,
+    /// refused before any key is made: a password key 256 bytes long was refused as damage, and
+    /// the data's own size was never read, so a file that named a wrong one opened anyway.
+    func testAKeySizeAESDoesNotTakeIsUnsupported() throws {
+        let made = TestOfficeEncryptor.agile(package: Data("x".utf8), password: "p", hash: "SHA512", spinCount: 100)
+        for both in [true, false] {
+            let info = try descriptor(of: made, keyBits: "2048", both: both)
+            XCTAssertThrowsError(try OfficeCryptoDecryptor.decrypt(info: info, package: made.package, password: Secret("p")), "both: \(both)") {
+                XCTAssertEqual($0 as? OfficeCryptoDecryptor.Failure, .unsupported, "both: \(both)")
+            }
+        }
+    }
+
+    /// A hostile key size, far past what memory holds, is refused before any key is made. The key
+    /// was padded to the size named, so this asked for a buffer of about 12 GB; with the check
+    /// broken it would take the host down, so it runs on GitHub's runner only.
+    func testAHostileKeySizeIsRefusedBeforeAnyKeyIsMade() throws {
+        try TestMachine.skipUnlessGitHubRunner("A key-size check broken by a later change would ask for about 12 GB")
+        let made = TestOfficeEncryptor.agile(package: Data("x".utf8), password: "p", hash: "SHA512", spinCount: 100)
+        let info = try descriptor(of: made, keyBits: "99999999999", both: true)
+        XCTAssertThrowsError(try OfficeCryptoDecryptor.decrypt(info: info, package: made.package, password: Secret("p"))) {
+            XCTAssertEqual($0 as? OfficeCryptoDecryptor.Failure, .unsupported)
+        }
+    }
+
     // MARK: - Standard
 
     /// Standard (Office 2007): each key size.
