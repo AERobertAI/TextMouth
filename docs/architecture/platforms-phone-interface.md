@@ -200,7 +200,7 @@ Part of [TextMouth's architecture](../../ARCHITECTURE.md).
 ## Search in Book
 <!-- id: search-book; keys: reader controls, control grid, VoiceOver order, openSearch, gridRows; src: TextMouth/Phone/PhoneReaderState.swift, TextMouth/Phone/PhoneReaderControls.swift, TextMouth/Phone/PhoneReaderModel.swift, TextMouth/Phone/PhoneBookSearch.swift, TextMouth/Phone/PhoneLaunchRequest.swift, TextMouth/Platform/iOS/Views/Reader/PhoneReaderView.swift, TextMouth/ViewModels/ReaderViewModel+Bookmarks.swift, TextMouthProductionTests/PhoneReaderControlsTests.swift -->
 
-- The reader's eleventh control, `PhoneReaderControl.searchInBook` (the ninth of the 16 in `PhoneReaderControl.grid`), comes after Headings and before Go To in VoiceOver's order.
+- The reader's eleventh control, `PhoneReaderControl.searchInBook` (the ninth of the 17 in `PhoneReaderControl.grid`), comes after Headings and before Go To in VoiceOver's order.
   Its label is "Search in Book", the Mac's command (`ShortcutAction.searchInBook.title`), and its hint is "Opens a search of the book's text."
   (`PhoneBookSearchVocabulary`).
   It opens `PhoneReaderSheet.search`.
@@ -213,11 +213,11 @@ Part of [TextMouth's architecture](../../ARCHITECTURE.md).
   - Previous Heading, Next Heading, Add bookmark;
   - Bookmarks, Headings, Search in Book;
   - Go To, Return, Sleep Timer;
-  - Voice, Book Info;
+  - Voice, Book Info, Export this book;
   - Skip backward, Skip forward.
 - A plain three to a row would leave Skip forward alone in a sixth row.
   So the rows are broken to keep each pair together, and the two skips are the last row, as in the spec.
-  The fifth row holds two, and the spec had five rows.
+  The fifth row holds three (Export this book joined it in FR31), and the spec had five rows.
   - `testTheGridRowsKeepOrderAndPairs` pins the order, at most three to a row, the three groups, and the last row.
     It does not pin the exact rows.
   - The comments on `PhoneReaderControl.grid` ("three to a row") and above `testTheControlsAreInTheSpecsOrder` ("five full rows and a sixth") still say the old count.
@@ -292,6 +292,33 @@ Part of [TextMouth's architecture](../../ARCHITECTURE.md).
   - The on-screen case also checks which reader Now Playing follows, but with only two readers it passes with or without the hand-over, so it does not prove it.
     A third reader would.
 - The tests are in [Testing the iPhone app](../developer/testing-iphone.md).
+
+## The Export sheet
+<!-- id: the-export-sheet; keys: PhoneExportSheet, PhoneExportOffer, PhoneBrailleExportRows, PhoneExportQuestion, PhoneExportFolder, Export this book, FR31, fileImporter; src: TextMouth/Platform/iOS/Views/Export/PhoneExportSheet.swift, TextMouth/Platform/iOS/Views/Export/PhoneBrailleExportRows.swift, TextMouth/Phone/PhoneExportOffer.swift, TextMouth/Phone/PhoneExportFolder.swift, TextMouth/Phone/PhoneExportQuestion.swift, TextMouth/Phone/PhoneLibraryOffer.swift, TextMouth/Platform/iOS/Views/Library/PhoneLibraryView.swift, TextMouth/Platform/iOS/Views/Reader/PhoneReaderSheetContent.swift, TextMouthiOSTests/PhoneExportSheetTests.swift, TextMouthiOSUITests/ExportUITests.swift -->
+
+Export on the iPhone (FR31, phase 1) is the shared `BookExportModel` under a sheet of its own; the model's hooks, the delivery, and the memory check are in [Exports on the iPhone](state/exports-iphone.md).
+
+- Two entry points open it:
+  - `PhoneLibraryOffer`'s `.export` command, "Export…" (`BookExportWording.commandTitle(count: 1)`), in a book's row after Move to Folder... as on the Mac;
+  - `PhoneReaderControl.export`, "Export this book", after Book Info, which opens `PhoneReaderSheet.export` over the reader, so a speech refusal's report waits for it to close.
+- `PhoneExportSheet` is a `NavigationStack` over one `List`, its buttons placed by `PhoneSheetButton`.
+  What it offers and says at each stage is decided in plain types the Mac's host tests: `PhoneExportOffer.kinds` (every kind but spoken audio), `Stage`, `content(stage:kindCount:)`, the `Bar` (Cancel, or Stop while exporting, or Close, then Export), and `folderRow(folderName:)`.
+  Every word is the Mac's (`BookExportWording`), except the memory sentence (`PhoneExportWording`).
+- Focus lands on the first kind `PhoneFocusPolicy.screenChangedDelay` after the books are listed.
+  It returns to the opener after a Convert to list, the folder picker, or an alert closes (`returnFocus(to:)`, with `@AccessibilityFocusState`).
+- The folder row opens `fileImporter` for a folder, and `onCancellation` returns focus to the row, since a cancel never reaches `onCompletion`.
+  `PhoneExportFolder.keep(_:in:)` keeps the choice (see [Exports on the iPhone](state/exports-iphone.md)).
+- While an export runs the sheet has `interactiveDismissDisabled`.
+  The accessibility escape action, on the whole sheet and not the list, presses Stop while it runs and otherwise closes the sheet.
+  The sheet stays open after an export ends and shows the model's `finishedWords`.
+- `PhoneBrailleExportRows` draws the braille rows while BRF or PEF is chosen, over the writer's options through `TextExportOptionsEditing.brailleOptions`.
+  The braille code is one choice row over the Braille setting's grouped list given `BrailleTableCatalog.exportCodes`, so print-only tables are offered.
+  The cells and lines are steppers, each one adjustable element that says its value.
+- `PhoneExportQuestion` is the iPhone's `ExportDeepChapterAlert`: an alert whose message says what each button does, since an iOS alert's buttons have no hints, with Export as Written the default and Cancel Export the cancel role.
+- Tests:
+  - on the Mac's host, `PhoneExportOfferTests`, `PhoneExportFolderTests`, `PhoneExportQuestionTests`, and `PhoneExportModelTests`;
+  - in the iPhone's unit bundle, `PhoneExportSheetTests` and `PhoneBrailleExportOptionsTests`;
+  - on GitHub, `ExportUITests` (see [Testing the iPhone app](../developer/testing-iphone.md)).
 
 ## What is left
 <!-- id: what-left; keys: phase 1, typecheck-ios, hand check, bundle identifier, open items; src: TextMouth/Platform/PlatformApplication.swift, Makefile, Scripts/ios/typecheck.py, Scripts/ios/mac-projection.py, project.yml -->

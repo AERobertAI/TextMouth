@@ -314,7 +314,7 @@ This is how the iPhone team builds and runs the app there.
   - Afterward run `xcrun simctl shutdown all`, since the Mac has 8 GB of memory.
 - **The `SIMCTL_CHILD_` launch variables.**
   - `xcrun simctl launch` passes an environment variable to the app when its name starts with `SIMCTL_CHILD_`, and drops that prefix.
-  - The app reads two variables, `TEXTMOUTH_UI_TEST` and `TEXTMOUTH_OPEN_AT_LAUNCH`, in Debug builds only.
+  - The app reads three variables, `TEXTMOUTH_UI_TEST`, `TEXTMOUTH_OPEN_AT_LAUNCH`, and `TEXTMOUTH_EXPORT_TO` (an absolute path the Export sheet uses as its folder, with no picker), in Debug builds only.
     Both are described in PhoneLaunchRequest in [The two apps and the platform folders](../architecture/platforms.md).
     A Release build does not hold the type or the variable names, so no environment variable can steer it.
   - The placement probe's variable, `TEXTMOUTH_PROBE_SYSTEM_PLACEMENT`, is gone, with the probe test.
