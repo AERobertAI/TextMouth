@@ -28,6 +28,8 @@ Each entry names a kind of state, then its owner, who may write it, how others o
   - [Kept texts, re-reads, and edited text](docs/architecture/state/text-caches-rereads-edits.md)
 - [The data directory](docs/architecture/state/data-directory.md)
 - [Cloud state](docs/architecture/state/cloud-state.md)
+- [Library sync](docs/architecture/state/library-sync.md): the folder, outbox, and merge.
+  - [Library sync: books and rules](docs/architecture/state/library-sync-store.md): blobs, folder access, R1 to R9.
 - [Preferences](docs/architecture/state/preferences.md)
   - [Preferences: keyboard shortcuts](docs/architecture/state/preferences-shortcuts.md)
 
