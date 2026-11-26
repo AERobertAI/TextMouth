@@ -75,6 +75,16 @@ enum SyncPlaceholder {
         return folder.appendingPathComponent(book.tmbDirectoryName, isDirectory: true)
     }
 
+    /// When the files of the book at `package` last arrived on this device: the date the pointer was last
+    /// written, which a fetch does after each file it brings in and a backup does when a book's copy has
+    /// uploaded (FR45). Nil when the package has no pointer, or it cannot be read.
+    static func arrivedAt(_ package: URL) -> Date? {
+        let pointer = package.appendingPathComponent(StorePointer.fileName)
+        return DatalessFiles.withoutDownloading {
+            try? pointer.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate
+        }
+    }
+
     /// Whether the package at `package` is a placeholder: it holds a pointer
     /// and the book's file is not on this device. A package with a pointer
     /// and its file is a fetched book, which keeps the pointer.

@@ -55,6 +55,20 @@ extension BookCloudStates {
         showsCloudNotes ? state(of: bookID) : nil
     }
 
+    /// Whether Remove Download may be offered for `book`: in a cloud library, when every file is on this Mac
+    /// (the recorded state is Downloaded); in a synced library (FR46), when the book is whole on this device,
+    /// which no state records (a book not checked, or one whose files are all here). A feed's item is left out:
+    /// its feed holds its download, and Delete Download is its command. A book in the cloud, downloading, or
+    /// failed has nothing to remove.
+    func canRemoveDownload(_ book: Book) -> Bool {
+        if isCloudLibrary { return listedState(of: book.id)?.canRemoveDownload == true }
+        guard syncIsOn, book.feedLink == nil else { return false }
+        switch state(of: book.id) {
+        case nil, .local?, .downloaded?: return true
+        case .inCloud?, .downloading?, .downloadFailed?, .waitingForSync?: return false
+        }
+    }
+
     /// How many of `books` the list's summary counts as in the cloud: in a
     /// cloud location, the books whose known state leaves some of their
     /// files off this Mac; always 0 elsewhere.
