@@ -563414,7 +563414,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Kitapları kilitli olarak ekler. Her birinin kilidini açarken açabilirsiniz."
+            "value" : "Kitapları kilitli olarak ekler. Her birini açtığınızda kilidini açabilirsiniz."
           }
         },
         "uk" : {
@@ -563438,7 +563438,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "以锁定状态添加这些图书。打开每此图书时可以解锁。"
+            "value" : "以锁定状态添加这些图书。打开每本图书时可以解锁。"
           }
         },
         "zh-Hant" : {
@@ -564398,7 +564398,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "কিচেনে পাসওয়ার্ড রাখা যায়নি। বইটি খোলা আছে।"
+            "value" : "কিচেইনে পাসওয়ার্ড রাখা যায়নি। বইটি খোলা আছে।"
           }
         },
         "de" : {
@@ -564554,7 +564554,7 @@
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "এটি এই ডিভাইসের কিচেনে রাখে, তাই TextMouth এই বইয়ের জন্য আর জিজ্ঞাসা করবে না।"
+            "value" : "এটি এই ডিভাইসের কিচেইনে রাখে, তাই TextMouth এই বইয়ের জন্য আর জিজ্ঞাসা করবে না।"
           }
         },
         "de" : {
@@ -565118,7 +565118,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Skriver om bokens fil i ditt bibliotek utan lösenord. Din original ändras aldrig."
+            "value" : "Skriver om bokens fil i ditt bibliotek utan lösenord. Ditt original ändras aldrig."
           }
         },
         "th" : {
