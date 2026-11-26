@@ -759,6 +759,47 @@ final class SyncSpaceCommandsTests: XCTestCase {
         XCTAssertFalse(freed.contains(two), "ending twice changes nothing")
     }
 
+    /// Exporting, transcribing, and Edit Text each hold a book: Remove Download refuses it as in use, the sweep leaves
+    /// it, and one of them begun while the copy is checked makes the last look say no, the book left whole.
+    func testABookExportedTranscribedOrTextEditedIsRefused() async {
+        let sessions = BookTextEditSessions()
+        let baseline = BookTextBaseline(source: nil, cache: FileFingerprint(stamp: FileStamp(byteCount: 0, modificationTimeNanoseconds: 0), digest: ""))
+        let transcribingBefore = TranscribedBooks.shared.transcribingBookID
+        defer { TranscribedBooks.shared.setTranscribing(transcribingBefore) }
+        // Each use, begun and ended as the app's own begins and ends it.
+        let uses: [(name: String, begin: @MainActor @Sendable (UUID) -> Void, end: @MainActor @Sendable (UUID) -> Void)] = [
+            ("exporting", { BookExportModel.noteExportStarted([$0]) }, { BookExportModel.noteExportEnded([$0]) }),
+            ("transcribing", { TranscribedBooks.shared.setTranscribing($0) }, { _ in TranscribedBooks.shared.setTranscribing(transcribingBefore) }),
+            ("Edit Text", { sessions.begin($0, BookTextEditSessions.Session(baseline: baseline, report: { _, _ in })) }, { sessions.end($0) }),
+        ]
+        for use in uses {
+            let book = fixtureBook(use.name, openedDaysAgo: 100)
+            let fixture = SpaceFixture(books: [book])
+            fixture.model.textEditSessions = sessions
+
+            // In use already: refused before any proof, and left by the sweep.
+            use.begin(book.id)
+            XCTAssertTrue(fixture.model.isBookBusyForSync(book.id), use.name)
+            XCTAssertTrue(fixture.model.isProtectedFromUnopenedRemoval(book), use.name)
+            let refusal = await fixture.commandsRemoving([book])
+            XCTAssertEqual(refusal?.message, BookCloudError.bookInUse.explanation(in: .iCloudDrive), use.name)
+            XCTAssertEqual(fixture.storage.proofs, [], "\(use.name): no proof was asked for")
+            use.end(book.id)
+
+            // Begun while the copy is checked: the last look says no, and the book stays whole.
+            fixture.storage.duringTheProof { id in
+                Task { @MainActor in use.begin(id) }
+            }
+            let report = await fixture.sweep(settings: fixture.settings(days: 7)) { [fixture] in
+                fixture.model.isProtectedFromUnopenedRemoval($0)
+            }
+            XCTAssertEqual(report.removed, [], use.name)
+            XCTAssertEqual(fixture.storage.lastLookAnswers[book.id], false, use.name)
+            XCTAssertNil(fixture.states.state(of: book.id), "\(use.name): still whole here")
+            use.end(book.id)
+        }
+    }
+
     // MARK: - The arrival date
 
     /// The date a book's files arrived is the pointer's last write; a package with no pointer has none.
