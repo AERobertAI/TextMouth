@@ -166,13 +166,14 @@ A test that makes sound is never shared: the check in `test_run_ios_ui_tests.py`
   - `HTMLExportWriterTests`, `MarkdownExportWriterTests`, `RTFExportWriterTests`, and `EPUBExportWriterTests` with its navigation and round-trip classes;
   - `ExportDocumentWalker*Tests`, `ExportDeepChapterWalkerTests`, `BrailleExportWriterTests`, and `BookExportDeliveryTests`, which runs the iPhone's coordinated copy on both;
   - their helpers, `MarkdownMarkerSupport`, `WordsInOrderSupport`, `EPUBRoundTripSupport`, `DeepMarkdown`, and `StackProbe`;
-  - `PhoneExportFolderTests`, `PhoneExportMemoryCheckTests`, `PhoneExportOfferTests`, and `PhoneExportQuestionTests` are shared too;
+  - `PhoneExportFolderTests`, `PhoneExportMemoryCheckTests`, `PhoneExportOfferTests`, `PhoneExportQuestionTests`, and `PhoneExportSpeechTests` (the spoken audio rows, the bar, the card, the task's mirror, Share…) are shared too;
+  - the speech export's own suites and the session's tests (`SpeechExportDialogTests`) are Mac-only: their fakes make audio buffers, and the iPhone's unit bundle takes no file that names `AVAudio` or `AVSpeech`;
   - the Mac-only parts of a shared class are fenced with `#if os(macOS)` (the RTF tests' textutil reads, the braille tests' Mac-table halves).
   - Not shared, because they build a library with `makeIntegrationWorld`: `PhoneExportModelTests`, `BookExportServiceTests`, `BookExportConversionTests`, `BookExportConvertToTests`, and `BookExportNestingTests`.
   - The iPhone's own: `PhoneExportSheetTests` (the real sheet hosted over a book, no export run), `PhoneBrailleExportOptionsTests`, and `PhoneExportPeakMemoryTests`.
 - **The peak-memory test** exports a large fixture through each writer and logs a `PHONE_EXPORT_PEAK writer=… fixture=… text=… peak=… factor=… figure=…` line for each, and one `writer=engine fixed=…` line for the braille engine's tables.
   It runs only on GitHub's runner and fails past twice a writer's figure (see The memory check in [Exports on the iPhone](../architecture/state/exports-iphone.md)); read the lines in the run's log before raising a figure.
-- **`ExportUITests`** (4 tests, on GitHub): the sheet's order and audit, the Library row's Export…, Convert to and an export into a folder, and the sheet at the largest text size.
+- **`ExportUITests`** (4 tests, on GitHub): the sheet's order and audit, with the spoken audio rows read and audited; the Library row's Export…; Convert to, an export, and Share…; and the largest text size, with the braille choices opened while the Braille code row is scrolled away.
   The system's folder picker can't be driven, so the one test that writes launches with `TEXTMOUTH_EXPORT_TO`, an absolute path the sheet uses as its folder.
   The variable is read in Debug builds alone (`#if DEBUG`), as `TEXTMOUTH_UI_TEST` is.
 - **The FFmpeg classes** (the helper's protocol and hostile-file ones too), `InProcessEngineTests`, and `RunningClockTests` are shared, so each shows that the iPhone makes the Mac's streams, books, and sentences.

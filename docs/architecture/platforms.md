@@ -43,20 +43,21 @@ The iPhone interface of research/IOS-INTERFACE-SPEC-2026-11-07.md has run in the
 <!-- id: ios-info-plist; keys: Info.plist, UIBackgroundModes, scene manifest, LSItemContentTypes, check-ios-plist, sync-info-plist; src: project.yml, Makefile, Scripts/ios/sync-info-plist.py, TextMouth/Platform/iOS/Info.plist, TextMouth/Resources/Info.plist, TextMouthProductionTests/IOSInfoPlistTests.swift -->
 
 - The iOS app has one Info.plist, an Info.plist of its own, `TextMouth/Platform/iOS/Info.plist`, which project.yml names in `INFOPLIST_FILE` and Xcode merges into the plist it generates (`GENERATE_INFOPLIST_FILE`).
-  XcodeGen would set `INFOPLIST_FILE` to the first `Info.plist` among a target's sources, even one the target excludes, so project.yml names the iOS file itself.
-  `Scripts/ios/sync-info-plist.py` writes the iOS file from the Mac's, `TextMouth/Resources/Info.plist`, so the two cannot drift apart by hand, and `make check-ios-plist` (`--check`) exits 1 when the iOS file is stale:
+  XcodeGen would pick the first `Info.plist` among a target's sources, even an excluded one, so project.yml names the iOS file.
+  `Scripts/ios/sync-info-plist.py` writes the iOS file from the Mac's, `TextMouth/Resources/Info.plist`, so the two cannot drift, and `make check-ios-plist` (`--check`) exits 1 when the iOS file is stale:
   - It leaves out the document types iOS cannot import, with the declaration of any type nothing else names:
     - "Ogg Audio" and "Audio Converted at Import" (the import converts that audio with `afconvert`, which iOS cannot start);
-    - "ALAC Audio" (its one type, `com.apple.coreaudio-format`, is the system's type for `.caf` files too, which are converted the same way, so `.alac` is not offered on iOS either);
+    - "ALAC Audio" (its one type, `com.apple.coreaudio-format`, is also the system's `.caf` type, converted the same way);
     - and "NLS BARD Braille Package" (`.bopf`, FMT56), since the iPhone copies only the file it is handed, and a package file alone would arrive without its BRF volumes.
       A BARD ZIP, or a folder chosen with Import Folder…, imports there.
       `FileImportService.supportedTypes` names the type only under `#if os(macOS)`; `IOSInfoPlistTests` pins both.
     The BRF, BRL, and PEF types stay, since the iPhone reads them in the app (DR34).
     "Audio and Video Converted with ffmpeg" stays, since the app converts it (FMT54), and so does "Lossless Audio Read by TextMouth".
   - It leaves out the keys `LSMinimumSystemVersion` and `NSAppleEventsUsageDescription`, which are macOS's.
-    The Mac's own list names `.azw3` (FMT48), so the iOS plist's Kindle type is the Mac's, unchanged.
-  - It adds the two keys that only iOS has (`IOS_ONLY_KEYS` in the script):
+    The Mac's own list names `.azw3` (FMT48), so the Kindle type is the Mac's.
+  - It adds the keys that only iOS has (`IOS_ONLY_KEYS` in the script):
     - `UIBackgroundModes` with the one mode `audio`, without which every book stops as the screen locks;
+    - `BGTaskSchedulerPermittedIdentifiers`, a wildcard for the export task ([Exports on the iPhone](state/exports-iphone.md));
     - and `UIApplicationSceneManifest` with `UIApplicationSupportsMultipleScenes` false, so the app has one scene at a time, an iPad included, since one reading session cannot serve two windows.
 
     The scene's delegate is named in code, by `TextMouthAppDelegate`, so the manifest names no configuration.
