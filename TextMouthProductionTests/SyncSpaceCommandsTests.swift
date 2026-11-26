@@ -329,7 +329,7 @@ final class SyncSpaceCommandsTests: XCTestCase {
 
     /// One sweep takes at most 25 books off the device; the rest wait for the next sync.
     func testASweepTakesAtMostTwentyFiveBooks() async {
-        let books = (1...30).map { fixtureBook("Book \($0)", openedDaysAgo: 100 + $0) }
+        let books = (1...30).map { fixtureBook("Book \($0)", openedDaysAgo: Double(100 + $0)) }
         let fixture = SpaceFixture(books: books)
         let first = await fixture.sweep(settings: fixture.settings(days: 7))
         XCTAssertEqual(first.removed.count, LibraryCloudCommands.unopenedBooksPerSweep)
