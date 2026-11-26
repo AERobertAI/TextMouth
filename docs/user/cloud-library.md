@@ -14,6 +14,8 @@ To put your library there, choose a folder in the drive with Change Location… 
 
 research/CLOUD-STORAGE-RESEARCH-2026-10-03.md and research/CLOUD-STORAGE-PLAN-2026-10-03.md, in the same folder as this file, explain the design.
 
+A library kept on this Mac and synced with an iPhone through a TextMouth Sync folder in iCloud Drive is a different thing: see [Syncing your library between your devices](syncing-your-library.md).
+
 ## How each cloud drive keeps a book
 <!-- id: how-each-cloud-drive-keeps; keys: package sync flags, .tmb, per-file sync, BookCloudStorageService; src: TextMouth/Services/BookCloudStorageService.swift, TextMouth/Models/CloudStorageContract.swift -->
 
@@ -100,6 +102,7 @@ Keep on This Mac:
 A book's context menu, and its VoiceOver actions, offer Keep on This Mac, or Stop Keeping on This Mac for a book kept already, for any book in a library in the cloud, even one whose package hasn't arrived yet.
 With several books selected, each counts the books it acts on, as in "Keep 3 Books on This Mac".
 The Library menu has both commands too, for the books selected in the Library window in front; when nothing would change, VoiceOver says why, as in "No books are selected."
+While library sync is on, a synced library offers Keep on All Devices and Stop Keeping on All Devices in their place (see [Syncing your library between your devices](syncing-your-library.md)).
 
 ### What a kept book does
 <!-- id: what-kept-book-does; keys: download at once, retry delay, five minutes, keptBookRetryDelay; src: TextMouth/ViewModels/LibraryViewModel+Cloud.swift, TextMouth/Services/KeptBooks.swift -->

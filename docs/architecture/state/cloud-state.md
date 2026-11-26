@@ -67,6 +67,7 @@ The list's cloud commands.
   Keep on This Mac's one announcement covers the start of the downloads it begins, and a refresh's downloads of kept books announce nothing but that notice for the reading list's books.
   LibraryCloudWording words every title and announcement.
   Book Info reads a book's metadata off the main thread through LibraryBookInfoReader and never downloads: a book only in the cloud shows the metadata the library keeps, and writing such an EPUB's file is refused.
+- With library sync on, Keep on All Devices and Stop Keeping on All Devices stand in the two Keep on This Mac commands, and a placeholder offers Download Now ([Library sync: books and rules](library-sync-store.md)).
 
 ## Books kept on this Mac
 <!-- id: books-kept-this-mac; keys: KeptBooks, keep downloaded, pin offline, KEEP_ON_MAC, Kept Books.json; src: TextMouth/Services/KeptBooks.swift, TextMouth/ViewModels/LibraryViewModel+Cloud.swift, TextMouth/Models/LibraryCloudWording.swift, TextMouth/Models/CloudStorageContract.swift, TextMouth/Views/Library/BookCloudNote.swift, TextMouth/Views/Library/LibrarySubviews.swift, TextMouth/Views/Library/LibraryView.swift, TextMouth/App/MenuCommands.swift -->
@@ -88,6 +89,7 @@ Books kept on this Mac (Keep on This Mac).
   One whose download failed waits keptBookRetryDelay, five minutes, before a refresh tries it again.
   Remove Download refuses a kept book (BookCloudError.keptOnThisMac).
   The log has KEEP_ON_MAC lines for keeping and stopping, and KEPT_BOOK_DOWNLOAD lines for the downloads.
+- With library sync on, KeptBooks also holds the books kept on all devices (syncedBookIDs), derived from the sync's registers and never saved here, and isKept(_:) answers for them ([Library sync: books and rules](library-sync-store.md)).
 
 ## Books the reading list keeps
 <!-- id: books-reading-list-keeps; keys: KeptBooks, downloadWhatFits, free space reserve, keepsReadingListBooks, reading list keep, DOWNLOAD_SKIPPED_NO_ROOM; src: TextMouth/Services/KeptBooks.swift, TextMouth/ViewModels/LibraryViewModel+Cloud.swift, TextMouth/Models/LibraryCloudWording.swift, TextMouth/Models/CloudStorageContract.swift, TextMouth/Services/ArchiveBudget.swift, TextMouth/Views/Library/ReadingListOptionsBar.swift, TextMouth/Models/ReadingListWording.swift, TextMouth/Models/LibraryInfoWording.swift -->
@@ -116,6 +118,7 @@ Books kept on this Mac (Keep on This Mac).
   Turning the checkbox on says it afresh.
   Book Information says "for the reading list" (BookInfoFacts.isKeptOnlyForReadingList).
   Nothing is removed by a book's leaving the list.
+- With library sync on, the checkbox shows in a library that is not in a cloud folder too, and the downloads run after each sync, on Wi-Fi or Ethernet only ([Library sync: books and rules](library-sync-store.md)).
 ## Maintenance in a cloud library
 <!-- id: maintenance-cloud-library; keys: dataless files, startup repair, metadata refresh, text cache batch, CloudSkips, MaintainedFiles, fileInCloud; src: TextMouth/Services/MaintenanceFileAccess.swift, TextMouth/ViewModels/LibraryViewModel+Migration.swift, TextMouth/ViewModels/LibraryViewModel+MetadataRefresh.swift, TextMouth/Services/FileImportService.swift, TextMouth/Services/TextCacheUpdateQueue.swift, TextMouth/Services/BookContentAnalysisService.swift, TextMouth/Models/TextCacheFingerprint.swift -->
 

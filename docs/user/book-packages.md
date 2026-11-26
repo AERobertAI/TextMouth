@@ -236,6 +236,14 @@ The text content.md held before was kept as content.md.edited-20261004T123012Z, 
 A marker written before markers carried an edit record gets the same, and a package of a book edited with Edit Text imports with its edit kept.
 When no copy can be kept, adding the book back stops with "Harbour Pilots was not added back: no copy of the text its package held could be kept first, so TextMouth left the text as it was."
 
+## .storeCopy.json, a book's pointer to the sync folder
+<!-- id: storecopy-json; keys: placeholder, pointer, In Cloud, library sync, sync folder; src: TextMouth/Services/SyncPlaceholder.swift, TextMouth/Models/Sync/SyncInterfaces.swift -->
+
+.storeCopy.json: present only in a library that syncs (see [Syncing your library between your devices](syncing-your-library.md)).
+It names the book's copy in the sync folder and which of its files are on this device.
+A book another device added, and this one hasn't downloaded, is a package of only its record and this pointer, and shows In Cloud.
+Its leading dot keeps it out of export and out of the files a book is said to have.
+
 ## .import- folders, imports in progress
 <!-- id: import-folders-imports-progress; keys: import staging, interrupted import, leftover folder; src: TextMouth/Services/ImportStaging.swift -->
 

@@ -99,6 +99,15 @@ library-identity.json: which library this is, an identifier and the date the lib
 It is written once, when TextMouth creates the library or first opens one an earlier version made, and never overwritten, so the library keeps its identity wherever its folder goes.
 TextMouth remembers the identifier it expects, so a folder that only has the right name, such as another drive called Backup, is never taken for your library.
 
+## Sync, this Mac's own sync files
+<!-- id: sync-folder-data-directory; keys: Sync folder, library sync, outbox, device.json, registers.json, baseline.json; src: TextMouth/Services/Sync/SyncLocalFiles.swift, TextMouth/Services/TextMouthPaths.swift -->
+
+Sync: present only once you have set up sync (see [Syncing your library between your devices](syncing-your-library.md)).
+It holds a folder for the sync folder's store, with this device's own files: who it is in the store, its clock, what it has merged from each other device, the latest value of each synced setting, and an Outbox of changes not yet uploaded.
+These stay on this Mac and are never in iCloud Drive; Stop Syncing leaves them where they are.
+A copy of the library made while sync is on is told from the original, and takes a new identity of its own at its first sync.
+[Library sync](../architecture/state/library-sync.md) says what each file holds.
+
 ## config.json, your settings
 <!-- id: config-json-your-settings; keys: settings file, edit by hand, preferences; src: TextMouth/Services/ConfigService.swift -->
 

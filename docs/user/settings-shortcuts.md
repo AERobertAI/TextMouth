@@ -135,6 +135,12 @@ A key with no view says "There is no view 7.
 Go to View reaches 6 views."
 (see [The Library window](library-window.md)).
 
+### Sync Now
+<!-- id: shortcuts-sync-now; keys: Command-Option-S, Option-Command-S, Library menu, Sync Now; src: TextMouth/Models/KeyboardShortcut.swift, TextMouth/App/MenuCommands.swift -->
+
+Sync Now, under Library, has Command-Option-S until you change it, and is changed, recorded, and reset like any other shortcut.
+Its menu item exists only while sync is on (see [Syncing your library between your devices](syncing-your-library.md)).
+
 ### Next in Folder and Previous in Folder
 <!-- id: next-folder-previous-folder; keys: Next in Reading List, Previous in Reading List, Navigate menu, folder navigation; src: TextMouth/Models/KeyboardShortcut.swift, TextMouth/Models/FolderNavigationWording.swift -->
 

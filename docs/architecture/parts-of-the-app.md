@@ -73,6 +73,7 @@ The source folders:
   - Services/Feeds holds the feed engine, whose FeedCenter.shared LibraryViewModel starts and offers as feeds;
   - Services/AudioEditing the audio editing engine, which works without a window (see [Audio edits](state/audio-edits.md));
   - Services/Export the model, walker, and writers of text export, which the Export dialog's Convert to picker chooses among (see [Exports](state/exports.md));
+  - Services/Sync, whose pure types are in Models/Sync, the library sync (see [Library sync](state/library-sync.md));
   - and Services/MP3 the MP3 encoder over the LAME library that project.yml builds from Vendor/lame (see MP3 files TextMouth writes in [Audio edits](state/audio-edits.md)).
 - ViewModels: LibraryViewModel and ReaderViewModel, each split into extensions by topic, plus SettingsViewModel, BookSearchModel, and LibraryBookUpdates.
 - Views: the SwiftUI views of the library, the reader, settings, the Record window, the audio editor window (Views/AudioEditor), the Export dialog (Views/Export), transcription's sheets, dialogs, and settings group (Views/Transcription), and the feed reader's interface (Views/Feeds).
@@ -124,6 +125,7 @@ The list's cloud refreshes and commands call the cloud services from detached ta
 - a move's copy;
 - and a folder edit's moves.
 
+Library sync's engine is an actor, its file calls run on a queue of their own with limits, and the main actor only applies a merge (see [Library sync: books and rules](state/library-sync-store.md)).
 The audio editor's level measurement reads its composition on a Thread of its own for the same reason: a reader may block for as long as CoreMedia takes, and a few cancelled measurements blocked there starve the cooperative pool.
 A read that must never download runs inside DatalessFiles.withoutDownloading, which leaves dataless files in the cloud for its own thread only.
 Other work leaves the main thread too.

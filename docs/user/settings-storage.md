@@ -57,3 +57,9 @@ It waits while TextMouth reads any book's file again in another encoding, with t
 It starts nothing, and the status line under its button says, and VoiceOver announces once, "TextMouth is reading “Moby-Dick” again in another encoding.
 Try again when that finishes.", naming that book.
 Choose it again once the re-read has ended.
+
+## Sync
+<!-- id: storage-sync-section; keys: Set Up Sync, Join Sync Folder, Sync Now, Stop Syncing, iCloud Drive; src: TextMouth/Platform/macOS/Views/SyncSettingsSection.swift, TextMouth/Views/Settings/StorageSettingsView.swift -->
+
+The Sync group, after Library maintenance, sets up, joins, runs, and stops the sync of your library with your iPhone through iCloud Drive.
+Its status line and buttons are described in [Syncing your library between your devices](syncing-your-library.md).

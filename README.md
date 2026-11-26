@@ -70,6 +70,8 @@ ARCHITECTURE.md, in the same folder, is the index of the pages explaining how th
   - [Folders of this Mac's own](docs/user/this-macs-folders.md): working copies, staging, recordings, and caches.
   - [Helper programs TextMouth watches](docs/user/helper-programs.md): the converters, textutil, and the braille helper.
 - [Keeping your library in the cloud](docs/user/cloud-library.md): iCloud Drive, Dropbox, Google Drive.
+- [Syncing your library between your devices](docs/user/syncing-your-library.md): Set Up Sync and Sync Now.
+  - [Syncing on the iPhone](docs/user/syncing-on-iphone.md): the Sync section, and Sync Now.
 - [Editing settings in config.json](docs/user/config-json.md): every setting the file holds.
 
 ## For people building TextMouth
@@ -83,6 +85,7 @@ ARCHITECTURE.md, in the same folder, is the index of the pages explaining how th
   - [Markup guard, Kindle, and MOBI tests](docs/developer/testing-formats.md): reader tests for those formats.
   - [Tests on GitHub Actions](docs/developer/testing-github.md): the runner, and how it differs.
   - [Testing the iPhone app](docs/developer/testing-iphone.md): the phone area, the two iOS test targets.
+  - [Testing library sync](docs/developer/testing-sync.md): the sync area, two devices, the log.
   - [The iPhone accessibility audit](docs/developer/testing-iphone-audit.md): the audit, its accepted findings, the UI tests.
 - [Translating TextMouth](docs/developer/translation.md): the translation tools, the glossary, and the rules.
 - [The interface languages](docs/developer/translation-languages.md): each language's letters, address, plurals, and doubts.
