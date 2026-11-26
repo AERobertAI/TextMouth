@@ -269,6 +269,23 @@ class CountingTheTestsTests(TreeCase):
                                   "extension XCUIApplication {\n    func testHelper() {}\n}\n")
         self.assertEqual(ui.test_counts(root), {"A": 1})
 
+    def test_a_class_nested_in_a_test_class_hides_none_of_the_tests_after_it(self):
+        # A helper nested in a test class (a file presenter, a host stub) holds only its own braces: the tests after it
+        # are still its outer class's. Before, they were credited to the helper and lost from the count.
+        root = self.folder_with(A="final class A: TextMouthUITestCase {\n    func testA() {}\n"
+                                  "    private final class Presenter: NSObject {\n        func helper() {}\n    }\n"
+                                  "    func testB() {}\n}\n")
+        self.assertEqual(ui.test_counts(root), {"A": 2})
+        self.assertEqual(ui.methods_of("A", root), ["testA", "testB"])
+
+    def test_a_brace_or_a_class_in_a_comment_or_a_string_moves_no_scope(self):
+        root = self.folder_with(A='final class A: TextMouthUITestCase {\n    // class B: TextMouthUITestCase {\n'
+                                  '    let brace = "}"\n    /* } */\n    func testA() {}\n'
+                                  '    let fixture = """\n    class C: TextMouthUITestCase {\n    """\n'
+                                  '    func testB() {}\n}\n')
+        self.assertEqual(ui.ui_classes(root), ["A"])
+        self.assertEqual(ui.test_counts(root), {"A": 2})
+
     def test_a_file_in_a_subfolder_is_read(self):
         root = self.folder_with("Deeper/Still", A="final class A: TextMouthUITestCase {\n    func testA() {}\n}\n")
         self.assertEqual(ui.ui_classes(root), ["A"])

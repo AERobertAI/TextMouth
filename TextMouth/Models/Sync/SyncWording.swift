@@ -107,6 +107,12 @@ enum SyncWording {
         InterfaceText.line("sync.announce.keeping", "Keeping \(title) on all devices.")
     }
 
+    /// Announced after a person stops keeping a book on all devices.
+    static func announceStoppedKeeping(title: String) -> String {
+        // Translators: Said aloud after the person chooses Stop Keeping on All Devices. %@ is the book's title.
+        InterfaceText.line("sync.announce.stoppedKeeping", "No longer keeping \(title) on all devices.")
+    }
+
     // MARK: - Refusals
 
     /// A folder chosen outside iCloud Drive.
@@ -218,6 +224,12 @@ enum SyncWording {
         InterfaceText.line("sync.status.notDownloaded", "Some changes from iPhone haven't downloaded yet. TextMouth will try again.")
     }
 
+    /// Removals held back as a mass removal.
+    static func heldRemovals(books: Int, device: String) -> String {
+        // Translators: The Sync status when TextMouth held back removing many books at once because it looked like a mistake. The first %@ is a phrase counting books ("42 books"), and the second names the device ("this Mac" or "this iPhone"), whose library the person should check. Sync Now is the name of a command.
+        InterfaceText.line("sync.status.heldRemovals", "TextMouth held back removing \(Self.books(books)), since it looked like a mistake. Check the library on \(device), then choose Sync Now.")
+    }
+
     /// Everything is synced.
     static func statusUpToDate(at time: String) -> String {
         // Translators: The Sync status when everything is synced. %@ is the time of the last sync, written by the system, such as "9:41 AM".
@@ -260,5 +272,19 @@ enum SyncWording {
     static func announceMovedToPlace(from device: String) -> String {
         // Translators: Said aloud when the open book moves to the place saved on another device. %@ names that device, such as "iPhone".
         InterfaceText.line("sync.announce.movedToPlace", "Moved to the place saved on \(device).")
+    }
+
+    // MARK: - A book that cannot be fetched
+
+    /// A book's files stopped arriving from iCloud Drive.
+    static var fetchStalled: String {
+        // Translators: Why a book's download from the sync folder stopped: iCloud Drive stopped sending its files. Said in the download view.
+        InterfaceText.line("sync.fetch.stalled", "iCloud Drive stopped sending this book's files.")
+    }
+
+    /// What to try when a fetch stalled on a cellular or hotspot connection.
+    static var fetchCellularHint: String {
+        // Translators: Added after the stalled-download sentence when the connection is cellular or a hotspot. iCloud Drive has a setting that stops it using cellular data.
+        InterfaceText.line("sync.fetch.cellularHint", "If iCloud Drive can't use cellular data, connect to Wi-Fi.")
     }
 }

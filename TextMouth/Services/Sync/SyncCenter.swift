@@ -39,7 +39,7 @@ struct SyncCenterEnvironment {
     /// The name this device gives itself in the store: its host name without ".local", or "Mac" or "iPhone".
     @MainActor static func deviceName(isPhone: Bool) -> String {
         let name = LibrarySessionLease.systemComputerName()
-        return name.isEmpty ? (isPhone ? "iPhone" : "Mac") : name
+        return name.isEmpty ? (isPhone ? "iPhone" : "Mac") : name // l10n: no (a device's name in the store, as the system gives it)
     }
 
     /// The app's own: the process's preferences, iCloud Drive's location, and the real clock and voice.
@@ -257,7 +257,7 @@ struct SyncCenterEnvironment {
     /// The folder a Debug build's interface test names in `TEXTMOUTH_SYNC_FOLDER` as one it may sync into (a
     /// sandbox folder, which R6 would refuse), as `TEXTMOUTH_EXPORT_TO` is for export. A Release build never
     /// reads it: nothing here exists there.
-    static func seamFolder(environment: [String: String] = ProcessInfo.processInfo.environment) -> URL? {
+    nonisolated static func seamFolder(environment: [String: String] = ProcessInfo.processInfo.environment) -> URL? {
         #if DEBUG
         guard let path = environment["TEXTMOUTH_SYNC_FOLDER"], !path.isEmpty else { return nil }
         return URL(fileURLWithPath: path, isDirectory: true).standardizedFileURL
@@ -267,7 +267,7 @@ struct SyncCenterEnvironment {
     }
 
     /// Whether `url` is, or is inside, the folder the test seam names.
-    static func isSeamFolder(_ url: URL, environment: [String: String] = ProcessInfo.processInfo.environment) -> Bool {
+    nonisolated static func isSeamFolder(_ url: URL, environment: [String: String] = ProcessInfo.processInfo.environment) -> Bool {
         guard let seam = seamFolder(environment: environment) else { return false }
         let path = url.standardizedFileURL.path
         return path == seam.path || path.hasPrefix(seam.path + "/")
@@ -431,6 +431,7 @@ struct SyncCenterEnvironment {
     /// The network path changed: the scheduler decides whether it is "back".
     private func networkReport(_ report: NetworkPathReport) {
         lastPath = report
+        SyncActivity.setPathIsCostly(report.isExpensive || report.isConstrained)
         scheduler.notePath(satisfied: report.isSatisfied, at: environment.now())
         rearm()
     }

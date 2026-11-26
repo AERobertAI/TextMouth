@@ -53,6 +53,29 @@ final class SyncStatusLineTests: XCTestCase {
         XCTAssertEqual(line(status), SyncWording.anotherStore)
     }
 
+    /// Held-back removals are said, with how many and what to do, before "up to date".
+    func testHeldRemovalsAreSpoken() {
+        var status = upToDate
+        status.heldRemovals = 42
+        let spoken = line(status)
+        XCTAssertEqual(spoken, SyncWording.heldRemovals(books: 42, device: SyncWording.thisDevice(isPhone: false)))
+        XCTAssertTrue(spoken.contains("42"))
+        XCTAssertTrue(spoken.contains(SyncWording.thisDevice(isPhone: false)))
+        status.heldRemovals = 0
+        XCTAssertEqual(line(status), SyncWording.statusUpToDate(at: "9:41 AM"))
+    }
+
+    /// The new lines' English, pinned: what a person hears when keeping stops, and when a fetch stalls.
+    func testTheNewLinesInEnglish() {
+        XCTAssertEqual(SyncWording.announceStoppedKeeping(title: "Moby-Dick"), "No longer keeping Moby-Dick on all devices.")
+        XCTAssertEqual(SyncWording.fetchStalled, "iCloud Drive stopped sending this book's files.")
+        XCTAssertEqual(SyncWording.fetchCellularHint, "If iCloud Drive can't use cellular data, connect to Wi-Fi.")
+        XCTAssertEqual(SyncWording.heldRemovals(books: 42, device: "this Mac"),
+                       "TextMouth held back removing 42 books, since it looked like a mistake. Check the library on this Mac, then choose Sync Now.")
+        XCTAssertFalse(StoreBookStorage.stalledSentence(onCostlyPath: false).contains("cellular"))
+        XCTAssertTrue(StoreBookStorage.stalledSentence(onCostlyPath: true).hasSuffix(SyncWording.fetchCellularHint))
+    }
+
     /// Changes waiting to upload are said when nothing is wrong.
     func testWaitingChanges() {
         var status = upToDate
