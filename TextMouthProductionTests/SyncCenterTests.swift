@@ -52,7 +52,7 @@ import XCTest
     /// Makes a center whose library is at `library` and whose iCloud Drive folder is `drive`, by the answers of `locate`.
     private func makeWorld(
         library: StorageLocation = .local, folder: StorageLocation = .cloud(.iCloudDrive),
-        renewedBookmark: @escaping @Sendable @MainActor (Data) -> Data? = { _ in nil }
+        renewedBookmark: @escaping @Sendable (Data) -> Data? = { _ in nil }
     ) throws -> World {
         let sandbox = try makeSandboxDirectory("sync-center")
         let dataDirectory = sandbox.appendingPathComponent("data", isDirectory: true)
@@ -398,6 +398,20 @@ import XCTest
 
         await world.center.recordNow()
         XCTAssertEqual(try presence(of: book, in: world), .bool(true), "recording works again")
+    }
+
+    // MARK: - A folder in a trash (sync-iphone review item 10)
+
+    /// A folder that was deleted in Files or Finder, and is in a trash, is not a place to set up or join.
+    func testAFolderInATrashIsRefused() async throws {
+        let world = try makeWorld()
+        world.center.install(host: world.host, dataDirectory: world.dataDirectory)
+        let trashed = world.parent.deletingLastPathComponent().appendingPathComponent(".Trash/Drive", isDirectory: true)
+        try FileManager.default.createDirectory(at: trashed, withIntermediateDirectories: true)
+        do {
+            try await world.center.setUp(in: trashed)
+            XCTFail("a folder in a trash")
+        } catch { XCTAssertEqual(error as? SyncProblem, .notInICloudDrive) }
     }
 
     // MARK: - Installing again (sync-mac review item 9)

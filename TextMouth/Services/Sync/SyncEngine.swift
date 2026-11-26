@@ -337,7 +337,8 @@ actor SyncEngine {
         var deviceFolder = folder.deviceFolder(outbox.device.deviceID)
         do {
             do {
-                result.filesCopied = try await outbox.copy(into: deviceFolder, using: folder.access, now: now())
+                let verified = try await outbox.verifiedPresent(in: deviceFolder, using: folder.access)
+                result.filesCopied = try outbox.copyVerified(into: deviceFolder, using: folder.access, now: now(), verified: verified)
             } catch is SyncOutboxConflict {
                 // A file of a seq this device wrote is in the folder with other bytes: another writer holds this
                 // identity. This library takes a new one, sets the old outbox aside, and sends a snapshot.
@@ -346,7 +347,8 @@ actor SyncEngine {
                 try publishDevice(in: folder)
                 try appendSnapshotIfDue()
                 deviceFolder = folder.deviceFolder(outbox.device.deviceID)
-                result.filesCopied = try await outbox.copy(into: deviceFolder, using: folder.access, now: now())
+                let verified = try await outbox.verifiedPresent(in: deviceFolder, using: folder.access)
+                result.filesCopied = try outbox.copyVerified(into: deviceFolder, using: folder.access, now: now(), verified: verified)
             }
             try stopAfter?(.copy)
             result.uploadProblem = try outbox.refreshUploads(in: deviceFolder, using: folder.access)

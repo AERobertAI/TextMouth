@@ -256,12 +256,14 @@ struct SyncCenterEnvironment {
 
     /// Refuses what R6 refuses: a library kept in a cloud location or on another volume.
     private func requireLocalLibrary() throws {
+        // On the iPhone the app's own container is local: `location(of:)` knows (it never says another volume there).
         guard let dataDirectory, environment.locate(dataDirectory) == .local else { throw SyncProblem.libraryNotLocal }
     }
 
     /// Refuses a folder that isn't in iCloud Drive.
     private func requireICloudDrive(_ folder: URL) throws {
-        guard environment.locate(folder) == .cloud(.iCloudDrive) else { throw SyncProblem.notInICloudDrive }
+        // A folder in a trash (deleted in Finder or Files) is not a place to sync into.
+        guard !SyncFolderIO.isDeleted(folder), environment.locate(folder) == .cloud(.iCloudDrive) else { throw SyncProblem.notInICloudDrive }
     }
 
     /// Makes TextMouth Sync and its store.json in `parent`, then joins it.
@@ -454,24 +456,27 @@ struct SyncCenterEnvironment {
     /// or renamed): the preferences and the access use it from now on. It is checked again against R6: a
     /// renewal that now leads outside iCloud Drive (the Trash, a local copy left at sign-out) is not kept,
     /// and the folder is reported missing.
-    private func renewBookmarkIfStale() async {
-        guard let current = bookmark else { return }
+    @discardableResult
+    private func renewBookmarkIfStale() async -> Bool {
+        guard let current = bookmark else { return true }
         // Resolving a bookmark can wait on the file system: it is done off the main actor.
         let renew = environment.renewedBookmark
         let locate = environment.locate
         let checked = await Task.detached { () -> (fresh: Data, refused: Bool)? in
             guard let fresh = renew(current) else { return nil }
-            if let target = PlainSyncFolderAccess.resolve(fresh)?.url, locate(target) != .cloud(.iCloudDrive) { return (fresh, true) }
+            if let target = PlainSyncFolderAccess.resolve(fresh)?.url, SyncFolderIO.isDeleted(target) || locate(target) != .cloud(.iCloudDrive) { return (fresh, true) }
             return (fresh, false)
         }.value
-        guard let checked, bookmark == current else { return }
+        guard let checked, bookmark == current else { return true }
         if checked.refused {
+            // The folder now leads outside iCloud Drive or into a trash: this run is not made with the old access.
             status.problem = .folderMissing
-            return
+            return false
         }
         SyncPreferences.bookmark.write(checked.fresh, to: environment.preferences)
         bookmark = checked.fresh
         access = environment.makeAccess(checked.fresh)
+        return true
     }
 
     /// Records this device's changes now, unless a merge is being applied (those values are not this
@@ -532,7 +537,10 @@ struct SyncCenterEnvironment {
             pendingReason = Self.folded(pendingReason, reason)
             return
         }
-        await renewBookmarkIfStale()
+        guard await renewBookmarkIfStale() else {
+            if reason == .syncNow { environment.announce(SyncStatusLine.text(for: status, isPhone: environment.isPhone, time: Self.timeOfDay)) }
+            return
+        }
         // Another request may have started while the bookmark was looked at.
         if isRunning {
             pendingReason = Self.folded(pendingReason, reason)
