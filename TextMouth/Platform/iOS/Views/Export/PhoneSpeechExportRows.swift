@@ -77,7 +77,8 @@ struct PhoneSpeechExportRows: View {
         }
 
         /// A slider that says its label, its value in words, and its hint: the value is shown above it for the eye and
-        /// hidden from VoiceOver, which hears it once, as the slider's own.
+        /// hidden from VoiceOver, which hears it once, as the slider's own. The label is the slider's own label view: a
+        /// second accessibility label would be added to it and read twice ("Speed, Speed").
         private func slider(_ row: PhoneExportOffer.SpeechRow, value: Binding<Double>, range: ClosedRange<Double>, step: Double) -> some View {
             VStack(alignment: .leading, spacing: 4) {
                 PhoneValueRow(name: row.label, value: row.value ?? "")
@@ -85,7 +86,6 @@ struct PhoneSpeechExportRows: View {
                 Slider(value: value, in: range, step: step) {
                     Text(row.label)
                 }
-                .accessibilityLabel(row.label)
                 .accessibilityValue(row.value ?? "")
                 .accessibilityHint(row.hint)
             }
