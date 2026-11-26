@@ -2931,6 +2931,7 @@
 		E002C42FD35F49F392F4366F /* FeedBookLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20DEDB125CE1B192D3E8C74 /* FeedBookLink.swift */; };
 		E00D7F3BCD3AE8CD7D089461 /* AudioEditRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F374071750996EBEC2EA5CB /* AudioEditRenderer.swift */; };
 		E026E56FF0EDA2869C9AAB28 /* FeedUICommandsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D919809E18384020EF1E2AE /* FeedUICommandsTests.swift */; };
+		E04EE4E30D35CDC5C421DED9 /* ZIPEncryptionTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69229F250D1A15207AED3496 /* ZIPEncryptionTestSupport.swift */; };
 		E04EE9F45E210EFCFE46D6B3 /* AudioFilterCoefficientTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46C29A12FFBAAF84584C376E /* AudioFilterCoefficientTests.swift */; };
 		E04FD0BDC093DD4BE65D0844 /* PhoneLogExportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 318A3B98B2B04805CE54C959 /* PhoneLogExportTests.swift */; };
 		E06CEC96BD3F9C8F39FA82EA /* PDFRecognitionPlanTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0822DEC58557FEA8335C7A8D /* PDFRecognitionPlanTests.swift */; };
@@ -9712,6 +9713,7 @@
 				AF52CF9536C75AFCD989C9BD /* WordDocumentLegacyComparisonTests.swift in Sources */,
 				995BA0410D263C8520126E9A /* WordsInOrderSupport.swift in Sources */,
 				99CB0A449ED5E7FB413789AB /* XMLInputGuardTests.swift in Sources */,
+				E04EE4E30D35CDC5C421DED9 /* ZIPEncryptionTestSupport.swift in Sources */,
 				F7FA65998F598510CEE4B2AA /* ZIPTestSupport.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

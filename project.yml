@@ -1276,6 +1276,7 @@ targets:
       - TextMouthProductionTests/WordsInOrderSupport.swift
       - TextMouthProductionTests/XMLInputGuardTests.swift
       - TextMouthProductionTests/ZIPTestSupport.swift
+      - TextMouthProductionTests/ZIPEncryptionTestSupport.swift
       # End of the shared Mac test files.
     settings:
       base:
