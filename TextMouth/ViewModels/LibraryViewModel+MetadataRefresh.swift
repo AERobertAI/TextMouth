@@ -53,6 +53,8 @@ extension LibraryViewModel {
     /// feed's item (FR11), whose title and author come from its feed.
     nonisolated static func needsMetadataRefresh(_ book: Book) -> Bool {
         !book.isFeedItem
+            // A protected book's file cannot be read without its password (FR41).
+            && !book.isPasswordProtected
             && SemanticVersion.isOutdated(stored: book.metadataReaderVersion, current: ImportedFileMetadata.readerVersion(for: book.format))
     }
 

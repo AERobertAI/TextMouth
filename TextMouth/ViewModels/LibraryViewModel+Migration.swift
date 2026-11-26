@@ -739,6 +739,8 @@ extension LibraryViewModel {
         DatalessFiles.withoutDownloading {
             books.filter { book in
                 guard !book.format.isAudio, !book.tmbDirectoryName.isEmpty else { return false }
+                // A protected book has no cache to keep up to date (FR41).
+                guard !book.isPasswordProtected else { return false }
                 // Needs cache if missing or if the stored version is outdated
                 if !MarkdownCacheService.cacheExists(for: book) { return true }
                 if MarkdownCacheService.isCacheOutdated(stored: book.cacheFormatVersion) { return true }

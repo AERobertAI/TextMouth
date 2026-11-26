@@ -185,6 +185,10 @@ enum UnlockedSources {
         }
     }
 
+    /// The plain archive held for the book at `url`, for rewriting its file
+    /// without the password (`ProtectionRemoval`); nil when none is held.
+    static func plainArchiveData(for url: URL) -> Data? { archiveData(for: url) }
+
     /// The ZIP archive at `url`, opened for reading: from memory when the
     /// book is unlocked for now, from the file otherwise.
     /// - Throws: ZIPFoundation's own errors, as `Archive(url:accessMode:)` does.

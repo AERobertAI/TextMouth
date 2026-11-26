@@ -25,7 +25,8 @@ extension ReaderViewModel {
     /// places count time in its recording (P08), before the text has
     /// loaded, and for a chapter the text lacks.
     func capturedAnchor(at place: TextPlace) -> TextAnchor? {
-        guard !isAudioBook, let content else { return nil }
+        // A protected book's words are never copied into a record (FR41).
+        guard !isAudioBook, !book.isPasswordProtected, let content else { return nil }
         return content.anchor(at: place, measuredIn: textAnchorMeasure)
     }
 
@@ -89,7 +90,7 @@ extension ReaderViewModel {
     /// copies. The position takes its words from the save the load makes.
     /// Places that have words keep them, and nothing is spoken or shown.
     func captureMissingAnchorsAtLoad() {
-        guard !isAudioBook, let content, let row = libraryViewModel.bookByID(book.id) else { return }
+        guard !isAudioBook, !book.isPasswordProtected, let content, let row = libraryViewModel.bookByID(book.id) else { return }
         let captured = CapturedPlaceAnchors.capturing(
             missingFrom: row,
             in: content,

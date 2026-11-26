@@ -79,6 +79,12 @@ struct PhoneReaderView: View {
             .task {
                 await arrive()
             }
+            // A protected book asks for its password over the reader (FR41).
+            .overlay {
+                if let reader = session.reader {
+                    PhoneUnlockOverlay(reader: reader)
+                }
+            }
     }
 
     // MARK: - The Screen
@@ -451,5 +457,30 @@ private final class PhoneReaderArrival {
     /// any reader control, the arrival is over.
     private func landed(onElementWithID id: ObjectIdentifier?) {
         policy.focusLanded(on: PhoneFocusRegistry.shared.kind(ofElementWithID: id))
+    }
+}
+
+// MARK: - Protected Books
+
+/// The password panel over the phone's reader while its book is locked
+/// (FR41). It watches the reader itself, so the panel appears and goes as
+/// the reader's prompt does, and while it shows nothing beneath it is
+/// reachable by VoiceOver (a modal element).
+private struct PhoneUnlockOverlay: View {
+    @ObservedObject var reader: ReaderViewModel
+    /// Goes back to the library, as Back does.
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        if let prompt = reader.unlockPrompt {
+            UnlockBookPanel(
+                title: reader.book.title,
+                state: prompt,
+                onUnlock: { reader.submitUnlock($0) },
+                onCancel: { dismiss() }
+            )
+            .background(Color(.systemBackground))
+            .accessibilityAddTraits(.isModal)
+        }
     }
 }

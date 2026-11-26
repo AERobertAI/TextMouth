@@ -95,7 +95,7 @@ extension LibraryViewModel {
         access: MaintenanceFileAccess = .live,
         then completion: (@MainActor @Sendable (TextAnchorBackfillOutcome) -> Void)? = nil
     ) {
-        let candidates = library.books.filter { !$0.tmbDirectoryName.isEmpty && $0.placesWithoutAnchors > 0 }
+        let candidates = library.books.filter { !$0.tmbDirectoryName.isEmpty && !$0.isPasswordProtected && $0.placesWithoutAnchors > 0 }
         guard !candidates.isEmpty else {
             completion?(TextAnchorBackfillOutcome())
             return

@@ -72,6 +72,30 @@ enum BookContentAnalysisService {
             return try analyzeAudio(book: book, url: url)
         }
 
+        // A book whose file has a password keeps no plain copy of its text
+        // on disk (FR41): no content.md, no index, no reading text. Locked,
+        // it is not read at all; unlocked for now, it is read straight from
+        // its file, whose plain form the parsers take from memory
+        // (`UnlockedSources`), and its index is never saved.
+        if book.isPasswordProtected {
+            guard UnlockedSources.isUnlocked(book.bookFileURL) else { throw BookLockedError() }
+            let content = try BookParser.parse(url: book.bookFileURL, format: book.format)
+            let index = content.contentIndex.replacingFormat(book.format)
+            return Result(
+                content: DocumentContent(
+                    title: content.title,
+                    author: content.author,
+                    chapters: content.chapters,
+                    contentIndex: index
+                ),
+                index: index,
+                audioFilePaths: nil,
+                audioSegments: nil,
+                usedPersistedIndex: true,
+                cacheFormatVersion: nil
+            )
+        }
+
         let hadExistingCache = MarkdownCacheService.cacheExists(for: book)
         if regenerateTextCache || !hadExistingCache {
             if let generated = MarkdownCacheService.generateCacheContent(for: book) {

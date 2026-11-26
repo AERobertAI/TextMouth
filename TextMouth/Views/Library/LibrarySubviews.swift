@@ -721,6 +721,11 @@ struct BookRow: View {
                         BookKeptNote()
                     }
 
+                    // "Locked": the book has a password and is not open (FR41).
+                    if book.isLocked {
+                        RowNoteBadge(symbolName: "lock.fill", text: ProtectionWording.lockedState)
+                    }
+
                     // "Transcribed" or "Transcribing", after the cloud notes (FR05).
                     if let transcriptionNote {
                         RowNoteBadge(symbolName: transcriptionNote.symbolName, text: transcriptionNote.text)
@@ -830,6 +835,11 @@ struct BookRow: View {
         }
         if isKeptOnThisMac {
             parts.append(KeptOnThisMacNote.text)
+        }
+        // A protected book says so, after its title and notes, so it is not
+        // opened by surprise (FR41).
+        if book.isLocked {
+            parts.append(ProtectionWording.lockedState)
         }
         if let transcriptionNote {
             parts.append(transcriptionNote.text)
