@@ -112,7 +112,9 @@ A Personal Voice, or no voice, is refused before anything is spoken, in sentence
   The system shows it too, as a Live Activity, with a Cancel that stops it as Stop does.
   At the end the card says what the export did and has Close.
   The end is announced without cutting off what VoiceOver is saying.
-  Focus goes to the card's title when it appears and when it ends, and to the Library's first row once the card is closed.
+  When you close the sheet while the audio file is made, focus goes to the card's title.
+  When the export ends, you hear it, and focus stays where you are, unless it was on the card's Stop, which has gone; then it goes to the card's title.
+  Once you close the card, focus goes to the Library's first row.
 - Stop keeps the chapters already spoken for a week, through closing the app.
   Exporting the same range again at the same speed and pitch goes on from them.
   The sentences at the end say "for a week", where the Mac's say "until TextMouth quits".

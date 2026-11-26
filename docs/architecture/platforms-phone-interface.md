@@ -307,6 +307,7 @@ Export on the iPhone (FR31, phase 1) is the shared `BookExportModel` under a she
   Every word is the Mac's (`BookExportWording`), except the memory sentence (`PhoneExportWording`).
 - Focus lands on the first kind `PhoneFocusPolicy.screenChangedDelay` after the books are listed.
   It returns to the opener after a Convert to list, the folder picker, or an alert closes (`returnFocus(to:)`, with `@AccessibilityFocusState`).
+  When the Stop row or the progress row goes, focus moves to the progress row while the export goes on, or to the end's words once it has ended; the move picks its row when it fires, since a quick file after the audio can end the export within the wait.
 - The folder row opens `fileImporter` for a folder, and `onCancellation` returns focus to the row, since a cancel never reaches `onCompletion`.
   `PhoneExportFolder.keep(_:in:)` keeps the choice (see [Exports on the iPhone](state/exports-iphone.md)).
 - While an export runs the sheet has `interactiveDismissDisabled`.

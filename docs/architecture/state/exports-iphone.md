@@ -76,11 +76,14 @@ What differs is how it keeps running, who stops it, and what it says.
   For a spoken audio export it asks `PhoneExportTasking` for a continued processing task as Export is pressed, the person's action iOS requires.
   `PhoneExportBackgroundTask` registers a handler under `com.textmouth.TextMouth.iOS.export.` and a UUID, which the plist's wildcard permits, then submits with the strategy `fail`.
   When the system takes no task, the export goes on held by the background task every export has.
-- The task's progress is `PhoneExportTaskMirror.update`: the model's fraction in a thousand units, never going back (`NeverBackwards`; the model's fraction does when the speech ends), and the progress words as its subtitle.
+- The task's progress is `PhoneExportTaskMirror.update`: the whole export in a thousand units, never going back (`NeverBackwards`), and the progress words as its subtitle.
+  It measures the whole export, not the sheet's bar, which starts again at 0 for the encoding: speaking fills 80% of the spoken file's share and encoding the rest, so the Live Activity keeps moving to the end, and iOS doesn't take a long book's encoding for a stall.
   The session ends the task with the export, a success only when every file was written.
 - The expiration handler, from iOS or from Cancel in the Live Activity, is `stopBySystem(_:)`: it sets `BookExportModel.wordsBeforeTheEnd` and stops, so the end begins "iOS stopped this export." and then says what is kept for a week.
   An export that finished before the stop took effect does not begin so.
 - The card's focus has one owner (`PhoneExportCardFocus`): the dismissal of the sheet that closed on the card gives it the card's title, the end moves focus only off the card's Stop, and closing it goes to the Library's first row.
+  A new export that replaces an ended card asks for no focus (the `replaced` event), so focus stays in the new sheet; the card has an identifier the list scrolls to.
+  The session clears iOS's words (`wordsBeforeTheEnd`) at every end, so they never begin the next export's.
 - The sheet may close only while the audio file is made (`BookExportModel.isMakingSpeech`).
   `sheetClosed(_:)` then makes the card (`cardModel`, told to the Library by `cardEvents`) and lowers the end's announcement.
   A file of the same book can follow the spoken audio (a transcript, an original), and may ask about a chapter nested too deeply, so `PhoneExportQuestionPrompt` answers Cancel Export at once once the sheet has closed, and the end says so.
