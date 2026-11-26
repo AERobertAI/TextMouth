@@ -7,11 +7,11 @@ import XCTest
 final class SyncFolderIOTests: XCTestCase {
     /// A presenter that never lets a writer in, so a coordinated write on its file waits for it for ever: only a
     /// cancel gets the caller out.
-    private final class StubbornPresenter: NSObject, @preconcurrency NSFilePresenter {
+    private final class StubbornPresenter: NSObject, NSFilePresenter {
         let presentedItemURL: URL?
         let presentedItemOperationQueue = OperationQueue()
         init(file: URL) { presentedItemURL = file }
-        func relinquishPresentedItem(toWriter writer: @escaping ((() -> Void)?) -> Void) {
+        func relinquishPresentedItem(toWriter writer: @escaping @Sendable ((@Sendable () -> Void)?) -> Void) {
             // Never calls `writer`: the coordinator waits on this.
         }
     }
