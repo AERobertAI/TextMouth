@@ -808,4 +808,57 @@ final class OnDiskContractTests: XCTestCase {
             brailleTableOrigin: .guessed
         )
     }
+
+    // MARK: - The sync folder's files (FR43)
+
+    /// Each file of a sync folder holds exactly these keys, and a sync key is
+    /// written as its one line of text: a later key or a renamed one is read as
+    /// none by the TextMouth that made the file (section 3 of the build plan).
+    func testSyncFilesHoldExactlyTheseKeys() throws {
+        let entry = SyncEntry(
+            key: .bookmark(book: UUID(), id: UUID()), value: .null,
+            stamp: SyncStamp(wall: 1, counter: 2, device: "d"), byHand: false
+        )
+        let change = SyncChangeFile(formatVersion: 1, deviceID: "d", incarnation: UUID(), seq: 1, kind: .changes, count: 1, entries: [entry])
+        let changeKeys = try Self.object(from: SyncFormats.encode(change))
+        XCTAssertEqual(
+            Set(changeKeys.keys), ["formatVersion", "deviceID", "incarnation", "seq", "kind", "count", "entries"],
+            Self.because("a sync change file's key", "a device reads another's change file by these names")
+        )
+        let entries = try XCTUnwrap(changeKeys["entries"] as? [[String: Any]])
+        let first = try XCTUnwrap(entries.first)
+        XCTAssertEqual(Set(first.keys), ["key", "value", "stamp", "byHand"])
+        XCTAssertEqual((first["key"] as? String)?.hasPrefix("bookmark/"), true)
+        let stamp = try XCTUnwrap(first["stamp"] as? [String: Any])
+        XCTAssertEqual(
+            Set(stamp.keys), ["wall", "counter", "device"],
+            Self.because("a sync stamp's key", "stamps of the two versions no longer order the same")
+        )
+
+        let store = SyncStoreFile(formatVersion: 1, storeID: UUID(), created: Date(), createdBy: "Mac", createdByVersion: "1")
+        XCTAssertEqual(
+            Set(try Self.object(from: SyncFormats.encode(store)).keys),
+            ["formatVersion", "storeID", "created", "createdBy", "createdByVersion"]
+        )
+        let device = SyncDeviceFile(formatVersion: 1, deviceID: "d", name: "n", platform: "mac", appVersion: "1", lastSeq: 1, updated: Date())
+        XCTAssertEqual(
+            Set(try Self.object(from: SyncFormats.encode(device)).keys),
+            ["formatVersion", "deviceID", "name", "platform", "appVersion", "lastSeq", "updated"]
+        )
+        let manifest = StoreManifest(
+            formatVersion: 1, bookID: UUID(), files: [StoreManifest.File(path: "a", sha256: "b", blob: "c", role: "content", size: 1)]
+        )
+        let manifestKeys = try Self.object(from: SyncFormats.encode(manifest))
+        XCTAssertEqual(Set(manifestKeys.keys), ["formatVersion", "bookID", "files"])
+        let manifestFile = try XCTUnwrap((manifestKeys["files"] as? [[String: Any]])?.first)
+        XCTAssertEqual(Set(manifestFile.keys), ["path", "sha256", "blob", "role", "size"])
+        let pointer = StorePointer(
+            formatVersion: 1, storeID: UUID(), bookID: UUID(), manifest: "m", uploaded: "m",
+            files: [StorePointer.File(path: "a", sha256: "b", size: 1, modified: 2, onThisDevice: true)]
+        )
+        let pointerKeys = try Self.object(from: SyncFormats.encode(pointer))
+        XCTAssertEqual(Set(pointerKeys.keys), ["formatVersion", "storeID", "bookID", "manifest", "uploaded", "files"])
+        let pointerFile = try XCTUnwrap((pointerKeys["files"] as? [[String: Any]])?.first)
+        XCTAssertEqual(Set(pointerFile.keys), ["path", "sha256", "size", "modified", "onThisDevice"])
+    }
 }
