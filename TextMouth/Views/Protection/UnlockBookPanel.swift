@@ -115,7 +115,13 @@ struct UnlockBookPanel: View {
         .frame(maxWidth: .infinity)
         .onAppear {
             remembers = remembersByDefault
-            fieldFocused = true
+            // After the panel is in its window, as the search and Add Feed
+            // sheets do: focus asked for while the view is still being put in
+            // place does not reach a Mac's text field, and the person would
+            // have to find the field before typing.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                fieldFocused = true
+            }
         }
         // A wrong password keeps the person in the field.
         // and what was typed is cleared, so typing again replaces it.
