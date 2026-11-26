@@ -211,27 +211,106 @@ final class StoreRemovalTests: XCTestCase {
         }
     }
 
-    /// A file of the book that is gone by the last look is not a change: there is nothing of it left to lose.
-    func testAFileDeletedHereDuringTheReadBackIsNotAChange() async throws {
+    /// A file of the book gone by the last look is a change too (an edit took a track away, or the package moved or
+    /// went): the removal stops, the pointer is never written, and nothing is reported freed that it did not free.
+    func testAFileDeletedHereDuringTheReadBackStopsTheRemoval() async throws {
         let world = try makeWorld()
+        let pointerBefore = try Data(contentsOf: world.file(StorePointer.fileName))
         var removal = world.removal
         let gone = world.file("book.txt")
         removal.checkpoint = { step in if step == .proven { try FileManager.default.removeItem(at: gone) } }
-        _ = try await removal.removeDownload(of: world.package, bookID: bookID, mayDownload: true)
-        XCTAssertTrue(StoreFetch.isMissingFiles(world.package))
+        do {
+            let outcome = try await removal.removeDownload(of: world.package, bookID: bookID, mayDownload: true)
+            XCTFail("reported \(outcome.freedBytes) bytes freed for a file it never removed")
+        } catch let refusal as SyncRemovalRefusal {
+            XCTAssertEqual(refusal, .changedHere("book.txt"))
+        }
+        XCTAssertEqual(try Data(contentsOf: world.file(StorePointer.fileName)), pointerBefore, "the pointer was never written")
     }
 
-    /// The library's last word stops the removal before the pointer is written: nothing here changes. With a yes it goes.
+    /// The library's last word stops the removal before the pointer is written: nothing here changes. With a yes it
+    /// goes. It is asked on the main actor, about the package that is about to change.
     func testTheLibrarysLastWordStopsTheRemoval() async throws {
         let world = try makeWorld()
         var no = world.removal
-        no.finalCheck = { false }
+        no.finalCheck = { _ in false }
         try await assertRefused(.busy, in: world, removal: no)
 
         var yes = world.removal
-        yes.finalCheck = { true }
+        let asked = NoteLog()
+        yes.finalCheck = { package in
+            asked.note(Thread.isMainThread ? package.standardizedFileURL.path : "off the main thread")
+            return true
+        }
         let outcome = try await yes.removeDownload(of: world.package, bookID: bookID, mayDownload: true)
         XCTAssertEqual(outcome.freedBytes, Int64(text.count))
+        XCTAssertEqual(asked.notes, [world.package.standardizedFileURL.path])
+    }
+
+    // MARK: - The storage boundary
+
+    /// While an operation holds the storage work (a data-directory move), the last look and the removal wait: the
+    /// proof may run, but nothing in the package changes until the hold is released; then the book is freed.
+    func testTheLastLookAndTheRemovalWaitWhileAMoveHoldsTheWork() async throws {
+        let world = try makeWorld()
+        let pointerBefore = try Data(contentsOf: world.file(StorePointer.fileName))
+        let boundary = StorageBoundary(root: world.package.deletingLastPathComponent())
+        let hold = try boundary.holdWork(for: .movingDataDirectory)
+        let waiting = expectation(description: "the removal waits for the storage work")
+        let asked = NoteLog()
+        var removal = world.removal
+        removal.boundary = boundary
+        removal.whileHeld = { waiting.fulfill() }
+        removal.finalCheck = { _ in asked.note("asked"); return true }
+        let id = bookID
+        let package = world.package
+        let running = Task { try await removal.removeDownload(of: package, bookID: id, mayDownload: true) }
+
+        await fulfillment(of: [waiting], timeout: 30)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: world.file("book.txt").path), "nothing goes while the work is held")
+        XCTAssertEqual(try Data(contentsOf: world.file(StorePointer.fileName)), pointerBefore, "nor is the pointer written")
+        XCTAssertEqual(asked.notes, [], "the last look waits too")
+
+        hold.release()
+        let outcome = try await running.value
+        XCTAssertEqual(outcome.freedBytes, Int64(text.count))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: world.file("book.txt").path))
+        XCTAssertEqual(asked.notes, ["asked"])
+    }
+
+    /// A data-directory move published while the removal waited took the package to its new place: the last look is
+    /// at the package there, whose files are other files than the ones hashed, so the removal stops, and neither copy
+    /// of the package changes.
+    func testAMovePublishedWhileTheRemovalWaitedIsSeenAtTheNewPlace() async throws {
+        let world = try makeWorld()
+        let oldRoot = world.package.deletingLastPathComponent()
+        let newRoot = try makeSandboxDirectory("store-removal-moved")
+        let moved = newRoot.appendingPathComponent(world.package.lastPathComponent, isDirectory: true)
+        let boundary = StorageBoundary(root: oldRoot)
+        let hold = try boundary.holdWork(for: .movingDataDirectory)
+        let waiting = expectation(description: "the removal waits for the move")
+        var removal = world.removal
+        removal.boundary = boundary
+        removal.whileHeld = { waiting.fulfill() }
+        let id = bookID
+        let package = world.package
+        let running = Task { try await removal.removeDownload(of: package, bookID: id, mayDownload: true) }
+
+        await fulfillment(of: [waiting], timeout: 30)
+        // The move copies the package and publishes the copy, as a data-directory move does.
+        try FileManager.default.copyItem(at: world.package, to: moved)
+        let movedBefore = try snapshot(of: moved)
+        let oldBefore = try snapshot(of: world.package)
+        boundary.publish(root: newRoot)
+        hold.release()
+        do {
+            _ = try await running.value
+            XCTFail("the removal went on at a package it never proved")
+        } catch let refusal as SyncRemovalRefusal {
+            guard case .changedHere = refusal else { return XCTFail("\(refusal)") }
+        }
+        XCTAssertEqual(try snapshot(of: moved), movedBefore, "the package where the move put it is whole")
+        XCTAssertEqual(try snapshot(of: world.package), oldBefore, "and nothing was removed from the old place")
     }
 
     /// On a connection that costs, the refusal comes before anything is hashed: a changed file does not hide it.
@@ -624,6 +703,14 @@ final class StoreRemovalTests: XCTestCase {
 }
 
 /// How many times a closure was asked, from any thread.
+/// The notes a test's closures make, in order, from any thread.
+private final class NoteLog: @unchecked Sendable {
+    private let lock = NSLock()
+    private var kept: [String] = []
+    func note(_ text: String) { lock.lock(); kept.append(text); lock.unlock() }
+    var notes: [String] { lock.lock(); defer { lock.unlock() }; return kept }
+}
+
 private final class AskedLog: @unchecked Sendable {
     private let lock = NSLock()
     private var asked = 0

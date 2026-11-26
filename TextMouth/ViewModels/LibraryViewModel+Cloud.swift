@@ -940,23 +940,24 @@ final class LibraryCloudCommands {
         return report
     }
 
-    /// The library's last word before a removal writes its pointer (`FreeingCheck`), asked on the main actor: the
-    /// book is still in the library, nothing protects it now, sync is on and the library may change, no reader has
-    /// it open, and, for a sweep, the setting still removes unopened downloads.
+    /// The library's last word before a removal writes its pointer (`FreeingCheck`), asked on the main actor inside
+    /// the removal's storage work, with the package about to change: the book is still in the library, and that
+    /// package is still its own (a book moved to another folder meanwhile is not freed from its old place); nothing
+    /// protects it now; sync is on and the library may change; no reader has it open; and, for a sweep, the setting
+    /// still removes unopened downloads.
     private func finalCheck(
         for bookID: UUID,
         in library: LibraryViewModel,
         protecting isProtected: @escaping @MainActor @Sendable (Book) -> Bool,
         requiringRemovalSetting: Bool
-    ) -> @Sendable () async -> Bool {
-        { [weak self, weak library] in
-            await MainActor.run {
-                guard let self, let library, let book = library.bookByID(bookID) else { return false }
-                guard self.states.syncIsOn, library.maySyncNow, !library.isBookOpenNow(bookID) else { return false }
-                guard !isProtected(book) else { return false }
-                if requiringRemovalSetting { return self.currentSettings().activeDays != nil }
-                return true
-            }
+    ) -> @MainActor @Sendable (URL) -> Bool {
+        { [weak self, weak library] package in
+            guard let self, let library, let book = library.bookByID(bookID) else { return false }
+            guard BookPackage(book).url.standardizedFileURL.path == package.standardizedFileURL.path else { return false }
+            guard self.states.syncIsOn, library.maySyncNow, !library.isBookOpenNow(bookID) else { return false }
+            guard !isProtected(book) else { return false }
+            if requiringRemovalSetting { return self.currentSettings().activeDays != nil }
+            return true
         }
     }
 

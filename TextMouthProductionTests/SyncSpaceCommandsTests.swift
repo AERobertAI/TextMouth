@@ -688,8 +688,9 @@ private final class ProvingStorage: BookCloudStorage, @unchecked Sendable {
         if let refusal { throw refusal }
         let action = lock.withLock { between }
         action?(package.bookID)
-        // The storage asks the last look right before it deletes; the double records its answer, and deletes only on yes.
-        let answer = await FreeingCheck.current?() ?? true
+        // The storage asks the last look right before it deletes, about the package it is removing; the double records
+        // its answer, and deletes only on yes.
+        let answer = await FreeingCheck.current?(package.url) ?? true
         lock.withLock { lastLooks[package.bookID] = answer }
         guard answer else { throw BookCloudError.syncRemoval(.busy) }
         try fake.removeDownload(of: package)

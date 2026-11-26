@@ -61,13 +61,17 @@ enum SyncRemovalRefusal: Error, Equatable, Sendable {
 
 // MARK: - The Last Look Before Files Go (FR46)
 
-/// What the library checks again, on its own thread, right before a removal writes its pointer: the book's rows,
-/// its protections, the setting, and whether sync is on and the library may change. A command or sweep sets it
-/// around its call into the storage (a task-local value, so it reaches the removal however deep the call goes);
-/// with none set, nothing more is asked.
+/// What the library checks again, on the main actor, right before a removal writes its pointer: the book's rows,
+/// its protections, the setting, whether sync is on and the library may change, and that the package about to change
+/// is still the book's. A command or sweep sets it around its call into the storage (a task-local value, so it reaches
+/// the removal however deep the call goes); with none set, nothing more is asked.
+///
+/// It is asked inside the removal's storage work (`StorageWork.removingSyncedDownloads`), in one step with what
+/// follows a yes: the library marks the book busy then (`BooksBeingFreed`), so nothing it asked about can begin
+/// between its answer and the files' going.
 enum FreeingCheck {
-    /// Answers whether the book may still be freed now.
-    @TaskLocal static var current: (@Sendable () async -> Bool)?
+    /// Answers whether the book whose package is at the URL, where the data directory is now, may still be freed.
+    @TaskLocal static var current: (@MainActor @Sendable (URL) -> Bool)?
 }
 
 // MARK: - Removing a Synced Book's Download (FR46)
@@ -87,6 +91,10 @@ enum FreeingCheck {
 /// 4. only then the pointer is written, with every file about to go marked away;
 /// 5. only then are the files removed.
 ///
+/// Steps 4 and 5, with the last look before them, are storage work
+/// (`StorageBoundary.perform`): a data-directory move waits for them, and while
+/// one holds the work they wait, then look at the package where the move left it.
+///
 /// A stop at any step leaves the book whole, or a placeholder whose blobs are
 /// proven; never neither. Anything short of the proof (offline, still uploading,
 /// a blob missing, a read that fails, a digest that differs) throws a
@@ -103,9 +111,17 @@ struct StoreRemoval: Sendable {
     let staging: URL
     /// How long one file may take to arrive (section 7).
     var perFile: Duration = .seconds(60)
-    /// Asked right before the pointer is written, after the files have been looked at again: false stops the removal
-    /// (`.busy`). The library's last word (`FreeingCheck`).
-    var finalCheck: (@Sendable () async -> Bool)? = nil
+    /// Asked on the main actor right before the pointer is written, after the files have been looked at again, with
+    /// the package where it is then: false stops the removal (`.busy`). The library's last word (`FreeingCheck`).
+    var finalCheck: (@MainActor @Sendable (URL) -> Bool)? = nil
+    /// The boundary between data-directory moves and the work that writes into the data directory, which the last
+    /// look and the removal run inside: the app's, unless a test holds one of its own.
+    var boundary: StorageBoundary = .shared
+    /// Told when the last look and the removal must wait because an operation holds the storage work (a data-directory
+    /// move): the debug log says so, and a test learns the removal is waiting.
+    var whileHeld: @Sendable () -> Void = {
+        DiagnosticLog.event(.storage, "SYNC_REMOVAL_WAITING: storage work is held, so a removal waits") // l10n: no (debug log text)
+    }
     /// Called after each step; a test throws from it to stop the run there, as a crash would.
     var checkpoint: @Sendable (Step) throws -> Void = { _ in }
 
@@ -176,23 +192,51 @@ struct StoreRemoval: Sendable {
         }
         try checkpoint(.proven)
 
-        // The last look, since the read-back can take minutes: the book's own files are the same files, and the
-        // library agrees the book may go. An edit rendered, a track added, a book opened or kept meanwhile stops it.
-        try Self.requireUnchanged(ownFiles, then: try ownFilesHere(in: package))
-        if let finalCheck, await finalCheck() == false { throw SyncRemovalRefusal.busy }
-        // Step 4: the pointer says the book's own files are away, before the first goes.
-        try writePointer(for: manifest, manifestName: pointer.manifest, in: package, previous: pointer)
-        try checkpoint(.pointerWritten)
-
-        // Step 5: the files go, one entry of the package at a time.
-        try removeEntries(of: ownFiles, in: package)
-        try checkpoint(.allRemoved)
+        // The last look and steps 4 and 5, as storage work.
+        let freed = try await commit(ownFiles, manifest: manifest, pointer: pointer, package: package)
 
         // Last, the folder's own copies of the blobs stop taking room here; a refusal is a wait, not a failure.
         for name in copyNames {
             try? folder.access.evictLocalCopy(of: bookFolder.appendingPathComponent(name))
         }
-        return Outcome(freedBytes: ownFiles.reduce(Int64(0)) { $0 + $1.size })
+        return Outcome(freedBytes: freed)
+    }
+
+    /// The last look, then step 4 (the pointer says the book's own files are away, before the first goes), then
+    /// step 5 (the files go, one entry of the package at a time): one piece of storage work, off the main thread, so a
+    /// data-directory move never copies the package while it changes (`StorageBoundary.perform`).
+    ///
+    /// The last look comes first, since the read-back can take minutes: the book's own files are listed again, in the
+    /// package as it is now (where a move published meanwhile put it), and must be the very files that were hashed;
+    /// then the library must agree the book may go (`finalCheck`, on the main actor). An edit rendered, a track added
+    /// or taken away, a package moved, a book opened or kept meanwhile each stop it.
+    /// - Returns: The bytes of the book's own files that went.
+    private func commit(_ hashed: [OwnFile], manifest: StoreManifest, pointer: StorePointer, package: URL) async throws -> Int64 {
+        let removal = self
+        return try await OffMainWork.runThrowing {
+            try removal.boundary.perform(.removingSyncedDownloads, whileHeld: removal.whileHeld) { _ in
+                // The package where the data directory is now: a move that held this work back has published another.
+                let here = URL(fileURLWithPath: removal.boundary.rebasedToCurrent(package.path), isDirectory: true)
+                try Self.requireUnchanged(hashed, then: try removal.ownFilesHere(in: here))
+                if let finalCheck = removal.finalCheck, !Self.answerOnTheMainActor({ finalCheck(here) }) {
+                    throw SyncRemovalRefusal.busy
+                }
+                try removal.writePointer(for: manifest, manifestName: pointer.manifest, in: here, previous: pointer)
+                try removal.checkpoint(.pointerWritten)
+                try removal.removeEntries(of: hashed, in: here)
+                try removal.checkpoint(.allRemoved)
+                return hashed.reduce(Int64(0)) { $0 + $1.size }
+            }
+        }
+    }
+
+    /// Asks `question` on the main actor from inside the removal's storage work, and waits for its answer, as an
+    /// import's step asks the library there (`openTMBPackage`). The main queue is free to answer: whoever runs a
+    /// removal awaits it rather than blocking, and no operation on the main thread waits for storage work under way
+    /// without suspending. A call made on the main thread, which only a test's own thread can be, asks at once.
+    private static func answerOnTheMainActor(_ question: @escaping @MainActor @Sendable () -> Bool) -> Bool {
+        if Thread.isMainThread { return MainActor.assumeIsolated { question() } }
+        return DispatchQueue.main.sync { MainActor.assumeIsolated { question() } }
     }
 
     // MARK: The book's files here
@@ -228,10 +272,13 @@ struct StoreRemoval: Sendable {
         }
     }
 
-    /// The files are the ones that were hashed: none was changed, replaced, or added. A file that is gone is not a
-    /// change (there is nothing of it left to lose); `current` is what is there now.
+    /// The files are the ones that were hashed: none was changed, replaced, added, or taken away; `current` is what is
+    /// there now. A file gone is a change too: an edit that took a track away, or a package moved or removed
+    /// meanwhile, which holds none of them, so nothing is ever reported freed that this removal did not free.
     private static func requireUnchanged(_ hashed: [OwnFile], then current: [OwnFile]) throws {
         let before = Dictionary(hashed.map { ($0.path, $0) }, uniquingKeysWith: { first, _ in first })
+        let now = Set(current.map(\.path))
+        if let gone = hashed.first(where: { !now.contains($0.path) }) { throw SyncRemovalRefusal.changedHere(gone.path) }
         for file in current {
             guard let was = before[file.path], was.size == file.size, was.modified == file.modified, was.fileNumber == file.fileNumber else {
                 throw SyncRemovalRefusal.changedHere(file.path)

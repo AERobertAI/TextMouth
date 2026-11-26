@@ -710161,6 +710161,162 @@
         }
       }
     },
+    "storageWork.waitingMessage.syncedDownloads" : {
+      "comment" : "Progress text while a move of the library waits for the removal of a synced book's download from this device to finish first. The book stays in iCloud Drive.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "في انتظار إزالة تنزيل كتاب…"
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "একটি বইয়ের ডাউনলোড সরানোর জন্য অপেক্ষা করা হচ্ছে..."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Warten, bis der Download eines Buchs entfernt ist…"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting for a book's download to be removed..."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Esperando a que se quite la descarga de un libro…"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "در انتظار برداشته شدن بارگیری یک کتاب..."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "En attente du retrait du téléchargement d’un livre…"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ממתין להסרת ההורדה של ספר..."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "किसी पुस्तक का डाउनलोड हटाए जाने की प्रतीक्षा है..."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Menunggu unduhan sebuah buku dibuang..."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "In attesa della rimozione del download di un libro…"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ブックのダウンロードが取り除かれるのを待っています…"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "책의 다운로드가 제거되기를 기다리는 중..."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Wachten tot de download van een boek is verwijderd…"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Oczekiwanie na usunięcie pobranego pliku książki..."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Aguardando a remoção do download de um livro…"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ожидание, пока будет убрана загрузка книги..."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Väntar på att en boks nedladdning ska tas bort..."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "กำลังรอให้นำการดาวน์โหลดของหนังสือออก..."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bir kitabın indirilen kopyasının kaldırılması bekleniyor..."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Очікування, поки буде вилучено завантаження книги..."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ایک کتاب کا ڈاؤن لوڈ ہٹائے جانے کا انتظار ہے..."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Đang chờ gỡ xong bản tải về của một cuốn sách..."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "正在等待移除一本图书的下载内容…"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "正在等待移除一本書的下載項目…"
+          }
+        }
+      }
+    },
     "storageWork.waitingMessage.textExtraction" : {
       "comment" : "Progress text while a move of the library waits for text extraction to finish first.",
       "extractionState" : "manual",
