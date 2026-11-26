@@ -99,6 +99,13 @@ enum SyncActivity {
     static var isOn: Bool { flag.withLock { $0 } }
     /// Set by `SyncCenter` when it turns sync on or off.
     static func set(_ on: Bool) { flag.withLock { $0 = on } }
+
+    private static let cellular = OSAllocatedUnfairLock(initialState: false)
+    /// Whether the network path is expensive (cellular, a hotspot) or constrained (Low Data Mode): a fetch that
+    /// stalls then adds section 7's hint about cellular data.
+    static var pathIsCostly: Bool { cellular.withLock { $0 } }
+    /// Set by `SyncCenter` from each path report.
+    static func setPathIsCostly(_ costly: Bool) { cellular.withLock { $0 = costly } }
 }
 
 /// What the library offers the sync; `LibraryViewModel` conforms (sync-mac).

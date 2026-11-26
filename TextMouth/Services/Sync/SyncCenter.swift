@@ -39,7 +39,7 @@ struct SyncCenterEnvironment {
     /// The name this device gives itself in the store: its host name without ".local", or "Mac" or "iPhone".
     @MainActor static func deviceName(isPhone: Bool) -> String {
         let name = LibrarySessionLease.systemComputerName()
-        return name.isEmpty ? (isPhone ? "iPhone" : "Mac") : name
+        return name.isEmpty ? (isPhone ? "iPhone" : "Mac") : name // l10n: no (a device's name in the store, as the system gives it)
     }
 
     /// The app's own: the process's preferences, iCloud Drive's location, and the real clock and voice.
@@ -431,6 +431,7 @@ struct SyncCenterEnvironment {
     /// The network path changed: the scheduler decides whether it is "back".
     private func networkReport(_ report: NetworkPathReport) {
         lastPath = report
+        SyncActivity.setPathIsCostly(report.isExpensive || report.isConstrained)
         scheduler.notePath(satisfied: report.isSatisfied, at: environment.now())
         rearm()
     }

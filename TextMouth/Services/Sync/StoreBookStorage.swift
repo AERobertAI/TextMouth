@@ -99,6 +99,12 @@ final class StoreBookStorage: BookCloudStorage {
         }
     }
 
+    /// Why a fetch stalled, naming iCloud Drive; on a cellular or hotspot connection (or in Low Data Mode) with
+    /// section 7's hint to connect to Wi-Fi.
+    static func stalledSentence(onCostlyPath: Bool) -> String {
+        onCostlyPath ? SyncWording.fetchStalled + " " + SyncWording.fetchCellularHint : SyncWording.fetchStalled
+    }
+
     /// Whether this is the iPhone's app, for the words that name the device.
     private static var isPhone: Bool {
         #if os(iOS)
@@ -112,7 +118,7 @@ final class StoreBookStorage: BookCloudStorage {
     static func cloudError(for error: Error) -> Error {
         switch error as? SyncProblem {
         case .offline: return BookCloudError.offline
-        case .notDownloaded: return BookCloudError.stalled(seconds: 60)
+        case .notDownloaded: return BookCloudError.provider(stalledSentence(onCostlyPath: SyncActivity.pathIsCostly))
         case .some(.damaged), .some(.notASyncFolder): return BookCloudError.provider(SyncWording.notASyncFolder)
         case .some(.folderMissing): return BookCloudError.provider(SyncWording.statusFolderMissing(device: SyncWording.thisDevice(isPhone: Self.isPhone)))
         default: return error

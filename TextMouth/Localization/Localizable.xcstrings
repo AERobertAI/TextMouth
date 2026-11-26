@@ -720721,6 +720721,162 @@
         }
       }
     },
+    "sync.announce.stoppedKeeping" : {
+      "comment" : "Said aloud after the person chooses Stop Keeping on All Devices. %@ is the book's title.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لم يعد %@ محفوظًا على جميع الأجهزة."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সব ডিভাইসে আর রাখা হচ্ছে না: %@।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ wird nicht mehr auf allen Geräten behalten."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No longer keeping %@ on all devices."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Se deja de mantener %@ en todos los dispositivos."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ دیگر در همه دستگاه‌ها نگه داشته نمی‌شود."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ n’est plus conservé sur tous les appareils."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ לא נשמר עוד בכל המכשירים."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ अब सभी डिवाइस पर नहीं रखा जा रहा है।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ tidak lagi disimpan di semua perangkat."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ non viene più mantenuto su tutti i dispositivi."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "「%@」をすべてのデバイスで保持するのをやめました。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@을(를) 더 이상 모든 기기에 보관하지 않습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ wordt niet meer op alle apparaten bewaard."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ nie jest już zachowywane na wszystkich urządzeniach."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ não é mais mantido em todos os dispositivos."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ больше не хранится на всех устройствах."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ behålls inte längre på alla enheter."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ไม่ได้เก็บ %@ ไว้ในอุปกรณ์ทั้งหมดอีกต่อไป"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ artık tüm aygıtlarda tutulmuyor."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ більше не зберігається на всіх пристроях."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ اب تمام آلات پر نہیں رکھا جا رہا۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ không còn được giữ trên mọi thiết bị."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "已不再在所有设备上保留“%@”。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "已不再在所有裝置上保留「%@」。"
+          }
+        }
+      }
+    },
     "sync.announce.synced" : {
       "comment" : "Said aloud when Sync Now finishes. A plural line. %lld is how many changes arrived, and %@ names the device they came from, such as \"iPhone\".",
       "extractionState" : "manual",
@@ -722697,6 +722853,318 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "sync.fetch.cellularHint" : {
+      "comment" : "Added after the stalled-download sentence when the connection is cellular or a hotspot. iCloud Drive has a setting that stops it using cellular data.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "إذا تعذّر على iCloud Drive استخدام بيانات الجوّال، فاتصل بشبكة Wi‑Fi."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive মোবাইল ডেটা ব্যবহার করতে না পারলে Wi-Fi-এ সংযুক্ত হন।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Wenn iCloud Drive kein Mobilfunknetz verwenden darf, verbinde dich mit einem WLAN."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "If iCloud Drive can't use cellular data, connect to Wi-Fi."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Si iCloud Drive no puede usar datos móviles, conéctate a una red Wi-Fi."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اگر iCloud Drive نمی‌تواند از داده تلفن همراه استفاده کند، به Wi-Fi وصل شوید."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Si iCloud Drive ne peut pas utiliser les données cellulaires, connectez-vous au Wi-Fi."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "אם iCloud Drive אינו יכול להשתמש בנתונים סלולריים, התחבר ל-Wi-Fi."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "अगर iCloud Drive सेल्युलर डेटा इस्तेमाल नहीं कर सकता, तो Wi-Fi से जुड़ें।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Jika iCloud Drive tidak dapat memakai data seluler, sambungkan ke Wi-Fi."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Se iCloud Drive non può usare i dati cellulare, connettiti al Wi-Fi."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive がモバイルデータ通信を使えない場合は、Wi-Fi に接続してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive가 셀룰러 데이터를 사용할 수 없으면 Wi-Fi에 연결하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Als iCloud Drive geen mobiele data mag gebruiken, maak dan verbinding met wifi."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Jeśli iCloud Drive nie może używać danych komórkowych, połącz się z Wi-Fi."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Se o iCloud Drive não puder usar dados celulares, conecte-se ao Wi-Fi."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Если iCloud Drive не может использовать сотовые данные, подключитесь к Wi-Fi."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Om iCloud Drive inte kan använda mobildata, anslut till Wi-Fi."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "หาก iCloud Drive ใช้ข้อมูลเซลลูลาร์ไม่ได้ ให้เชื่อมต่อ Wi-Fi"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive hücresel veriyi kullanamıyorsa Wi-Fi’ye bağlanın."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Якщо iCloud Drive не може використовувати стільниковий зв’язок, підключіться до Wi-Fi."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اگر iCloud Drive سیلولر ڈیٹا استعمال نہیں کر سکتا تو Wi-Fi سے جڑیں۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nếu iCloud Drive không dùng được dữ liệu di động, hãy kết nối Wi-Fi."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "如果 iCloud 云盘无法使用蜂窝数据，请连接 Wi-Fi。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "如果 iCloud Drive 無法使用行動數據，請連接 Wi-Fi。"
+          }
+        }
+      }
+    },
+    "sync.fetch.stalled" : {
+      "comment" : "Why a book's download from the sync folder stopped: iCloud Drive stopped sending its files. Said in the download view.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "توقف iCloud Drive عن إرسال ملفات هذا الكتاب."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive এই বইয়ের ফাইল পাঠানো বন্ধ করে দিয়েছে।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive hat aufgehört, die Dateien dieses Buchs zu senden."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iCloud Drive stopped sending this book's files."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive dejó de enviar los archivos de este libro."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive ارسال فایل‌های این کتاب را متوقف کرد."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive a cessé d’envoyer les fichiers de ce livre."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive הפסיק לשלוח את הקבצים של הספר הזה."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive ने इस पुस्तक की फ़ाइलें भेजना बंद कर दिया।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive berhenti mengirim berkas buku ini."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive ha smesso di inviare i file di questo libro."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive がこの本のファイルの送信を停止しました。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive가 이 책의 파일 전송을 멈췄습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive is gestopt met het sturen van de bestanden van dit boek."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive przestał wysyłać pliki tej książki."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "O iCloud Drive parou de enviar os arquivos deste livro."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive перестал присылать файлы этой книги."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive slutade skicka den här bokens filer."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive หยุดส่งไฟล์ของหนังสือเล่มนี้"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive bu kitabın dosyalarını göndermeyi durdurdu."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive припинив надсилати файли цієї книги."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive نے اس کتاب کی فائلیں بھیجنا بند کر دیا۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive đã ngừng gửi các tệp của cuốn sách này."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud 云盘已停止发送这本书的文件。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive 已停止傳送這本書的檔案。"
           }
         }
       }
@@ -725541,6 +726009,162 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth 在 iCloud Drive 中找不到 TextMouth Sync 檔案夾。它可能已被移動或刪除，或 iCloud Drive 已登出。你在 %@ 上的書庫維持原樣。"
+          }
+        }
+      }
+    },
+    "sync.status.heldRemovals" : {
+      "comment" : "The Sync status when TextMouth held back removing many books at once because it looked like a mistake. The first %@ is a phrase counting books (\"42 books\"), and the second names the device (\"this Mac\" or \"this iPhone\"), whose library the person should check. Sync Now is the name of a command.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "منع TextMouth إزالة %@ لأنها بدت خطأً. تحقق من المكتبة (%@) ثم اختر المزامنة الآن."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ভুল মনে হওয়ায় TextMouth %@ সরানো স্থগিত রেখেছে। %@-এ লাইব্রেরি দেখে নিন, তারপর এখনই সিঙ্ক করুন বেছে নিন।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth hat das Entfernen von %@ zurückgehalten, weil es wie ein Fehler aussah. Prüfe die Bibliothek (%@) und wähle dann „Jetzt synchronisieren“."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "TextMouth held back removing %@, since it looked like a mistake. Check the library on %@, then choose Sync Now."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth detuvo la eliminación de %@ porque parecía un error. Revisa tu biblioteca en %@ y luego elige Sincronizar ahora."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth حذف %@ را متوقف کرد، چون به نظر اشتباه می‌آمد. کتابخانهٔ خود در %@ را بررسی کنید و سپس «همگام‌سازی اکنون» را انتخاب کنید."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth a suspendu la suppression de %@, car cela ressemblait à une erreur. Vérifiez la bibliothèque sur %@, puis choisissez Synchroniser maintenant."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth עצר את הסרת %@ כי זה נראה כמו טעות. בדוק את הספרייה ב-%@ ואז בחר ״סנכרן עכשיו״."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth ने %@ हटाना रोक दिया, क्योंकि यह गलती जैसा लगा। %@ पर लाइब्रेरी जाँचें, फिर “अभी सिंक करें” चुनें।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth menahan penghapusan %@ karena tampak seperti kesalahan. Periksa pustaka di %@, lalu pilih Sinkronkan Sekarang."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth ha trattenuto la rimozione di %@ perché sembrava un errore. Controlla la libreria su %@, poi scegli Sincronizza ora."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "間違いのように見えたため、TextMouth は%@の削除を保留しました。%@ のライブラリを確認してから、「今すぐ同期」を選んでください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "실수로 보여서 TextMouth가 %@ 제거를 보류했습니다. %@의 보관함을 확인한 다음 ‘지금 동기화’를 선택하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth heeft het verwijderen van %@ tegengehouden, omdat het op een vergissing leek. Controleer de bibliotheek op %@ en kies daarna Synchroniseer nu."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth wstrzymał usuwanie: %@, ponieważ wyglądało to na pomyłkę. Sprawdź bibliotekę (%@), a potem wybierz Synchronizuj teraz."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "O TextMouth segurou a remoção de %@, pois parecia um engano. Confira a biblioteca (%@) e escolha Sincronizar agora."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth приостановил удаление: %@, так как это похоже на ошибку. Проверьте библиотеку (%@), затем выберите «Синхронизировать сейчас»."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth höll tillbaka borttagningen av %@, eftersom det såg ut som ett misstag. Kontrollera biblioteket på %@ och välj sedan Synkronisera nu."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth ระงับการลบ %@ ไว้ เพราะดูเหมือนเป็นความผิดพลาด ตรวจสอบไลบรารีบน %@ แล้วเลือก “ซิงค์ตอนนี้”"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth, hata gibi göründüğü için %@ kaldırma işlemini tuttu. %@ üzerindeki kitaplığı kontrol edin, ardından Şimdi Eşzamanla’yı seçin."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth призупинив видалення: %@, бо це схоже на помилку. Перевірте бібліотеку (%@), а потім виберіть «Синхронізувати зараз»."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth نے %@ ہٹانا روک دیا، کیونکہ یہ غلطی لگ رہی تھی۔ %@ پر لائبریری دیکھیں، پھر «ابھی سنک کریں» چنیں۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth đã giữ lại việc xóa %@ vì có vẻ là nhầm lẫn. Hãy kiểm tra thư viện trên %@, rồi chọn Đồng bộ ngay."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 认为这像是误操作，已暂缓移除%@。请检查 %@ 上的资料库，然后选择“立即同步”。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 認為這像是誤操作，已暫緩移除%@。請檢查 %@ 上的書庫，然後選擇「立即同步」。"
           }
         }
       }
