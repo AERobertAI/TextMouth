@@ -257,6 +257,8 @@ final class StoreRemovalTests: XCTestCase {
         let boundary = StorageBoundary(root: world.package.deletingLastPathComponent())
         let hold = try boundary.holdWork(for: .movingDataDirectory)
         let waiting = expectation(description: "the removal waits for the storage work")
+        // Told once a removal meets the hold; never twice, but a second telling must not end the test host.
+        waiting.assertForOverFulfill = false
         let asked = NoteLog()
         var removal = world.removal
         removal.boundary = boundary
@@ -289,6 +291,7 @@ final class StoreRemovalTests: XCTestCase {
         let boundary = StorageBoundary(root: oldRoot)
         let hold = try boundary.holdWork(for: .movingDataDirectory)
         let waiting = expectation(description: "the removal waits for the move")
+        waiting.assertForOverFulfill = false
         var removal = world.removal
         removal.boundary = boundary
         removal.whileHeld = { waiting.fulfill() }
