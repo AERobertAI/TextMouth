@@ -112,7 +112,7 @@ final class SyncInterruptionTests: XCTestCase {
         try world.restart(\.mac)
         world.drive.failCopies(after: nil)
         _ = try await world.mac.engine.exchange(in: world.folder)
-        XCTAssertEqual(Set(world.drive.copiedNames).count, world.drive.copiedNames.count, "no file went twice")
+        XCTAssertEqual(Set(world.drive.copiedPaths).count, world.drive.copiedPaths.count, "no file went twice")
         _ = try await world.phone.engine.exchange(in: world.folder)
         let kept = await world.phone.engine.keptBookIDs()
         XCTAssertEqual(kept.count, 3)
@@ -126,6 +126,15 @@ extension SyncInterruptionTests {
     func testAStopAfterEveryStepLosesNothing() async throws {
         for step in SyncStep.allCases {
             try await checkAStop(after: step)
+        }
+    }
+
+    /// The same, five times over, since a stop and a restart may depend on timing: every round must end the same way.
+    func testAStopAfterEveryStepLosesNothingEveryTime() async throws {
+        for _ in 1...5 {
+            for step in SyncStep.allCases {
+                try await checkAStop(after: step)
+            }
         }
     }
 
@@ -183,8 +192,9 @@ extension SyncInterruptionTests {
             XCTAssertEqual(onMac?.value, .bool(true), "a row recorded by the Mac after a stop after \(step)")
             XCTAssertEqual(onPhone?.value, onMac?.value, "the iPhone holds the same row after a stop after \(step)")
         }
-        // Nothing went into the folder twice.
-        XCTAssertEqual(Set(world.drive.copiedNames).count, world.drive.copiedNames.count, "no file went twice after a stop after \(step)")
+        // Nothing went into the folder twice. Files are told apart by their path: both devices write seq 1, seq 2, and so
+        // on, so the same bare name in two devices' folders is two files.
+        XCTAssertEqual(Set(world.drive.copiedPaths).count, world.drive.copiedPaths.count, "a file went twice after a stop after \(step): \(world.drive.copiedPaths)")
     }
 }
 
