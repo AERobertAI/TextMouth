@@ -900,14 +900,19 @@ final class LibraryCloudCommands {
                 unopenedHeld.remove(book.id)
                 continue
             }
+            // Marked before the first wait, so a person's Remove Download of the book meanwhile leaves it to this sweep.
+            booksBeingRemoved.insert(book.id)
+            defer { booksBeingRemoved.remove(book.id) }
             let package = BookPackage(book)
             let arrival = packageArrival
             let arrived = await Task.detached(priority: .utility) { arrival(package.url) }.value
             let lastInUse = SyncSpacePolicy.lastInUse(opened: book.lastOpened, played: book.lastPlaybackStopped, arrived: arrived, removalsBeganAt: began)
             guard SyncSpacePolicy.isDue(lastInUse: lastInUse, days: days, now: time) else { continue }
-            booksBeingRemoved.insert(book.id)
-            defer { booksBeingRemoved.remove(book.id) }
-            let lastLook = finalCheck(for: book.id, in: library, protecting: isProtected, requiringRemovalSetting: true)
+            // The last look asks again whether the book is due, as it is then: opened or played meanwhile, or the days
+            // made longer, it stays.
+            let lastLook = finalCheck(for: book.id, in: library, protecting: isProtected) { [weak self] current in
+                self?.isStillDue(current, arrived: arrived) ?? false
+            }
             // A yes of the last look holds the book busy until its row says what came of the removal, recorded below.
             defer { endFreeing(book.id, in: library) }
             do {
@@ -945,8 +950,8 @@ final class LibraryCloudCommands {
     /// The library's last word before a removal writes its pointer (`FreeingCheck`), asked on the main actor inside
     /// the removal's storage work, with the package about to change: the book is still in the library, and that
     /// package is still its own (a book moved to another folder meanwhile is not freed from its old place); nothing
-    /// protects it now; sync is on and the library may change; no reader has it open; and, for a sweep, the setting
-    /// still removes unopened downloads.
+    /// protects it now; sync is on and the library may change; no reader has it open; and, for a sweep, the book is
+    /// still due (`stillDue`).
     ///
     /// A yes holds the book busy at once, in the same step, until its row says what came of the removal
     /// (`beginFreeing`, `endFreeing`): nothing the look asked about can begin between its answer and the files' going.
@@ -954,17 +959,28 @@ final class LibraryCloudCommands {
         for bookID: UUID,
         in library: LibraryViewModel,
         protecting isProtected: @escaping @MainActor @Sendable (Book) -> Bool,
-        requiringRemovalSetting: Bool
+        stillDue: (@MainActor @Sendable (Book) -> Bool)? = nil
     ) -> @MainActor @Sendable (URL) -> Bool {
         { [weak self, weak library] package in
             guard let self, let library, let book = library.bookByID(bookID) else { return false }
             guard BookPackage(book).url.standardizedFileURL.path == package.standardizedFileURL.path else { return false }
             guard self.states.syncIsOn, library.maySyncNow, !library.isBookOpenNow(bookID) else { return false }
             guard !isProtected(book) else { return false }
-            if requiringRemovalSetting, self.currentSettings().activeDays == nil { return false }
+            if let stillDue, !stillDue(book) { return false }
             self.beginFreeing(bookID, in: library)
             return true
         }
+    }
+
+    /// Whether `book`, as the library holds it now, is still due to have its download removed by the settings as they
+    /// are now: they still remove unopened downloads, and the book has gone unopened and unplayed for their days, counted
+    /// from the latest of its opening, its play, `arrived` (its files' arrival, read before the proof), and the day the
+    /// removal began. A book opened and closed while its copy was checked, or days made longer meanwhile, is not.
+    private func isStillDue(_ book: Book, arrived: Date?) -> Bool {
+        let settings = currentSettings()
+        guard let days = settings.activeDays, let began = settings.removalsBeganAt else { return false }
+        let lastInUse = SyncSpacePolicy.lastInUse(opened: book.lastOpened, played: book.lastPlaybackStopped, arrived: arrived, removalsBeganAt: began)
+        return SyncSpacePolicy.isDue(lastInUse: lastInUse, days: days, now: now())
     }
 
     /// Holds the book `bookID` busy while its files go (`BooksBeingFreed`): the editors, an export, a transcription,
@@ -1494,7 +1510,7 @@ final class LibraryCloudCommands {
         // then it says the book waits for Wi-Fi. Each book is looked at again, with its protections, right before its
         // files go (`FreeingCheck`).
         let mayDownload = !pathIsCostly()
-        let lastLooks = targets.map { finalCheck(for: $0.id, in: library, protecting: { [weak self] book in self?.isHeldByTheLibrary(book, in: library) ?? true }, requiringRemovalSetting: false) }
+        let lastLooks = targets.map { finalCheck(for: $0.id, in: library, protecting: { [weak self] book in self?.isHeldByTheLibrary(book, in: library) ?? true }) }
         // A proof that takes a while says it is working, once.
         let working = syncIsOn ? Task { @MainActor in
             try? await Task.sleep(for: .seconds(3))

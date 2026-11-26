@@ -448,6 +448,36 @@ final class SyncSpaceCommandsTests: XCTestCase {
         XCTAssertNil(fixture.states.state(of: book.id), "still whole here")
     }
 
+    /// The sweep's last look asks again whether the book is due: one opened and closed while its copy was checked, or
+    /// whose days were made longer meanwhile, stays whole, though nothing protects it by then.
+    func testTheLastLookStopsABookOpenedOrNoLongerDueMeanwhile() async {
+        // Opened and closed during the proof: its row's last opening is now, and no reader has it open.
+        let opened = fixtureBook("Opened", openedDaysAgo: 100)
+        let fixture = SpaceFixture(books: [opened])
+        fixture.storage.duringTheProof { [fixture] _ in
+            Task { @MainActor in
+                var row = opened
+                row.lastOpened = fixture.clock.now
+                fixture.model.library = Library(books: [row])
+            }
+        }
+        let report = await fixture.sweep(settings: fixture.settings(days: 7))
+        XCTAssertEqual(report.removed, [])
+        XCTAssertEqual(fixture.storage.lastLookAnswers[opened.id], false)
+        XCTAssertNil(fixture.states.state(of: opened.id), "still whole here")
+
+        // Unopened for 10 days: due under 7 days, not under the 30 chosen while its copy was checked.
+        let tenDays = fixtureBook("Ten days", openedDaysAgo: 10)
+        let later = SpaceFixture(books: [tenDays])
+        later.storage.duringTheProof { [later] _ in
+            Task { @MainActor in later.settingsNow.value.removeAfterDays = 30 }
+        }
+        let laterReport = await later.sweep(settings: later.settings(days: 7))
+        XCTAssertEqual(laterReport.removed, [])
+        XCTAssertEqual(later.storage.lastLookAnswers[tenDays.id], false)
+        XCTAssertNil(later.states.state(of: tenDays.id))
+    }
+
     /// A person's own Remove Download is looked at again too: a book kept while its copy was read back stays.
     func testTheLastLookStopsAPersonsRemovalOfABookKeptMeanwhile() async {
         let book = cloudTestBook()
