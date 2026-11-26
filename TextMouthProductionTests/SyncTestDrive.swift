@@ -26,6 +26,7 @@ final class SyncTestDrive: SyncFolderAccess, @unchecked Sendable {
     private var uploadByName: [String: Upload] = [:]
     private var notDownloaded: Set<String> = []
     private var copies: [String] = []
+    private var copiedFromRoot: [String] = []
     private var failCopiesAfter: Int?
     private var limits: [Duration] = []
 
@@ -53,6 +54,9 @@ final class SyncTestDrive: SyncFolderAccess, @unchecked Sendable {
     func failCopies(after count: Int?) { locked { failCopiesAfter = count } }
     /// The limit of every read made, so a test shows every wait was bounded.
     var readLimits: [Duration] { locked { limits } }
+    /// The paths of the files copied in, from the drive's folder (`Devices/<id>/<name>`): two devices write files of
+    /// the same name (each numbers its own seqs), so only a path tells a file sent twice from two devices' files.
+    var copiedPaths: [String] { locked { copiedFromRoot } }
     /// The names of the files copied in, in order, for "nothing went twice".
     var copiedNames: [String] { locked { copies } }
 
@@ -107,7 +111,11 @@ final class SyncTestDrive: SyncFolderAccess, @unchecked Sendable {
         if refused { throw SyncProblem.outOfSpace }
         try FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
         try FileManager.default.copyItem(at: local, to: file)
-        locked { copies.append(file.lastPathComponent) }
+        let relative = file.path.hasPrefix(root.path + "/") ? String(file.path.dropFirst(root.path.count + 1)) : file.path
+        locked {
+            copies.append(file.lastPathComponent)
+            copiedFromRoot.append(relative)
+        }
     }
 
     func uploadState(of file: URL) -> SyncUploadState {

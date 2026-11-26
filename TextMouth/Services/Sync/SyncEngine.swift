@@ -201,16 +201,19 @@ actor SyncEngine {
             return SyncEntry(key: pair.key, value: pair.value, stamp: stamp, byHand: pair.byHand)
         }
         let seq = try outbox.append(stamped)
-        try stopAfter?(.outboxWrite)
-        try local.saveClock(clock)
+        // The outbox file is on disk: the registers and the baseline take the entries in memory at once, before any
+        // save that may fail, so a snapshot made after a failed save still holds them (a snapshot that left them out
+        // would make every device skip the files that do).
         registers.merge(stamped)
         registers.throughSeq = seq
-        try local.saveRegisters(registers)
         if updatingBaseline {
             // Only `absorb` writes the baseline: it forgets removals, notes hand edits, and keeps list orders.
             baseline.absorb(stamped)
-            try local.saveBaseline(baseline)
         }
+        try stopAfter?(.outboxWrite)
+        try local.saveClock(clock)
+        try local.saveRegisters(registers)
+        if updatingBaseline { try local.saveBaseline(baseline) }
         return pairs.count
     }
 
