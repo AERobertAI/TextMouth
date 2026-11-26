@@ -182,6 +182,7 @@ final class ProtectedBookReaderTests: XCTestCase {
 
     /// A section of a protected book cannot be skipped: a skipped heading is saved with its words.
     func testASectionOfAProtectedBookCannotBeSkipped() {
+        XCTAssertNoThrow(try prepare())
         let reader = makeReader()
         wait(for: reader, "the prompt") { $0.unlockPrompt != nil }
         reader.submitUnlock(UnlockChoice(password: Secret("secret"), remember: false, removePassword: false))
@@ -195,6 +196,7 @@ final class ProtectedBookReaderTests: XCTestCase {
 
     /// An attempt is announced as it begins, so a person who hears nothing else knows it is working.
     func testTryingAPasswordIsAnnounced() {
+        XCTAssertNoThrow(try prepare())
         let reader = makeReader()
         wait(for: reader, "the prompt") { $0.unlockPrompt != nil }
         reader.submitUnlock(UnlockChoice(password: Secret("nope"), remember: false, removePassword: false))
@@ -205,6 +207,7 @@ final class ProtectedBookReaderTests: XCTestCase {
 
     /// A Keychain that will not keep the password says so once, and the book is open all the same.
     func testAKeychainThatRefusesIsSaidAndTheBookStaysOpen() {
+        XCTAssertNoThrow(try prepare())
         let restore = CredentialStores.use(RefusingCredentialStore())
         addTeardownBlock { @MainActor in restore() }
         let reader = makeReader()
