@@ -158,6 +158,33 @@ final class PhoneExportSpeechTests: XCTestCase {
         XCTAssertNil(PhoneExportOffer.stopRow(stage: .finished, isMakingSpeech: true))
     }
 
+    /// Focus on a row of the progress that goes as the export moves goes to what takes its place: the Stop row, where the
+    /// sheet itself sends focus as the spoken audio file begins, goes once that file is made, to the progress while a file
+    /// of the same book follows, and to what the export did once it has ended; the progress row goes as the export ends.
+    /// Focus on a row that stays, or anywhere else, is left where the person put it.
+    func testFocusOnAProgressRowThatGoesMovesToWhatTakesItsPlace() {
+        typealias Offer = PhoneExportOffer
+        let moves: [(Offer.ProgressFocus?, Offer.Stage, Bool, Offer.ProgressFocus?, String)] = [
+            (.stopRow, .exporting, false, .progress, "the spoken audio file made, a transcript follows"),
+            (.stopRow, .finished, false, .finished, "the export ended with the spoken audio file"),
+            (.progress, .finished, false, .finished, "the export ended"),
+            (.stopRow, .exporting, true, nil, "the Stop row is still there"),
+            (.progress, .exporting, false, nil, "the progress row is still there"),
+            (.progress, .exporting, true, nil, "the progress row is still there, with the Stop row"),
+            (.finished, .finished, false, nil, "what the export did is still there"),
+            (.finished, .exporting, false, nil, "focus on the end's words as a new export begins is the person's"),
+            (nil, .finished, false, nil, "focus elsewhere is the person's: the end is announced"),
+            (nil, .exporting, false, nil, "focus elsewhere is the person's"),
+            (.stopRow, .ready, false, nil, "an export back where it began has nothing in the row's place")
+        ]
+        for (focused, stage, isMakingSpeech, expected, why) in moves {
+            XCTAssertEqual(
+                Offer.focusAfterProgressMoves(from: focused, stage: stage, isMakingSpeech: isMakingSpeech), expected,
+                "\(String(describing: focused)) at \(stage), making speech \(isMakingSpeech): \(why)"
+            )
+        }
+    }
+
     /// Before and after an export the bar is as it was: Cancel, and Close once it has ended, however spoken audio goes.
     func testTheBarBeforeAndAfterIsUnchangedBySpokenAudio() {
         XCTAssertEqual(PhoneExportOffer.bar(stage: .ready, canExport: true, isExportingSpeech: true, isMakingSpeech: true).leading.role, .cancel)

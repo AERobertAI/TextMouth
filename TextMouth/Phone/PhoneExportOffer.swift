@@ -142,6 +142,43 @@ enum PhoneExportOffer {
         return BarButton(role: .stop, title: BookExportWording.stopTitle, hint: SpeechExportWording.stopHint, isEnabled: true)
     }
 
+    // MARK: - Focus as the Export Moves
+
+    /// A row of the sheet's progress that VoiceOver's focus can be on, and be sent to, as an export moves.
+    enum ProgressFocus: Equatable, Sendable {
+        /// The progress row, while an export runs.
+        case progress
+        /// The Stop row, while the spoken audio file is made (`stopRow`).
+        case stopRow
+        /// What the export did, once it has ended.
+        case finished
+    }
+
+    /// Where VoiceOver's focus goes as the export moves to `stage`, making the spoken audio file or not
+    /// (`isMakingSpeech`): nowhere, unless it is on a row of the progress (`focused`) that has just gone, as the Stop row
+    /// goes once the spoken audio file is made, where the sheet itself sends focus as that file begins, and the progress
+    /// row once the export has ended. Then it goes to what takes that row's place: the progress row while the export
+    /// goes on (a file of the same book can follow the spoken audio), and what the export did once it has ended. Focus
+    /// left on a row that has gone rests on nothing, and VoiceOver may then read anything, cutting off the end's sentence,
+    /// which is announced as it comes; focus anywhere else stays where the person put it.
+    static func focusAfterProgressMoves(from focused: ProgressFocus?, stage: Stage, isMakingSpeech: Bool) -> ProgressFocus? {
+        let hasGone: Bool
+        switch focused {
+        case .stopRow?:
+            hasGone = stopRow(stage: stage, isMakingSpeech: isMakingSpeech) == nil
+        case .progress?:
+            hasGone = stage != .exporting
+        case .finished?, nil:
+            hasGone = false
+        }
+        guard hasGone else { return nil }
+        switch stage {
+        case .exporting: return .progress
+        case .finished: return .finished
+        case .listing, .ready: return nil
+        }
+    }
+
     // MARK: - The Share Button
 
     /// Share…, the button after an export that sends the files it wrote to another app or person: its title and its hint.

@@ -12,7 +12,8 @@ import UniformTypeIdentifiers
 /// progress; and what the last export did. Focus lands on the first kind
 /// 0.35 seconds after the books are listed, as the Mac's dialog starts on its
 /// first checkbox, and returns to the row that opened a choice sheet or the
-/// folder picker when it closes.
+/// folder picker when it closes. Focus on a row of the progress that goes as
+/// the export moves, the Stop row above all, goes to what takes its place.
 ///
 /// While an export runs the sheet cannot be swiped away, and VoiceOver's
 /// escape gesture presses Stop, as Escape does on the Mac. Once it has ended
@@ -42,6 +43,36 @@ struct PhoneExportSheet: View {
         case share
         /// The Stop row, while the spoken audio file is made.
         case stopRow
+        /// The progress row, while an export runs.
+        case progress
+        /// What the last export did.
+        case finished
+
+        /// The focus on `row` of the progress, which `PhoneExportOffer.focusAfterProgressMoves` names.
+        init(_ row: PhoneExportOffer.ProgressFocus) {
+            switch row {
+            case .progress: self = .progress
+            case .stopRow: self = .stopRow
+            case .finished: self = .finished
+            }
+        }
+
+        /// The row of the progress this is, nil for any other.
+        var progressRow: PhoneExportOffer.ProgressFocus? {
+            switch self {
+            case .progress: return .progress
+            case .stopRow: return .stopRow
+            case .finished: return .finished
+            case .kind, .format, .folder, .braille, .speech, .share: return nil
+            }
+        }
+    }
+
+    /// What of the export's progress the sheet shows: its stage, and whether the spoken audio file is being made, which
+    /// brings the Stop row. Watched as one value, so that a change of both at once moves focus once.
+    private struct ProgressShape: Equatable {
+        let stage: PhoneExportOffer.Stage
+        let isMakingSpeech: Bool
     }
 
     /// What the share sheet is given: the files an export wrote, and what lets go of their folder's scope.
@@ -212,7 +243,7 @@ struct PhoneExportSheet: View {
         // No swipe may close the sheet while an export runs, unless it is making the spoken audio file, which goes on
         // without it: Stop does.
         .interactiveDismissDisabled(model.isExporting && !model.isMakingSpeech)
-        .onChange(of: model.isMakingSpeech) { _, making in barChanged(isMakingSpeech: making) }
+        .onChange(of: progressShape) { old, new in progressMoved(from: old, to: new) }
         .modifier(PhoneExportQuestionAlert(prompt: model.questionPrompt))
         // However the sheet closes, an export still under way stops, but one making the spoken audio file, which goes on
         // with a card in the Library.
@@ -267,13 +298,26 @@ struct PhoneExportSheet: View {
         }
     }
 
-    /// The spoken audio file is being made: Close has taken Stop's place in the bar, which VoiceOver is told, and its focus
-    /// moves to the Stop row, so that it never rests on a button whose meaning changed under it. The announcement queues
-    /// after what the focus says.
-    private func barChanged(isMakingSpeech: Bool) {
-        guard isMakingSpeech else { return }
-        returnFocus(to: .stopRow)
-        PhoneAnnouncer.say(PhoneExportWording.canCloseNow)
+    /// The progress the sheet shows now.
+    private var progressShape: ProgressShape {
+        ProgressShape(stage: stage, isMakingSpeech: model.isMakingSpeech)
+    }
+
+    /// The export moved on. As the spoken audio file begins, Close takes Stop's place in the bar: focus moves to the Stop
+    /// row, so that it never rests on a button whose meaning changed under it, and VoiceOver is then told that the sheet
+    /// may close, once the focus has moved, so that what it reads of the row queues the words rather than cuts them off.
+    /// Otherwise focus on a row of the progress that has just gone, the Stop row above all, which the sheet itself sent
+    /// focus to, moves to what took its place (`PhoneExportOffer.focusAfterProgressMoves`). `focus` still names the row
+    /// here: the row goes from VoiceOver's view only once this update is drawn.
+    private func progressMoved(from old: ProgressShape, to new: ProgressShape) {
+        if new.isMakingSpeech, !old.isMakingSpeech {
+            returnFocus(to: .stopRow) { PhoneAnnouncer.say(PhoneExportWording.canCloseNow) }
+            return
+        }
+        let target = PhoneExportOffer.focusAfterProgressMoves(
+            from: focus?.progressRow, stage: new.stage, isMakingSpeech: new.isMakingSpeech
+        )
+        if let target { returnFocus(to: Focus(target)) }
     }
 
     // MARK: - The Kinds
@@ -462,6 +506,7 @@ struct PhoneExportSheet: View {
                 }
                 .progressViewStyle(.linear)
                 .accessibilityLabel(text)
+                .accessibilityFocused($focus, equals: .progress)
                 stopRow
             }
         }
@@ -475,6 +520,7 @@ struct PhoneExportSheet: View {
         if let words = model.finishedWords ?? model.summary {
             Section {
                 Text(words)
+                    .accessibilityFocused($focus, equals: .finished)
                 shareButton
             }
         }
@@ -518,15 +564,17 @@ struct PhoneExportSheet: View {
     }
 
     /// Returns VoiceOver's focus to `target` once a sheet, a picker, or an
-    /// alert has closed, after 0.35 seconds, by setting the focus state to
-    /// nothing and then to the target, since setting the value it holds does
-    /// nothing.
-    private func returnFocus(to target: Focus) {
+    /// alert has closed, or the row it was on has gone, after 0.35 seconds, by
+    /// setting the focus state to nothing and then to the target, since setting
+    /// the value it holds does nothing; then runs `afterwards`, as an
+    /// announcement that is to follow what VoiceOver reads of the target.
+    private func returnFocus(to target: Focus, then afterwards: (@MainActor () -> Void)? = nil) {
         Task { @MainActor in
             try? await Task.sleep(for: .seconds(PhoneFocusPolicy.screenChangedDelay))
             focus = nil
             await Task.yield()
             focus = target
+            afterwards?()
         }
     }
 }
