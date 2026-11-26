@@ -88,11 +88,19 @@ final class StorageGenerationWorkTests: XCTestCase {
     }
 
     /// The deletion of feed items' downloaded files is a kind of work a move
-    /// names in its own words, and the last kind, so a move names every
-    /// older kind first.
-    func testRemovingFeedDownloadsIsTheLastKindAndHasItsOwnWording() {
+    /// names in its own words, after every older kind.
+    func testRemovingFeedDownloadsHasItsOwnWording() {
         XCTAssertEqual(StorageWork.removingFeedDownloads.waitingMessage, "Waiting for feed downloads to be deleted...")
-        XCTAssertEqual(StorageWork.allCases.last, .removingFeedDownloads)
+        XCTAssertEqual(StorageWork.allCases.suffix(2).first, .removingFeedDownloads)
+    }
+
+    /// The removal of a synced book's download (FR46) is a kind of work a
+    /// move names in its own words, and the last kind, so a move names every
+    /// older kind first.
+    func testRemovingSyncedDownloadsIsTheLastKindAndHasItsOwnWording() {
+        XCTAssertEqual(StorageWork.removingSyncedDownloads.waitingMessage, "Waiting for a book's download to be removed...")
+        XCTAssertEqual(StorageWork.removingSyncedDownloads.logWaitingMessage, "Waiting for a book's download to be removed...")
+        XCTAssertEqual(StorageWork.allCases.last, .removingSyncedDownloads)
     }
 
     /// Work started while a move holds work says so, waits until the hold
