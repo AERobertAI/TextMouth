@@ -204,7 +204,7 @@ struct PhoneReaderView: View {
                 sheetOpener = item
                 sheet = item.sheet
             }
-        case .navigationUnit, .bookmarks, .headings, .goTo, .sleepTimer, .voice, .bookInfo:
+        case .navigationUnit, .bookmarks, .headings, .goTo, .sleepTimer, .voice, .bookInfo, .export:
             return {
                 sheetOpener = item
                 sheet = item.sheet
@@ -267,7 +267,8 @@ struct PhoneReaderView: View {
                 reader: reader,
                 noteJumped: { [model] in model.noteJumped() },
                 library: session.library,
-                pauseBookForPreview: { [session] in session.pauseBookForPreview() }
+                pauseBookForPreview: { [session] in session.pauseBookForPreview() },
+                beginHold: { [session] name in session.beginHold(name) }
             )
         }
     }

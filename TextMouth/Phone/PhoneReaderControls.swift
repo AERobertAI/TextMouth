@@ -107,6 +107,15 @@ enum PhoneReaderControls {
                 hint: FeedItemBookInfoWording.readerButtonLabel(readOnly: true),
                 traits: .button
             )
+        case .export:
+            // The Mac's toolbar button's words: its spoken label, its drawn
+            // title, and its hint.
+            return PhoneControlDescription(
+                label: BookExportWording.toolbarLabel,
+                hint: BookExportWording.toolbarHint,
+                traits: .button,
+                visibleTitle: BookExportWording.toolbarTitle
+            )
         case .skipBackward:
             return PhoneControlDescription(label: PhoneReaderVocabulary.skipBackward(by: state.unit), traits: .button)
         case .skipForward:

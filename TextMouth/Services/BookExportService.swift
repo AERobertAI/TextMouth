@@ -402,6 +402,14 @@ enum BookExportConversion: Sendable, Equatable {
 
 // MARK: - Listing and Exporting
 
+/// What an export asks before it converts a book's text (FR31): whether the
+/// memory left holds a conversion of that many bytes of text by the writer whose
+/// `id` it is given (a braille writer holds more than a web page's). It throws, with
+/// a sentence naming why (a `TextExportError`), to refuse: that book's file
+/// then fails alone and the export goes on. The iPhone's is
+/// `PhoneExportMemoryCheck`; the Mac asks nothing.
+typealias BookExportMemoryGuard = @Sendable (_ writerID: String, _ textBytes: Int64) throws -> Void
+
 /// Lists what a book can export and copies the chosen items to a folder
 /// (FR05): an audiobook's audio, a recording's original take, the original
 /// audio an edit kept, a transcript, and a text book's own file, its
@@ -417,6 +425,11 @@ enum BookExportService {
     /// The extensions of the audio files an audiobook's folder of tracks
     /// can hold: the formats TextMouth plays.
     private static let audioExtensions = Set(BookFormat.audio.fileExtensions)
+
+    /// What a `BookExportMemoryGuard` is given for the plain text of a book, which is no text writer's, and for a
+    /// transcript's captions: names that no writer's `id` is.
+    static let plainTextGuardID = "plain-text"
+    static let captionsGuardID = "captions"
 
     // MARK: Listing
 
@@ -1266,6 +1279,13 @@ enum BookExportService {
     /// and the folder its spoken chapters are kept in, and where its progress
     /// goes. The app passes the live one; tests pass their own.
     ///
+    /// `delivery` (FR31) is how each file is made and put in `destination`:
+    /// the Mac moves it from a scratch folder, the iPhone copies it in under a
+    /// file coordinator (`BookExportDelivery`).
+    ///
+    /// `memoryGuard` (FR31) is asked before each text conversion walks its
+    /// book, with the size of the book's text; see `BookExportMemoryGuard`.
+    ///
     /// `askAboutDeepChapters` (FR24) is how the export asks what to do with a
     /// chapter of a text conversion that nests quotes, lists, or emphasis
     /// past the reader's limit: it is called on the export's thread, which
@@ -1287,6 +1307,8 @@ enum BookExportService {
         cancellation: BookExportCancellation? = nil,
         progress: (@Sendable (_ done: Int, _ total: Int) -> Void)? = nil,
         speech: SpeechExportContext = .live,
+        delivery: BookExportDelivery = .standard,
+        memoryGuard: BookExportMemoryGuard? = nil,
         askAboutDeepChapters: ExportDeepChapterQuestioner.Ask? = nil
     ) -> BookExportOutcome {
         let (files, booksInCloud) = plan(offers, kinds: kinds, conversions: conversions, in: destination)
@@ -1311,6 +1333,8 @@ enum BookExportService {
                 access: access,
                 cancellation: token,
                 speech: speech,
+                delivery: delivery,
+                memoryGuard: memoryGuard,
                 deepChapters: questioner?.decider(for: planned.book, filesAfter: textFilesAfter[number]),
                 into: &outcome
             )
@@ -1342,13 +1366,17 @@ enum BookExportService {
     /// file is then neither exported nor a failure. Whatever fails, nothing is
     /// removed from the folder chosen: the file is made in a scratch folder
     /// and only moved in whole. `speech` is what a speech conversion runs
-    /// with (`export`); `deepChapters` decides what a text conversion does
-    /// with a chapter nested too deeply (nil refuses it).
+    /// with (`export`); `delivery` is how the file is made and put in place
+    /// (`BookExportDelivery`); `memoryGuard` is asked before a text
+    /// conversion (`BookExportMemoryGuard`); `deepChapters` decides what a
+    /// text conversion does with a chapter nested too deeply (nil refuses it).
     private static func write(
         _ planned: PlannedFile,
         access: MaintenanceFileAccess,
         cancellation: BookExportCancellation,
         speech: SpeechExportContext,
+        delivery: BookExportDelivery,
+        memoryGuard: BookExportMemoryGuard?,
         deepChapters: ExportDeepChapterDecider?,
         into outcome: inout BookExportOutcome
     ) {
@@ -1365,11 +1393,13 @@ enum BookExportService {
             switch planned.file.source {
             case .copy(let url):
                 // A file, or a folder such as an RTFD package.
-                try writeThroughScratchFile(to: planned.target, cancellation: cancellation) { scratch in
+                try writeThroughScratchFile(to: planned.target, cancellation: cancellation, delivery: delivery) { scratch in
                     try access.read(url) { try FileManager.default.copyItem(at: url, to: scratch) }
                 }
             case .readingText(let markdown):
-                try writeThroughScratchFile(to: planned.target, cancellation: cancellation) { scratch in
+                // The plain text is made of the whole of content.md in memory, as a conversion's walk is.
+                try memoryGuard?(plainTextGuardID, planned.file.byteCount)
+                try writeThroughScratchFile(to: planned.target, cancellation: cancellation, delivery: delivery) { scratch in
                     let bytes = try access.read(markdown) { try Data(contentsOf: markdown) }
                     let text = try plainText(fromMarkdown: bytes, at: markdown, title: planned.book.title)
                     try Data(text.utf8).write(to: scratch, options: .withoutOverwriting)
@@ -1389,6 +1419,9 @@ enum BookExportService {
                     access: access,
                     cancellation: cancellation,
                     speech: speech,
+                    delivery: delivery,
+                    memoryGuard: memoryGuard,
+                    textBytes: planned.file.byteCount,
                     deepChapters: deepChapters
                 )
             }
@@ -1407,8 +1440,9 @@ enum BookExportService {
     }
 
     /// Makes the folder that holds `target`, and any above it that are
-    /// missing.
-    private static func makeFolder(of target: URL) throws {
+    /// missing: the Mac's delivery does so (`BookExportDelivery.moving`), and the iPhone's makes it under its
+    /// file coordinator.
+    static func makeFolder(of target: URL) throws {
         try FileManager.default.createDirectory(
             at: target.deletingLastPathComponent(),
             withIntermediateDirectories: true
@@ -1427,7 +1461,10 @@ enum BookExportService {
     /// Stop is checked after the read, all through the walk and the writing
     /// or the speaking and the encoding, and once more before the move.
     /// A text conversion's walk takes `deepChapters` (FR24): what to do with a
-    /// chapter nested too deeply, which is to refuse it when nil.
+    /// chapter nested too deeply, which is to refuse it when nil. `delivery`
+    /// is how the scratch file is put in place (`BookExportDelivery`).
+    /// `memoryGuard` is asked, with the conversion's writer and `textBytes`, the size of the text the
+    /// source holds, before a text conversion reads the source at all.
     /// - Throws: `CancellationError` when stopped, or when `deepChapters` says
     ///   to cancel the export; the walk's or the
     ///   writer's error, or the speech export's (a refusal, such as a
@@ -1443,6 +1480,9 @@ enum BookExportService {
         access: MaintenanceFileAccess,
         cancellation: BookExportCancellation,
         speech: SpeechExportContext,
+        delivery: BookExportDelivery,
+        memoryGuard: BookExportMemoryGuard?,
+        textBytes: Int64,
         deepChapters: ExportDeepChapterDecider?
     ) throws {
         // A chapter list is made from the book's audio and its record, never
@@ -1453,10 +1493,21 @@ enum BookExportService {
             )
             try cancellation.checkCancelled()
             let bytes = try format.fileBytes(of: entries, book: book)
-            try writeThroughScratchFile(to: target, cancellation: cancellation) { scratch in
+            try writeThroughScratchFile(to: target, cancellation: cancellation, delivery: delivery) { scratch in
                 try bytes.write(to: scratch, options: .withoutOverwriting)
             }
             return
+        }
+        // A text conversion holds the whole text, its document, and the file
+        // it makes in memory at once, and captions the whole transcript and
+        // its cues: asked before any of it is read.
+        switch conversion {
+        case .text(let text):
+            try memoryGuard?(text.writerID, textBytes)
+        case .timedText:
+            try memoryGuard?(captionsGuardID, textBytes)
+        case .speech, .chapterList:
+            break
         }
         let bytes = try access.read(source) { try Data(contentsOf: source) }
         try cancellation.checkCancelled()
@@ -1470,7 +1521,7 @@ enum BookExportService {
                 deepChapters: deepChapters,
                 cancellation: cancellation
             )
-            try writeThroughScratchFile(to: target, cancellation: cancellation) { scratch in
+            try writeThroughScratchFile(to: target, cancellation: cancellation, delivery: delivery) { scratch in
                 try text.write(document, to: scratch, cancellation: cancellation)
             }
         case .speech(let request):
@@ -1481,7 +1532,7 @@ enum BookExportService {
             // system makes one there. The file is moved in as the job's last
             // step, so a move that fails, say to a name taken during the hours
             // the book was spoken, leaves every spoken chapter kept.
-            try withScratchFile(for: target) { scratch in
+            try withScratchFile(for: target, delivery: delivery) { scratch in
                 try SpeechExportJob.run(
                     request,
                     markdown: bytes,
@@ -1489,13 +1540,15 @@ enum BookExportService {
                     to: scratch,
                     context: speech,
                     cancellation: cancellation,
-                    deliver: { try moveScratchFile(scratch, to: target, cancellation: cancellation) }
+                    deliver: {
+                        try moveScratchFile(scratch, to: target, cancellation: cancellation, delivery: delivery)
+                    }
                 )
             }
         case .timedText(let format):
             let transcript = try Transcript.exportable(from: bytes)
             try cancellation.checkCancelled()
-            try writeThroughScratchFile(to: target, cancellation: cancellation) { scratch in
+            try writeThroughScratchFile(to: target, cancellation: cancellation, delivery: delivery) { scratch in
                 try format.fileBytes(of: transcript.bookTimelineCues).write(to: scratch, options: .withoutOverwriting)
             }
         case .chapterList:
@@ -1519,29 +1572,40 @@ enum BookExportService {
     private static func writeThroughScratchFile(
         to target: URL,
         cancellation: BookExportCancellation,
+        delivery: BookExportDelivery,
         write: (_ scratch: URL) throws -> Void
     ) throws {
-        try withScratchFile(for: target) { scratch in
+        try withScratchFile(for: target, delivery: delivery) { scratch in
             try write(scratch)
-            try moveScratchFile(scratch, to: target, cancellation: cancellation)
+            try moveScratchFile(scratch, to: target, cancellation: cancellation, delivery: delivery)
         }
     }
 
     /// Runs `body` with where to make the file that will become `target`: a
-    /// URL of the same name in a new scratch folder, which is removed however
-    /// `body` ends.
-    private static func withScratchFile(for target: URL, _ body: (_ scratch: URL) throws -> Void) throws {
-        let scratchFolder = try makeScratchFolder(near: target)
+    /// URL of the same name in a new scratch folder (`delivery` makes it),
+    /// which is removed however `body` ends.
+    private static func withScratchFile(
+        for target: URL,
+        delivery: BookExportDelivery,
+        _ body: (_ scratch: URL) throws -> Void
+    ) throws {
+        let scratchFolder = try delivery.makeScratchFolder(target)
         defer { try? FileManager.default.removeItem(at: scratchFolder) }
         try body(scratchFolder.appendingPathComponent(target.lastPathComponent))
     }
 
-    /// Moves the whole file `scratch` to `target`, unless Stop was pressed,
-    /// making the folder of `target` only now.
-    private static func moveScratchFile(_ scratch: URL, to target: URL, cancellation: BookExportCancellation) throws {
+    /// Delivers the whole file `scratch` to `target` the way `delivery` does
+    /// (a move, or a coordinated copy), unless Stop was pressed; the folder of
+    /// `target` is made then too, by the delivery, so that a stopped export
+    /// leaves none.
+    private static func moveScratchFile(
+        _ scratch: URL,
+        to target: URL,
+        cancellation: BookExportCancellation,
+        delivery: BookExportDelivery
+    ) throws {
         try cancellation.checkCancelled()
-        try makeFolder(of: target)
-        try moveExclusively(scratch, to: target)
+        try delivery.deliver(scratch, target, cancellation)
     }
 
     /// Moves `source` (a file, or a folder such as an RTFD package) to
@@ -1748,9 +1812,10 @@ enum BookExportService {
 
     /// A new, empty scratch folder: one the system keeps on the volume of the
     /// nearest folder above `target` that exists, so that the move is a
-    /// rename, or, when the system makes none, a new folder "TextMouth Export
-    /// <UUID>" in the temporary directory.
-    private static func makeScratchFolder(near target: URL) throws -> URL {
+    /// rename, or, when the system makes none, a new folder in the temporary
+    /// directory (`makeTemporaryScratchFolder()`). The Mac's way
+    /// (`BookExportDelivery.moving`).
+    static func makeScratchFolder(near target: URL) throws -> URL {
         // The target's folder may not exist yet: its first folder that does.
         var existing = target.deletingLastPathComponent()
         while existing.path != "/", !FileManager.default.fileExists(atPath: existing.path) {
@@ -1764,10 +1829,20 @@ enum BookExportService {
         ) {
             return replacement
         }
-        let fallback = FileManager.default.temporaryDirectory
-            .appendingPathComponent("TextMouth Export \(UUID().uuidString)", isDirectory: true)
-        try FileManager.default.createDirectory(at: fallback, withIntermediateDirectories: true)
-        return fallback
+        return try makeTemporaryScratchFolder()
+    }
+
+    /// A new, empty folder "TextMouth Export <UUID>" in the temporary
+    /// directory, which is inside the app's own container on the iPhone: the
+    /// iPhone's scratch folder (`BookExportDelivery.coordinatedCopy`), which
+    /// asks the system for no item-replacement folder near the target, since
+    /// one might be made in a file provider's folder and sync a half-made
+    /// file.
+    static func makeTemporaryScratchFolder() throws -> URL {
+        let folder = FileManager.default.temporaryDirectory
+            .appendingPathComponent("\(BookExportDelivery.scratchFolderPrefix)\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        return folder
     }
 
     /// Records in the debug log how an export ended: one line saying how

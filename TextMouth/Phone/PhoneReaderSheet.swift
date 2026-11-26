@@ -11,6 +11,7 @@ enum PhoneReaderSheet: String, Identifiable, CaseIterable, Sendable {
     case sleepTimer
     case voice
     case bookInfo
+    case export
     case navigationUnit
 
     /// The sheet itself, for SwiftUI's `sheet(item:)`.

@@ -1,4 +1,6 @@
+#if os(macOS)
 import AppKit
+#endif
 import SwiftUI
 import XCTest
 @testable import TextMouth
@@ -312,7 +314,13 @@ final class BrailleExportWriterTests: XCTestCase {
     func testTheWritersAreRegisteredAfterWord() throws {
         let ids = TextExportWriters.all.map(\.id)
         XCTAssertEqual(Array(ids.suffix(2)), ["brf", "pef"], "braille comes last")
+        #if os(macOS)
         XCTAssertEqual(Array(ids.suffix(4)), ["doc", "epub", "brf", "pef"], "Word, then EPUB, then braille")
+        #else
+        // The iPhone has no Word 97-2003 writer (it needs AppKit's .docFormat).
+        XCTAssertEqual(Array(ids.suffix(3)), ["epub", "brf", "pef"], "EPUB, then braille")
+        XCTAssertFalse(ids.contains("doc"))
+        #endif
         let brf = try XCTUnwrap(TextExportWriters.writer(id: "brf"))
         let pef = try XCTUnwrap(TextExportWriters.writer(id: "pef"))
         XCTAssertEqual([brf.name, pef.name], ["BRF", "PEF"])
@@ -415,6 +423,9 @@ final class BrailleExportWriterTests: XCTestCase {
         XCTAssertEqual(BrailleExportOptions.standard().fileCode, .northAmerican)
     }
 
+    // Mac only: the dialog's options view is AppKit's, and the round trips use the Mac's library world;
+    // the iPhone's rows are read by ExportUITests.
+    #if os(macOS)
     // MARK: - The Options View
 
     /// A BRF's options view has the three table pop-ups, the line ends pop-up,
@@ -615,6 +626,7 @@ final class BrailleExportWriterTests: XCTestCase {
             XCTAssertEqual(try roundTrip(markdown: markdown, conversion: conversion, table: table), expected, name)
         }
     }
+    #endif
 
     // MARK: - Helpers
 
@@ -645,6 +657,7 @@ final class BrailleExportWriterTests: XCTestCase {
         )
     }
 
+    #if os(macOS)
     /// The text blocks of the book `markdown` makes, exported to a file
     /// through the export service with `conversion` chosen, then imported
     /// again with `table` as the Braille setting: the blocks the reader shows
@@ -688,10 +701,12 @@ final class BrailleExportWriterTests: XCTestCase {
             try body(hosting)
         }
     }
+    #endif
 }
 
 // MARK: - Test Support
 
+#if os(macOS)
 /// The options a hosted options view sets, observable so the view redraws.
 @MainActor
 private final class OptionsBox: ObservableObject {
@@ -713,6 +728,7 @@ private struct OptionsHarness: View {
         BrailleExportOptionsView(options: $box.options, choosesLineEnds: choosesLineEnds, codes: BrailleTableCatalog.bundledCodes)
     }
 }
+#endif
 
 /// A BRF or PEF writer, its type forgotten so a test loops over both.
 private struct AnyBrailleWriter {

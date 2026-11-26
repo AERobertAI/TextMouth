@@ -10,15 +10,16 @@ final class PhoneReaderControlsTests: XCTestCase {
 
     /// The elements after Back and the title, in VoiceOver's order, and the
     /// grid of three columns under Play: five full rows, and a sixth holding
-    /// the last control, since Search in Book follows Headings.
+    /// the two skips, since Search in Book follows Headings and Export this
+    /// book follows Book Info.
     func testTheControlsAreInTheSpecsOrder() {
         XCTAssertEqual(PhoneReaderControl.allCases, [
             .bookContent, .play, .whereAmI, .navigationUnit, .speed,
             .previousHeading, .nextHeading, .addBookmark, .bookmarks, .headings,
-            .searchInBook, .goTo, .returnToPlace, .sleepTimer, .voice, .bookInfo,
+            .searchInBook, .goTo, .returnToPlace, .sleepTimer, .voice, .bookInfo, .export,
             .skipBackward, .skipForward,
         ])
-        XCTAssertEqual(PhoneReaderControl.grid.count, 16)
+        XCTAssertEqual(PhoneReaderControl.grid.count, 17)
         XCTAssertEqual(PhoneReaderControl.grid.first, .whereAmI)
         XCTAssertEqual(PhoneReaderControl.grid.last, .skipForward)
     }
@@ -41,6 +42,9 @@ final class PhoneReaderControlsTests: XCTestCase {
             )
         }
         XCTAssertEqual(PhoneReaderControl.gridRows.last, [.skipBackward, .skipForward], "The skips aren't the last row")
+        // Voice, Book Info, and Export this book are the fifth row, the third of it the Export control (FR31).
+        XCTAssertEqual(PhoneReaderControl.gridRows.count, 6, "The grid changed its shape")
+        XCTAssertEqual(PhoneReaderControl.gridRows.dropFirst(4).first, [.voice, .bookInfo, .export])
     }
 
     /// Every control has a focus kind of its own, and every kind belongs to
@@ -56,6 +60,7 @@ final class PhoneReaderControlsTests: XCTestCase {
         XCTAssertEqual(PhoneReaderControl.navigationUnit.sheet, .navigationUnit)
         XCTAssertEqual(PhoneReaderControl.headings.sheet, .headings)
         XCTAssertEqual(PhoneReaderControl.voice.sheet, .voice)
+        XCTAssertEqual(PhoneReaderControl.export.sheet, .export)
         XCTAssertEqual(PhoneReaderControl.searchInBook.sheet, .search)
         XCTAssertNil(PhoneReaderControl.play.sheet)
         XCTAssertNil(PhoneReaderControl.addBookmark.sheet)
@@ -240,6 +245,25 @@ final class PhoneReaderControlsTests: XCTestCase {
         XCTAssertEqual(describe(.returnToPlace, in: state()).hint, "Goes back to where the last jump began.")
         XCTAssertEqual(describe(.bookInfo, in: state()).label, "Book Info")
         XCTAssertEqual(describe(.bookInfo, in: state()).hint, "Show book information")
+    }
+
+    /// Export this book is the Mac's toolbar button: its spoken label, its drawn
+    /// title "Export", and its hint, a button with no value and no actions; it
+    /// follows Book Info and comes before the skips.
+    func testExportThisBook() {
+        let export = describe(.export, in: state())
+        XCTAssertEqual(export.label, "Export this book")
+        XCTAssertEqual(export.visibleTitle, "Export")
+        XCTAssertEqual(export.value, "")
+        XCTAssertEqual(export.hint, "Opens the Export dialog: the book's audio, its text, or its own file.")
+        XCTAssertEqual(export.traits, .button)
+        XCTAssertEqual(export.actions, [])
+        let order = PhoneReaderControl.allCases
+        XCTAssertEqual(order.firstIndex(of: .export), order.firstIndex(of: .bookInfo).map { $0 + 1 })
+        XCTAssertEqual(order.firstIndex(of: .skipBackward), order.firstIndex(of: .export).map { $0 + 1 })
+        for control in PhoneReaderControl.allCases where control != .export {
+            XCTAssertNil(describe(control, in: state()).visibleTitle, "\(control) draws words other than its label")
+        }
     }
 
     /// Sleep Timer says "Off", or the Mac's spoken status.
