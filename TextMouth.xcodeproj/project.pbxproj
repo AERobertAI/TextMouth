@@ -969,6 +969,7 @@
 		4A28B26DE239A779C3C27AC6 /* LibraryFileWaitWording.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FDE9A90642A049B691058D7 /* LibraryFileWaitWording.swift */; };
 		4A319F6C55CE202551610D71 /* LibraryBookUpdates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E1172AED5226D2AD3F61771 /* LibraryBookUpdates.swift */; };
 		4A32359A51BACAA64B4E47AF /* LibraryIndexPersistenceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C0FBD655842F63B0DD95540 /* LibraryIndexPersistenceTests.swift */; };
+		4A842250A528E1870034BAF3 /* SyncFolderIO.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDC9B02E1683E86E3A13FCA4 /* SyncFolderIO.swift */; };
 		4AADAF8070F169D3FFEF386F /* TranscriptionLanguageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2C40E1A301C82B4C699F1B9 /* TranscriptionLanguageTests.swift */; };
 		4AB96420CF5751B6D25096A5 /* LibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E6AEB1AF29767066AB7B08A /* LibraryView.swift */; };
 		4ABEC9B9E89C9F6FFE8B01E5 /* BrailleFileCodeRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33F950D093C28AFB01CF8127 /* BrailleFileCodeRecord.swift */; };
@@ -1410,6 +1411,7 @@
 		6F358F7F97C65CFCAA97EA32 /* PodcastChaptersHeadingsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBEEC385626F9EAFB4CEF25C /* PodcastChaptersHeadingsTests.swift */; };
 		6F367DA0552D1B9E7D0236C5 /* FeedRefresher.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCDBEE28BA67CD3C8CF92977 /* FeedRefresher.swift */; };
 		6F4B8645769A7A49DD0FAAA0 /* PhoneLibraryRowViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 975F97D891BE4F8D02F62B9B /* PhoneLibraryRowViews.swift */; };
+		6F54471F8E3A287F334CC802 /* SyncFolderIOTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A44D6A7A64ACB49893056F1F /* SyncFolderIOTests.swift */; };
 		6F599B7E76B3B5972127F7AD /* FeedBookUse.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D9B46FF46B870E2355B439D /* FeedBookUse.swift */; };
 		6FC4C7A58613DB29B97409FB /* ReaderViewModel+EpisodeDownload.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14E753ED75F769DB5A43EF61 /* ReaderViewModel+EpisodeDownload.swift */; };
 		6FC7DFF09B3F0351B7229DFF /* BookSearchModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BB8A49BD8A57B839DDD4926 /* BookSearchModel.swift */; };
@@ -2608,6 +2610,7 @@
 		CE91C1F647A72A3AD92921C8 /* LibraryViewModel+BookOperations.swift in Sources */ = {isa = PBXBuildFile; fileRef = 462A17BFF390D0260CA555CA /* LibraryViewModel+BookOperations.swift */; };
 		CEBD16E7F3797CC4F225B178 /* ZIPImportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2DE88EB9B76BC3FEACE00F0F /* ZIPImportTests.swift */; };
 		CEC224A583530455EC64C498 /* ShortcutManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFC7B62C2565B66A16CDFA23 /* ShortcutManagerTests.swift */; };
+		CECC616B9922045DEB6D04F4 /* SyncFolderIO.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDC9B02E1683E86E3A13FCA4 /* SyncFolderIO.swift */; };
 		CEDD314678BDCC247B08C65A /* FeedSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94559A41D8F0BE56561F9BA7 /* FeedSettingsView.swift */; };
 		CEFCF55961641C49FF106639 /* PhoneLifeCycle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 518F697E3EC5484302F328C1 /* PhoneLifeCycle.swift */; };
 		CF1F88A0132606DBBF43FE24 /* lou_translateString.c in Sources */ = {isa = PBXBuildFile; fileRef = B2AC49DADAC7ACC9B7FB743B /* lou_translateString.c */; };
@@ -2981,6 +2984,7 @@
 		EA6C8F9BA5C076B304C5EB36 /* KFXEPUBComparisonTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67B1BFCC74ECF6C2E4B76E87 /* KFXEPUBComparisonTests.swift */; };
 		EA7CC4D604BC699AC45FC97F /* BookReaderWindowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92BDB2E2EF1B369DA910AB56 /* BookReaderWindowView.swift */; };
 		EA7DEF1F3A56AB5C47FEEC2D /* DAISYParser+SMILParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CE0B255A9734DCEC3F75947 /* DAISYParser+SMILParser.swift */; };
+		EA7DFA8EE88FDCB4F7D3F084 /* SyncFolderIOTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A44D6A7A64ACB49893056F1F /* SyncFolderIOTests.swift */; };
 		EA7FC6A7AA89A512A70E146B /* EndBehaviorTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = F78DAE3D5991C2B64EDE6D41 /* EndBehaviorTestSupport.swift */; };
 		EA8732968A6B262840795007 /* FFmpegAudioConverter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DD8C95BE65D0E219E04F265 /* FFmpegAudioConverter.swift */; };
 		EAA9931AF5F05FC90211B34F /* FeedDownloadProgress.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54EEF22349F649B2B737468A /* FeedDownloadProgress.swift */; };
@@ -4945,6 +4949,7 @@
 		A41E4438403038F0313BC123 /* TranscriptAttachTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptAttachTests.swift; sourceTree = "<group>"; };
 		A4250ABAFA28C08D022062F4 /* LibraryPersistenceService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryPersistenceService.swift; sourceTree = "<group>"; };
 		A43CF2482B3D82FF0A911711 /* DAISYPackageInventoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DAISYPackageInventoryTests.swift; sourceTree = "<group>"; };
+		A44D6A7A64ACB49893056F1F /* SyncFolderIOTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncFolderIOTests.swift; sourceTree = "<group>"; };
 		A44E1875FDCD2079F025CD21 /* AudioEditPlacesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEditPlacesTests.swift; sourceTree = "<group>"; };
 		A455D116536C3301E5E4CC68 /* PackageFileEditing+iOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PackageFileEditing+iOS.swift"; sourceTree = "<group>"; };
 		A4D5D7CA6B82157A5E734B92 /* LibraryViewModel+LibraryFetch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LibraryViewModel+LibraryFetch.swift"; sourceTree = "<group>"; };
@@ -5679,6 +5684,7 @@
 		FD6B1B7FB41719E130C84969 /* LibraryViewModel+Feeds.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LibraryViewModel+Feeds.swift"; sourceTree = "<group>"; };
 		FD843A66FB1C52F062F57BE6 /* TextPlausibility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextPlausibility.swift; sourceTree = "<group>"; };
 		FD86799BCF095CAE75433E35 /* ExportDeepChapterExportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportDeepChapterExportTests.swift; sourceTree = "<group>"; };
+		FDC9B02E1683E86E3A13FCA4 /* SyncFolderIO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncFolderIO.swift; sourceTree = "<group>"; };
 		FDD7BC7D2012446B0B0039B9 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		FDDDED77D9A3C9B8EC2C43FB /* IOSBranchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IOSBranchTests.swift; sourceTree = "<group>"; };
 		FDE762072A792C62EB01476E /* PronunciationLexiconTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PronunciationLexiconTests.swift; sourceTree = "<group>"; };
@@ -7944,6 +7950,7 @@
 				87D700D613D4CE925ABCDDC0 /* SyncBaselineTests.swift */,
 				2C32498DC2ED439469C59284 /* SyncCenterTests.swift */,
 				BFC99B0FC72B28090BF9EF2F /* SyncEngineTests.swift */,
+				A44D6A7A64ACB49893056F1F /* SyncFolderIOTests.swift */,
 				3BC9E0A693C4313BBBFCA2B1 /* SyncFolderTests.swift */,
 				F91D13C72A2D9DC73D807EA7 /* SyncFormatTests.swift */,
 				98DE9CFD6161B13EF950ED91 /* SyncMergePropertyTests.swift */,
@@ -8343,6 +8350,7 @@
 				6ED5FD2A265DC82670723A14 /* SyncCenter.swift */,
 				263C10A3687B06744EC233A2 /* SyncEngine.swift */,
 				466110B0E30ABC27E354718A /* SyncFolder.swift */,
+				FDC9B02E1683E86E3A13FCA4 /* SyncFolderIO.swift */,
 				74E27690E626B67D7E8E9197 /* SyncLocalFiles.swift */,
 				922AC525556AB82F0FFB46CB /* SyncNames.swift */,
 				18D4B2D0B57814270BC51957 /* SyncOutbox.swift */,
@@ -9376,6 +9384,7 @@
 				5C7C526A6DD673837C259068 /* SyncBaselineTests.swift in Sources */,
 				3D8E7D8838004B5880445474 /* SyncCenterTests.swift in Sources */,
 				42EF60D7A658870C763C007E /* SyncEngineTests.swift in Sources */,
+				EA7DFA8EE88FDCB4F7D3F084 /* SyncFolderIOTests.swift in Sources */,
 				F20142B91E3514067696D7BF /* SyncFolderTests.swift in Sources */,
 				3EFD3755882B67A3E80D9D53 /* SyncFormatTests.swift in Sources */,
 				0A4CDB6C13BFB391FEAC2398 /* SyncMergePropertyTests.swift in Sources */,
@@ -10236,6 +10245,7 @@
 				D762FEFF06C8307AE728BD05 /* SyncBaselineTests.swift in Sources */,
 				405962DAB5182C49DF8194B9 /* SyncCenterTests.swift in Sources */,
 				86EDEF385598D3CBA564A78E /* SyncEngineTests.swift in Sources */,
+				6F54471F8E3A287F334CC802 /* SyncFolderIOTests.swift in Sources */,
 				7338F02AF3CE41610035B490 /* SyncFolderTests.swift in Sources */,
 				8D4B4832B5CD06A46FB1D7E4 /* SyncFormatTests.swift in Sources */,
 				63F8B7218FACC1376BF4A8F2 /* SyncMergePropertyTests.swift in Sources */,
@@ -11243,6 +11253,7 @@
 				A06FB10C02E14658C32629A5 /* SyncCenter.swift in Sources */,
 				3EB1FBE4B0DE0998C8C29012 /* SyncEngine.swift in Sources */,
 				837E13584873305F26FB4518 /* SyncFolder.swift in Sources */,
+				4A842250A528E1870034BAF3 /* SyncFolderIO.swift in Sources */,
 				3F6D6917F417C83CB6A7A3CA /* SyncFolderPlan.swift in Sources */,
 				9A66BB743138C24797E3BD12 /* SyncFormats.swift in Sources */,
 				487378CF0155397F2FF033E0 /* SyncInterfaces.swift in Sources */,
@@ -12309,6 +12320,7 @@
 				376C1C94099BC2A9EE8E00FE /* SyncCenter.swift in Sources */,
 				0908E9CD715C69BB7B244194 /* SyncEngine.swift in Sources */,
 				B3BB06C0DB7E7E9480F0D7ED /* SyncFolder.swift in Sources */,
+				CECC616B9922045DEB6D04F4 /* SyncFolderIO.swift in Sources */,
 				1AFC10E3357AFEE611C40572 /* SyncFolderPlan.swift in Sources */,
 				7C09E5CC10719CED9594AFE1 /* SyncFormats.swift in Sources */,
 				C4D60919C0E50E8D93E24DA3 /* SyncInterfaces.swift in Sources */,
