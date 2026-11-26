@@ -41,6 +41,13 @@ final class TextMouthAppDelegate: UIResponder, UIApplicationDelegate {
         // Both do nothing until a sync folder is chosen (R1).
         CloudServices.bookStorage = StoreBookStorage(wrapping: CloudServices.bookStorage)
         SyncFolderAccessFactory.make = { PhoneSyncFolderAccess(bookmark: $0) }
+        // A folder picked in Files is bookmarked, and a stale bookmark renewed, with its security scope open.
+        SyncFolderAccessFactory.makeBookmark = { try? PhoneSyncFolderAccess.makeBookmark(of: $0) }
+        SyncFolderAccessFactory.renewedBookmark = { bookmark in
+            // A bookmark that finds nothing (or only a deleted folder) renews to nothing: the center keeps the old one and
+            // its status says the folder is missing.
+            (try? PhoneSyncFolderAccess.renewedBookmark(for: bookmark)) ?? nil
+        }
         let model = Self.model
         model.lifeCycle.beginHold = { name in
             Self.beginBackgroundTask(named: name)

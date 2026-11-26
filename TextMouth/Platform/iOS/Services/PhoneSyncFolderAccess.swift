@@ -2,281 +2,171 @@ import Foundation
 
 // PhoneSyncFolderAccess.swift: how the iPhone reaches the TextMouth Sync folder
 // (FR43, sync-iphone). The folder is one a person picked in Files, kept as a
-// bookmark; every read and write goes through NSFileCoordinator, each bounded
-// by a limit, so a stalled iCloud Drive never holds the library or the app
-// (rules R2 and R8 of research/CLOUD-SYNC-BUILD-PLAN-2026-11-25.md).
+// bookmark. What the iPhone needs beyond the Mac is its security scope, held
+// open for as long as the engine works in the folder; every read, write, copy,
+// fetch, and upload state is the Mac's own (`PlainSyncFolderAccess`), so the
+// two never differ: staged writes into folders not yet made, blobs made whole
+// under a hidden name, a coordinated fetch with a limit that counts only stalled
+// time, waits that tell offline from slow, and one upload rule.
 // Nothing here has run on a phone.
 
-/// The iPhone's `SyncFolderAccess`: the folder's bookmark, its security scope,
-/// and coordinated, bounded file work.
+/// The iPhone's `SyncFolderAccess`: the folder's bookmark and its security
+/// scope around the Mac's access.
 struct PhoneSyncFolderAccess: SyncFolderAccess {
     /// The bookmark of the folder the person picked (`makeBookmark(of:)`).
     let bookmark: Data
-    /// Whether the network is reachable now: the system's, unless a test gives its own.
-    let reachability: NetworkReachability
-    /// How long a write or a copy may wait on the coordinator before it is cancelled.
-    let writeLimit: Duration
+    /// The work in the folder: the Mac's, over the same bookmark.
+    private let plain: PlainSyncFolderAccess
 
     /// - Parameters:
     ///   - bookmark: The folder's bookmark.
-    ///   - reachability: Answers whether the network is reachable.
-    ///   - writeLimit: The longest a write or copy waits for its coordination.
-    init(
-        bookmark: Data,
-        reachability: NetworkReachability = .system,
-        writeLimit: Duration = .seconds(30)
-    ) {
+    ///   - reachability: Answers whether the network is reachable; the system's by default.
+    ///   - pollInterval: How often a wait for a download looks again; a test's own is shorter.
+    init(bookmark: Data, reachability: NetworkReachability = .system, pollInterval: Duration = .milliseconds(500)) {
         self.bookmark = bookmark
-        self.reachability = reachability
-        self.writeLimit = writeLimit
+        var plain = PlainSyncFolderAccess(bookmark: bookmark)
+        plain.reachability = reachability
+        plain.pollInterval = pollInterval
+        self.plain = plain
     }
 
     // MARK: - The Folder and Its Bookmark
 
-    /// A bookmark of the folder at `folder`, to be kept in `SyncPreferences`.
-    /// Call it while the scope of a URL from `.fileImporter` is open
-    /// (`withScope(of:_:)`): a bookmark of a folder the app may not yet read
-    /// would not find it again.
+    /// A bookmark of the folder at `folder`, to be kept in `SyncPreferences`. It is made with the folder's security scope
+    /// open: a bookmark of a folder the app may not yet read would not find it again.
     static func makeBookmark(of folder: URL) throws -> Data {
-        try folder.bookmarkData(options: [], includingResourceValuesForKeys: nil, relativeTo: nil)
+        try withScope(of: folder) {
+            try folder.bookmarkData(options: [], includingResourceValuesForKeys: nil, relativeTo: nil)
+        }
     }
 
-    /// Runs `body` with the security scope of `url` open, as a URL given by
-    /// `.fileImporter` needs, and closes it afterwards.
+    /// Runs `body` with the security scope of `url` open, as a URL given by `.fileImporter` needs, and closes it afterwards.
     static func withScope<T>(of url: URL, _ body: () throws -> T) rethrows -> T {
         let opened = url.startAccessingSecurityScopedResource()
         defer { if opened { url.stopAccessingSecurityScopedResource() } }
         return try body()
     }
 
-    /// The folder the bookmark names, and whether the system found it stale.
-    /// A bookmark that no longer finds a folder is `.folderMissing`.
+    /// The folder the bookmark names, and whether the system found it stale. A bookmark that no longer finds a folder is
+    /// `.folderMissing`, and so is one whose folder is in Recently Deleted: Files moves a deleted folder there and the
+    /// bookmark follows it, but it is gone as a sync folder.
     static func resolve(_ bookmark: Data) throws -> (url: URL, isStale: Bool) {
         var isStale = false
+        let url: URL
         do {
-            let url = try URL(resolvingBookmarkData: bookmark, options: [.withoutUI], relativeTo: nil, bookmarkDataIsStale: &isStale)
-            return (url, isStale)
+            url = try URL(resolvingBookmarkData: bookmark, options: [.withoutUI], relativeTo: nil, bookmarkDataIsStale: &isStale)
         } catch {
             throw SyncProblem.folderMissing
         }
+        guard !isDeleted(url) else { throw SyncProblem.folderMissing }
+        return (url, isStale)
+    }
+
+    /// Whether `url` is in the place Files keeps deleted items: a `.Trash` folder, or Recently Deleted.
+    static func isDeleted(_ url: URL) -> Bool {
+        url.standardizedFileURL.pathComponents.contains { $0 == ".Trash" || $0 == ".Trashes" || $0 == "Recently Deleted" } // l10n: no (path components)
     }
 
     /// A fresh bookmark of the folder `bookmark` names, when the system found it stale (the folder was moved or renamed, and
-    /// the bookmark still finds it); nil when the bookmark is current. The caller keeps the new one in place of the old.
-    static func renewedBookmark(for bookmark: Data) throws -> Data? {
-        let (folder, isStale) = try resolve(bookmark)
+    /// the bookmark still finds it); nil when the bookmark is current. The center keeps the new one in place of the old.
+    /// - Parameters:
+    ///   - resolving: Finds the folder and says whether the bookmark is stale; a test's own forces a stale one.
+    ///   - making: Makes the new bookmark of the folder found.
+    static func renewedBookmark(
+        for bookmark: Data,
+        resolving: (Data) throws -> (url: URL, isStale: Bool) = { try resolve($0) },
+        making: (URL) throws -> Data = { try makeBookmark(of: $0) }
+    ) throws -> Data? {
+        let (folder, isStale) = try resolving(bookmark)
         guard isStale else { return nil }
-        return try withScope(of: folder) { try makeBookmark(of: folder) }
+        return try making(folder)
     }
 
-    /// Opens the folder's scope, hands its URL to `body`, and closes the scope
-    /// afterwards. The folder missing, or not a folder, is `.folderMissing`.
+    /// Opens the folder's scope, hands its URL to `body`, and closes the scope afterwards. The folder missing, deleted, or
+    /// not a folder is `.folderMissing`.
     func withFolder<T: Sendable>(_ body: @Sendable (URL) async throws -> T) async throws -> T {
         let folder = try Self.resolve(bookmark).url
         let opened = folder.startAccessingSecurityScopedResource()
         defer { if opened { folder.stopAccessingSecurityScopedResource() } }
         var isFolder: ObjCBool = false
-        guard FileManager.default.fileExists(atPath: folder.path, isDirectory: &isFolder), isFolder.boolValue else {
-            throw SyncProblem.folderMissing
-        }
+        // A folder named as a folder: no stat of an item above it may download it.
+        let exists = DatalessFiles.withoutDownloading { FileManager.default.fileExists(atPath: folder.path, isDirectory: &isFolder) }
+        guard exists, isFolder.boolValue else { throw SyncProblem.folderMissing }
         return try await body(folder)
     }
 
-    // MARK: - Listing
+    // MARK: - The Mac's Work, with the System's Errors Made Problems
 
-    /// What is in `folder`, without downloading anything. A file only in the
-    /// cloud may be listed by its own name, or as the hidden stand-in
-    /// `.<name>.icloud`; both come back under the real name, off this device.
     func list(_ folder: URL) throws -> [SyncFolderItem] {
-        let urls: [URL]
         do {
-            urls = try DatalessFiles.withoutDownloading {
-                try FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: [.fileSizeKey], options: [])
-            }
+            return try plain.list(folder)
         } catch {
-            throw Self.problem(for: error, whenMissing: .folderMissing)
-        }
-        return urls.map { url in
-            let name = url.lastPathComponent
-            if let real = Self.nameBehindStandIn(name) {
-                return SyncFolderItem(name: real, size: nil, isOnThisDevice: false)
-            }
-            let onDevice = !DatalessFiles.isDataless(url)
-            let size = onDevice ? (try? url.resourceValues(forKeys: [.fileSizeKey]))?.fileSize.map(Int64.init) : nil
-            return SyncFolderItem(name: name, size: size, isOnThisDevice: onDevice)
+            throw Self.problem(for: error, missing: .folderMissing)
         }
     }
 
-    /// The real name behind iCloud Drive's stand-in name, `.<name>.icloud`, or
-    /// nil for a name that is not a stand-in.
-    static func nameBehindStandIn(_ name: String) -> String? {
-        guard name.hasPrefix("."), name.hasSuffix(".icloud"), name.count > ".icloud".count + 1 else { return nil }
-        return String(name.dropFirst().dropLast(".icloud".count))
-    }
-
-    // MARK: - Reading
-
-    /// Reads `file`. A file not on the phone while the network is out is
-    /// `.offline` at once; one that doesn't arrive within `limit` is
-    /// `.notDownloaded`. The coordinated read is what asks iCloud Drive for a
-    /// file's content, and TextMouth forces nothing more (R8).
     func read(_ file: URL, within limit: Duration) async throws -> Data {
-        if DatalessFiles.isDataless(file), !reachability.isOnline() {
-            throw SyncProblem.offline
-        }
-        let device = Self.deviceName(of: file)
-        return try await withCheckedThrowingContinuation { continuation in
-            DispatchQueue.global(qos: .utility).async {
-                do {
-                    let data = try Self.runCoordinated(within: limit) { coordinator in
-                        var failure: NSError?
-                        var result: Result<Data, Error> = .failure(SyncProblem.notDownloaded(device: device))
-                        coordinator.coordinate(readingItemAt: file, options: [.withoutChanges], error: &failure) { url in
-                            result = Result { try Data(contentsOf: url) }
-                        }
-                        if let failure { throw failure }
-                        return try result.get()
-                    }
-                    continuation.resume(returning: data)
-                } catch {
-                    // A cancelled coordination, or a file that isn't there, is a wait, not a loss; but a file whose whole
-                    // folder is gone is the sync folder missing (moved, deleted, or iCloud Drive signed out).
-                    let folderIsThere = FileManager.default.fileExists(atPath: file.deletingLastPathComponent().path)
-                    let missing: SyncProblem = folderIsThere ? .notDownloaded(device: device) : .folderMissing
-                    continuation.resume(throwing: Self.problem(for: error, whenMissing: missing, whenCancelled: .notDownloaded(device: device)))
-                }
-            }
-        }
-    }
-
-    /// The device a file belongs to, for "hasn't downloaded yet": the folder
-    /// under `Devices`, or the file's own folder.
-    static func deviceName(of file: URL) -> String {
-        file.deletingLastPathComponent().lastPathComponent
-    }
-
-    // MARK: - Writing
-
-    /// Writes `data` to `file`: staged in the app's temporary folder, then
-    /// moved in under coordination, so no reader sees a half file. Without
-    /// `replacing`, a file already there is `.exists` and stays untouched.
-    func write(_ data: Data, to file: URL, replacing: Bool) throws {
-        let staged = Self.stagingURL()
-        try data.write(to: staged, options: .atomic)
-        // The staged copy is left for the system's cleanup of the temporary folder: nothing here deletes.
-        try placeCoordinated(at: file, replacing: replacing) { destination in
-            if replacing, FileManager.default.fileExists(atPath: destination.path) {
-                _ = try FileManager.default.replaceItemAt(destination, withItemAt: staged)
-            } else {
-                try FileManager.default.moveItem(at: staged, to: destination)
-            }
-        }
-    }
-
-    /// Copies `local` to `file`, as a clone where the volume allows (APFS
-    /// does). A file already there is `.exists` and stays untouched.
-    func copyIn(_ local: URL, to file: URL) throws {
-        try placeCoordinated(at: file, replacing: false) { destination in
-            try FileManager.default.copyItem(at: local, to: destination)
-        }
-    }
-
-    /// Runs `place` under a coordinated write at `file`, bounded by
-    /// `writeLimit`, and turns the system's errors into `SyncProblem`s.
-    private func placeCoordinated(at file: URL, replacing: Bool, _ place: (URL) throws -> Void) throws {
         do {
-            try Self.runCoordinated(within: writeLimit) { coordinator in
-                var failure: NSError?
-                var result: Result<Void, Error> = .success(())
-                coordinator.coordinate(writingItemAt: file, options: replacing ? [.forReplacing] : [], error: &failure) { destination in
-                    if !replacing, FileManager.default.fileExists(atPath: destination.path) {
-                        result = .failure(SyncProblem.exists)
-                        return
-                    }
-                    result = Result { try place(destination) }
-                }
-                if let failure { throw failure }
-                try result.get()
-            }
+            return try await plain.read(file, within: limit)
         } catch {
-            throw Self.problem(for: error, whenMissing: .folderMissing, whenCancelled: .offline)
+            throw Self.problem(for: error, missing: Self.missing(file))
         }
     }
 
-    /// A new file in the app's temporary folder, for a write to stage in.
-    private static func stagingURL() -> URL {
-        FileManager.default.temporaryDirectory.appendingPathComponent("sync-staging-\(UUID().uuidString)")
-    }
-
-    // MARK: - Upload and Eviction
-
-    /// Whether iCloud Drive has uploaded `file`, from its upload flags, read
-    /// without downloading. A file the system gives no flags for (not in a
-    /// sync service, or one that says nothing) is `.notReported`, so a copy
-    /// there counts as sent (section 4, step 7).
-    func uploadState(of file: URL) -> SyncUploadState {
-        let metadata = try? DatalessFiles.withoutDownloading {
-            try UbiquitousItemStatusProvider.readFreshMetadata(
-                of: file,
-                keys: [.isUbiquitousItemKey, .ubiquitousItemIsUploadedKey, .ubiquitousItemIsUploadingKey, .ubiquitousItemUploadingErrorKey]
-            )
-        }
-        guard let metadata, metadata.isUbiquitousItem == true else { return .notReported }
-        if metadata.uploadError != nil {
-            return .failed(Self.uploadProblem(of: file))
-        }
-        if metadata.isUploading == true { return .uploading }
-        switch metadata.isUploaded {
-        case true?: return .uploaded
-        case false?: return .uploading
-        case nil: return .notReported
+    func fetch(_ file: URL, to destination: URL, within limit: Duration) async throws {
+        do {
+            try await plain.fetch(file, to: destination, within: limit)
+        } catch {
+            throw Self.problem(for: error, missing: Self.missing(file))
         }
     }
 
-    /// Why `file`'s upload failed: no room in iCloud (the quota's own error),
-    /// or else most likely the network.
-    private static func uploadProblem(of file: URL) -> SyncProblem {
-        let fresh = URL(fileURLWithPath: file.path)
-        let error = try? fresh.resourceValues(forKeys: [.ubiquitousItemUploadingErrorKey]).ubiquitousItemUploadingError
-        if let error, error.domain == NSCocoaErrorDomain, error.code == NSUbiquitousFileNotUploadedDueToQuotaError {
-            return .outOfSpace
+    func write(_ data: Data, to file: URL, replacing: Bool) throws {
+        do {
+            try plain.write(data, to: file, replacing: replacing)
+        } catch {
+            throw Self.problem(for: error, missing: .folderMissing)
         }
-        return .offline
     }
 
-    /// Asks iCloud Drive to drop the phone's copy of `file`, keeping it in the
-    /// cloud. A refusal is thrown, and is a wait.
-    func evictLocalCopy(of file: URL) throws {
-        try UbiquitousItemStatusProvider().removeLocalCopy(of: file)
+    func copyIn(_ local: URL, to file: URL) throws {
+        do {
+            try plain.copyIn(local, to: file)
+        } catch {
+            throw Self.problem(for: error, missing: .folderMissing)
+        }
     }
 
-    // MARK: - Bounded Coordination and Errors
+    func uploadState(of file: URL) -> SyncUploadState { plain.uploadState(of: file) }
 
-    /// Runs `body` with a new coordinator, and cancels the coordinator once
-    /// `limit` passes, so a coordination that waits on iCloud Drive ends with
-    /// a cancellation error instead of waiting for ever. Blocks the calling
-    /// thread: call it off the main thread.
-    static func runCoordinated<T>(within limit: Duration, _ body: (NSFileCoordinator) throws -> T) throws -> T {
-        let coordinator = NSFileCoordinator(filePresenter: nil)
-        let seconds = Double(limit.components.seconds) + Double(limit.components.attoseconds) / 1e18
-        let timer = DispatchWorkItem { coordinator.cancel() }
-        DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + seconds, execute: timer)
-        defer { timer.cancel() }
-        return try body(coordinator)
+    func evictLocalCopy(of file: URL) throws { try plain.evictLocalCopy(of: file) }
+
+    func sweepPartialFiles(in folder: URL, olderThan age: TimeInterval) {
+        plain.sweepPartialFiles(in: folder, olderThan: age)
     }
 
-    /// `error` as the `SyncProblem` it means. Out of room is `.outOfSpace`; a
-    /// missing item is `whenMissing`; a cancelled coordination is
-    /// `whenCancelled` (the limit passed); a `SyncProblem` is itself; any
-    /// other error is thrown on as it is.
-    static func problem(for error: Error, whenMissing: SyncProblem, whenCancelled: SyncProblem? = nil) -> Error {
+    // MARK: - Errors
+
+    /// What a file that isn't there means: the sync folder is gone when the folder it was in is, and otherwise the file has
+    /// not downloaded yet.
+    private static func missing(_ file: URL) -> SyncProblem {
+        let folder = file.deletingLastPathComponent()
+        let isThere = DatalessFiles.withoutDownloading { FileManager.default.fileExists(atPath: folder.path) }
+        return isThere ? .notDownloaded(device: folder.lastPathComponent) : .folderMissing
+    }
+
+    /// `error` as the `SyncProblem` it means. A `SyncProblem` is itself; no room is `.outOfSpace`; a missing item is
+    /// `missing`; a refused permission is the folder missing, since the person can no longer reach it; a cancelled
+    /// coordination is a download that hasn't come. Any other error is thrown on as it is.
+    static func problem(for error: Error, missing: SyncProblem) -> Error {
         if let problem = error as? SyncProblem { return problem }
         let nsError = error as NSError
         guard nsError.domain == NSCocoaErrorDomain else { return error }
         switch nsError.code {
         case NSFileWriteOutOfSpaceError: return SyncProblem.outOfSpace
-        case NSFileNoSuchFileError, NSFileReadNoSuchFileError: return whenMissing
-        case NSUserCancelledError: return whenCancelled ?? error
+        case NSFileNoSuchFileError, NSFileReadNoSuchFileError: return missing
+        case NSFileReadNoPermissionError, NSFileWriteNoPermissionError: return SyncProblem.folderMissing
+        case NSUserCancelledError: return missing
         default: return error
         }
     }
