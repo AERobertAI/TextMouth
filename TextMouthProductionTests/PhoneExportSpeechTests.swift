@@ -179,6 +179,25 @@ final class PhoneExportSpeechTests: XCTestCase {
         XCTAssertNil(PhoneExportOffer.shareButton(stage: .listing, exportedCount: 2))
     }
 
+    // MARK: - Where the Card Sends Focus
+
+    /// One owner for each change of the card, and one request: the card appearing asks for nothing (the dismissal of the sheet
+    /// that closed on it does, once), its end moves focus only off the card's Stop, and its closing goes to the first row.
+    func testTheCardsFocusHasOneOwnerForEachChange() {
+        XCTAssertNil(PhoneExportCardFocus.target(for: .appeared, focusWasOnStop: false), "the card's appearing competes with the dismissal")
+        XCTAssertNil(PhoneExportCardFocus.target(for: .appeared, focusWasOnStop: true))
+        XCTAssertNil(PhoneExportCardFocus.target(for: .ended, focusWasOnStop: false), "the end pulled focus off where the person was")
+        XCTAssertEqual(PhoneExportCardFocus.target(for: .ended, focusWasOnStop: true), .card)
+        XCTAssertEqual(PhoneExportCardFocus.target(for: .closed, focusWasOnStop: false), .firstRow)
+    }
+
+    /// The Library's dismissal of a sheet that closed on a card asks for the card, not the row that opened it; any other
+    /// dismissal asks for the opener, as it always did.
+    func testTheDismissalFocusesTheCardInPlaceOfTheOpener() {
+        XCTAssertEqual(PhoneExportCardFocus.afterSheetClosed(cardAppeared: true), .card)
+        XCTAssertEqual(PhoneExportCardFocus.afterSheetClosed(cardAppeared: false), .opener)
+    }
+
     // MARK: - The Library's Card
 
     /// The card shows the sheet's title and the progress with Stop while the export runs, and the Mac's sentence with Close

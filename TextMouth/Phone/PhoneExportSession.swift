@@ -191,8 +191,9 @@ final class PhoneExportSession: ObservableObject {
         cardEvents.send(.appeared)
     }
 
-    /// Whether the sheet may close without stopping `model`'s export: it is making the spoken audio file, whose sheet
-    /// has nothing more to ask.
+    /// Whether the sheet may close without stopping `model`'s export: it is making the spoken audio file. A file of the
+    /// same book may still follow it (a transcript, an original), and a question about a chapter nested too deeply may come
+    /// with it; with the sheet closed, the prompt answers Cancel Export (`PhoneExportQuestionPrompt.sheetClosed()`).
     func letsGo(on model: BookExportModel) -> Bool {
         current === model && model.isMakingSpeech
     }
@@ -208,5 +209,42 @@ final class PhoneExportSession: ObservableObject {
         self.cardModel = nil
         if current === cardModel { current = nil }
         cardEvents.send(.closed)
+    }
+}
+
+// MARK: - Where the Card Sends Focus
+
+/// What VoiceOver's focus does as the export's card comes and goes (`PhoneExportSession.cardEvents`): one request for each
+/// change, from one place, so that two never compete and the later one wins by luck.
+enum PhoneExportCardFocus {
+    /// Where focus goes: the card's title, or the Library's first row.
+    enum Target: Equatable, Sendable {
+        case card
+        case firstRow
+    }
+
+    /// What the Library focuses once a sheet has closed: the card, when it appeared as that sheet closed, else the row or
+    /// button that opened the sheet. The sheet's dismissal asks, and only it: the card's appearing asks for nothing.
+    enum AfterSheet: Equatable, Sendable {
+        case card
+        case opener
+    }
+
+    /// Where focus goes for `event`, nil for nowhere.
+    /// - The card appearing: nowhere, since the dismissal of the sheet that closed on it decides (`afterSheetClosed`).
+    /// - Its export ending: nowhere, so that the person is not moved off what they are doing; the end is announced. Only
+    ///   when focus was on the card's Stop, which has gone, it goes to the card's title.
+    /// - The card closed: the Library's first row.
+    static func target(for event: PhoneExportSession.CardEvent, focusWasOnStop: Bool) -> Target? {
+        switch event {
+        case .appeared: return nil
+        case .ended: return focusWasOnStop ? .card : nil
+        case .closed: return .firstRow
+        }
+    }
+
+    /// What the Library focuses once a sheet has closed, `cardAppeared` saying whether the card appeared as it did.
+    static func afterSheetClosed(cardAppeared: Bool) -> AfterSheet {
+        cardAppeared ? .card : .opener
     }
 }

@@ -1084,29 +1084,52 @@ final class SpeechExportDialogTests: XCTestCase {
         XCTAssertNil(session.cardModel)
     }
 
-    /// The question about a chapter nested too deeply cannot come after the sheet closes: spoken audio is the last file of
-    /// a book's export, and it is offered for one book alone, so every text file is walked, and every question put, before
-    /// the sheet may close. The iPhone's prompt answers Cancel Export at once should one ever come late; this pins the
-    /// order that makes that never happen.
-    func testSpokenAudioIsTheLastFileAndOfferedForOneBookAlone() async throws {
+    /// A file of the same book can follow the spoken audio: a transcript, an original recording or audio come after it in
+    /// the dialog's order, and the plan writes them after it, so a question about a chapter nested too deeply can come
+    /// with the sheet closed, which is why the iPhone's prompt answers Cancel Export at once then. A transcribed book is
+    /// stood in for by its own offer with a transcript item added; spoken audio is offered for one book alone.
+    func testAFileCanFollowTheSpokenAudioSoThePromptHasToAnswerForAClosedSheet() async throws {
         let dialog = try await makeDialog("Speech Session Order")
         let model = dialog.model
-        for kind in model.choices.map(\.kind) { model.setChecked(true, for: kind) }
-        let conversions = model.conversions
-        XCTAssertNotNil(conversions[.spokenAudio], "spoken audio has no conversion to plan")
+        model.setChecked(true, for: .spokenAudio)
+        let offer = try XCTUnwrap(model.offers.first)
+        let transcript = BookExportItem(
+            kind: .transcript, folderName: nil,
+            files: [BookExportFile(source: .copy(dialog.folder.appendingPathComponent("transcript.json")), path: "Harbour Pilots - Transcript.json", byteCount: 1)],
+            fileInCloud: nil
+        )
+        let withTranscript = BookExportOffer(
+            book: offer.book, items: (offer.items + [transcript]).sorted { $0.kind.order < $1.kind.order }, isPackageInCloud: false
+        )
+        for later in [BookExportKind.originalRecording, .originalAudio, .transcript] {
+            XCTAssertLessThan(BookExportKind.spokenAudio.order, later.order, "\(later) does not come after spoken audio")
+        }
 
         let plan = BookExportService.plan(
-            model.offers, kinds: model.checked, conversions: conversions, in: dialog.folder, fileExists: { _ in false }
+            [withTranscript], kinds: [.spokenAudio, .transcript], conversions: model.conversions, in: dialog.folder, fileExists: { _ in false }
         ).files
 
-        XCTAssertGreaterThan(plan.count, 1, "the plan holds one file only")
-        XCTAssertEqual(plan.last?.target.pathExtension, "m4b", "spoken audio is not the last file: \(plan.map(\.target.lastPathComponent))")
-        XCTAssertEqual(plan.filter { $0.target.pathExtension == "m4b" }.count, 1)
-        // And two books are offered none.
+        let names = plan.map(\.target.lastPathComponent)
+        XCTAssertEqual(plan.map(\.target.pathExtension), ["m4b", "json"], "the plan holds \(names)")
+        // And two books are offered no spoken audio.
         let second = try makeUnlistedDialog("Speech Session Order Two").book
         let two = BookExportModel(books: [dialog.book, second], library: dialog.world.library, destination: dialog.folder)
         await two.load()
         XCTAssertFalse(two.choices.contains { $0.kind == .spokenAudio }, "spoken audio is offered for two books")
+    }
+
+    /// iOS's words start the end only for an export it stopped: one that finished before the stop took effect says it
+    /// finished, and the note is cleared for the next export.
+    func testIOSsWordsAreOnlyForAnExportItStopped() async throws {
+        let dialog = try await makeDialog("Speech Session Finished First")
+        let model = dialog.model
+        model.wordsBeforeTheEnd = PhoneExportWording.stoppedBySystem
+
+        let outcome = try await end(of: ExportRun(of: model))
+
+        XCTAssertFalse(outcome.wasCancelled)
+        XCTAssertEqual(model.finishedWords, "Exported 1 item to \(BookExportWording.folderName(of: dialog.folder)).")
+        XCTAssertNil(model.wordsBeforeTheEnd, "the note outlived the export it was for")
     }
 
     // MARK: - Fixtures

@@ -63,6 +63,7 @@ struct PhoneExportProgressCard: View {
                     }
                     if let stop = card.stop {
                         button(stop) { session.stop() }
+                            .accessibilityFocused(focus, equals: .exportCardStop)
                     }
                     if let close = card.close {
                         button(close) { session.closeCard() }

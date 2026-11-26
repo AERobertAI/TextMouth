@@ -78,10 +78,13 @@ What differs is how it keeps running, who stops it, and what it says.
   When the system takes no task, the export goes on held by the background task every export has.
 - The task's progress is `PhoneExportTaskMirror.update`: the model's fraction in a thousand units, never going back (`NeverBackwards`; the model's fraction does when the speech ends), and the progress words as its subtitle.
   The session ends the task with the export, a success only when every file was written.
-- The expiration handler, from iOS or from Cancel in the Live Activity, is `stopBySystem(_:)`: it sets `BookExportModel.wordsBeforeTheEnd` and stops, so the end begins "iOS stopped this export."
-- The sheet may close only while the audio file is made (`BookExportModel.isMakingSpeech`), after every text file, since only text files ask the deep-chapter question.
+- The expiration handler, from iOS or from Cancel in the Live Activity, is `stopBySystem(_:)`: it sets `BookExportModel.wordsBeforeTheEnd` and stops, so the end begins "iOS stopped this export." and then says what is kept for a week.
+  An export that finished before the stop took effect does not begin so.
+- The card's focus has one owner (`PhoneExportCardFocus`): the dismissal of the sheet that closed on the card gives it the card's title, the end moves focus only off the card's Stop, and closing it goes to the Library's first row.
+- The sheet may close only while the audio file is made (`BookExportModel.isMakingSpeech`).
   `sheetClosed(_:)` then makes the card (`cardModel`, told to the Library by `cardEvents`) and lowers the end's announcement.
-  Were a question to come with the sheet closed, `PhoneExportQuestionPrompt` answers Cancel Export at once and the end says so; the order of files, spoken audio last and one book alone, makes that unreachable, and `testSpokenAudioIsTheLastFileAndOfferedForOneBookAlone` pins it.
+  A file of the same book can follow the spoken audio (a transcript, an original), and may ask about a chapter nested too deeply, so `PhoneExportQuestionPrompt` answers Cancel Export at once once the sheet has closed, and the end says so.
+  `testAFileCanFollowTheSpokenAudioSoThePromptHasToAnswerForAClosedSheet` pins the order.
 - `SpeechExportStore` keeps an export's chapters for a week on the iPhone (`keptOnPhone`), and the iPhone's launch sweep removes older ones (`sweep(keeping:)`, from the app delegate); the Mac keeps them until it quits.
 - The words that name the Mac take the iPhone's through an `onPhone` parameter whose default is `SpeechRefusalWording.runsOnPhone`: the two refusals, the engine's refusal, the licence line, Stop's hint, and the kept sentences.
 - Tests:

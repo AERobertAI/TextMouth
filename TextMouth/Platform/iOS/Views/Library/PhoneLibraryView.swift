@@ -18,6 +18,8 @@ enum PhoneLibraryFocus: Hashable, Sendable {
     case sort
     /// The title of the export card at the top of the list.
     case exportCard
+    /// The Stop button of the export card, which goes when its export ends.
+    case exportCardStop
 }
 
 /// One iPhone Library screen (the iPhone interface spec, "The Library"): the
@@ -59,6 +61,9 @@ struct PhoneLibraryView: View {
     @State private var rowsWhenSheetOpened: [PhoneRowID] = []
     /// What VoiceOver says once the sheet has closed.
     @State private var sayAfterSheet: String?
+    /// Whether the export card appeared as the sheet now closing closed (`PhoneExportCardFocus`): its dismissal then focuses
+    /// the card.
+    @State private var exportCardAppeared = false
     /// The book the removal question is about.
     @State private var removalCandidate: Book?
     /// The row left for a book's or a folder's screen, which focus returns to.
@@ -405,7 +410,12 @@ struct PhoneLibraryView: View {
     /// later, once the list has heard of the change; then what the sheet's
     /// choice says, after VoiceOver has settled (the Mac's `afterSheetDelay`).
     private func sheetClosed() {
-        if let opener = sheetOpener {
+        // An export sheet that closed on a card gives focus to the card, and nothing else asks: one owner, one request.
+        let landing = PhoneExportCardFocus.afterSheetClosed(cardAppeared: exportCardAppeared)
+        exportCardAppeared = false
+        if landing == .card {
+            DispatchQueue.main.async { requestFocus(.exportCard) }
+        } else if let opener = sheetOpener {
             let before = rowsWhenSheetOpened
             DispatchQueue.main.async {
                 guard case .row(let row) = opener else {
@@ -511,14 +521,19 @@ struct PhoneLibraryView: View {
         }
     }
 
-    /// What happened to the export card: VoiceOver's focus goes to its title when it appears and when its export ends, and,
-    /// once it is closed, to the Library's first row, so that it never rests on something that has gone.
+    /// What happened to the export card (`PhoneExportCardFocus` decides): the card appearing is noted, for the dismissal of
+    /// the sheet that closed on it to focus the card; its export ending moves focus only off its Stop, which has gone; and
+    /// once it is closed focus goes to the Library's first row, so that it never rests on something that has gone.
     private func exportCardChanged(_ event: PhoneExportSession.CardEvent) {
-        switch event {
-        case .appeared, .ended:
+        // Only a sheet of this screen leaves its dismissal to say; one over the reader, or none, leaves nothing to say.
+        if event == .appeared, sheetOpener != nil { exportCardAppeared = true }
+        switch PhoneExportCardFocus.target(for: event, focusWasOnStop: focus == .exportCardStop) {
+        case .card?:
             requestFocus(.exportCard)
-        case .closed:
+        case .firstRow?:
             if let first = rows.rowIDs.first { requestFocus(.row(first)) }
+        case nil:
+            break
         }
     }
 

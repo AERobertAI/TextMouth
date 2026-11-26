@@ -585,9 +585,10 @@ final class BookExportModel: ObservableObject, Identifiable {
     /// an export that goes on, whose end is a background result (`PhoneExportSession.sheetClosed(_:)`).
     var announcementPriority: NSAccessibilityPriorityLevel = .high
 
-    /// Whether the spoken audio file is being made now: its chapters spoken, or the file encoded, which comes after
-    /// every other kind is written. Only then may the iPhone's sheet close and the export go on, since only the
-    /// other kinds can ask about a chapter nested too deeply, which needs the sheet.
+    /// Whether the spoken audio file is being made now: its chapters spoken, or the file encoded. Only then may the
+    /// iPhone's sheet close and the export go on. A file of the same book can follow it (a transcript, an original), and
+    /// asks about a chapter nested too deeply, which needs the sheet; with the sheet closed the iPhone's prompt answers
+    /// Cancel Export (`PhoneExportQuestionPrompt.sheetClosed()`).
     var isMakingSpeech: Bool {
         isExporting && speechProgress != nil
     }
@@ -984,7 +985,8 @@ final class BookExportModel: ObservableObject, Identifiable {
         let format = speechFormat
         let folderName = knownFolderName
         // What the iPhone adds to the end's sentence: that iOS stopped the export, and that a question came with no one to ask.
-        let before = wordsBeforeTheEnd
+        // iOS's words are for an export it stopped: one that finished before the stop took effect says it finished.
+        let before = outcome.wasCancelled ? wordsBeforeTheEnd : nil
         wordsBeforeTheEnd = nil
         #if os(macOS)
         let after: String? = nil
