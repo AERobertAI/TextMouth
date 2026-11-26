@@ -50,13 +50,16 @@ enum ProtectionDetector {
         guard format == .pdf || zipFormats.contains(format) else { return nil }
         // (A .docx may be a ZIP archive with a password or an encrypted package.)
         let path = url.standardizedFileURL.path
+        // A file that is only in the cloud is not looked at: any read would
+        // download it. It is looked at once it is here.
+        guard !DatalessFiles.isDataless(url) else { return nil }
         guard let attributes = try? FileManager.default.attributesOfItem(atPath: path),
               let size = (attributes[.size] as? NSNumber)?.uint64Value,
               let date = attributes[.modificationDate] as? Date else { return nil }
         if let known = remembered.withLock({ $0[path] }), known.size == size, known.date == date {
             return known.scheme
         }
-        let found = look(at: url, format: format)
+        let found = DatalessFiles.withoutDownloading { look(at: url, format: format) }
         remembered.withLock { $0[path] = Remembered(size: size, date: date, scheme: found) }
         return found
     }

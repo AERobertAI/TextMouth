@@ -1843,6 +1843,13 @@ final class ReaderViewModel: ObservableObject {
         case .success(let loaded):
             showLoadedContent(loaded, readFrom: filePath)
         case .failure(let error):
+            // A protected book that arrived from the cloud locked (its file
+            // could not be looked at before it was here) asks for its
+            // password, as any other locked book does (FR41).
+            if error is BookLockedError {
+                beginUnlocking()
+                return
+            }
             showLoadFailure(error, readFrom: filePath)
         }
     }
