@@ -110,7 +110,7 @@ final class InMemoryCredentialStore: CredentialStore {
 /// exercised by hand, once, on a signed build.
 struct KeychainCredentialStore: CredentialStore {
     /// The service every item carries.
-    static let service = "TextMouth Book Password"
+    static let service = "TextMouth Book Password" // l10n: no (the Keychain item's service name, never shown)
 
     /// The attributes that find the item of the book with `key`.
     private func query(forBook key: String) -> [String: Any] {
