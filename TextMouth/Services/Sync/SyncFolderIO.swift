@@ -139,24 +139,44 @@ enum SyncFolderIO {
     /// Waits within `limit` until `file` is on this device, asking iCloud Drive for it once. `.offline` at once
     /// when the network is gone; `.notDownloaded` once the file has stalled for `limit`: the limit counts only
     /// time spent not downloading, so a long track that is arriving is never cancelled.
+    ///
+    /// "Stalled" means no progress: the clock restarts only when the bytes that have arrived change, not whenever
+    /// the state says `.downloading`, so a download stuck in that state still times out. `progress` and `state`
+    /// are the file system's by default; a test passes its own.
     static func waitUntilHere(
-        _ file: URL, within limit: Duration, items: UbiquitousItemStatusProvider, reachability: NetworkReachability, pollInterval: Duration
+        _ file: URL, within limit: Duration, items: UbiquitousItemStatusProvider, reachability: NetworkReachability, pollInterval: Duration,
+        state: ((URL) -> CloudItemState)? = nil, progress: ((URL) -> Int64?)? = nil
     ) async throws {
-        guard items.status(of: file).state == .notDownloaded else { return }
+        let stateOf = state ?? { items.status(of: $0).state }
+        let progressOf = progress ?? { SyncFolderIO.allocatedBytes(of: $0) }
+        guard stateOf(file) == .notDownloaded else { return }
         guard reachability.isOnline() else { throw SyncProblem.offline }
         try? items.requestDownload(of: file)
         let clock = ContinuousClock()
         var started = clock.now
+        var seen = progressOf(file)
         while true {
-            let state = items.status(of: file).state
-            if state != .notDownloaded, state != .downloading { return }
+            let now = stateOf(file)
+            if now != .notDownloaded, now != .downloading { return }
             try Task.checkCancellation()
-            if state == .downloading { started = clock.now }
+            // The network may go while a download waits: the caller is told at once, not at the limit.
+            guard reachability.isOnline() else { throw SyncProblem.offline }
+            let bytes = progressOf(file)
+            if bytes != seen {
+                seen = bytes
+                started = clock.now
+            }
             if clock.now - started >= limit {
                 throw SyncProblem.notDownloaded(device: file.deletingLastPathComponent().lastPathComponent)
             }
             try await Task.sleep(for: pollInterval)
         }
+    }
+
+    /// The bytes of `file` that have arrived on this device, as the file system allocates them.
+    static func allocatedBytes(of file: URL) -> Int64? {
+        let fresh = URL(fileURLWithPath: file.path)
+        return (try? fresh.resourceValues(forKeys: [.totalFileAllocatedSizeKey]))?.totalFileAllocatedSize.map(Int64.init)
     }
 
     /// Reads `file` whole, after waiting for it to be here, on a queue of its own.

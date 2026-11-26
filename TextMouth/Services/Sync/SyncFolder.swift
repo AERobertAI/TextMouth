@@ -114,8 +114,8 @@ struct SyncFolder: Sendable {
     /// Writes this device's `device.json`, or the new version of it; the
     /// access makes the device's folder, as `write` and `copyIn` make the
     /// folder of any file they put.
-    func publishDevice(_ file: SyncDeviceFile) throws {
-        try access.write(try SyncFormats.encode(file), to: deviceFolder(file.deviceID).appendingPathComponent(SyncNames.deviceFile), replacing: true)
+    func publishDevice(_ file: SyncDeviceFile) async throws {
+        try await access.writeOffActor(try SyncFormats.encode(file), to: deviceFolder(file.deviceID).appendingPathComponent(SyncNames.deviceFile), replacing: true)
     }
 
     /// The IDs of the devices that have a folder here, in order.

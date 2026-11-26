@@ -152,36 +152,70 @@ struct SyncOutbox: Sendable {
         return verified
     }
 
-    /// Copies what is not in the folder, and marks as copied what `verified` says is there already.
-    @discardableResult
-    mutating func copyVerified(into deviceFolder: URL, using access: any SyncFolderAccess, now: Date = Date(), verified: Set<String>) throws -> Int {
+    /// One file the outbox still has to put in the device's folder.
+    struct CopyItem: Sendable {
+        var seq: Int
+        var source: URL
+        var destination: URL
+    }
+
+    /// What a copy has to do: the files to put in the folder, and the seqs whose files are there already (verified
+    /// to be the outbox's own, or sent before) and only need marking.
+    struct CopyPlan: Sendable {
+        var toCopy: [CopyItem] = []
+        var alreadyThere: [Int] = []
+        /// Files in the folder under an outbox name that could not be read, so are not known to be ours.
+        var unreadable: [String] = []
+    }
+
+    /// Works out what to copy, from what the folder lists and what `verified` says. A file present and not
+    /// verified stays unsent and is named in `unreadable`. Changes nothing, so it holds no state across a wait.
+    func copyPlan(into deviceFolder: URL, using access: any SyncFolderAccess, verified: Set<String>) -> CopyPlan {
         // A device folder not made yet lists as empty: `copyIn` makes it.
         let present = Set(((try? access.list(deviceFolder)) ?? []).map(\.name))
-        var copied = 0
-        var failure: Error?
-        for position in index.items.indices where index.items[position].state != .uploaded {
-            let item = index.items[position]
+        var plan = CopyPlan()
+        for item in index.items where item.state != .uploaded {
             let name = SyncNames.changeFile(seq: item.seq, kind: item.kind)
-            if item.state == .copied, present.contains(name) { continue }
-            do {
-                if present.contains(name) {
-                    // A file of this name is there already: it is ours, sent before, only if `verified` says its
-                    // bytes are the outbox's. One not known to be ours stays unsent.
-                    guard verified.contains(name) else { continue }
+            if present.contains(name) {
+                if item.state == .copied || verified.contains(name) {
+                    plan.alreadyThere.append(item.seq)
                 } else {
-                    try access.copyIn(fileURL(item.seq, item.kind), to: deviceFolder.appendingPathComponent(name))
-                    copied += 1
+                    plan.unreadable.append(name)
                 }
-                index.items[position].state = .copied
-                index.items[position].copiedAt = index.items[position].copiedAt ?? now
-            } catch {
-                failure = error
-                break
+            } else {
+                plan.toCopy.append(CopyItem(seq: item.seq, source: fileURL(item.seq, item.kind), destination: deviceFolder.appendingPathComponent(name)))
             }
         }
+        return plan
+    }
+
+    /// Marks the files of `seqs` as copied into the folder, and saves the index.
+    mutating func markCopied(_ seqs: [Int], now: Date = Date()) throws {
+        for seq in seqs {
+            guard let position = index.items.firstIndex(where: { $0.seq == seq }) else { continue }
+            index.items[position].state = .copied
+            index.items[position].copiedAt = index.items[position].copiedAt ?? now
+        }
         try local.write(index, to: local.outboxIndexURL)
-        if let failure { throw failure }
-        return copied
+    }
+
+    /// Copies what the plan says, on the calling thread, marking each as it goes: for a caller that owns the outbox
+    /// (a test). An actor does this itself, awaiting each copy, so no change to the outbox spans a wait.
+    @discardableResult
+    mutating func copyVerified(into deviceFolder: URL, using access: any SyncFolderAccess, now: Date = Date(), verified: Set<String>) throws -> Int {
+        let plan = copyPlan(into: deviceFolder, using: access, verified: verified)
+        var done = plan.alreadyThere
+        do {
+            for item in plan.toCopy {
+                try access.copyIn(item.source, to: item.destination)
+                done.append(item.seq)
+            }
+        } catch {
+            try markCopied(done, now: now)
+            throw error
+        }
+        try markCopied(done, now: now)
+        return plan.toCopy.count
     }
 
     /// Reads the upload state of each copied file, marking those uploaded.

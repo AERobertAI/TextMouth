@@ -202,6 +202,21 @@ final class SyncOutboxTests: XCTestCase {
         XCTAssertNotNil(outbox.file(2, kind: .snapshot), "the newest snapshot stays")
     }
 
+    /// A file in the folder under an outbox name that can't be verified is not copied over and not marked: it is unreadable.
+    func testAnUnverifiedPresentFileIsLeftPending() async throws {
+        var (outbox, drive, deviceFolder, _) = try makeWorld()
+        try outbox.append([entry(1)])
+        // Another writer's file of the same name is in the folder and cannot be read yet.
+        try drive.write(Data("theirs".utf8), to: deviceFolder.appendingPathComponent(SyncNames.changeFile(seq: 1, kind: .changes)), replacing: false)
+        drive.setNotDownloaded(SyncNames.changeFile(seq: 1, kind: .changes))
+        let verified = try await outbox.verifiedPresent(in: deviceFolder, using: drive)
+        XCTAssertTrue(verified.isEmpty)
+        let plan = outbox.copyPlan(into: deviceFolder, using: drive, verified: verified)
+        XCTAssertTrue(plan.toCopy.isEmpty)
+        XCTAssertEqual(plan.unreadable, [SyncNames.changeFile(seq: 1, kind: .changes)])
+        XCTAssertEqual(outbox.pendingChanges, 1, "still waiting, not marked sent")
+    }
+
     /// A file a crash left unindexed is found and copied.
     func testUnindexedFileIsAdopted() async throws {
         var (outbox, drive, deviceFolder, local) = try makeWorld()

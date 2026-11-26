@@ -34,6 +34,25 @@ protocol SyncFolderAccess: Sendable {
 }
 
 extension SyncFolderAccess {
+    /// `copyIn`, run on the queue coordinated calls use and awaited, so a stuck iCloud Drive call holds neither the
+    /// engine actor nor a cooperative thread for the 30 seconds it may take (R2).
+    func copyInOffActor(_ local: URL, to file: URL) async throws {
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            SyncFolderIO.coordinationQueue.async {
+                continuation.resume(with: Result { try self.copyIn(local, to: file) })
+            }
+        }
+    }
+
+    /// `write`, run on the same queue and awaited.
+    func writeOffActor(_ data: Data, to file: URL, replacing: Bool) async throws {
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            SyncFolderIO.coordinationQueue.async {
+                continuation.resume(with: Result { try self.write(data, to: file, replacing: replacing) })
+            }
+        }
+    }
+
     /// An access that stages nothing has nothing to sweep.
     func sweepPartialFiles(in folder: URL, olderThan age: TimeInterval) {}
 
@@ -83,10 +102,17 @@ enum SyncFolderAccessFactory {
     /// A fresh bookmark for `bookmark` when the system found it stale (the folder moved or was renamed, and the
     /// bookmark still found it), nil when it is current; the center keeps the fresh one in `SyncPreferences`.
     /// The iPhone sets its own, which opens the folder's scope to make it.
-    @MainActor static var renewedBookmark: @Sendable (_ bookmark: Data) -> Data? = { bookmark in
+    ///
+    /// Read when it is called, from any thread, so an override set after the center was built is used.
+    static var renewedBookmark: @Sendable (_ bookmark: Data) -> Data? {
+        get { renewal.withLock { $0 } }
+        set { renewal.withLock { $0 = newValue } }
+    }
+
+    private static let renewal = OSAllocatedUnfairLock<@Sendable (Data) -> Data?>(initialState: { bookmark in
         guard let resolved = PlainSyncFolderAccess.resolve(bookmark), resolved.isStale else { return nil }
         return DataDirectoryPreferences.makeBookmark(of: resolved.url)
-    }
+    })
 }
 
 // MARK: - The library's side, and the app's one sync
