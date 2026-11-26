@@ -47,6 +47,10 @@ enum ProtectionRemoval {
                     throw Failure.couldNotWrite
                 }
             }
+            // On the disk before the rename puts it in place: the rename
+            // replaces the library's only copy of the book, so a power loss
+            // just after it must not leave a name over bytes never written.
+            try flushToDisk(temporary)
             try SavedFile.renameReplacing(temporary, url)
         } catch let failure as Failure {
             discard(temporary)
@@ -61,6 +65,20 @@ enum ProtectionRemoval {
 
     /// The prefix of the hidden copy's name.
     static let temporaryPrefix = ".unprotecting-"
+
+    /// Asks the file system to put the file at `url` on the disk now, as
+    /// the search texts are before their rename (`LibrarySearchTextStore`).
+    /// - Throws: when the file cannot be opened or flushed.
+    private static func flushToDisk(_ url: URL) throws {
+        let handle = try FileHandle(forWritingTo: url)
+        do {
+            try handle.synchronize()
+            try handle.close()
+        } catch {
+            try? handle.close()
+            throw error
+        }
+    }
 
     /// Deletes a copy of the book without its password, which a failed
     /// write or rename left. Its name is a path this code made itself.
