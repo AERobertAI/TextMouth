@@ -73,6 +73,9 @@ struct PhoneExportProgressCard: View {
                 // A container, not one combined element: combining would fold the buttons into the status, out of
                 // VoiceOver's reach.
                 .accessibilityElement(children: .contain)
+                // What the Library's focus helper scrolls to before it focuses the title (`PhoneListFocus.focus`): a
+                // list makes no row far above what it shows, and focus asked for a row it has not made goes nowhere.
+                .id(PhoneLibraryFocus.exportCard)
             }
         }
 
