@@ -134,7 +134,9 @@ final class SyncLibraryHostTests: XCTestCase {
     /// merged row: the folder is a field of its own (review item 5).
     func testARowChangedMeanwhileStillFollowsAFolderRename() {
         let book = makeBook("Renamed Away", folderPath: "Old")
-        let start = Library(books: [book])
+        // The folders the rename holds, as the library the move published does.
+        var start = Library(books: [book])
+        start.folders = [BookFolder(name: "Old"), BookFolder(name: "New")]
         var merged = start
         merged.books[0].folderPath = "New"
         merged.books[0].localWPM = 111
