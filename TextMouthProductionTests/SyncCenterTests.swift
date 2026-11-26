@@ -32,7 +32,8 @@ import XCTest
 /// that name their reason (R6), set up, join, stop (which deletes nothing),
 /// and what Sync Now says. Every folder is in the test's sandbox; the
 /// location of a folder is a test's answer, so no iCloud Drive is touched.
-@MainActor final class SyncCenterTests: XCTestCase {
+@MainActor
+final class SyncCenterTests: XCTestCase {
     /// Collects what the center says aloud.
     private final class Spoken: @unchecked Sendable {
         // `@unchecked Sendable`: `lines` is read and changed only on the main actor, where every test and the center run.
