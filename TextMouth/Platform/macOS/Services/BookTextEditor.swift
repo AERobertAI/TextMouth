@@ -226,7 +226,9 @@ final class BookTextEditor {
     /// Edit Text… and Edit Text With… are not offered otherwise, in the
     /// library's rows or the reader's Book menu.
     static func canEditText(of book: Book, isTranscribed: Bool) -> Bool {
-        !book.tmbDirectoryName.isEmpty && (book.format.isAudio ? isTranscribed : !book.isFeedItem)
+        // Edit Text writes the text out as a plain file beside the book, so it is
+        // off for a book with a password (FR41) until the password is removed.
+        !book.tmbDirectoryName.isEmpty && !book.isPasswordProtected && (book.format.isAudio ? isTranscribed : !book.isFeedItem)
     }
 
     /// Whether `book` has text to edit now: a text book always, an
