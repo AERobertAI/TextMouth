@@ -52,7 +52,8 @@ import XCTest
     /// Makes a center whose library is at `library` and whose iCloud Drive folder is `drive`, by the answers of `locate`.
     private func makeWorld(
         library: StorageLocation = .local, folder: StorageLocation = .cloud(.iCloudDrive),
-        renewedBookmark: @escaping @Sendable @MainActor (Data) -> Data? = { _ in nil }
+        renewedBookmark: @escaping @Sendable (Data) -> Data? = { _ in nil },
+        ownContainerOfLibrary: Bool = false
     ) throws -> World {
         let sandbox = try makeSandboxDirectory("sync-center")
         let dataDirectory = sandbox.appendingPathComponent("data", isDirectory: true)
@@ -72,7 +73,8 @@ import XCTest
             announce: { spoken.lines.append($0) },
             freeSpace: { _ in 100_000_000_000 },
             pauseWhileJoining: { _ in },
-            renewedBookmark: renewedBookmark
+            renewedBookmark: renewedBookmark,
+            ownContainer: ownContainerOfLibrary ? sandbox : nil
         )
         return World(center: SyncCenter(environment: environment), host: StubHost(), dataDirectory: dataDirectory, parent: parent, preferences: preferences, spoken: spoken)
     }
@@ -398,6 +400,36 @@ import XCTest
 
         await world.center.recordNow()
         XCTAssertEqual(try presence(of: book, in: world), .bool(true), "recording works again")
+    }
+
+    // MARK: - R6 on the iPhone, and a folder in a trash (sync-iphone review items 6 and 10)
+
+    /// The app's own container is local though `location(of:)` takes its volume for another: Set Up is not refused there.
+    func testTheAppsOwnContainerIsLocal() async throws {
+        let refused = try makeWorld(library: .otherVolume(name: "Data"))
+        refused.center.install(host: refused.host, dataDirectory: refused.dataDirectory)
+        do {
+            try await refused.center.setUp(in: refused.parent)
+            XCTFail("another volume is refused")
+        } catch { XCTAssertEqual(error as? SyncProblem, .libraryNotLocal) }
+
+        let own = try makeWorld(library: .otherVolume(name: "Data"), ownContainerOfLibrary: true)
+        own.center.install(host: own.host, dataDirectory: own.dataDirectory)
+        try await own.center.setUp(in: own.parent)
+        XCTAssertTrue(own.center.status.isOn)
+        await own.center.waitUntilIdle()
+    }
+
+    /// A folder that was deleted in Files or Finder, and is in a trash, is not a place to set up or join.
+    func testAFolderInATrashIsRefused() async throws {
+        let world = try makeWorld()
+        world.center.install(host: world.host, dataDirectory: world.dataDirectory)
+        let trashed = world.parent.deletingLastPathComponent().appendingPathComponent(".Trash/Drive", isDirectory: true)
+        try FileManager.default.createDirectory(at: trashed, withIntermediateDirectories: true)
+        do {
+            try await world.center.setUp(in: trashed)
+            XCTFail("a folder in a trash")
+        } catch { XCTAssertEqual(error as? SyncProblem, .notInICloudDrive) }
     }
 
     // MARK: - Installing again (sync-mac review item 9)
