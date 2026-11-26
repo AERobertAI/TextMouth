@@ -170,6 +170,7 @@ Each refusal names the file and says what to do next (see [Adding books](import-
 - For Pages, Keynote, Numbers, WordPerfect, Compiled HTML Help, DjVu, XPS, and RAR comic and archive files, and copy-protected audio, the refusal adds a sentence of advice (see [Adding books](import-progress-and-errors.md)).
 - An .xml file that is not a DTBook, Word 2003 XML, or a PEF file; and a file with no text to read.
 - A Kindle Create package (.kpf), a Kindle book that is copy-protected or has no flowing text, and a KFX part without its book: told apart, each with its own sentence.
-- A Word 1 or Word 2 document, and a password-protected Word 97-2003, OpenDocument, or PDF file.
+- A Word 1 or Word 2 document, and a password-protected Word 97-2003 or OpenDocument file.
+  A PDF, a Word (.docx) document, or a ZIP-based book with a password is added locked and asks for its password when opened ([Adding books](import-progress-and-errors.md)).
 - A document, web archive, SSML file, DTBook, or Kindle book of more than 64 MB.
 - On the iPhone, Ogg and the other converted audio, and a Word document older than Word 6.

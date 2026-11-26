@@ -85,7 +85,7 @@ They share a base and a writer, and reuse the rich text reader's RTFBlockBuilder
 
   A mimetype entry that is damaged, long, or junk is ignored; only the media type of another kind of document refuses.
   A damaged, cut, or oversized styles.xml or meta.xml is reported to a closure (the console and the debug log, tag ODT_DAMAGED_PART) and the body is read; only content.xml or the ZIP refuses.
-  A password-protected package is refused earlier (TextutilSourceCheck.isEncryptedOpenDocument).
+  A package whose ZIP entries are encrypted is refused as `PasswordProtectedDocument`, or opened once unlocked ([Password-protected books](protected-books.md)); one encrypted by its own manifest is refused earlier (TextutilSourceCheck.isEncryptedOpenDocument).
   An empty file is noTextToRead, and a file, content.xml, or text past DocumentByteLimit is DocumentTooLargeError.
 - ODT headings are text:h with text:outline-level, a paragraph whose style has style:default-outline-level, and the styles Title (1), Subtitle (2), and Heading (the base of Writer's headings) when the style names no outline level.
   The size guess (RTFSizeHeadings) runs only when the document names none.

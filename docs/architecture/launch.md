@@ -75,6 +75,7 @@ One FINISHED_BOOKS_AT_END line counts what it did.
 First, once for each library on this Mac, keepHandEditedTitlesInManifestsOnce writes each book of tracks' hand-edited title and author into its manifest where the manifest gives another, on the manifest sessions' queue, before any look.
 Until it is recorded (library.manifestHandEditsKeptVersion, keyed by the library's identity), each look keeps its book's hand edits first.
 Each look then writes what its manifest is owed (BookManifestEditSessions.settleOwedFields(of:adding:isDataless:), ManifestOwedFields; package records) before it compares, so a title or author the manifest could not take stands over its stale value.
+A protected book (see [Password-protected books](state/protected-books.md)) is skipped by every pass here, silently; each check of one is asked last, and a background look at every file (lookForProtectedBooks) keeps its answers in this Mac's caches.
 Before the metadata refresh, it takes the edits of audiobooks' manifests made while TextMouth was closed or on another Mac (takeOutsideManifestEdits, FR18), one book at a time on a utility queue, leaving books whose files are in the cloud as they are.
 
 ## Search Library preparation
