@@ -115,7 +115,7 @@ enum PhoneSyncSettingsModel {
     /// The status line for the iPhone, and the lines after it, as the section reads them: the shared function, in the
     /// iPhone's words.
     static func lines(for status: SyncStatus, isPhone: Bool = ThisDevice.isPhone, time: (Date) -> String = timeOfDay) -> [String] {
-        [SyncStatusLine.text(for: status, isPhone: isPhone, time: time)] + SyncStatusLine.detailLines(for: status, time: time)
+        [SyncStatusLine.text(for: status, isPhone: isPhone, time: time)] + SyncStatusLine.detailLines(for: status, time: time, isPhone: isPhone)
     }
 
     /// A date as a time of day, as the system writes one: "9:41 AM".

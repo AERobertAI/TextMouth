@@ -11,6 +11,8 @@ struct SyncSettingsSection: View {
     @StateObject private var model = SyncSettingsModel()
     /// The sync's state, which redraws the status line as it changes.
     @ObservedObject private var center = SyncCenter.shared
+    /// This Mac's own choice of books to keep, and the days a book may stay unopened (FR45).
+    @ObservedObject private var space = SyncSpaceSettings.shared
     /// Whether Stop Syncing's question is up.
     @State private var confirmingStop = false
     /// Whether a command is running, which holds the others back.
@@ -50,6 +52,7 @@ struct SyncSettingsSection: View {
             }
 
             if center.status.isOn {
+                SyncSpaceControls(settings: space)
                 Button(SyncWording.syncNowTitle) { model.syncNow() }
                     .disabled(center.status.isSyncing)
                     .accessibilityLabel(SyncWording.syncNowTitle)
@@ -94,7 +97,7 @@ struct SyncSettingsSection: View {
 
     /// The lines after it.
     private var details: [String] {
-        SyncStatusLine.detailLines(for: center.status, time: Self.timeOfDay)
+        SyncStatusLine.detailLines(for: center.status, time: Self.timeOfDay, isPhone: false)
     }
 
     // MARK: - Choosing a Folder

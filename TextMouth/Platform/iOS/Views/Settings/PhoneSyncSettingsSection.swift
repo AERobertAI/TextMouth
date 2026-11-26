@@ -18,6 +18,8 @@ struct PhoneSyncSettingsSection: View {
     @ObservedObject private var center = SyncCenter.shared
     /// The steps the buttons take.
     @StateObject private var steps = PhoneSyncSettingsController()
+    /// This iPhone's own choice of books to keep, and the days a book may stay unopened (FR45).
+    @ObservedObject private var space = SyncSpaceSettings.shared
     /// What the folder picker now showing is for.
     @State private var pick: PhoneSyncPick = .setUp
     /// Whether the folder picker is up.
@@ -68,6 +70,10 @@ struct PhoneSyncSettingsSection: View {
         if let message = steps.model.message {
             // The words say what went wrong, so the color is never the only sign.
             Text(message).phonePrimaryText()
+        }
+        // Nothing is added before sync is set up (R1): the device's own choice of books shows once it is on.
+        if center.status.isOn {
+            SyncSpaceControls(settings: space)
         }
         ForEach(PhoneSyncSettingsModel.controls(isOn: center.status.isOn)) { control in
             PhoneActionButton(title: control.title) { press(control) }

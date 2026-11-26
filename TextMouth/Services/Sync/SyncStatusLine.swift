@@ -47,12 +47,16 @@ enum SyncStatusLine {
     }
 
     /// The lines that follow the status line as they apply: when each other device was last
-    /// heard from, and how far the backup is.
-    static func detailLines(for status: SyncStatus, time: (Date) -> String) -> [String] {
+    /// heard from, how far the backup is, and what this device's choice of books left undone.
+    static func detailLines(for status: SyncStatus, time: (Date) -> String, isPhone: Bool = ThisDevice.isPhone) -> [String] {
         var lines = status.lastHeard.sorted { $0.key < $1.key }.map { SyncWording.lastHeard(from: $0.key, at: time($0.value)) }
         if let done = status.booksBackedUp, let total = status.booksToBackUp, done < total {
             lines.append(SyncWording.backingUp(done: done, total: total))
         }
+        // What a device's own choice of books leaves undone (FR45), said where a person reads the status.
+        let device = SyncWording.thisDevice(isPhone: isPhone)
+        if status.removalsWaiting > 0 { lines.append(SyncWording.removalsWaiting(books: status.removalsWaiting, device: device)) }
+        if status.booksShortOfRoom > 0 { lines.append(SyncWording.shortOfRoom(books: status.booksShortOfRoom, device: device)) }
         return lines
     }
 }
