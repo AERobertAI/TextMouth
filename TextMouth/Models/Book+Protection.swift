@@ -24,7 +24,7 @@ extension Book {
     /// background look (`LibraryViewModel.lookForProtectedBooks()`) has made
     /// its pass and refreshed the list.
     var isLockedForDisplay: Bool {
-        !format.isAudio && ProtectionDetector.cachedScheme(ofFileAt: bookFileURL) != nil
+        !format.isAudio && ProtectionDetector.keptScheme(ofFileAt: bookFileURL) != nil
             && !UnlockedSources.isUnlocked(bookFileURL)
     }
 

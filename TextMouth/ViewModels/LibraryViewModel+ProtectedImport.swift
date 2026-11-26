@@ -138,7 +138,10 @@ extension LibraryViewModel {
     /// the plain copy then finds a book that is not the protected one.
     @MainActor
     func passwordWasRemoved(bookID: UUID, oldHash: String, newHash: String?) {
-        CredentialStores.current.forget(forBook: oldHash)
+        // Unless another copy of the same file is in the library, which still needs it.
+        if !library.books.contains(where: { $0.id != bookID && $0.md5Hash == oldHash }) {
+            CredentialStores.current.forget(forBook: oldHash)
+        }
         guard let index = library.books.firstIndex(where: { $0.id == bookID }) else { return }
         if let newHash { library.books[index].md5Hash = newHash }
         library.books[index].metadataReaderVersion = nil

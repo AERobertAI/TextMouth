@@ -168,11 +168,12 @@ final class UnlockedSourcesTests: XCTestCase {
     /// nothing before the first look, the kept answer after, and nothing once the file is rewritten.
     func testTheDetectorKeepsItsAnswerWithoutLookingAgain() throws {
         let url = try lockedZIP()
-        XCTAssertNil(ProtectionDetector.cachedScheme(ofFileAt: url))
+        XCTAssertNil(ProtectionDetector.keptScheme(ofFileAt: url))
         XCTAssertEqual(ProtectionDetector.scheme(ofFileAt: url, format: .epub), .zip)
-        XCTAssertEqual(ProtectionDetector.cachedScheme(ofFileAt: url), .zip)
+        XCTAssertEqual(ProtectionDetector.keptScheme(ofFileAt: url), .zip)
+        XCTAssertNil(ProtectionDetector.keptScheme(ofFileAt: folder.appendingPathComponent("gone.zip")))
         ProtectionDetector.forget(url)
-        XCTAssertNil(ProtectionDetector.cachedScheme(ofFileAt: url))
+        XCTAssertNil(ProtectionDetector.keptScheme(ofFileAt: url))
     }
 
     /// A copy a crash left in a package is deleted by its exact name, and nothing else is.

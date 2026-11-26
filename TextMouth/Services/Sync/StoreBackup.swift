@@ -54,7 +54,10 @@ struct StoreBackup: Sendable {
     static func isLeftOut(_ relativePath: String) -> Bool {
         let top = relativePath.split(separator: "/").first.map(String.init) ?? relativePath
         let name = (relativePath as NSString).lastPathComponent
+        // The plain copy a password removal is writing (or a crash left) holds the book
+        // without its password: it never goes to the sync folder (FR41).
         return name == StorePointer.fileName || name == ".DS_Store"
+            || top.hasPrefix(ProtectionRemoval.temporaryPrefix) || name.hasPrefix(ProtectionRemoval.temporaryPrefix)
             || top == TextMouthPaths.cachedAudioFolderName
             || top == TextMouthPaths.removedFromLibraryMarkerName
     }

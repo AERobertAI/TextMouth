@@ -21,6 +21,47 @@ final class StoreBackupTests: XCTestCase {
         return package
     }
 
+    /// A package whose book file is a ZIP with an encrypted entry, beside its derived text and
+    /// the plain copy a password removal leaves while it writes.
+    private func makeProtectedPackage(in sandbox: URL) throws -> URL {
+        let package = sandbox.appendingPathComponent("Locked.tmb", isDirectory: true)
+        try FileManager.default.createDirectory(at: package, withIntermediateDirectories: true)
+        let zip = try makeTemporaryZip(prefix: "locked", entries: ["a.txt": Data("words".utf8)])
+        try FileManager.default.moveItem(at: zip, to: package.appendingPathComponent("book.epub"))
+        try markEncrypted(["a.txt"], in: package.appendingPathComponent("book.epub"))
+        for (name, text) in [
+            ("bookInfo.json", "{\"title\":\"T\"}"), ("content.md", "plain words"), ("content.md.edited-1", "plain words"),
+            ("contentIndex.json", "{\"headings\":[\"Zebra\"]}"), (".unprotecting-ABC", "the whole book, plain")
+        ] {
+            try Data(text.utf8).write(to: package.appendingPathComponent(name))
+        }
+        return package
+    }
+
+    /// A protected book's backup holds neither its derived text nor a password removal's plain copy;
+    /// the same files around an unprotected book are backed up (bar the plain copy, which never is).
+    func testAProtectedBooksDerivedTextAndPlainCopyAreNotBackedUp() throws {
+        let sandbox = try makeSandboxDirectory("store-backup-protected")
+        let (backup, _) = makeBackup(sandbox)
+        let locked = try makeProtectedPackage(in: sandbox)
+        let result = try backup.back(up: locked, bookID: bookID)
+        XCTAssertEqual(result.manifest.files.map(\.path), ["book.epub", "bookInfo.json"])
+
+        // The control: with no password the derived text goes, so the omission above is the protection's.
+        let plain = try makePackage(in: sandbox)
+        try Data("{}".utf8).write(to: plain.appendingPathComponent("contentIndex.json"))
+        try Data("x".utf8).write(to: plain.appendingPathComponent(".unprotecting-ABC"))
+        let other = try backup.back(up: plain, bookID: UUID())
+        XCTAssertEqual(other.manifest.files.map(\.path), ["book.epub", "bookInfo.json", "content.md", "contentIndex.json"])
+    }
+
+    /// The plain copy of a password removal is left out wherever it sits, so a sync during the removal never copies it.
+    func testThePlainCopyOfAPasswordRemovalIsLeftOut() {
+        XCTAssertTrue(StoreBackup.isLeftOut(".unprotecting-8F2C"))
+        XCTAssertTrue(StoreBackup.isLeftOut("sub/.unprotecting-8F2C"))
+        XCTAssertFalse(StoreBackup.isLeftOut("book.epub"))
+    }
+
     /// A backup into a fresh sandbox drive.
     private func makeBackup(_ sandbox: URL) -> (backup: StoreBackup, drive: SyncTestDrive) {
         let drive = SyncTestDrive(root: sandbox.appendingPathComponent("cloud", isDirectory: true))

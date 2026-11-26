@@ -42,7 +42,24 @@ enum ProtectionDetector {
 
     /// The answers kept, by file path, read from this Mac's caches the
     /// first time they are asked for.
-    private static let remembered = OSAllocatedUnfairLock<[String: Remembered]>(initialState: loadRemembered())
+    private static let remembered = OSAllocatedUnfairLock<[String: Remembered]>(initialState: [:])
+
+    /// Whether the saved answers have been read into `remembered`. They are
+    /// read by the first look (`scheme(ofFileAt:format:)`), which runs off
+    /// the main thread at launch, never by a list.
+    private static let loaded = OSAllocatedUnfairLock(initialState: false)
+
+    /// Reads the saved answers once.
+    private static func ensureLoaded() {
+        let first = loaded.withLock { done -> Bool in
+            let was = !done
+            done = true
+            return was
+        }
+        guard first else { return }
+        let saved = loadRemembered()
+        remembered.withLock { current in current.merge(saved) { fresh, _ in fresh } }
+    }
 
     /// The file the answers are kept in.
     private static var rememberedFile: URL {
@@ -85,14 +102,13 @@ enum ProtectionDetector {
         return (size, date.timeIntervalSinceReferenceDate)
     }
 
-    /// The answer already kept for the file at `url`, without looking at it:
-    /// for a list that must not wait on a file (nil when none is kept, which
-    /// reads as no password until `scheme(ofFileAt:format:)` has looked).
-    static func cachedScheme(ofFileAt url: URL) -> ProtectionScheme? {
-        guard let stamp = stamp(of: url),
-              let known = remembered.withLock({ $0[url.standardizedFileURL.path] }),
-              known.size == stamp.size, known.date == stamp.date else { return nil }
-        return known.scheme.flatMap(ProtectionScheme.init(rawValue:))
+    /// The answer kept for the file at `url`: a lookup in memory, with no
+    /// stat and no file read, for a list that must not wait on anything
+    /// (nil when none is kept, which reads as no password until the
+    /// background look has made its pass). A file replaced since is
+    /// corrected by that pass (and at once by `forget(_:)` for a removal).
+    static func keptScheme(ofFileAt url: URL) -> ProtectionScheme? {
+        remembered.withLock { $0[url.standardizedFileURL.path] }?.scheme.flatMap(ProtectionScheme.init(rawValue:))
     }
 
     /// The formats whose file is a ZIP archive that a password can lock.
@@ -107,6 +123,7 @@ enum ProtectionDetector {
         let path = url.standardizedFileURL.path
         // A file that is only in the cloud is not looked at: any read would
         // download it. It is looked at once it is here.
+        ensureLoaded()
         guard let stamp = stamp(of: url) else { return nil }
         if let known = remembered.withLock({ $0[path] }), known.size == stamp.size, known.date == stamp.date {
             return known.scheme.flatMap(ProtectionScheme.init(rawValue:))
