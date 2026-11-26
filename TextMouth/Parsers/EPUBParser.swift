@@ -258,6 +258,12 @@ enum EPUBParser {
         to url: URL,
         replacingWith replacement: ((URL, URL) throws -> Void)? = nil
     ) throws -> String {
+        // A protected book's file is never rewritten: its archive keeps only the
+        // entries before the first encrypted one when an entry is removed,
+        // so the copy would lose the rest of the book (FR41).
+        if ProtectionDetector.scheme(ofFileAt: url, format: .epub) != nil {
+            throw PasswordProtectedDocument()
+        }
         // A file that is not there is said to be missing, not to be a damaged
         // archive, as reading the metadata says it.
         let archive = try openArchive(at: url)

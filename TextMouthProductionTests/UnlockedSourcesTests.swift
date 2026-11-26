@@ -151,6 +151,18 @@ final class UnlockedSourcesTests: XCTestCase {
         XCTAssertNil(ProtectionDetector.scheme(ofFileAt: url, format: .epub))
     }
 
+    /// Write to File refuses a protected EPUB, even unlocked, and leaves the file byte for byte as it was.
+    func testWriteToFileRefusesAProtectedEPUB() throws {
+        let url = try lockedZIP()
+        let before = try Data(contentsOf: url)
+        try UnlockedSources.unlock(fileAt: url, format: .epub, password: Secret("secret"))
+        defer { UnlockedSources.release(url) }
+        let metadata = EPUBMetadata(title: "T", author: "A", publisher: "", publicationDate: "", isbn: "", language: "", identifier: "", epubVersion: "")
+        XCTAssertThrowsError(try EPUBParser.writeMetadata(metadata, to: url)) { XCTAssertTrue($0 is PasswordProtectedDocument, "\($0)") }
+        XCTAssertEqual(try Data(contentsOf: url), before)
+        XCTAssertEqual(try folderListing().filter { $0.hasSuffix(".epub") }, [], "no copy was left")
+    }
+
     // MARK: - Secrets and the store
 
     /// A password never prints itself, however it is interpolated or dumped.
