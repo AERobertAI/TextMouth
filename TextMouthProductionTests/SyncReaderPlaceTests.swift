@@ -104,6 +104,22 @@ final class SyncReaderPlaceTests: XCTestCase {
         XCTAssertEqual(reader.currentCharacterOffset, 500)
     }
 
+    /// A paused reader is never moved either: a pause leaves the speech where
+    /// it is, and a place saved elsewhere does not pull it away.
+    func testAPausedReaderIsNeverMoved() {
+        let (reader, library, book) = makeReader()
+        reader.isCurrentlyPlaying = false
+        reader.isCurrentlyPaused = true
+        let recorder = recordingAnnouncements {
+            library.syncedReadingStates.send(
+                SyncedReadingState(bookID: book.id, state: state(of: book, offset: 200, savedAfter: 60), device: "iPhone")
+            )
+        }
+        XCTAssertEqual(reader.currentChapterIndex, 0)
+        XCTAssertEqual(reader.currentCharacterOffset, 10)
+        XCTAssertTrue(recorder.announcements.isEmpty)
+    }
+
     /// A playing reader plays on: its place and its words stay as they were.
     func testAPlayingReaderPlaysOn() {
         let (reader, library, book) = makeReader()

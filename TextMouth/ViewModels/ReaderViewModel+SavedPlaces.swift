@@ -142,7 +142,8 @@ extension ReaderViewModel {
     /// plays on, and its next checkpoint wins; a place that is not the later
     /// one changes nothing and says nothing.
     func takeSyncedReadingState(_ synced: SyncedReadingState) {
-        guard !isCurrentlyPlaying else { return }
+        // A reader that plays, or is paused in the middle of its speech, is never moved.
+        guard !isCurrentlyPlaying, !isCurrentlyPaused else { return }
         let before = book.readingPosition
         takeNewerRecordedState(synced.state)
         guard book.readingPosition != before else { return }
