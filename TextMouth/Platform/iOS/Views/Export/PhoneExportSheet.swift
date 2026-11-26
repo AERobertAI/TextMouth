@@ -133,6 +133,9 @@ struct PhoneExportSheet: View {
     @State private var brailleChanges = 0
     /// The options row whose choices were last opened, which focus returns to when they close.
     @State private var choiceOpener: Focus?
+    /// Whether a move of focus off a row of the progress that went is waiting its 0.35 seconds: a change of the progress
+    /// meanwhile asks for no second move, since the one waiting picks its row as it fires.
+    @State private var isMovingOffAGoneRow = false
 
     /// A sheet exporting `books`, as `library` holds them when Export is
     /// pressed. `beginHold` is what keeps the app running while an export
@@ -308,16 +311,24 @@ struct PhoneExportSheet: View {
     /// may close, once the focus has moved, so that what it reads of the row queues the words rather than cuts them off.
     /// Otherwise focus on a row of the progress that has just gone, the Stop row above all, which the sheet itself sent
     /// focus to, moves to what took its place (`PhoneExportOffer.focusAfterProgressMoves`). `focus` still names the row
-    /// here: the row goes from VoiceOver's view only once this update is drawn.
+    /// here: the row goes from VoiceOver's view only once this update is drawn. The row it moves to is picked as the focus
+    /// moves, 0.35 seconds on (`PhoneExportOffer.progressRow(at:)`): a short file after the spoken audio can end the
+    /// export within that wait, and the progress row with it.
     private func progressMoved(from old: ProgressShape, to new: ProgressShape) {
         if new.isMakingSpeech, !old.isMakingSpeech {
             returnFocus(to: .stopRow) { PhoneAnnouncer.say(PhoneExportWording.canCloseNow) }
             return
         }
-        let target = PhoneExportOffer.focusAfterProgressMoves(
-            from: focus?.progressRow, stage: new.stage, isMakingSpeech: new.isMakingSpeech
-        )
-        if let target { returnFocus(to: Focus(target)) }
+        guard !isMovingOffAGoneRow,
+              PhoneExportOffer.focusAfterProgressMoves(
+                  from: focus?.progressRow, stage: new.stage, isMakingSpeech: new.isMakingSpeech
+              ) != nil
+        else { return }
+        isMovingOffAGoneRow = true
+        returnFocus(toWhicheverIs: {
+            isMovingOffAGoneRow = false
+            return PhoneExportOffer.progressRow(at: stage).map(Focus.init)
+        })
     }
 
     // MARK: - The Kinds
@@ -569,11 +580,18 @@ struct PhoneExportSheet: View {
     /// the value it holds does nothing; then runs `afterwards`, as an
     /// announcement that is to follow what VoiceOver reads of the target.
     private func returnFocus(to target: Focus, then afterwards: (@MainActor () -> Void)? = nil) {
+        returnFocus(toWhicheverIs: { target }, then: afterwards)
+    }
+
+    /// `returnFocus(to:then:)` for a target picked as the focus moves, when the wait is over: `target` gives it then, or
+    /// nil for none, and nothing moves.
+    private func returnFocus(toWhicheverIs target: @escaping @MainActor () -> Focus?, then afterwards: (@MainActor () -> Void)? = nil) {
         Task { @MainActor in
             try? await Task.sleep(for: .seconds(PhoneFocusPolicy.screenChangedDelay))
+            guard let row = target() else { return }
             focus = nil
             await Task.yield()
-            focus = target
+            focus = row
             afterwards?()
         }
     }

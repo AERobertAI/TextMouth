@@ -172,6 +172,13 @@ enum PhoneExportOffer {
             hasGone = false
         }
         guard hasGone else { return nil }
+        return progressRow(at: stage)
+    }
+
+    /// The row of the progress that takes the place of one that has gone, at `stage`: the progress row while the export
+    /// goes on, what it did once it has ended, and none before an export. The sheet asks again as its focus moves, 0.35
+    /// seconds on, since a short file after the spoken audio can end the export within that wait.
+    static func progressRow(at stage: Stage) -> ProgressFocus? {
         switch stage {
         case .exporting: return .progress
         case .finished: return .finished

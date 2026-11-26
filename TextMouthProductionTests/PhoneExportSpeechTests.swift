@@ -183,6 +183,12 @@ final class PhoneExportSpeechTests: XCTestCase {
                 "\(String(describing: focused)) at \(stage), making speech \(isMakingSpeech): \(why)"
             )
         }
+        // The row the sheet's focus then lands on is picked as it moves, 0.35 seconds on: a short file after the spoken
+        // audio can end the export within the wait, and the progress row with it, so it is what the export did then.
+        XCTAssertEqual(Offer.progressRow(at: .exporting), .progress)
+        XCTAssertEqual(Offer.progressRow(at: .finished), .finished, "an export that ended within the wait")
+        XCTAssertNil(Offer.progressRow(at: .ready))
+        XCTAssertNil(Offer.progressRow(at: .listing))
     }
 
     /// Before and after an export the bar is as it was: Cancel, and Close once it has ended, however spoken audio goes.
