@@ -25,6 +25,8 @@ enum PhoneLibraryOffer {
         case keepOnAllDevices
         /// Ends keeping the book's files on every device that syncs.
         case stopKeepingOnAllDevices
+        /// Opens the Export sheet for the book.
+        case export
         /// Moves the book one place up the order the list shows.
         case moveUp
         /// Moves the book one place down the order the list shows.
@@ -52,8 +54,8 @@ enum PhoneLibraryOffer {
 
     /// The commands of `book`'s row, each only where it applies, in the
     /// spec's order: Book Info; Add to Reading List or Remove from Reading
-    /// List; Move to Folder...; Move Up and Move Down, where the list shows an
-    /// order the listener arranges; then the removal.
+    /// List; Move to Folder...; Export...; Move Up and Move Down, where the
+    /// list shows an order the listener arranges; then the removal.
     ///
     /// - Parameters:
     ///   - book: The row's book.
@@ -96,6 +98,9 @@ enum PhoneLibraryOffer {
         if let moveTitle = LibraryTransitionWording.moveToFolderTitle(for: [book]) {
             commands.append(Command(action: .moveToFolder, title: moveTitle))
         }
+        // The Mac's own command, in the Mac's place: after Move to Folder...
+        // and before the moves and the removal (FR31).
+        commands.append(Command(action: .export, title: BookExportWording.commandTitle(count: 1)))
         for move in moves?.offered ?? [] {
             let action: Action = move.direction < 0 ? .moveUp : .moveDown
             commands.append(Command(action: action, title: move.title))

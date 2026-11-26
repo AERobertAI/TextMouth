@@ -238,9 +238,9 @@ final class PhoneSyncSettingsTests: XCTestCase {
                 isKeptOnAllDevices: isKept
             ).map(\.title)
         }
-        XCTAssertEqual(titles(isKept: nil), ["Book Info", "Add to Reading List", "Move to Folder...", "Remove from Library..."])
-        XCTAssertEqual(titles(isKept: false), ["Book Info", "Add to Reading List", "Keep on All Devices", "Move to Folder...", "Remove from Library..."])
-        XCTAssertEqual(titles(isKept: true), ["Book Info", "Add to Reading List", "Stop Keeping on All Devices", "Move to Folder...", "Remove from Library..."])
+        XCTAssertEqual(titles(isKept: nil), ["Book Info", "Add to Reading List", "Move to Folder...", "Export…", "Remove from Library..."])
+        XCTAssertEqual(titles(isKept: false), ["Book Info", "Add to Reading List", "Keep on All Devices", "Move to Folder...", "Export…", "Remove from Library..."])
+        XCTAssertEqual(titles(isKept: true), ["Book Info", "Add to Reading List", "Stop Keeping on All Devices", "Move to Folder...", "Export…", "Remove from Library..."])
     }
 
     /// A book only in the cloud offers Download Now, as the Mac does, before the keep commands; one on the phone offers none.
@@ -255,8 +255,8 @@ final class PhoneSyncSettingsTests: XCTestCase {
                 canDownload: canDownload
             ).map(\.title)
         }
-        XCTAssertEqual(titles(canDownload: true), ["Book Info", "Add to Reading List", "Download Now", "Keep on All Devices", "Move to Folder...", "Remove from Library..."])
-        XCTAssertEqual(titles(canDownload: false), ["Book Info", "Add to Reading List", "Keep on All Devices", "Move to Folder...", "Remove from Library..."])
+        XCTAssertEqual(titles(canDownload: true), ["Book Info", "Add to Reading List", "Download Now", "Keep on All Devices", "Move to Folder...", "Export…", "Remove from Library..."])
+        XCTAssertEqual(titles(canDownload: false), ["Book Info", "Add to Reading List", "Keep on All Devices", "Move to Folder...", "Export…", "Remove from Library..."])
     }
 
     /// The choice follows at once, so the switch and the row read the new value as VoiceOver asks; one that is already so
@@ -277,7 +277,7 @@ final class PhoneSyncSettingsTests: XCTestCase {
 
     /// What is said when keeping ends.
     func testStoppedKeepingIsSaid() {
-        XCTAssertEqual(SyncWording.announceStoppedKeeping(title: "Dune"), "Stopped keeping Dune on all devices.")
+        XCTAssertEqual(SyncWording.announceStoppedKeeping(title: "Dune"), "No longer keeping Dune on all devices.")
         XCTAssertEqual(SyncWording.announceKeeping(title: "Dune"), "Keeping Dune on all devices.")
         XCTAssertEqual(SyncWording.keptState, "Kept on all devices")
     }

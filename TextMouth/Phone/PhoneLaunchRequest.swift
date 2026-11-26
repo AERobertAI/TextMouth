@@ -1,14 +1,15 @@
 import Foundation
 
-// The whole of this file is compiled into debug builds only: each of its two
-// uses (`TextMouthRuntime.detect` and the iPhone's scene delegate) is inside
-// `#if DEBUG`, so a release build holds neither the type nor its two variable
+// The whole of this file is compiled into debug builds only: each of its
+// uses (`TextMouthRuntime.detect`, the iPhone's scene delegate, and its Export
+// sheet) is inside `#if DEBUG`, so a release build holds neither the type nor its three variable
 // names, and no environment variable can steer it.
 #if DEBUG
 
 /// What a UI test, or a run in the iOS simulator, asks of the iPhone app at
 /// launch through the app's environment, in debug builds only: to run with a
-/// library of its own, and to be sent a book as another app would send one.
+/// library of its own, to be sent a book as another app would send one, and to
+/// export into a folder without the system's picker.
 ///
 /// A UI test drives the app from a process of its own, and XCTest names its
 /// configuration (`TextMouthRuntime.testConfigurationVariable`) only in a
@@ -26,6 +27,11 @@ import Foundation
 /// the copier works from a copy, and the phone keeps every original
 /// (`PhoneDefaults`).
 ///
+/// With `exportFolderVariable`, the Export sheet takes the folder named as the
+/// folder its files go to, so that a UI test exports without the system's
+/// folder picker, which no test can drive. The folder is used as it is: it
+/// is made when the first file is written, and nothing in it is read.
+///
 /// From a Mac's shell, `xcrun simctl launch` passes each variable with the
 /// prefix `SIMCTL_CHILD_`, as in `SIMCTL_CHILD_TEXTMOUTH_UI_TEST=1`.
 enum PhoneLaunchRequest {
@@ -33,6 +39,9 @@ enum PhoneLaunchRequest {
     static let sandboxVariable = "TEXTMOUTH_UI_TEST"
     /// An absolute path: the file the launch is sent, as another app would send it.
     static let openVariable = "TEXTMOUTH_OPEN_AT_LAUNCH"
+    /// An absolute path: the folder the Export sheet exports to, with no
+    /// folder picker.
+    static let exportFolderVariable = "TEXTMOUTH_EXPORT_TO"
 
     /// Whether `environment` asks for a sandbox: only the exact value "1", so
     /// an empty or mistyped value leaves the app as it is.
@@ -46,6 +55,13 @@ enum PhoneLaunchRequest {
     static func filesToOpen(_ environment: [String: String]) -> [URL] {
         guard let path = environment[openVariable], path.hasPrefix("/") else { return [] }
         return [URL(fileURLWithPath: path)]
+    }
+
+    /// The folder `environment` names for exports, or none. Only an absolute
+    /// path counts, as for `filesToOpen(_:)`.
+    static func exportFolder(_ environment: [String: String]) -> URL? {
+        guard let path = environment[exportFolderVariable], path.hasPrefix("/") else { return nil }
+        return URL(fileURLWithPath: path, isDirectory: true)
     }
 }
 

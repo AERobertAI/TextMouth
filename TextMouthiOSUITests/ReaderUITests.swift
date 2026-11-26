@@ -1,7 +1,7 @@
 import XCTest
 
 /// The reader, as XCUITest reads it in the simulator, opened on a text book
-/// sent to the app: its 20 elements in the spec's order (under "VoiceOver's
+/// sent to the app: its 21 elements in the spec's order (under "VoiceOver's
 /// order"), what its controls hold before anything is pressed, and Apple's
 /// accessibility audit. Nothing in the reader is pressed here: Play, which plays,
 /// is pressed in `PlaybackUITests` (it runs only where sound is allowed), and
@@ -14,7 +14,7 @@ final class ReaderUITests: TextMouthUITestCase {
     static let controls = [
         "Book content", "Play", "Where Am I?", "Navigation unit", "Speed",
         "Previous Heading", "Next Heading", "Add bookmark", "Bookmarks", "Headings",
-        "Search in Book", "Go To", "Return to previous reading position", "Sleep Timer", "Voice", "Book Info",
+        "Search in Book", "Go To", "Return to previous reading position", "Sleep Timer", "Voice", "Book Info", "Export this book",
         "Skip backward…", "Skip forward…",
     ]
 

@@ -46,6 +46,10 @@ struct PhoneControlDescription: Equatable {
     let label: String
     /// What it holds now, or "" for nothing: "Sentence", "3 bookmarks".
     let value: String
+    /// The words drawn on the control when they are not its label, as Export
+    /// draws "Export" for the control VoiceOver calls "Export this book"; nil
+    /// when the label is what is drawn. Voice Control says the drawn words.
+    let visibleTitle: String?
     /// What activating or adjusting it does, or "" for no hint.
     let hint: String
     /// How VoiceOver treats it.
@@ -60,9 +64,11 @@ struct PhoneControlDescription: Equatable {
         value: String = "",
         hint: String = "",
         traits: PhoneControlTraits,
-        actions: [PhoneControlAction] = []
+        actions: [PhoneControlAction] = [],
+        visibleTitle: String? = nil
     ) {
         self.label = label
+        self.visibleTitle = visibleTitle
         self.value = value
         self.hint = hint
         self.traits = traits

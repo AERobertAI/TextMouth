@@ -52,11 +52,12 @@ class RunSuiteRemoteTests(RemoteTestCase):
             self.addCleanup(patcher.stop)
         self.log = self.folder / "suite.log"
 
-    def run_remote(self, name="suite"):
-        """Runs run_suite's remote path from the throwaway repository; returns (status, stdout, stderr)."""
+    def run_remote(self, name="suite", **options):
+        """Runs run_suite's remote path from the throwaway repository, with run_remote's keyword `options`; returns
+        (status, stdout, stderr)."""
         out, err = io.StringIO(), io.StringIO()
         with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
-            status = run_suite.run_remote(name, str(self.log), self.head, cwd=self.repo)
+            status = run_suite.run_remote(name, str(self.log), self.head, cwd=self.repo, **options)
         return status, out.getvalue(), err.getvalue()
 
     def gh_runs(self, *downloads, view=DONE):
@@ -89,6 +90,15 @@ class RunSuiteRemoteTests(RemoteTestCase):
                          "the full suite is every test, dealt out as widely as the workflow allows")
         self.assertEqual(request["requests"], [{"agent": "orchestrator-suite", "head": self.head}])
         self.assertIs(request["ios_size"], True, "the release check also measures the iPhone app")
+
+    def test_a_merges_gate_leaves_out_the_iphone_apps_size(self):
+        # Every iPhone job makes the device build when the request asks for the size, about 14 minutes apiece.
+        self.gh_runs(results("PASSED\n", SUITE_PASSED))
+        status, out, _ = self.run_remote("gate", ios_size=False)
+        self.assertEqual(status, 0, out)
+        request = self.pushed_request(self.pushed_refs()["refs/heads/TestBuild"])
+        self.assertIs(request["ios_size"], False)
+        self.assertTrue(request["full"], "the gate is still the full suite")
 
     def test_a_remote_suite_with_failing_tests_exits_one(self):
         self.gh_runs(results("FAILED\n", SUITE_FAILED), view={**DONE, "conclusion": "failure"})
@@ -237,7 +247,25 @@ class RunSuiteRemoteTests(RemoteTestCase):
         with mock.patch.object(sys, "argv", ["run_suite.py", "--remote", self.head, "suite"]), \
                 contextlib.redirect_stderr(err):
             self.assertEqual(run_suite.main(), 2)
-        self.assertIn("usage: run_suite.py [--remote COMMIT] NAME LOG", err.getvalue())
+        self.assertIn("usage: run_suite.py [--remote COMMIT [--no-ios-size]] NAME LOG", err.getvalue())
+
+    def test_the_command_line_takes_no_ios_size_after_the_commit(self):
+        self.gh_runs(results("PASSED\n", SUITE_PASSED))
+        out = io.StringIO()
+        argv = ["run_suite.py", "--remote", self.head, "--no-ios-size", "suite", str(self.log)]
+        with mock.patch.object(sys, "argv", argv), mock.patch.object(run_suite.os, "getcwd", return_value=str(self.repo)), \
+                contextlib.redirect_stdout(out):
+            status = run_suite.main()
+        self.assertEqual(status, 0, out.getvalue())
+        self.assertIs(self.pushed_request(self.pushed_refs()["refs/heads/TestBuild"])["ios_size"], False)
+
+    def test_no_ios_size_without_remote_is_a_usage_error(self):
+        # A local suite builds no iPhone app, so the option would mean nothing there.
+        err = io.StringIO()
+        with mock.patch.object(sys, "argv", ["run_suite.py", "--no-ios-size", "suite", str(self.log)]), \
+                contextlib.redirect_stderr(err):
+            self.assertEqual(run_suite.main(), 2)
+        self.assertIn("usage:", err.getvalue())
 
 
 if __name__ == "__main__":

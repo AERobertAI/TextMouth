@@ -4,7 +4,7 @@
 Part of [TextMouth's architecture](../../../ARCHITECTURE.md).
 
 ## An export and its dialog
-<!-- id: export-dialog; keys: Export command, Export button, overwrite, atomic rename, scratch folder, Stop button, unique names, export log; src: TextMouth/Services/BookExportService.swift, TextMouth/ViewModels/BookExportModel.swift, TextMouth/Models/BookExportWording.swift, TextMouth/Models/LibraryCloudWording.swift, TextMouth/Views/Export/BookExportSheet.swift, TextMouth/Views/Export/BookExportPresentation.swift, TextMouth/Views/Reader/ReaderBookCommands.swift, TextMouth/Views/Library/LibraryView.swift, TextMouth/Views/Library/LibrarySubviews.swift, TextMouth/App/MenuCommands.swift, TextMouth/App/TextMouthRuntime.swift, TextMouth/Services/MaintenanceFileAccess.swift, TextMouth/Parsers/DAISYParser+PackageInventory.swift, TextMouth/Services/AudioEditing/AudioEditPackage.swift -->
+<!-- id: export-dialog; keys: Export command, Export button, overwrite, atomic rename, scratch folder, Stop button, unique names, export log; src: TextMouth/Services/BookExportDelivery.swift, TextMouth/Services/BookExportService.swift, TextMouth/ViewModels/BookExportModel.swift, TextMouth/Models/BookExportWording.swift, TextMouth/Models/LibraryCloudWording.swift, TextMouth/Views/Export/BookExportSheet.swift, TextMouth/Views/Export/BookExportPresentation.swift, TextMouth/Views/Reader/ReaderBookCommands.swift, TextMouth/Views/Library/LibraryView.swift, TextMouth/Views/Library/LibrarySubviews.swift, TextMouth/App/MenuCommands.swift, TextMouth/App/TextMouthRuntime.swift, TextMouth/Services/MaintenanceFileAccess.swift, TextMouth/Parsers/DAISYParser+PackageInventory.swift, TextMouth/Services/AudioEditing/AudioEditPackage.swift -->
 
 An export (FR05): what the Export dialog offers, what is checked, where it goes, and how far it has got.
 
@@ -26,7 +26,7 @@ An export (FR05): what the Export dialog offers, what is checked, where it goes,
   The Text as Markdown item, and the Markdown of a transcribed audiobook's Transcript, are made from content.md, not copied.
   BookExportService.markdownFile(of:from:as:) lists each as a .converted source by BookExportConversion.markdown, with content.md's size as the offer's.
   Only transcript.json is copied byte for byte.
-  Every file, whether copied, plain text, or converted (text export, below), is made at a scratch URL in a new scratch folder (writeThroughScratchFile).
+  Every file, whether copied, plain text, or converted (text export, below), is made at a scratch URL in a new scratch folder (writeThroughScratchFile); the scratch folder and move below are the Mac's (BookExportDelivery.moving), and the iPhone's way is in [Exports on the iPhone](exports-iphone.md).
   The folder is the system's item-replacement folder on the volume of the nearest existing folder that holds the target (makeScratchFolder(near:)), or, when the system makes none, a new "TextMouth Export `<UUID>`" folder in the temporary directory.
   When the file is whole and Stop has not been pressed, moveExclusively moves it to its target, and the target's folder is made only then.
   The move is an exclusive rename (renamex_np with RENAME_EXCL, which the file system makes atomic).
@@ -184,7 +184,8 @@ What each format keeps and leaves out is in [Exporting books](../../user/exporti
 - Options: BrailleExportOptions (a BraillePageFormat with the cells per line, 18 to 80, the lines per page, 4 to 50, and whether pages are numbered; the table; the BRF's BrailleLineEnd, and the BRF's fileCode, a BrailleFileCode) is the two writers' Options.
   It is started by BrailleExportOptions.standard() from BraillePreferences.importTable() and, for the file code, the Braille setting's, BraillePreferences.importFileCode() (never Unicode braille patterns, which the Export dialog offers but the setting does not).
   Or it is started from the default table, with replacedTable set, when that is one of this Mac's tables (BrailleTableCatalog.readsFromMacFolder).
-  That is when this Mac does not offer it for export or a kept verdict refused it this session (isUnusableMacTable; a too-slow refusal and a check that could not be made are not kept).
+  That is when this Mac does not offer it for export or a kept verdict refused it this session (BrailleDocumentWriter.exportCannotStart(from:); a too-slow refusal and a check that could not be made are not kept).
+  On the iPhone, which has no folder of the Mac's tables, a Settings table that no export list can use, because the translator would refuse it (BrailleTableCatalog.bundledID(forStored:) finds none in the pack), is replaced by the default the same way, with the Mac's sentence.
   The options view then says BrailleExportWording.startsFromDefault(replacing:) until another table is chosen.
   BrailleExportOptionsView draws them under the picker, with the words in BrailleExportWording and no line ends or braille file characters for a PEF.
   A BRF's two own pop-ups, drawn by one menuPopUp builder, come last, the braille file characters (BrailleFileCode.all) after the line ends, so every other control keeps its place in the reading order.

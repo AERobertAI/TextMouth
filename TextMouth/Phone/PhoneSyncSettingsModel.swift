@@ -50,12 +50,6 @@ extension SyncWording {
         // Translators: The button of the confirmation that stops syncing on an iPhone. Title case.
         InterfaceText.line("phoneSync.stopButton", "Stop Syncing")
     }
-
-    /// Announced after a person ends keeping a book on all devices.
-    static func announceStoppedKeeping(title: String) -> String {
-        // Translators: Said aloud after the person chooses Stop Keeping on All Devices. %@ is the book's title.
-        InterfaceText.line("phoneSync.announce.stoppedKeeping", "Stopped keeping \(title) on all devices.")
-    }
 }
 
 // MARK: - The Section's Controls

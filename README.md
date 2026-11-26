@@ -39,6 +39,7 @@ ARCHITECTURE.md, in the same folder, is the index of the pages explaining how th
   - [When a book ends, and your saved places](docs/user/reader-book-end.md): what plays next.
   - [When speech or audio goes wrong](docs/user/reader-speech-problems.md): refusals, stalls, memory limits.
 - [Exporting books](docs/user/exporting-books.md): what Export copies, and the Convert to menu.
+  - [Exporting on the iPhone](docs/user/exporting-on-iphone.md): the sheet, the kept folder, braille rows.
   - [Exporting braille files](docs/user/exporting-braille.md): BRF and PEF options, layout, and emphasis.
   - [Exporting a transcript as captions](docs/user/exporting-captions.md): WebVTT and SubRip files.
   - [Exporting text as spoken audio](docs/user/exporting-spoken-audio.md): M4B, M4A, and MP3 files.

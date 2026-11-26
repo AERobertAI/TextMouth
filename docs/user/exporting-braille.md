@@ -57,8 +57,7 @@ An export only ever writes braille, so it can use them, and they are one more ch
 - The options start from the Braille tab's choice.
   When that choice is one of these tables, the pop-ups show it, and an export writes with it.
   A table an iPhone chose, whose name has no "mac:" in front, such as fr-bfu-g2.ctb, shows as this Mac's table of that name, and the export writes with it.
-- The iPhone has no Export dialog yet.
-  Its pack carries print-only tables, German, Chinese, Korean, Czech, Thai, Vietnamese, Hebrew, and Persian among them, which an export there would offer.
+- The iPhone's Export sheet offers them too: its pack carries print-only tables, German, Chinese, Korean, Czech, Thai, Vietnamese, Hebrew, and Persian among them (see [Exporting on the iPhone](exporting-on-iphone.md)).
 
 ## When the Settings table can't be used
 <!-- id: export-braille-table-unusable; keys: Unified English Braille, Grade 2, fallback table, display name; src: TextMouth/Views/Export/BrailleExportOptionsView.swift -->

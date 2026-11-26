@@ -534313,6 +534313,162 @@
         }
       }
     },
+    "phoneExport.tooLittleMemory" : {
+      "comment" : "Why an export on the iPhone could not convert a book's text, after the file's name in a failure sentence: the iPhone has too little memory left for it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لا تتوفر في iPhone ذاكرة كافية لتحويل هذا الكتاب الآن. أغلق التطبيقات الأخرى، ثم صدّر مرة أخرى."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই বইটি এখন রূপান্তর করার মতো যথেষ্ট খালি মেমোরি iPhone-এ নেই। অন্য অ্যাপ বন্ধ করুন, তারপর আবার রপ্তানি করুন।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Auf dem iPhone ist gerade zu wenig Arbeitsspeicher frei, um dieses Buch umzuwandeln. Schließe andere Apps und exportiere dann erneut."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The iPhone has too little memory free to convert this book now. Close other apps, then export again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El iPhone tiene muy poca memoria libre para convertir este libro ahora. Cierra otras apps y vuelve a exportar."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اکنون حافظه‌ی آزاد iPhone برای تبدیل این کتاب کافی نیست. برنامه‌های دیگر را ببندید، سپس دوباره صادر کنید."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "L’iPhone n’a pas assez de mémoire disponible pour convertir ce livre pour le moment. Fermez les autres apps, puis exportez de nouveau."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "אין ב-iPhone מספיק זיכרון פנוי כדי להמיר את הספר הזה עכשיו. סגור אפליקציות אחרות, ואז ייצא שוב."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iPhone में अभी इस पुस्तक को बदलने के लिए पर्याप्त मेमोरी खाली नहीं है। दूसरे ऐप बंद करें, फिर दोबारा निर्यात करें।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iPhone tidak memiliki cukup memori kosong untuk mengonversi buku ini sekarang. Tutup app lain, lalu ekspor lagi."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "L’iPhone non ha abbastanza memoria libera per convertire questo libro adesso. Chiudi le altre app, poi esporta di nuovo."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iPhone の空きメモリが不足しているため、今はこのブックを変換できません。ほかの App を閉じてから、もう一度書き出してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iPhone의 사용 가능한 메모리가 부족하여 지금은 이 책을 변환할 수 없습니다. 다른 앱을 닫은 다음 다시 내보내십시오."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "De iPhone heeft nu te weinig vrij geheugen om dit boek om te zetten. Sluit andere apps en exporteer daarna opnieuw."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iPhone ma teraz za mało wolnej pamięci, aby przekonwertować tę książkę. Zamknij inne aplikacje, a potem wyeksportuj ponownie."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "O iPhone está com pouca memória livre para converter este livro agora. Feche outros apps e exporte de novo."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "На iPhone сейчас недостаточно свободной памяти, чтобы преобразовать эту книгу. Закройте другие приложения, затем экспортируйте снова."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Det finns för lite ledigt minne på iPhone för att konvertera boken just nu. Stäng andra appar och exportera sedan igen."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iPhone มีหน่วยความจำว่างไม่พอที่จะแปลงหนังสือเล่มนี้ในตอนนี้ ปิดแอปอื่น แล้วส่งออกอีกครั้ง"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iPhone'da bu kitabı şimdi dönüştürmek için yeterli boş bellek yok. Diğer uygulamaları kapatın, sonra yeniden dışa aktarın."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "На iPhone зараз недостатньо вільної пам’яті, щоб перетворити цю книгу. Закрийте інші програми, а потім експортуйте знову."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iPhone میں اس وقت اس کتاب کو تبدیل کرنے کے لیے کافی خالی میموری نہیں ہے۔ دوسری ایپس بند کریں، پھر دوبارہ برآمد کریں۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iPhone hiện không đủ bộ nhớ trống để chuyển đổi sách này. Hãy đóng các ứng dụng khác, rồi xuất lại."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iPhone 当前可用内存不足，无法转换此图书。请关闭其他 App，然后再次导出。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iPhone 目前可用記憶體不足，無法轉換這本書。請關閉其他 App，然後再次輸出。"
+          }
+        }
+      }
+    },
     "phoneGoToField.jumpLabel.page" : {
       "comment" : "VoiceOver label of the Jump button under the Page field of the iPhone's Go To sheet.",
       "extractionState" : "manual",
@@ -547869,162 +548025,6 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "版本"
-          }
-        }
-      }
-    },
-    "phoneSync.announce.stoppedKeeping" : {
-      "comment" : "Said aloud after the person chooses Stop Keeping on All Devices. %@ is the book's title.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "تم إيقاف إبقاء %@ على كل الأجهزة."
-          }
-        },
-        "bn" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "%@ সব ডিভাইসে রাখা বন্ধ করা হয়েছে।"
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "%@ wird nicht mehr auf allen Geräten behalten."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Stopped keeping %@ on all devices."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "Se dejó de mantener %@ en todos los dispositivos."
-          }
-        },
-        "fa" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "نگه‌داشتن %@ روی همه دستگاه‌ها متوقف شد."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "%@ n’est plus conservé sur tous les appareils."
-          }
-        },
-        "he" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "הפסקת השמירה של %@ בכל המכשירים."
-          }
-        },
-        "hi" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "%@ को सभी डिवाइस पर रखना बंद किया गया।"
-          }
-        },
-        "id" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "Berhenti menyimpan %@ di semua perangkat."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "%@ non viene più conservato su tutti i dispositivi."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "%@をすべてのデバイスに保持する設定を解除しました。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "%@을(를) 모든 기기에 보관하는 것을 중단했습니다."
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "%@ wordt niet meer op alle apparaten bewaard."
-          }
-        },
-        "pl" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "Przestano zachowywać %@ na wszystkich urządzeniach."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "%@ não será mais mantido em todos os dispositivos."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "«%@» больше не хранится на всех устройствах."
-          }
-        },
-        "sv" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "%@ behålls inte längre på alla enheter."
-          }
-        },
-        "th" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "เลิกเก็บ %@ ไว้ในทุกอุปกรณ์แล้ว"
-          }
-        },
-        "tr" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "%@ artık tüm aygıtlarda tutulmayacak."
-          }
-        },
-        "uk" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "«%@» більше не зберігається на всіх пристроях."
-          }
-        },
-        "ur" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "%@ کو تمام آلات پر رکھنا بند کر دیا گیا۔"
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "Đã ngừng giữ %@ trên tất cả thiết bị."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "已停止在所有设备上保留 %@。"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "machine_translated",
-            "value" : "已停止在所有裝置上保留 %@。"
           }
         }
       }

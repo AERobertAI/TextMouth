@@ -26,4 +26,5 @@ The walk and its writers are in [Exports](exports.md).
 - ExportDeepChapterAlert (Platform/macOS) is an NSAlert whose words are BookExportDeepChapterWording's: Export as Written is the default button (Return), Cancel Export has Escape, and each button has a hint.
   It is a sheet on the Export dialog's window (`export(presentingFrom:)`, passed by BookExportSheet) when that is on screen and has no sheet, else a window of its own.
   The export's answer is resumed once, whichever of a button, `dismiss()`, and AppKit's completion comes first.
+- On the iPhone the alert is `PhoneExportQuestion`, shown by the Export sheet (see [The Export sheet](../platforms-phone-interface.md#the-export-sheet)); `ExportDeepChapterWalkerTests` and `ExportDocumentWalkerNestingTests` are shared with the iPhone's unit bundle.
 - Tests: ExportDeepChapterWalkerTests (the lines as written, with content.md as TextMouth writes it) and ExportDeepChapterExportTests (the decision, the question, the alert's buttons and presentation, and each format), none of which shows an alert.

@@ -23,6 +23,9 @@ struct PhoneReaderSheetContent: View {
     /// Pauses the book that plays for the Voice sheet's Preview Voice
     /// (`PhoneSession.pauseBookForPreview`).
     let pauseBookForPreview: PhoneSettingsVoicePreview.PauseBook?
+    /// Begins a hold that keeps the app running while an export does, and
+    /// returns what ends it (`PhoneSession.beginHold`).
+    let beginHold: @MainActor (_ name: String) -> (@MainActor () -> Void)
 
     /// What the sheet leaves to say, and to start, once it has closed.
     @State private var farewell = PhoneSheetFarewell()
@@ -55,6 +58,15 @@ struct PhoneReaderSheetContent: View {
         case .bookInfo:
             // The Library's Book Info sheet, for the reader's book.
             PhoneReaderBookInfo(reader: reader, library: library)
+        case .export:
+            // The Library's Export sheet, for the reader's book as the
+            // library's row holds it now (a rename or an edit keeps it
+            // current; the reader's own copy only when the row is gone).
+            PhoneExportSheet(
+                books: [library.bookByID(reader.book.id) ?? reader.book],
+                library: library,
+                beginHold: beginHold
+            )
         case .navigationUnit:
             // The Navigation unit's list is the reader's slice's, through
             // `PhoneChoiceSheet`; this shows its name, the Mac's, until then.

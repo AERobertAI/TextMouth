@@ -578,9 +578,15 @@ enum BookExportWording {
     // MARK: When an Export Ends
 
     /// How an export names the folder `url`: as Finder shows it, such as
-    /// "Documents".
+    /// "Documents". On the iPhone, the folder's localized name
+    /// (`PhoneExportFolder.name(of:)`): `displayName(atPath:)` may name a
+    /// folder of iCloud Drive as its path spells it.
     static func folderName(of url: URL) -> String {
+        #if os(macOS)
         FileManager.default.displayName(atPath: url.path)
+        #else
+        PhoneExportFolder.name(of: url)
+        #endif
     }
 
     /// What an export says once it ends, `outcome`, into the folder named

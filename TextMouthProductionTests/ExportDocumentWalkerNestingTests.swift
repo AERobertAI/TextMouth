@@ -99,7 +99,7 @@ final class ExportDocumentWalkerNestingTests: XCTestCase {
     /// the limit as the reader holds it: at the limit it walks, past it the
     /// whole text is refused, and the reader refuses the same.
     func testTheRestOfAMarkerLineIsHeldToTheLimitAsTheReaderHoldsIt() throws {
-        let marker = MarkdownWalkCorpusKit.page("1")
+        let marker = MarkdownMarkers.page("1")
         let atTheLimit = marker + DeepMarkdown.quotes(limits.deepestNesting)
         let pastTheLimit = marker + DeepMarkdown.quotes(limits.deepestNesting + 1)
 
@@ -120,7 +120,7 @@ final class ExportDocumentWalkerNestingTests: XCTestCase {
     /// quotes (102 levels to the block) and the lists (two levels each) set.
     func testTheRestOfAMarkerLineIsCountedOnTopOfItsBlocksLevel() {
         func text(lists: Int) -> String {
-            String(repeating: "> ", count: 100) + MarkdownWalkCorpusKit.page("1") + " "
+            String(repeating: "> ", count: 100) + MarkdownMarkers.page("1") + " "
                 + String(repeating: "- ", count: lists) + "words"
         }
         XCTAssertNotNil(refusal(of: text(lists: 100)), "the export walked what the reader refuses")

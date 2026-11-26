@@ -339,6 +339,16 @@ struct PhoneLibraryView: View {
             }
         case .folder(let request):
             folderSheet(request)
+        case .export(let bookID):
+            // A book gone meanwhile has no sheet. What keeps the app running
+            // while an export does is the life cycle's.
+            if let book = library.bookByID(bookID) {
+                PhoneExportSheet(
+                    books: [book],
+                    library: library,
+                    beginHold: { [lifeCycle = model.lifeCycle] name in lifeCycle.beginHold(name) }
+                )
+            }
         }
     }
 
@@ -560,6 +570,8 @@ struct PhoneLibraryView: View {
             rows.rebuild()
         case .moveToFolder:
             open(.folder(.moveBook(bookID)), from: .row(.book(bookID)))
+        case .export:
+            open(.export(bookID), from: .row(.book(bookID)))
         case .moveUp, .moveDown:
             move(book, direction: action == .moveUp ? -1 : 1)
         case .remove:

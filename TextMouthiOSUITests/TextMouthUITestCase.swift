@@ -72,8 +72,9 @@ class TextMouthUITestCase: XCTestCase {
     /// at `path`, a file of this test bundle, when it is not nil: another
     /// book than Alice, such as a braille one (BrailleUITests). `arguments`
     /// are added to the launch's, as `-AppleLanguages (es)` starts the app in
-    /// Spanish (SpanishUITests), and `environment` to its environment, as a Debug
-    /// seam such as TEXTMOUTH_SYNC_FOLDER (SyncSettingsUITests) is named.
+    /// Spanish (SpanishUITests). `environment` is added to the launch's
+    /// environment, as `TEXTMOUTH_EXPORT_TO` names the folder the Export sheet
+    /// exports to (ExportUITests).
     func launch(
         sendingBookAt path: String?,
         textSize: String? = nil,
@@ -83,11 +84,11 @@ class TextMouthUITestCase: XCTestCase {
         continueAfterFailure = false
         let app = XCUIApplication()
         app.launchEnvironment["TEXTMOUTH_UI_TEST"] = "1"
+        app.launchEnvironment.merge(environment) { _, new in new }
         if let textSize {
             app.launchArguments += ["-UIPreferredContentSizeCategoryName", textSize]
         }
         app.launchArguments += arguments
-        for (name, value) in environment { app.launchEnvironment[name] = value }
         if let path {
             app.launchEnvironment["TEXTMOUTH_OPEN_AT_LAUNCH"] = path
         }
@@ -112,10 +113,13 @@ class TextMouthUITestCase: XCTestCase {
         sendingBookAt path: String? = nil,
         textSize: String? = nil,
         arguments: [String] = [],
+        environment: [String: String] = [:],
         playLabel: String = "Play",
         loadingValue: String = "Loading"
     ) throws -> XCUIApplication {
-        let app = try launch(sendingBookAt: path ?? Self.bookPath(), textSize: textSize, arguments: arguments)
+        let app = try launch(
+            sendingBookAt: path ?? Self.bookPath(), textSize: textSize, arguments: arguments, environment: environment
+        )
         let play = app.buttons[playLabel]
         XCTAssertTrue(play.appears(within: Self.patience), "The reader never opened:\n\(app.debugDescription)")
         // Not the test case's own expectation, so nothing is left unwaited.

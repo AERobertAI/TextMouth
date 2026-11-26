@@ -1024,6 +1024,7 @@ targets:
       - TextMouthProductionTests/BardBrailleTests.swift
       - TextMouthProductionTests/BookAuthorPlaceholderTests.swift
       - TextMouthProductionTests/BookContentIndexTests.swift
+      - TextMouthProductionTests/BookExportDeliveryTests.swift
       - TextMouthProductionTests/BookMetadataUpdateTests.swift
       - TextMouthProductionTests/BookSearchModelTests.swift
       - TextMouthProductionTests/BookTextEncodingTests.swift
@@ -1033,6 +1034,7 @@ targets:
       - TextMouthProductionTests/BrailleEbaeFixesTests.swift
       - TextMouthProductionTests/BrailleEmphasisReadingTests.swift
       - TextMouthProductionTests/BrailleEmphasisRoundTripTests.swift
+      - TextMouthProductionTests/BrailleExportWriterTests.swift
       - TextMouthProductionTests/BrailleFileCodeRecordTests.swift
       - TextMouthProductionTests/BrailleFileCodeTests.swift
       - TextMouthProductionTests/BrailleFileReaderTests.swift
@@ -1059,11 +1061,20 @@ targets:
       - TextMouthProductionTests/DataDirectoryCopyTests.swift
       - TextMouthProductionTests/DataDirectoryCreationTests.swift
       - TextMouthProductionTests/DataDirectoryServicesTests.swift
+      - TextMouthProductionTests/DeepMarkdown.swift
       - TextMouthProductionTests/DocumentByteLimitTests.swift
+      - TextMouthProductionTests/EPUBExportRoundTripTests.swift
+      - TextMouthProductionTests/EPUBExportWriterNavigationTests.swift
+      - TextMouthProductionTests/EPUBExportWriterTests.swift
       - TextMouthProductionTests/EPUBLinkAddressTests.swift
+      - TextMouthProductionTests/EPUBRoundTripSupport.swift
       - TextMouthProductionTests/EPUBStructureFailureTests.swift
       - TextMouthProductionTests/EndOfBookRuleTests.swift
       - TextMouthProductionTests/ExportContentsListTests.swift
+      - TextMouthProductionTests/ExportDeepChapterWalkerTests.swift
+      - TextMouthProductionTests/ExportDocumentWalkerNestingTests.swift
+      - TextMouthProductionTests/ExportDocumentWalkerStructureTests.swift
+      - TextMouthProductionTests/ExportDocumentWalkerTests.swift
       - TextMouthProductionTests/ExtractionReportTests.swift
       - TextMouthProductionTests/FFmpegHelperHostileFileTests.swift
       - TextMouthProductionTests/FFmpegHelperProtocolTests.swift
@@ -1080,6 +1091,7 @@ targets:
       - TextMouthProductionTests/FolderPathEquivalenceTests.swift
       - TextMouthProductionTests/FolderSafetyTests.swift
       - TextMouthProductionTests/FormatSampleFixtures.swift
+      - TextMouthProductionTests/HTMLExportWriterTests.swift
       - TextMouthProductionTests/HostedTestIsolationSupport.swift
       - TextMouthProductionTests/IOSInfoPlistTests.swift
       - TextMouthProductionTests/ImportConcurrencyTests.swift
@@ -1131,6 +1143,8 @@ targets:
       - TextMouthProductionTests/MOBIBookStructureTests.swift
       - TextMouthProductionTests/MOBIFixture.swift
       - TextMouthProductionTests/MarkdownEmphasisTests.swift
+      - TextMouthProductionTests/MarkdownExportWriterTests.swift
+      - TextMouthProductionTests/MarkdownMarkerSupport.swift
       - TextMouthProductionTests/MarkdownNestingTests.swift
       - TextMouthProductionTests/MarkdownPageMarkerTests.swift
       - TextMouthProductionTests/MarkupFuzzGenerator.swift
@@ -1155,6 +1169,10 @@ targets:
       - TextMouthProductionTests/PhoneBookmarksModelTests.swift
       - TextMouthProductionTests/PhoneBrailleSettingsTests.swift
       - TextMouthProductionTests/PhoneEscapePolicyTests.swift
+      - TextMouthProductionTests/PhoneExportFolderTests.swift
+      - TextMouthProductionTests/PhoneExportMemoryCheckTests.swift
+      - TextMouthProductionTests/PhoneExportOfferTests.swift
+      - TextMouthProductionTests/PhoneExportQuestionTests.swift
       - TextMouthProductionTests/PhoneFocusRequestsTests.swift
       - TextMouthProductionTests/PhoneFolderVocabularyTests.swift
       - TextMouthProductionTests/PhoneGoToModelTests.swift
@@ -1194,6 +1212,7 @@ targets:
       - TextMouthProductionTests/PlaybackFuzzOperations.swift
       - TextMouthProductionTests/PlaybackFuzzOperationsTests.swift
       - TextMouthProductionTests/PreferenceStoreTests.swift
+      - TextMouthProductionTests/RTFExportWriterTests.swift
       - TextMouthProductionTests/ReadingStatsDayAttributionTests.swift
       - TextMouthProductionTests/ReadingTextCacheTests.swift
       - TextMouthProductionTests/RemovalWordingTests.swift
@@ -1206,6 +1225,7 @@ targets:
       - TextMouthProductionTests/SpeechPreparationBenchmarkSupport.swift
       - TextMouthProductionTests/SpeechPreparationSubstitutionTests.swift
       - TextMouthProductionTests/SpeechRenderCoordinatorTests.swift
+      - TextMouthProductionTests/StackProbe.swift
       - TextMouthProductionTests/StorageDestinationAssessmentTests.swift
       - TextMouthProductionTests/StorageGenerationTestSupport.swift
       - TextMouthProductionTests/StorageGenerationTests.swift
@@ -1253,6 +1273,7 @@ targets:
       - TextMouthProductionTests/ViewsAndWindowsCloudStatesTests.swift
       - TextMouthProductionTests/WordDocumentComparisonTests.swift
       - TextMouthProductionTests/WordDocumentLegacyComparisonTests.swift
+      - TextMouthProductionTests/WordsInOrderSupport.swift
       - TextMouthProductionTests/XMLInputGuardTests.swift
       - TextMouthProductionTests/ZIPTestSupport.swift
       # End of the shared Mac test files.
