@@ -81,12 +81,14 @@ class HostedClass:
         return self.test_count > 0
 
 
-# A top-level declaration starts in column 0, with any modifiers before the
-# keyword: `final class X: Y {`, `private final class X {`, `extension X {`.
-# The name may be dotted (`extension LogWriter.Environment`). The text after
-# the name up to `{` is kept so a class's superclass can be read.
+# A top-level declaration starts in column 0, with any attributes and modifiers
+# before the keyword: `final class X: Y {`, `@MainActor final class X: Y {`,
+# `private final class X {`, `extension X {`. The name may be dotted
+# (`extension LogWriter.Environment`). The text after the name up to `{` is
+# kept so a class's superclass can be read.
 _DECLARATION = re.compile(
-    r"^(?:(?:private|fileprivate|internal|public|open|final)\s+)*"
+    r"^(?:@\w+(?:\([^)]*\))?\s+)*"
+    r"(?:(?:private|fileprivate|internal|public|open|final|nonisolated)\s+)*"
     r"(class|extension|struct|enum|actor|protocol)\s+([A-Za-z_][\w.]*)(.*)$")
 # A test: a method indented exactly one level (4 spaces) with no parameters.
 _TEST_METHOD = re.compile(
@@ -99,9 +101,10 @@ def hosted_test_classes(root: Path, folder_name: str = TESTS_FOLDER) -> Dict[str
     {class name: HostedClass}.
 
     This is a line scanner, not a Swift parser, and it has limits:
-      * a scope opens at a column-0 `class`/`extension` line and closes at the
-        next column-0 declaration or column-0 `}`; test methods must be
-        indented exactly 4 spaces (as everywhere in this repository);
+      * a scope opens at a column-0 `class`/`extension` line (attributes may
+        come first on the line) and closes at the next column-0 declaration
+        or column-0 `}`; test methods must be indented exactly 4 spaces (as
+        everywhere in this repository);
       * a test is `func test...()` with no parameters, as XCTest requires;
         a method hidden in a `#if` is counted as if it were compiled;
       * the superclass is the first word after the colon on the declaration
@@ -120,9 +123,13 @@ def hosted_test_classes(root: Path, folder_name: str = TESTS_FOLDER) -> Dict[str
             if text.startswith("}"):
                 current = None
                 continue
-            # Blank, indented, comment, attribute and compiler-directive lines
-            # never start or end a scope; any other column-0 line does.
-            if text[:1] not in ("", " ", "\t", "/", "@", "#"):
+            # Blank, indented, comment and compiler-directive lines never start
+            # or end a scope. An attribute line starts one when its declaration
+            # follows on the line (`@MainActor final class X: Y {`: run-area.py
+            # once refused such a class, and train 1125-2059 ran no Mac test);
+            # an attribute alone on its line leaves the scope as it is. Any
+            # other column-0 line starts or ends one.
+            if text[:1] not in ("", " ", "\t", "/", "#"):
                 match = _DECLARATION.match(text)
                 if match:
                     kind, name, rest = match.groups()
@@ -132,7 +139,7 @@ def hosted_test_classes(root: Path, folder_name: str = TESTS_FOLDER) -> Dict[str
                     if kind == "class" and name not in declared:
                         superclass = re.match(r"\s*:\s*([A-Za-z_][\w.]*)", rest)
                         declared[name] = (relative, number, superclass.group(1) if superclass else None)
-                else:
+                elif not text.startswith("@"):
                     current = None
                 continue
             if current and _TEST_METHOD.match(text):
