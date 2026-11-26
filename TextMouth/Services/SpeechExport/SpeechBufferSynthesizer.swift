@@ -123,8 +123,20 @@ struct SystemSpeechBufferSynthesizer: SpeechBufferSynthesizing {
     /// the protocol's contract.
     private static let waitSlice: TimeInterval = 0.25
 
+    /// The clock the stall limits are timed by: the Mac's uptime, and the iPhone's running time, which does not count
+    /// a suspension (`RunningClock.app`).
+    static var defaultClock: RunningClock {
+        #if os(macOS)
+        .system
+        #else
+        .app
+        #endif
+    }
+
     /// How long a write waits for a buffer.
     let stallLimits: StallLimits
+    /// What the limits are timed by.
+    let clock: RunningClock
     /// Makes the synthesizer one write uses: a fresh one each time.
     let makeWriter: @Sendable () -> any SpeechBufferWriting
     /// The installed voice with an identifier, or nil when none has it.
@@ -136,11 +148,13 @@ struct SystemSpeechBufferSynthesizer: SpeechBufferSynthesizing {
     /// its own parts.
     init(
         stallLimits: StallLimits = .standard,
+        clock: RunningClock = SystemSpeechBufferSynthesizer.defaultClock,
         makeWriter: @escaping @Sendable () -> any SpeechBufferWriting = { AVSpeechBufferWriter() },
         findVoice: @escaping @Sendable (String) -> AVSpeechSynthesisVoice? = { AVSpeechSynthesisVoice(identifier: $0) },
         isPersonalVoice: @escaping @Sendable (AVSpeechSynthesisVoice) -> Bool = { $0.voiceTraits.contains(.isPersonalVoice) }
     ) {
         self.stallLimits = stallLimits
+        self.clock = clock
         self.makeWriter = makeWriter
         self.findVoice = findVoice
         self.isPersonalVoice = isPersonalVoice
@@ -161,8 +175,11 @@ struct SystemSpeechBufferSynthesizer: SpeechBufferSynthesizing {
         // delivering its last buffer, often before any: the cancel wakes the
         // wait then, and is remembered.
         let refused = OSAllocatedUnfairLock(initialState: false)
-        let delivery = SpeechBufferDelivery(onBuffer: onBuffer, waking: wake)
+        // The clock's heartbeat runs for the write, so that running time is counted whole and only a suspension is not.
+        clock.hold()
+        let delivery = SpeechBufferDelivery(onBuffer: onBuffer, waking: wake, clock: clock)
         defer {
+            clock.release()
             // However the write ends, `onBuffer` is never called again, even
             // if the synthesizer calls back after being stopped. The writer is
             // held until here, and lets go of the synthesizer then.
@@ -330,17 +347,26 @@ final class SpeechBufferDelivery {
     private var hasEnded = false
     /// What `onBuffer` threw, which ended the write.
     private var keptFailure: (any Error)?
-    /// When the latest buffer was handed on; until the first, when the
-    /// write began.
-    private var lastProgress = DispatchTime.now()
+    /// What the stall limits are timed by: the Mac's own uptime, or, on the iPhone, the time the app has run, which
+    /// leaves out the time iOS held it suspended (`RunningClock`). A system clock keeps counting through a
+    /// suspension, and a chapter would be ended as stalled after a minute away.
+    private let clock: RunningClock
+    /// When the latest buffer was handed on, by `clock`; until the first, when the write began.
+    private var lastProgress: TimeInterval
     /// Whether a buffer has been handed on, after which the limit between
     /// buffers applies rather than the first buffer's.
     private var hasHandedOn = false
 
-    /// A delivery to `onBuffer` that signals `wake` at its end.
-    init(onBuffer: @escaping (AVAudioPCMBuffer) throws -> Void, waking wake: DispatchSemaphore) {
+    /// A delivery to `onBuffer` that signals `wake` at its end, timing its stall limits by `clock`.
+    init(
+        onBuffer: @escaping (AVAudioPCMBuffer) throws -> Void,
+        waking wake: DispatchSemaphore,
+        clock: RunningClock = SystemSpeechBufferSynthesizer.defaultClock
+    ) {
         self.onBuffer = onBuffer
         self.wake = wake
+        self.clock = clock
+        lastProgress = clock.now()
     }
 
     /// What `onBuffer` threw, which ended the write; nil while it has thrown
@@ -364,7 +390,7 @@ final class SpeechBufferDelivery {
             }
             do {
                 try onBuffer(pcm)
-                lastProgress = .now()
+                lastProgress = clock.now()
                 hasHandedOn = true
             } catch {
                 keptFailure = error
@@ -388,7 +414,7 @@ final class SpeechBufferDelivery {
     func endIfStalled(firstBufferLimit: TimeInterval, betweenBuffersLimit: TimeInterval) -> Bool {
         lock.withLock {
             let limit = hasHandedOn ? betweenBuffersLimit : firstBufferLimit
-            guard !hasEnded, DispatchTime.now() >= lastProgress + limit else { return false }
+            guard !hasEnded, clock.now() >= lastProgress + limit else { return false }
             hasEnded = true
             return true
         }
