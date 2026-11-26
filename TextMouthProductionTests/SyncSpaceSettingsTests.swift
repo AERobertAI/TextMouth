@@ -184,6 +184,19 @@ final class SyncSpaceSettingsTests: XCTestCase {
         XCTAssertEqual(SyncSpaceSettings(store: store, isPhone: false).settings.books, .allBooks, "and read again at the next launch")
     }
 
+    /// A step VoiceOver takes by adjusting the days is said once, by VoiceOver reading the new value: the model keeps the
+    /// step and says nothing of its own; the control's own arrows still have the new state said.
+    func testAStepVoiceOverAdjustsIsSaidOnce() {
+        var said: [String] = []
+        let model = SyncSpaceSettings(store: makeSandboxedPreferences("sync-space-step"), isPhone: true, now: { self.start }, announce: { said.append($0) })
+        model.setRemoveAfterDays(SyncSpaceControls.step(7, by: 1), announcing: false)
+        XCTAssertEqual(model.settings.removeAfterDays, 8)
+        XCTAssertEqual(said, [], "VoiceOver reads the value; nothing is announced over it")
+        XCTAssertEqual(SyncSpaceControls.value(of: model.settings.removeAfterDays), "8 days")
+        model.setRemoveAfterDays(9)
+        XCTAssertEqual(said, ["Removing downloads of books unopened for 9 days."])
+    }
+
     /// Turning the removal on starts its days from the change, and the first look at a device whose removal is on
     /// by default says nothing, since nothing was chosen.
     func testTheModelCountsTheDaysFromTheChange() {

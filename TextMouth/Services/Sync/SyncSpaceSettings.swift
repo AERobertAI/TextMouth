@@ -54,11 +54,13 @@ final class SyncSpaceSettings: ObservableObject {
     }
 
     /// Sets the days a book may stay unopened (1 to 30), or Off for nil, and says the new value.
-    func setRemoveAfterDays(_ days: Int?) {
+    /// - Parameter announcing: False for a step VoiceOver took by adjusting the control, after which VoiceOver reads
+    ///   the control's new value itself, so each step is said once, as the app's other steppers say theirs.
+    func setRemoveAfterDays(_ days: Int?, announcing: Bool = true) {
         let clamped = SyncDeviceSettings.clampedDays(days)
         guard clamped != settings.removeAfterDays else { return }
         save(settings.changing(removeAfterDays: .some(clamped), at: now()))
-        announce(SyncWording.announceRemoveAfter(clamped))
+        if announcing { announce(SyncWording.announceRemoveAfter(clamped)) }
     }
 
     /// Notes the first time removal applies on this device without a person having chosen it (the iPhone's

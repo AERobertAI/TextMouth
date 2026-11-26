@@ -34,7 +34,8 @@ struct SyncSpaceControls: View {
                 }
             }
             // One adjustable element, as the app's other steppers are (`SteppedAdjustment`): VoiceOver reads its
-            // label, value, and hint once, and each step it adjusts says the new value once.
+            // label, value, and hint once, and each step it adjusts says the new value once, by reading the value
+            // itself; the model says nothing more for such a step.
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(SyncWording.removeAfterLabel)
             .accessibilityValue(Self.value(of: settings.settings.removeAfterDays))
@@ -42,8 +43,8 @@ struct SyncSpaceControls: View {
             .accessibilityAdjustableAction { direction in
                 let days = settings.settings.removeAfterDays ?? 0
                 switch direction {
-                case .increment: settings.setRemoveAfterDays(Self.step(days, by: 1))
-                case .decrement: settings.setRemoveAfterDays(Self.step(days, by: -1))
+                case .increment: settings.setRemoveAfterDays(Self.step(days, by: 1), announcing: false)
+                case .decrement: settings.setRemoveAfterDays(Self.step(days, by: -1), announcing: false)
                 @unknown default: break
                 }
             }
