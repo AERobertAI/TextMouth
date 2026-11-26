@@ -7,14 +7,14 @@ priority: P2
 platform: both
 assignee:
 created: 2026-11-24
-updated: 2026-11-24
+updated: 2026-11-26
 found-by: the user
 branch:
 merged:
 reason:
 related: B26, DR35
 docs:
-labels:
+labels: release-0-7-0
 ---
 
 ## Description
