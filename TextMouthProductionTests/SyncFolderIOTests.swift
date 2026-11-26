@@ -74,6 +74,29 @@ final class SyncFolderIOTests: XCTestCase {
         )
     }
 
+    /// A file that is `.downloading` before the wait begins (iCloud Drive started it on its own) is waited for by the progress
+    /// rule: one that moves slowly finishes, and one that does not move times out.
+    func testAFileAlreadyDownloadingIsWaitedForByItsProgress() async throws {
+        let file = URL(fileURLWithPath: "/Users/reader/Scratch/started.bin")
+        let time = VirtualTime()
+        let looks = OSAllocatedUnfairLock(initialState: 0)
+        try await SyncFolderIO.waitUntilHere(
+            file, within: .milliseconds(300), items: UbiquitousItemStatusProvider(), reachability: .online, pollInterval: .milliseconds(30),
+            state: { _ in looks.withLock { $0 += 1; return $0 < 40 ? .downloading : .downloaded } },
+            progress: { _ in Int64(looks.withLock { $0 }) },
+            now: { time.now }, sleep: { time.advance($0) }
+        )
+        XCTAssertGreaterThanOrEqual(looks.withLock { $0 }, 40, "it waited past the 300 ms limit, as the bytes kept arriving")
+
+        do {
+            try await SyncFolderIO.waitUntilHere(
+                file, within: .milliseconds(300), items: UbiquitousItemStatusProvider(), reachability: .online, pollInterval: .milliseconds(30),
+                state: { _ in .downloading }, progress: { _ in 5 }, now: { time.now }, sleep: { time.advance($0) }
+            )
+            XCTFail("a download that never moves must time out")
+        } catch { XCTAssertEqual(error as? SyncProblem, .notDownloaded(device: "Scratch")) }
+    }
+
     /// The network going while a download waits is said at once, not at the limit.
     func testGoingOfflineInsideTheWaitIsReportedAtOnce() async throws {
         let file = URL(fileURLWithPath: "/Users/reader/Scratch/stuck.bin")

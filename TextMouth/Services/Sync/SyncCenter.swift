@@ -123,6 +123,8 @@ struct SyncCenterEnvironment {
     private var runTask: Task<Void, Never>?
     /// The launch's check of R6 and of this store's files, which happens off the main actor.
     private var installTask: Task<Void, Never>?
+    /// Callers of `waitUntilIdle` asleep until a run ends.
+    private var idleWaiters: [CheckedContinuation<Void, Never>] = []
     private var wakeTask: Task<Void, Never>?
     private var backupTask: Task<Void, Never>?
     /// Which backup task is current, so a stale one that ends late never clears a newer task.
@@ -497,12 +499,20 @@ struct SyncCenterEnvironment {
             if let task = runTask {
                 await task.value
                 if runTask == task { runTask = nil }
-            } else if isRunning, pendingReason != nil || backupTask != nil {
-                await Task.yield()
+            } else if isRunning {
+                // A run is going and is not the one in `runTask`: sleep until it ends, never spin.
+                await withCheckedContinuation { idleWaiters.append($0) }
             } else {
                 return
             }
         }
+    }
+
+    /// Wakes whoever sleeps in `waitUntilIdle` for a run to end.
+    private func resumeIdleWaiters() {
+        let waiting = idleWaiters
+        idleWaiters = []
+        for waiter in waiting { waiter.resume() }
     }
 
     /// Keeps the renewed bookmark when the system found the folder's bookmark stale (the folder was moved
@@ -629,6 +639,7 @@ struct SyncCenterEnvironment {
                 pendingReason = nil
                 requestRun(next)
             }
+            resumeIdleWaiters()
         }
 
         await recorder?.flush()

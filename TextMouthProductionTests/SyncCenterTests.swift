@@ -526,6 +526,54 @@ final class SyncCenterTests: XCTestCase {
         XCTAssertEqual(world.center.deviceName(forKey: .book(book, .keep)), "Phone Name")
     }
 
+    /// `waitUntilIdle` sleeps until a run ends, for as many callers as there are, and returns at once when nothing runs.
+    func testWaitUntilIdleSleepsUntilTheRunEnds() async throws {
+        let world = try makeWorld()
+        world.center.install(host: world.host, dataDirectory: world.dataDirectory)
+        try await world.center.setUp(in: world.parent)
+        await world.center.waitUntilIdle()
+        await world.center.waitUntilIdle()   // nothing runs: it returns at once
+
+        // A run held in its apply, until the test lets it go. The held run says when it is there, through the gate it waits
+        // on: the test waits for that signal (with a fixed timeout), and counts nothing.
+        var release: CheckedContinuation<Void, Never>?
+        let reached = AsyncStream<Void>.makeStream()
+        world.host.pauseApply = {
+            await withCheckedContinuation { gate in
+                release = gate
+                reached.continuation.yield()
+            }
+        }
+        world.center.applyAtNextSync()
+        world.center.moment(.active)
+        let signalled = await withTaskGroup(of: Bool.self) { group in
+            group.addTask {
+                for await _ in reached.stream { return true }
+                return false
+            }
+            group.addTask {
+                try? await Task.sleep(for: .seconds(60))
+                return false
+            }
+            let first = await group.next() ?? false
+            group.cancelAll()
+            return first
+        }
+        XCTAssertTrue(signalled, "the run never reached its apply")
+        let held = try XCTUnwrap(release, "the held run's gate")
+
+        var finished = 0
+        let first = Task { @MainActor in await world.center.waitUntilIdle(); finished += 1 }
+        let second = Task { @MainActor in await world.center.waitUntilIdle(); finished += 1 }
+        for _ in 0..<50 { await Task.yield() }
+        XCTAssertEqual(finished, 0, "both wait while the run is held")
+        world.host.pauseApply = nil
+        held.resume()
+        await first.value
+        await second.value
+        XCTAssertEqual(finished, 2)
+    }
+
     /// The host's voices are asked for when a merge is applied.
     func testTheHostsVoicesAreAskedFor() async throws {
         let world = try makeWorld()
