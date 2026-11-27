@@ -189,6 +189,39 @@ final class PhonePassagePolicyTests: XCTestCase {
         XCTAssertNil(place([], chapter: 0, offset: 0))
     }
 
+    // MARK: - The Sentence Being Spoken (FR48)
+
+    /// The highlight follows the speech while VoiceOver's focus is elsewhere,
+    /// holds still under it unless Follow in Braille is on, and waits five
+    /// seconds after the person's own scroll.
+    func testTheHighlightFollowsOnlyAwayFromFocusAndAfterAScrollSettles() {
+        XCTAssertTrue(PhonePassagePolicy.highlightFollows(hasFocus: false, followsInBraille: false, secondsSinceScroll: nil))
+        XCTAssertFalse(PhonePassagePolicy.highlightFollows(hasFocus: true, followsInBraille: false, secondsSinceScroll: nil))
+        XCTAssertTrue(PhonePassagePolicy.highlightFollows(hasFocus: true, followsInBraille: true, secondsSinceScroll: nil))
+        XCTAssertFalse(PhonePassagePolicy.highlightFollows(hasFocus: false, followsInBraille: false, secondsSinceScroll: 4.9))
+        XCTAssertTrue(PhonePassagePolicy.highlightFollows(hasFocus: false, followsInBraille: false, secondsSinceScroll: 5))
+        XCTAssertFalse(PhonePassagePolicy.highlightFollows(hasFocus: true, followsInBraille: false, secondsSinceScroll: 60))
+    }
+
+    /// The highlighted sentence is the one holding the place, from its start
+    /// to the next sentence's, as a range in the passage.
+    func testTheSpokenSentenceIsTheOneHoldingThePlace() {
+        let passage = "One two. Three four! Five?"
+        // The passage starts 100 characters into its chapter.
+        XCTAssertEqual(PhonePassagePolicy.spokenSentence(inPassage: passage, passageStart: 100, place: 100), 0..<9)
+        XCTAssertEqual(PhonePassagePolicy.spokenSentence(inPassage: passage, passageStart: 100, place: 104), 0..<9)
+        XCTAssertEqual(PhonePassagePolicy.spokenSentence(inPassage: passage, passageStart: 100, place: 109), 9..<21)
+        XCTAssertEqual(PhonePassagePolicy.spokenSentence(inPassage: passage, passageStart: 100, place: 115), 9..<21)
+        XCTAssertEqual(PhonePassagePolicy.spokenSentence(inPassage: passage, passageStart: 100, place: 121), 21..<26)
+    }
+
+    /// A place before the passage or past its end lights nothing.
+    func testAPlaceOutsideThePassageLightsNothing() {
+        XCTAssertNil(PhonePassagePolicy.spokenSentence(inPassage: "One. Two.", passageStart: 10, place: 9))
+        XCTAssertNil(PhonePassagePolicy.spokenSentence(inPassage: "One. Two.", passageStart: 10, place: 19))
+        XCTAssertNil(PhonePassagePolicy.spokenSentence(inPassage: "", passageStart: 0, place: 0))
+    }
+
     // MARK: - Read All's page turns
 
     /// Paused, a turn moves the place as well as the text, so stopping Read All

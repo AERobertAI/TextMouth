@@ -54,6 +54,19 @@ final class ReaderUITests: TextMouthUITestCase {
         XCTAssertLessThanOrEqual(text.count, 20_000, "More than the passage's limit")
     }
 
+    /// Book content is one element, one swipe for VoiceOver (FR48): nothing
+    /// labeled stands between it and Play, as a paragraph of its own would,
+    /// and it is the screen's main area, taller than Play.
+    func testBookContentIsOneElementAndTheMainArea() throws {
+        let app = try launchIntoTheReader()
+        let elements = try elementsInOrder(of: app)
+        let index = try XCTUnwrap(elements.firstIndex { $0.label == "Book content" }, "No Book content")
+        XCTAssertTrue(elements.indices.contains(index + 1), "Nothing after Book content")
+        XCTAssertEqual(elements[index + 1].label, "Play", "The element after Book content: \(Self.describe(elements))")
+        let play = try XCTUnwrap(elements.first { $0.label == "Play" })
+        XCTAssertGreaterThan(elements[index].frame.height, play.frame.height, "Book content is smaller than Play")
+    }
+
     /// Each control is big enough to find by touch: at least 44 points tall,
     /// Apple's smallest, as `PhoneControlButton.minimumHeight` holds them.
     func testEveryControlIsBigEnoughToTouch() throws {

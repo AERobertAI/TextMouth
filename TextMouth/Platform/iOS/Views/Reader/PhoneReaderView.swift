@@ -31,8 +31,9 @@ struct PhoneReaderView: View {
 
     /// At accessibility text sizes the grid becomes one column.
     @Environment(\.dynamicTypeSize) private var typeSize
-    /// Book content's height: about six lines of body text at any size.
-    @ScaledMetric(relativeTo: .body) private var textHeight: CGFloat = 150
+    /// Book content's height: about twelve lines of body text at any size,
+    /// the reader's main area, as Voice Dream Reader's text is (FR48).
+    @ScaledMetric(relativeTo: .body) private var textHeight: CGFloat = 300
     /// Play's height, the same in every book.
     @ScaledMetric(relativeTo: .title2) private var playHeight: CGFloat = 88
 
