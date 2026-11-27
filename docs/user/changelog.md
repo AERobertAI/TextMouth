@@ -17,7 +17,16 @@ Every version of TextMouth, newest first, and what changed for you in each.
 - Removing the downloads of books you haven't opened for some days, and freeing a book's space while it stays in iCloud Drive, come in a later version; "Syncing your library between your devices" lists what isn't synced yet.
 
 ### Export on the iPhone
-- Export… in a book's actions and Export this book in the reader write the book into a folder you choose once, in every format but spoken audio and Word 97-2003, braille's BRF and PEF included.
+- Export… in a book's actions and Export this book in the reader write the book into a folder you choose once, in every format but Word 97-2003, braille's BRF and PEF included.
+- Spoken audio, as on the Mac, goes on with the screen locked and the sheet closed: the Live Activity shows its progress, and a card at the top of the Library has Stop. When iOS ends an export, the card says so, and the chapters already spoken are kept for a week.
+- Export 12 Books… on a folder's row exports each book into a folder of its own, and Share… sends the files just exported to another app or person.
+
+### Password-protected books
+- TextMouth opens books with a password: ZIP archives, PDFs, and Word (.docx) documents. It asks for the password when you open the book, and Import Locked adds one without it.
+- While a protected book is open its text stays in memory; nothing of it is written to disk or copied to iCloud Drive, and the library's row says Locked.
+- Remember this password keeps it in this device's Keychain, so the book opens without asking next time.
+- Remove Password, in the password panel, saves the book without its password, replacing its file.
+- A password ZIP that TextMouth can't open yet is refused with words saying a password is why, never added empty.
 
 ## 0.5.12 (November 25, 2026)
 
