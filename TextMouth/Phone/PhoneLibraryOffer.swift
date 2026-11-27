@@ -132,3 +132,33 @@ enum PhoneLibraryOffer {
         return commands
     }
 }
+
+// MARK: - The Library's One Alert
+
+/// What the Library's alert shows (the iPhone): the question before a book is removed, or why Remove Download left a
+/// book's download (FR46), as the Mac's alert says it. One alert modifier serves both, so the Library, the screen every
+/// other screen is pushed over and which stays under the reader and its sheets, holds no more presentations than it
+/// did before sync's commands came: a second alert there was the sync branch's one change to the screens under the
+/// reader's Export sheet, whose kind switches lost their taps beside it.
+enum PhoneLibraryAlert: Equatable {
+    /// Asks whether to remove `book` from the library.
+    case removal(Book)
+    /// Says why Remove Download left a book's download, in the words the command gave.
+    case removeDownloadRefused(LibraryCloudRefusal)
+
+    /// The alert's title.
+    var title: String {
+        switch self {
+        case .removal(let book): return PhoneRowWording.removalTitle(for: book)
+        case .removeDownloadRefused(let refusal): return refusal.title
+        }
+    }
+
+    /// The alert's message.
+    var message: String {
+        switch self {
+        case .removal: return PhoneRowWording.removalMessage
+        case .removeDownloadRefused(let refusal): return refusal.message
+        }
+    }
+}
