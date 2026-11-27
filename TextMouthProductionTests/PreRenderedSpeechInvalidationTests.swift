@@ -1111,13 +1111,61 @@ final class PreRenderedSpeechInvalidationTests: XCTestCase {
     // direct speech in the new voice, from the word the engine had reached.
 
     /// Speaks `spokenText` and moves it onto silent rendered audio of the
-    /// current voice, as a Play does on the iPhone, so the engine holds the
-    /// speech. Returns whether the engine took it.
-    private func moveOntoRenderedAudio(_ speech: SpeechService) -> Bool {
+    /// current voice at `offset`, as a Play does on the iPhone, so the engine
+    /// holds the speech. The text's offsets are spread evenly over the
+    /// audio's five seconds, as a render's map spreads them, so the engine
+    /// reports `offset` until a few milliseconds of it have played. Returns
+    /// whether the engine took the speech.
+    private func moveOntoRenderedAudio(_ speech: SpeechService, at offset: Int = 6) -> Bool {
         speech.speak(Self.spokenText)
-        speech.audioEngine._installRenderedAudioForTesting(signature: Self.signature(of: speech), lasting: 5)
-        speech.seek(toCharOffset: 6)
+        let engine = speech.audioEngine
+        engine._installRenderedAudioForTesting(signature: Self.signature(of: speech), lasting: 5)
+        let speechFrames: AVAudioFrameCount = 5 * 22_050
+        engine._configureFrameMapForTesting(
+            [(charOffset: 0, frame: 0), (charOffset: Self.spokenText.utf16.count, frame: AVAudioFramePosition(speechFrames))],
+            totalFrames: speechFrames
+        )
+        speech.seek(toCharOffset: offset)
         return !speech.usingDirectMode
+    }
+
+    /// Where "circled" begins in `spokenText`, and a place inside it.
+    private static let circledStart = 6
+    private static let insideCircled = 9
+
+    /// A voice chosen while rendered audio plays at a place inside a word
+    /// speaks that word whole in the new voice: direct speech starts at the
+    /// word's start, never at its second half ("cled").
+    func testChoosingAVoiceInsideAWordWhilePlayingSpeaksTheWordWhole() throws {
+        try withSpeechService { speech in
+            let onEngine = moveOntoRenderedAudio(speech, at: Self.insideCircled)
+            speech.currentVoice = try anotherVoice(than: speech.currentVoice)
+            speech.settleVoiceChange()
+
+            let continuedDirectly = speech.usingDirectMode
+            let place = speech.currentCharOffset()
+            speech.stop()
+
+            XCTAssertTrue(onEngine)
+            XCTAssertTrue(continuedDirectly)
+            XCTAssertEqual(place, Self.circledStart)
+        }
+    }
+
+    /// The same while paused: Play speaks the word whole, from its start.
+    func testChoosingAVoiceInsideAWordWhilePausedResumesAtTheWordsStart() throws {
+        try withSpeechService { speech in
+            let onEngine = moveOntoRenderedAudio(speech, at: Self.insideCircled)
+            speech.pause()
+            speech.currentVoice = try anotherVoice(than: speech.currentVoice)
+            speech.settleVoiceChange()
+
+            let place = speech.currentCharOffset()
+            speech.stop()
+
+            XCTAssertTrue(onEngine)
+            XCTAssertEqual(place, Self.circledStart)
+        }
     }
 
     /// A voice chosen while rendered audio plays carries speech on directly,

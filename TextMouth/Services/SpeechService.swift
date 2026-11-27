@@ -2329,12 +2329,16 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// its own audio"). On the iPhone a Play starts on rendered audio, so
     /// this was the way speech was usually heard there.
     ///
-    /// Moving to direct speech is the direction that is safe at any time
-    /// (the engine's position is known to the word, unlike a direct
-    /// utterance's), never the reverse (`feedback_playback_architecture`):
+    /// Moving to direct speech is the direction allowed while speech is
+    /// heard, never the reverse (`feedback_playback_architecture`):
     ///   - paused: nothing is heard, so the place is kept and Play restarts
     ///     directly from it, in the new voice (`pendingDirectSeekOffset`);
     ///   - playing: direct speech starts at the word the engine had reached.
+    ///
+    /// The engine's offset is an estimate that spreads the audio evenly over
+    /// the text (`AudioEngineService.frameMap`), so it can fall inside a
+    /// word: the place is taken back to that word's start, and the new voice
+    /// says the word whole, never its second half.
     ///
     /// It does nothing when speech is direct already (the next chunk takes
     /// the voice), when the audio is of the new voice, or while a sleep
@@ -2350,7 +2354,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
               !renderedAudioMatchesSpeech,
               engine.intendedVolume >= 1 else { return }
 
-        let offset = max(0, min(engine.currentCharOffset(), currentText.utf16Length))
+        let offset = ReaderViewModel.snappedWordStart(in: currentText, at: engine.currentCharOffset())
         transitionLog(.event, "VOICE_CHANGED_ON_ENGINE: leaving audio rendered in another voice at offset=\(offset) paused=\(isPaused)")
         // Drop in-flight position reports of the audio being left, then the
         // audio itself, so no seek or resume can find it again.
