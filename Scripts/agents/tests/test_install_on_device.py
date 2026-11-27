@@ -223,6 +223,16 @@ class DeviceTests(unittest.TestCase):
             with self.subTest(selector=selector):
                 self.assertEqual(tool.choose_device(selector, usable, others).name, name)
 
+    def test_a_straight_or_curly_apostrophe_matches_either(self):
+        curly = tool.Device("1", "u1", "Reader\u2019s Phone")
+        straight = tool.Device("2", "u2", "Other's Phone")
+        for selector, expected in (("Reader's Phone", curly), ("Reader\u2019s Phone", curly),
+                                   ("READER\u2019S phone", curly), ("Other\u2019s Phone", straight),
+                                   ("other's phone", straight)):
+            with self.subTest(selector=selector):
+                self.assertEqual(tool.match_device(selector, [curly, straight]), [expected])
+        self.assertEqual(tool.match_device("Readers Phone", [curly, straight]), [])
+
     def test_a_selector_that_names_nothing_lists_the_ready_ones(self):
         usable, others = tool.devices_in_listing(listing(device_entry()))
         with self.assertRaises(tool.MissingStep) as caught:

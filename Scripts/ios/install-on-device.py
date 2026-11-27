@@ -223,11 +223,18 @@ def devices_in_listing(listing):
     return usable, others
 
 
+def comparable(text):
+    """`text` as match_device compares it: with the curly apostrophe (U+2019, which iOS puts in a phone's name) made
+    straight, and without regard to case."""
+    return text.replace("\u2019", "'").casefold()
+
+
 def match_device(selector, usable):
-    """The devices of `usable` that `selector` names: by name (any case), identifier, or UDID."""
-    wanted = selector.casefold()
+    """The devices of `usable` that `selector` names: by name, identifier, or UDID, in any case, and with a curly or a
+    straight apostrophe alike."""
+    wanted = comparable(selector)
     return [device for device in usable
-            if wanted in (device.name.casefold(), device.identifier.casefold(), device.udid.casefold())]
+            if wanted in (comparable(device.name), comparable(device.identifier), comparable(device.udid))]
 
 
 def ready_names(devices):
