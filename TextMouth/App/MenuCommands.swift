@@ -652,6 +652,11 @@ struct LibraryCommands: Commands {
                 Button(SyncWording.stopKeepingTitle) {
                     NotificationCenter.default.post(name: .stopKeepingOnAllDevices, object: nil)
                 }
+
+                // Frees the selected books' space on this device while they stay in iCloud Drive (FR46).
+                Button(LibraryCloudWording.removeDownloadTitle(count: 1, forSelection: false)) {
+                    NotificationCenter.default.post(name: .removeDownload, object: nil)
+                }
             }
 
             Divider()
@@ -1108,6 +1113,9 @@ extension Notification.Name {
     /// Posted by Library > Stop Keeping on All Devices: the key Library
     /// window stops keeping its selected books on all devices (FR43).
     static let stopKeepingOnAllDevices = Notification.Name("stopKeepingOnAllDevices")
+    /// Posted by Library > Remove Download, with sync on: the key Library
+    /// window removes its selected books' downloads from this Mac (FR46).
+    static let removeDownload = Notification.Name("removeDownload")
     static let showHeadingList = Notification.Name("showHeadingList")
     static let showBookmarkList = Notification.Name("showBookmarkList")
     static let showSleepTimer = Notification.Name("showSleepTimer")

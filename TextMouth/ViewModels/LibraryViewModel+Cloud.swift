@@ -420,7 +420,8 @@ struct LibraryCloudCommand: Identifiable, Equatable {
 
     /// The cloud commands for `targets`, in menu order:
     /// - Download Now for the books not downloaded, and Remove Download for
-    ///   the downloaded ones, both only in a cloud library;
+    ///   the downloaded ones, in a cloud library, and in a synced library for
+    ///   a book whole on this device (`BookCloudStates.canRemoveDownload(_:)`);
     /// - Keep on This Mac for the books this Mac doesn't keep, and Stop
     ///   Keeping on This Mac for the ones it does, both only in a cloud
     ///   library, whatever each book's state, so a book waiting for sync can
@@ -451,13 +452,13 @@ struct LibraryCloudCommand: Identifiable, Equatable {
         keptOnAllDevices: Set<UUID> = []
     ) -> [LibraryCloudCommand] {
         let listed = targets.map { (book: $0, state: states.listedState(of: $0.id)) }
-        // Keep on This Mac and Remove Download are for a library in a cloud
-        // folder; a synced library has Keep on All Devices instead.
+        // Keep on This Mac is for a library in a cloud folder; a synced
+        // library has Keep on All Devices instead, and Remove Download too.
         let inCloudLibrary = states.isCloudLibrary ? targets : []
         let synced = states.syncIsOn ? targets : []
         let offered: [(kind: Kind, books: [Book])] = [
             (.download, listed.filter { $0.state?.canDownload == true }.map(\.book)),
-            (.removeDownload, states.isCloudLibrary ? listed.filter { $0.state?.canRemoveDownload == true }.map(\.book) : []),
+            (.removeDownload, targets.filter { states.canRemoveDownload($0) }),
             (.keepOnThisMac, inCloudLibrary.filter { !kept.contains($0.id) }),
             (.stopKeepingOnThisMac, inCloudLibrary.filter { kept.contains($0.id) }),
             (.keepOnAllDevices, synced.filter { !keptOnAllDevices.contains($0.id) }),
@@ -517,8 +518,18 @@ final class LibraryCloudCommands {
     /// The books whose downloads the list is removing now, by ID.
     private(set) var booksBeingRemoved: Set<UUID> = []
     /// When each kept book whose last download failed may be downloaded
-    /// again by a refresh, by ID.
+    /// again by a refresh, by ID. Books `All books` downloads wait the same way.
     private var keptBookRetryTimes: [UUID: Date] = [:]
+    /// When each book the removal of unopened downloads had to leave for a reason that costs a look at its files
+    /// may be tried again, by ID (FR45).
+    private var unopenedRetryTimes: [UUID: Date] = [:]
+    /// The books the removal of unopened downloads has left on the device for want of a proven copy, until they go
+    /// or are protected: the count the status line shows stays steady while a book waits out its day.
+    private var unopenedHeld: Set<UUID> = []
+    /// The books whose refusal the log has already told, so a book that waits is told once, not at each sync.
+    private var unopenedLogged: Set<UUID> = []
+    /// Whether a sweep of unopened downloads is under way: sweeps run one at a time.
+    private var isSweepingUnopened = false
 
     /// The store the commands record into.
     private let states: BookCloudStates
@@ -542,6 +553,21 @@ final class LibraryCloudCommands {
     /// The bytes the quiet downloads leave free on the volume
     /// (`ArchiveLimits.standard.freeSpaceReserve`, as an import leaves).
     private let freeSpaceReserve: Int64
+    /// Which books this device keeps downloaded now (FR45): the setting's, unless a test supplies its own.
+    private let booksChoice: @MainActor () -> BooksOnThisDevice
+    /// Told how many books `All books` could not download for want of room, after each plan (FR45): the sync's
+    /// status line says it.
+    private let roomNotice: @MainActor (Int) -> Void
+    /// When the files of the book at a package last arrived on this device (`SyncPlaceholder.arrivedAt`), read off
+    /// the main thread; a test supplies its own.
+    private let packageArrival: @Sendable (URL) -> Date?
+    /// Whether the network path costs (cellular, a hotspot, Low Data Mode), asked before each download and each
+    /// proof that would download; `SyncActivity.pathIsCostly` unless a test supplies its own.
+    private let pathIsCostly: @Sendable () -> Bool
+    /// This device's settings now, which a removal looks at again just before it deletes (FR45).
+    private let currentSettings: @MainActor () -> SyncDeviceSettings
+    /// The books a person freed, which "All books" leaves in the cloud until they are opened (FR46).
+    private let freedOnPurpose: @MainActor () -> BooksFreedOnPurpose
     /// The books whose size and room a plan is reading now, which a second
     /// refresh must not plan again.
     private(set) var booksBeingPlanned: Set<UUID> = []
@@ -566,6 +592,12 @@ final class LibraryCloudCommands {
     ///   - now: The time now: the system clock, unless a test sets it.
     ///   - freeSpace: The free bytes on the volume holding a location.
     ///   - freeSpaceReserve: The bytes downloads leave free on that volume.
+    ///   - booksChoice: Which books this device keeps (FR45).
+    ///   - roomNotice: Told how many books could not download for want of room.
+    ///   - packageArrival: When a package's files last arrived on this device.
+    ///   - pathIsCostly: Whether the network path costs.
+    ///   - currentSettings: This device's settings now.
+    ///   - freedOnPurpose: The books a person freed.
     init(
         states: BookCloudStates = .shared,
         kept: KeptBooks = .shared,
@@ -579,7 +611,13 @@ final class LibraryCloudCommands {
         },
         now: @escaping @MainActor () -> Date = { Date() },
         freeSpace: @escaping @Sendable (URL) -> Int64? = { ArchiveLimits.volumeFreeSpace(at: $0) },
-        freeSpaceReserve: Int64 = ArchiveLimits.standard.freeSpaceReserve
+        freeSpaceReserve: Int64 = ArchiveLimits.standard.freeSpaceReserve,
+        booksChoice: @escaping @MainActor () -> BooksOnThisDevice = { SyncSpaceSettings.shared.settings.books },
+        roomNotice: @escaping @MainActor (Int) -> Void = { SyncCenter.shared.noteSpace(booksShortOfRoom: $0) },
+        packageArrival: @escaping @Sendable (URL) -> Date? = { SyncPlaceholder.arrivedAt($0) },
+        pathIsCostly: @escaping @Sendable () -> Bool = { SyncActivity.pathIsCostly },
+        currentSettings: @escaping @MainActor () -> SyncDeviceSettings = { SyncSpaceSettings.shared.settings },
+        freedOnPurpose: @escaping @MainActor () -> BooksFreedOnPurpose = { BooksFreedOnPurpose.shared }
     ) {
         self.states = states
         self.kept = kept
@@ -589,6 +627,12 @@ final class LibraryCloudCommands {
         self.now = now
         self.freeSpace = freeSpace
         self.freeSpaceReserve = freeSpaceReserve
+        self.booksChoice = booksChoice
+        self.roomNotice = roomNotice
+        self.packageArrival = packageArrival
+        self.pathIsCostly = pathIsCostly
+        self.currentSettings = currentSettings
+        self.freedOnPurpose = freedOnPurpose
     }
 
     /// Runs `command` for the Library window `window` shows, announcing
@@ -766,6 +810,212 @@ final class LibraryCloudCommands {
         return downloadWhatFits(of: evicted, in: library, from: nil, origin: .keptBookRefresh)
     }
 
+    // MARK: Books on This Device (FR45)
+
+    /// Under `All books`, downloads each book this device lacks, after a sync: the books the sync recorded as
+    /// only in the cloud, one at a time, quietly, as many as the free space allows (`downloadWhatFits`), the
+    /// rows saying "Downloading 40%". Never removes one. A book short of room is left, and the sync's status
+    /// line says how many (`roomNotice`); a book whose download failed waits `keptBookRetryDelay`.
+    /// Does nothing while the choice is the other one, or sync is off.
+    /// - Returns: The task running the downloads, which tests await; nil when none needed to start.
+    @discardableResult
+    func downloadMissingBooks(in library: LibraryViewModel) -> Task<Void, Never>? {
+        guard states.syncIsOn, booksChoice() == .allBooks, !pathIsCostly() else { return nil }
+        let time = now()
+        // A book a person freed stays freed until it is opened again: the next sync does not undo their command.
+        let freed = freedOnPurpose()
+        let missing = library.library.books.filter { book in
+            states.listedState(of: book.id) == .inCloud
+                && (keptBookRetryTimes[book.id].map { $0 <= time } ?? true)
+                && !freed.isHeld(book)
+        }
+        guard !missing.isEmpty else {
+            roomNotice(0)
+            return nil
+        }
+        return downloadWhatFits(of: missing, in: library, from: nil, origin: .allBooks)
+    }
+
+    /// What one sweep of the removal of unopened downloads did.
+    struct UnopenedRemovalReport: Equatable {
+        /// The books whose downloads were removed.
+        var removed: [UUID] = []
+        /// How many books are left on this device for now, because their copies in iCloud Drive are not proven yet.
+        var waiting = 0
+    }
+
+    /// The most books one sweep takes off the device: the rest wait for the next sync, so a sweep after a long
+    /// absence does not read back a whole library at once. Books that cannot be proven are not counted: they
+    /// cost only a look, and never keep the books behind them from going.
+    static let unopenedBooksPerSweep = 25
+
+    /// Removes the downloads of books left unopened for the days of `settings` (FR45), after a sync, keeping each
+    /// book in the library as a placeholder that says In Cloud. Only under `Books you open or keep`, with days
+    /// set and the date the removal began known (`settings.activeDays`, `removalsBeganAt`). One sweep runs at a
+    /// time: a second asked for while one is under way does nothing.
+    ///
+    /// A book is left alone when `isProtected` says so (kept, listed, in use, a feed's, or busy), when it was
+    /// opened, played, or arrived within the days, and whenever the proof of its copy in the sync folder falls
+    /// short (`StoreRemoval`): it then stays whole and the sweep counts it as waiting. The book is looked at
+    /// again right before its files go, with the setting, since the proof can take minutes (`FreeingCheck`): one
+    /// opened, kept, or edited meanwhile stays. The rows are recorded In Cloud, and VoiceOver hears one summary
+    /// for the whole sweep, never one for each book.
+    /// - Parameters:
+    ///   - books: The library's books.
+    ///   - library: The library, which the last look asks.
+    ///   - settings: This device's settings.
+    ///   - mayDownload: Whether files of a copy that are away in iCloud Drive may be downloaded to read them back:
+    ///     not on a connection that costs.
+    ///   - isProtected: Whether a book is never removed now.
+    @discardableResult
+    func removeUnopenedDownloads(
+        of books: [Book],
+        in library: LibraryViewModel,
+        settings: SyncDeviceSettings,
+        mayDownload: Bool,
+        isProtected: @escaping @MainActor @Sendable (Book) -> Bool
+    ) async -> UnopenedRemovalReport {
+        var report = UnopenedRemovalReport()
+        guard !isSweepingUnopened else { return report }
+        guard states.syncIsOn, let days = settings.activeDays, let began = settings.removalsBeganAt else { return report }
+        isSweepingUnopened = true
+        defer { isSweepingUnopened = false }
+        let time = now()
+        let bookIDs = Set(books.map(\.id))
+        unopenedHeld.formIntersection(bookIDs)
+        // The books due by their own dates, longest unopened first; their files' arrival is looked at one by one below.
+        let candidates = books
+            .filter { book in
+                book.feedLink == nil && (unopenedRetryTimes[book.id].map { $0 <= time } ?? true)
+            }
+            .map { ($0, SyncSpacePolicy.lastInUse(opened: $0.lastOpened, played: $0.lastPlaybackStopped, arrived: nil, removalsBeganAt: began)) }
+            .filter { SyncSpacePolicy.isDue(lastInUse: $0.1, days: days, now: time) }
+            .sorted { $0.1 < $1.1 }
+            .map(\.0)
+        let storage = storage()
+        for book in candidates {
+            guard report.removed.count < Self.unopenedBooksPerSweep else { break }
+            // Looked at now, as the library is now: a book opened or kept meanwhile stays.
+            guard !isProtected(book), !booksBeingRemoved.contains(book.id), states.canRemoveDownload(book) else {
+                unopenedHeld.remove(book.id)
+                continue
+            }
+            // Marked before the first wait, so a person's Remove Download of the book meanwhile leaves it to this sweep.
+            booksBeingRemoved.insert(book.id)
+            defer { booksBeingRemoved.remove(book.id) }
+            let package = BookPackage(book)
+            let arrival = packageArrival
+            let arrived = await Task.detached(priority: .utility) { arrival(package.url) }.value
+            let lastInUse = SyncSpacePolicy.lastInUse(opened: book.lastOpened, played: book.lastPlaybackStopped, arrived: arrived, removalsBeganAt: began)
+            guard SyncSpacePolicy.isDue(lastInUse: lastInUse, days: days, now: time) else { continue }
+            // The last look asks again whether the book is due, as it is then: opened or played meanwhile, or the days
+            // made longer, it stays.
+            let lastLook = finalCheck(for: book.id, in: library, protecting: isProtected) { [weak self] current in
+                self?.isStillDue(current, arrived: arrived) ?? false
+            }
+            // A yes of the last look holds the book busy until its row says what came of the removal, recorded below.
+            defer { endFreeing(book.id, in: library) }
+            do {
+                try await FreeingCheck.$current.withValue(lastLook) {
+                    try await storage.removeDownloadAsync(of: package, mayDownload: mayDownload)
+                }
+                states.record(.inCloud, for: book.id)
+                report.removed.append(book.id)
+                unopenedHeld.remove(book.id)
+            } catch BookCloudError.syncRemoval(.nothingToRemove) {
+                // Away already, though no row said so: the row says it now, and nothing was removed.
+                states.record(.inCloud, for: book.id)
+                unopenedHeld.remove(book.id)
+            } catch BookCloudError.syncRemoval(.busy) {
+                // The last look said no (opened, kept, in use, or no longer due): the book stays as a protected book
+                // does, and the status line never counts it as waiting for its copy in iCloud Drive.
+                unopenedHeld.remove(book.id)
+            } catch {
+                unopenedHeld.insert(book.id)
+                // Said once for each book, and never with a title or a path (a package's names hold the title).
+                if unopenedLogged.insert(book.id).inserted {
+                    let reason = (error as? BookCloudError)?.logReason ?? "an unexpected error" // l10n: no (debug log text)
+                    DiagnosticLog.event(.storage, "UNOPENED_DOWNLOAD_KEPT: book \(book.id.uuidString.prefix(8)): \(reason)")
+                }
+                // Files that did not match, or would not go, are looked at again tomorrow, not at each sync.
+                if case .syncRemoval(let refusal)? = error as? BookCloudError, Self.isCostly(refusal) {
+                    unopenedRetryTimes[book.id] = time.addingTimeInterval(SyncSpacePolicy.secondsInDay)
+                }
+            }
+        }
+        report.waiting = unopenedHeld.count
+        guard !report.removed.isEmpty else { return report }
+        refreshAfterRemoval()
+        DiagnosticLog.event(.storage, "UNOPENED_DOWNLOADS_REMOVED: \(report.removed.count) removed after \(days) days")
+        VoiceOverAnnouncer.announce(SyncWording.announceRemovedUnopened(books: report.removed.count, days: days))
+        return report
+    }
+
+    /// The library's last word before a removal writes its pointer (`FreeingCheck`), asked on the main actor inside
+    /// the removal's storage work, with the package about to change: the book is still in the library, and that
+    /// package is still its own (a book moved to another folder meanwhile is not freed from its old place); nothing
+    /// protects it now; sync is on and the library may change; no reader has it open; and, for a sweep, the book is
+    /// still due (`stillDue`).
+    ///
+    /// A yes holds the book busy at once, in the same step, until its row says what came of the removal
+    /// (`beginFreeing`, `endFreeing`): nothing the look asked about can begin between its answer and the files' going.
+    private func finalCheck(
+        for bookID: UUID,
+        in library: LibraryViewModel,
+        protecting isProtected: @escaping @MainActor @Sendable (Book) -> Bool,
+        stillDue: (@MainActor @Sendable (Book) -> Bool)? = nil
+    ) -> @MainActor @Sendable (URL) -> Bool {
+        { [weak self, weak library] package in
+            guard let self, let library, let book = library.bookByID(bookID) else { return false }
+            guard BookPackage(book).url.standardizedFileURL.path == package.standardizedFileURL.path else { return false }
+            guard self.states.syncIsOn, library.maySyncNow, !library.isBookOpenNow(bookID) else { return false }
+            guard !isProtected(book) else { return false }
+            if let stillDue, !stillDue(book) { return false }
+            self.beginFreeing(bookID, in: library)
+            return true
+        }
+    }
+
+    /// Whether `book`, as the library holds it now, is still due to have its download removed by the settings as they
+    /// are now: they still remove unopened downloads, and the book has gone unopened and unplayed for their days, counted
+    /// from the latest of its opening, its play, `arrived` (its files' arrival, read before the proof), and the day the
+    /// removal began. A book opened and closed while its copy was checked, or days made longer meanwhile, is not.
+    private func isStillDue(_ book: Book, arrived: Date?) -> Bool {
+        let settings = currentSettings()
+        guard let days = settings.activeDays, let began = settings.removalsBeganAt else { return false }
+        let lastInUse = SyncSpacePolicy.lastInUse(opened: book.lastOpened, played: book.lastPlaybackStopped, arrived: arrived, removalsBeganAt: began)
+        return SyncSpacePolicy.isDue(lastInUse: lastInUse, days: days, now: now())
+    }
+
+    /// Holds the book `bookID` busy while its files go (`BooksBeingFreed`): the editors, an export, a transcription,
+    /// and a sync's removal wait, and a reader's load waits for the package move it is bracketed as, then loads the
+    /// book from wherever it is, as one opened during any package move does.
+    private func beginFreeing(_ bookID: UUID, in library: LibraryViewModel) {
+        guard !library.booksBeingFreed.contains(bookID) else { return }
+        library.booksBeingFreed.begin(bookID)
+        library.bookUpdates.packagesWillMove([bookID])
+    }
+
+    /// Ends what `beginFreeing` began for the book `bookID`, once its row says what came of the removal; nothing when
+    /// the last look never said yes.
+    private func endFreeing(_ bookID: UUID, in library: LibraryViewModel) {
+        guard library.booksBeingFreed.contains(bookID) else { return }
+        library.bookUpdates.packagesDidMove([bookID])
+        library.booksBeingFreed.end(bookID)
+    }
+
+    /// Whether looking at a book again is costly enough (its files were hashed, or read back) that a refusal
+    /// waits a day: the files differ or would not go. A copy not uploaded yet, or an offline device, costs
+    /// nothing to look at again and is tried at the next sync.
+    private static func isCostly(_ refusal: SyncRemovalRefusal) -> Bool {
+        switch refusal {
+        case .changedHere, .doesNotMatch, .couldNotRemove: return true
+        case .notBackedUp, .missingFromFolder, .notUploaded, .uploadFailed, .offline, .needsDownload, .needsRoom,
+             .folderUnreachable, .busy, .nothingToRemove:
+            return false
+        }
+    }
+
     /// Downloads the books the listener has just added to the reading list
     /// (Add to Reading List), when the library is in the cloud and this Mac
     /// keeps the list's books, those that fit in the free space
@@ -844,6 +1094,7 @@ final class LibraryCloudCommands {
                     toldOfLaterShortfall = announceShortfallOfLaterPass(plan.short, origin: origin, from: window)
                 }
                 logBooksLeftOutForRoom(plan.short, starting: starting, origin: origin)
+                if origin == .allBooks { roomNotice(plan.short.count) }
                 await download(starting, in: library, from: window, origin: origin)?.value
                 pending = waiting
                 isFirstPass = false
@@ -864,6 +1115,8 @@ final class LibraryCloudCommands {
             return kept.isKept(book.id)
         case .readingListAdd:
             return kept.keepsReadingListBooks && library.readingList.contains(book.id)
+        case .allBooks:
+            return booksChoice() == .allBooks
         }
     }
 
@@ -879,7 +1132,7 @@ final class LibraryCloudCommands {
             LibraryCloudWording.readingListDownloadsStarted(
                 titles: [],
                 short: listBooks.count,
-                quietly: origin == .keptBookRefresh
+                quietly: origin.isQuiet
             ),
             from: window,
             priority: .medium
@@ -965,18 +1218,18 @@ final class LibraryCloudCommands {
             LibraryCloudWording.readingListDownloadsStarted(
                 titles: started.map(\.title),
                 short: notFitting.count,
-                quietly: origin == .keptBookRefresh
+                quietly: origin.isQuiet
             ),
             from: window,
             priority: .medium
         )
     }
 
-    /// Notes how a download of the book `bookID` ended, for a kept book: a
+    /// Notes how a download of the book `bookID` ended, for a kept book, or for any book when `origin` is `All books`: a
     /// failure makes refreshes wait `keptBookRetryDelay` before they try it
     /// again, and a success lets the next eviction be downloaded at once.
-    private func noteKeptBookDownload(_ bookID: UUID, failed: Bool) {
-        guard kept.isKept(bookID) else { return }
+    private func noteKeptBookDownload(_ bookID: UUID, failed: Bool, origin: DownloadOrigin) {
+        guard kept.isKept(bookID) || origin == .allBooks else { return }
         keptBookRetryTimes[bookID] = failed ? now().addingTimeInterval(Self.keptBookRetryDelay) : nil
     }
 
@@ -1028,6 +1281,9 @@ final class LibraryCloudCommands {
         /// notice at medium priority tells the start, and VoiceOver hears the
         /// end as Download Now's.
         case readingListAdd
+        /// The setting `All books` (FR45): after a sync this device downloads each
+        /// book it lacks, one at a time, quietly, as the rows show.
+        case allBooks
 
         /// Whether the download itself tells VoiceOver which books start
         /// downloading, as Download Now does.
@@ -1037,7 +1293,12 @@ final class LibraryCloudCommands {
 
         /// Whether VoiceOver hears how the downloads ended.
         var announcesEnd: Bool {
-            self != .keptBookRefresh
+            self != .keptBookRefresh && self != .allBooks
+        }
+
+        /// Whether the books' words, as the reading list's notice says them, are the quiet ones.
+        var isQuiet: Bool {
+            self == .keptBookRefresh || self == .allBooks
         }
 
         /// What the line of a book left out for want of room says started
@@ -1048,6 +1309,7 @@ final class LibraryCloudCommands {
             case .keepOnThisMac: return "Keep on This Mac"
             case .keptBookRefresh: return "refresh of kept books"
             case .readingListAdd: return "added to the reading list"
+            case .allBooks: return "all books"
             }
         }
 
@@ -1058,7 +1320,7 @@ final class LibraryCloudCommands {
             switch self {
             case .downloadNow:
                 return ("DOWNLOAD_NOW_STARTED", "DOWNLOAD_NOW_FAILED", "DOWNLOAD_NOW_FINISHED")
-            case .keepOnThisMac, .keptBookRefresh, .readingListAdd:
+            case .keepOnThisMac, .keptBookRefresh, .readingListAdd, .allBooks:
                 return ("KEPT_BOOK_DOWNLOAD_STARTED", "KEPT_BOOK_DOWNLOAD_FAILED", "KEPT_BOOK_DOWNLOAD_FINISHED")
             }
         }
@@ -1142,6 +1404,12 @@ final class LibraryCloudCommands {
             states.endDownload(of: bookID)
         }
         guard let book = library.bookByID(bookID) else { return nil }
+        // "All books" goes on only while it is still the choice and the path does not cost: Wi-Fi lost, Low Data
+        // Mode turned on, or the choice changed while earlier books downloaded, stops the books still queued.
+        if origin == .allBooks, pathIsCostly() || booksChoice() != .allBooks {
+            states.record(.inCloud, for: bookID)
+            return nil
+        }
         // Starting a download can read files, which can wait on the
         // network, so the storage is asked off the main thread.
         let package = BookPackage(book)
@@ -1170,10 +1438,10 @@ final class LibraryCloudCommands {
         switch ending {
         case .downloaded:
             states.record(.downloaded, for: bookID)
-            noteKeptBookDownload(bookID, failed: false)
+            noteKeptBookDownload(bookID, failed: false, origin: origin)
         case .failed(_, let explanation):
             states.record(.downloadFailed(explanation), for: bookID)
-            noteKeptBookDownload(bookID, failed: true)
+            noteKeptBookDownload(bookID, failed: true, origin: origin)
         }
         return ending
     }
@@ -1207,18 +1475,26 @@ final class LibraryCloudCommands {
     @discardableResult
     func removeDownloads(of books: [Book], in library: LibraryViewModel, from window: PlatformWindow?) async -> LibraryCloudRefusal? {
         let targets = books.filter { book in
-            !booksBeingRemoved.contains(book.id) && states.listedState(of: book.id)?.canRemoveDownload == true
+            !booksBeingRemoved.contains(book.id) && states.canRemoveDownload(book)
         }
         guard !targets.isEmpty else { return nil }
         let targetIDs = Set(targets.map(\.id))
         booksBeingRemoved.formUnion(targetIDs)
         defer { booksBeingRemoved.subtract(targetIDs) }
-        let provider = states.libraryLocation.provider
+        // A synced library's copy is in iCloud Drive, whichever folder the library is in.
+        let provider = states.libraryLocation.provider ?? (states.syncIsOn ? .iCloudDrive : nil)
         let storage = storage()
+        let syncIsOn = states.syncIsOn
         // Each book's package, or why its download stays without asking the
-        // storage: the book is open in a reader, or kept on this Mac.
+        // storage: the book is open in a reader, in use, or kept.
         let requests = targets.map { book -> Result<BookPackage, BookCloudError> in
             if library.isBookOpenNow(book.id) { return .failure(.bookIsOpen) }
+            // In a synced library a book being exported, transcribed, edited,
+            // or fetched keeps its files too, and a book kept on all devices.
+            if syncIsOn {
+                if library.isBookBusyForSync(book.id) { return .failure(.bookInUse) }
+                if kept.isKeptOnAllDevices(book.id) { return .failure(.keptOnAllDevices) }
+            }
             // Both reasons are named at once, so the advice never leads to a
             // second refusal.
             switch (kept.contains(book.id), kept.isKeptForReadingList(book.id)) {
@@ -1234,25 +1510,33 @@ final class LibraryCloudCommands {
             "REMOVE_DOWNLOAD_STARTED: \(targets.map(\.title).joined(separator: ", "))" // l10n: no (debug log, English)
         )
 
-        let failures = await Task.detached(priority: .userInitiated) {
-            requests.map { request -> BookCloudError? in
-                let package: BookPackage
-                switch request {
-                case .failure(let refusal):
-                    return refusal
-                case .success(let found):
-                    package = found
-                }
-                do {
-                    try storage.removeDownload(of: package)
-                    return nil
-                } catch {
-                    // Any other error is the removal's failure too, never a
-                    // download's, which `.provider` would say.
-                    return (error as? BookCloudError) ?? .removalFailed(error.localizedDescription)
-                }
+        // A person's command may download what it needs to prove the copy, but never over a connection that costs:
+        // then it says the book waits for Wi-Fi. Each book is looked at again, with its protections, right before its
+        // files go (`FreeingCheck`).
+        let mayDownload = !pathIsCostly()
+        let lastLooks = targets.map { finalCheck(for: $0.id, in: library, protecting: { [weak self] book in self?.isHeldByTheLibrary(book, in: library) ?? true }) }
+        // A proof that takes a while says it is working, once.
+        let working = syncIsOn ? Task { @MainActor in
+            try? await Task.sleep(for: .seconds(3))
+            if !Task.isCancelled { VoiceOverAnnouncer.announce(SyncWording.checkingTheCopy, from: window) }
+        } : nil
+        defer { working?.cancel() }
+        // One book at a time, since a synced library's removal reads the book's copy back first (FR46) and
+        // each waits on the network. Each book's row says In Cloud as soon as its own files are gone, which ends the
+        // hold its last look began (`endFreeing`), so a book freed first is never held busy for the books after it.
+        var failures: [BookCloudError?] = []
+        for (request, lastLook) in zip(requests, lastLooks) {
+            switch request {
+            case .failure(let refusal):
+                failures.append(refusal)
+            case .success(let package):
+                let failure = await Self.removeDownload(of: package, with: storage, mayDownload: mayDownload, syncIsOn: syncIsOn, lastLook: lastLook)
+                if failure == nil { states.record(.inCloud, for: package.bookID) }
+                endFreeing(package.bookID, in: library)
+                failures.append(failure)
             }
-        }.value
+        }
+        working?.cancel()
 
         var removed: [String] = []
         var refused: [(title: String, explanation: String)] = []
@@ -1263,7 +1547,8 @@ final class LibraryCloudCommands {
                 DiagnosticLog.event(.storage, "REMOVE_DOWNLOAD_REFUSED: \(book.title): \(failure.logReason)")
             } else {
                 removed.append(book.title)
-                states.record(.inCloud, for: book.id)
+                // Under "All books" the next sync would download it again: it stays freed until it is opened.
+                if syncIsOn { freedOnPurpose().note(book.id, at: now()) }
             }
         }
         if !removed.isEmpty {
@@ -1286,7 +1571,42 @@ final class LibraryCloudCommands {
                 message: message
             )
         }
-        VoiceOverAnnouncer.announce(message, from: window)
+        // Under "All books" the result says the book is not downloaded again until it is opened.
+        let keepsEveryBook = syncIsOn && booksChoice() == .allBooks
+        VoiceOverAnnouncer.announce(keepsEveryBook ? SentenceWording.joined([message, SyncWording.removedDownloadsAgainOnOpening]) : message, from: window)
         return nil
+    }
+
+    /// Removes one book's download for Remove Download, off the main thread (a cloud library's storage removes
+    /// synchronously, and a synced library's reads the copy back), with the last look set for the storage to ask.
+    /// - Returns: Why the download stayed; nil when it went. An error that is not the storage's own is the removal's
+    ///   failure, never a download's, which `.provider` would say; in a synced library it is said in the app's own
+    ///   words, never the system's, which can name a file.
+    private nonisolated static func removeDownload(
+        of package: BookPackage,
+        with storage: any BookCloudStorage,
+        mayDownload: Bool,
+        syncIsOn: Bool,
+        lastLook: @escaping @MainActor @Sendable (URL) -> Bool
+    ) async -> BookCloudError? {
+        await Task.detached(priority: .userInitiated) { () -> BookCloudError? in
+            do {
+                try await FreeingCheck.$current.withValue(lastLook) {
+                    try await storage.removeDownloadAsync(of: package, mayDownload: mayDownload)
+                }
+                return nil
+            } catch {
+                return (error as? BookCloudError) ?? (syncIsOn ? .syncRemoval(.couldNotRemove("")) : .removalFailed(error.localizedDescription))
+            }
+        }.value
+    }
+
+    /// Whether the library holds `book` now, so that its download is not removed: it is kept (by the listener, the
+    /// reading list, or on all devices), on the reading list, open, in use, or downloading.
+    private func isHeldByTheLibrary(_ book: Book, in library: LibraryViewModel) -> Bool {
+        library.isBookBusyForSync(book.id)
+            || kept.isKept(book.id)
+            || library.library.readingList.contains(book.id)
+            || booksDownloading.contains(book.id)
     }
 }

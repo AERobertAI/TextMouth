@@ -694,7 +694,8 @@ struct LibraryView: View {
             library: libraryViewModel,
             refusal: $cloudRefusal,
             performKeepMenuCommand: performKeepMenuCommand,
-            performKeepOnAllDevicesMenuCommand: performKeepOnAllDevicesMenuCommand
+            performKeepOnAllDevicesMenuCommand: performKeepOnAllDevicesMenuCommand,
+            performRemoveDownloadMenuCommand: performRemoveDownloadMenuCommand
         ))
         // File > Export… for the selection, and the Export dialog (FR05).
         .modifier(LibraryExportSupport(
@@ -1719,6 +1720,28 @@ struct LibraryView: View {
         }
     }
 
+    /// Runs Library > Remove Download, which `notification` carried, for the books selected here, when this window
+    /// takes the command: on the books it is offered for (`LibraryCloudCommand.commands`). Its refusal is shown in
+    /// the window's alert, as a row's command shows it; VoiceOver hears why when nothing can be removed.
+    private func performRemoveDownloadMenuCommand(_ notification: Notification) {
+        guard takesCommand(notification) else { return }
+        let offered = LibraryCloudCommand.commands(
+            for: selectedBooks,
+            isSelection: selectedBooks.count > 1,
+            states: cloudStates,
+            kept: keptBooks.bookIDs,
+            keptOnAllDevices: keptBooks.syncedBookIDs
+        )
+        if let command = offered.first(where: { $0.kind == .removeDownload }) {
+            Task { cloudRefusal = await LibraryCloudCommands.shared.perform(command, in: libraryViewModel, from: hostWindow) }
+        } else {
+            VoiceOverAnnouncer.announce(
+                selectedBooks.isEmpty ? LibraryCloudWording.noBooksSelected : SyncWording.nothingToRemove,
+                from: hostWindow
+            )
+        }
+    }
+
     // MARK: - Moving Books
 
     /// Opens the Move to Folder sheet, by a request for `books`, from a
@@ -2460,6 +2483,8 @@ private struct LibraryCloudWindowSupport: ViewModifier {
     let performKeepMenuCommand: (_ keeping: Bool, _ notification: Notification) -> Void
     /// The same for Keep on All Devices and Stop Keeping on All Devices (FR43).
     let performKeepOnAllDevicesMenuCommand: (_ keeping: Bool, _ notification: Notification) -> Void
+    /// The same for Library > Remove Download, with sync on (FR46).
+    let performRemoveDownloadMenuCommand: (_ notification: Notification) -> Void
 
     func body(content: Content) -> some View {
         content
@@ -2480,6 +2505,9 @@ private struct LibraryCloudWindowSupport: ViewModifier {
             }
             .onReceive(NotificationCenter.default.publisher(for: .stopKeepingOnAllDevices)) { notification in
                 performKeepOnAllDevicesMenuCommand(false, notification)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .removeDownload)) { notification in
+                performRemoveDownloadMenuCommand(notification)
             }
             // Why Remove Download kept a book's download. This alert is the
             // only place the refusal is said: nothing announces it besides

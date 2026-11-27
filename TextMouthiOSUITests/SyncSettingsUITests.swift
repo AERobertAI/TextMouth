@@ -70,7 +70,15 @@ final class SyncSettingsUITests: TextMouthUITestCase {
         // Sync is on: its two buttons are there, and the section no longer says it is off.
         let syncNow = app.buttons["Sync Now"]
         let stop = app.buttons["Stop Syncing…"]
+        // Sync's two settings (Books on this device, and the days) now come before the buttons, which a list may not have
+        // drawn yet: scroll until Sync Now is there.
+        for _ in 0..<20 where !syncNow.waitForExistence(timeout: 3) {
+            app.swipeUp()
+        }
         XCTAssertTrue(syncNow.appears(within: 60), "Sync Now never appeared:\n\(app.debugDescription)")
+        for _ in 0..<20 where !stop.waitForExistence(timeout: 3) {
+            app.swipeUp()
+        }
         XCTAssertTrue(stop.appears(within: Self.patience), "Stop Syncing… never appeared:\n\(app.debugDescription)")
         XCTAssertFalse(app.buttons[Self.setUp].exists, "Set Up Sync… is still offered with sync on")
         let on = try elementsInOrder(of: app)

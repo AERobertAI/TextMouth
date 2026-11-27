@@ -132,6 +132,31 @@ Your Mac copies its books into the TextMouth Sync folder in the background: text
 A book reaches other devices once its copy has uploaded.
 A book already in the folder is not copied again, whichever device made it, and a book that is the same file on both devices stays one book on each.
 
+## Saving space on this Mac
+<!-- id: sync-saving-space; keys: Books on this device, All books, Books you open or keep, Remove Download, unopened, days, Off; src: TextMouth/Services/Sync/StoreRemoval.swift, TextMouth/Services/Sync/SyncSpaceSettings.swift, TextMouth/Models/Sync/SyncDeviceSettings.swift, TextMouth/Views/Settings/SyncSpaceControls.swift, TextMouth/ViewModels/LibraryViewModel+Cloud.swift -->
+
+While sync is on, the Sync section has two settings of this Mac alone; they never reach another device.
+- Books on this device: All books, or Books you open or keep.
+  All books, this Mac's choice at first, downloads every book it lacks after each sync, and never removes one.
+  Books you open or keep downloads only kept books, the reading list's, and the books you open.
+- Remove unopened downloads after: Off, or 1 to 30 days.
+  It is Off on the Mac at first, and shows only under Books you open or keep.
+  A download goes once its book has gone unopened that long, counting from its last opening on any device, its last play here, the day its files arrived, or the day you turned this on, whichever is latest.
+  Choosing Books you open or keep removes nothing at once.
+  One sweep after a sync takes at most 25 books, and VoiceOver hears one summary: "Removed downloads of 3 books not opened in 7 days.
+  All stay in iCloud Drive."
+
+Remove Download frees one book or a selection, from a book's context menu and VoiceOver actions, the Library menu, and Book Information.
+The book stays in the library with its place, bookmarks, and details, and its row says In Cloud; opening it downloads it again.
+Under All books, a book you freed stays freed until you open it, and the result says "Opening a book downloads it again."
+
+A download is removed only when the TextMouth Sync folder holds every file of the book.
+TextMouth reads the copy back and checks it against what was backed up, and looks again just before the files go.
+A book kept on all devices or on the reading list, one that is open, playing, exported, transcribed, edited, or downloading, a feed's item, and a book the backup hasn't finished with, are never removed.
+When the proof falls short the book stays whole and the alert says why, in words such as "TextMouth hasn't confirmed that iCloud Drive holds every file of this book, so its download stays."
+The check downloads the book again if this Mac gave its copy in the folder up, so it needs room for one more copy and, on cellular data, Wi-Fi.
+The status line counts books kept for want of a proven copy, and books not downloaded for want of room.
+
 ## Keep on All Devices
 <!-- id: sync-keep-all-devices; keys: Kept on all devices, Stop Keeping on All Devices, Book Information checkbox, reading list keeps; src: TextMouth/ViewModels/LibraryViewModel+Cloud.swift, TextMouth/Services/KeptBooks.swift, TextMouth/Views/Library/LibrarySheetViews.swift, TextMouth/App/MenuCommands.swift -->
 
@@ -152,8 +177,9 @@ A book that leaves the list returns to its own choice.
 ## Downloads after a sync
 <!-- id: sync-downloads-after; keys: Wi-Fi, Ethernet, Low Data Mode, cellular, hotspot, free space, one GB; src: TextMouth/Services/NetworkReachability.swift, TextMouth/ViewModels/LibraryViewModel+Sync.swift, TextMouth/ViewModels/LibraryViewModel+Cloud.swift -->
 
-After each sync, TextMouth downloads the books that are kept on all devices or on a reading list it keeps, and that are only in the cloud here.
-It does so one at a time, only as many as fit in the free space less 1 GB, and only on Wi-Fi or Ethernet with Low Data Mode off.
+After each sync, TextMouth downloads the books that are kept on all devices or on a reading list it keeps, and that are only in the cloud here; under All books, every book that is only in the cloud, except one you freed.
+It does so one at a time, only as many as fit in the free space less 1 GB, and only on Wi-Fi or Ethernet with Low Data Mode off, checked before each book.
+A book that doesn't fit is left, and the status line says how many.
 On a cellular or hotspot connection it waits for a later sync, so it spends none of that data.
 A book you open downloads on any network, and offline nothing starts.
 Kept books download quietly, their rows saying "Downloading 40%"; the reading list's books are announced once, as "Downloading 12 reading list books".
@@ -179,6 +205,9 @@ A removal arriving from another device waits while the book is open in a reader,
 
 Stop Syncing… asks "Stop syncing this library?
 Nothing is deleted, on this Mac or in iCloud Drive."
+When some books are only in iCloud Drive, it adds "12 books: only in iCloud Drive.
+Keep the TextMouth Sync folder to open them."
+Those books won't open without that folder.
 Cancel is first and the default, so Return keeps sync on.
 Stopping forgets the folder, says "Sync is off.", and leaves every book, the TextMouth Sync folder, and this Mac's own sync files where they are.
 To use the folder again, choose Join Sync Folder….

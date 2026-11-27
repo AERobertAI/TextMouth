@@ -90,6 +90,9 @@ struct StoreBackup: Sendable {
         case overBudget
     }
 
+    /// The package's pointer says some of the book's files are not on this device, so it is not backed up from here.
+    struct FilesAreAway: Error, Equatable {}
+
     // MARK: Listing a package
 
     /// One file of a package: its path from the package, and its URL.
@@ -150,6 +153,9 @@ struct StoreBackup: Sendable {
     /// is not there. `budget` is how many blob bytes may be copied this call;
     /// a book that doesn't fit throws `.outOfSpace` before copying anything.
     func back(up package: URL, bookID: UUID, budget: Int64 = .max) throws -> StoreBackupResult {
+        // A book whose pointer says a file is away has a copy already, and what is here is not the whole book: a
+        // manifest made from it would leave out the file that is away, and be taken for the book's copy everywhere.
+        if StoreFetch.isMissingFiles(package) { throw FilesAreAway() }
         let files = try Self.files(of: package)
         let bookFolder = folder.bookFolder(bookID)
         let present = Set(((try? folder.access.list(bookFolder)) ?? []).map(\.name))
@@ -210,7 +216,7 @@ struct StoreBackup: Sendable {
     // MARK: The pointer
 
     /// Writes `.storeCopy.json` in the package, atomically: the manifest it
-    /// names and which files are on this device.
+    /// names and which files are on this device (those in `files`).
     private func writePointer(
         in package: URL, bookID: UUID, manifest: String, entries: [StoreManifest.File],
         files: [PackageFile], uploaded: String?
@@ -225,7 +231,9 @@ struct StoreBackup: Sendable {
             formatVersion: SyncFormats.currentVersion, storeID: storeID, bookID: bookID,
             manifest: manifest, uploaded: uploaded,
             files: entries.map {
-                StorePointer.File(path: $0.path, sha256: $0.sha256, size: $0.size, modified: modified[$0.path] ?? 0, onThisDevice: true)
+                // A file is on this device when it was found there, not because the manifest names it: a book whose own
+                // file was freed has its record and text here and the file away.
+                StorePointer.File(path: $0.path, sha256: $0.sha256, size: $0.size, modified: modified[$0.path] ?? 0, onThisDevice: modified[$0.path] != nil)
             }
         )
         try SyncFormats.encode(pointer).write(to: package.appendingPathComponent(StorePointer.fileName), options: .atomic)

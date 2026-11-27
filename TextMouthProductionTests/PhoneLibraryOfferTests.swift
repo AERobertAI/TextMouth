@@ -94,4 +94,20 @@ final class PhoneLibraryOfferTests: XCTestCase {
         )
         XCTAssertEqual(Set(commands.map(\.id)).count, commands.count)
     }
+
+    /// The Library's one alert says the removal question about a book in the words the removal's own alert said, and
+    /// a refusal of Remove Download (FR46) in the words the command gave: both through one alert, so the Library
+    /// holds no more presentations under the screens pushed over it than it did.
+    func testTheLibrarysOneAlertSaysEachOfItsTwoThings() {
+        let book = PhoneLibraryFixture.book("Dune")
+        let removal = PhoneLibraryAlert.removal(book)
+        XCTAssertEqual(removal.title, PhoneRowWording.removalTitle(for: book))
+        XCTAssertEqual(removal.message, PhoneRowWording.removalMessage)
+
+        let refusal = LibraryCloudRefusal(title: "Download Kept", message: "The book is in use, so its download can't be removed.")
+        let refused = PhoneLibraryAlert.removeDownloadRefused(refusal)
+        XCTAssertEqual(refused.title, refusal.title)
+        XCTAssertEqual(refused.message, refusal.message)
+        XCTAssertNotEqual(removal, refused)
+    }
 }

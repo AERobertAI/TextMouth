@@ -183,16 +183,17 @@ final class SyncSettingsSectionTests: XCTestCase {
         XCTAssertFalse(kinds(kept: [book.id]).contains(.keepOnAllDevices))
     }
 
-    /// A synced library is on this device's disk, so Keep on This Mac and
-    /// Remove Download, which are for a library in a cloud folder, are not offered.
-    func testASyncedLibraryOffersNeitherKeepOnThisMacNorRemoveDownload() {
+    /// A synced library is on this device's disk, so Keep on This Mac, which is for a library in a cloud folder, is
+    /// not offered; Keep on All Devices is. Remove Download is offered too (FR46): it frees a book whole
+    /// on this device once the sync folder is proven to hold it (`SyncSpaceCommandsTests` pins when).
+    func testASyncedLibraryOffersKeepOnAllDevicesAndRemoveDownloadButNotKeepOnThisMac() {
         let book = makeBook("Synced Only")
         let states = BookCloudStates()
         states.setSyncIsOn(true)
         states.record(.downloaded, for: book.id)
         let kinds = LibraryCloudCommand.commands(for: [book], isSelection: false, states: states, kept: []).map(\.kind)
         XCTAssertFalse(kinds.contains(.keepOnThisMac))
-        XCTAssertFalse(kinds.contains(.removeDownload))
+        XCTAssertTrue(kinds.contains(.removeDownload))
         XCTAssertTrue(kinds.contains(.keepOnAllDevices))
     }
 

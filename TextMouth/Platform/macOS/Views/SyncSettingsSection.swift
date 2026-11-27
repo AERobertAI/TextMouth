@@ -11,8 +11,13 @@ struct SyncSettingsSection: View {
     @StateObject private var model = SyncSettingsModel()
     /// The sync's state, which redraws the status line as it changes.
     @ObservedObject private var center = SyncCenter.shared
+    /// This Mac's own choice of books to keep, and the days a book may stay unopened (FR45).
+    @ObservedObject private var space = SyncSpaceSettings.shared
     /// Whether Stop Syncing's question is up.
     @State private var confirmingStop = false
+    /// How many books have files only in the sync folder, counted from their packages as Stop Syncing was pressed,
+    /// which its question names.
+    @State private var onlyInCloud = 0
     /// Whether a command is running, which holds the others back.
     @State private var isWorking = false
     /// Whether Set Up or Join has just worked and its first run's outcome is
@@ -50,13 +55,14 @@ struct SyncSettingsSection: View {
             }
 
             if center.status.isOn {
+                SyncSpaceControls(settings: space)
                 Button(SyncWording.syncNowTitle) { model.syncNow() }
                     .disabled(center.status.isSyncing)
                     .accessibilityLabel(SyncWording.syncNowTitle)
                     .accessibilityHint(SyncWording.sectionSummary)
-                Button(SyncWording.stopTitle) { confirmingStop = true }
+                Button(SyncWording.stopTitle) { askToStop() }
                     .accessibilityLabel(SyncWording.stopTitle)
-                    .accessibilityHint(SyncWording.stopQuestion)
+                    .accessibilityHint(SyncWording.stopQuestion(isPhone: false))
             } else {
                 Button(SyncWording.setUpTitle) { choose(joining: false) }
                     .disabled(isWorking)
@@ -70,7 +76,7 @@ struct SyncSettingsSection: View {
         } header: {
             Text(SyncWording.sectionTitle)
         }
-        .alert(SyncWording.stopQuestion, isPresented: $confirmingStop) {
+        .alert(stopQuestion, isPresented: $confirmingStop) {
             // Cancel is first, so Return presses the safe choice.
             Button(StorageSettingsWording.cancelTitle, role: .cancel) {}
                 .keyboardShortcut(.defaultAction)
@@ -87,6 +93,19 @@ struct SyncSettingsSection: View {
         }
     }
 
+    /// The question before syncing stops, with the books only in iCloud Drive counted.
+    private var stopQuestion: String {
+        SyncWording.stopQuestion(isPhone: false, onlyInCloud: onlyInCloud)
+    }
+
+    /// Counts the books only in the sync folder, from their packages, then asks whether to stop.
+    private func askToStop() {
+        Task {
+            onlyInCloud = await center.countBooksOnlyInTheSyncFolder()
+            confirmingStop = true
+        }
+    }
+
     /// The status line's sentence now.
     private var statusSentence: String {
         SyncStatusLine.text(for: center.status, isPhone: false, time: Self.timeOfDay)
@@ -94,7 +113,7 @@ struct SyncSettingsSection: View {
 
     /// The lines after it.
     private var details: [String] {
-        SyncStatusLine.detailLines(for: center.status, time: Self.timeOfDay)
+        SyncStatusLine.detailLines(for: center.status, time: Self.timeOfDay, isPhone: false)
     }
 
     // MARK: - Choosing a Folder
