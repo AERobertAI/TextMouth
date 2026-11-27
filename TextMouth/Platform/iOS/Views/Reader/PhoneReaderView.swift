@@ -1,3 +1,4 @@
+import Combine
 import SwiftUI
 import UIKit
 
@@ -78,6 +79,12 @@ struct PhoneReaderView: View {
             // screen, and focus stays where the listener put it.
             .task {
                 await arrive()
+            }
+            // A protected book asks for its password over the reader (FR41).
+            // One overlay for every book and none, so its identity never
+            // changes; it watches the reader's prompt alone.
+            .overlay {
+                PhoneUnlockOverlay(reader: session.reader)
             }
     }
 
@@ -350,8 +357,11 @@ struct PhoneReaderView: View {
     private func arrive() async {
         guard let snapshot = session.snapshot else { return }
         // A book that is being downloaded has no Play to give focus to; the cloud view takes it, and the arrival runs when the
-        // controls come (`contentArrived`).
-        if session.reader?.cloudPhase == nil { await PhoneReaderArrival().run() }
+        // controls come (`contentArrived`). A locked book's password panel, which can come at any moment of the arrival, holds
+        // it back too, and the arrival runs again once the book is unlocked (`PhoneUnlockOverlay`).
+        if session.reader?.cloudPhase == nil {
+            await PhoneReaderArrival().run(heldBack: { session.reader?.unlockPrompt != nil })
+        }
         PhoneAnnouncer.say(snapshot.title)
         guard session.snapshot?.isLoading == true, session.reader?.cloudPhase == nil else { return }
         try? await Task.sleep(for: .seconds(5))
@@ -415,8 +425,10 @@ private final class PhoneReaderArrival {
     /// The focus observer, while the arrival runs.
     private var observer: NSObjectProtocol?
 
-    /// Runs the arrival to its end: at most 3 seconds.
-    func run() async {
+    /// Runs the arrival to its end: at most 3 seconds. While `heldBack` says
+    /// a panel covers the reader (a locked book's password panel), nothing is
+    /// posted and the arrival ends: focus is the panel's.
+    func run(heldBack: @escaping @MainActor () -> Bool = { false }) async {
         // Told on the main queue, then claims the main actor. Only the
         // element's identity crosses, which is Sendable. The observer holds
         // the arrival until the defer below removes it, as the run ends.
@@ -436,6 +448,10 @@ private final class PhoneReaderArrival {
             let wait = max(0, next - ProcessInfo.processInfo.systemUptime)
             try? await Task.sleep(for: .seconds(wait))
             if Task.isCancelled { return }
+            if heldBack() {
+                policy.panelCoversReader()
+                continue
+            }
             switch policy.action(at: ProcessInfo.processInfo.systemUptime) {
             case .postScreenChanged?:
                 UIAccessibility.post(notification: .screenChanged, argument: PhoneFocusRegistry.shared.view(for: .play))
@@ -451,5 +467,87 @@ private final class PhoneReaderArrival {
     /// any reader control, the arrival is over.
     private func landed(onElementWithID id: ObjectIdentifier?) {
         policy.focusLanded(on: PhoneFocusRegistry.shared.kind(ofElementWithID: id))
+    }
+}
+
+// MARK: - Protected Books
+
+/// The password panel over the phone's reader while its book is locked
+/// (FR41), and while it shows nothing beneath it is reachable by VoiceOver
+/// (a modal element). The reader's arrival holds back while it shows
+/// (`PhoneReaderArrival.run(heldBack:)`), and once the book is unlocked
+/// focus goes to Play, as when any book opens.
+///
+/// It watches the reader's prompt alone (`PhoneUnlockPromptWatcher`), never
+/// the reader itself, as the cloud gate watches its phase
+/// (`PhoneReaderCloudGate`): the reader publishes at every word it speaks,
+/// and a view on the reader's screen that drew itself again at each word
+/// closed a sheet presented from the screen (Export). The panel comes and
+/// goes inside a stack, so the overlay keeps one identity throughout.
+private struct PhoneUnlockOverlay: View {
+    /// The open reader, or none.
+    let reader: ReaderViewModel?
+    /// Goes back to the library, as Back does.
+    @Environment(\.dismiss) private var dismiss
+    /// The reader's prompt, changing only when the prompt does.
+    @StateObject private var watcher = PhoneUnlockPromptWatcher()
+
+    var body: some View {
+        // A stack, not a Group: a Group hands its modifiers to its contents,
+        // and with no panel there would be nothing to watch the prompt go.
+        ZStack {
+            if let reader, let prompt = watcher.prompt(of: reader) {
+                UnlockBookPanel(
+                    title: reader.book.title,
+                    state: prompt,
+                    onUnlock: { reader.submitUnlock($0) },
+                    onCancel: { dismiss() }
+                )
+                .background(Color(.systemBackground))
+                .accessibilityAddTraits(.isModal)
+            }
+        }
+        // The same reader keeps the same watch; the next book's is a new one.
+        .task(id: reader.map(ObjectIdentifier.init)) { watcher.watch(reader) }
+        // From a prompt to none: unlocked, and focus goes to Play. (Cancel
+        // leaves the screen with the panel still up, so nothing runs then.)
+        .onChange(of: watcher.hasPrompt) { was, has in
+            if was && !has { Task { await PhoneReaderArrival().run() } }
+        }
+    }
+}
+
+/// The password prompt of one reader (FR41), republished when it changes and
+/// not when anything else of the reader does, as `PhoneCloudPhaseWatcher`
+/// republishes its cloud phase.
+@MainActor
+private final class PhoneUnlockPromptWatcher: ObservableObject {
+    /// The prompt of the reader being watched; nil when its book needs none, or no reader is open.
+    @Published private(set) var watchedPrompt: UnlockPromptState?
+    /// The subscription to the reader's `unlockPrompt`.
+    private var subscription: AnyCancellable?
+    /// The reader being watched, by identity.
+    private var watched: ObjectIdentifier?
+
+    /// Whether a prompt is up for the reader being watched.
+    var hasPrompt: Bool { watchedPrompt != nil }
+
+    /// The prompt to show for `reader`. Until the watch has moved to a reader
+    /// that has just opened, the prompt held is the last reader's, so the new
+    /// reader's own is read at once: no frame shows one book's panel over another.
+    func prompt(of reader: ReaderViewModel) -> UnlockPromptState? {
+        watched == ObjectIdentifier(reader) ? watchedPrompt : reader.unlockPrompt
+    }
+
+    /// Watches `reader`, or nothing.
+    func watch(_ reader: ReaderViewModel?) {
+        watched = reader.map(ObjectIdentifier.init)
+        watchedPrompt = reader?.unlockPrompt
+        subscription = reader?.$unlockPrompt
+            .removeDuplicates()
+            .sink { [weak self] new in
+                // `$unlockPrompt` publishes just before the change, with the new value.
+                MainActor.assumeIsolated { self?.watchedPrompt = new }
+            }
     }
 }

@@ -187,6 +187,10 @@ enum MarkdownCacheService {
         decidingEncoding: Bool = false
     ) throws -> GeneratedCache? {
         guard !book.format.isAudio, !book.tmbDirectoryName.isEmpty else { return nil }
+        // A book with a password gets no content.md, from any pass or command
+        // (FR41): the launch re-reads, cache rebuilds, and Redo Text Extraction
+        // all come through here, and leave it alone silently.
+        guard !book.isPasswordProtected else { return nil }
         let boundary = StorageBoundary.shared
         return try boundary.perform(.textExtraction) { _ in
             try writeCache(

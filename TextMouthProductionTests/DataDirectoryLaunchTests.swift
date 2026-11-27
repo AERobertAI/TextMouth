@@ -292,8 +292,9 @@ struct LibraryFixture {
         return try decoder.decode(Library.self, from: Data(contentsOf: root.appendingPathComponent("library.json")))
     }
 
-    /// Writes `library` as `root`'s library.json.
-    private static func write(_ library: Library, to root: URL) throws {
+    /// Writes `library` as `root`'s library.json: the fixture's own index,
+    /// or one a test lays out with books before the library starts.
+    static func write(_ library: Library, to root: URL) throws {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         try encoder.encode(library).write(to: root.appendingPathComponent("library.json"), options: .atomic)

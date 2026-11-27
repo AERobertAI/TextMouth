@@ -168,12 +168,18 @@ How books are added is in [Adding books](adding-books.md).
 - Every other kind of document, Word 6 and Word 95 since version 0.4.1 among them, is read inside TextMouth, never by textutil, and is not stopped this way.
 
 ### Documents protected by a password
-<!-- id: documents-protected-password; keys: encrypted, password, locked PDF, Save a copy without the password; src: TextMouth/Parsers/TextutilSourceCheck.swift, TextMouth/Parsers/WordDocumentReader.swift, TextMouth/Parsers/PDFTextParser.swift -->
+<!-- id: documents-protected-password; keys: encrypted, password, locked PDF, Save a copy without the password; src: TextMouth/Parsers/TextutilSourceCheck.swift, TextMouth/Parsers/WordDocumentReader.swift, TextMouth/Parsers/PDFTextParser.swift, TextMouth/Parsers/EncryptedArchive.swift -->
 
 - A Word 97-2003 document (a Word 6 or Word 95 one too) or an OpenDocument document protected by a password is refused with "This document is protected by a password.
   Save a copy without the password, then import that copy."
-- A PDF locked by a password is refused with "This PDF needs a password to open.", before any page is read, so it is not mistaken for a scan that text recognition could not read.
+- A PDF, a Word (.docx) document, or a ZIP-based book (EPUB, DAISY, comic archive, KFX) that a password protects is added locked.
+  On the Mac one panel first asks for the password of every protected book in the list, with Unlock and Import Locked; the iPhone adds them locked.
+  A locked book's row says "Locked".
+  Opening it asks for the password, unless a remembered one fits; Remember this password keeps it in this device's Keychain, and Remove the password from this book rewrites the book's own file without it.
+  While it is open nothing of its text is written to disk: no text cache, headings, search text, or saved words, and its sections cannot be skipped.
   A PDF that only restricts copying or printing is not locked and imports as usual.
+- A ZIP archive whose files a password protects, when it holds several books, is refused with "This ZIP archive is protected by a password." and the names of the files it could not read.
+  7z and RAR archives, and protected audiobooks, are not opened.
 
 ### A Word document's title and author
 <!-- id: word-document-title-author; keys: .docx, core properties, dc:title, dc:creator, Unknown; src: TextMouth/Parsers/DOCXParser+Metadata.swift -->

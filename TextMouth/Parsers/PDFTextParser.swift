@@ -136,7 +136,7 @@ enum PDFTextParser {
         guard FileManager.default.fileExists(atPath: url.path) else {
             throw PDFParserError.fileNotFound(url.path)
         }
-        guard let document = PDFDocument(url: url) else {
+        guard let document = UnlockedSources.openPDF(at: url) else {
             throw PDFParserError.cannotOpenPDF
         }
         // A PDF locked by a password opens, but its pages give no text and
@@ -217,7 +217,7 @@ enum PDFTextParser {
 
     /// Read metadata (title, author) from PDF document attributes
     static func readMetadata(from url: URL) -> PDFMetadata? {
-        guard let document = PDFDocument(url: url) else { return nil }
+        guard let document = UnlockedSources.openPDF(at: url) else { return nil }
 
         let attrs = document.documentAttributes ?? [:]
         let title = (attrs[PDFDocumentAttribute.titleAttribute] as? String)?

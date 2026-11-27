@@ -54,7 +54,10 @@ struct StoreBackup: Sendable {
     static func isLeftOut(_ relativePath: String) -> Bool {
         let top = relativePath.split(separator: "/").first.map(String.init) ?? relativePath
         let name = (relativePath as NSString).lastPathComponent
+        // The plain copy a password removal is writing (or a crash left) holds the book
+        // without its password: it never goes to the sync folder (FR41).
         return name == StorePointer.fileName || name == ".DS_Store"
+            || top.hasPrefix(ProtectionRemoval.temporaryPrefix) || name.hasPrefix(ProtectionRemoval.temporaryPrefix)
             || top == TextMouthPaths.cachedAudioFolderName
             || top == TextMouthPaths.removedFromLibraryMarkerName
     }
@@ -112,7 +115,23 @@ struct StoreBackup: Sendable {
             }
             if values.isRegularFile == true { found.append(PackageFile(path: path, url: url)) }
         }
-        return found.sorted { $0.path < $1.path }
+        return withoutDerivedText(ofProtectedBookIn: found).sorted { $0.path < $1.path }
+    }
+
+    /// The names of a package's files that hold a book's words in plain text.
+    private static let derivedTextNames: Set<String> = [TextMouthPaths.contentIndexFileName, "content.md"]
+
+    /// `files`, less the derived files that would copy the words of a book
+    /// protected by a password (its headings, a text cache) out of the
+    /// library (FR41). A package whose own file has no password is whole.
+    private static func withoutDerivedText(ofProtectedBookIn files: [PackageFile]) -> [PackageFile] {
+        let isProtected = files.contains { file in
+            guard !file.path.contains("/"), !derivedTextNames.contains(file.path),
+                  let format = BookFormat.detect(from: file.url) else { return false }
+            return ProtectionDetector.isProtected(fileAt: file.url, format: format)
+        }
+        guard isProtected else { return files }
+        return files.filter { !derivedTextNames.contains($0.path) && !$0.path.hasPrefix("content.md.") }
     }
 
     /// The bytes of the files of the package at `package`, for the backup's order; 0 when it can't be read.

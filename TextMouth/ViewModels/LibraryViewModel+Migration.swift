@@ -655,11 +655,14 @@ extension LibraryViewModel {
     }
 
     nonisolated static func needsContentAnalysis(_ book: Book) -> Bool {
-        book.contentIndexVersion != BookContentIndex.currentVersion
+        // The cheap checks first; the protection check, which looks at the
+        // file, last (FR41).
+        (book.contentIndexVersion != BookContentIndex.currentVersion
             || book.totalWordCount == nil
             || book.totalCharacterCount == nil
             || (book.format.isAudio && book.audioDuration == nil)
-            || needsTextCacheFingerprint(book)
+            || needsTextCacheFingerprint(book))
+            && !book.isPasswordProtected
     }
 
     /// Whether `book` has a current text cache that was written before
@@ -740,13 +743,18 @@ extension LibraryViewModel {
             books.filter { book in
                 guard !book.format.isAudio, !book.tmbDirectoryName.isEmpty else { return false }
                 // Needs cache if missing or if the stored version is outdated
-                if !MarkdownCacheService.cacheExists(for: book) { return true }
-                if MarkdownCacheService.isCacheOutdated(stored: book.cacheFormatVersion) { return true }
-                // Its format gained pages since content.md was written, and
-                // the launch re-read is switched on (PG09).
-                if PageReaderVersions.isDueForPages(book) { return true }
-                return hasResizedTextCacheFile(book, isDataless: access.isDataless)
-                    || hasRedatedTextCache(book, isDataless: access.isDataless)
+                let needsUpdate: Bool = {
+                    if !MarkdownCacheService.cacheExists(for: book) { return true }
+                    if MarkdownCacheService.isCacheOutdated(stored: book.cacheFormatVersion) { return true }
+                    // Its format gained pages since content.md was written, and
+                    // the launch re-read is switched on (PG09).
+                    if PageReaderVersions.isDueForPages(book) { return true }
+                    return hasResizedTextCacheFile(book, isDataless: access.isDataless)
+                        || hasRedatedTextCache(book, isDataless: access.isDataless)
+                }()
+                // A protected book has no cache to keep up to date (FR41);
+                // asked last, since it looks at the file.
+                return needsUpdate && !book.isPasswordProtected
             }
         }
     }

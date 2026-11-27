@@ -241,6 +241,10 @@ final class LibraryViewModel: ObservableObject {
     /// question (`ImportDecisionPresenter`).
     @Published var importDecisions = ImportDecisionQueue()
 
+    /// The question about protected books being added, while one waits for
+    /// its answer (FR41, `ImportPasswordRequest`); each Library window shows it as a sheet.
+    @Published var importPasswordRequest: ImportPasswordRequest?
+
     /// Book removal confirmation (supports single or multi-book removal)
     @Published var showRemoveBookDialog = false
     @Published var pendingRemoveBooks: [Book] = []
@@ -519,6 +523,12 @@ final class LibraryViewModel: ObservableObject {
         // enters recovery with a provisional library and saves nothing.
         loadLibraryIndex()
         saveIndexOfNewLibrary(madeIdentity: madeIdentity, hadIndex: hadIndex)
+        // Each package's plain copy a crash left while a password was being
+        // removed goes, and every book's file is looked at for a password,
+        // so the rows say "Locked" (FR41). Both go through the library's
+        // books, so they wait for the index: before it, the library has none.
+        sweepPasswordRemovalLeftovers()
+        lookForProtectedBooks()
         setupDataDirectoryChangeHandler()
         // Delete the originals of recordings and edited audiobooks whose
         // time is up, off the main thread, downloading nothing (FR04).

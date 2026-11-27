@@ -61,6 +61,15 @@ struct ReaderView: View {
                     provider: viewModel.cloudProvider,
                     actions: cloudPhaseActions
                 )
+            } else if let prompt = viewModel.unlockPrompt {
+                // A protected book asks for its password in place of the
+                // book (FR41).
+                UnlockBookPanel(
+                    title: viewModel.book.title,
+                    state: prompt,
+                    onUnlock: { viewModel.submitUnlock($0) },
+                    onCancel: { dismissWindow() }
+                )
             } else if viewModel.isLoading {
                 ProgressView(ReaderViewWording.loadingBook)
                     .accessibilityLabel(ReaderViewWording.loading(title: viewModel.book.title))

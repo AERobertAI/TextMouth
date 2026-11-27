@@ -237,6 +237,11 @@ extension LibraryViewModel {
         library.removeBook(id: book.id)
         LibraryPersistenceService.forgetDeletedBook(book)
         ReadingTextCache.shared.remove(bookID: book.id)
+        // The password remembered for it goes too, unless a copy of the same
+        // file is still in the library (FR41).
+        if !library.books.contains(where: { $0.md5Hash == book.md5Hash }) {
+            CredentialStores.current.forget(forBook: book.md5Hash)
+        }
     }
 
     // MARK: - Moving Books
@@ -935,6 +940,8 @@ extension LibraryViewModel {
         cacheFormatVersion: String? = nil
     ) {
         guard let bookIndex = library.books.firstIndex(where: { $0.id == bookID }) else { return }
+        // A protected book's headings are never saved (FR41).
+        guard !library.books[bookIndex].isPasswordProtected else { return }
         library.books[bookIndex].applyContentAnalysis(index, cacheFormatVersion: cacheFormatVersion)
         let updatedBook = library.books[bookIndex]
         save()

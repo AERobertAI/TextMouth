@@ -34,7 +34,7 @@ final class ODTHostileReaderTests: XCTestCase {
         do {
             return try outcome.get()
         } catch {
-            let known = error is TextutilConverter.Failure || error is DocumentTooLargeError || error is FileImportError
+            let known = error is TextutilConverter.Failure || error is DocumentTooLargeError || error is FileImportError || error is PasswordProtectedDocument
             XCTAssertTrue(known, "\(label) threw an error the reader does not name: \(error)", file: file, line: line)
             return nil
         }

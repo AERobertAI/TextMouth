@@ -152,6 +152,23 @@ final class PhoneFocusPolicyTests: XCTestCase {
         XCTAssertEqual(policy.action(at: 1.5), .postLayoutChanged)
         XCTAssertNil(policy.action(at: 1.5))
     }
+
+    /// A locked book's password panel over the reader takes focus for good (FR41), even
+    /// between the two posts: Play is beneath it, and the arrival posted focus there,
+    /// off the password field, at 0.35 and again at 1.2 seconds.
+    func testAPasswordPanelOverTheReaderStopsIt() {
+        var policy = PhoneFocusPolicy(arrivedAt: 0)
+        policy.panelCoversReader()
+        XCTAssertNil(policy.action(at: 0.4))
+        XCTAssertNil(policy.action(at: 1.3))
+        XCTAssertNil(policy.nextCheck)
+
+        var later = PhoneFocusPolicy(arrivedAt: 0)
+        XCTAssertEqual(later.action(at: 0.4), .postScreenChanged, "the panel came after the first post")
+        later.panelCoversReader()
+        XCTAssertNil(later.action(at: 1.3))
+        XCTAssertTrue(later.isFinished)
+    }
 }
 
 /// `PhoneListFocus`: which row focus goes to.

@@ -1229,6 +1229,13 @@ enum FileImportService {
                 brailleFileCode: brailleFileCode,
                 brailleTableOrigin: brailleReading?.origin
             )
+            // A book whose file has a password is added locked: nothing of it
+            // is read, so no copy of its text or headings is written
+            // (FR41). The person is asked for the password afterwards, and
+            // may leave it locked (Import Locked).
+            if ProtectionDetector.scheme(ofFileAt: stagedFile, format: format) != nil {
+                return try publishLockedBook(staged, from: staging, run: &run)
+            }
             // The one import that guesses (FMT16): a file the user chose, whose
             // bytes may name no encoding, is read in the encoding the guesser
             // finds, and the book records it. Every other way a book comes to

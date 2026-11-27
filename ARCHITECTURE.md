@@ -55,6 +55,7 @@ Each entry names a kind of state, then its owner, who may write it, how others o
   - [Documents textutil reads](docs/architecture/state/imports-textutil.md): web archives, SSML, and DTBooks.
   - [Rich text and Word](docs/architecture/state/imports-rtf-and-word.md): the RTF, Word 97-2003, and Word 6 readers.
   - [DOCX, OpenDocument, and Word 2003 XML](docs/architecture/state/imports-office-xml.md): the readers' policies.
+  - [Password-protected books](docs/architecture/state/protected-books.md): detecting, unlocking, and never writing their text.
   - [Kindle books](docs/architecture/state/imports-kindle.md): KFX, MOBI 6, and KF8.
   - [Braille files](docs/architecture/state/imports-braille.md): BRF, BRL, PEF, and BARD braille books, and their records.
   - [Braille tables](docs/architecture/state/imports-braille-tables.md): the translator helper, the table check, and the guess.

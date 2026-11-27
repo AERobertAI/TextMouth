@@ -54,6 +54,9 @@ extension LibraryViewModel {
     nonisolated static func needsMetadataRefresh(_ book: Book) -> Bool {
         !book.isFeedItem
             && SemanticVersion.isOutdated(stored: book.metadataReaderVersion, current: ImportedFileMetadata.readerVersion(for: book.format))
+            // A protected book's file cannot be read without its password
+            // (FR41); asked last, since it looks at the file.
+            && !book.isPasswordProtected
     }
 
     /// The fields of `book` the refresh replaces with what its file names

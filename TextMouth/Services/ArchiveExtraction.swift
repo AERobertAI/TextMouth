@@ -122,15 +122,19 @@ struct ArchiveExtractionProgress: Equatable, Sendable {
 enum ArchiveExtractor {
 
     /// Opens the ZIP archive at `url` for reading.
-    /// - Throws: Cocoa's "no such file" error when nothing is at `url`, and
+    /// - Throws: Cocoa's "no such file" error when nothing is at `url`,
+    ///   `EncryptedArchiveError` when an entry is protected by a password, and
     ///   `FileImportError.unreadableArchive` when ZIPFoundation cannot open
     ///   it, since its own errors carry no description a listener could use.
     static func open(_ url: URL) throws -> Archive {
         guard FileManager.default.fileExists(atPath: url.path) else {
             throw CocoaError(.fileReadNoSuchFile, userInfo: [NSFilePathErrorKey: url.path])
         }
+        // A password-protected archive is refused in words that say so, since
+        // ZIPFoundation would list it empty or short (B27).
+        try UnlockedSources.refuseIfLocked(at: url)
         do {
-            return try Archive(url: url, accessMode: .read)
+            return try UnlockedSources.openArchive(at: url)
         } catch {
             throw FileImportError.unreadableArchive
         }

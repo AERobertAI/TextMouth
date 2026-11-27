@@ -274,13 +274,21 @@ enum DOCXParser {
 
     /// Open the DOCX package at `url` for reading.
     /// - Throws: `DOCXParserError.fileNotFound` when no file is there, or
-    ///   `.invalidArchive` when it cannot be opened as a ZIP archive.
+    ///   `.invalidArchive` when it cannot be opened as a ZIP archive, and
+    ///   `EncryptedArchiveError` when an entry is protected by a password.
     private static func openArchive(at url: URL) throws -> Archive {
         guard FileManager.default.fileExists(atPath: url.path) else {
             throw DOCXParserError.fileNotFound(url.path)
         }
+        // A password-protected archive is refused in words that say so (B27).
         do {
-            return try Archive(url: url, accessMode: .read)
+            try UnlockedSources.refuseIfLocked(at: url)
+        } catch is EncryptedArchiveError {
+            // The reader's own refusal for a package with a password.
+            throw PasswordProtectedDocument()
+        }
+        do {
+            return try UnlockedSources.openArchive(at: url)
         } catch {
             throw DOCXParserError.invalidArchive
         }

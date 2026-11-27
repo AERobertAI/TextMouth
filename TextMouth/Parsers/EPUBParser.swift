@@ -166,13 +166,17 @@ enum EPUBParser {
     /// Open the EPUB at `url` for reading.
     /// - Throws: `EPUBParserError.fileNotFound` when no file is there, checked
     ///   first so a missing file is not reported as `.invalidArchive`, which
-    ///   is thrown when the file cannot be opened as a ZIP archive.
+    ///   is thrown when the file cannot be opened as a ZIP archive, and
+    ///   `EncryptedArchiveError` when an entry is protected by a password.
     private static func openArchive(at url: URL) throws -> Archive {
         guard FileManager.default.fileExists(atPath: url.path) else {
             throw EPUBParserError.fileNotFound(url.path)
         }
+        // A password-protected archive is refused in words that say so, since
+        // ZIPFoundation would list it empty or short (B27).
+        try UnlockedSources.refuseIfLocked(at: url)
         do {
-            return try Archive(url: url, accessMode: .read)
+            return try UnlockedSources.openArchive(at: url)
         } catch {
             throw EPUBParserError.invalidArchive
         }
@@ -254,6 +258,13 @@ enum EPUBParser {
         to url: URL,
         replacingWith replacement: ((URL, URL) throws -> Void)? = nil
     ) throws -> String {
+        // A protected book's file is never rewritten: its archive keeps only the
+        // entries before the first encrypted one when an entry is removed,
+        // so the copy would lose the rest of the book (FR41). One unlocked for
+        // now is protected whatever a look at its file says meanwhile.
+        if ProtectionDetector.isProtected(fileAt: url, format: .epub) {
+            throw PasswordProtectedDocument()
+        }
         // A file that is not there is said to be missing, not to be a damaged
         // archive, as reading the metadata says it.
         let archive = try openArchive(at: url)

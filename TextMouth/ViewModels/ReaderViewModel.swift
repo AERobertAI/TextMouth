@@ -207,6 +207,13 @@ final class ReaderViewModel: ObservableObject {
     /// while it shows the book, or Loading.
     @Published var cloudPhase: ReaderCloudPhase?
     @Published var errorMessage: String?
+    /// The panel that asks for the password of a protected book, shown in
+    /// place of the book while it is locked (FR41); nil when the book needs
+    /// none, or has been unlocked.
+    @Published var unlockPrompt: UnlockPromptState?
+    /// Whether this reader holds one hold on its book's plain form
+    /// (`UnlockedSources`), which it lets go of when it closes.
+    var holdsUnlockedBook = false
     /// The audio failure `errorMessage` reports, kept while the message is
     /// shown so its alert can offer Retry. Nil for every other error.
     @Published var audioPlaybackFailure: AudioPlaybackFailure?
@@ -1614,6 +1621,12 @@ final class ReaderViewModel: ObservableObject {
     func loadContent() {
         isLoading = true
         guard beginReadingForLoad() else { return }
+        // A protected book is read only once it is unlocked: remembered
+        // passwords are tried, and then the person is asked (FR41).
+        if book.isLocked {
+            beginUnlocking()
+            return
+        }
         let bookCopy = book
         let storage = cloudServices.storage
         let package = BookPackage(bookCopy)
@@ -1762,7 +1775,9 @@ final class ReaderViewModel: ObservableObject {
         // the reader takes the move into the row, which saves the row and
         // the record as any change is. All of it runs off the main thread,
         // where a large book's places are found.
-        if !format.isAudio {
+        // (Not for a protected book: finding a place by its words would copy
+        // them into its record, FR41.)
+        if !format.isAudio, !book.isPasswordProtected {
             if let moved = analysis.movedPlaces {
                 book.takeMovedPlaces(original: moved.original, moved: moved.moved)
             }
@@ -1806,11 +1821,12 @@ final class ReaderViewModel: ObservableObject {
             audioFiles: analysis.audioFilePaths,
             audioSegments: analysis.audioSegments,
             audioTags: audioTags,
-            shouldPersistContentIndex: !analysis.usedPersistedIndex
+            // Never for a protected book, whose headings stay out of its record (FR41).
+            shouldPersistContentIndex: !book.isPasswordProtected && (!analysis.usedPersistedIndex
                 || transcriptIndexChanged
                 || book.contentIndexVersion != BookContentIndex.currentVersion
                 || (!format.isAudio
-                    && book.cacheFormatVersion != MarkdownCacheService.currentCacheVersion),
+                    && book.cacheFormatVersion != MarkdownCacheService.currentCacheVersion)),
             cacheFormatVersion: analysis.cacheFormatVersion,
             movedPlaces: movedPlaces,
             // The manifest is read afresh, so a load from the saved index
@@ -1830,6 +1846,13 @@ final class ReaderViewModel: ObservableObject {
         case .success(let loaded):
             showLoadedContent(loaded, readFrom: filePath)
         case .failure(let error):
+            // A protected book that arrived from the cloud locked (its file
+            // could not be looked at before it was here) asks for its
+            // password, as any other locked book does (FR41).
+            if error is BookLockedError {
+                beginUnlocking()
+                return
+            }
             showLoadFailure(error, readFrom: filePath)
         }
     }
@@ -2035,7 +2058,14 @@ final class ReaderViewModel: ObservableObject {
     /// not written; the library index alone takes the fields then, as for
     /// any save (`LibraryPersistenceService`). The reader's own copy of the
     /// book takes the same fields.
-    private func keepEPUBMetadataReadFromFile(_ metadata: EPUBMetadata) {
+    ///
+    /// A book with a password keeps none of it (FR41): its package document
+    /// is one of the entries its password encrypts, so the publisher, the
+    /// identifier, and the rest are shown while the book is open, and never
+    /// written to its row, its record, or the sync folder in plain text.
+    /// Internal, not private, so a test can hand it metadata.
+    func keepEPUBMetadataReadFromFile(_ metadata: EPUBMetadata) {
+        guard !book.isPasswordProtected else { return }
         book.keepEPUBMetadata(readFromFile: metadata)
         guard let row = libraryViewModel.bookByID(book.id), row.format == .epub,
               row.keptEPUBMetadata == nil else { return }
@@ -2564,6 +2594,8 @@ final class ReaderViewModel: ObservableObject {
     func close() {
         guard !hasClosed else { return }
         hasClosed = true
+        // The last window to close lets go of a protected book's plain form.
+        releaseUnlockedBook()
         // A closed reader hands nothing over when the next episode arrives.
         nextEpisodeWait = nil
         // Nor does it look any further for a Search Library match that moved.

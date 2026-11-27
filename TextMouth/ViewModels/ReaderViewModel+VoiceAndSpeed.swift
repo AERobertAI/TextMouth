@@ -224,6 +224,12 @@ extension ReaderViewModel {
     /// reader's copy of the book and in the library; their IDs, which the
     /// reader's filter matches, are written from them.
     func toggleHeadingSkip(_ heading: Heading) {
+        // A skipped heading is saved with its words (its label, and its ID),
+        // which a protected book never lets into a record (FR41).
+        guard !book.isPasswordProtected else {
+            announceToVoiceOver(ProtectionWording.cannotSkipSections)
+            return
+        }
         var skipped = book.skippedHeadings ?? []
         if skipped.contains(where: { $0.id == heading.id }) {
             skipped.removeAll { $0.id == heading.id }

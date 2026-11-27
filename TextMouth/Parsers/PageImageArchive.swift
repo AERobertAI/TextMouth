@@ -63,8 +63,11 @@ struct PageImageArchive: PageImageBook {
     ///   smaller limit than the book's).
     /// - Throws: `PageImageError.notAnArchive` when it is no ZIP archive,
     ///   `.tooManyPictures` when it holds more pictures than TextMouth reads
-    ///   in one book, and `.noPictures` when it holds none.
+    ///   in one book, `.noPictures` when it holds none, and
+    ///   `EncryptedArchiveError` when an entry is protected by a password.
     init(url: URL, maximumPages: Int = PageImageWording.maximumPages) throws {
+        // A password-protected archive is refused in words that say so (B27).
+        try UnlockedSources.refuseIfLocked(at: url)
         guard let archive = Archive.openedForReading(at: url) else { throw PageImageError.notAnArchive }
         let contents = try Self.contents(of: archive, maximumPages: maximumPages)
         let comicInfo = contents.comicInfo.flatMap { Self.comicInfo(in: $0, of: archive) }
