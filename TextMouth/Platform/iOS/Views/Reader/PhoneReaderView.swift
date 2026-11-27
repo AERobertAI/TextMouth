@@ -193,12 +193,19 @@ struct PhoneReaderView: View {
             focusKind: item.focusKind,
             showsValue: item == .navigationUnit || item == .speed || item == .sleepTimer,
             rotors: rotors(for: item),
-            menuItems: item == .bookActions ? { bookActionsMenu() } : nil,
+            menuItems: menuItems(for: item),
             refreshesEverySecond: item == .sleepTimer,
             hiddenFromVoiceOver: item.isHiddenFromVoiceOver,
             longPress: longPress(for: item)
         )
         .frame(maxWidth: .infinity)
+    }
+
+    /// The maker of `item`'s menu items: Book Actions' (FR51); nil for the
+    /// controls with no menu.
+    private func menuItems(for item: PhoneReaderControl) -> (@MainActor () -> [UIMenuElement])? {
+        guard item == .bookActions else { return nil }
+        return { bookActionsMenu() }
     }
 
     /// The Book Actions menu's items (FR51), made as it opens: each is its
@@ -213,7 +220,7 @@ struct PhoneReaderView: View {
             let action = UIAction(title: description.label) { _ in
                 // On the next turn, once the menu has begun to close, so the
                 // sheet isn't presented over a menu still on its way out.
-                DispatchQueue.main.async {
+                Task { @MainActor in
                     sheetOpener = .bookActions
                     sheet = item.sheet
                 }
