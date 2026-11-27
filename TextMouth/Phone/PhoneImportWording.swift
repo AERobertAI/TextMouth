@@ -173,4 +173,16 @@ enum PhoneImportWording {
         // Translators: Hint of the iPhone Library's Add to Library button.
         InterfaceText.line("phoneImport.addToLibraryButtonHint", "Opens options to open a book or import a folder.")
     }
+
+    // MARK: - What the Phone Has Not Yet
+
+    /// The note at the end of the phone's Add to Library sheet, after its two
+    /// rows: the Mac's sheet also offers New Recording… and Add Feed…, so a
+    /// person looking for them here learns they are the Mac's for now,
+    /// rather than wondering whether they are hidden or broken (FR53). Each
+    /// feature's iPhone phase shortens it, and the last removes it.
+    static var onlyOnTheMacNote: String {
+        // Translators: Note at the end of the iPhone's Add to Library sheet, after its two choices, saying which features the iPhone app does not have yet and the Mac app does. "For now": they are planned for the iPhone.
+        InterfaceText.line("phoneImport.onlyOnTheMacNote", "Feeds, recording, editing audio, and transcribing are only on the Mac for now.")
+    }
 }

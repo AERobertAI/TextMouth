@@ -4,7 +4,8 @@ import UniformTypeIdentifiers
 /// The iPhone's Add to Library sheet (the spec's "Adding a book"), rebuilt
 /// for the phone over the Mac's words: its title, a Cancel button, then
 /// "Open Book…" and "Import Folder…", each with the Mac's summary as its
-/// hint. Focus lands on Open Book.
+/// hint, and last a note naming what only the Mac has for now (FR53). Focus
+/// lands on Open Book.
 ///
 /// One `fileImporter` serves both rows, set by which row was chosen: books,
 /// several at once, or one folder. Two on one view are reported not to work.
@@ -50,9 +51,13 @@ struct PhoneAddToLibrarySheet: View {
     var body: some View {
         NavigationStack {
             List {
-                row(for: .openBook, mode: .books)
-                    .accessibilityFocused($isOpenBookFocused)
-                row(for: .importFolder, mode: .folder)
+                Section {
+                    row(for: .openBook, mode: .books)
+                        .accessibilityFocused($isOpenBookFocused)
+                    row(for: .importFolder, mode: .folder)
+                } footer: {
+                    onlyOnTheMacNote
+                }
             }
             .navigationTitle(AddToLibraryWording.sheetTitle)
             .navigationBarTitleDisplayMode(.inline)
@@ -94,6 +99,17 @@ struct PhoneAddToLibrarySheet: View {
         }
         .accessibilityLabel(choice.title)
         .accessibilityHint(summary)
+    }
+
+    /// The note under the two rows (FR53): the Mac's sheet also offers New
+    /// Recording… and Add Feed…, so this says which features are the Mac's
+    /// for now. Plain static text after Import Folder… in VoiceOver's order,
+    /// drawn in the phone's full-contrast secondary color, since a footer's
+    /// default gray fails the accessibility audit.
+    private var onlyOnTheMacNote: some View {
+        Text(PhoneImportWording.onlyOnTheMacNote)
+            .font(.footnote)
+            .phoneSecondaryText()
     }
 
     /// Takes what the picker returned: the sheet closes, then the files go

@@ -537781,6 +537781,162 @@
         }
       }
     },
+    "phoneImport.onlyOnTheMacNote" : {
+      "comment" : "Note at the end of the iPhone's Add to Library sheet, after its two choices, saying which features the iPhone app does not have yet and the Mac app does. \"For now\": they are planned for the iPhone.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "الموجزات والتسجيل وتحرير الصوت وتفريغ الصوت متاحة على Mac فقط حاليًا."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ফিড, রেকর্ডিং, অডিও সম্পাদনা ও ট্রান্সক্রাইব করা আপাতত শুধু Mac-এ আছে।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Feeds, Aufnehmen, Audio bearbeiten und Transkribieren gibt es vorerst nur auf dem Mac."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Feeds, recording, editing audio, and transcribing are only on the Mac for now."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Los canales, la grabación, la edición de audio y la transcripción solo están en el Mac por ahora."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "فیدها، ضبط، ویرایش صدا و رونویسی فعلاً فقط در Mac هستند."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Les flux, l’enregistrement, la modification de l’audio et la transcription ne sont pour l’instant disponibles que sur Mac."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ערוצים, הקלטה, עריכת שמע ותמלול זמינים בינתיים רק ב-Mac."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "फ़ीड, रिकॉर्डिंग, ऑडियो संपादन और ट्रांसक्राइब करना अभी केवल Mac पर हैं।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Feed, perekaman, pengeditan audio, dan transkripsi untuk saat ini hanya ada di Mac."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Feed, registrazione, modifica audio e trascrizione per ora sono solo sul Mac."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "フィード、録音、オーディオの編集、文字起こしは、今のところ Mac でのみ使えます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "피드, 녹음, 오디오 편집, 대본 만들기는 현재 Mac에서만 사용할 수 있습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Feeds, opnemen, audio wijzigen en transcriberen zijn voorlopig alleen op de Mac beschikbaar."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kanały, nagrywanie, edycja dźwięku i transkrypcja są na razie dostępne tylko na komputerze Mac."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Feeds, gravação, edição de áudio e transcrição, por enquanto, estão só no Mac."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ленты, запись, изменение аудио и расшифровка пока есть только на Mac."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Flöden, inspelning, ljudredigering och transkribering finns tills vidare bara på Mac."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ฟีด การบันทึกเสียง การแก้ไขเสียง และการถอดเสียง ตอนนี้มีเฉพาะบน Mac"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Beslemeler, kayıt, ses düzenleme ve yazıya dökme şimdilik yalnızca Mac'te var."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Стрічки, запис, редагування аудіо й транскрибування поки є лише на Mac."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "فیڈز، ریکارڈنگ، آڈیو میں ترمیم اور ٹرانسکرائب کرنا فی الحال صرف Mac پر ہیں۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nguồn cấp, ghi âm, sửa âm thanh và chép lời hiện chỉ có trên Mac."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "订阅源、录音、编辑音频和转录目前仅在 Mac 上提供。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "訂閱源、錄音、編輯音訊和轉錄目前僅在 Mac 上提供。"
+          }
+        }
+      }
+    },
     "phoneImport.refusalNextStep" : {
       "comment" : "Last sentence of every refusal of a file the iPhone app can't import yet: the Mac can add it, and the book then comes to the iPhone.",
       "extractionState" : "manual",
