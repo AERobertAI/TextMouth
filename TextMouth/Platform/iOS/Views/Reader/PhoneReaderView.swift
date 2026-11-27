@@ -354,13 +354,16 @@ struct PhoneReaderView: View {
     }
 
     /// A sheet closed: the text follows a jump made in it, and focus returns
-    /// to the control that opened it.
+    /// to the control that opened it, or to Play when that control has left
+    /// the screen (the Sleep Timer under Play, its timer turned off in the
+    /// sheet: `PhoneReaderControl.focusTarget`).
     private func sheetClosed() {
         model.invalidate()
         model.placeDidMove?()
-        guard let kind = sheetOpener?.focusKind else { return }
+        guard let opener = sheetOpener else { return }
         sheetOpener = nil
-        returnFocus(to: kind)
+        let timerRuns = session.reader?.sleepTimerService.isActive ?? false
+        returnFocus(to: PhoneReaderControl.focusTarget(returningTo: opener, timerRuns: timerRuns).focusKind)
     }
 
     /// Returns focus to the control of `kind` after 0.35 seconds, by a layout
@@ -635,7 +638,21 @@ final class PhoneSleepTimerWatcher: ObservableObject {
             .removeDuplicates()
             .sink { [weak self] isActive in
                 // `$isActive` publishes just before the change, with the new value.
-                MainActor.assumeIsolated { self?.runs = isActive }
+                MainActor.assumeIsolated { self?.timerChanged(runs: isActive) }
             }
+    }
+
+    /// The timer started or ended. As it ends, the Sleep Timer under Play
+    /// leaves the screen; if VoiceOver's focus was on it, focus goes to Play
+    /// once the control has gone, rather than VoiceOver dropping it at the
+    /// top of the screen (`PhoneReaderControl.focusTarget`). Asked here,
+    /// before the screen redraws, while the control is still there to ask.
+    private func timerChanged(runs isActive: Bool) {
+        let focusWasOnTimer = runs && !isActive
+            && PhoneFocusRegistry.shared.view(for: .sleepTimer)?.accessibilityElementIsFocused() == true
+        runs = isActive
+        guard focusWasOnTimer else { return }
+        let target = PhoneReaderControl.focusTarget(returningTo: .sleepTimer, timerRuns: isActive)
+        PhoneFocusRegistry.shared.requestFocus(on: target.focusKind, after: PhoneFocusPolicy.screenChangedDelay)
     }
 }

@@ -95,6 +95,17 @@ enum PhoneReaderControl: CaseIterable, Hashable, Sendable {
     /// less frequent actions, each opening its sheet as its button did.
     static let bookActionItems: [PhoneReaderControl] = [.sleepTimer, .voice, .bookInfo, .export]
 
+    /// Where VoiceOver's focus goes back to, for a sheet that `control`
+    /// opened as it closes, or for the control VoiceOver was on as it leaves
+    /// the screen: `control` while it is still on the screen, and Play when
+    /// it is not. Only the Sleep Timer under Play comes and goes (FR52): a
+    /// timer turned off in its sheet, or one that ran out under VoiceOver's
+    /// focus, would otherwise leave focus on a control that is gone, and
+    /// VoiceOver would drop it at the top of the screen.
+    static func focusTarget(returningTo control: PhoneReaderControl, timerRuns: Bool) -> PhoneReaderControl {
+        screen(timerRuns: timerRuns).contains(control) ? control : .play
+    }
+
     /// The kind `PhoneFocusRegistry` knows the control by, for focus on
     /// arrival and on return from a sheet: every control has one, so a
     /// landing on any of them counts as the listener's in `PhoneFocusPolicy`.

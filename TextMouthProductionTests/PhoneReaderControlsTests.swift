@@ -70,6 +70,22 @@ final class PhoneReaderControlsTests: XCTestCase {
         XCTAssertFalse(PhoneReaderControl.screen(timerRuns: false).contains(.sleepTimer))
     }
 
+    /// Focus goes back to the Sleep Timer under Play while a timer still runs,
+    /// and to Play once it has gone (turned off in its sheet, or run out under
+    /// VoiceOver's focus), never to a control no longer on the screen. Every
+    /// other control on the screen gets focus back itself.
+    func testFocusReturnsToPlayWhenTheSleepTimerHasGone() {
+        XCTAssertEqual(PhoneReaderControl.focusTarget(returningTo: .sleepTimer, timerRuns: true), .sleepTimer)
+        XCTAssertEqual(PhoneReaderControl.focusTarget(returningTo: .sleepTimer, timerRuns: false), .play)
+        for timerRuns in [false, true] {
+            for control in PhoneReaderControl.screen(timerRuns: timerRuns) {
+                XCTAssertEqual(PhoneReaderControl.focusTarget(returningTo: control, timerRuns: timerRuns), control)
+            }
+            // The menu's items have no button on the screen but the timer's.
+            XCTAssertEqual(PhoneReaderControl.focusTarget(returningTo: .voice, timerRuns: timerRuns), .play)
+        }
+    }
+
     /// The grid's rows hold the controls in the grid's order, at most three
     /// to a row, with each pair kept in one row: the headings, the skips, and
     /// Bookmarks with Headings.
