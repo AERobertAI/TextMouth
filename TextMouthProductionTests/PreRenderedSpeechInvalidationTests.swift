@@ -1103,6 +1103,84 @@ final class PreRenderedSpeechInvalidationTests: XCTestCase {
         }
     }
 
+    // MARK: - A voice chosen while rendered audio is heard (B29)
+
+    // On the iPhone a Play starts on rendered audio, so a voice chosen in
+    // Settings reached an open reader only once the text had ended: the
+    // engine played the old voice's audio. Speech now leaves that audio for
+    // direct speech in the new voice, from the word the engine had reached.
+
+    /// Speaks `spokenText` and moves it onto silent rendered audio of the
+    /// current voice, as a Play does on the iPhone, so the engine holds the
+    /// speech. Returns whether the engine took it.
+    private func moveOntoRenderedAudio(_ speech: SpeechService) -> Bool {
+        speech.speak(Self.spokenText)
+        speech.audioEngine._installRenderedAudioForTesting(signature: Self.signature(of: speech), lasting: 5)
+        speech.seek(toCharOffset: 6)
+        return !speech.usingDirectMode
+    }
+
+    /// A voice chosen while rendered audio plays carries speech on directly,
+    /// in the new voice, with no rendered audio of the old one left.
+    func testChoosingAVoiceWhilePlayingRenderedAudioContinuesDirectly() throws {
+        try withSpeechService { speech in
+            let onEngine = moveOntoRenderedAudio(speech)
+            speech.currentVoice = try anotherVoice(than: speech.currentVoice)
+
+            let continuedDirectly = speech.usingDirectMode
+            let oldAudioLeft = speech.audioEngine.hasRenderedAudio
+            let stillSpeaking = speech.isSpeaking && !speech.isPaused
+            speech.stop()
+
+            XCTAssertTrue(onEngine)
+            XCTAssertTrue(continuedDirectly)
+            XCTAssertFalse(oldAudioLeft)
+            XCTAssertTrue(stillSpeaking)
+        }
+    }
+
+    /// A voice chosen while rendered audio is paused keeps the pause and the
+    /// place, and Play then speaks directly in the new voice instead of
+    /// resuming the old voice's audio.
+    func testChoosingAVoiceWhilePausedOnRenderedAudioResumesDirectly() throws {
+        try withSpeechService { speech in
+            let onEngine = moveOntoRenderedAudio(speech)
+            speech.pause()
+            let placeBefore = speech.currentCharOffset()
+            speech.currentVoice = try anotherVoice(than: speech.currentVoice)
+
+            let stayedPaused = speech.isPaused
+            let placeAfter = speech.currentCharOffset()
+            let resumed = speech.resume()
+            let resumedDirectly = speech.usingDirectMode
+            let oldAudioLeft = speech.audioEngine.hasRenderedAudio
+            speech.stop()
+
+            XCTAssertTrue(onEngine)
+            XCTAssertTrue(stayedPaused)
+            XCTAssertEqual(placeAfter, placeBefore)
+            XCTAssertTrue(resumed)
+            XCTAssertTrue(resumedDirectly)
+            XCTAssertFalse(oldAudioLeft)
+        }
+    }
+
+    /// The same voice assigned again, as the reader does each time any
+    /// setting changes, leaves rendered audio playing.
+    func testAssigningTheSameVoiceKeepsTheRenderedAudioPlaying() throws {
+        try withSpeechService { speech in
+            let onEngine = moveOntoRenderedAudio(speech)
+            let sameVoice = try XCTUnwrap(speech.currentVoice.flatMap { AVSpeechSynthesisVoice(identifier: $0.identifier) })
+            speech.currentVoice = sameVoice
+
+            let stillOnEngine = !speech.usingDirectMode && speech.audioEngine.hasRenderedAudio
+            speech.stop()
+
+            XCTAssertTrue(onEngine)
+            XCTAssertTrue(stillOnEngine)
+        }
+    }
+
     // MARK: - Fixtures
 
     /// When a setting changes relative to the look-ahead render.

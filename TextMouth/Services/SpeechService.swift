@@ -731,7 +731,19 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// (the reader takes each word from `onWordSpoken`), and publishing it
     /// announced a change of the service 3 to 5 times a second for nothing.
     var currentWordRange: NSRange?
-    @Published var currentVoice: AVSpeechSynthesisVoice?
+    /// The voice speech is made in. Choosing another one, from any source
+    /// (the global setting, the book's own, a reset), reaches speech that is
+    /// being heard from rendered audio at once
+    /// (`leaveRenderedAudioOfAnotherVoice()`), since that audio was made in
+    /// the old voice and plays on in it otherwise (B29).
+    @Published var currentVoice: AVSpeechSynthesisVoice? {
+        didSet {
+            // The same voice assigned again (the reader applies the settings
+            // each time one changes) is no change.
+            guard oldValue?.identifier != currentVoice?.identifier else { return }
+            leaveRenderedAudioOfAnotherVoice()
+        }
+    }
     @Published var wordsPerMinute: Double = 200 {
         didSet {
             // This is a reader's effective speed. Only SettingsViewModel may
@@ -2300,6 +2312,49 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         startPositionTracking()
 
         transitionLog(.trace, "PRE_RENDERED_START: playing chapter (\(text.utf16Length) UTF-16 units) from offset \(charOffset)")
+    }
+
+    /// Moves speech off rendered audio made in a voice other than the
+    /// current one, when the voice was chosen while that audio was playing or
+    /// paused (B29): the engine plays what it was given, so the old voice
+    /// would otherwise be heard to the end of the text, and a paused play
+    /// would resume in it (`SpeechResumePolicy`: "a paused engine resumes
+    /// its own audio"). On the iPhone a Play starts on rendered audio, so
+    /// this was the way speech was usually heard there.
+    ///
+    /// Moving to direct speech is the direction that is safe at any time
+    /// (the engine's position is known to the word, unlike a direct
+    /// utterance's), never the reverse (`feedback_playback_architecture`):
+    ///   - paused: nothing is heard, so the place is kept and Play restarts
+    ///     directly from it, in the new voice (`pendingDirectSeekOffset`);
+    ///   - playing: direct speech starts at the word the engine had reached.
+    ///
+    /// It does nothing when speech is direct already (the next chunk takes
+    /// the voice), when the audio is of the new voice, or while a sleep
+    /// fade holds the mixer down, which direct speech would not follow; the
+    /// text then ends in its old voice, and the next one is made in the new.
+    private func leaveRenderedAudioOfAnotherVoice() {
+        guard isSpeaking,
+              !usingDirectMode,
+              let engine = madeAudioEngine,
+              engine.hasRenderedAudio,
+              !renderedAudioMatchesSpeech,
+              engine.intendedVolume >= 1 else { return }
+
+        let offset = max(0, min(engine.currentCharOffset(), currentText.utf16Length))
+        transitionLog(.event, "VOICE_CHANGED_ON_ENGINE: leaving audio rendered in another voice at offset=\(offset) paused=\(isPaused)")
+        // Drop in-flight position reports of the audio being left, then the
+        // audio itself, so no seek or resume can find it again.
+        positionGeneration += 1
+        stopPositionTracking()
+        engine.discardRenderedAudio()
+        currentWordRange = NSRange(location: offset, length: 0)
+        usingDirectMode = true
+        if isPaused {
+            pendingDirectSeekOffset = offset
+        } else {
+            speakDirect(currentText, fromCharOffset: offset)
+        }
     }
 
     // MARK: - Seeking
