@@ -156,7 +156,9 @@ enum PhoneReaderControls {
             label: PhoneAppWording.playButton(isPlaying: state.isPlaying),
             value: value,
             hint: PhoneReaderWording.playHint(movingBy: state.unit),
-            traits: traits
+            traits: traits,
+            // The Sleep Timer from Play (FR52), as its long press opens it.
+            actions: [.sleepTimer]
         )
     }
 

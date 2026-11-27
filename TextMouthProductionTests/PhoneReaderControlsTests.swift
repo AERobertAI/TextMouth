@@ -140,7 +140,18 @@ final class PhoneReaderControlsTests: XCTestCase {
         XCTAssertEqual(play.value, "")
         XCTAssertEqual(play.hint, "Moves back or forward by sentence.")
         XCTAssertEqual(play.traits, [.button, .adjustable, .startsMediaSession])
-        XCTAssertEqual(play.actions, [])
+        XCTAssertEqual(play.actions, [.sleepTimer])
+    }
+
+    /// Play offers the Sleep Timer on the Actions rotor in every state,
+    /// named as the sheet is (FR52): the sure way to it beside the triple tap.
+    func testPlayOffersTheSleepTimerAction() {
+        let changes: [(inout PhoneReaderState) -> Void] = [{ _ in }, { $0.isPlaying = true }, { $0.isLoading = true }]
+        for change in changes {
+            XCTAssertEqual(describe(.play, in: state(change)).actions, [.sleepTimer])
+        }
+        XCTAssertEqual(PhoneControlAction.sleepTimer.name, "Sleep Timer")
+        XCTAssertEqual(PhoneControlAction.sleepTimer.name, describe(.sleepTimer, in: state()).label)
     }
 
     /// Playing: "Pause", with an empty value, and without the media trait,
@@ -358,13 +369,13 @@ final class PhoneReaderControlsTests: XCTestCase {
         XCTAssertEqual(describe(.skipForward, in: state()).label, "Skip forward: Sentence")
     }
 
-    /// No control but Where Am I? has actions, so VoiceOver never says
-    /// "Actions available" after one that has none to offer; none but Play
-    /// and Where Am I? start a media session.
-    func testOnlyWhereAmIHasActionsAndOnlyPlayAndWhereAmIStartMedia() {
+    /// No control but Where Am I? and Play (its Sleep Timer, FR52) has
+    /// actions, so VoiceOver never says "Actions available" after one that has
+    /// none to offer; none but Play and Where Am I? start a media session.
+    func testOnlyWhereAmIAndPlayHaveActionsAndOnlyPlayAndWhereAmIStartMedia() {
         for control in PhoneReaderControl.allCases {
             let description = describe(control, in: state())
-            if control != .whereAmI {
+            if control != .whereAmI && control != .play {
                 XCTAssertEqual(description.actions, [], "\(control)")
             }
             if control != .play && control != .whereAmI {

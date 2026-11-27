@@ -195,7 +195,8 @@ struct PhoneReaderView: View {
             rotors: rotors(for: item),
             menuItems: item == .bookActions ? { bookActionsMenu() } : nil,
             refreshesEverySecond: item == .sleepTimer,
-            hiddenFromVoiceOver: item.isHiddenFromVoiceOver
+            hiddenFromVoiceOver: item.isHiddenFromVoiceOver,
+            longPress: longPress(for: item)
         )
         .frame(maxWidth: .infinity)
     }
@@ -269,14 +270,31 @@ struct PhoneReaderView: View {
 
     /// What `item`'s custom actions do: Where Am I?'s two, the Mac's.
     private func customActions(for item: PhoneReaderControl) -> (@MainActor (PhoneControlAction) -> Void)? {
-        guard item == .whereAmI else { return nil }
+        guard item == .whereAmI || item == .play else { return nil }
         let model = model
         return { action in
             switch action {
             case .whereAmIFullSummary: model.whereAmIFullSummary()
             case .copyReadingPosition: model.copyReadingPosition()
+            case .sleepTimer: openSleepTimer(from: item)
             }
         }
+    }
+
+    /// Opens the Sleep Timer sheet from `opener` (FR52: Play's action and its
+    /// long press, which a VoiceOver one-finger triple tap makes), focus
+    /// coming back to `opener` as it closes.
+    private func openSleepTimer(from opener: PhoneReaderControl) {
+        sheetOpener = opener
+        sheet = PhoneReaderControl.sleepTimer.sheet
+    }
+
+    /// What a long press on `item` does: Play's opens the Sleep Timer (FR52).
+    /// VoiceOver's one-finger triple tap is a long press on the item ("Touch
+    /// and hold (long press) the item", Apple's VoiceOver gestures list).
+    private func longPress(for item: PhoneReaderControl) -> (@MainActor () -> Void)? {
+        guard item == .play else { return nil }
+        return { openSleepTimer(from: .play) }
     }
 
     /// `item`'s own rotors: Play's, while their flag is on; none otherwise.

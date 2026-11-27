@@ -46,6 +46,9 @@ struct PhoneControl: UIViewRepresentable {
     /// Whether VoiceOver passes over the control while it runs (FR49); it
     /// stays on screen and in the tree without VoiceOver.
     var hiddenFromVoiceOver = false
+    /// What a long press does, a touch and hold or VoiceOver's one-finger
+    /// triple tap (FR52); nil for nothing.
+    var longPress: (@MainActor () -> Void)?
 
     func makeUIView(context: Context) -> PhoneControlButton {
         let button = PhoneControlButton()
@@ -70,6 +73,7 @@ struct PhoneControl: UIViewRepresentable {
         button.setMenuItems(menuItems)
         button.refreshesEverySecond = refreshesEverySecond
         button.hiddenFromVoiceOver = hiddenFromVoiceOver
+        button.setLongPress(longPress)
         if let focusKind {
             PhoneFocusRegistry.shared.register(button, as: focusKind)
         }
@@ -124,6 +128,10 @@ final class PhoneControlButton: UIButton {
     }
     /// The observer of VoiceOver starting and stopping, while hidden from it.
     private var voiceOverObserver: NSObjectProtocol?
+    /// What a long press does; nil for nothing.
+    private var longPressAction: (@MainActor () -> Void)?
+    /// The long-press recognizer, made with the first long-press action.
+    private var longPressRecognizer: UILongPressGestureRecognizer?
 
     /// A plain, large button whose title wraps and follows the text size.
     init() {
@@ -188,6 +196,26 @@ final class PhoneControlButton: UIButton {
             NotificationCenter.default.removeObserver(observer)
             voiceOverObserver = nil
         }
+    }
+
+    /// Gives the button a long press that does `action`, or none for nil. A
+    /// recognized long press cancels the touch, so the button's own press
+    /// (Play's play or pause) doesn't follow it as the finger lifts.
+    func setLongPress(_ action: (@MainActor () -> Void)?) {
+        longPressAction = action
+        if action != nil, longPressRecognizer == nil {
+            let recognizer = UILongPressGestureRecognizer(target: self, action: #selector(longPressed(_:)))
+            recognizer.cancelsTouchesInView = true
+            addGestureRecognizer(recognizer)
+            longPressRecognizer = recognizer
+        }
+        longPressRecognizer?.isEnabled = action != nil
+    }
+
+    /// The long press was recognized: its action, once, as it begins.
+    @objc private func longPressed(_ recognizer: UILongPressGestureRecognizer) {
+        guard recognizer.state == .began else { return }
+        longPressAction?()
     }
 
     /// Starts the one-second redraw while it is wanted and the button is on

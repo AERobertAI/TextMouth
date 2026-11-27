@@ -295,6 +295,25 @@ final class PlaybackUITests: TextMouthUITestCase {
         try pressPauseIfPlaying(app)
     }
 
+    /// A long press on Play, which VoiceOver's one-finger triple tap makes,
+    /// opens the Sleep Timer sheet, and the book doesn't start: the press that
+    /// ends the hold is cancelled, not taken for Play (FR52).
+    func testALongPressOnPlayOpensTheSleepTimer() throws {
+        try requireSound("Holding Play, which would start the book if the hold were taken for a press")
+        let app = try launchIntoTheReader()
+        let play = app.buttons["Play"]
+        XCTAssertTrue(play.waitForExistence(timeout: Self.patience), "No Play:\n\(app.debugDescription)")
+        play.press(forDuration: 1.2)
+        XCTAssertTrue(
+            app.navigationBars["Sleep Timer"].waitForExistence(timeout: Self.patience),
+            "Holding Play opened no Sleep Timer sheet:\n\(app.debugDescription)"
+        )
+        XCTAssertFalse(app.buttons["Pause"].exists, "Holding Play started the book")
+        app.buttons["Close"].tap()
+        XCTAssertTrue(app.buttons["Play"].waitForExistence(timeout: Self.patience), "No Play back on the reader")
+        try pressPauseIfPlaying(app)
+    }
+
     /// Stop At "End of the book" starts the book and reads as the place it
     /// waits for; Cancel Timer in the sheet ends it, and the control leaves
     /// the reader (FR51). (The End of heading timer at the cover has a test of its own,
