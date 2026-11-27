@@ -459,6 +459,21 @@ class TextMouthUITestCase: XCTestCase {
             labelIsPrefix: true
         )
 
+        /// The Add to Library sheet's note on what only the Mac has (FR53), a
+        /// plain `Text` in the footnote style in its section's footer, which
+        /// wraps to two lines: flagged "partially unsupported" at the default
+        /// size as the Library's summary is (train 1127-1548), for a cause not
+        /// known, while `LargeTextUITests` passes the same sheet at the
+        /// largest size. Matched by the note's whole words, the Dynamic Type
+        /// kind, and Apple's exact short description, so a fixed font (which
+        /// reads "unsupported", and `PhoneFontPolicyTests` refuses in the
+        /// source) still fails, and so does any other finding on it.
+        static let onlyOnTheMacNote = Accepted(
+            type: .dynamicType, label: "Feeds, recording, editing audio, and transcribing are only on the Mac for now.",
+            why: "the Add to Library sheet's note: a plain footnote Text that grows and wraps, flagged as the Library's summary is",
+            description: "Dynamic Type font sizes are partially unsupported"
+        )
+
         /// A Dynamic Type finding that names no element, in Apple's exact
         /// words `description`. Every Dynamic Type finding that names an
         /// element (audited alone) is matched by that element, so one that

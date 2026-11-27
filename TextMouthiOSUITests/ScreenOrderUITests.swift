@@ -29,9 +29,9 @@ final class ScreenOrderUITests: TextMouthUITestCase {
         XCTAssertTrue(app.buttons["Open Book…"].waitForExistence(timeout: Self.patience), "The sheet never opened:\n\(app.debugDescription)")
 
         let elements = try elementsOfSheet(titled: "Add to Library", in: app)
-        let note = "Feeds, recording, editing audio, and transcribing are only on the Mac for now."
+        let note = Accepted.onlyOnTheMacNote.label
         assertOrder(["Add to Library", "Cancel", "Open Book…", "Import Folder…", note], in: elements)
-        try audit(app, screen: "Add to Library sheet", accepting: [.navigationTitle("Add to Library"), .barItem("Cancel")])
+        try audit(app, screen: "Add to Library sheet", accepting: [.navigationTitle("Add to Library"), .barItem("Cancel"), .onlyOnTheMacNote])
     }
 
     // MARK: - Settings
