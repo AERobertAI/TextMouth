@@ -90,6 +90,10 @@ final class PhoneBookTextView: UITextView {
     private var lastRefresh = Date.distantPast
     /// The highlighted sentence, as a range in the passage; nil for none.
     private var highlighted: Range<Int>?
+    /// The reading place the highlight was last placed for, as chapter and
+    /// UTF-16 offset; nil since the passage changed. The tick does nothing
+    /// more while the place stays here.
+    private var highlightedPlace: [Int]?
     /// When the person last scrolled the text by touch; nil since it was shown.
     private var lastTouchScroll: Date?
     /// The highlight's color: the system's yellow, faint enough to read
@@ -228,6 +232,7 @@ final class PhoneBookTextView: UITextView {
         shown = next
         rotorSentence = nil
         highlighted = nil
+        highlightedPlace = nil
         lastTouchScroll = nil
         text = next.text
         selectedRange = NSRange(location: 0, length: 0)
@@ -243,6 +248,7 @@ final class PhoneBookTextView: UITextView {
     /// never its characters, and nothing is posted to VoiceOver.
     private func moveHighlight(of reader: ReaderViewModel, scrolls: Bool) {
         guard let shown, let chapter = shown.chapter else { return }
+        highlightedPlace = Self.place(of: reader)
         let sentence = reader.currentChapterIndex == chapter
             ? PhonePassagePolicy.spokenSentence(
                 inPassage: shown.text,
@@ -278,16 +284,9 @@ final class PhoneBookTextView: UITextView {
         setContentOffset(CGPoint(x: 0, y: top), animated: true)
     }
 
-    /// The tick's highlight: moved, and scrolled to, when the policy lets it.
-    private func followSpeech() {
-        guard let reader = model?.reader else { return }
-        let sinceScroll = lastTouchScroll.map { Date().timeIntervalSince($0) }
-        guard PhonePassagePolicy.highlightFollows(
-            hasFocus: hasFocus,
-            followsInBraille: followsInBraille(),
-            secondsSinceScroll: sinceScroll
-        ) else { return }
-        moveHighlight(of: reader, scrolls: true)
+    /// `reader`'s place, as the chapter and the UTF-16 offset in it.
+    private static func place(of reader: ReaderViewModel) -> [Int] {
+        [reader.currentChapterIndex, reader.currentCharacterOffset]
     }
 
     /// The UTF-16 range `range` of `text`.
@@ -306,22 +305,39 @@ final class PhoneBookTextView: UITextView {
     /// view is on screen.
     private func startTick() {
         guard tick == nil, window != nil else { return }
-        tick = Timer.scheduledTimer(withTimeInterval: PhonePassagePolicy.followInterval, repeats: true) { [weak self] _ in
+        let timer = Timer.scheduledTimer(withTimeInterval: PhonePassagePolicy.followInterval, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated {
                 self?.ticked()
             }
         }
+        // A fifth of a second's leeway lets the system group the wake-ups,
+        // which saves battery; the highlight needs no finer timing.
+        timer.tolerance = PhonePassagePolicy.followInterval / 5
+        tick = timer
     }
 
-    /// One tick: the passage's refresh when 10 seconds have passed since the
-    /// last, then the highlight.
+    /// One tick, as `PhonePassagePolicy.tickPlan` says: the passage's refresh
+    /// when 10 seconds have passed since the last and no finger is scrolling,
+    /// then the highlight, when the place has moved and the policy lets it.
     private func ticked() {
+        guard let reader = model?.reader else { return }
         let now = Date()
-        if now.timeIntervalSince(lastRefresh) >= PhonePassagePolicy.refreshInterval {
+        let plan = PhonePassagePolicy.tickPlan(
+            refreshDue: now.timeIntervalSince(lastRefresh) >= PhonePassagePolicy.refreshInterval,
+            placeMoved: highlightedPlace != Self.place(of: reader),
+            hasFocus: hasFocus,
+            followsInBraille: followsInBraille(),
+            secondsSinceScroll: lastTouchScroll.map { now.timeIntervalSince($0) }
+        )
+        if plan.asksRefresh {
             lastRefresh = now
             passageEvent(.playingTick)
         }
-        followSpeech()
+        // A refresh that showed a new passage has lit its first sentence and
+        // noted the place already, so the place is asked about again here.
+        if plan.movesHighlight, highlightedPlace != Self.place(of: reader) {
+            moveHighlight(of: reader, scrolls: true)
+        }
     }
 
     /// Stops the tick.

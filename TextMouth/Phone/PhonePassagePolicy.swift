@@ -62,8 +62,54 @@ enum PhonePassagePolicy {
     ///     text by touch; nil when they haven't since it was shown.
     static func highlightFollows(hasFocus: Bool, followsInBraille: Bool, secondsSinceScroll: TimeInterval?) -> Bool {
         if hasFocus && !followsInBraille { return false }
-        guard let secondsSinceScroll else { return true }
-        return secondsSinceScroll >= touchQuietInterval
+        return !isTouchScrolling(secondsSinceScroll: secondsSinceScroll)
+    }
+
+    /// Whether the person scrolled the text by touch in the last few seconds
+    /// (`touchQuietInterval`), so that nothing moves it under their finger.
+    static func isTouchScrolling(secondsSinceScroll: TimeInterval?) -> Bool {
+        guard let secondsSinceScroll else { return false }
+        return secondsSinceScroll < touchQuietInterval
+    }
+
+    /// What one tick of Book content's one-second timer does (FR48).
+    struct TickPlan: Equatable, Sendable {
+        /// Whether it asks for the passage's refresh (`Event.playingTick`),
+        /// which `changesPassage` may still refuse.
+        var asksRefresh: Bool
+        /// Whether it moves the highlight to the sentence being spoken.
+        var movesHighlight: Bool
+    }
+
+    /// One tick's work. The refresh, every 10 seconds, waits while the person
+    /// scrolls by touch, as the highlight does: a new passage starts at the
+    /// top and would pull the text from under their finger. The highlight
+    /// moves only when the place has moved since it was last lit, so a paused
+    /// book costs the tick nothing but this question.
+    ///
+    /// - Parameters:
+    ///   - refreshDue: Whether 10 seconds have passed since the last refresh.
+    ///   - placeMoved: Whether the reading place differs from the one the
+    ///     highlight was last placed for.
+    ///   - hasFocus: Whether Book content has VoiceOver's focus.
+    ///   - followsInBraille: Whether Settings' Follow in Braille is on.
+    ///   - secondsSinceScroll: How long ago the person last scrolled the
+    ///     text by touch; nil when they haven't since it was shown.
+    static func tickPlan(
+        refreshDue: Bool,
+        placeMoved: Bool,
+        hasFocus: Bool,
+        followsInBraille: Bool,
+        secondsSinceScroll: TimeInterval?
+    ) -> TickPlan {
+        TickPlan(
+            asksRefresh: refreshDue && !isTouchScrolling(secondsSinceScroll: secondsSinceScroll),
+            movesHighlight: placeMoved && highlightFollows(
+                hasFocus: hasFocus,
+                followsInBraille: followsInBraille,
+                secondsSinceScroll: secondsSinceScroll
+            )
+        )
     }
 
     /// The sentence holding the reading place, as a range in the passage
