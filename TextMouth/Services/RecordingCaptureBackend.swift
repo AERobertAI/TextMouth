@@ -343,6 +343,24 @@ final class FileRecordingDelegate: NSObject, AVCaptureFileOutputRecordingDelegat
         state.withLock { $0.unfinishedFailure }
     }
 
+    /// Suspends on a checked continuation that `body` receives, running on
+    /// the caller's actor (`isolation`) and resuming there. The one place
+    /// that spells the call twice: Swift 6.4 (Xcode 27) deprecated
+    /// `withCheckedThrowingContinuation(isolation:)` for an overload that
+    /// stays on the caller's isolation by itself (`nonisolated(nonsending)`),
+    /// and Xcode 26.0.1's Swift 6.2, which GitHub's runners still build with,
+    /// has only the old one.
+    private static func waitOnCaller(
+        isolation: isolated (any Actor)? = #isolation,
+        _ body: (CheckedContinuation<Void, Error>) -> Void
+    ) async throws {
+        #if compiler(>=6.4)
+        try await withCheckedThrowingContinuation(body)
+        #else
+        try await withCheckedThrowingContinuation(isolation: isolation, body)
+        #endif
+    }
+
     /// Runs `begin`, which starts recording, and waits until recording has
     /// begun. Throws when it ended before beginning, or did not begin
     /// within `timeout`. Runs on the caller's actor (`isolation`), the
@@ -352,7 +370,7 @@ final class FileRecordingDelegate: NSObject, AVCaptureFileOutputRecordingDelegat
         isolation: isolated (any Actor)? = #isolation,
         _ begin: () -> Void
     ) async throws {
-        try await withCheckedThrowingContinuation(isolation: isolation) { (continuation: CheckedContinuation<Void, Error>) in
+        try await Self.waitOnCaller(isolation: isolation) { (continuation: CheckedContinuation<Void, Error>) in
             state.withLock { $0.start = continuation }
             begin()
             // Whichever comes first, the start or the timeout, ends the wait.
@@ -370,7 +388,7 @@ final class FileRecordingDelegate: NSObject, AVCaptureFileOutputRecordingDelegat
         isolation: isolated (any Actor)? = #isolation,
         _ end: () -> Void
     ) async throws {
-        try await withCheckedThrowingContinuation(isolation: isolation) { (continuation: CheckedContinuation<Void, Error>) in
+        try await Self.waitOnCaller(isolation: isolation) { (continuation: CheckedContinuation<Void, Error>) in
             let alreadyFinished = state.withLock { state -> Bool in
                 guard !state.finished else { return true }
                 state.finish = continuation
