@@ -140,7 +140,7 @@ Part of [TextMouth's documentation](../../README.md).
   At the largest size the first tap after a launch was seen to do nothing (a Back, an Add to Library, and, in pass 5, the Bookmarks control).
   `tap(_:until:in:what:)` taps up to three times, 5 seconds apart, until the screen it wants shows.
   At the top of each round it returns if that screen is already there, so a screen that was slow to come is not tapped past.
-  `LargeTextUITests` and `openReaderSheet` of `ScreenOrderUITests` use it.
+  `LargeTextUITests` and `openReaderSheet` of `ScreenOrderUITests` use it; a switch never does, since a retried tap would turn it off again (`ExportUITests` holds each one a quarter of a second instead).
 - Nothing is pressed but a book's Back, Settings, Add to Library, and Search in Book, and nothing is typed but the one search of the Search test.
 
 ## PlaybackUITests
