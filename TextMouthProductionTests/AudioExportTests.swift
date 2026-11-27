@@ -236,8 +236,8 @@ final class AudioExportTests: XCTestCase {
 
         let samples = try AudioTestFixtures.floatSamples(of: exported)
         XCTAssertEqual(samples.count, 16_000)
-        XCTAssertEqual(samples[checked: 7_999].map(AudioTestFixtures.rampSample), .frame(.book, 7_999))
-        XCTAssertEqual(samples[checked: 8_000].map(AudioTestFixtures.rampSample), .frame(.book, 16_000))
+        XCTAssertEqual(samples[checked: 7_999].map(AudioTestFixtures.rampSample), .some(.frame(.book, 7_999)))
+        XCTAssertEqual(samples[checked: 8_000].map(AudioTestFixtures.rampSample), .some(.frame(.book, 16_000)))
         XCTAssertEqual(try Data(contentsOf: book.bookFileURL), before, "the book's file changed")
         XCTAssertTrue(session.hasUnsavedEdits)
 

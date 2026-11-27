@@ -36,7 +36,7 @@ final class AudioEditorSavingTests: XCTestCase {
         XCTAssertEqual(harness.announcements.sentences.last, "Saved. The book's audio is now 8 seconds long.")
         let samples = try AudioTestFixtures.floatSamples(of: harness.fixture.book.bookFileURL)
         XCTAssertEqual(samples.count, 64_000)
-        XCTAssertEqual(samples[checked: 16_000].map(AudioTestFixtures.rampSample), .frame(.book, 32_000))
+        XCTAssertEqual(samples[checked: 16_000].map(AudioTestFixtures.rampSample), .some(.frame(.book, 32_000)))
         XCTAssertEqual(model.closeNeed, .nothing)
         XCTAssertFalse(model.canPerform(.editorSave))
 
@@ -93,7 +93,7 @@ final class AudioEditorSavingTests: XCTestCase {
         XCTAssertTrue(saved, "\(harness.announcements.sentences)")
         let samples = try AudioTestFixtures.floatSamples(of: harness.fixture.book.bookFileURL)
         XCTAssertEqual(samples.count, 20_000)
-        XCTAssertEqual(samples[checked: 15_999].map(AudioTestFixtures.rampSample), .frame(.book, 15_999))
+        XCTAssertEqual(samples[checked: 15_999].map(AudioTestFixtures.rampSample), .some(.frame(.book, 15_999)))
         XCTAssertEqual(AudioTestFixtures.peak(samples.suffix(4_000)), 0.25, accuracy: 0.01, "the recording")
     }
 
