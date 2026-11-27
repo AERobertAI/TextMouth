@@ -378,6 +378,16 @@ enum BookCloudError: Error, Equatable, Sendable {
     case removalFailed(String)
     /// The book's package is not on this Mac.
     case packageMissing
+    /// Remove Download refused: the book is kept on all devices that sync
+    /// (Keep on All Devices, FR43).
+    case keptOnAllDevices
+    /// Remove Download refused: the book is in use, being exported,
+    /// transcribed, edited, or played (FR46).
+    case bookInUse
+    /// Remove Download refused in a synced library: the sync folder is not
+    /// proven to hold every file of the book, or the files could not be
+    /// taken off this device (FR46).
+    case syncRemoval(SyncRemovalRefusal)
 
     /// Why the operation did not happen, in a few English words for a debug
     /// log line, which stays English whatever language the interface speaks.
@@ -403,13 +413,25 @@ enum BookCloudError: Error, Equatable, Sendable {
             return "the book is kept on this Mac and for the reading list" // l10n: no (debug log text)
         case .packageMissing:
             return "the package is not on this Mac" // l10n: no (debug log text)
+        case .keptOnAllDevices:
+            return "the book is kept on all devices" // l10n: no (debug log text)
+        case .bookInUse:
+            return "the book is in use" // l10n: no (debug log text)
+        case .syncRemoval(let refusal):
+            return refusal.logReason
         }
     }
 
     /// The sentence that sends the listener to Stop Keeping on This Mac.
     private static var stopKeepingFirst: String {
+        stopKeepingFirst(LibraryCloudWording.stopKeepingName)
+    }
+
+    /// The sentence that sends the listener to the command `command` first (Stop Keeping on This Mac, or Stop
+    /// Keeping on All Devices).
+    private static func stopKeepingFirst(_ command: String) -> String {
         // Translators: Sentence of why Remove Download was refused: the listener must first choose a command. %@ is the command's name, Stop Keeping on This Mac, as the Library menu shows it.
-        InterfaceText.line("bookCloudError.stopKeepingFirst", "Choose \(LibraryCloudWording.stopKeepingName) first.")
+        InterfaceText.line("bookCloudError.stopKeepingFirst", "Choose \(command) first.")
     }
 
     /// A sentence the interface shows and VoiceOver speaks, naming `provider`
@@ -485,6 +507,12 @@ enum BookCloudError: Error, Equatable, Sendable {
             }
             // Translators: Why a book can't be used yet: its files have not arrived. %@ is the cloud service's name, or "The cloud service" when it is unknown.
             return InterfaceText.line("bookCloudError.packageMissing", "The book's files aren't on this Mac yet. \(serviceStartingSentence) may still be syncing them.")
+        case .keptOnAllDevices:
+            return SentenceWording.joined([SyncWording.removeKeptOnAllDevices, Self.stopKeepingFirst(SyncWording.stopKeepingTitle)])
+        case .bookInUse:
+            return SyncWording.removeBookInUse
+        case .syncRemoval(let refusal):
+            return SyncWording.removalRefusal(refusal, isPhone: isPhone)
         }
     }
 }
@@ -603,6 +631,12 @@ protocol BookCloudStorage: AnyObject, Sendable {
     /// book waits to upload, and `.removalFailed` when the sync service
     /// refuses or fails to remove a file's local copy.
     func removeDownload(of package: BookPackage) throws
+    /// `removeDownload(of:)` for storage that has to read a copy back first
+    /// (a synced library's, FR46), which waits on the network. `mayDownload`
+    /// says whether files of the copy that are away may be downloaded to prove
+    /// it; a person's own command says yes. The default does the synchronous
+    /// removal, so only the synced storage need say more.
+    func removeDownloadAsync(of package: BookPackage, mayDownload: Bool) async throws
     /// The bytes of `package` not on this Mac yet, as its files report their
     /// sizes, read without downloading anything: what a download of it needs
     /// room for. Nil when they cannot be told, such as a package that syncs
@@ -612,6 +646,11 @@ protocol BookCloudStorage: AnyObject, Sendable {
 }
 
 extension BookCloudStorage {
+    /// Storage with nothing to read back removes as `removeDownload(of:)` does.
+    func removeDownloadAsync(of package: BookPackage, mayDownload: Bool) async throws {
+        try removeDownload(of: package)
+    }
+
     /// Storage that cannot tell a package's size says so.
     func bytesToDownload(of package: BookPackage) -> Int64? {
         nil

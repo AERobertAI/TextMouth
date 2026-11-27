@@ -115,7 +115,7 @@ enum PhoneSyncSettingsModel {
     /// The status line for the iPhone, and the lines after it, as the section reads them: the shared function, in the
     /// iPhone's words.
     static func lines(for status: SyncStatus, isPhone: Bool = ThisDevice.isPhone, time: (Date) -> String = timeOfDay) -> [String] {
-        [SyncStatusLine.text(for: status, isPhone: isPhone, time: time)] + SyncStatusLine.detailLines(for: status, time: time)
+        [SyncStatusLine.text(for: status, isPhone: isPhone, time: time)] + SyncStatusLine.detailLines(for: status, time: time, isPhone: isPhone)
     }
 
     /// A date as a time of day, as the system writes one: "9:41 AM".
@@ -147,6 +147,11 @@ final class PhoneSyncSettingsController: ObservableObject {
 
     /// Whether the question before Stop Syncing is showing.
     @Published var isAskingToStop = false
+    /// How many books have files only in the sync folder, counted from their packages as Stop Syncing was pressed,
+    /// which its question names (FR46).
+    @Published private(set) var onlyInCloud = 0
+    /// Counts the books only in the sync folder; the center's count by default.
+    private let countOnlyInCloud: @MainActor () async -> Int
     /// Which of Set Up or Join is under way, so a second press does nothing; nil when neither is.
     @Published private(set) var working: PhoneSyncPick?
 
@@ -162,15 +167,18 @@ final class PhoneSyncSettingsController: ObservableObject {
     /// - Parameters:
     ///   - model: The commands; the app's own by default, for the iPhone.
     ///   - openScope: Opens the picked folder's scope; the system's by default.
+    ///   - countOnlyInCloud: Counts the books only in the sync folder; the center's count by default.
     init(
         model: SyncSettingsModel = PhoneSyncSettingsController.appModel(),
         openScope: @escaping (URL) -> () -> Void = { url in
             let opened = url.startAccessingSecurityScopedResource()
             return { if opened { url.stopAccessingSecurityScopedResource() } }
-        }
+        },
+        countOnlyInCloud: @escaping @MainActor () async -> Int = { await SyncCenter.shared.countBooksOnlyInTheSyncFolder() }
     ) {
         self.model = model
         self.openScope = openScope
+        self.countOnlyInCloud = countOnlyInCloud
     }
 
     /// The app's model for the iPhone. A Debug build's interface test that names a sandbox folder in `TEXTMOUTH_SYNC_FOLDER`
@@ -219,8 +227,11 @@ final class PhoneSyncSettingsController: ObservableObject {
     /// Sync Now: the center announces "Syncing." and what came of it.
     func syncNow() { model.syncNow() }
 
-    /// Stop Syncing was pressed: asks first.
-    func askToStop() { isAskingToStop = true }
+    /// Stop Syncing was pressed: counts the books only in the sync folder, from their packages, then asks first.
+    func askToStop() async {
+        onlyInCloud = await countOnlyInCloud()
+        isAskingToStop = true
+    }
 
     /// The question was answered yes: stops, deleting nothing, and says sync is off.
     func confirmStop() {

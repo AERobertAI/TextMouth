@@ -426,6 +426,11 @@ final class LogContentPolicyTests: XCTestCase {
         "INTERFACE_TEXT_EDIT_FAILED", "INTERFACE_TEXT_EXPORT_FAILED",
         // Syncing the library (FR43): the engine's runs and the backup's; their lines hold counts and a type name, never a title.
         "SYNC_RUN", "SYNC_BACKUP",
+        // The removal of the downloads of books left unopened (FR45): a book kept, with why (a reason's words and the
+        // book's ID, shortened), and the count removed in a sweep.
+        "UNOPENED_DOWNLOAD_KEPT", "UNOPENED_DOWNLOADS_REMOVED",
+        // A synced book's removal (FR46) waiting while a data-directory move holds storage work.
+        "SYNC_REMOVAL_WAITING",
     ]
 
     /// Each tag still begins a string literal in the app's code, so none was

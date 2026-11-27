@@ -36,6 +36,31 @@ final class ExportUITests: TextMouthUITestCase {
         app.switches.matching(NSPredicate(format: "label BEGINSWITH %@", start)).firstMatch
     }
 
+    /// How long a kind's switch is held when it is turned on: a quarter of a second, about a finger's tap, where
+    /// XCUITest's own tap lasts 66 ms.
+    ///
+    /// iOS 26's switch ends a touch without toggling, and without sending any event, when the touch's end comes before
+    /// UIKit has finished taking its start. In GitHub's simulator UIKit took 72 and 79 ms over the start of the sheet's
+    /// switch in two of nineteen traced taps, past the tap's end, and those two switches stayed off; every tap whose
+    /// start took 61 ms or less turned its switch on (Q19, trains 1126-2145 and 1126-2222). The sheet had one model
+    /// throughout and drew nothing around the taps, so the tap was lost in the switch, not reset by the app. A held press
+    /// ends long after its start has been taken: held this long, all 27 presses of the same probes turned their switch
+    /// on, nine of them with a start UIKit took 69 to 95 ms over (train 1126-2301).
+    private static let switchPress: TimeInterval = 0.25
+
+    /// Turns on the switch of the kind whose label begins `kind`, held for `switchPress` at 0.88 of its row: the row is
+    /// one element whose middle is its words, and the switch itself is at its trailing edge. Waits until it reads on,
+    /// and fails with the screen's tree otherwise.
+    private func turnOn(_ kind: String, in app: XCUIApplication, file: StaticString = #filePath, line: UInt = #line) {
+        let control = kindSwitch(kind, in: app)
+        control.coordinate(withNormalizedOffset: CGVector(dx: 0.88, dy: 0.5)).press(forDuration: Self.switchPress)
+        let on = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", "1"), object: control)
+        XCTAssertEqual(
+            XCTWaiter().wait(for: [on], timeout: Self.patience), .completed,
+            "\(kind) did not turn on when held:\n\(app.debugDescription)", file: file, line: line
+        )
+    }
+
     // MARK: - The Sheet
 
     /// The sheet opens from the reader's Export this book: its title, Cancel
@@ -77,7 +102,7 @@ final class ExportUITests: TextMouthUITestCase {
     /// begins and ends (or the line saying the whole book is exported), the speed and the pitch, the voice, and the
     /// licence line in the iPhone's words. The sheet's audit passes with them. Export stays unpressed: it would speak.
     private func readTheSpokenAudioRows(in app: XCUIApplication) throws {
-        kindSwitch("Text as spoken audio", in: app).coordinate(withNormalizedOffset: CGVector(dx: 0.88, dy: 0.5)).tap()
+        turnOn("Text as spoken audio", in: app)
         let format = app.buttons["Format"]
         XCTAssertTrue(format.appears(within: Self.patience), "No Format row once spoken audio is on:\n\(app.debugDescription)")
         XCTAssertTrue(app.sliders["Speed"].appears(within: Self.patience), "No Speed slider:\n\(app.debugDescription)")
@@ -141,8 +166,7 @@ final class ExportUITests: TextMouthUITestCase {
         assertOrder(["Export to: \(folder.lastPathComponent)"], in: elements)
         XCTAssertTrue(app.buttons["Export"].isEnabled, "Export is dimmed with a folder chosen")
 
-        // The row is one element whose middle is its words; the switch itself is at its trailing edge.
-        kindSwitch("Text as Markdown", in: app).coordinate(withNormalizedOffset: CGVector(dx: 0.88, dy: 0.5)).tap()
+        turnOn("Text as Markdown", in: app)
         let row = app.buttons["Convert to"]
         XCTAssertTrue(row.appears(within: Self.patience), "No Convert to row:\n\(app.debugDescription)")
         XCTAssertEqual(row.value as? String, "Markdown")
@@ -258,7 +282,7 @@ final class ExportUITests: TextMouthUITestCase {
     /// and Braille file characters still open their sheets, each closing with Cancel; scrolled back up, so does Braille
     /// code. The sheets are presented from the list and not from a row, so a row that has scrolled away takes none with it.
     private func openTheBrailleChoicesWithTheCodeRowScrolledAway(in app: XCUIApplication) throws {
-        kindSwitch("Text as Markdown", in: app).coordinate(withNormalizedOffset: CGVector(dx: 0.88, dy: 0.5)).tap()
+        turnOn("Text as Markdown", in: app)
         let convert = app.buttons["Convert to"]
         try scrollTo(convert, in: app)
         tap(convert, until: app.navigationBars["Convert to"], in: app, what: "the Convert to row")

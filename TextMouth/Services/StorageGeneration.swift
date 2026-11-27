@@ -58,6 +58,10 @@ enum StorageWork: Sendable, CaseIterable {
     /// The engine's rules deleting feed items' downloaded files: the
     /// after-playing sweep and the newest-N rule (`FeedCenter.removeDue`).
     case removingFeedDownloads
+    /// Removing a synced book's download from this device once its copy in
+    /// the sync folder is proven (FR46): the library's last look at the book,
+    /// its pointer written, and its own files taken away (`StoreRemoval`).
+    case removingSyncedDownloads
 
     /// What the debug log says while a move waits for this work, in English
     /// whatever language the interface speaks.
@@ -70,6 +74,7 @@ enum StorageWork: Sendable, CaseIterable {
         case .metadataRefresh: return "Waiting for book metadata to be read..." // l10n: no (debug log text)
         case .savingFeeds: return "Waiting for feed records to be saved..." // l10n: no (debug log text)
         case .removingFeedDownloads: return "Waiting for feed downloads to be deleted..." // l10n: no (debug log text)
+        case .removingSyncedDownloads: return "Waiting for a book's download to be removed..." // l10n: no (debug log text)
         }
     }
 
@@ -98,6 +103,9 @@ enum StorageWork: Sendable, CaseIterable {
         case .removingFeedDownloads:
             // Translators: Progress text while a move of the library waits for the deletion of feed downloads to finish first.
             return InterfaceText.line("storageWork.waitingMessage.removingFeedDownloads", "Waiting for feed downloads to be deleted...")
+        case .removingSyncedDownloads:
+            // Translators: Progress text while a move of the library waits for the removal of a synced book's download from this device to finish first. The book stays in iCloud Drive.
+            return InterfaceText.line("storageWork.waitingMessage.syncedDownloads","Waiting for a book's download to be removed...")
         }
     }
 }

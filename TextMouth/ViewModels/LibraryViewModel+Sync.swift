@@ -210,9 +210,11 @@ extension LibraryViewModel: SyncLibraryHost {
     /// Whether the book `id` is busy now, so a removal waits: open in a
     /// reader (the synchronous truth, not the published set that follows a
     /// turn later), its audio being edited, being edited with Edit Text, in
-    /// use by a feed rule, being exported or transcribed, or being fetched.
+    /// use by a feed rule, being exported or transcribed, being fetched, or
+    /// having its download taken off this device (`booksBeingFreed`).
     func isBookBusyForSync(_ id: UUID) -> Bool {
         if isBookOpenNow(id) || audioEditActivity.isInUse(id) || feedBooksInUse.contains(id) { return true }
+        if booksBeingFreed.contains(id) { return true }
         if case .downloading? = BookCloudStates.shared.state(of: id) { return true }
         return false
     }
@@ -395,8 +397,35 @@ extension LibraryViewModel: SyncLibraryHost {
             Self.recordInCloud(placeholders)
             if mayDownload {
                 cloudCommands.downloadEvictedKeptBooks(in: self, afterSync: true)
+                // Under "All books" every book this device lacks downloads, never removing one (FR45).
+                cloudCommands.downloadMissingBooks(in: self)
             }
+            // Under "Books you open or keep" a book unopened for the days goes, on any connection.
+            await removeUnopenedDownloads(mayDownload: mayDownload)
         }
+    }
+
+    /// Removes the downloads of books unopened for this device's days (FR45), after a sync, and tells the sync's
+    /// status how many it had to leave. The first look at a device whose removal applies by default (the iPhone's
+    /// 7 days) only notes the date, so the days count from it and nothing goes at once.
+    func removeUnopenedDownloads(mayDownload: Bool, settings: SyncSpaceSettings = .shared) async {
+        guard SyncActivity.isOn else { return }
+        settings.beginRemovalsIfNeeded()
+        let report = await cloudCommands.removeUnopenedDownloads(
+            of: library.books, in: self, settings: settings.settings, mayDownload: mayDownload
+        ) { [weak self] in self?.isProtectedFromUnopenedRemoval($0) ?? true }
+        SyncCenter.shared.noteSpace(removalsWaiting: report.waiting)
+    }
+
+    /// Whether a book is never taken off this device for being unopened: kept (by the person, the reading list,
+    /// or on all devices), on the reading list, open now, being played, exported, transcribed, edited, or
+    /// downloaded, or a feed's item, whose feed holds its download.
+    func isProtectedFromUnopenedRemoval(_ book: Book) -> Bool {
+        isBookBusyForSync(book.id)
+            || cloudCommands.kept.isKept(book.id)
+            || library.readingList.contains(book.id)
+            || cloudCommands.booksDownloading.contains(book.id)
+            || book.feedLink != nil
     }
 
     /// Called after a placeholder's files were fetched: the content keeps the

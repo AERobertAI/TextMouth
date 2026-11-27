@@ -49,6 +49,7 @@ final class KeyboardReachabilityTests: XCTestCase {
         "LibraryCloudWording.stopKeepingName": "A Library menu command that stops keeping the selected books on this Mac; it has no shortcut action and is reached from the menu bar.",
         "SyncWording.keepTitle": "A Library menu command, in the menu only while sync is on, that keeps the selected books on every device that syncs; it has no shortcut action and is reached from the menu bar.",
         "SyncWording.stopKeepingTitle": "A Library menu command, in the menu only while sync is on, that stops keeping the selected books on all devices; it has no shortcut action and is reached from the menu bar.",
+        "LibraryCloudWording.removeDownloadTitle(count: 1, forSelection: false)": "A Library menu command, in the menu only while sync is on, that removes the selected books' downloads from this device while they stay in iCloud Drive; it has no shortcut action and is reached from the menu bar.",
         "LibraryRemoveCommandWording.menuBarTitle(preferences: removal.preferences, selection: removalSelection)":
             "A Library menu command whose title follows the selection and the removal preferences; its shortcut is Remove from Library's, which acts on the same selection.",
         "BookExportWording.commandTitle": "A File menu command that exports a book; it has no shortcut action and is reached from the menu bar.",

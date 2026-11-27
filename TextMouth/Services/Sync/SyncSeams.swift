@@ -92,6 +92,11 @@ struct SyncStatus: Equatable, Sendable {
     var booksBackedUp: Int?, booksToBackUp: Int?
     /// How many book removals were held back, not sent, as a mass removal (index recovery, a wrong folder).
     var heldRemovals = 0
+    /// How many books the setting "Books you open or keep" would take off this device but kept, because their copies in
+    /// iCloud Drive are not confirmed yet (FR45); never a count of what was removed.
+    var removalsWaiting = 0
+    /// How many books "All books" would download but cannot, for want of room on this device (FR45).
+    var booksShortOfRoom = 0
 }
 
 /// Makes the folder access for a bookmark; the iPhone sets its own.

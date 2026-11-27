@@ -131,6 +131,9 @@ extension LibraryViewModel {
         now: Date = Date(),
         progress: (@Sendable (Double) -> Void)? = nil
     ) async throws -> AudioEditSaveOutcome {
+        // A removal of the book's download whose last look has said yes ends first (FR46): no render writes into a
+        // package whose files are going. The book is then looked at as it is.
+        await booksBeingFreed.waitUntilFreed([bookID])
         guard let book = bookByID(bookID), book.format.isAudio, !book.tmbDirectoryName.isEmpty else {
             throw AudioEditError.bookNotInLibrary
         }

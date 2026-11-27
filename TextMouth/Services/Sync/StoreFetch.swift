@@ -50,6 +50,12 @@ struct StoreFetch: Sendable {
         return pointer.files.isEmpty || pointer.files.contains { !$0.onThisDevice }
     }
 
+    /// How many of `packages` are missing files (`isMissingFiles(_:)`): the books whose files are only in the sync
+    /// folder, in whole or in part, which Stop Syncing's question counts (FR46). Reads each pointer, and nothing more.
+    static func countMissingFiles(in packages: [URL]) -> Int {
+        packages.reduce(0) { count, package in isMissingFiles(package) ? count + 1 : count }
+    }
+
     /// The bytes of the files not on this device, from the pointer's sizes: what a fetch needs room for. Nil
     /// when the pointer lists no files yet, since only the manifest knows them.
     static func bytesToFetch(_ package: URL) -> Int64? {

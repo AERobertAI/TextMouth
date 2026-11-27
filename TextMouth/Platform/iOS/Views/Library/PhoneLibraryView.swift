@@ -64,8 +64,9 @@ struct PhoneLibraryView: View {
     /// Whether the export card appeared as the sheet now closing closed (`PhoneExportCardFocus`): its dismissal then focuses
     /// the card.
     @State private var exportCardAppeared = false
-    /// The book the removal question is about.
-    @State private var removalCandidate: Book?
+    /// The Library's alert, if one shows: the removal question about a book, or why Remove Download left a book's
+    /// download (FR46). One state and one alert modifier for both (`PhoneLibraryAlert`).
+    @State private var alert: PhoneLibraryAlert?
     /// The row left for a book's or a folder's screen, which focus returns to.
     @State private var rowLeft: PhoneRowID?
     /// The rows as they were when that row was left, for the row that takes
@@ -209,20 +210,27 @@ struct PhoneLibraryView: View {
         .sheet(item: $sheet, onDismiss: { sheetClosed() }) { shown in
             sheetView(shown)
         }
+        // The removal question, or why Remove Download kept a book's download (FR46), as the Mac shows it: one alert
+        // modifier for both, since this screen stays under every screen pushed over it, the reader and its sheets.
         .alert(
-            removalCandidate.map(PhoneRowWording.removalTitle(for:)) ?? "",
+            alert?.title ?? "",
             isPresented: Binding(
-                get: { removalCandidate != nil },
-                set: { if !$0 { removalCandidate = nil } }
+                get: { alert != nil },
+                set: { if !$0 { alert = nil } }
             ),
-            presenting: removalCandidate
-        ) { book in
-            Button(PhoneRowWording.removalDeleteButton, role: .destructive) {
-                remove(book)
+            presenting: alert
+        ) { shown in
+            switch shown {
+            case .removal(let book):
+                Button(PhoneRowWording.removalDeleteButton, role: .destructive) {
+                    remove(book)
+                }
+                Button(PhoneAppWording.cancel, role: .cancel) {}
+            case .removeDownloadRefused:
+                Button(PhoneAppWording.close, role: .cancel) {}
             }
-            Button(PhoneAppWording.cancel, role: .cancel) {}
-        } message: { _ in
-            Text(PhoneRowWording.removalMessage)
+        } message: { shown in
+            Text(shown.message)
         }
     }
 
@@ -608,6 +616,18 @@ struct PhoneLibraryView: View {
             if let download = commands.first(where: { $0.kind == .download }) {
                 Task { await library.cloudCommands.perform(download, in: library, from: nil) }
             }
+        case .removeDownload:
+            // The Mac's own command, on the book alone: it proves the copy in iCloud Drive first, says what came of it, and the row
+            // shows In Cloud. A refusal is an alert, spoken once by VoiceOver as it appears.
+            let commands = LibraryCloudCommand.commands(for: [book], isSelection: false, states: .shared, kept: [])
+            if let removal = commands.first(where: { $0.kind == .removeDownload }) {
+                Task {
+                    if let refused = await library.cloudCommands.perform(removal, in: library, from: nil) {
+                        alert = .removeDownloadRefused(refused)
+                    }
+                    rows.rebuild()
+                }
+            }
         case .keepOnAllDevices, .stopKeepingOnAllDevices:
             // Stamped on this device and synced, the set following at once; the person is told, and the rows are built again.
             PhoneKeepOnAllDevices.set(action == .keepOnAllDevices, book)
@@ -620,7 +640,7 @@ struct PhoneLibraryView: View {
             move(book, direction: action == .moveUp ? -1 : 1)
         case .remove:
             if RemovalPreferencesModel.shared.preferences.confirmsFirst {
-                removalCandidate = book
+                alert = .removal(book)
             } else {
                 remove(book)
             }

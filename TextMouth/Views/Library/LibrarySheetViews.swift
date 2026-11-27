@@ -322,6 +322,8 @@ struct LibraryBookInfoSheet: View {
                         LibraryCloudCommands.shared.setKeptOnAllDevices($0, [book], from: nil, announcing: false) }
                     ))
                     .accessibilityHint(SyncWording.keepHint)
+                    // Remove Download for a book whole on this device (FR46), as a row's menu offers it.
+                    SyncRemoveDownloadRow(book: book, library: libraryViewModel)
                 }
                 // A braille book names its code (FMT21) and offers others:
                 // VoiceOver reads "Unified English Braille, contracted
@@ -431,7 +433,7 @@ struct LibraryBookInfoSheet: View {
         // Taller with either re-read pop-up, the Text Encoding or the Braille
         // File Characters one, and room for a refusal of a few lines below
         // the form.
-        .frame(width: 400, height: (offersRereadChoice ? 470 : 350) + (cloudStates.syncIsOn ? 40 : 0))
+        .frame(width: 400, height: (offersRereadChoice ? 470 : 350) + (cloudStates.syncIsOn ? 90 : 0))
         .navigationTitle(LibrarySheetWording.infoTitle(book.title))
         .task {
             // What the file is read in, worked out off the main actor, so the

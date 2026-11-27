@@ -220,6 +220,9 @@ final class BookExportModel: ObservableObject, Identifiable {
     private let writers: [any TextExportWriter]
     /// The books as the library holds them now, for the export.
     private let currentBooks: @MainActor ([Book]) -> [Book]
+    /// Returns once none of the books is having its download taken off this device (the library's
+    /// `booksBeingFreed`, FR46); at once without a library.
+    private let waitWhileFreeing: @MainActor ([UUID]) async -> Void
     /// The export under way's Cancel.
     private var cancellation: BookExportCancellation?
     /// The options of each writer chosen so far, by writer `id`, kept for the
@@ -415,6 +418,9 @@ final class BookExportModel: ObservableObject, Identifiable {
         self.speechExportsUnderWay = speechExportsUnderWay
         currentBooks = { [weak library] chosen in
             chosen.map { library?.bookByID($0.id) ?? $0 }
+        }
+        waitWhileFreeing = { [weak library] bookIDs in
+            await library?.booksBeingFreed.waitUntilFreed(bookIDs)
         }
     }
 
@@ -874,6 +880,10 @@ final class BookExportModel: ObservableObject, Identifiable {
         // table the pop-ups show once the check has passed, or the one they
         // returned to.
         await BrailleTableChoiceChecks.shared.finished(unless: cancellation)
+        // A removal of a book's download whose last look has said yes ends first (FR46), so the export never reads
+        // a book's files as they go; Stop is offered meanwhile too. Nothing waits from here until the books are
+        // noted as being exported, so no removal begins between.
+        await waitWhileFreeing(self.books.map(\.id))
         guard !cancellation.isCancelled else {
             self.cancellation = nil
             (phase, summaryWording, finishedWording) = earlier

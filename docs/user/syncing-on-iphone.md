@@ -80,6 +80,17 @@ On cellular data nothing downloads unasked; a book you open downloads, and a dow
 If iCloud Drive can't use cellular data, connect to Wi-Fi."
 Each book fetched is left out of the iPhone's iCloud Backup, since its files are in the sync folder already.
 
+## Saving space on the iPhone
+<!-- id: iphone-saving-space; keys: Books on this device, Books you open or keep, 7 days, Remove Download, stepper; src: TextMouth/Views/Settings/SyncSpaceControls.swift, TextMouth/Phone/PhoneLibraryOffer.swift, TextMouth/Platform/iOS/Views/Library/PhoneBookInfoSheet.swift, TextMouth/Platform/iOS/Views/Library/PhoneLibraryView.swift -->
+
+The Sync section, once sync is on, has the Mac's two settings with the iPhone's first values: Books on this device is Books you open or keep, and Remove unopened downloads after is 7 days.
+The days are one adjustable element: VoiceOver reads its label, value, and hint, and each step says the new value once.
+[Syncing your library](syncing-your-library.md) says what the settings do and when a download is never removed.
+
+Remove Download is a row action and a button in Book Information, for a book whole on the iPhone.
+A refusal is an alert in words, and the iPhone never downloads over cellular data to check a copy: it says the book waits for Wi-Fi.
+Stop Syncing's question counts the books only in iCloud Drive, as the Mac's does.
+
 ## What isn't synced yet on the iPhone
 <!-- id: iphone-not-yet; keys: settings, feeds, text edits, Remove Download; src: TextMouth/Models/Sync/SyncProjection.swift; status: incomplete; issues: FR43 -->
 

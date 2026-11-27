@@ -60,7 +60,7 @@ private struct PhoneSimpleBookInfo: View {
         PhoneBookInfoForm(canSave: edit != nil, save: { save($0) }) {
             PhoneBookInfoField(PhoneLibraryVocabulary.titleField, label: PhoneLibraryVocabulary.titleFieldLabel, field: .title, of: book, text: $title)
             PhoneBookInfoField(PhoneLibraryVocabulary.authorField, label: PhoneLibraryVocabulary.authorFieldLabel, field: .author, of: book, text: $author)
-            PhoneBookInfoFacts(book: book)
+            PhoneBookInfoFacts(book: book, library: library)
         }
     }
 
@@ -112,7 +112,7 @@ private struct PhoneEPUBBookInfo: View {
                 of: book,
                 text: $edited.publicationDate
             )
-            PhoneBookInfoFacts(book: book)
+            PhoneBookInfoFacts(book: book, library: library)
             Section {
                 PhoneBookInfoRow(PhoneLibraryVocabulary.isbnRow, value: edited.isbn)
                 PhoneBookInfoRow(PhoneLibraryVocabulary.languageRow, value: edited.language)
@@ -160,7 +160,7 @@ private struct PhoneAudioBookInfo: View {
             PhoneBookInfoField(PhoneLibraryVocabulary.albumField, label: PhoneLibraryVocabulary.albumFieldLabel, field: .audioAlbum, of: book, text: $edited.album)
             PhoneBookInfoField(PhoneLibraryVocabulary.genreField, label: PhoneLibraryVocabulary.genreField, field: .audioGenre, of: book, text: $edited.genre)
             PhoneBookInfoField(PhoneLibraryVocabulary.yearField, label: PhoneLibraryVocabulary.yearField, field: .audioYear, of: book, text: $edited.year)
-            PhoneBookInfoFacts(book: book)
+            PhoneBookInfoFacts(book: book, library: library)
             Section {
                 PhoneBookInfoRow(PhoneLibraryVocabulary.durationRow, value: edited.duration)
             }
@@ -275,6 +275,8 @@ private struct PhoneBookInfoField: View {
 /// Count, each one element.
 private struct PhoneBookInfoFacts: View {
     let book: Book
+    /// The library, whose cloud commands run Remove Download (FR46).
+    let library: LibraryViewModel
 
     var body: some View {
         Section {
@@ -297,7 +299,7 @@ private struct PhoneBookInfoFacts: View {
                 PhoneBookInfoRow(PhoneLibraryVocabulary.wordCountRow, value: "\(words)")
             }
         }
-        PhoneBookInfoKeep(book: book)
+        PhoneBookInfoKeep(book: book, library: library)
     }
 }
 
@@ -305,6 +307,8 @@ private struct PhoneBookInfoFacts: View {
 /// and takes effect when it is flipped, not on Save, since it is no field of the book. Its hint says what it does, once.
 private struct PhoneBookInfoKeep: View {
     let book: Book
+    /// The library, whose cloud commands run Remove Download (FR46).
+    let library: LibraryViewModel
     /// What the app's one sync reports: the switch shows with sync on.
     @ObservedObject private var center = SyncCenter.shared
     /// The books kept on all devices, which the switch reads and follows as they change.
@@ -320,6 +324,8 @@ private struct PhoneBookInfoKeep: View {
                     Text(SyncWording.keptState).phoneWholeWords()
                 }
                 .accessibilityHint(SyncWording.keepHint)
+                // Remove Download for a book whole on this iPhone (FR46), as a row's actions offer it.
+                SyncRemoveDownloadRow(book: book, library: library)
             }
         }
     }

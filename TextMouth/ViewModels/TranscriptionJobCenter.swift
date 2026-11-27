@@ -235,6 +235,9 @@ final class TranscriptionJobCenter: ObservableObject {
             // The English the log writes if the transcription fails.
             var failureLog: String?
             do {
+                // A removal of the book's download whose last look has said yes ends first (FR46): the audio is never
+                // read as it goes. The book is marked being transcribed already, so no later removal begins.
+                await library?.booksBeingFreed.waitUntilFreed([book.id])
                 let transcript = try await service.transcribe(book, language: language, progress: report)
                 // The book as the library holds it now: a transcription
                 // takes minutes, and the book may have moved meanwhile.
