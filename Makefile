@@ -379,7 +379,12 @@ ios-size: generate
 ## (a 10-character team identifier), DEVICE (the iPhone's name or UDID), and
 ## LAUNCH=1 (start the app after installing) are passed through when given.
 ## Run it yourself: no agent runs it, since it signs and installs.
+## Make's variables are case-sensitive, so `device=` in lower case is taken as DEVICE=, and so are `team=` and
+## `launch=` (a value given as DEVICE, in the environment, or on the command line wins).
 install-ios: SIZE_PROFILE = light
+install-ios: DEVICE ?= $(device)
+install-ios: TEAM ?= $(team)
+install-ios: LAUNCH ?= $(launch)
 install-ios: full-build-note generate
 	@python3 -I -B Scripts/agents/run_locked.py install-ios python3 -I -B Scripts/ios/install-on-device.py --profile "$(SIZE_PROFILE)" $(if $(TEAM),--team "$(TEAM)") $(if $(DEVICE),--device "$(DEVICE)") $(if $(LAUNCH),--launch)
 
