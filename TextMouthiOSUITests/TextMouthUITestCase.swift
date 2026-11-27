@@ -339,13 +339,18 @@ class TextMouthUITestCase: XCTestCase {
 
     /// Opens the reader's sheet from its control, waits for the sheet's
     /// navigation bar and for the button `element`, and returns the sheet's
-    /// elements in order.
+    /// elements in order. A control that isn't on the reader is looked for
+    /// under the Book Actions menu, `menu` (FR51), which is opened first.
     func openReaderSheet(
         _ control: String,
         titled title: String,
         waitingFor element: String,
+        under menu: String = "Book Actions",
         in app: XCUIApplication
     ) throws -> [Element] {
+        if !app.buttons[control].exists, app.buttons[menu].exists {
+            tap(app.buttons[menu], until: app.buttons[control], in: app, what: "the \(menu) menu")
+        }
         // The tap is repeated if the sheet does not come: a first tap was seen
         // to do nothing (Bookmarks, pass 5, November 9, 2026).
         tap(app.buttons[control], until: app.navigationBars[title], in: app, what: "the \(control) control")

@@ -1,8 +1,10 @@
 import Foundation
 
-/// The reader's elements after Back and the title, in VoiceOver's order and
-/// the layout's (the spec, under "VoiceOver's order"). They never appear or
-/// vanish while a book is open: only their words change.
+/// The reader's controls: those on the screen after Back and the title, in
+/// VoiceOver's order and the layout's (the spec, under "VoiceOver's order";
+/// `screen`), then those under Book Actions (`bookActionItems`, FR51). The
+/// screen's controls never appear or vanish while a book is open: only their
+/// words change.
 enum PhoneReaderControl: CaseIterable, Hashable, Sendable {
     /// The book's text, how a braille reader reads the book.
     case bookContent
@@ -31,6 +33,8 @@ enum PhoneReaderControl: CaseIterable, Hashable, Sendable {
     case goTo
     /// Goes back to where the last jump began.
     case returnToPlace
+    /// A menu of the book's less frequent actions (FR51): the four below.
+    case bookActions
     /// Opens the Sleep Timer sheet.
     case sleepTimer
     /// Opens the Voice & Speed sheet, or an audiobook's Audio Settings.
@@ -44,28 +48,37 @@ enum PhoneReaderControl: CaseIterable, Hashable, Sendable {
     /// A move forward by the unit in force.
     case skipForward
 
-    /// The controls of the grid under Play, row by row, three to a row:
-    /// Where Am I? to Skip forward.
-    static let grid: [PhoneReaderControl] = Array(allCases.drop { $0 != .whereAmI })
-
-    /// The grid's rows, left to right and top to bottom in `grid`'s order, so
-    /// that VoiceOver's order is the same however the rows break. The spec's
-    /// layout ("The layout") has three to a row, ending with Book Info, Skip
-    /// backward, and Skip forward. Search in Book makes sixteen, so a plain
-    /// three to a row would leave Skip forward alone; the rows are broken so
-    /// that each pair stays together instead: Previous and Next Heading in
-    /// the second row, Bookmarks, Headings, and Search in Book in the third,
-    /// and the two skips side by side in the last, as the spec's last row
-    /// has them. The fifth row holds Voice, Book Info, and Export this book
-    /// (FR31), so the grid keeps its shape and the two skips stay last.
+    /// The grid's rows under Play, left to right and top to bottom, three to
+    /// a row, in VoiceOver's order however the rows break. Each pair stays in
+    /// one row: Previous and Next Heading in the second, Bookmarks, Headings,
+    /// and Search in Book in the third, and the two skips side by side in the
+    /// last, as the spec's last row has them. Book Actions ends the fourth
+    /// row, in place of Sleep Timer, Voice, Book Info, and Export this book,
+    /// which it gathers (FR51).
     static let gridRows: [[PhoneReaderControl]] = [
         [.whereAmI, .navigationUnit, .speed],
         [.previousHeading, .nextHeading, .addBookmark],
         [.bookmarks, .headings, .searchInBook],
-        [.goTo, .returnToPlace, .sleepTimer],
-        [.voice, .bookInfo, .export],
+        [.goTo, .returnToPlace, .bookActions],
         [.skipBackward, .skipForward],
     ]
+
+    /// The controls of the grid under Play, row by row: Where Am I? to Skip
+    /// forward.
+    static let grid: [PhoneReaderControl] = gridRows.flatMap { $0 }
+
+    /// The reader's controls on the screen, in VoiceOver's order: Book
+    /// content, Play, the Sleep Timer while a timer runs, and the grid. The
+    /// Sleep Timer is the one control that comes and goes (FR51, FR52): with
+    /// no timer it lives under Book Actions, and while one runs it shows under
+    /// Play too, its value the time left.
+    static func screen(timerRuns: Bool) -> [PhoneReaderControl] {
+        [.bookContent, .play] + (timerRuns ? [.sleepTimer] : []) + grid
+    }
+
+    /// The items of the Book Actions menu, in its order (FR51): the book's
+    /// less frequent actions, each opening its sheet as its button did.
+    static let bookActionItems: [PhoneReaderControl] = [.sleepTimer, .voice, .bookInfo, .export]
 
     /// The kind `PhoneFocusRegistry` knows the control by, for focus on
     /// arrival and on return from a sheet: every control has one, so a
@@ -85,6 +98,7 @@ enum PhoneReaderControl: CaseIterable, Hashable, Sendable {
         case .searchInBook: return .searchInBook
         case .goTo: return .goTo
         case .returnToPlace: return .returnToPlace
+        case .bookActions: return .bookActions
         case .sleepTimer: return .sleepTimer
         case .voice: return .voice
         case .bookInfo: return .bookInfo

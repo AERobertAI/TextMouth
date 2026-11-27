@@ -17,7 +17,10 @@ import XCTest
 final class PlaybackUITests: TextMouthUITestCase {
     /// The Play control's value, as a string: empty when it has none.
     private func value(of control: XCUIElement) -> String {
-        (control.value as? String) ?? ""
+        // A control that has left the screen (the Sleep Timer once no timer
+        // runs, FR51) reads as empty, rather than failing the read.
+        guard control.exists else { return "" }
+        return (control.value as? String) ?? ""
     }
 
     /// How long a state is watched to see that it holds, in seconds: long
@@ -224,14 +227,14 @@ final class PlaybackUITests: TextMouthUITestCase {
     // MARK: - The Sleep Timer
 
     /// A preset starts the timer and the book: Play reads Pause, and the Sleep
-    /// Timer reads the time left, a little under the preset. It counts down
+    /// Timer, which shows only while a timer runs (FR51), reads the time left,
+    /// a little under the preset. It counts down
     /// while the book plays and stands still while it is paused (the spec's
     /// "the countdown halts when the book pauses").
     func testASleepTimerCountsDownWhileTheBookPlaysAndStopsWhenItPauses() throws {
         try requireSound("Setting a sleep timer, which starts the book playing")
         let app = try launchIntoTheReader()
-        let timer = app.buttons["Sleep Timer"]
-        XCTAssertEqual(value(of: timer), "Off", "The timer before one is set")
+        XCTAssertFalse(app.buttons["Sleep Timer"].exists, "A Sleep Timer shows before a timer is set")
 
         try startSleepTimer("Set timer for 10 minutes", in: app)
         XCTAssertTrue(
@@ -268,11 +271,12 @@ final class PlaybackUITests: TextMouthUITestCase {
     /// in. Three things are checked, each of which that fault breaks: the book
     /// plays; it is still playing a few seconds later (a timer that had run out
     /// pauses the book at once, and the control turns back into Play); and the
-    /// Sleep Timer's value names the end of the heading, not "Off".
+    /// Sleep Timer is on the reader with a value naming the end of the heading
+    /// (a timer that ran out leaves no Sleep Timer there, FR51).
     func testAnEndOfHeadingTimerSetAtTheCoverPlaysOnAndNamesItsStop() throws {
         try requireSound("Setting a sleep timer, which starts the book playing")
         let app = try launchIntoTheReader()
-        XCTAssertEqual(value(of: app.buttons["Sleep Timer"]), "Off", "The timer before one is set")
+        XCTAssertFalse(app.buttons["Sleep Timer"].exists, "A Sleep Timer shows before a timer is set")
         try startSleepTimer("Stop at the end of this heading", in: app)
         XCTAssertTrue(
             app.buttons["Pause"].waitForExistence(timeout: Self.patience),
@@ -281,9 +285,10 @@ final class PlaybackUITests: TextMouthUITestCase {
         )
         // The value is read first, the moment the book plays: it is what a listener hears on the control.
         let timer = app.buttons["Sleep Timer"]
+        XCTAssertTrue(timer.waitForExistence(timeout: 5), "No Sleep Timer on the reader once the timer was set: it ran out at once")
         XCTAssertTrue(
-            value(of: timer).localizedCaseInsensitiveContains("end of this heading"),
-            "The timer's value after it was set at the cover: \"\(value(of: timer))\" (\"Off\" means it ran out at once)"
+            timer.exists && value(of: timer).localizedCaseInsensitiveContains("end of this heading"),
+            "The timer's value after it was set at the cover: \"\(timer.exists ? value(of: timer) : "no Sleep Timer")\""
         )
         // A timer that ran out at once pauses the book a moment after it started: hold, for a few seconds, that it plays on.
         assertHolds(app.buttons["Pause"], what: "Pause after an End of heading timer was set at the cover", in: app)
@@ -291,8 +296,8 @@ final class PlaybackUITests: TextMouthUITestCase {
     }
 
     /// Stop At "End of the book" starts the book and reads as the place it
-    /// waits for; Cancel Timer in the sheet ends it, and the control reads
-    /// "Off". (The End of heading timer at the cover has a test of its own,
+    /// waits for; Cancel Timer in the sheet ends it, and the control leaves
+    /// the reader (FR51). (The End of heading timer at the cover has a test of its own,
     /// above.)
     func testAnEndOfBookTimerNamesItsStopAndCancelEndsIt() throws {
         try requireSound("Setting a sleep timer, which starts the book playing")
@@ -321,8 +326,11 @@ final class PlaybackUITests: TextMouthUITestCase {
             "Cancel Timer stayed after it was pressed:\n\(app.debugDescription)"
         )
         app.buttons["Close"].tap()
-        XCTAssertTrue(app.buttons["Sleep Timer"].waitForExistence(timeout: Self.patience), "No Sleep Timer back on the reader")
-        XCTAssertEqual(value(of: app.buttons["Sleep Timer"]), "Off", "The timer after Cancel Timer")
+        XCTAssertTrue(app.buttons["Book Actions"].waitForExistence(timeout: Self.patience), "No Book Actions back on the reader")
+        XCTAssertTrue(
+            app.buttons["Sleep Timer"].waitForNonExistence(timeout: Self.patience),
+            "The Sleep Timer stayed on the reader after Cancel Timer, reading \"\(value(of: app.buttons["Sleep Timer"]))\""
+        )
         try pressPauseIfPlaying(app)
     }
 

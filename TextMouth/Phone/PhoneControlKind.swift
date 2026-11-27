@@ -35,6 +35,9 @@ enum PhoneControlKind: Hashable, Sendable, CaseIterable {
     case goTo
     /// Return, to the place before the last jump.
     case returnToPlace
+    /// The Book Actions menu (FR51), which focus returns to from the sheets
+    /// its items open.
+    case bookActions
     /// The Sleep Timer sheet.
     case sleepTimer
     /// The Voice & Speed sheet, or Audio Settings for an audiobook.

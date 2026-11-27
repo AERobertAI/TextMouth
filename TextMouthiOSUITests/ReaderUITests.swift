@@ -14,9 +14,12 @@ final class ReaderUITests: TextMouthUITestCase {
     static let controls = [
         "Book content", "Play", "Where Am I?", "Navigation unit", "Speed",
         "Previous Heading", "Next Heading", "Add bookmark", "Bookmarks", "Headings",
-        "Search in Book", "Go To", "Return to previous reading position", "Sleep Timer", "Voice", "Book Info", "Export this book",
+        "Search in Book", "Go To", "Return to previous reading position", "Book Actions",
         "Skip backward…", "Skip forward…",
     ]
+
+    /// The items of the Book Actions menu, in its order (FR51).
+    static let bookActionItems = ["Sleep Timer", "Voice", "Book Info", "Export this book"]
 
     /// The reader opens on the book, titled with it, with Back first and its
     /// controls in the spec's order after the title.
@@ -32,8 +35,8 @@ final class ReaderUITests: TextMouthUITestCase {
     }
 
     /// Before anything is pressed: Play says "Play" with no value, a text
-    /// book moves by sentence, the timer is off, no bookmark is counted, and
-    /// Book content holds the book's text from its place.
+    /// book moves by sentence, no timer shows (FR51), no bookmark is counted,
+    /// and Book content holds the book's text from its place.
     func testTheControlsHoldTheirFirstValues() throws {
         let app = try launchIntoTheReader()
         let play = app.buttons["Play"]
@@ -45,7 +48,7 @@ final class ReaderUITests: TextMouthUITestCase {
             elements.first { $0.label == label }?.value
         }
         XCTAssertEqual(value(of: "Navigation unit"), "Sentence")
-        XCTAssertEqual(value(of: "Sleep Timer"), "Off")
+        XCTAssertFalse(elements.contains { $0.label == "Sleep Timer" }, "A Sleep Timer shows with no timer running: \(Self.describe(elements))")
         XCTAssertTrue((value(of: "Bookmarks") ?? "").isEmpty, "No bookmark yet: \(value(of: "Bookmarks") ?? "")")
         XCTAssertTrue(elements.contains { $0.label.hasPrefix("Skip forward") && $0.label.hasSuffix("Sentence") }, "The skips don't name the unit")
 
@@ -65,6 +68,25 @@ final class ReaderUITests: TextMouthUITestCase {
         XCTAssertEqual(elements[index + 1].label, "Play", "The element after Book content: \(Self.describe(elements))")
         let play = try XCTUnwrap(elements.first { $0.label == "Play" })
         XCTAssertGreaterThan(elements[index].frame.height, play.frame.height, "Book content is smaller than Play")
+    }
+
+    /// Book Actions opens a menu of Sleep Timer, Voice, Book Info, and Export
+    /// this book, in that order, none of which is on the reader by itself, and
+    /// its Book Info opens the Book Information sheet (FR51).
+    func testBookActionsOpensItsMenu() throws {
+        let app = try launchIntoTheReader()
+        let before = try elementsInOrder(of: app)
+        for item in Self.bookActionItems {
+            XCTAssertFalse(before.contains { $0.label == item }, "\(item) is loose in the reader: \(Self.describe(before))")
+        }
+        tap(app.buttons["Book Actions"], until: app.buttons["Book Info"], in: app, what: "Book Actions")
+        assertOrder(Self.bookActionItems, in: try elementsInOrder(of: app))
+        keepScreenshot(of: app, named: "Book Actions")
+        app.buttons["Book Info"].tap()
+        XCTAssertTrue(
+            app.navigationBars["Book Information"].waitForExistence(timeout: Self.patience),
+            "Book Info in the menu opened no sheet:\n\(app.debugDescription)"
+        )
     }
 
     /// Each control is big enough to find by touch: at least 44 points tall,

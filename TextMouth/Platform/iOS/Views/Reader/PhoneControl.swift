@@ -36,6 +36,13 @@ struct PhoneControl: UIViewRepresentable {
     /// The control's own rotors, made when VoiceOver asks, for the element
     /// they're set on; nil for none.
     var rotors: (@MainActor (_ element: UIView) -> [UIAccessibilityCustomRotor])?
+    /// The items of the menu the control opens, made each time it opens, so
+    /// their words are the moment's; nil for a control with no menu (FR51).
+    var menuItems: (@MainActor () -> [UIMenuElement])?
+    /// Whether the visible title is redrawn each second, for a value that
+    /// counts down (the running sleep timer's time left, FR52). For sight
+    /// alone: VoiceOver asks for the value when it reads.
+    var refreshesEverySecond = false
 
     func makeUIView(context: Context) -> PhoneControlButton {
         let button = PhoneControlButton()
@@ -57,6 +64,8 @@ struct PhoneControl: UIViewRepresentable {
         button.perform = perform
         button.showsValue = showsValue
         button.rotors = rotors
+        button.setMenuItems(menuItems)
+        button.refreshesEverySecond = refreshesEverySecond
         if let focusKind {
             PhoneFocusRegistry.shared.register(button, as: focusKind)
         }
@@ -93,6 +102,16 @@ final class PhoneControlButton: UIButton {
     var showsValue = false
     /// The control's own rotors, made when VoiceOver asks.
     var rotors: (@MainActor (_ element: UIView) -> [UIAccessibilityCustomRotor])?
+    /// The items of the control's menu, made as it opens; nil for no menu.
+    private var menuItems: (@MainActor () -> [UIMenuElement])?
+    /// Whether the visible title is redrawn each second while on screen.
+    var refreshesEverySecond = false {
+        didSet {
+            if refreshesEverySecond != oldValue { updateSecondTimer() }
+        }
+    }
+    /// The one-second timer that redraws the title, while one is wanted.
+    private var secondTimer: Timer?
 
     /// A plain, large button whose title wraps and follows the text size.
     init() {
@@ -117,6 +136,47 @@ final class PhoneControlButton: UIButton {
     /// Not made from a storyboard: the reader builds its controls in code.
     required init?(coder: NSCoder) {
         return nil
+    }
+
+    /// Gives the button a menu that opens at a touch or VoiceOver's double
+    /// tap, its items asked for each time it opens (an uncached deferred
+    /// element), or takes the menu away for nil. The menu is made once; only
+    /// the items' maker is replaced on later calls.
+    func setMenuItems(_ items: (@MainActor () -> [UIMenuElement])?) {
+        menuItems = items
+        guard items != nil else {
+            menu = nil
+            showsMenuAsPrimaryAction = false
+            return
+        }
+        guard menu == nil else { return }
+        let deferred = UIDeferredMenuElement.uncached { [weak self] completion in
+            MainActor.assumeIsolated {
+                completion(self?.menuItems?() ?? [])
+            }
+        }
+        menu = UIMenu(children: [deferred])
+        showsMenuAsPrimaryAction = true
+    }
+
+    /// Starts the one-second redraw while it is wanted and the button is on
+    /// screen, and stops it otherwise.
+    private func updateSecondTimer() {
+        let wanted = refreshesEverySecond && window != nil
+        if wanted, secondTimer == nil {
+            secondTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
+                MainActor.assumeIsolated { self?.refreshTitle() }
+            }
+        } else if !wanted {
+            secondTimer?.invalidate()
+            secondTimer = nil
+        }
+    }
+
+    /// The redraw follows the button on and off the screen.
+    override func didMoveToWindow() {
+        super.didMoveToWindow()
+        updateSecondTimer()
     }
 
     /// A touch's press, without VoiceOver: the control's action.
@@ -190,6 +250,8 @@ final class PhoneControlButton: UIButton {
     /// reads next are the new ones. Apple's documentation: return true when
     /// the element handled the activation.
     override func accessibilityActivate() -> Bool {
+        // A menu button opens its menu as UIKit's own button does.
+        if menu != nil { return super.accessibilityActivate() }
         guard let activate else { return false }
         activate()
         refreshTitle()

@@ -90,6 +90,12 @@ enum PhoneReaderControls {
                 hint: PhoneReaderWording.returnHint,
                 traits: .button
             )
+        case .bookActions:
+            return PhoneControlDescription(
+                label: PhoneReaderWording.bookActions,
+                hint: PhoneReaderWording.bookActionsHint,
+                traits: .button
+            )
         case .sleepTimer:
             return PhoneControlDescription(
                 label: PhoneReaderVocabulary.sleepTimer,

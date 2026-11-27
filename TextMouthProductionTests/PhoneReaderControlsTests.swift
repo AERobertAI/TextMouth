@@ -8,20 +8,48 @@ import XCTest
 final class PhoneReaderControlsTests: XCTestCase {
     // MARK: - Order
 
-    /// The elements after Back and the title, in VoiceOver's order, and the
-    /// grid of three columns under Play: five full rows, and a sixth holding
-    /// the two skips, since Search in Book follows Headings and Export this
-    /// book follows Book Info.
+    /// The elements after Back and the title, in VoiceOver's order: Book
+    /// content, Play, and the grid of three columns under Play, four full
+    /// rows and a fifth holding the two skips, Book Actions in place of the
+    /// four actions it gathers (FR51).
     func testTheControlsAreInTheSpecsOrder() {
-        XCTAssertEqual(PhoneReaderControl.allCases, [
+        XCTAssertEqual(PhoneReaderControl.screen(timerRuns: false), [
             .bookContent, .play, .whereAmI, .navigationUnit, .speed,
             .previousHeading, .nextHeading, .addBookmark, .bookmarks, .headings,
-            .searchInBook, .goTo, .returnToPlace, .sleepTimer, .voice, .bookInfo, .export,
+            .searchInBook, .goTo, .returnToPlace, .bookActions,
             .skipBackward, .skipForward,
         ])
-        XCTAssertEqual(PhoneReaderControl.grid.count, 17)
+        XCTAssertEqual(PhoneReaderControl.grid.count, 14)
         XCTAssertEqual(PhoneReaderControl.grid.first, .whereAmI)
         XCTAssertEqual(PhoneReaderControl.grid.last, .skipForward)
+    }
+
+    /// Book Actions holds Sleep Timer, Voice, Book Info, and Export this book,
+    /// in that order, none of them on the screen as well; every control is on
+    /// the screen or in the menu, never both (FR51).
+    func testBookActionsGathersTheFourLessFrequentActions() {
+        XCTAssertEqual(PhoneReaderControl.bookActionItems, [.sleepTimer, .voice, .bookInfo, .export])
+        let screen = PhoneReaderControl.screen(timerRuns: false)
+        XCTAssertTrue(Set(screen).isDisjoint(with: PhoneReaderControl.bookActionItems), "\(screen)")
+        XCTAssertEqual(Set(screen).union(PhoneReaderControl.bookActionItems), Set(PhoneReaderControl.allCases))
+        for item in PhoneReaderControl.bookActionItems {
+            XCTAssertNotNil(item.sheet, "\(item) opens no sheet from the menu")
+        }
+        let actions = describe(.bookActions, in: state())
+        XCTAssertEqual(actions.label, "Book Actions")
+        XCTAssertEqual(actions.hint, "Sleep timer, voice, book information, and export.")
+        XCTAssertEqual(actions.value, "")
+        XCTAssertEqual(actions.traits, .button)
+        XCTAssertNil(PhoneReaderControl.bookActions.sheet, "Book Actions opens a menu, not a sheet")
+    }
+
+    /// While a timer runs, the Sleep Timer shows under Play as well as in the
+    /// menu, its value the time left; with none it is only in the menu.
+    func testTheSleepTimerShowsUnderPlayOnlyWhileATimerRuns() {
+        let running = PhoneReaderControl.screen(timerRuns: true)
+        XCTAssertEqual(Array(running.prefix(3)), [.bookContent, .play, .sleepTimer])
+        XCTAssertEqual(Array(running.dropFirst(3)), PhoneReaderControl.grid)
+        XCTAssertFalse(PhoneReaderControl.screen(timerRuns: false).contains(.sleepTimer))
     }
 
     /// The grid's rows hold the controls in the grid's order, at most three
@@ -42,9 +70,9 @@ final class PhoneReaderControlsTests: XCTestCase {
             )
         }
         XCTAssertEqual(PhoneReaderControl.gridRows.last, [.skipBackward, .skipForward], "The skips aren't the last row")
-        // Voice, Book Info, and Export this book are the fifth row, the third of it the Export control (FR31).
-        XCTAssertEqual(PhoneReaderControl.gridRows.count, 6, "The grid changed its shape")
-        XCTAssertEqual(PhoneReaderControl.gridRows.dropFirst(4).first, [.voice, .bookInfo, .export])
+        // Book Actions ends the fourth row (FR51).
+        XCTAssertEqual(PhoneReaderControl.gridRows.count, 5, "The grid changed its shape")
+        XCTAssertEqual(PhoneReaderControl.gridRows.dropFirst(3).first, [.goTo, .returnToPlace, .bookActions])
     }
 
     /// Every control has a focus kind of its own, and every kind belongs to
