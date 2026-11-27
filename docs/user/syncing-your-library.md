@@ -221,10 +221,10 @@ A TextMouth that finds a folder made by a later one leaves it alone and says "A 
 Update TextMouth to use it."
 
 ## What isn't synced yet
-<!-- id: sync-not-yet; keys: settings, feeds, statistics, sorts, views, Dropbox, text edits, Remove Download; src: TextMouth/Models/Sync/SyncProjection.swift; status: incomplete; issues: FR43 -->
+<!-- id: sync-not-yet; keys: settings, feeds, statistics, sorts, views, Dropbox, text edits, books imported on both; src: TextMouth/Models/Sync/SyncProjection.swift, TextMouth/Models/Sync/SyncApplier.swift; status: incomplete; issues: FR43 -->
 
 - Settings, text substitutions, feeds, statistics, sorts, views, folders' sort and listening options, and the manual order stay on each device.
 - An edit of a book's text doesn't reach a device that has the book already.
 - Only iCloud Drive is used; Dropbox and Google Drive aren't.
 - Nothing is deleted from the TextMouth Sync folder, and books that are the same on two devices aren't folded together there.
-- Freeing a device's space while the book stays in iCloud Drive isn't there: no Remove Download for a synced library, and no removing of books unopened for some days.
+- So a book imported on both devices before they synced stays one book on each, but its place and bookmarks don't pass between them.

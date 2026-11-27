@@ -209,9 +209,9 @@ final class AudioEditRenderingTests: XCTestCase {
             let samples = try AudioTestFixtures.floatSamples(of: output)
             let take = "a take at \(Int(takeRate)) Hz"
             XCTAssertEqual(samples.count, 132_300, "\(take): the book's length")
-            XCTAssertEqual(samples[checked: 44_099].map(AudioTestFixtures.rampSample), .frame(.book, 44_099), "\(take): the sound before it")
-            XCTAssertEqual(samples[checked: 88_200].map(AudioTestFixtures.rampSample), .frame(.book, 88_200), "\(take): the sound after it")
-            XCTAssertEqual(samples[checked: 132_299].map(AudioTestFixtures.rampSample), .frame(.book, 132_299), "\(take): the book's last frame")
+            XCTAssertEqual(samples[checked: 44_099].map(AudioTestFixtures.rampSample), .some(.frame(.book, 44_099)), "\(take): the sound before it")
+            XCTAssertEqual(samples[checked: 88_200].map(AudioTestFixtures.rampSample), .some(.frame(.book, 88_200)), "\(take): the sound after it")
+            XCTAssertEqual(samples[checked: 132_299].map(AudioTestFixtures.rampSample), .some(.frame(.book, 132_299)), "\(take): the book's last frame")
         }
     }
 
@@ -534,8 +534,8 @@ final class AudioEditRenderingTests: XCTestCase {
         let takeSamples = try AudioTestFixtures.int16Samples(of: take)
         let expected = takeSamples.dropFirst(2_000).prefix(8_000).map { Float($0) / 32_768 }
         XCTAssertEqual(replaced, Array(expected))
-        XCTAssertEqual(samples[checked: 7_999].map(AudioTestFixtures.rampSample), .frame(.book, 7_999))
-        XCTAssertEqual(samples[checked: 16_000].map(AudioTestFixtures.rampSample), .frame(.book, 16_000))
+        XCTAssertEqual(samples[checked: 7_999].map(AudioTestFixtures.rampSample), .some(.frame(.book, 7_999)))
+        XCTAssertEqual(samples[checked: 16_000].map(AudioTestFixtures.rampSample), .some(.frame(.book, 16_000)))
     }
 
     // MARK: - Helpers

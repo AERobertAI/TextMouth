@@ -107,8 +107,8 @@ final class AudioEditorEditingTests: XCTestCase {
         XCTAssertEqual(model.undoName, "Cut 2 Seconds")
         XCTAssertEqual(model.title(for: .editorUndo), "Undo Cut 2 Seconds")
         let samples = try await editedSamples(model)
-        XCTAssertEqual(samples[checked: 15_999].map(AudioTestFixtures.rampSample), .frame(.book, 15_999))
-        XCTAssertEqual(samples[checked: 16_000].map(AudioTestFixtures.rampSample), .frame(.book, 32_000))
+        XCTAssertEqual(samples[checked: 15_999].map(AudioTestFixtures.rampSample), .some(.frame(.book, 15_999)))
+        XCTAssertEqual(samples[checked: 16_000].map(AudioTestFixtures.rampSample), .some(.frame(.book, 32_000)))
         XCTAssertNotNil(model.clip?.file)
         XCTAssertEqual(harness.player.loadedFrames.last, 64_000, "the preview wasn't reloaded with the cut")
 
@@ -143,10 +143,10 @@ final class AudioEditorEditingTests: XCTestCase {
         XCTAssertEqual(harness.announcements.sentences.last, "Pasted 1 second. Now 11 seconds long.")
         XCTAssertEqual(model.undoName, "Insert 1 Second of Audio")
         let samples = try await editedSamples(model)
-        XCTAssertEqual(samples[checked: 39_999].map(AudioTestFixtures.rampSample), .frame(.book, 39_999))
-        XCTAssertEqual(samples[checked: 40_000].map(AudioTestFixtures.rampSample), .frame(.book, 8_000))
-        XCTAssertEqual(samples[checked: 47_999].map(AudioTestFixtures.rampSample), .frame(.book, 15_999))
-        XCTAssertEqual(samples[checked: 48_000].map(AudioTestFixtures.rampSample), .frame(.book, 40_000))
+        XCTAssertEqual(samples[checked: 39_999].map(AudioTestFixtures.rampSample), .some(.frame(.book, 39_999)))
+        XCTAssertEqual(samples[checked: 40_000].map(AudioTestFixtures.rampSample), .some(.frame(.book, 8_000)))
+        XCTAssertEqual(samples[checked: 47_999].map(AudioTestFixtures.rampSample), .some(.frame(.book, 15_999)))
+        XCTAssertEqual(samples[checked: 48_000].map(AudioTestFixtures.rampSample), .some(.frame(.book, 40_000)))
     }
 
     /// On a disk with less free than the reserve the editor keeps nothing
@@ -176,8 +176,8 @@ final class AudioEditorEditingTests: XCTestCase {
         XCTAssertEqual(harness.announcements.sentences.last, "Pasted 1 second over 3 seconds. Now 8 seconds long.")
         XCTAssertEqual(model.undoName, "Replace 3 Seconds")
         let samples = try await editedSamples(model)
-        XCTAssertEqual(samples[checked: 48_000].map(AudioTestFixtures.rampSample), .frame(.book, 8_000))
-        XCTAssertEqual(samples[checked: 56_000].map(AudioTestFixtures.rampSample), .frame(.book, 72_000))
+        XCTAssertEqual(samples[checked: 48_000].map(AudioTestFixtures.rampSample), .some(.frame(.book, 8_000)))
+        XCTAssertEqual(samples[checked: 56_000].map(AudioTestFixtures.rampSample), .some(.frame(.book, 72_000)))
     }
 
     /// A Paste right after a Cut moves the audio cut, as one edit undone in
@@ -196,9 +196,9 @@ final class AudioEditorEditingTests: XCTestCase {
         XCTAssertEqual(harness.announcements.sentences.last, "Moved 2 seconds to 6 seconds.")
         XCTAssertEqual(model.cursor, 8, accuracy: 0.000_1)
         let samples = try await editedSamples(model)
-        XCTAssertEqual(samples[checked: 16_000].map(AudioTestFixtures.rampSample), .frame(.book, 32_000))
-        XCTAssertEqual(samples[checked: 48_000].map(AudioTestFixtures.rampSample), .frame(.book, 16_000))
-        XCTAssertEqual(samples[checked: 64_000].map(AudioTestFixtures.rampSample), .frame(.book, 64_000))
+        XCTAssertEqual(samples[checked: 16_000].map(AudioTestFixtures.rampSample), .some(.frame(.book, 32_000)))
+        XCTAssertEqual(samples[checked: 48_000].map(AudioTestFixtures.rampSample), .some(.frame(.book, 16_000)))
+        XCTAssertEqual(samples[checked: 64_000].map(AudioTestFixtures.rampSample), .some(.frame(.book, 64_000)))
         await model.undo()
         XCTAssertFalse(model.session.canUndo, "the move and the cut took two undos")
         XCTAssertEqual(model.duration, 10, accuracy: 0.000_1)
@@ -226,7 +226,7 @@ final class AudioEditorEditingTests: XCTestCase {
         XCTAssertEqual(harness.announcements.sentences.last, "Trimmed to the selection: 5 seconds kept.")
         XCTAssertEqual(model.undoName, "Trim to Selection")
         let samples = try await editedSamples(model)
-        XCTAssertEqual(samples.first.map(AudioTestFixtures.rampSample), .frame(.book, 16_000))
+        XCTAssertEqual(samples.first.map(AudioTestFixtures.rampSample), .some(.frame(.book, 16_000)))
         XCTAssertEqual(samples.count, 40_000)
 
         await model.undo()
@@ -260,8 +260,8 @@ final class AudioEditorEditingTests: XCTestCase {
         XCTAssertEqual(model.cursor, 5.5, accuracy: 0.000_1)
         XCTAssertEqual(harness.announcements.sentences.last, "Inserted 1.5 seconds of silence. Now 11.5 seconds long.")
         let samples = try await editedSamples(model)
-        XCTAssertEqual(samples[checked: 32_000].map(AudioTestFixtures.rampSample), .silence)
-        XCTAssertEqual(samples[checked: 44_000].map(AudioTestFixtures.rampSample), .frame(.book, 32_000))
+        XCTAssertEqual(samples[checked: 32_000].map(AudioTestFixtures.rampSample), .some(.silence))
+        XCTAssertEqual(samples[checked: 44_000].map(AudioTestFixtures.rampSample), .some(.frame(.book, 32_000)))
     }
 
     /// Insert Chapter Marker offers the next chapter's number, refuses a
@@ -344,7 +344,7 @@ final class AudioEditorEditingTests: XCTestCase {
         let gain = Float(pow(10, 6.0 / 20))
         let inside = try XCTUnwrap(samples[checked: 20_000])
         XCTAssertEqual(inside, Float(20_001) * Float(AudioTestFixtures.rampStep) * gain, accuracy: 0.000_01)
-        XCTAssertEqual(samples[checked: 40_000].map(AudioTestFixtures.rampSample), .frame(.book, 40_000))
+        XCTAssertEqual(samples[checked: 40_000].map(AudioTestFixtures.rampSample), .some(.frame(.book, 40_000)))
     }
 
     // MARK: - Punch In
@@ -383,8 +383,8 @@ final class AudioEditorEditingTests: XCTestCase {
         )
         XCTAssertEqual(model.undoName, "Replace 1 Second")
         let samples = try await editedSamples(model)
-        XCTAssertEqual(samples[checked: 15_999].map(AudioTestFixtures.rampSample), .frame(.book, 15_999))
-        XCTAssertEqual(samples[checked: 28_000].map(AudioTestFixtures.rampSample), .frame(.book, 24_000))
+        XCTAssertEqual(samples[checked: 15_999].map(AudioTestFixtures.rampSample), .some(.frame(.book, 15_999)))
+        XCTAssertEqual(samples[checked: 28_000].map(AudioTestFixtures.rampSample), .some(.frame(.book, 24_000)))
         let takeFile = await harness.backend.url
         XCTAssertFalse(FileManager.default.fileExists(atPath: try XCTUnwrap(takeFile).path), "the take outlived its edit")
     }

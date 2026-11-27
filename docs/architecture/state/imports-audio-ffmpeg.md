@@ -37,7 +37,8 @@ The rest of the audio import is in [Imports: audio](imports-audio.md).
 ## Confining and watching the helper
 <!-- id: ffmpeg-helper-confinement-watching; keys: sandbox, sandbox_init, exit status 12, watchdog, grace after END, output cap, AUDIO_DECODER_REFUSED; src: TextMouthFFmpeg/main.c, TextMouth/Services/FFmpegAudioConverter.swift, TextMouth/Platform/macOS/Services/WatchedProcess.swift -->
 
-- Confinement: once the file is open, main.c calls sandbox_init with kSBXProfilePureComputation, so the helper can compute, read that descriptor, and write its standard output, and no more.
+- Confinement: once the file is open, main.c calls sandbox_init with the system's profile named "pure-computation", so the helper can compute, read that descriptor, and write its standard output, and no more.
+  main.c names the profile itself, since the macOS 27 SDK no longer declares kSBXProfilePureComputation, whose value is that name.
   A refusal ends it with exit status 12 (TMFF_EXIT_NOT_CONFINED), which is FFmpegImportWording.notConfined; it reads nothing.
   The processor's features are asked first (tmff_session_prepare), since the sandbox blocks sysctl and FFmpeg found fewer afterwards.
   Every fatal signal ends the helper with _exit on a stack of its own (status 70, so no crash report), and SIGXCPU with 71.

@@ -21,8 +21,12 @@ enum RecordingTimeFixtures {
 
     /// Thirty chapter lengths, in seconds, between fifteen and twenty-five
     /// minutes, none of them on a tenth of a second, as measured audio is.
-    static let thirtyDurations: [TimeInterval] = (0..<30).map { number in
-        900 + Double((number * 389) % 600) + 0.0371 * Double(number % 9 + 1)
+    /// The sum is built in typed steps, in the same order as before, because Xcode 27's type
+    /// checker gives up on it as one untyped expression.
+    static let thirtyDurations: [TimeInterval] = (0..<30).map { (number: Int) -> TimeInterval in
+        let wholeSeconds: TimeInterval = Double((number * 389) % 600)
+        let fraction: TimeInterval = 0.0371 * Double(number % 9 + 1)
+        return 900 + wholeSeconds + fraction
     }
 
     /// The length of the one-file book: 9:41:07.4.

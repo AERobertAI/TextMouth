@@ -23,7 +23,7 @@
  *
  * Confinement: FFmpeg is C that parses what an attacker may have written, so once the helper
  * has opened its one input file it confines itself with the system's pure-computation sandbox
- * (sandbox_init, kSBXProfilePureComputation): from then on it can compute, read the descriptor
+ * (sandbox_init, named "pure-computation"): from then on it can compute, read the descriptor
  * it already holds, and write its standard output, and nothing else. It opens no file, makes
  * no network connection, and starts no program, whatever FFmpeg does with a hostile file. A
  * helper that cannot confine itself reads nothing and ends with TMFF_EXIT_NOT_CONFINED. What
@@ -107,6 +107,12 @@ static int write_all(const unsigned char *bytes, size_t length) {
     return 0;
 }
 
+/* The system's built-in pure-computation profile, by the name sandbox_init looks it up under.
+   The macOS 27 SDK's <sandbox.h> no longer declares kSBXProfilePureComputation, though the
+   system library still exports it, holding exactly this string; naming the profile here builds
+   with every SDK and asks for the same profile. */
+static const char pure_computation_profile[] = "pure-computation";
+
 /* Confines the process to computing, reading the descriptors it already holds, and writing its
    standard output (the system's pure-computation sandbox, which nothing undoes); 0, or -1 when
    the system refuses. sandbox_init and sandbox_free_error are deprecated, though they are the
@@ -116,7 +122,7 @@ static int confine_process(void) {
     char *message = NULL;
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
-    const int result = sandbox_init(kSBXProfilePureComputation, SANDBOX_NAMED, &message);
+    const int result = sandbox_init(pure_computation_profile, SANDBOX_NAMED, &message);
     if (message) {
         sandbox_free_error(message);
     }
