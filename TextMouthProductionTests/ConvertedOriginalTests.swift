@@ -1,4 +1,5 @@
 import XCTest
+import os
 @testable import TextMouth
 
 /// The setting that keeps the original of audio an import converts (FMT14):
@@ -169,16 +170,18 @@ final class ConvertedOriginalTests: XCTestCase {
         // the other thread's hop to the main thread through.
         let read = expectation(description: "read from another thread")
         read.assertForOverFulfill = false
-        var fromOtherThread: Bool?
+        // A lock holds the answer, since it crosses threads: Xcode 27 refuses a captured var
+        // here as a data race.
+        let fromOtherThread = OSAllocatedUnfairLock<Bool?>(initialState: nil)
         DispatchQueue.global().async {
             let value = FileImportService.keepsOriginalsOfConvertedAudio(feedLink: nil)
             Task { @MainActor in
-                fromOtherThread = value
+                fromOtherThread.withLock { $0 = value }
                 read.fulfill()
             }
         }
         wait(for: [read], timeout: 10)
-        XCTAssertEqual(fromOtherThread, true)
+        XCTAssertEqual(fromOtherThread.withLock { $0 }, true)
 
         setKeepsOriginals(false)
         XCTAssertFalse(FileImportService.keepsOriginalsOfConvertedAudio(feedLink: nil))
