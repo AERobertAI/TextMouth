@@ -1203,6 +1203,22 @@ final class PreRenderedSpeechInvalidationTests: XCTestCase {
         }
     }
 
+    /// The engine's estimate of a place, taken to the start of the word it
+    /// stands for: inside a word, that word's start; on the space before a
+    /// word, as frames rounded down leave it, the word after; at the ends,
+    /// the ends.
+    func testAnEstimatedPlaceIsTakenToTheStartOfItsWord() {
+        let text = Self.spokenText
+        XCTAssertEqual(SpeechService.wordStart(around: Self.insideCircled, in: text), Self.circledStart)
+        XCTAssertEqual(SpeechService.wordStart(around: Self.circledStart, in: text), Self.circledStart)
+        XCTAssertEqual(SpeechService.wordStart(around: Self.circledStart - 1, in: text), Self.circledStart)
+        XCTAssertEqual(SpeechService.wordStart(around: 0, in: text), 0)
+        XCTAssertEqual(SpeechService.wordStart(around: -3, in: text), 0)
+        XCTAssertEqual(SpeechService.wordStart(around: text.utf16.count, in: text), text.utf16.count)
+        XCTAssertEqual(SpeechService.wordStart(around: 4, in: "wall   "), 7)
+        XCTAssertEqual(SpeechService.wordStart(around: 2, in: ""), 0)
+    }
+
     /// The same while paused: Play speaks the word whole, from its start.
     func testChoosingAVoiceInsideAWordWhilePausedResumesAtTheWordsStart() throws {
         try withSpeechService { speech in
@@ -1240,13 +1256,14 @@ final class PreRenderedSpeechInvalidationTests: XCTestCase {
     }
 
     /// A voice chosen while rendered audio is paused keeps the pause and the
-    /// place, and Play then speaks directly in the new voice instead of
-    /// resuming the old voice's audio.
+    /// place, the word paused at ("circled", where the engine was moved to,
+    /// though its estimate may stand on the space before it), and Play then
+    /// speaks directly in the new voice instead of resuming the old voice's
+    /// audio.
     func testChoosingAVoiceWhilePausedOnRenderedAudioResumesDirectly() throws {
         try withSpeechService { speech in
             let onEngine = moveOntoRenderedAudio(speech)
             speech.pause()
-            let placeBefore = speech.currentCharOffset()
             speech.currentVoice = try anotherVoice(than: speech.currentVoice)
             speech.settleVoiceChange()
 
@@ -1259,7 +1276,7 @@ final class PreRenderedSpeechInvalidationTests: XCTestCase {
 
             XCTAssertTrue(onEngine)
             XCTAssertTrue(stayedPaused)
-            XCTAssertEqual(placeAfter, placeBefore)
+            XCTAssertEqual(placeAfter, Self.circledStart)
             XCTAssertTrue(resumed)
             XCTAssertTrue(resumedDirectly)
             XCTAssertFalse(oldAudioLeft)

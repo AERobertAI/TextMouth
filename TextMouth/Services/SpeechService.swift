@@ -2340,8 +2340,9 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     ///
     /// The engine's offset is an estimate that spreads the audio evenly over
     /// the text (`AudioEngineService.frameMap`), so it can fall inside a
-    /// word: the place is taken back to that word's start, and the new voice
-    /// says the word whole, never its second half.
+    /// word or on the space before one: the place is taken to that word's
+    /// start (`wordStart(around:in:)`), and the new voice says the word
+    /// whole, never its second half nor the word before again.
     ///
     /// It does nothing when speech is direct already (the next chunk takes
     /// the voice), when the audio is of the new voice, or while a sleep
@@ -2365,7 +2366,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         let heard = engine.isPlaying || engine.isPaused
             ? engine.currentCharOffset()
             : currentWordRange?.location ?? engine.currentCharOffset()
-        let offset = ReaderViewModel.snappedWordStart(in: currentText, at: heard)
+        let offset = Self.wordStart(around: heard, in: currentText)
         transitionLog(.event, "VOICE_CHANGED_ON_ENGINE: leaving audio rendered in another voice at offset=\(offset) paused=\(isPaused)")
         // Drop in-flight position reports of the audio being left, then the
         // audio itself, so no seek or resume can find it again.
@@ -2379,6 +2380,23 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         } else {
             speakDirect(currentText, fromCharOffset: offset)
         }
+    }
+
+    /// The start of the word an estimated `offset` of `text` stands for: on
+    /// white space, the word after it, since the engine's estimate falls a
+    /// unit short of a word's start as often as on it (rounding frames down);
+    /// inside a word, that word's start (`ReaderViewModel.snappedWordStart`).
+    /// White space at the text's end gives the end.
+    nonisolated static func wordStart(around offset: Int, in text: String) -> Int {
+        let length = text.utf16Length
+        var place = max(0, min(offset, length))
+        guard place < length else { return length }
+        var index = text.index(atUTF16Offset: place)
+        while index < text.endIndex && text[index].isWhitespace {
+            index = text.index(after: index)
+        }
+        place = text.utf16Offset(of: index)
+        return ReaderViewModel.snappedWordStart(in: text, at: place)
     }
 
     /// Queues `settleVoiceChange()` for the end of the main queue's turn,
