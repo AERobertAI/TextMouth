@@ -84,6 +84,30 @@ class TeamTests(unittest.TestCase):
                 tool.choose_team(None, {}, lambda: preferences)
             self.assertIn("Xcode > Settings > Accounts", str(caught.exception))
 
+    def test_an_apple_id_without_a_team_says_to_finish_signing_in(self):
+        # Made-up identifiers, in a list, a dict of lists, and as dict keys.
+        for held in (["reader@example.com"], {"Xcode": ["reader@example.com"]}, {"reader@example.com": {}}):
+            preferences = {"DVTDeveloperAccountManagerAppleIDLists": held, "IDEProvisioningTeamByIdentifier": {}}
+            with self.subTest(held=held), self.assertRaises(tool.MissingStep) as caught:
+                tool.choose_team(None, {}, lambda: preferences)
+            message = str(caught.exception)
+            self.assertIn("sign-in is not finished", message)
+            self.assertIn("Sign in to your Apple ID again", message)
+            self.assertNotIn("Add your Apple ID", message)
+            # The identifier itself is never spoken.
+            self.assertNotIn("reader@example.com", message)
+
+    def test_an_empty_apple_id_list_still_says_to_add_one(self):
+        for held in ([], {}, [""], None):
+            with self.subTest(held=held), self.assertRaises(tool.MissingStep) as caught:
+                tool.choose_team(None, {}, lambda: {"DVTDeveloperAccountManagerAppleIDLists": held})
+            self.assertIn("Add your Apple ID", str(caught.exception))
+
+    def test_a_team_wins_over_an_apple_id_list(self):
+        preferences = {"DVTDeveloperAccountManagerAppleIDLists": ["reader@example.com"],
+                       "IDEProvisioningTeamByIdentifier": {"a": [TEAM_A]}}
+        self.assertEqual(tool.choose_team(None, {}, lambda: preferences).team_id, "AAAAAAAAAA")
+
     def test_a_form_it_does_not_know_asks_for_the_team(self):
         for odd in ({"IDEProvisioningTeamByIdentifier": {"a": [{"id": 5}]}},
                     {"IDEProvisioningTeamByIdentifier": {"a": "text"}},

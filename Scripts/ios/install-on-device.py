@@ -82,6 +82,15 @@ ADD_APPLE_ID_STEPS = """Xcode has no team yet. Add your Apple ID to Xcode once:
   3. Run this command again.
 Or give the team's 10-character identifier yourself with TEAM=<identifier> (make) or --team (the script)."""
 
+# Said when Xcode's preferences hold an Apple ID but no team: the sign-in was begun and not finished.
+FINISH_SIGN_IN_STEPS = """Xcode has your Apple ID, but its sign-in is not finished, so it has no team.
+  1. Open Xcode, then choose Xcode > Settings > Accounts.
+  2. Sign in to your Apple ID again there.
+  3. Run this command again.
+Or give the team's 10-character identifier yourself with TEAM=<identifier> (make) or --team (the script)."""
+# The preferences key under which Xcode lists the Apple IDs it has been given.
+APPLE_ID_LISTS_KEY = "DVTDeveloperAccountManagerAppleIDLists"
+
 
 def read_xcode_preferences(run=subprocess.run):
     """Xcode's preferences as a dict, from `defaults export com.apple.dt.Xcode -` (an XML plist on standard output).
@@ -118,6 +127,21 @@ def teams_in_preferences(preferences):
     return teams, bool(teams) or not any(values)
 
 
+def has_apple_id(preferences):
+    """True when Xcode's preferences hold at least one account identifier under APPLE_ID_LISTS_KEY. The form of the value
+    is not relied on: any non-empty text found anywhere inside it (in a list, or a dict's keys or values) counts. Only
+    the fact is used; the identifier itself is never shown."""
+    def holds_text(value):
+        if isinstance(value, str):
+            return bool(value.strip())
+        if isinstance(value, dict):
+            return any(holds_text(key) or holds_text(item) for key, item in value.items())
+        if isinstance(value, (list, tuple)):
+            return any(holds_text(item) for item in value)
+        return False
+    return isinstance(preferences, dict) and holds_text(preferences.get(APPLE_ID_LISTS_KEY))
+
+
 def choose_team(flag, environ, read_preferences):
     """The Team to sign for. The flag wins, then the environment's TEXTMOUTH_TEAM (each gives only an identifier, so
     its name is not known), then the one team in Xcode's preferences, which `read_preferences()` gives. Raises
@@ -125,7 +149,8 @@ def choose_team(flag, environ, read_preferences):
     given = flag or environ.get(TEAM_ENVIRONMENT)
     if given:
         return Team(given, "", False)
-    teams, recognized = teams_in_preferences(read_preferences())
+    preferences = read_preferences()
+    teams, recognized = teams_in_preferences(preferences)
     if len(teams) == 1:
         return teams[0]
     if len(teams) > 1:
@@ -137,7 +162,7 @@ def choose_team(flag, environ, read_preferences):
         raise MissingStep("Xcode's preferences name teams in a form this script does not know, so it cannot choose one.\n"
                           "Give the team's 10-character identifier with TEAM=<identifier> (make) or --team (the script). "
                           "Xcode shows it under Signing & Capabilities, in the TextMouthiOS target.")
-    raise MissingStep(ADD_APPLE_ID_STEPS)
+    raise MissingStep(FINISH_SIGN_IN_STEPS if has_apple_id(preferences) else ADD_APPLE_ID_STEPS)
 
 
 def describe_team(team):
