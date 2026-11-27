@@ -2033,9 +2033,12 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     }
 
     /// Restore normal-volume direct speech when a running fade is cancelled.
-    /// Rendered playback only needs its mixer volume restored.
+    /// Rendered playback only needs its mixer volume restored, and leaves
+    /// for direct speech now if another voice was chosen while the fade held
+    /// it (`leaveRenderedAudioOfAnotherVoice()`, which waits out a fade).
     func cancelSleepTimerFade() {
         madeAudioEngine?.restoreVolume()
+        leaveRenderedAudioOfAnotherVoice()
         guard isDirectSleepFadeActive else { return }
 
         let offset = max(
@@ -2342,8 +2345,9 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     ///
     /// It does nothing when speech is direct already (the next chunk takes
     /// the voice), when the audio is of the new voice, or while a sleep
-    /// fade holds the mixer down, which direct speech would not follow; the
-    /// text then ends in its old voice, and the next one is made in the new.
+    /// fade holds the mixer down, which direct speech would not follow: a
+    /// fade cancelled leaves then (`cancelSleepTimerFade()`), and a fade run
+    /// out pauses with the engine stopped, so Play speaks in the new voice.
     /// It runs once the main queue's turn ends (`settleVoiceChange()`), not
     /// at each choice.
     private func leaveRenderedAudioOfAnotherVoice() {

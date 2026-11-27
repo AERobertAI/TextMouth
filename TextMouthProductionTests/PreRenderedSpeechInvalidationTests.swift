@@ -1152,6 +1152,31 @@ final class PreRenderedSpeechInvalidationTests: XCTestCase {
         }
     }
 
+    /// A voice chosen while a sleep fade holds the engine's mixer down waits
+    /// for the fade, which direct speech would not follow, and reaches
+    /// speech when the fade is cancelled.
+    func testAVoiceChosenDuringASleepFadeReachesSpeechWhenTheFadeIsCancelled() throws {
+        try withSpeechService { speech in
+            let onEngine = moveOntoRenderedAudio(speech)
+            speech.setSleepTimerFadeVolume(0.5, duration: 30)
+            speech.currentVoice = try anotherVoice(than: speech.currentVoice)
+            speech.settleVoiceChange()
+            let waitedForTheFade = !speech.usingDirectMode
+
+            speech.cancelSleepTimerFade()
+            let continuedDirectly = speech.usingDirectMode
+            let oldAudioLeft = speech.audioEngine.hasRenderedAudio
+            let volume = speech.audioEngine.intendedVolume
+            speech.stop()
+
+            XCTAssertTrue(onEngine)
+            XCTAssertTrue(waitedForTheFade)
+            XCTAssertTrue(continuedDirectly)
+            XCTAssertFalse(oldAudioLeft)
+            XCTAssertEqual(volume, 1)
+        }
+    }
+
     /// The same while paused: Play speaks the word whole, from its start.
     func testChoosingAVoiceInsideAWordWhilePausedResumesAtTheWordsStart() throws {
         try withSpeechService { speech in
