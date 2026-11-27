@@ -352,6 +352,19 @@ class SummaryTests(TypecheckTestsCase):
         _, _, errors = self.summarize([self.line("TextMouthProductionTests/FirstTests.swift", "error", "oops", 713)])
         self.assertEqual(errors, "TextMouthProductionTests/FirstTests.swift:713:3: error: oops\n")
 
+    def test_a_colored_error_is_reported_as_its_plain_line(self):
+        # Xcode 27's compiler colors each diagnostic and links it to its documentation, even in a log file.
+        colored = (f"{self.src / 'TextMouthProductionTests/FirstTests.swift'}:24:50: \x1b[1;31merror: \x1b[1;39m"
+                   "too complex \x1b]8;;https://docs.swift.org/x\x1b\\[#Complex]\x1b]8;;\x1b\\\x1b[0;0m")
+        summary, count, errors = self.summarize([colored])
+        self.assertEqual(count, 1)
+        self.assertEqual(errors, "TextMouthProductionTests/FirstTests.swift:24:50: error: too complex [#Complex]\n")
+        self.assertIn("Errors in the app and its tests: **1**", summary)
+
+    def test_terminal_escapes_are_removed_and_plain_text_is_kept(self):
+        self.assertEqual(typecheck.without_terminal_escapes("\x1b[0;36m24 |\x1b[0;0m let a\x1b]8;;u\x07b\x1b]8;;\x07"), "24 | let ab")
+        self.assertEqual(typecheck.without_terminal_escapes("/a.swift:1:2: error: plain"), "/a.swift:1:2: error: plain")
+
     def test_two_errors_in_two_files_are_both_counted(self):
         _, count, _ = self.summarize([
             self.line("TextMouthProductionTests/FirstTests.swift", "error", "a", 713),

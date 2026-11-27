@@ -110,6 +110,17 @@ PACKAGES = [
 # One compiler diagnostic: an absolute path to a source file, its line and
 # column, the kind, and the message.
 DIAGNOSTIC = re.compile(r"^(/\S+\.(?:swift|c|h|m)):(\d+):(\d+): (error|warning): (.*)$")
+# The terminal escapes in a compiler's colored output: color codes, and OSC 8 links. Xcode 27's
+# compiler writes them even into a log file, inside each diagnostic line, and links each
+# diagnostic to its documentation.
+TERMINAL_ESCAPE = re.compile(r"\x1b\[[0-9;]*m|\x1b\]8;[^\x07\x1b]*(?:\x07|\x1b\\)")
+
+
+def without_terminal_escapes(text):
+    """`text` without color codes or links, so a colored diagnostic reads as the plain line DIAGNOSTIC matches."""
+    return TERMINAL_ESCAPE.sub("", text)
+
+
 # The linker's own failures, which name no source line.
 LINK_FAILURE = re.compile(r"(^ld: |Undefined symbols|linker command failed|error: link command failed)")
 # A quoted name inside a message, folded to 'X' to group messages by kind.
@@ -549,6 +560,7 @@ def summarize(log_text, src, header, out, tests=False, origins=None, builds=1):
     to its repository path, which the diagnostics are shown under. `builds` is how many builds the log holds (one per test
     target): each must have finished for the run to succeed."""
     origins = origins or {}
+    log_text = without_terminal_escapes(log_text)
     errors, warnings, package_problems = set(), set(), 0
     for line in log_text.splitlines():
         match = DIAGNOSTIC.match(line)
@@ -628,7 +640,7 @@ def errors_by_test_file(log_text, src, target):
     messages in order and without repeats; and how many errors there are in other files (the app's own, which make a
     census meaningless). A listed file is named by its copied name, in the folder of the files listed by path."""
     found, elsewhere = {}, 0
-    for line in log_text.splitlines():
+    for line in without_terminal_escapes(log_text).splitlines():
         match = DIAGNOSTIC.match(line)
         if not match or match.group(4) != "error":
             continue
