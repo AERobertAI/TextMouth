@@ -2358,7 +2358,14 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
               !renderedAudioMatchesSpeech,
               engine.intendedVolume >= 1 else { return }
 
-        let offset = ReaderViewModel.snappedWordStart(in: currentText, at: engine.currentCharOffset())
+        // The engine knows its place while it plays or is paused. Stopped, as
+        // over a change of hardware format on the iPhone until it plays on
+        // (`engineConfigurationChanged()`), it knows only where its last play
+        // began, and the place last published is the one heard.
+        let heard = engine.isPlaying || engine.isPaused
+            ? engine.currentCharOffset()
+            : currentWordRange?.location ?? engine.currentCharOffset()
+        let offset = ReaderViewModel.snappedWordStart(in: currentText, at: heard)
         transitionLog(.event, "VOICE_CHANGED_ON_ENGINE: leaving audio rendered in another voice at offset=\(offset) paused=\(isPaused)")
         // Drop in-flight position reports of the audio being left, then the
         // audio itself, so no seek or resume can find it again.

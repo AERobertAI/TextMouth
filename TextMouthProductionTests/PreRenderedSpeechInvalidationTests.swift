@@ -1132,6 +1132,9 @@ final class PreRenderedSpeechInvalidationTests: XCTestCase {
     /// Where "circled" begins in `spokenText`, and a place inside it.
     private static let circledStart = 6
     private static let insideCircled = 9
+    /// Where "harbour" begins in `spokenText`, and a place inside it.
+    private static let harbourStart = 18
+    private static let insideHarbour = 20
 
     /// A voice chosen while rendered audio plays at a place inside a word
     /// speaks that word whole in the new voice: direct speech starts at the
@@ -1174,6 +1177,29 @@ final class PreRenderedSpeechInvalidationTests: XCTestCase {
             XCTAssertTrue(continuedDirectly)
             XCTAssertFalse(oldAudioLeft)
             XCTAssertEqual(volume, 1)
+        }
+    }
+
+    /// A voice chosen while the engine stands stopped with speech still
+    /// playing, as on the iPhone between a change of hardware format and
+    /// the engine playing on, speaks on from the place last heard, the one
+    /// the position poll published, not from where the engine's last play
+    /// began.
+    func testChoosingAVoiceWhileTheEngineStandsStoppedSpeaksOnFromThePlaceHeard() throws {
+        try withSpeechService { speech in
+            let onEngine = moveOntoRenderedAudio(speech, at: Self.insideCircled)
+            speech.publishRenderedPosition(Self.insideHarbour, generation: speech.positionGeneration)
+            speech.audioEngine.stop()
+            speech.currentVoice = try anotherVoice(than: speech.currentVoice)
+            speech.settleVoiceChange()
+
+            let continuedDirectly = speech.usingDirectMode
+            let place = speech.currentCharOffset()
+            speech.stop()
+
+            XCTAssertTrue(onEngine)
+            XCTAssertTrue(continuedDirectly)
+            XCTAssertEqual(place, Self.harbourStart)
         }
     }
 
