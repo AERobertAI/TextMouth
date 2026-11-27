@@ -14,7 +14,9 @@ Every version of TextMouth, newest first, and what changed for you in each.
 - Keep on All Devices, in a book's commands, the Mac's Library menu, and Book Information, keeps a book's files on every device, and the reading list's books are kept too; they download after a sync on Wi-Fi or Ethernet, never on cellular data or in Low Data Mode.
 - When a sync would remove many books at once, TextMouth holds the removal and says so until you choose Sync Now.
 - Sync is off until you set it up, and it needs a library kept on the device itself, not one in a cloud folder; update every device to this version first.
-- Removing the downloads of books you haven't opened for some days, and freeing a book's space while it stays in iCloud Drive, come in a later version; "Syncing your library between your devices" lists what isn't synced yet.
+- Remove Download frees a book's space on this device while it stays in iCloud Drive, once TextMouth has checked that iCloud Drive holds every file of it; the row then says In Cloud, and opening the book downloads it again.
+- Books on this device, in the Sync section of Settings, is All books on the Mac or Books you open or keep on the iPhone, where the downloads of books you haven't opened for 7 days (Off or 1 to 30) are removed at a sync; kept books and the reading list's stay.
+- "Syncing your library between your devices" lists what isn't synced yet.
 
 ### Export on the iPhone
 - Export… in a book's actions and Export this book in the reader write the book into a folder you choose once, in every format but Word 97-2003, braille's BRF and PEF included.
