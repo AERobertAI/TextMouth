@@ -76,6 +76,21 @@ enum PhoneReaderControl: CaseIterable, Hashable, Sendable {
         [.bookContent, .play] + (timerRuns ? [.sleepTimer] : []) + grid
     }
 
+    /// Whether VoiceOver passes over the control (FR49): Skip backward and
+    /// Skip forward, since adjusting Play (a swipe up or down) makes the same
+    /// moves, so for VoiceOver the two buttons only add swipes. They stay on
+    /// screen for touch, and for Voice Control and Switch Control, which run
+    /// without VoiceOver; their keyboard shortcuts stay too.
+    var isHiddenFromVoiceOver: Bool {
+        self == .skipBackward || self == .skipForward
+    }
+
+    /// The reader's controls VoiceOver reaches, in its order: the screen's,
+    /// less those it passes over while it runs (FR49).
+    static func voiceOverOrder(timerRuns: Bool, voiceOverRuns: Bool) -> [PhoneReaderControl] {
+        screen(timerRuns: timerRuns).filter { !(voiceOverRuns && $0.isHiddenFromVoiceOver) }
+    }
+
     /// The items of the Book Actions menu, in its order (FR51): the book's
     /// less frequent actions, each opening its sheet as its button did.
     static let bookActionItems: [PhoneReaderControl] = [.sleepTimer, .voice, .bookInfo, .export]

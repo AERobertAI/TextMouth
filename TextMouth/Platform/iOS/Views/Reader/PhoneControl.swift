@@ -43,6 +43,9 @@ struct PhoneControl: UIViewRepresentable {
     /// counts down (the running sleep timer's time left, FR52). For sight
     /// alone: VoiceOver asks for the value when it reads.
     var refreshesEverySecond = false
+    /// Whether VoiceOver passes over the control while it runs (FR49); it
+    /// stays on screen and in the tree without VoiceOver.
+    var hiddenFromVoiceOver = false
 
     func makeUIView(context: Context) -> PhoneControlButton {
         let button = PhoneControlButton()
@@ -66,6 +69,7 @@ struct PhoneControl: UIViewRepresentable {
         button.rotors = rotors
         button.setMenuItems(menuItems)
         button.refreshesEverySecond = refreshesEverySecond
+        button.hiddenFromVoiceOver = hiddenFromVoiceOver
         if let focusKind {
             PhoneFocusRegistry.shared.register(button, as: focusKind)
         }
@@ -112,6 +116,14 @@ final class PhoneControlButton: UIButton {
     }
     /// The one-second timer that redraws the title, while one is wanted.
     private var secondTimer: Timer?
+    /// Whether VoiceOver passes over the button while it runs (FR49).
+    var hiddenFromVoiceOver = false {
+        didSet {
+            if hiddenFromVoiceOver != oldValue { followVoiceOver() }
+        }
+    }
+    /// The observer of VoiceOver starting and stopping, while hidden from it.
+    private var voiceOverObserver: NSObjectProtocol?
 
     /// A plain, large button whose title wraps and follows the text size.
     init() {
@@ -157,6 +169,25 @@ final class PhoneControlButton: UIButton {
         }
         menu = UIMenu(children: [deferred])
         showsMenuAsPrimaryAction = true
+    }
+
+    /// Hides the button and its title from VoiceOver while VoiceOver runs and
+    /// the button asks to be passed over, and shows it again otherwise, as
+    /// VoiceOver starts and stops. Without VoiceOver the button stays in the
+    /// accessibility tree, for Voice Control, Switch Control, and the
+    /// interface tests.
+    private func followVoiceOver() {
+        accessibilityElementsHidden = hiddenFromVoiceOver && UIAccessibility.isVoiceOverRunning
+        if hiddenFromVoiceOver, voiceOverObserver == nil {
+            voiceOverObserver = NotificationCenter.default.addObserver(
+                forName: UIAccessibility.voiceOverStatusDidChangeNotification, object: nil, queue: .main
+            ) { [weak self] _ in
+                MainActor.assumeIsolated { self?.followVoiceOver() }
+            }
+        } else if !hiddenFromVoiceOver, let observer = voiceOverObserver {
+            NotificationCenter.default.removeObserver(observer)
+            voiceOverObserver = nil
+        }
     }
 
     /// Starts the one-second redraw while it is wanted and the button is on

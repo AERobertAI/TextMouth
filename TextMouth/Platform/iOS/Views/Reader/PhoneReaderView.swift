@@ -194,7 +194,8 @@ struct PhoneReaderView: View {
             showsValue: item == .navigationUnit || item == .speed || item == .sleepTimer,
             rotors: rotors(for: item),
             menuItems: item == .bookActions ? { bookActionsMenu() } : nil,
-            refreshesEverySecond: item == .sleepTimer
+            refreshesEverySecond: item == .sleepTimer,
+            hiddenFromVoiceOver: item.isHiddenFromVoiceOver
         )
         .frame(maxWidth: .infinity)
     }

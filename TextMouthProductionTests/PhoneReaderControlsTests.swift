@@ -43,6 +43,24 @@ final class PhoneReaderControlsTests: XCTestCase {
         XCTAssertNil(PhoneReaderControl.bookActions.sheet, "Book Actions opens a menu, not a sheet")
     }
 
+    /// VoiceOver passes over Skip backward and Skip forward while it runs,
+    /// since adjusting Play makes the same moves; without VoiceOver every
+    /// control on the screen is reachable (FR49). Play stays adjustable.
+    func testVoiceOverPassesOverTheSkipsOnlyWhileItRuns() {
+        let hidden = PhoneReaderControl.allCases.filter(\.isHiddenFromVoiceOver)
+        XCTAssertEqual(hidden, [.skipBackward, .skipForward])
+        for timerRuns in [false, true] {
+            XCTAssertEqual(
+                PhoneReaderControl.voiceOverOrder(timerRuns: timerRuns, voiceOverRuns: false),
+                PhoneReaderControl.screen(timerRuns: timerRuns)
+            )
+            let withVoiceOver = PhoneReaderControl.voiceOverOrder(timerRuns: timerRuns, voiceOverRuns: true)
+            XCTAssertEqual(withVoiceOver, PhoneReaderControl.screen(timerRuns: timerRuns).filter { !hidden.contains($0) })
+            XCTAssertEqual(withVoiceOver.last, .bookActions, "\(withVoiceOver)")
+        }
+        XCTAssertTrue(describe(.play, in: state()).traits.contains(.adjustable), "Play must still move back and forward")
+    }
+
     /// While a timer runs, the Sleep Timer shows under Play as well as in the
     /// menu, its value the time left; with none it is only in the menu.
     func testTheSleepTimerShowsUnderPlayOnlyWhileATimerRuns() {
