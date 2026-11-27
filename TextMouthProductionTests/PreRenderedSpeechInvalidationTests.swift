@@ -1126,6 +1126,7 @@ final class PreRenderedSpeechInvalidationTests: XCTestCase {
         try withSpeechService { speech in
             let onEngine = moveOntoRenderedAudio(speech)
             speech.currentVoice = try anotherVoice(than: speech.currentVoice)
+            speech.settleVoiceChange()
 
             let continuedDirectly = speech.usingDirectMode
             let oldAudioLeft = speech.audioEngine.hasRenderedAudio
@@ -1148,6 +1149,7 @@ final class PreRenderedSpeechInvalidationTests: XCTestCase {
             speech.pause()
             let placeBefore = speech.currentCharOffset()
             speech.currentVoice = try anotherVoice(than: speech.currentVoice)
+            speech.settleVoiceChange()
 
             let stayedPaused = speech.isPaused
             let placeAfter = speech.currentCharOffset()
@@ -1172,6 +1174,7 @@ final class PreRenderedSpeechInvalidationTests: XCTestCase {
             let onEngine = moveOntoRenderedAudio(speech)
             let sameVoice = try XCTUnwrap(speech.currentVoice.flatMap { AVSpeechSynthesisVoice(identifier: $0.identifier) })
             speech.currentVoice = sameVoice
+            speech.settleVoiceChange()
 
             let stillOnEngine = !speech.usingDirectMode && speech.audioEngine.hasRenderedAudio
             speech.stop()
@@ -1179,6 +1182,54 @@ final class PreRenderedSpeechInvalidationTests: XCTestCase {
             XCTAssertTrue(onEngine)
             XCTAssertTrue(stillOnEngine)
         }
+    }
+
+    /// A Play in the same turn of the main queue as the choice, before the
+    /// choice is settled, speaks directly in the new voice instead of
+    /// resuming the old voice's paused audio.
+    func testPlayInTheTurnOfTheChoiceResumesDirectly() throws {
+        try withSpeechService { speech in
+            let onEngine = moveOntoRenderedAudio(speech)
+            speech.pause()
+            speech.currentVoice = try anotherVoice(than: speech.currentVoice)
+
+            let resumed = speech.resume()
+            let resumedDirectly = speech.usingDirectMode
+            let oldAudioLeft = speech.audioEngine.hasRenderedAudio
+            speech.stop()
+
+            XCTAssertTrue(onEngine)
+            XCTAssertTrue(resumed)
+            XCTAssertTrue(resumedDirectly)
+            XCTAssertFalse(oldAudioLeft)
+        }
+    }
+
+    /// A change in Settings, a speed step say, to a reader whose book has a
+    /// voice of its own: `reloadSettings()` gives speech the global voice,
+    /// and the reader gives it the book's again in the same turn
+    /// (`applyLocalSpeechOverrides()`). The audio rendered in the book's
+    /// voice plays on; it was once left for direct speech in the global
+    /// voice, which spoke the next thousand characters in it.
+    func testTheGlobalVoiceGivenAndTakenBackInOneTurnKeepsTheRenderedAudioPlaying() throws {
+        let preferences = makeSandboxedPreferences("pre-rendered-speech.book-voice")
+        let speech = SpeechService(userDefaults: preferences)
+        defer { speech.stop() }
+        let booksVoice = try XCTUnwrap(speech.currentVoice)
+        preferences.set(try anotherVoice(than: booksVoice).identifier, forKey: "selectedVoiceID")
+        let onEngine = moveOntoRenderedAudio(speech)
+
+        speech.reloadSettings()
+        let tookTheGlobalVoice = speech.currentVoice?.identifier != booksVoice.identifier
+        speech.currentVoice = booksVoice
+        speech.settleVoiceChange()
+
+        let stillOnEngine = !speech.usingDirectMode && speech.audioEngine.hasRenderedAudio
+        speech.stop()
+
+        XCTAssertTrue(onEngine)
+        XCTAssertTrue(tookTheGlobalVoice, "reloadSettings() gives speech the global voice first")
+        XCTAssertTrue(stillOnEngine)
     }
 
     // MARK: - Fixtures

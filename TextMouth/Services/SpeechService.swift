@@ -733,17 +733,20 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     var currentWordRange: NSRange?
     /// The voice speech is made in. Choosing another one, from any source
     /// (the global setting, the book's own, a reset), reaches speech that is
-    /// being heard from rendered audio at once
-    /// (`leaveRenderedAudioOfAnotherVoice()`), since that audio was made in
-    /// the old voice and plays on in it otherwise (B29).
+    /// being heard from rendered audio once the main queue's turn ends
+    /// (`settleVoiceChange()`), since that audio was made in the old voice
+    /// and plays on in it otherwise (B29).
     @Published var currentVoice: AVSpeechSynthesisVoice? {
         didSet {
             // The same voice assigned again (the reader applies the settings
             // each time one changes) is no change.
             guard oldValue?.identifier != currentVoice?.identifier else { return }
-            leaveRenderedAudioOfAnotherVoice()
+            scheduleVoiceChangeCheck()
         }
     }
+    /// Whether a voice was chosen since the main queue last turned, and
+    /// `settleVoiceChange()` is queued to act on it.
+    private var voiceChangeCheckIsScheduled = false
     @Published var wordsPerMinute: Double = 200 {
         didSet {
             // This is a reader's effective speed. Only SettingsViewModel may
@@ -795,8 +798,9 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// previous voice when a voice was chosen part-way through the text, or
     /// from another text when a render finished after it was abandoned.
     /// Speech then carries on directly in the current voice. Rendered audio
-    /// already playing keeps playing until its text ends, since switching
-    /// mid-playback is never seamless.
+    /// already playing or paused when another voice is chosen is left for
+    /// direct speech in the new voice (`leaveRenderedAudioOfAnotherVoice()`,
+    /// B29), the one direction a switch may go while speech is heard.
     private var renderedAudioMatchesSpeech: Bool {
         renderedAudioMatches(text: currentText)
     }
@@ -2133,6 +2137,9 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     @discardableResult
     func resume() -> Bool {
         guard isPaused else { return false }
+        // A voice chosen in this turn leaves paused audio of the old voice
+        // first, so the policy below never resumes it.
+        settleVoiceChange()
 
         let offset = Self.resumeOffset(
             reportedWord: currentWordRange,
@@ -2333,6 +2340,8 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// the voice), when the audio is of the new voice, or while a sleep
     /// fade holds the mixer down, which direct speech would not follow; the
     /// text then ends in its old voice, and the next one is made in the new.
+    /// It runs once the main queue's turn ends (`settleVoiceChange()`), not
+    /// at each choice.
     private func leaveRenderedAudioOfAnotherVoice() {
         guard isSpeaking,
               !usingDirectMode,
@@ -2355,6 +2364,37 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         } else {
             speakDirect(currentText, fromCharOffset: offset)
         }
+    }
+
+    /// Queues `settleVoiceChange()` for the end of the main queue's turn,
+    /// once however many voices are chosen in it.
+    ///
+    /// A voice is often chosen and then chosen back in one turn: a change in
+    /// Settings posts `speechSettingsChanged`, `reloadSettings()` gives
+    /// speech the global voice, and the reader then gives a book with a
+    /// voice of its own that voice again (`applyLocalSpeechOverrides()`),
+    /// at each change in Settings, a speed step too. Acting at the first
+    /// choice left the book's rendered audio for direct speech in the global
+    /// voice, the wrong one, until the next chunk.
+    private func scheduleVoiceChangeCheck() {
+        guard !voiceChangeCheckIsScheduled else { return }
+        voiceChangeCheckIsScheduled = true
+        DispatchQueue.main.async { [weak self] in
+            self?.settleVoiceChange()
+        }
+    }
+
+    /// Acts on a voice chosen since the main queue last turned, if any
+    /// (`leaveRenderedAudioOfAnotherVoice()`), with the voice chosen last:
+    /// queued by the choice (`scheduleVoiceChangeCheck()`), and called by a
+    /// resume before it decides how to go on, so that a Play in the same
+    /// turn as the choice never resumes audio of the old voice. Internal so
+    /// that tests settle a choice without turning the main run loop, which
+    /// would let the system synthesizer be heard.
+    func settleVoiceChange() {
+        guard voiceChangeCheckIsScheduled else { return }
+        voiceChangeCheckIsScheduled = false
+        leaveRenderedAudioOfAnotherVoice()
     }
 
     // MARK: - Seeking
