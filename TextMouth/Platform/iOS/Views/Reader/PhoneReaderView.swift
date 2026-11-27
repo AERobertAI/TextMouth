@@ -138,7 +138,12 @@ struct PhoneReaderView: View {
                 snapshot: session.snapshot,
                 followsInBraille: { PhoneReaderView.followsInBraille }
             )
-            .frame(height: textHeight)
+            // Twelve lines, but never so tall that Play falls below the first
+            // screen at the largest text sizes: the share is of the reader's
+            // scroll view, the nearest container.
+            .containerRelativeFrame(.vertical) { visible, _ in
+                CGFloat(PhoneReaderControls.bookContentHeight(scaled: Double(textHeight), visible: Double(visible)))
+            }
 
             control(.play)
                 .frame(height: playHeight)

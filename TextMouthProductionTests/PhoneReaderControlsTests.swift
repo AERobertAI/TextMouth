@@ -320,6 +320,17 @@ final class PhoneReaderControlsTests: XCTestCase {
         XCTAssertEqual(describe(.bookInfo, in: state()).hint, "Show book information")
     }
 
+    /// Book content keeps its twelve lines while they fit in 55 percent of the
+    /// screen, and is cut to that share at the largest text sizes, so Play
+    /// still shows under it; an unmeasured screen leaves the twelve lines.
+    func testBookContentLeavesRoomForPlayAtTheLargestTextSizes() {
+        // The default size on the smallest iPhone: 300 points of 560 fits.
+        XCTAssertEqual(PhoneReaderControls.bookContentHeight(scaled: 300, visible: 560), 300)
+        // The largest accessibility size, about 3.1 times the body's: cut.
+        XCTAssertEqual(PhoneReaderControls.bookContentHeight(scaled: 935, visible: 750), 412.5, accuracy: 0.001)
+        XCTAssertEqual(PhoneReaderControls.bookContentHeight(scaled: 300, visible: 0), 300)
+    }
+
     /// Go To's value is the place, as the sheet's Page and Time fields start:
     /// the page and the time, the page left out in a book without pages, and
     /// nothing while loading (FR50). It is no button's visible title: Go To
