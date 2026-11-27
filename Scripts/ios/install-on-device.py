@@ -54,6 +54,8 @@ MISSING_STEP = 2
 HEARTBEAT_SECONDS = 60
 # The kinds of device an app may be installed on.
 INSTALLABLE_DEVICE_TYPES = ("iPhone", "iPad")
+# The hardwareProperties.reality of a real device (a simulator's is "simulated").
+PHYSICAL_REALITY = "physical"
 
 # A team Xcode knows: its identifier, its name, and whether it is a free personal team (whose profile lasts a week).
 Team = namedtuple("Team", "team_id name free")
@@ -182,6 +184,10 @@ def devices_in_listing(listing):
         name = properties.get("name") if isinstance(properties.get("name"), str) else identifier
         if hardware.get("deviceType") not in INSTALLABLE_DEVICE_TYPES:
             continue  # a watch, a TV, or a Mac: not somewhere this app installs
+        # Xcode 27 lists simulators too, with reality "simulated": never a phone to install on. An entry with no
+        # reality (an older devicectl) is taken as physical.
+        if hardware.get("reality", PHYSICAL_REALITY) != PHYSICAL_REALITY:
+            continue
         if connection.get("pairingState") != "paired":
             others.append((name, "not paired: connect it by USB, unlock it, and tap Trust"))
         elif connection.get("tunnelState") == "unavailable":

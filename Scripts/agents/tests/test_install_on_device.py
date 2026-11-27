@@ -33,12 +33,12 @@ TEAM_B = {"teamID": "BBBBBBBBBB", "teamName": "Test Company", "isFreeProvisionin
 
 
 def device_entry(name="Test Phone", identifier="11111111-AAAA", udid="00001111-AAAA", pairing="paired",
-                 tunnel="disconnected", kind="iPhone"):
+                 tunnel="disconnected", kind="iPhone", reality="physical"):
     """One device of devicectl's JSON, with the fields the tool reads, made up."""
     return {"identifier": identifier,
             "connectionProperties": {"pairingState": pairing, "tunnelState": tunnel, "transportType": "wired"},
             "deviceProperties": {"name": name},
-            "hardwareProperties": {"deviceType": kind, "udid": udid}}
+            "hardwareProperties": {"deviceType": kind, "udid": udid, "reality": reality}}
 
 
 def listing(*entries):
@@ -138,6 +138,23 @@ class DeviceTests(unittest.TestCase):
         usable, _ = tool.devices_in_listing(listing(device_entry(tunnel="disconnected"), device_entry(
             name="Other", identifier="2", udid="u2", tunnel="connected")))
         self.assertEqual([device.name for device in usable], ["Test Phone", "Other"])
+
+    def test_a_simulator_is_never_ready(self):
+        # Xcode 27's devicectl lists simulators, with reality "simulated".
+        usable, others = tool.devices_in_listing(listing(
+            device_entry(name="Test Simulator", identifier="S1", udid="s1", reality="simulated"), device_entry()))
+        self.assertEqual([device.name for device in usable], ["Test Phone"])
+        self.assertEqual(others, [])
+        self.assertEqual(tool.choose_device(None, usable, others).name, "Test Phone")
+
+    def test_a_listing_with_only_a_simulator_has_no_ready_phone(self):
+        usable, others = tool.devices_in_listing(listing(device_entry(reality="simulated")))
+        self.assertEqual((usable, others), ([], []))
+
+    def test_an_entry_without_a_reality_counts_as_physical(self):
+        entry = device_entry()
+        del entry["hardwareProperties"]["reality"]
+        self.assertEqual(len(tool.devices_in_listing(listing(entry))[0]), 1)
 
     def test_no_devices_says_how_to_connect(self):
         usable, others = tool.devices_in_listing(listing())
