@@ -226,7 +226,9 @@ final class PhoneReaderModel {
             isNearBookmark: reader.hasNearbyBookmark,
             bookmarkCount: reader.bookmarks.count,
             headingPosition: position,
-            sleepTimerStatus: reader.sleepTimerService.spokenStatus
+            sleepTimerStatus: reader.sleepTimerService.spokenStatus,
+            goToPage: reader.hasSeveralPages ? reader.currentPagePosition.label : "",
+            goToTime: reader.goToTimeStartingText
         )
     }
 

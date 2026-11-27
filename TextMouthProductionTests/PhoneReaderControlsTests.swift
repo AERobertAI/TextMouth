@@ -293,6 +293,21 @@ final class PhoneReaderControlsTests: XCTestCase {
         XCTAssertEqual(describe(.bookInfo, in: state()).hint, "Show book information")
     }
 
+    /// Go To's value is the place, as the sheet's Page and Time fields start:
+    /// the page and the time, the page left out in a book without pages, and
+    /// nothing while loading (FR50). It is no button's visible title: Go To
+    /// shows its name alone.
+    func testGoToSaysThePageAndTheTime() {
+        let place = state { $0.goToPage = "Page 112 of 300"; $0.goToTime = "1:02:03" }
+        XCTAssertEqual(describe(.goTo, in: place).value, "Page 112 of 300, 1:02:03")
+        XCTAssertEqual(describe(.goTo, in: state { $0.goToTime = "0:05:00" }).value, "0:05:00")
+        XCTAssertEqual(describe(.goTo, in: state()).value, "")
+        var loading = place
+        loading.isLoading = true
+        XCTAssertEqual(describe(.goTo, in: loading).value, "")
+        XCTAssertEqual(describe(.goTo, in: place).label, "Go To", "The place belongs in the value, after the name")
+    }
+
     /// Export this book is the Mac's toolbar button: its spoken label, its drawn
     /// title "Export", and its hint, a button with no value and no actions; it
     /// follows Book Info and comes before the skips.

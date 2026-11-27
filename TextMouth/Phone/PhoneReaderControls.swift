@@ -81,6 +81,9 @@ enum PhoneReaderControls {
         case .goTo:
             return PhoneControlDescription(
                 label: PhoneReaderWording.goTo,
+                // The place, as the sheet's fields start (FR50): read when
+                // VoiceOver asks, never announced as it changes.
+                value: goToValue(in: state),
                 hint: PhoneReaderWording.goToHint,
                 traits: .button
             )
@@ -192,6 +195,17 @@ enum PhoneReaderControls {
             hint: macLabel == label ? "" : macLabel,
             traits: .button
         )
+    }
+
+    // MARK: - Go To
+
+    /// Go To's value (FR50): the page at the place and the time there, the
+    /// starting texts of the sheet's Page and Time fields, "Page 112 of 300,
+    /// 1:02:03"; the page left out in a book of fewer than two pages, and
+    /// nothing while the book loads, when there's no place yet.
+    static func goToValue(in state: PhoneReaderState) -> String {
+        guard !state.isLoading else { return "" }
+        return SentenceWording.commaJoined([state.goToPage, state.goToTime].filter { !$0.isEmpty })
     }
 
     // MARK: - Where Am I?

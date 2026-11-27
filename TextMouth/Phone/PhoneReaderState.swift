@@ -205,4 +205,12 @@ struct PhoneReaderState: Equatable {
     var headingPosition: HeadingPosition
     /// The sleep timer's status as the Mac speaks it, or "" with no timer.
     var sleepTimerStatus: String
+    /// The page at the place, "Page 112 of 300", for Go To's value (FR50);
+    /// "" in a book of fewer than two pages. Unlike Where Am I?'s page, it
+    /// doesn't wait on the reader screen's page setting: Go To goes to pages.
+    var goToPage: String = ""
+    /// The time at the place, as Go To's Time field starts ("1:02:03"): the
+    /// recording's for an audiobook, else at the book's listening speed
+    /// (FR50).
+    var goToTime: String = ""
 }

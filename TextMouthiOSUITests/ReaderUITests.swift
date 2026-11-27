@@ -48,6 +48,8 @@ final class ReaderUITests: TextMouthUITestCase {
             elements.first { $0.label == label }?.value
         }
         XCTAssertEqual(value(of: "Navigation unit"), "Sentence")
+        // Go To says the place, its time at least (FR50).
+        XCTAssertFalse((value(of: "Go To") ?? "").isEmpty, "Go To says no place: \(Self.describe(elements))")
         XCTAssertFalse(elements.contains { $0.label == "Sleep Timer" }, "A Sleep Timer shows with no timer running: \(Self.describe(elements))")
         XCTAssertTrue((value(of: "Bookmarks") ?? "").isEmpty, "No bookmark yet: \(value(of: "Bookmarks") ?? "")")
         XCTAssertTrue(elements.contains { $0.label.hasPrefix("Skip forward") && $0.label.hasSuffix("Sentence") }, "The skips don't name the unit")
