@@ -61,10 +61,13 @@ final class ReaderUITests: TextMouthUITestCase {
 
     /// Book content is one element, one swipe for VoiceOver (FR48): nothing
     /// labeled stands between it and Play, as a paragraph of its own would,
-    /// and it is the screen's main area, taller than Play.
+    /// and it is the screen's main area, taller than Play. The text view's own
+    /// scroll bars, which XCUITest lists after it ("Vertical scroll bar, 5
+    /// pages", train 1127-1548), are UIKit's and not the text's, so they are
+    /// passed over.
     func testBookContentIsOneElementAndTheMainArea() throws {
         let app = try launchIntoTheReader()
-        let elements = try elementsInOrder(of: app)
+        let elements = try elementsInOrder(of: app).filter { !$0.label.contains("scroll bar") }
         let index = try XCTUnwrap(elements.firstIndex { $0.label == "Book content" }, "No Book content")
         XCTAssertTrue(elements.indices.contains(index + 1), "Nothing after Book content")
         XCTAssertEqual(elements[index + 1].label, "Play", "The element after Book content: \(Self.describe(elements))")
