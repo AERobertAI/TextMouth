@@ -61,18 +61,52 @@ final class ReaderUITests: TextMouthUITestCase {
 
     /// Book content is one element, one swipe for VoiceOver (FR48): nothing
     /// labeled stands between it and Play, as a paragraph of its own would,
-    /// and it is the screen's main area, taller than Play. The text view's own
-    /// scroll bars, which XCUITest lists after it ("Vertical scroll bar, 5
-    /// pages", train 1127-1548), are UIKit's and not the text's, so they are
-    /// passed over.
+    /// and it is the screen's main area, taller than Play.
+    ///
+    /// The text view's own scroll bars ("Vertical scroll bar, 5 pages", train
+    /// 1127-1548) are in XCUITest's tree, which also lists what lies inside
+    /// an element, as it lists a cell's labels. VoiceOver stops at an element
+    /// and never visits what is inside it, so the bars are passed over only
+    /// where they are Book content's own descendants, as this checks: beside
+    /// it, they would be stops of their own.
     func testBookContentIsOneElementAndTheMainArea() throws {
         let app = try launchIntoTheReader()
-        let elements = try elementsInOrder(of: app).filter { !$0.label.contains("scroll bar") }
+        let content = try XCTUnwrap(Self.snapshot(labeled: "Book content", in: try app.snapshot()), "No Book content")
+        let inside = Self.labeledDescendants(of: content)
+        XCTAssertTrue(
+            inside.allSatisfy { $0.contains("scroll bar") },
+            "Something besides its scroll bars inside Book content: \(inside)"
+        )
+        let elements = try elementsInOrder(of: app)
         let index = try XCTUnwrap(elements.firstIndex { $0.label == "Book content" }, "No Book content")
-        XCTAssertTrue(elements.indices.contains(index + 1), "Nothing after Book content")
-        XCTAssertEqual(elements[index + 1].label, "Play", "The element after Book content: \(Self.describe(elements))")
+        // What follows Book content once its own descendants are passed.
+        let next = index + 1 + inside.count
+        let after = elements.indices.contains(next) ? elements[next].label : "nothing"
+        XCTAssertEqual(after, "Play", "The element after Book content: \(Self.describe(elements))")
         let play = try XCTUnwrap(elements.first { $0.label == "Play" })
         XCTAssertGreaterThan(elements[index].frame.height, play.frame.height, "Book content is smaller than Play")
+    }
+
+    /// The first element labeled `label` in `root`'s tree, depth first.
+    private static func snapshot(labeled label: String, in root: any XCUIElementSnapshot) -> (any XCUIElementSnapshot)? {
+        var stack: [any XCUIElementSnapshot] = [root]
+        while let next = stack.popLast() {
+            if next.label == label { return next }
+            stack.append(contentsOf: next.children.reversed())
+        }
+        return nil
+    }
+
+    /// The labels of `root`'s descendants that have one, depth first, as
+    /// `elementsInOrder(of:)` lists them after `root`.
+    private static func labeledDescendants(of root: any XCUIElementSnapshot) -> [String] {
+        var found: [String] = []
+        var stack = Array(root.children.reversed())
+        while let next = stack.popLast() {
+            if !next.label.isEmpty { found.append(next.label) }
+            stack.append(contentsOf: next.children.reversed())
+        }
+        return found
     }
 
     /// Book Actions opens a menu of Sleep Timer, Voice, Book Info, and Export
