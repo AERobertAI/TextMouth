@@ -104,7 +104,9 @@ extension LibraryViewModel {
         let open = openBookIDsNow
         let readable = candidates.filter { !open.contains($0.id) }
         let openCount = candidates.count - readable.count
-        DispatchQueue.global(qos: .utility).async {
+        // Weak here too: a strong capture would hold the library until the
+        // pass ends, though the closure below is written for its going.
+        DispatchQueue.global(qos: .utility).async { [weak self] in
             let boundary = StorageBoundary.shared
             var captures: [UUID: CapturedPlaceAnchors] = [:]
             var outcome = TextAnchorBackfillOutcome(waiting: openCount)
