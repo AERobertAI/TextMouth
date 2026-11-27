@@ -1173,6 +1173,7 @@ targets:
       - TextMouthProductionTests/PhoneExportMemoryCheckTests.swift
       - TextMouthProductionTests/PhoneExportOfferTests.swift
       - TextMouthProductionTests/PhoneExportQuestionTests.swift
+      - TextMouthProductionTests/PhoneExportSpeechTests.swift
       - TextMouthProductionTests/PhoneFocusRequestsTests.swift
       - TextMouthProductionTests/PhoneFolderVocabularyTests.swift
       - TextMouthProductionTests/PhoneGoToModelTests.swift

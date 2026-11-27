@@ -583,6 +583,22 @@ final class BookExportModel: ObservableObject, Identifiable {
         isExporting && isChecked(.spokenAudio)
     }
 
+    /// Words that start the sentence of the export's end, set by the iPhone's session when iOS, not the person, stopped it
+    /// (`PhoneExportSession.stopBySystem(_:)`); nil for any other end. Taken, and cleared, as the export ends.
+    var wordsBeforeTheEnd: String?
+
+    /// How urgent the announcement of the export's end is: high while the sheet shows, low once the sheet has closed on
+    /// an export that goes on, whose end is a background result (`PhoneExportSession.sheetClosed(_:)`).
+    var announcementPriority: NSAccessibilityPriorityLevel = .high
+
+    /// Whether the spoken audio file is being made now: its chapters spoken, or the file encoded. Only then may the
+    /// iPhone's sheet close and the export go on. A file of the same book can follow it (a transcript, an original), and
+    /// asks about a chapter nested too deeply, which needs the sheet; with the sheet closed the iPhone's prompt answers
+    /// Cancel Export (`PhoneExportQuestionPrompt.sheetClosed()`).
+    var isMakingSpeech: Bool {
+        isExporting && speechProgress != nil
+    }
+
     // MARK: Converting
 
     /// The choices of the Convert to picker beside the checkbox of `kind`:
@@ -978,12 +994,23 @@ final class BookExportModel: ObservableObject, Identifiable {
         let latest = speechRecord.latest
         let format = speechFormat
         let folderName = knownFolderName
+        // What the iPhone adds to the end's sentence: that iOS stopped the export, and that a question came with no one to ask.
+        // iOS's words are for an export it stopped: one that finished before the stop took effect says it finished.
+        let before = outcome.wasCancelled ? wordsBeforeTheEnd : nil
+        wordsBeforeTheEnd = nil
+        #if os(macOS)
+        let after: String? = nil
+        #else
+        let after = questionPrompt?.wordsAfterTheEnd
+        #endif
         let words: () -> String = {
-            Self.finishedWords(outcome, folderName: folderName, latest: latest, speechFormat: format)
+            (before.map { $0 + " " } ?? "")
+                + Self.finishedWords(outcome, folderName: folderName, latest: latest, speechFormat: format)
+                + (after.map { " " + $0 } ?? "")
         }
         summaryWording = Self.didEverything(outcome) ? nil : words
         finishedWording = words
-        VoiceOverAnnouncer.announce(words(), from: window)
+        VoiceOverAnnouncer.announce(words(), from: window, priority: announcementPriority)
         return outcome
     }
 

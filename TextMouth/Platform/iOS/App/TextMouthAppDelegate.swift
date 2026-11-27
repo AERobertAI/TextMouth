@@ -54,6 +54,10 @@ final class TextMouthAppDelegate: UIResponder, UIApplicationDelegate {
         }
         PhoneAudioSession.install(session: model.session)
         joinTheSlices(on: model)
+        // A spoken audio export's kept chapters outlive the app by a week (`SpeechExportStore.keptOnPhone`): an export iOS
+        // ended, or the person closed, goes on from them. Older ones, and any other leftover, are removed now, off the main
+        // thread, unless an export has already begun.
+        SpeechExportStore.sweepInBackground()
         return true
     }
 

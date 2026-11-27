@@ -16,6 +16,10 @@ enum PhoneLibraryFocus: Hashable, Sendable {
     case newFolder
     /// Sort, in the bottom bar.
     case sort
+    /// The title of the export card at the top of the list.
+    case exportCard
+    /// The Stop button of the export card, which goes when its export ends.
+    case exportCardStop
 }
 
 /// One iPhone Library screen (the iPhone interface spec, "The Library"): the
@@ -57,6 +61,9 @@ struct PhoneLibraryView: View {
     @State private var rowsWhenSheetOpened: [PhoneRowID] = []
     /// What VoiceOver says once the sheet has closed.
     @State private var sayAfterSheet: String?
+    /// Whether the export card appeared as the sheet now closing closed (`PhoneExportCardFocus`): its dismissal then focuses
+    /// the card.
+    @State private var exportCardAppeared = false
     /// The Library's alert, if one shows: the removal question about a book, or why Remove Download left a book's
     /// download (FR46). One state and one alert modifier for both (`PhoneLibraryAlert`).
     @State private var alert: PhoneLibraryAlert?
@@ -118,6 +125,9 @@ struct PhoneLibraryView: View {
                 // after the title (the spec's "Progress"): it shows nothing
                 // while nothing imports, and observes only the import.
                 PhoneImportProgressCard()
+                // An export that goes on with its sheet closed (FR31, phase 2): the sheet's title, how far it has
+                // come, and Stop; then what it did, and Close. It shows nothing while no export has its card.
+                PhoneExportProgressCard(focus: $focus)
                 // The Mac's Storage problems notice, as it is, at the top of
                 // the list while a write keeps failing: it observes only the
                 // failure center, and shows nothing until then. Each of its
@@ -195,6 +205,8 @@ struct PhoneLibraryView: View {
                 bottomBar
             }
         }
+        // The export card appearing, ending, and being closed moves VoiceOver's focus.
+        .onReceive(PhoneExportSession.shared.cardEvents) { exportCardChanged($0) }
         .sheet(item: $sheet, onDismiss: { sheetClosed() }) { shown in
             sheetView(shown)
         }
@@ -357,6 +369,17 @@ struct PhoneLibraryView: View {
                     beginHold: { [lifeCycle = model.lifeCycle] name in lifeCycle.beginHold(name) }
                 )
             }
+        case .exportFolder(let path):
+            // The folder's books as the library holds them now, each exported into a folder of its own (the Mac's way for
+            // several books); a folder emptied meanwhile has no sheet.
+            let books = library.library.booksInFolderTree(path)
+            if !books.isEmpty {
+                PhoneExportSheet(
+                    books: books,
+                    library: library,
+                    beginHold: { [lifeCycle = model.lifeCycle] name in lifeCycle.beginHold(name) }
+                )
+            }
         }
     }
 
@@ -395,7 +418,12 @@ struct PhoneLibraryView: View {
     /// later, once the list has heard of the change; then what the sheet's
     /// choice says, after VoiceOver has settled (the Mac's `afterSheetDelay`).
     private func sheetClosed() {
-        if let opener = sheetOpener {
+        // An export sheet that closed on a card gives focus to the card, and nothing else asks: one owner, one request.
+        let landing = PhoneExportCardFocus.afterSheetClosed(cardAppeared: exportCardAppeared)
+        exportCardAppeared = false
+        if landing == .card {
+            DispatchQueue.main.async { requestFocus(.exportCard) }
+        } else if let opener = sheetOpener {
             let before = rowsWhenSheetOpened
             DispatchQueue.main.async {
                 guard case .row(let row) = opener else {
@@ -501,6 +529,22 @@ struct PhoneLibraryView: View {
         }
     }
 
+    /// What happened to the export card (`PhoneExportCardFocus` decides): the card appearing is noted, for the dismissal of
+    /// the sheet that closed on it to focus the card; its export ending moves focus only off its Stop, which has gone; and
+    /// once it is closed focus goes to the Library's first row, so that it never rests on something that has gone.
+    private func exportCardChanged(_ event: PhoneExportSession.CardEvent) {
+        // Only a sheet of this screen leaves its dismissal to say; one over the reader, or none, leaves nothing to say.
+        if event == .appeared, sheetOpener != nil { exportCardAppeared = true }
+        switch PhoneExportCardFocus.target(for: event, focusWasOnStop: focus == .exportCardStop) {
+        case .card?:
+            requestFocus(.exportCard)
+        case .firstRow?:
+            if let first = rows.rowIDs.first { requestFocus(.row(first)) }
+        case nil:
+            break
+        }
+    }
+
     /// Sends VoiceOver's focus to `target` by the list's one helper
     /// (`PhoneListFocus`): scrolled into being, then asked for a moment later.
     private func requestFocus(_ target: PhoneLibraryFocus) {
@@ -600,7 +644,7 @@ struct PhoneLibraryView: View {
             } else {
                 remove(book)
             }
-        case .renameFolder, .moveFolder, .deleteFolder:
+        case .renameFolder, .moveFolder, .deleteFolder, .exportFolder:
             break
         }
     }
@@ -619,6 +663,10 @@ struct PhoneLibraryView: View {
         case .deleteFolder:
             guard PhoneFolderSheetModel.startDeleting(folder, in: library) == .asks else { return }
             shown = .delete(folder)
+        case .exportFolder:
+            // Not a folder sheet: the Export sheet, for the folder's books.
+            open(.exportFolder(folder.fullPath), from: .row(.folder(folderID)))
+            return
         default:
             return
         }

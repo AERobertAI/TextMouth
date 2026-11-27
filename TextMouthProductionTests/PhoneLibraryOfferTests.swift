@@ -54,7 +54,7 @@ final class PhoneLibraryOfferTests: XCTestCase {
         XCTAssertEqual(commands.filter { $0.action == .moveDown }.count, 1)
     }
 
-    /// A folder offers Rename, Move, and Delete where the Mac offers Delete.
+    /// A folder offers Rename, Move, and Delete where the Mac offers Delete; the Export command comes with books in it.
     func testAFoldersCommands() {
         XCTAssertEqual(
             PhoneLibraryOffer.folderCommands(offersDelete: true).map(\.action),
@@ -64,6 +64,24 @@ final class PhoneLibraryOfferTests: XCTestCase {
             PhoneLibraryOffer.folderCommands(offersDelete: false).map(\.title),
             ["Rename Folder...", "Move Folder..."]
         )
+    }
+
+    /// A folder that holds books offers the Mac's Export command for them, after Move Folder... and before Delete
+    /// Folder..., named by how many there are: "Export…" for one, "Export 12 Books…" for several (FR31, phase 3). A folder
+    /// of no books offers none.
+    func testAFolderOfBooksOffersExportInTheMacsWords() {
+        XCTAssertEqual(
+            PhoneLibraryOffer.folderCommands(offersDelete: true, bookCount: 12).map(\.action),
+            [.renameFolder, .moveFolder, .exportFolder, .deleteFolder]
+        )
+        XCTAssertEqual(
+            PhoneLibraryOffer.folderCommands(offersDelete: true, bookCount: 12).map(\.title),
+            ["Rename Folder...", "Move Folder...", "Export 12 Books…", "Delete Folder..."]
+        )
+        XCTAssertEqual(PhoneLibraryOffer.folderCommands(offersDelete: false, bookCount: 1).last?.title, "Export…")
+        XCTAssertFalse(PhoneLibraryOffer.folderCommands(offersDelete: true, bookCount: 0).contains { $0.action == .exportFolder })
+        // The title is the Mac's own, for the count.
+        XCTAssertEqual(PhoneLibraryOffer.folderCommands(offersDelete: false, bookCount: 3).last?.title, BookExportWording.commandTitle(count: 3))
     }
 
     /// Each command is offered once, so its action identifies it.

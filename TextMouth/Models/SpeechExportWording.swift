@@ -163,9 +163,9 @@ enum SpeechExportWording {
     /// or, when no voice can speak it into a file, the export's own refusal
     /// saying why and what to do: no voice installed (`voice` nil), or a
     /// Personal Voice, which macOS never records to a file.
-    static func voiceLine(_ voice: SpeechExportVoiceInfo?) -> String {
-        guard let voice else { return sentence(for: .noVoice) }
-        guard !voice.isPersonalVoice else { return sentence(for: .personalVoice(name: voice.name)) }
+    static func voiceLine(_ voice: SpeechExportVoiceInfo?, onPhone: Bool = SpeechRefusalWording.runsOnPhone) -> String {
+        guard let voice else { return sentence(for: .noVoice, onPhone: onPhone) }
+        guard !voice.isPersonalVoice else { return sentence(for: .personalVoice(name: voice.name), onPhone: onPhone) }
         // Translators: The line in the Export dialog's spoken audio options naming the voice the book is spoken with. %@ is the voice's name.
         return InterfaceText.line("speechExport.voiceLine", "Voice: \(voice.name)")
     }
@@ -173,8 +173,17 @@ enum SpeechExportWording {
     /// The line about the licence the Mac's voices come with (the user's
     /// answer to question 20 asked for it).
     static var licence: String {
+        licence(onPhone: SpeechRefusalWording.runsOnPhone)
+    }
+
+    /// The licence line in the words of the device: the Mac's voices', or, with `onPhone`, the iPhone's.
+    static func licence(onPhone: Bool) -> String {
+        if onPhone {
+            // Translators: The line in the Export sheet's spoken audio options about the licence the iPhone's voices come with.
+            return InterfaceText.line("speechExport.licence.iphone", "Speech from the iPhone's voices is for personal, non-commercial use, under Apple's licence.")
+        }
         // Translators: The line in the Export dialog's spoken audio options about the licence the Mac's voices come with.
-        InterfaceText.line("speechExport.licence", "Speech from the Mac's voices is for personal, non-commercial use, under Apple's licence.")
+        return InterfaceText.line("speechExport.licence", "Speech from the Mac's voices is for personal, non-commercial use, under Apple's licence.")
     }
 
     // MARK: A File's Name
@@ -243,16 +252,27 @@ enum SpeechExportWording {
     /// pauses changes what the same range would speak, so it speaks every
     /// chapter again.
     static var stopHint: String {
+        stopHint(onPhone: SpeechRefusalWording.runsOnPhone)
+    }
+
+    /// Stop's hint in the words of the device: the Mac keeps the chapters until TextMouth quits; the iPhone, for a
+    /// week (`SpeechExportStore.keptOnPhone`), through a close of the app.
+    static func stopHint(onPhone: Bool) -> String {
+        if onPhone {
+            // Translators: The hint of the Stop button in the Export sheet while a spoken audio export runs, on the iPhone.
+            return InterfaceText.line("speechExport.stopHint.iphone", "Stops the export and keeps the chapters already spoken for a week, until a different spoken audio export starts, or until the book's voice, text, substitutions, or pauses change. Exporting the same range at the same speed and pitch goes on from them.")
+        }
         // Translators: The hint of the Stop button in the Export dialog while a spoken audio export runs.
-        InterfaceText.line("speechExport.stopHint", "Stops the export and keeps the chapters already spoken until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. Exporting the same range at the same speed and pitch goes on from them.")
+        return InterfaceText.line("speechExport.stopHint", "Stops the export and keeps the chapters already spoken until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. Exporting the same range at the same speed and pitch goes on from them.")
     }
 
     /// The sentence an export that ended without its file adds to what the
     /// dialog says, telling what it kept, how to use it, and for how long:
     /// `done` of its `total` chapters are kept (`SpeechExportProgress.ended`).
     /// Nil when none is.
-    static func kept(done: Int, total: Int) -> String? {
+    static func kept(done: Int, total: Int, onPhone: Bool = SpeechRefusalWording.runsOnPhone) -> String? {
         guard done > 0 else { return nil }
+        if onPhone { return keptOnPhone(done: done, total: total) }
         guard done >= total else {
             // Chapter numbers name places in the book, so they are written without grouping.
             // Translators: What the Export dialog says after a spoken audio export ended without its file and kept some of its chapters. %1$@ is how many chapters are kept, %2$lld how many there are, and %3$@ the number of the chapter to go on from, both written without digit grouping.
@@ -263,6 +283,21 @@ enum SpeechExportWording {
             ? InterfaceText.line("speechExport.kept.chapter", "Kept the spoken chapter until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To make the audio file from it, export the same range at the same speed and pitch.")
             // Translators: What the Export dialog says after a spoken audio export ended without its file and kept every one of its chapters. %lld is the number of chapters, more than one.
             : InterfaceText.line("speechExport.kept.them", "Kept all \(number: total) spoken chapters until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To make the audio file from them, export the same range at the same speed and pitch.")
+    }
+
+    /// What an export that ended without its file kept, on the iPhone, which keeps spoken chapters for a week where
+    /// the Mac keeps them until it quits. As `kept(done:total:onPhone:)` words the Mac's.
+    private static func keptOnPhone(done: Int, total: Int) -> String {
+        guard done >= total else {
+            // Chapter numbers name places in the book, so they are written without grouping.
+            // Translators: What the Export sheet says after a spoken audio export ended without its file and kept some of its chapters, on the iPhone. %1$@ is how many chapters are kept, %2$@ how many there are, and %3$@ the number of the chapter to go on from, each written without digit grouping. The counts follow a label, so no word has to agree with them.
+            return InterfaceText.line("speechExport.kept.chaptersGo.iphone", "Chapters kept for a week: \(String(done)) of \(String(total)). They stay until a different spoken audio export starts, or until the book's voice, text, substitutions, or pauses change. To go on from chapter \(String(done + 1)), export the same range at the same speed and pitch.")
+        }
+        return total == 1
+            // Translators: What the Export sheet says after a spoken audio export ended without its file and kept its only chapter, on the iPhone.
+            ? InterfaceText.line("speechExport.kept.chapter.iphone", "The spoken chapter is kept for a week, until a different spoken audio export starts, or until the book's voice, text, substitutions, or pauses change. To make the audio file from it, export the same range at the same speed and pitch.")
+            // Translators: What the Export sheet says after a spoken audio export ended without its file and kept every one of its chapters, on the iPhone. %@ is the number of chapters, more than one, written without digit grouping. The count follows a label, so no word has to agree with it.
+            : InterfaceText.line("speechExport.kept.them.iphone", "Chapters kept for a week: all \(String(total)). They stay until a different spoken audio export starts, or until the book's voice, text, substitutions, or pauses change. To make the audio file from them, export the same range at the same speed and pitch.")
     }
 
     // MARK: Text on One Line
@@ -276,7 +311,7 @@ enum SpeechExportWording {
     }
 
     /// The sentence of a refusal, as the export would show it.
-    private static func sentence(for refusal: SpeechExportError) -> String {
-        refusal.errorDescription ?? ""
+    private static func sentence(for refusal: SpeechExportError, onPhone: Bool = SpeechRefusalWording.runsOnPhone) -> String {
+        refusal.description(onPhone: onPhone)
     }
 }

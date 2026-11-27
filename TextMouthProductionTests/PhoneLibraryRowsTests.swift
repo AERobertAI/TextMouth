@@ -187,7 +187,7 @@ final class PhoneLibraryRowsTests: XCTestCase {
         XCTAssertEqual(folderRow.label, "Fiction, 2 books")
         XCTAssertEqual(folderRow.label, FolderRow.accessibilityLabel(name: "Fiction", bookCount: 2, feedCounts: nil))
         XCTAssertEqual(folderRow.detail, "2 books")
-        XCTAssertEqual(folderRow.commands.map(\.title), ["Rename Folder...", "Move Folder...", "Delete Folder..."])
+        XCTAssertEqual(folderRow.commands.map(\.title), ["Rename Folder...", "Move Folder...", "Export 2 Books…", "Delete Folder..."])
         XCTAssertEqual(rows.sections.last?.rows.map(\.title), ["Orchard"])
     }
 

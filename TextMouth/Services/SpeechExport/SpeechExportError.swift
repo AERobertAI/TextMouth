@@ -32,11 +32,25 @@ enum SpeechExportError: LocalizedError, Equatable {
     }
 
     var errorDescription: String? {
+        description(onPhone: SpeechRefusalWording.runsOnPhone)
+    }
+
+    /// The refusal in the words of the device: the Mac's, or, with `onPhone`, the iPhone's, which names no macOS
+    /// setting. A parameter so that a test on the Mac reaches both, as the refusal report's lines do.
+    func description(onPhone: Bool) -> String {
         switch self {
         case .personalVoice(let name):
+            if onPhone {
+                // Translators: Why a spoken audio export was refused on the iPhone: the book's voice is a Personal Voice. %1$@ is the voice's name and %2$@ the name of the Voice button in the book's reader.
+                return InterfaceText.line("speechExportError.personalVoice.iphone", "“\(name)” is a Personal Voice, which the iPhone can't record to a file. Choose another voice with the \(Self.voiceButtonName) button in the reader, then export again.")
+            }
             // Translators: Why a spoken audio export was refused: the book's voice is a Personal Voice. %1$@ is the voice's name and %2$@ the name of the Voice button in the book's reader.
             return InterfaceText.line("speechExportError.personalVoice", "“\(name)” is a Personal Voice, which macOS can't record to a file. Choose another voice with the \(Self.voiceButtonName) button in the reader, then export again.")
         case .noVoice:
+            if onPhone {
+                // Translators: Why a spoken audio export was refused on the iPhone: no voice is installed. Settings, Accessibility, and Spoken Content are the names of iOS settings.
+                return InterfaceText.line("speechExportError.noVoice.iphone", "No voice is installed. Add one in Settings, Accessibility, Spoken Content, then export again.")
+            }
             // Translators: Why a spoken audio export was refused: no voice is installed. System Settings, Accessibility, and Spoken Content are the names of macOS settings.
             return InterfaceText.line("speechExportError.noVoice", "No voice is installed. Add one in System Settings, Accessibility, Spoken Content, then export again.")
         case .notEnoughSpace(let needed):

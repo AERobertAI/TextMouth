@@ -47,7 +47,8 @@ is left out by name, with the declaration of any type nothing else names:
 
 What iOS adds:
 - The keys only iOS has (`IOS_ONLY_KEYS`): the audio background mode, without
-  which every book stops as the screen locks, and a scene manifest of one
+  which every book stops as the screen locks, the identifiers of a spoken audio
+  export's continued processing task (a wildcard), and a scene manifest of one
   scene at a time, also on an iPad, since one reading session cannot serve two
   windows. The scene's delegate is named in code, by TextMouthAppDelegate, so
   the manifest names no configuration. project.yml leaves out Xcode's
@@ -89,6 +90,9 @@ MAC_ONLY_KEYS = {
 # docstring says why each is there). IOSInfoPlistTests pins both.
 IOS_ONLY_KEYS = {
     "UIBackgroundModes": ["audio"],
+    # The continued processing task of a spoken audio export (FR31, phase 2): one name for each export, this wildcard's
+    # prefix and a UUID, which `PhoneExportBackgroundTask` registers and submits as Export is pressed.
+    "BGTaskSchedulerPermittedIdentifiers": ["com.textmouth.TextMouth.iOS.export.*"],
     "UIApplicationSceneManifest": {"UIApplicationSupportsMultipleScenes": False},
 }
 

@@ -462,7 +462,7 @@ final class PhoneLibraryRows: ObservableObject {
             label: FolderRow.accessibilityLabel(name: folder.name, bookCount: count, feedCounts: nil),
             title: folder.name,
             detail: FolderRow.countText(bookCount: count, feedCounts: nil),
-            commands: PhoneLibraryOffer.folderCommands(offersDelete: library.offersDeleteFolder(folder))
+            commands: PhoneLibraryOffer.folderCommands(offersDelete: library.offersDeleteFolder(folder), bookCount: count)
         )
     }
 

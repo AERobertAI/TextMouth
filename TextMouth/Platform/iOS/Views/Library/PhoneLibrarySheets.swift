@@ -27,6 +27,8 @@ enum PhoneLibrarySheet: Identifiable {
     case folder(PhoneLibraryFolderSheet)
     /// The Export sheet of the book with this ID.
     case export(UUID)
+    /// The Export sheet of every book in the folder at this path and below it.
+    case exportFolder(String)
 
     /// One sheet at a time, told apart by what it is for.
     var id: String {
@@ -36,6 +38,7 @@ enum PhoneLibrarySheet: Identifiable {
         case .bookInfo(let bookID): "bookInfo-\(bookID.uuidString)"
         case .folder(let sheet): "folder-\(sheet.hashValue)"
         case .export(let bookID): "export-\(bookID.uuidString)"
+        case .exportFolder(let path): "exportFolder-\(path)"
         }
     }
 }

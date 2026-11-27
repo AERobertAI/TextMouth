@@ -14,8 +14,8 @@ import XCTest
 /// sent to it. Nothing here makes sound, and nothing is typed. The system's
 /// folder picker cannot be driven by a test, so the one export that writes a
 /// file names its folder at launch (`TEXTMOUTH_EXPORT_TO`, a debug build's);
-/// the files go into a folder of the test's own, and spoken audio, which the
-/// iPhone does not offer yet, is never pressed.
+/// the files go into a folder of the test's own, and spoken audio's Export is
+/// never pressed: it would speak (its rows are read, and audited, switched on).
 ///
 /// Four tests, since each interface test costs the planner 25 seconds, and a
 /// third iPhone job begins past 1,600 seconds of tests (`ios_ui_tests.py`).
@@ -50,10 +50,9 @@ final class ExportUITests: TextMouthUITestCase {
         let elements = try openTheSheet(in: app)
 
         assertOrder(
-            [Self.sheetTitle, "Cancel", "Export", "What to export", "Original file…", "Text as Markdown…", "Text as plain text…", "Choose Folder…"],
+            [Self.sheetTitle, "Cancel", "Export", "What to export", "Original file…", "Text as Markdown…", "Text as plain text…", "Text as spoken audio…", "Choose Folder…"],
             in: elements
         )
-        XCTAssertFalse(elements.contains { $0.label.hasPrefix("Text as spoken audio") }, "The iPhone offers spoken audio before phase 2")
         XCTAssertTrue(app.buttons["Export"].exists)
         XCTAssertFalse(app.buttons["Export"].isEnabled, "Export is enabled before a folder is chosen")
         XCTAssertEqual(kindSwitch("Original file", in: app).value as? String, "1", "The first kind is not on")
@@ -67,9 +66,42 @@ final class ExportUITests: TextMouthUITestCase {
             accepting: [.navigationTitle(Self.sheetTitle), .barItem("Cancel"), .barItem("Export"), .firstHeader("What to export")]
         )
 
+        try readTheSpokenAudioRows(in: app)
+
         app.buttons["Cancel"].tap()
         XCTAssertTrue(app.buttons["Export this book"].appears(within: Self.patience), "The reader's Export control is not back:\n\(app.debugDescription)")
         XCTAssertFalse(app.navigationBars[Self.sheetTitle].exists)
+    }
+
+    /// Text as spoken audio, switched on, is followed by its rows in the Mac's order, valued: the format, where the audio
+    /// begins and ends (or the line saying the whole book is exported), the speed and the pitch, the voice, and the
+    /// licence line in the iPhone's words. The sheet's audit passes with them. Export stays unpressed: it would speak.
+    private func readTheSpokenAudioRows(in app: XCUIApplication) throws {
+        kindSwitch("Text as spoken audio", in: app).coordinate(withNormalizedOffset: CGVector(dx: 0.88, dy: 0.5)).tap()
+        let format = app.buttons["Format"]
+        XCTAssertTrue(format.appears(within: Self.patience), "No Format row once spoken audio is on:\n\(app.debugDescription)")
+        XCTAssertTrue(app.sliders["Speed"].appears(within: Self.patience), "No Speed slider:\n\(app.debugDescription)")
+
+        let rows = try elementsInOrder(of: app)
+        assertOrder(["Text as spoken audio…", "Format", "Speed", "Pitch", "Choose Folder…"], in: rows)
+        // A book with headings has From and To after the Format; one without says the whole book is exported.
+        if rows.contains(where: { $0.label == "From" }) {
+            assertOrder(["Format", "From", "To", "Speed"], in: rows)
+        } else {
+            XCTAssertTrue(rows.contains { $0.label == "This book has no headings, so all of it is exported." }, "No From, and no line saying why")
+        }
+        XCTAssertTrue(rows.contains { $0.label == "Speech from the iPhone's voices is for personal, non-commercial use, under Apple's licence." }, "No licence line")
+        XCTAssertTrue((format.value as? String ?? "").hasPrefix("M4B"), "Format says \(String(describing: format.value))")
+        XCTAssertTrue((app.sliders["Speed"].value as? String ?? "").hasSuffix("words per minute"), "Speed says \(String(describing: app.sliders["Speed"].value))")
+        XCTAssertTrue((app.sliders["Pitch"].value as? String ?? "").contains("x)"), "Pitch says \(String(describing: app.sliders["Pitch"].value))")
+        XCTAssertTrue(app.buttons["Export"].exists)
+
+        try audit(
+            app,
+            screen: "Export sheet with spoken audio",
+            informing: .dynamicType,
+            accepting: [.navigationTitle(Self.sheetTitle), .barItem("Cancel"), .barItem("Export"), .firstHeader("What to export")]
+        )
     }
 
     /// The Library's row has Export… in its context menu, after Move to Folder...,
@@ -184,6 +216,20 @@ final class ExportUITests: TextMouthUITestCase {
         XCTAssertEqual(written.count, 2, "The folder holds \(written)")
         XCTAssertTrue(written.contains("alice.epub"), "The book's own file is missing: \(written)")
         XCTAssertTrue(written.contains { $0.hasSuffix(" - Text.html") }, "The book's HTML is missing: \(written)")
+
+        // Share… follows what the export did, now that it has written files: it opens the system's share sheet over the
+        // export sheet, which a drag down from its top closes, leaving Share… where it was.
+        let share = app.buttons["Share…"]
+        XCTAssertTrue(share.appears(within: Self.patience), "No Share… after an export that wrote files:\n\(app.debugDescription)")
+        share.tap()
+        let covered = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isHittable == false"), object: share)
+        XCTAssertEqual(XCTWaiter().wait(for: [covered], timeout: Self.patience), .completed, "The share sheet did not open over the sheet:\n\(app.debugDescription)")
+        let from = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.08))
+        let to = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.98))
+        from.press(forDuration: 0.1, thenDragTo: to)
+        let back = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isHittable == true"), object: share)
+        XCTAssertEqual(XCTWaiter().wait(for: [back], timeout: Self.patience), .completed, "The share sheet stayed open:\n\(app.debugDescription)")
+        XCTAssertTrue(app.navigationBars[Self.sheetTitle].exists, "The export sheet closed with the share sheet")
         keepScreenshot(of: app, named: "Export done")
     }
 
