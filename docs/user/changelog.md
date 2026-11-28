@@ -4,6 +4,35 @@ Part of [TextMouth's documentation](../../README.md).
 
 Every version of TextMouth, newest first, and what changed for you in each.
 
+## 0.6.2 (November 28, 2026)
+
+### Chapters and spoken exports on macOS 27
+- A book read aloud on macOS 27 no longer skips ahead to the next chapter after one sentence of each.
+  The speech engine marks the end of every sentence there, and TextMouth had taken the first mark for the end of the chapter.
+  It now waits for the engine to say the chapter is done, and a spoken export is whole for the same reason.
+- A chapter you leave while it is being prepared stops at once on macOS 27, where the engine cannot be told to stop.
+
+### Feeds sync between your devices
+- Your feeds, their folders, and their own settings (List and download, days after playing, and listening options) sync with the rest of your library, and so does Unsubscribe and Resubscribe.
+  A feed you subscribe to on one device appears on the other, and it is checked at once.
+- Each device keeps its own downloaded episodes, and each reads the feed itself.
+- Delete Feed… on one device deletes the feed on the other, including a copy that device subscribed to separately; its downloads go where that device's own removal setting sends them.
+
+### Feeds on the iPhone
+- Add Feed… is in the Add to Library sheet. The Library lists your feeds in a Feeds section, and each feed's folder lists its episodes or articles, newest first.
+- Episodes and feeds have the Mac's commands in the Actions menu: Download, Open, Mark Played, Show Description…, Delete Download, Check Feed, Feed Info…, Unsubscribe…, and Delete Feed….
+- A Feed Downloads card at the top of the Library shows the downloads under way, with Cancel Feed Downloads.
+  VoiceOver says when a download you asked for ends, and where focus goes after a row is deleted.
+- Downloads run while TextMouth is open. Checking feeds and downloading in the background, OPML, and a feed's own settings on the iPhone come later.
+
+### The iPhone's reader, round 2
+- VoiceOver passes Skip backward, Play, and Skip forward in that order. Play adjusts by the navigation unit, and Previous Heading and Next Heading are gone, since a heading is a unit.
+  A Settings switch, Hide skip buttons from VoiceOver, passes over the skips again.
+- The running Sleep Timer, after Skip forward, offers Reset Timer and Cancel Timer in its actions, and a double tap opens it. Focus stays on it after Reset Timer.
+- Within a minute after a sleep timer ends by itself, shaking the iPhone starts it again, wherever a book is open. Settings has a switch, Shake to restart the timer.
+- Search in Book is in Book Actions.
+- Settings has Book content height: Short, Medium, or Tall, about 6, 12, or 18 lines.
+
 ## 0.6.1 (November 27, 2026)
 
 ### Choosing a voice while a book is playing
