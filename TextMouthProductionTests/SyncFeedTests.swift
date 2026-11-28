@@ -370,6 +370,36 @@ final class SyncFeedTests: XCTestCase {
         XCTAssertEqual(try XCTUnwrap(application.feeds.feedsToChange.first).folderID, theirsID)
     }
 
+    /// A feed's folder removed on another device (Delete Folder…, or an older TextMouth's Delete
+    /// Feed…) leaves the feed without a folder, as on that device: it never takes over the folder
+    /// above, which holds a person's books, nor records a move there for every device to follow.
+    func testRemovedFolderLeavesTheFeedWithoutOne() {
+        let podcasts = BookFolder(name: "Podcasts")
+        let show = BookFolder(name: "Show", parentPath: "Podcasts")
+        let mine = feed(folderID: show.id)
+        let removal = Fixtures.entry(.folder(show.id, .presence), .null, wall: 9)
+        let application = apply(
+            [removal, Fixtures.entry(.feed(mine.id, .folder), SyncValueCoding.id(show.id), wall: 5)],
+            to: Fixtures.library(folders: [podcasts, show]), feeds: [mine]
+        )
+        XCTAssertEqual(application.library.folders.map(\.id), [podcasts.id])
+        XCTAssertTrue(application.feeds.feedsToChange.isEmpty, "the feed stays where it was, not in Podcasts")
+        XCTAssertNil(application.entriesToRecord[.feed(mine.id, .folder)])
+    }
+
+    /// A feed another device subscribed to whose folder was removed there arrives without a
+    /// folder, as it is there, not in the folder above.
+    func testNewFeedWhoseFolderWasRemovedComesWithoutOne() throws {
+        let podcasts = BookFolder(name: "Podcasts")
+        let show = BookFolder(name: "Show", parentPath: "Podcasts")
+        let theirs = feed(folderID: show.id)
+        let removal = Fixtures.entry(.folder(show.id, .presence), .null, wall: 9)
+        let application = apply(
+            entries(of: theirs, wall: 5) + [removal], to: Fixtures.library(folders: [podcasts, show]), feeds: []
+        )
+        XCTAssertEqual(try XCTUnwrap(application.feeds.feedsToAdd.first).folderID, show.id)
+    }
+
     /// A folder entry naming a folder the plan doesn't know leaves the feed where it is.
     func testUnknownFolderLeavesTheFeed() {
         let folder = BookFolder(name: "Show")

@@ -379,20 +379,21 @@ private struct SyncApplier {
     }
 
     /// Moves `feed` to the folder its winning entry names, or, with none, after
-    /// its own folder where that was folded into another or removed: a feed lists
-    /// its episodes in the live folder the plan lands it in. A folder that lands
-    /// nowhere (the top level) leaves the feed where it is, since a feed needs a
-    /// folder of its own.
+    /// its own folder where that was folded into another: a feed lists its
+    /// episodes in the folder the plan gives it (`SyncFolderPlan.feedFolder`).
+    /// A folder removed elsewhere leaves the feed without one, never in the
+    /// folder above it; a folder not arrived yet leaves the feed where it is,
+    /// its entry unapplied.
     private mutating func applyFolder(_ entry: SyncEntry?, to feed: inout Feed) {
         let named = entry.flatMap { SyncValueCoding.uuid(from: $0.value) }
-        guard let target = plan.landing(named ?? feed.folderID) else { return }
+        guard let target = plan.feedFolder(named ?? feed.folderID) else { return }
         feed.folderID = target
         if let entry, named != nil { appliedKeys.insert(entry.key) }
     }
 
     /// Adds a record for each live feed another device subscribed to and this
-    /// device lacks, once its address, date, and folder have arrived and the
-    /// folder lands in a live one. A feed whose address this device subscribes
+    /// device lacks, once its address, date, and folder have arrived (a folder
+    /// removed elsewhere counts: the feed comes without one, as it is there). A feed whose address this device subscribes
     /// already is not added (the same feed subscribed on both devices stays one
     /// here), and of two new feeds of one address the older, then the lower ID,
     /// is added, so every device adds the same one. Nor is a feed added to a
@@ -408,7 +409,7 @@ private struct SyncApplier {
         for (id, group) in entriesOfFeed where !known.contains(id) {
             guard let presence = group[.presence], !isFeedRemoved(group),
                   let folderValue = group[.folder], let named = SyncValueCoding.uuid(from: folderValue.value),
-                  let folderID = plan.landing(named) else { continue }
+                  let folderID = plan.feedFolder(named) else { continue }
             guard let feed = SyncFeedValues.makeFeed(id: id, values: group.mapValues(\.value), folderID: folderID) else { continue }
             var keys = Set(group.values.map(\.key))
             // A value this TextMouth can't hold (a later TextMouth's choice) is not applied.
