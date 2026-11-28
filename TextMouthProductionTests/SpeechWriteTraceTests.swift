@@ -308,7 +308,7 @@ final class SpeechWriteTraceTests: XCTestCase {
 
     /// The Mac's synthesizer over `writer`, with short limits, the stand-in
     /// voice, and no Personal Voice: it never reaches a real voice.
-    private static func synthesizer(over writer: ScriptedTraceWriter) -> SystemSpeechBufferSynthesizer {
+    private nonisolated static func synthesizer(over writer: ScriptedTraceWriter) -> SystemSpeechBufferSynthesizer {
         SystemSpeechBufferSynthesizer(
             stallLimits: SystemSpeechBufferSynthesizer.StallLimits(firstBufferFloor: 10, firstBufferPerUnit: 0, betweenBuffers: 10),
             makeWriter: { writer },
@@ -319,7 +319,7 @@ final class SpeechWriteTraceTests: XCTestCase {
 
     /// An installed voice to stand in as the voice an utterance names: the
     /// scripted writer ignores it, and it is never spoken with.
-    private static func standInVoice() -> AVSpeechSynthesisVoice? {
+    private nonisolated static func standInVoice() -> AVSpeechSynthesisVoice? {
         AVSpeechSynthesisVoice(identifier: "com.apple.voice.compact.en-US.Samantha")
             ?? AVSpeechSynthesisVoice(language: "en-US")
     }
@@ -375,8 +375,10 @@ private final class CallbackCounts: Sendable {
             AVSpeechUtterance(string: "unused"),
             onBuffer: { [self] buffer in
                 guard let pcm = buffer as? AVAudioPCMBuffer else { return }
+                // Read outside the lock's closure, which must not capture the buffer.
+                let frames = Int(pcm.frameLength)
                 state.withLock {
-                    if pcm.frameLength == 0 { $0.empties += 1 } else { $0.frames += Int(pcm.frameLength) }
+                    if frames == 0 { $0.empties += 1 } else { $0.frames += frames }
                 }
             },
             onFinish: { [self] in state.withLock { $0.finishes += 1 } },
