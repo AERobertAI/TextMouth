@@ -4,6 +4,26 @@ Part of [TextMouth's documentation](../../README.md).
 
 Every version of TextMouth, newest first, and what changed for you in each.
 
+## 0.6.1 (November 27, 2026)
+
+### Choosing a voice while a book is playing
+- A voice you choose in the reader, in Settings, or in a book's own settings now takes effect at once, most of all on the iPhone.
+  Speech goes on in the new voice from the start of the word you were at, where before the old voice played to the end of the text.
+- A book that is paused starts in the new voice when you press Play.
+- While a sleep timer is fading the sound, the change waits until the fade is cancelled.
+
+### A quieter reader on the iPhone
+- Book content is one element for VoiceOver, about twelve lines tall and never more than 55% of the screen, so Play is always in view. The sentence being spoken is highlighted.
+  The text follows it while the book plays, unless VoiceOver is reading the text or you scrolled it by hand in the last 5 seconds.
+- Book Actions, after Return, holds Sleep Timer, Voice, Book Info, and Export this book. While a sleep timer runs, it also shows under Play with the time left, and focus goes to Play when it ends.
+- Play opens the Sleep Timer from its actions, with a one-finger triple tap, or with a touch and hold.
+- VoiceOver passes over Skip backward and Skip forward, since swiping up or down on Play does the same; they stay for touch, Voice Control, and Switch Control.
+- Go To says the page and time at your place, as in "Page 112 of 300, 1:02:03".
+
+### Building with Xcode 27
+- TextMouth builds with Xcode 27.2, and the helper program that reads audio formats starts under macOS 27.
+- Installing on your iPhone skips simulators, accepts device=, team=, and launch= in lower case, and says how to finish an Apple ID sign-in that Xcode left unfinished.
+
 ## 0.6.0 (November 26, 2026)
 
 ### Your library on your Mac and your iPhone
