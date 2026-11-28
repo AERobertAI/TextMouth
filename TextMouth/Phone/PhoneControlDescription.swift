@@ -24,6 +24,11 @@ enum PhoneControlAction: Equatable, Hashable, Sendable {
     case whereAmIFullSummary
     /// The Mac's Copy Reading Position.
     case copyReadingPosition
+    /// The running sleep timer's Reset Timer, the Mac's: the timer starts
+    /// again at its full length (FR55), on the Sleep Timer under Play.
+    case resetSleepTimer
+    /// The running sleep timer's Cancel Timer, the Mac's (FR55).
+    case cancelSleepTimer
 
     /// The action's name, as VoiceOver reads it: the Mac's command names.
     @MainActor
@@ -31,6 +36,8 @@ enum PhoneControlAction: Equatable, Hashable, Sendable {
         switch self {
         case .whereAmIFullSummary: return ReaderWhereAmIToolbarButton.fullSummaryActionName
         case .copyReadingPosition: return ShortcutAction.copyReadingPosition.title
+        case .resetSleepTimer: return PhoneSleepTimerVocabulary.resetTimer
+        case .cancelSleepTimer: return PhoneSleepTimerVocabulary.cancelTimer
         }
     }
 }
@@ -47,10 +54,6 @@ enum PhoneControlAdjustment: Equatable, Hashable, Sendable {
     case unit
     /// Speed: steps the book's speed.
     case speed
-    /// The Sleep Timer under Play while a timer runs (FR55): up starts it
-    /// again at its full length, as the Mac's Reset Timer does; down cancels
-    /// it, as Cancel Timer does.
-    case sleepTimer
 }
 
 /// Everything VoiceOver reads of one reader control at one moment: its

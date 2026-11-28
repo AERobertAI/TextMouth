@@ -300,9 +300,10 @@ final class PlaybackUITests: TextMouthUITestCase {
     /// double tap on it (a tap here) opens the Sleep Timer sheet, with the
     /// running timer's Reset Timer and Cancel Timer, and closing the sheet
     /// leaves it on the reader. Play itself opens nothing any more: FR52's
-    /// long press and Actions item are gone, which `PhoneReaderControlsTests`
-    /// and `PhoneControlButtonTests` check, since XCUITest can neither list a
-    /// control's actions nor adjust a control that is not a slider.
+    /// long press and Actions item are gone. The timer's Reset Timer and
+    /// Cancel Timer actions, and Play having none, are checked by
+    /// `PhoneReaderControlsTests` and `PhoneControlButtonTests`, since
+    /// XCUITest cannot list or perform a control's custom actions.
     func testTheSleepTimerUnderPlayOpensItsSheet() throws {
         let app = try launchIntoTheReader()
         try startSleepTimer("Set timer for 10 minutes", in: app)

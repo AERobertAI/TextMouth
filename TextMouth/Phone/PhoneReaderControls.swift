@@ -104,9 +104,12 @@ enum PhoneReaderControls {
                 label: PhoneReaderVocabulary.sleepTimer,
                 value: state.sleepTimerStatus.isEmpty ? PhoneReaderWording.sleepTimerOff : state.sleepTimerStatus,
                 hint: PhoneReaderWording.sleepTimerHint,
-                // Adjustable: it is on the screen only while a timer runs
-                // (FR55), when up restarts the timer and down cancels it.
-                traits: [.button, .adjustable]
+                traits: .button,
+                // It is on the screen only while a timer runs (FR55): its
+                // actions are the sheet's, picked on the Actions rotor and
+                // done with a double tap, as a Library row's are; a double tap
+                // with none picked opens the sheet.
+                actions: [.resetSleepTimer, .cancelSleepTimer]
             )
         case .voice:
             return voice(in: state)

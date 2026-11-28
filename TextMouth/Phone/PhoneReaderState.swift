@@ -134,15 +134,15 @@ enum PhoneReaderControl: CaseIterable, Hashable, Sendable {
         }
     }
 
-    /// What adjusting the control does, for the four adjustable ones: Play,
-    /// Navigation unit, Speed, and the Sleep Timer under Play (FR55); nil for
-    /// the rest, which a swipe up or down leaves alone.
+    /// What adjusting the control does, for the three adjustable ones: Play,
+    /// Navigation unit, and Speed; nil for the rest, which a swipe up or down
+    /// leaves alone. The Sleep Timer under Play is not adjustable: its Reset
+    /// Timer and Cancel Timer are actions, picked and then done (FR55).
     var adjustment: PhoneControlAdjustment? {
         switch self {
         case .play: return .move
         case .navigationUnit: return .unit
         case .speed: return .speed
-        case .sleepTimer: return .sleepTimer
         default: return nil
         }
     }

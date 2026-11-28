@@ -171,13 +171,13 @@ final class PhoneReaderControlsTests: XCTestCase {
         }
     }
 
-    /// The four adjustable controls, and what a swipe up or down on each does:
-    /// Play moves, Navigation unit and Speed step, and the Sleep Timer under
-    /// Play restarts or cancels its timer (FR55). Each says it is adjustable,
-    /// and no other control does.
+    /// The three adjustable controls, and what a swipe up or down on each
+    /// does: Play moves, Navigation unit and Speed step. Each says it is
+    /// adjustable, and no other control does: not the Sleep Timer under Play,
+    /// whose swipes pick its actions (the user's correction to FR55).
     func testWhatAdjustingEachControlDoes() {
         let adjustable: [PhoneReaderControl: PhoneControlAdjustment] = [
-            .play: .move, .navigationUnit: .unit, .speed: .speed, .sleepTimer: .sleepTimer,
+            .play: .move, .navigationUnit: .unit, .speed: .speed,
         ]
         for control in PhoneReaderControl.allCases {
             XCTAssertEqual(control.adjustment, adjustable[control], "\(control)")
@@ -383,9 +383,9 @@ final class PhoneReaderControlsTests: XCTestCase {
         }
     }
 
-    /// Sleep Timer says "Off", or the Mac's spoken status; it is an
-    /// adjustable button (FR55) whose hint says what a double tap and a swipe
-    /// do, with no actions.
+    /// Sleep Timer says "Off", or the Mac's spoken status; it is a button,
+    /// not adjustable, that opens the sheet, with the sheet's Reset Timer and
+    /// Cancel Timer as its actions, by the Mac's names (FR55).
     func testSleepTimerValue() {
         XCTAssertEqual(describe(.sleepTimer, in: state()).value, "Off")
         XCTAssertEqual(
@@ -395,9 +395,10 @@ final class PhoneReaderControlsTests: XCTestCase {
         let timer = describe(.sleepTimer, in: state { $0.sleepTimerStatus = "9:57 remaining" })
         XCTAssertEqual(timer.label, "Sleep Timer")
         XCTAssertEqual(timer.value, "9:57 remaining")
-        XCTAssertEqual(timer.hint, "Opens the sleep timer. Adjusting up restarts it at its full length, and down cancels it.")
-        XCTAssertEqual(timer.traits, [.button, .adjustable])
-        XCTAssertEqual(timer.actions, [])
+        XCTAssertEqual(timer.hint, "Opens the sleep timer.")
+        XCTAssertEqual(timer.traits, .button)
+        XCTAssertEqual(timer.actions, [.resetSleepTimer, .cancelSleepTimer])
+        XCTAssertEqual(timer.actions.map(\.name), ["Reset Timer", "Cancel Timer"])
     }
 
     /// Voice for a text book, with the Mac's label as its hint; Audio
@@ -421,14 +422,14 @@ final class PhoneReaderControlsTests: XCTestCase {
         XCTAssertEqual(describe(.skipForward, in: state()).label, "Skip forward: Sentence")
     }
 
-    /// No control but Where Am I? has actions (Play lost its Sleep Timer
-    /// action, FR55), so VoiceOver never says "Actions available" after one
-    /// that has none to offer; none but Play and Where Am I? start a media
-    /// session.
-    func testOnlyWhereAmIHasActionsAndOnlyPlayAndWhereAmIStartMedia() {
+    /// No control but Where Am I? and the Sleep Timer has actions (Play lost
+    /// its Sleep Timer action, FR55), so VoiceOver never says "Actions
+    /// available" after one that has none to offer; none but Play and Where
+    /// Am I? start a media session.
+    func testOnlyWhereAmIAndTheTimerHaveActionsAndOnlyPlayAndWhereAmIStartMedia() {
         for control in PhoneReaderControl.allCases {
             let description = describe(control, in: state())
-            if control != .whereAmI {
+            if control != .whereAmI && control != .sleepTimer {
                 XCTAssertEqual(description.actions, [], "\(control)")
             }
             if control != .play && control != .whereAmI {

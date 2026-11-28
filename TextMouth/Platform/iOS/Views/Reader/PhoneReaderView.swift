@@ -279,15 +279,18 @@ struct PhoneReaderView: View {
         }
     }
 
-    /// What `item`'s custom actions do: Where Am I?'s two, the Mac's. Play
-    /// has none (FR55), nor does any other control.
+    /// What `item`'s custom actions do: Where Am I?'s two, the Mac's, and
+    /// the running Sleep Timer's Reset Timer and Cancel Timer (FR55). Play has
+    /// none (FR55), nor does any other control.
     private func customActions(for item: PhoneReaderControl) -> (@MainActor (PhoneControlAction) -> Void)? {
-        guard item == .whereAmI else { return nil }
+        guard item == .whereAmI || item == .sleepTimer else { return nil }
         let model = model
         return { action in
             switch action {
             case .whereAmIFullSummary: model.whereAmIFullSummary()
             case .copyReadingPosition: model.copyReadingPosition()
+            case .resetSleepTimer: model.restartSleepTimer()
+            case .cancelSleepTimer: model.cancelSleepTimer()
             }
         }
     }
@@ -301,8 +304,7 @@ struct PhoneReaderView: View {
 
     /// What adjusting `item` up or down does, by `PhoneReaderControl
     /// .adjustment`: Play moves by the unit, Navigation unit steps through the
-    /// units, Speed steps the speed, and the Sleep Timer under Play restarts
-    /// the timer (up) or cancels it (down, FR55).
+    /// units, and Speed steps the speed.
     private func adjustment(for item: PhoneReaderControl, up: Bool) -> (@MainActor () -> Void)? {
         let model = model
         switch item.adjustment {
@@ -313,8 +315,6 @@ struct PhoneReaderView: View {
             return { model.adjustUnit(up: up) }
         case .speed?:
             return { model.adjustSpeed(up: up) }
-        case .sleepTimer?:
-            return up ? { model.restartSleepTimer() } : { model.cancelSleepTimer() }
         case nil:
             return nil
         }
