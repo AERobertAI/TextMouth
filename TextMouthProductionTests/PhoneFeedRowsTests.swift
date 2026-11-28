@@ -9,6 +9,53 @@ import XCTest
 /// test reaches the network, plays a sound, or opens a book.
 @MainActor
 final class PhoneFeedRowsTests: XCTestCase {
+    // MARK: - The Device the Words Name
+
+    /// Every feed sentence that names the device it runs on says "this iPhone"
+    /// on the iPhone, where a row, an alert, the Add Feed sheet, or the Feed
+    /// downloads card shows it, and still "this Mac" on the Mac: a refresh, a
+    /// search, or a download offline, a download waiting for a network without
+    /// data limits or for room, and a download with no room (checkfeedsf1).
+    func testTheFeedWordsThatNameTheDeviceNameTheIPhoneOnTheIPhone() {
+        let room: Int64 = 61_000_000
+        let size = ByteCountFormatter.string(fromByteCount: room, countStyle: .file)
+        let waits = FeedDownloadWaits(network: 2, room: 1)
+        // Each sentence on the iPhone, then on the Mac.
+        let pairs: [(phone: String, mac: String)] = [
+            (FeedFetchError.offline.message(about: "Planet Money", isPhone: true),
+             FeedFetchError.offline.message(about: "Planet Money", isPhone: false)),
+            (FeedFetchError.offline.searchMessage(isPhone: true), FeedFetchError.offline.searchMessage(isPhone: false)),
+            (FeedFetchError.offline.downloadMessage(about: "Ep. 368", isPhone: true),
+             FeedFetchError.offline.downloadMessage(about: "Ep. 368", isPhone: false)),
+            (FeedFetchError.constrainedNetwork.downloadMessage(about: "Ep. 368", isPhone: true),
+             FeedFetchError.constrainedNetwork.downloadMessage(about: "Ep. 368", isPhone: false)),
+            (FeedDownloadError.notEnoughSpace(bytes: room).message(about: "Ep. 368", isPhone: true),
+             FeedDownloadError.notEnoughSpace(bytes: room).message(about: "Ep. 368", isPhone: false)),
+            (FeedDownloadError.transfer(.offline).message(about: "Ep. 368", isPhone: true),
+             FeedDownloadError.transfer(.offline).message(about: "Ep. 368", isPhone: false)),
+            (FeedDownloadWait.network.reason(isPhone: true), FeedDownloadWait.network.reason(isPhone: false)),
+            (FeedDownloadWait.room(bytes: room).reason(isPhone: true), FeedDownloadWait.room(bytes: room).reason(isPhone: false)),
+        ] + zip(FeedDownloadProgressWording.waits(waits, isPhone: true), FeedDownloadProgressWording.waits(waits, isPhone: false))
+            .map { (phone: $0, mac: $1) }
+        XCTAssertEqual(pairs.count, 10, "a sentence went missing")
+        for pair in pairs {
+            XCTAssertFalse(pair.phone.contains("Mac"), "the iPhone hears of a Mac: \(pair.phone)")
+            XCTAssertTrue(pair.phone.contains("iPhone"), "the iPhone's sentence names no device: \(pair.phone)")
+            // The same sentence, the device's name aside.
+            XCTAssertEqual(pair.phone.replacingOccurrences(of: "iPhone", with: "Mac"), pair.mac)
+        }
+        XCTAssertEqual(
+            FeedDownloadWait.room(bytes: room).reason(isPhone: true),
+            "it needs room for \(size) on this iPhone"
+        )
+        XCTAssertEqual(
+            FeedDownloadProgressWording.waits(waits, isPhone: true),
+            ["2 waiting until this iPhone is on a network without data limits", "1 waiting for room on this iPhone"]
+        )
+        // The Mac's host runs with the Mac's words.
+        XCTAssertEqual(FeedDownloadWait.network.reason, "it downloads once this Mac is on a network without data limits")
+    }
+
     // MARK: - The Feeds Section
 
     /// The top of the library lists a feed under the Mac's "Feeds" heading, one

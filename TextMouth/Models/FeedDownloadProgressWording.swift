@@ -112,13 +112,20 @@ enum FeedDownloadProgressWording {
     /// waiting until this Mac is on a network without data limits", which
     /// covers a Mac offline too (REV13 item 4), "1 waiting for room on this
     /// Mac".
-    static func waits(_ waits: FeedDownloadWaits) -> [String] {
+    /// On an iPhone (`isPhone`) the lines name "this iPhone".
+    static func waits(_ waits: FeedDownloadWaits, isPhone: Bool = ThisDevice.isPhone) -> [String] {
         var lines: [String] = []
-        if waits.network > 0 {
+        if waits.network > 0, isPhone {
+            // Translators: A line of the iPhone's feed downloads section: how many downloads wait for a network without data limits, which includes an iPhone that is offline. %lld is the number waiting.
+            lines.append(InterfaceText.line("feedDownloadProgress.waits.networkPhone", "\(number: waits.network) waiting until this iPhone is on a network without data limits"))
+        } else if waits.network > 0 {
             // Translators: A line of the feed downloads section: how many downloads wait for a network without data limits, which includes a Mac that is offline. %lld is the number waiting.
             lines.append(InterfaceText.line("feedDownloadProgress.waits.network", "\(number: waits.network) waiting until this Mac is on a network without data limits"))
         }
-        if waits.room > 0 {
+        if waits.room > 0, isPhone {
+            // Translators: A line of the iPhone's feed downloads section: how many downloads wait for room in the iPhone's storage. %lld is the number waiting.
+            lines.append(InterfaceText.line("feedDownloadProgress.waits.roomPhone", "\(number: waits.room) waiting for room on this iPhone"))
+        } else if waits.room > 0 {
             // Translators: A line of the feed downloads section: how many downloads wait for room on this Mac's disk. %lld is the number waiting.
             lines.append(InterfaceText.line("feedDownloadProgress.waits.room", "\(number: waits.room) waiting for room on this Mac"))
         }

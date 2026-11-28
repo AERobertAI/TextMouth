@@ -169,9 +169,13 @@ enum FeedFetchError: Error, Equatable, Sendable {
     case cancelled
 
     /// The sentence the library shows and VoiceOver speaks about a feed
-    /// named `name` (its title, or its host).
-    func message(about name: String) -> String {
+    /// named `name` (its title, or its host), naming the device it runs on
+    /// where it names one: "this iPhone" when `isPhone`, else "this Mac".
+    func message(about name: String, isPhone: Bool = ThisDevice.isPhone) -> String {
         switch self {
+        case .offline where isPhone:
+            // Translators: Why a feed could not be refreshed on an iPhone: the iPhone has no internet. %@ is the feed's title or server.
+            return InterfaceText.line("feedFetchError.message.offlinePhone", "This iPhone is offline, so \(name) can't be refreshed. Connect to the internet and try again.")
         case .offline:
             // Translators: Why a feed could not be refreshed: this Mac has no internet. %@ is the feed's title or server.
             return InterfaceText.line("feedFetchError.message.offline", "This Mac is offline, so \(name) can't be refreshed. Connect to the internet and try again.")
