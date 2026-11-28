@@ -48,47 +48,57 @@ enum PhoneReaderControl: CaseIterable, Hashable, Sendable {
     /// A move forward by the unit in force.
     case skipForward
 
+    /// Play's row, left to right and in VoiceOver's order: Skip backward
+    /// just before Play and Skip forward just after it (FR54, the user's
+    /// answer of November 27), as a player's buttons stand.
+    static let playRow: [PhoneReaderControl] = [.skipBackward, .play, .skipForward]
+
     /// The grid's rows under Play, left to right and top to bottom, three to
     /// a row, in VoiceOver's order however the rows break. Each pair stays in
     /// one row: Previous and Next Heading in the second, Bookmarks, Headings,
-    /// and Search in Book in the third, and the two skips side by side in the
-    /// last, as the spec's last row has them. Book Actions ends the fourth
-    /// row, in place of Sleep Timer, Voice, Book Info, and Export this book,
-    /// which it gathers (FR51).
+    /// and Search in Book in the third. Book Actions ends the fourth row, in
+    /// place of Sleep Timer, Voice, Book Info, and Export this book, which it
+    /// gathers (FR51).
     static let gridRows: [[PhoneReaderControl]] = [
         [.whereAmI, .navigationUnit, .speed],
         [.previousHeading, .nextHeading, .addBookmark],
         [.bookmarks, .headings, .searchInBook],
         [.goTo, .returnToPlace, .bookActions],
-        [.skipBackward, .skipForward],
     ]
 
-    /// The controls of the grid under Play, row by row: Where Am I? to Skip
-    /// forward.
+    /// The controls of the grid under Play, row by row: Where Am I? to Book
+    /// Actions.
     static let grid: [PhoneReaderControl] = gridRows.flatMap { $0 }
 
     /// The reader's controls on the screen, in VoiceOver's order: Book
-    /// content, Play, the Sleep Timer while a timer runs, and the grid. The
-    /// Sleep Timer is the one control that comes and goes (FR51, FR52): with
-    /// no timer it lives under Book Actions, and while one runs it shows under
-    /// Play too, its value the time left.
+    /// content, Play's row, the Sleep Timer while a timer runs, and the grid.
+    /// The Sleep Timer is the one control that comes and goes (FR51, FR55):
+    /// with no timer it lives under Book Actions, and while one runs it shows
+    /// under Play too, its value the time left.
     static func screen(timerRuns: Bool) -> [PhoneReaderControl] {
-        [.bookContent, .play] + (timerRuns ? [.sleepTimer] : []) + grid
+        [.bookContent] + playRow + (timerRuns ? [.sleepTimer] : []) + grid
     }
 
-    /// Whether VoiceOver passes over the control (FR49): Skip backward and
-    /// Skip forward, since adjusting Play (a swipe up or down) makes the same
-    /// moves, so for VoiceOver the two buttons only add swipes. They stay on
-    /// screen for touch, and for Voice Control and Switch Control, which run
-    /// without VoiceOver; their keyboard shortcuts stay too.
-    var isHiddenFromVoiceOver: Bool {
+    /// Whether the control is one of the two skips, Skip backward and Skip
+    /// forward, which Settings' "Hide skip buttons from VoiceOver" hides.
+    var isSkip: Bool {
         self == .skipBackward || self == .skipForward
     }
 
+    /// Whether VoiceOver passes over the control: the skips, while Settings'
+    /// "Hide skip buttons from VoiceOver" (`hidingSkips`) is on, since
+    /// adjusting Play makes the same moves (FR49, FR54). The switch is off by
+    /// default, so VoiceOver reaches them. Hidden, they stay on screen for
+    /// touch, and for Voice Control and Switch Control, which run without
+    /// VoiceOver.
+    func isHiddenFromVoiceOver(hidingSkips: Bool) -> Bool {
+        hidingSkips && isSkip
+    }
+
     /// The reader's controls VoiceOver reaches, in its order: the screen's,
-    /// less those it passes over while it runs (FR49).
-    static func voiceOverOrder(timerRuns: Bool, voiceOverRuns: Bool) -> [PhoneReaderControl] {
-        screen(timerRuns: timerRuns).filter { !(voiceOverRuns && $0.isHiddenFromVoiceOver) }
+    /// less those it passes over while it runs.
+    static func voiceOverOrder(timerRuns: Bool, voiceOverRuns: Bool, hidingSkips: Bool) -> [PhoneReaderControl] {
+        screen(timerRuns: timerRuns).filter { !(voiceOverRuns && $0.isHiddenFromVoiceOver(hidingSkips: hidingSkips)) }
     }
 
     /// The items of the Book Actions menu, in its order (FR51): the book's

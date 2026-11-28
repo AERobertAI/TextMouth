@@ -9,13 +9,14 @@ import XCTest
 final class ReaderUITests: TextMouthUITestCase {
 
     /// The reader's elements after Back and the title, in the spec's order:
-    /// Book content, then Play, then the grid, the skip buttons last. A skip
-    /// button's label names the unit, so only its start is fixed.
+    /// Book content, then Skip backward, Play, and Skip forward (FR54), then
+    /// the grid. A skip button's label names the unit, so only its start is
+    /// fixed.
     static let controls = [
-        "Book content", "Play", "Where Am I?", "Navigation unit", "Speed",
+        "Book content", "Skip backward…", "Play", "Skip forward…",
+        "Where Am I?", "Navigation unit", "Speed",
         "Previous Heading", "Next Heading", "Add bookmark", "Bookmarks", "Headings",
         "Search in Book", "Go To", "Return to previous reading position", "Book Actions",
-        "Skip backward…", "Skip forward…",
     ]
 
     /// The items of the Book Actions menu, in its order (FR51).
@@ -60,8 +61,9 @@ final class ReaderUITests: TextMouthUITestCase {
     }
 
     /// Book content is one element, one swipe for VoiceOver (FR48): nothing
-    /// labeled stands between it and Play, as a paragraph of its own would,
-    /// and it is the screen's main area, taller than Play.
+    /// labeled stands between it and Play's row, which begins with Skip
+    /// backward (FR54), as a paragraph of its own would, and it is the
+    /// screen's main area, taller than Play.
     ///
     /// The text view's own scroll bars ("Vertical scroll bar, 5 pages", train
     /// 1127-1548) are in XCUITest's tree, which also lists what lies inside
@@ -82,7 +84,7 @@ final class ReaderUITests: TextMouthUITestCase {
         // What follows Book content once its own descendants are passed.
         let next = index + 1 + inside.count
         let after = elements.indices.contains(next) ? elements[next].label : "nothing"
-        XCTAssertEqual(after, "Play", "The element after Book content: \(Self.describe(elements))")
+        XCTAssertTrue(after.hasPrefix("Skip backward"), "The element after Book content: \(Self.describe(elements))")
         let play = try XCTUnwrap(elements.first { $0.label == "Play" })
         XCTAssertGreaterThan(elements[index].frame.height, play.frame.height, "Book content is smaller than Play")
     }

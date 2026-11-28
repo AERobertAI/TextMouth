@@ -9,19 +9,20 @@ final class PhoneReaderControlsTests: XCTestCase {
     // MARK: - Order
 
     /// The elements after Back and the title, in VoiceOver's order: Book
-    /// content, Play, and the grid of three columns under Play, four full
-    /// rows and a fifth holding the two skips, Book Actions in place of the
-    /// four actions it gathers (FR51).
+    /// content, Skip backward just before Play and Skip forward just after it
+    /// (FR54), and the grid of three columns under Play, Book Actions in
+    /// place of the four actions it gathers (FR51).
     func testTheControlsAreInTheSpecsOrder() {
+        XCTAssertEqual(PhoneReaderControl.playRow, [.skipBackward, .play, .skipForward])
         XCTAssertEqual(PhoneReaderControl.screen(timerRuns: false), [
-            .bookContent, .play, .whereAmI, .navigationUnit, .speed,
+            .bookContent, .skipBackward, .play, .skipForward,
+            .whereAmI, .navigationUnit, .speed,
             .previousHeading, .nextHeading, .addBookmark, .bookmarks, .headings,
             .searchInBook, .goTo, .returnToPlace, .bookActions,
-            .skipBackward, .skipForward,
         ])
-        XCTAssertEqual(PhoneReaderControl.grid.count, 14)
+        XCTAssertEqual(PhoneReaderControl.grid.count, 12)
         XCTAssertEqual(PhoneReaderControl.grid.first, .whereAmI)
-        XCTAssertEqual(PhoneReaderControl.grid.last, .skipForward)
+        XCTAssertEqual(PhoneReaderControl.grid.last, .bookActions)
     }
 
     /// Book Actions holds Sleep Timer, Voice, Book Info, and Export this book,
@@ -43,20 +44,21 @@ final class PhoneReaderControlsTests: XCTestCase {
         XCTAssertNil(PhoneReaderControl.bookActions.sheet, "Book Actions opens a menu, not a sheet")
     }
 
-    /// VoiceOver passes over Skip backward and Skip forward while it runs,
-    /// since adjusting Play makes the same moves; without VoiceOver every
-    /// control on the screen is reachable (FR49). Play stays adjustable.
-    func testVoiceOverPassesOverTheSkipsOnlyWhileItRuns() {
-        let hidden = PhoneReaderControl.allCases.filter(\.isHiddenFromVoiceOver)
+    /// VoiceOver reaches Skip backward and Skip forward by default, around
+    /// Play (FR54); with Settings' "Hide skip buttons from VoiceOver" on, it
+    /// passes over them while it runs, and without VoiceOver every control on
+    /// the screen is reachable either way. Play stays adjustable.
+    func testVoiceOverReachesTheSkipsUnlessSettingsHideThem() {
+        XCTAssertEqual(PhoneReaderControl.allCases.filter { $0.isHiddenFromVoiceOver(hidingSkips: false) }, [])
+        let hidden = PhoneReaderControl.allCases.filter { $0.isHiddenFromVoiceOver(hidingSkips: true) }
         XCTAssertEqual(hidden, [.skipBackward, .skipForward])
         for timerRuns in [false, true] {
-            XCTAssertEqual(
-                PhoneReaderControl.voiceOverOrder(timerRuns: timerRuns, voiceOverRuns: false),
-                PhoneReaderControl.screen(timerRuns: timerRuns)
-            )
-            let withVoiceOver = PhoneReaderControl.voiceOverOrder(timerRuns: timerRuns, voiceOverRuns: true)
-            XCTAssertEqual(withVoiceOver, PhoneReaderControl.screen(timerRuns: timerRuns).filter { !hidden.contains($0) })
-            XCTAssertEqual(withVoiceOver.last, .bookActions, "\(withVoiceOver)")
+            let screen = PhoneReaderControl.screen(timerRuns: timerRuns)
+            XCTAssertEqual(PhoneReaderControl.voiceOverOrder(timerRuns: timerRuns, voiceOverRuns: true, hidingSkips: false), screen)
+            XCTAssertEqual(PhoneReaderControl.voiceOverOrder(timerRuns: timerRuns, voiceOverRuns: false, hidingSkips: true), screen)
+            let withoutSkips = PhoneReaderControl.voiceOverOrder(timerRuns: timerRuns, voiceOverRuns: true, hidingSkips: true)
+            XCTAssertEqual(withoutSkips, screen.filter { !hidden.contains($0) })
+            XCTAssertEqual(Array(withoutSkips.prefix(2)), [.bookContent, .play], "\(withoutSkips)")
         }
         XCTAssertTrue(describe(.play, in: state()).traits.contains(.adjustable), "Play must still move back and forward")
     }
@@ -65,8 +67,8 @@ final class PhoneReaderControlsTests: XCTestCase {
     /// menu, its value the time left; with none it is only in the menu.
     func testTheSleepTimerShowsUnderPlayOnlyWhileATimerRuns() {
         let running = PhoneReaderControl.screen(timerRuns: true)
-        XCTAssertEqual(Array(running.prefix(3)), [.bookContent, .play, .sleepTimer])
-        XCTAssertEqual(Array(running.dropFirst(3)), PhoneReaderControl.grid)
+        XCTAssertEqual(Array(running.prefix(5)), [.bookContent, .skipBackward, .play, .skipForward, .sleepTimer])
+        XCTAssertEqual(Array(running.dropFirst(5)), PhoneReaderControl.grid)
         XCTAssertFalse(PhoneReaderControl.screen(timerRuns: false).contains(.sleepTimer))
     }
 
@@ -87,15 +89,15 @@ final class PhoneReaderControlsTests: XCTestCase {
     }
 
     /// The grid's rows hold the controls in the grid's order, at most three
-    /// to a row, with each pair kept in one row: the headings, the skips, and
-    /// Bookmarks with Headings.
+    /// to a row, with each pair kept in one row: the headings, and Bookmarks
+    /// with Headings. The skips have left the grid for Play's row (FR54).
     func testTheGridRowsKeepOrderAndPairs() {
         XCTAssertEqual(PhoneReaderControl.gridRows.flatMap { $0 }, PhoneReaderControl.grid, "The rows change VoiceOver's order")
         for row in PhoneReaderControl.gridRows {
             XCTAssertLessThanOrEqual(row.count, 3, "\(row)")
         }
         let together: [[PhoneReaderControl]] = [
-            [.previousHeading, .nextHeading], [.skipBackward, .skipForward], [.bookmarks, .headings, .searchInBook],
+            [.previousHeading, .nextHeading], [.bookmarks, .headings, .searchInBook],
         ]
         for group in together {
             XCTAssertTrue(
@@ -103,10 +105,10 @@ final class PhoneReaderControlsTests: XCTestCase {
                 "\(group) are split across rows: \(PhoneReaderControl.gridRows)"
             )
         }
-        XCTAssertEqual(PhoneReaderControl.gridRows.last, [.skipBackward, .skipForward], "The skips aren't the last row")
-        // Book Actions ends the fourth row (FR51).
-        XCTAssertEqual(PhoneReaderControl.gridRows.count, 5, "The grid changed its shape")
-        XCTAssertEqual(PhoneReaderControl.gridRows.dropFirst(3).first, [.goTo, .returnToPlace, .bookActions])
+        XCTAssertFalse(PhoneReaderControl.grid.contains { $0.isSkip }, "A skip is still in the grid")
+        // Book Actions ends the last row (FR51).
+        XCTAssertEqual(PhoneReaderControl.gridRows.count, 4, "The grid changed its shape")
+        XCTAssertEqual(PhoneReaderControl.gridRows.last, [.goTo, .returnToPlace, .bookActions])
     }
 
     /// Every control has a focus kind of its own, and every kind belongs to

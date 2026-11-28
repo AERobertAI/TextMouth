@@ -2,8 +2,8 @@ import Combine
 import SwiftUI
 import UIKit
 
-/// The reader's screen: Book content, Play, and a grid of up to three columns
-/// and five rows (`PhoneReaderControl.gridRows`), in the spec's order and
+/// The reader's screen: Book content, Play between the two skips, and a grid
+/// of up to three columns (`PhoneReaderControl.gridRows`), in the spec's order and
 /// layout (the spec, under "The reader"), its less frequent actions under
 /// Book Actions (FR51).
 ///
@@ -145,8 +145,7 @@ struct PhoneReaderView: View {
                 CGFloat(PhoneReaderControls.bookContentHeight(scaled: Double(textHeight), visible: Double(visible)))
             }
 
-            control(.play)
-                .frame(height: playHeight)
+            playRow
 
             // While a timer runs, the Sleep Timer shows under Play, its value
             // the time left (`PhoneReaderControl.screen(timerRuns:)`).
@@ -168,6 +167,31 @@ struct PhoneReaderView: View {
                 }
             }
         }
+    }
+
+    /// Skip backward, Play, and Skip forward, in VoiceOver's order and the
+    /// layout's (FR54): side by side, Play's height, or one above another at
+    /// accessibility text sizes, where three across would not fit their words.
+    @ViewBuilder
+    private var playRow: some View {
+        if typeSize.isAccessibilitySize {
+            ForEach(PhoneReaderControl.playRow, id: \.self) { item in
+                playRowControl(item)
+            }
+        } else {
+            HStack(spacing: 12) {
+                ForEach(PhoneReaderControl.playRow, id: \.self) { item in
+                    playRowControl(item)
+                }
+            }
+        }
+    }
+
+    /// One control of Play's row: Play always at Play's height, the skips at
+    /// it too beside Play, so the row is one even band to find by touch.
+    private func playRowControl(_ item: PhoneReaderControl) -> some View {
+        control(item)
+            .frame(height: item == .play || !typeSize.isAccessibilitySize ? playHeight : nil)
     }
 
     /// The book's title, with the Mac's prefix for a book read from the
@@ -200,7 +224,7 @@ struct PhoneReaderView: View {
             rotors: rotors(for: item),
             menuItems: menuItems(for: item),
             refreshesEverySecond: item == .sleepTimer,
-            hiddenFromVoiceOver: item.isHiddenFromVoiceOver
+            hiddenFromVoiceOver: item.isHiddenFromVoiceOver(hidingSkips: Self.hidesSkips)
         )
         .frame(maxWidth: .infinity)
     }
@@ -464,6 +488,13 @@ struct PhoneReaderView: View {
                 return UIAccessibilityCustomRotor(name: PhoneReaderVocabulary.bookmarks, itemSearch: search)
             }
         }
+    }
+
+    /// Whether Settings' "Hide skip buttons from VoiceOver" is on, read from
+    /// preferences as each control is drawn: Settings is reached from the
+    /// Library, so the reader is drawn again after any change (FR54).
+    private static var hidesSkips: Bool {
+        PhoneDefaults.hidesSkipsFromVoiceOver(in: TextMouthRuntime.current.preferences)
     }
 
     /// Whether Settings' Follow in Braille is on, read from preferences.

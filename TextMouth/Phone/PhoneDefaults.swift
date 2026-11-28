@@ -124,6 +124,23 @@ enum PhoneDefaults {
         preferences.set(isOn, forKey: followInBrailleKey)
     }
 
+    // MARK: - Hide Skip Buttons from VoiceOver
+
+    /// The preference that holds whether VoiceOver passes over Skip backward
+    /// and Skip forward (FR54): Settings' switch under Reading.
+    nonisolated static let hidesSkipsFromVoiceOverKey = "phoneHidesSkipsFromVoiceOver"
+
+    /// Whether VoiceOver passes over the skips: off until the listener turns
+    /// it on, so VoiceOver reaches them around Play.
+    static func hidesSkipsFromVoiceOver(in preferences: UserDefaults) -> Bool {
+        preferences.bool(forKey: hidesSkipsFromVoiceOverKey)
+    }
+
+    /// Keeps whether VoiceOver passes over the skips.
+    static func setHidesSkipsFromVoiceOver(_ isOn: Bool, in preferences: UserDefaults) {
+        preferences.set(isOn, forKey: hidesSkipsFromVoiceOverKey)
+    }
+
     // MARK: - Shake to Restart the Sleep Timer
 
     /// The preference that holds whether shaking the iPhone soon after a

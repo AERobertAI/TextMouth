@@ -67,6 +67,17 @@ enum PhoneSettingsWording {
         // Translators: Switch in iPhone Settings: while a book plays, the book's text moves on with the speech, for a braille display.
         InterfaceText.line("phoneSettings.followInBraille", "Follow in Braille")
     }
+    /// The switch that hides Skip backward and Skip forward from VoiceOver
+    /// (FR54).
+    static var hideSkipButtons: String {
+        // Translators: Switch in the Reading section of iPhone Settings: VoiceOver passes over the reader's Skip backward and Skip forward buttons. VoiceOver is Apple's screen reader; keep its name.
+        InterfaceText.line("phoneSettings.hideSkipButtons", "Hide skip buttons from VoiceOver")
+    }
+    /// What the switch does.
+    static var hideSkipButtonsHint: String {
+        // Translators: Hint of the Hide skip buttons from VoiceOver switch in iPhone Settings. Adjusting Play is VoiceOver's swipe up or down on the Play button.
+        InterfaceText.line("phoneSettings.hideSkipButtonsHint", "Adjusting Play makes the same moves.")
+    }
     /// What Follow in Braille does.
     static var followInBrailleHint: String {
         SentenceWording.joined([

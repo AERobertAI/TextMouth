@@ -548497,6 +548497,30 @@
         }
       }
     },
+    "phoneSettings.hideSkipButtons" : {
+      "comment" : "Switch in the Reading section of iPhone Settings: VoiceOver passes over the reader's Skip backward and Skip forward buttons. VoiceOver is Apple's screen reader; keep its name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hide skip buttons from VoiceOver"
+          }
+        }
+      }
+    },
+    "phoneSettings.hideSkipButtonsHint" : {
+      "comment" : "Hint of the Hide skip buttons from VoiceOver switch in iPhone Settings. Adjusting Play is VoiceOver's swipe up or down on the Play button.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adjusting Play makes the same moves."
+          }
+        }
+      }
+    },
     "phoneSettings.navigationUnitHint" : {
       "comment" : "Hint of the two iPhone Settings rows that choose a navigation unit, one for text books and one for audiobooks.",
       "extractionState" : "manual",

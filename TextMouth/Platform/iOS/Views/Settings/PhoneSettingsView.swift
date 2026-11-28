@@ -199,6 +199,7 @@ struct PhoneSettingsView: View {
             switchRow(.sayPageInWhereAmI, isOn: noted($settings.saysPageInWhereAmI))
         case .reading:
             switchRow(.followInBraille, isOn: followsInBraille)
+            switchRow(.hideSkipButtons, isOn: hidesSkipsFromVoiceOver)
         case .braille:
             // The table braille files are read with from now on, a row opening the tables of every language, then the
             // characters a BRF or BRL file is read in, and whether a new book's code is guessed (FR32).
@@ -599,6 +600,11 @@ struct PhoneSettingsView: View {
     /// Follow in Braille, as kept in `PhoneDefaults`.
     private var followsInBraille: Binding<Bool> {
         phonePreference(get: PhoneDefaults.followInBraille(in:), set: PhoneDefaults.setFollowInBraille(_:in:))
+    }
+
+    /// Hide skip buttons from VoiceOver (FR54), as kept in `PhoneDefaults`.
+    private var hidesSkipsFromVoiceOver: Binding<Bool> {
+        phonePreference(get: PhoneDefaults.hidesSkipsFromVoiceOver(in:), set: PhoneDefaults.setHidesSkipsFromVoiceOver(_:in:))
     }
 
     /// Shake to restart the timer (FR55), as kept in `PhoneDefaults`.

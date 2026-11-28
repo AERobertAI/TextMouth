@@ -341,6 +341,15 @@ struct PhoneSettingsSwitch: Sendable {
         )
     }
 
+    /// Under Reading: the phone's own (FR54).
+    static var hideSkipButtons: PhoneSettingsSwitch {
+        PhoneSettingsSwitch(
+            title: PhoneSettingsWording.hideSkipButtons,
+            hint: PhoneSettingsWording.hideSkipButtonsHint,
+            showsHintAsCaption: true
+        )
+    }
+
     /// Under Braille: whether a new braille book's code is guessed (the Mac's own words, FR32).
     static var guessBrailleTable: PhoneSettingsSwitch {
         PhoneSettingsSwitch(

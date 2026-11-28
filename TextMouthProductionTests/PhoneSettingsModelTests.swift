@@ -260,6 +260,10 @@ final class PhoneSettingsModelTests: XCTestCase {
                     + "For trying out with a braille display.",
                 true
             ),
+            (
+                .hideSkipButtons, "Hide skip buttons from VoiceOver", "Hide skip buttons from VoiceOver",
+                "Adjusting Play makes the same moves.", true
+            ),
             (.confirmBeforeRemoving, "Confirm before removing a book", "Confirm before removing a book", nil, false),
         ]
         for entry in expected {
