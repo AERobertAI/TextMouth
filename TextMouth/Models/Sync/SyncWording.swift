@@ -230,7 +230,7 @@ enum SyncWording {
         let counts = (books > 0 || feeds == 0 ? [Self.books(books)] : []) + (feeds > 0 ? [CountWording.feeds(feeds)] : [])
         let removals = CountWording.joinedCounts(counts)
         // Translators: The Sync status when TextMouth held back removing many books at once because it looked like a mistake. The first %@ is a phrase counting books ("42 books"), and the second names the device ("this Mac" or "this iPhone"), whose library the person should check. Sync Now is the name of a command.
-        InterfaceText.line("sync.status.heldRemovals", "TextMouth held back removing \(removals), since it looked like a mistake. Check the library on \(device), then choose Sync Now.")
+        return InterfaceText.line("sync.status.heldRemovals", "TextMouth held back removing \(removals), since it looked like a mistake. Check the library on \(device), then choose Sync Now.")
     }
 
     /// Everything is synced.
