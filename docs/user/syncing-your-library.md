@@ -20,7 +20,12 @@ Both ways, each device keeping the latest change of each thing:
 - each book's place, bookmarks, and skipped headings;
 - each book's details, such as title and author, and its own voice and speed settings;
 - folders, and which book is in which;
-- the reading list, its order, and its options.
+- the reading list, its order, and its options;
+- your feeds: each subscription, its folder, and its own settings (List and download, days after playing, listening options), and whether it is unsubscribed.
+
+A feed's downloaded episodes stay on each device, and each device reads the feed itself.
+A feed you subscribe to on one device appears on the other with its folder and checks at once.
+Delete Feed… on one device deletes the feed on the other, including a copy that device subscribed to separately, and its downloads there go where that device's own removal setting sends them.
 
 A book's files are not carried at once.
 A book you add on one device reaches the other as a row marked In Cloud, once its files have uploaded to iCloud Drive; opening the row, or Download Now, brings the files in.
@@ -223,7 +228,7 @@ Update TextMouth to use it."
 ## What isn't synced yet
 <!-- id: sync-not-yet; keys: settings, feeds, statistics, sorts, views, Dropbox, text edits, books imported on both; src: TextMouth/Models/Sync/SyncProjection.swift, TextMouth/Models/Sync/SyncApplier.swift; status: incomplete; issues: FR43 -->
 
-- Settings, text substitutions, feeds, statistics, sorts, views, folders' sort and listening options, and the manual order stay on each device.
+- Settings, the feeds' global settings, an episode's place and played marks, text substitutions, statistics, sorts, views, folders' sort and listening options, and the manual order stay on each device.
 - An edit of a book's text doesn't reach a device that has the book already.
 - Only iCloud Drive is used; Dropbox and Google Drive aren't.
 - Nothing is deleted from the TextMouth Sync folder, and books that are the same on two devices aren't folded together there.

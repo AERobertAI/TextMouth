@@ -80,17 +80,25 @@ Any two stamps are ordered alike on every device.
 A device's first record in a store (a joining, restored, or copied library) is stamped with `SyncMerge.joiningStamp`, as old as its values are, so they lose to what the store holds already.
 
 ## Keys, registers, and merging
-<!-- id: library-sync-registers-merge; keys: SyncKey, SyncRegisters, SyncEntry, byHand, removal mark, SyncOrderKey, SyncFolderPlan, commutative; src: TextMouth/Models/Sync/SyncInterfaces.swift, TextMouth/Models/Sync/SyncProjection.swift, TextMouth/Models/Sync/SyncFolderPlan.swift, TextMouth/Models/Sync/SyncOrderKey.swift, TextMouth/Models/Sync/SyncApplier.swift -->
+<!-- id: library-sync-registers-merge; keys: SyncKey, SyncRegisters, SyncEntry, byHand, removal mark, SyncOrderKey, SyncFolderPlan, commutative; src: TextMouth/Models/Sync/SyncInterfaces.swift, TextMouth/Models/Sync/SyncProjection.swift, TextMouth/Models/Sync/SyncFolderPlan.swift, TextMouth/Models/Sync/SyncOrderKey.swift, TextMouth/Models/Sync/SyncApplier.swift, TextMouth/Models/Sync/SyncFeedValues.swift, TextMouth/Services/Feeds/FeedCenter+Sync.swift -->
 
-A `SyncKey` is one register of the shared state, written as a line of text: `book/<id>/<field>`, `bookmark/<book id>/<id>`, `folder/<id>/<field>`, `readingList/<book id>`, and `readingListOption/<option>`.
+A `SyncKey` is one register of the shared state, written as a line of text: `book/<id>/<field>`, `bookmark/<book id>/<id>`, `folder/<id>/<field>`, `readingList/<book id>`, `readingListOption/<option>`, and `feed/<id>/<field>`.
 - A book has `presence`, `content` (the uploaded manifest, with what a device lacking the book makes its row from), its details, `folder`, its settings, `position`, `skippedHeadings`, `lastOpened`, and `keep`.
 - A bookmark merges one by one, keeping both devices' additions; its `number` is not synced, since removals renumber.
 - A folder has `presence`, `name`, and `parent` by ID, where the library's paths name folders.
-- Left out: feeds and feed items, `Library.unreadableRows`, the manual order, playback times, and what a device keeps for itself.
+- A feed has `presence`, `address`, `subscribed`, `folder` (the library folder's ID), `unsubscribed`, and its own `itemPolicy`, `deleteAfterPlayed`, and `listening` choices (`SyncFeedField`, `SyncFeedValues`).
+  A refresh's reading (title, items, fetch state) is no key, so a refresh records nothing.
+  Downloads stay on each device, and a device lacking the feed makes its record from `address`, `subscribed`, and `folder`.
+- Left out: feed items and their places, the global feed settings, a folder's listening options, `Library.unreadableRows`, the manual order, playback times, and what a device keeps for itself.
 
 `SyncRegisters.merge` keeps each key's highest `SyncEntry`: a `byHand` entry (`HandEdits`) first, then the later stamp, then the values' text, so every device picks the same one.
 So any order of merging gives the same registers, merging twice changes nothing, and a re-read of a file never replaces a person's edit.
 A null value is a removal mark; a book or folder is removed when its mark is later than all its other entries, so a later change elsewhere brings it back.
+
+A feed merges like a book: `SyncMerge.apply` returns a `SyncFeedApplication` beside the library's changes, and `FeedCenter.applySync` carries it out through the feed store and Delete Feed.
+Folders apply first, then books, then feeds, so a new feed's folder is there when it lands; a feed waits, keys unapplied, until its `address`, `subscribed`, and `folder` have arrived and its folder is live.
+Two feeds of one address (`FeedAddress.comparisonKey`) subscribed apart stay one on each device: a device adds no feed whose address it holds, and a Delete Feed reaches every copy of the address.
+A feed another device deleted is deleted here as Delete Feed does, with this device's Trash setting and `leavingLibraryFolder`, so the library folder follows its own keys.
 
 The reading list sorts by key, then ID.
 `SyncOrderKey` makes a key between two neighbours, only for a moved book, so an addition on one device and a move on another both stand.
@@ -106,6 +114,9 @@ The reading list sorts by key, then ID.
 Every writer changes `LibraryViewModel.library`, whose `didSet` calls `SyncCenter.libraryDidChange`, so no writer is wired by hand and both platforms are covered.
 `SyncRecorder` runs `SyncEngine.record` 2 seconds after the last change (a burst of checkpoints is one recording), before each merge, as the iPhone goes to the background, and as the Mac quits.
 It does nothing while a merge is applied.
+
+A feed's change reaches the recorder through `LibraryViewModel.followFeedsForSync`: it watches the store's synced values, so a refresh, which changes none, schedules nothing.
+Until `FeedStore.hasLoaded`, `syncFeeds` is nil and no feed key is recorded or applied, so a launch never reads as every feed removed.
 
 `record` makes the library's `SyncProjection` and compares it with `baseline.json`, skipping books equal to their baseline, and stamps each changed key.
 Its first run after launch stamps what an older TextMouth left in library.json (`SyncLaunchHold`; see R7 in the next page).
