@@ -1262,11 +1262,17 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
 
         renderSynth.write(utterance) { buffer in delivery.deliver(buffer) }
 
+        // A render the engine lets go of ends its wait at once: on macOS 27
+        // `stopSpeaking(at:)` does not stop a write (it returns false and
+        // the buffers go on to the utterance's end), so neither a cancel nor
+        // a finish would come before the whole chapter was written, and the
+        // render coordinator's queue would hold the next render meanwhile.
         let delivered = Self.waitForWrite(
             waking: semaphore,
             delivery: delivery,
             limit: Self.renderWriteLimit,
-            quietAfterSegmentEnd: SpeechBufferDelivery.quietAfterSegmentEnd
+            quietAfterSegmentEnd: SpeechBufferDelivery.quietAfterSegmentEnd,
+            isLetGo: { self.hasLetGo(of: ticket) }
         )
         // However the wait ended, no piece reaches the builder after it.
         delivery.end()
@@ -1275,30 +1281,38 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
         // or the finish it relays would never come.
         withExtendedLifetime(relay) {}
 
-        // Whether this render was let go of while the write was waited for.
-        renderLock.lock()
-        let wasLetGo = currentRender?.ticket !== ticket
-        renderLock.unlock()
         return RenderWrite(
             builder: builder,
             deliveredItsLastPiece: delivered,
-            wasLetGo: wasLetGo,
+            // Whether this render was let go of while the write was waited for.
+            wasLetGo: hasLetGo(of: ticket),
             synthesizerCancelled: cancelled.withLock { $0 }
         )
+    }
+
+    /// Whether the engine has let go of the render `ticket` identifies, by
+    /// cancelling it or beginning another; read under `renderLock`, from any
+    /// thread.
+    private func hasLetGo(of ticket: RenderTicket) -> Bool {
+        renderLock.lock()
+        defer { renderLock.unlock() }
+        return currentRender?.ticket !== ticket
     }
 
     /// The longest a render's write is waited for, in seconds.
     static let renderWriteLimit: TimeInterval = 120
 
-    /// How often a render's wait looks at the quiet after a segment's end,
-    /// in seconds.
+    /// How often a render's wait looks at the quiet after a segment's end
+    /// and at whether the engine let go of the render, in seconds.
     private static let renderWaitSlice: TimeInterval = 0.25
 
     /// On the render queue: wait for a write's end, and say whether the
     /// synthesizer delivered its last piece: `semaphore` signalled (the
     /// synthesizer's finish or cancel), or `quietAfterSegmentEnd` seconds
     /// with nothing after a segment's end, the fallback for a synthesizer
-    /// that never reports its finish. False after `limit` seconds.
+    /// that never reports its finish. False after `limit` seconds, and
+    /// within a slice of `isLetGo` turning true: the synthesizer goes on
+    /// writing a render it was told to stop, so only this ends its wait.
     ///
     /// - Parameters:
     ///   - semaphore: Signalled at the synthesizer's finish and its cancel.
@@ -1307,15 +1321,19 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
     ///   - limit: The longest wait, in seconds.
     ///   - quietAfterSegmentEnd: The quiet after a segment's end that counts
     ///     as the write's end, in seconds.
-    /// - Returns: Whether the write ended within `limit`.
+    ///   - isLetGo: Whether the engine has let go of the render.
+    /// - Returns: Whether the write ended within `limit`, its engine still
+    ///   holding it.
     static func waitForWrite(
         waking semaphore: DispatchSemaphore,
         delivery: SpeechBufferDelivery,
         limit: TimeInterval,
-        quietAfterSegmentEnd: TimeInterval
+        quietAfterSegmentEnd: TimeInterval,
+        isLetGo: () -> Bool
     ) -> Bool {
         let deadline = DispatchTime.now() + limit
         while semaphore.wait(timeout: min(deadline, .now() + renderWaitSlice)) == .timedOut {
+            if isLetGo() { return false }
             if delivery.endIfQuietAfterSegmentEnd(limit: quietAfterSegmentEnd) { return true }
             if DispatchTime.now() >= deadline { return false }
         }

@@ -1450,7 +1450,7 @@ final class AudioEngineBehaviorTests: XCTestCase {
         let delivery = SpeechBufferDelivery(onBuffer: { _ in }, waking: semaphore)
         semaphore.signal()
 
-        XCTAssertTrue(AudioEngineService.waitForWrite(waking: semaphore, delivery: delivery, limit: 5, quietAfterSegmentEnd: 5))
+        XCTAssertTrue(AudioEngineService.waitForWrite(waking: semaphore, delivery: delivery, limit: 5, quietAfterSegmentEnd: 5, isLetGo: { false }))
     }
 
     /// An empty buffer, the end of one of the synthesizer's segments (about
@@ -1467,7 +1467,7 @@ final class AudioEngineBehaviorTests: XCTestCase {
         delivery.deliver(try Self.silentBuffer(frames: 0))
         let started = ContinuousClock.now
 
-        XCTAssertTrue(AudioEngineService.waitForWrite(waking: semaphore, delivery: delivery, limit: 5, quietAfterSegmentEnd: 0.5))
+        XCTAssertTrue(AudioEngineService.waitForWrite(waking: semaphore, delivery: delivery, limit: 5, quietAfterSegmentEnd: 0.5, isLetGo: { false }))
 
         XCTAssertGreaterThanOrEqual(started.duration(to: .now), .seconds(0.5), "a segment's end ended the wait at once")
         XCTAssertLessThan(started.duration(to: .now), .seconds(4))
@@ -1482,8 +1482,36 @@ final class AudioEngineBehaviorTests: XCTestCase {
         let delivery = SpeechBufferDelivery(onBuffer: { _ in }, waking: semaphore)
         let started = ContinuousClock.now
 
-        XCTAssertFalse(AudioEngineService.waitForWrite(waking: semaphore, delivery: delivery, limit: 0.5, quietAfterSegmentEnd: 0.1))
+        XCTAssertFalse(AudioEngineService.waitForWrite(waking: semaphore, delivery: delivery, limit: 0.5, quietAfterSegmentEnd: 0.1, isLetGo: { false }))
         XCTAssertLessThan(started.duration(to: .now), .seconds(4))
+    }
+
+    /// A render the engine lets go of (Stop, a seek, a voice change) ends
+    /// its wait within a slice, although the synthesizer neither finishes
+    /// nor cancels: on macOS 27 `stopSpeaking(at:)` does not stop a write,
+    /// which goes on to the end of the chapter, and the render coordinator's
+    /// queue held the next render until then, up to the two-minute limit.
+    func testALetGoRendersWaitEndsAtOnce() throws {
+        let semaphore = DispatchSemaphore(value: 0)
+        let delivery = SpeechBufferDelivery(onBuffer: { _ in }, waking: semaphore)
+        // The synthesizer is mid-chapter: audio, a segment's end, audio.
+        delivery.deliver(try Self.silentBuffer(frames: 100))
+        delivery.deliver(try Self.silentBuffer(frames: 0))
+        delivery.deliver(try Self.silentBuffer(frames: 100))
+        let letGo = OSAllocatedUnfairLock(initialState: false)
+        DispatchQueue.global().asyncAfter(deadline: .now() + 0.3) { letGo.withLock { $0 = true } }
+        let started = ContinuousClock.now
+
+        let delivered = AudioEngineService.waitForWrite(
+            waking: semaphore,
+            delivery: delivery,
+            limit: 20,
+            quietAfterSegmentEnd: 20,
+            isLetGo: { letGo.withLock { $0 } }
+        )
+
+        XCTAssertFalse(delivered, "a let-go render's wait said its write delivered its last piece")
+        XCTAssertLessThan(started.duration(to: .now), .seconds(3), "a let-go render's wait went on")
     }
 }
 
