@@ -423,3 +423,47 @@ final class SyncFeedTests: XCTestCase {
         XCTAssertEqual(gone, [.feed(show.id, .presence): .null])
     }
 }
+
+/// A feed between two real engines over the stand-in cloud folder (FR56): the
+/// Mac's subscription reaches the iPhone with its folder and settings, and a
+/// setting the iPhone changes comes back. No network and no iCloud.
+final class SyncFeedTwoDeviceTests: XCTestCase {
+    /// A subscription made on the Mac reaches the iPhone, and the iPhone's change of it reaches the Mac.
+    func testAFeedAndItsSettingTravelBothWays() async throws {
+        let world = try SyncTwoDevices(sandbox: try makeSandboxDirectory("feed-two-devices"))
+        let folder = BookFolder(name: "Show")
+        let macLibrary = SyncTestFixtures.library(folders: [folder])
+        var show = Feed(
+            feedURL: try XCTUnwrap(URL(string: "https://example.com/show.xml")), folderID: folder.id,
+            subscribedDate: Date(timeIntervalSince1970: 1_000)
+        )
+        show.itemPolicyOverride = FeedItemPolicy(choice: .onlyNewestListed, newestCount: 3)
+        try await world.mac.engine.record(library: macLibrary, feeds: [show])
+        _ = try await world.mac.engine.exchange(in: world.folder)
+
+        // The iPhone has no library yet and no feeds: both arrive, the folder first.
+        _ = try await world.phone.engine.exchange(in: world.folder)
+        let empty = Library()
+        try await world.phone.engine.record(library: empty, feeds: [])
+        let onPhone = await world.phone.engine.application(for: empty, feeds: [], voices: nil)
+        XCTAssertEqual(onPhone.library.folders.map(\.id), [folder.id])
+        let arrived = try XCTUnwrap(onPhone.feeds.feedsToAdd.first)
+        XCTAssertEqual(arrived.id, show.id)
+        XCTAssertEqual(arrived.folderID, folder.id)
+        XCTAssertEqual(arrived.itemPolicyOverride, show.itemPolicyOverride)
+        try await world.phone.engine.didApply(onPhone, keys: onPhone.appliedKeys)
+
+        // The iPhone stops checking the feed; the applied state records only that.
+        var phoneFeed = arrived
+        phoneFeed.unsubscribedDate = Date(timeIntervalSince1970: 5_000)
+        let recorded = try await world.phone.engine.record(library: onPhone.library, feeds: [phoneFeed])
+        XCTAssertEqual(recorded.recorded, 1)
+        _ = try await world.phone.engine.exchange(in: world.folder)
+
+        let back = try await world.mac.engine.exchange(in: world.folder)
+        XCTAssertTrue(back.changedKeys.contains(.feed(show.id, .unsubscribed)))
+        let onMac = await world.mac.engine.application(for: macLibrary, feeds: [show], voices: nil)
+        XCTAssertEqual(onMac.feeds.feedsToChange.map(\.unsubscribedDate), [phoneFeed.unsubscribedDate])
+        XCTAssertTrue(onMac.feeds.feedsToAdd.isEmpty)
+    }
+}
