@@ -49,7 +49,7 @@ final class SyncFeedTests: XCTestCase {
     /// A change file holding a feed field a later TextMouth added reads, leaving that entry out.
     func testLaterFeedFieldIsLeftOutOfAChangeFile() throws {
         let folder = BookFolder(name: "Show")
-        let known = entries(of: feed(folderID: folder.id), wall: 5)[0]
+        let known = try XCTUnwrap(entries(of: feed(folderID: folder.id), wall: 5).first)
         var file = SyncChangeFile(
             formatVersion: 1, deviceID: "b", incarnation: Fixtures.id(1), seq: 1, kind: .changes, count: 2, entries: [known]
         )
