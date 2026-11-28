@@ -969,7 +969,7 @@ extension FeedWording {
     /// Trash is emptied. Its folder “Podcasts/Finish It!” goes too when
     /// nothing else is in it. To keep an episode, choose Move to Library… on
     /// its row first." On an iPhone (`isPhone`) the last sentence is said
-    /// only once the phone offers Move to Library… (`PhoneFeedRows.offers(_:)`),
+    /// only once the phone offers Move to Library… (`phoneOffersMoveToLibrary`),
     /// so it never names a command the phone's rows lack.
     static func deleteFeedMessage(
         downloads: Int,
@@ -1005,7 +1005,7 @@ extension FeedWording {
             sentences.append(InterfaceText.line("feed.folderGoesToo", "Its folder “\(folderPath)” goes too when nothing else is in it."))
         }
         // The way to keep a download, where the rows offer it.
-        if downloads > 0, !isPhone || PhoneFeedRows.offers(.moveToLibrary) {
+        if downloads > 0, !isPhone || phoneOffersMoveToLibrary {
             let moveName = title(of: .moveToLibrary, isArticle: false)
             sentences.append(noun.choose(
                 // Translators: The last sentence of the confirmation before Delete Feed, for a feed of episodes. %@ is the name of the Move to Library command.
@@ -1016,6 +1016,19 @@ extension FeedWording {
                 item: InterfaceText.line("feed.keepItemChoose", "To keep an item, choose \(moveName) on its row first.")))
         }
         return SentenceWording.joined(sentences)
+    }
+
+    /// Whether the iPhone's feed rows offer Move to Library…, which phase F1's
+    /// rows leave out: the iPhone's own answer in its build. The Mac's build
+    /// never reaches the iPhone's types (the boundary `IOSBranchTests` keeps),
+    /// so it answers for the phone of this phase, which a test of the Mac's
+    /// host checks against the iPhone's rows.
+    private static var phoneOffersMoveToLibrary: Bool {
+        #if os(iOS)
+        PhoneFeedRows.offers(.moveToLibrary)
+        #else
+        false
+        #endif
     }
 
     /// The sentence of Delete Feed's confirmation that says what it deletes,
