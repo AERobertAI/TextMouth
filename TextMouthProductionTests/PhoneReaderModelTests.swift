@@ -191,6 +191,49 @@ final class PhoneReaderModelTests: XCTestCase {
         XCTAssertEqual(plays, 0)
     }
 
+    // MARK: - Focus on the Sleep Timer Under Play (FR55)
+
+    /// Reset Timer, picked on the running Sleep Timer's Actions rotor, starts
+    /// the timer again, which stops it for an instant first. Focus stays on
+    /// the control: the move to Play the stop asks for is skipped, since a
+    /// timer runs again at its moment. A timer that really ends moves focus
+    /// to Play, once.
+    func testResettingTheTimerKeepsFocusOnItsControl() {
+        let timer = SleepTimerService(userDefaults: makeSandboxedPreferences("PhoneSleepTimerWatcher"), registry: SleepTimerRegistry())
+        defer { timer.stop() }
+        var requests: [(kind: PhoneControlKind, unless: @MainActor () -> Bool)] = []
+        let watcher = PhoneSleepTimerWatcher(isFocusedOnTimer: { true }, requestFocus: { requests.append(($0, $1)) })
+        timer.start(duration: .minutes(10), onExpire: {})
+        watcher.watch(timer)
+        XCTAssertTrue(watcher.runs)
+
+        // Reset Timer: the reader's restart starts the same timer again.
+        timer.start(duration: .minutes(10), onExpire: {})
+        XCTAssertTrue(watcher.runs)
+        XCTAssertTrue(requests.allSatisfy { $0.unless() }, "Focus left the Sleep Timer for Play after Reset Timer")
+
+        // Cancel Timer: the control goes, and focus goes to Play.
+        requests = []
+        timer.stop()
+        XCTAssertFalse(watcher.runs)
+        XCTAssertEqual(requests.map(\.kind), [.play])
+        XCTAssertEqual(requests.map { $0.unless() }, [false])
+    }
+
+    /// A timer that ends with focus elsewhere moves nothing.
+    func testATimerEndingWithFocusElsewhereMovesNothing() {
+        let timer = SleepTimerService(userDefaults: makeSandboxedPreferences("PhoneSleepTimerWatcher"), registry: SleepTimerRegistry())
+        var requests: [PhoneControlKind] = []
+        let watcher = PhoneSleepTimerWatcher(isFocusedOnTimer: { false }, requestFocus: { kind, _ in requests.append(kind) })
+        timer.start(duration: .minutes(10), onExpire: {})
+        watcher.watch(timer)
+
+        timer.stop()
+
+        XCTAssertFalse(watcher.runs)
+        XCTAssertEqual(requests, [])
+    }
+
     // MARK: - Shaking to Restart the Sleep Timer (FR55)
 
     /// Within a minute of a shake, the timer last used starts again, the

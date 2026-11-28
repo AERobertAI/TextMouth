@@ -29,7 +29,7 @@ struct PhoneReaderView: View {
     /// Whether the load failure has VoiceOver's focus.
     @AccessibilityFocusState private var failureFocused: Bool
     /// Whether a sleep timer runs, changing only when that does.
-    @StateObject private var timer = PhoneSleepTimerWatcher()
+    @StateObject private var timer = PhoneSleepTimerWatcher.onTheReader()
 
     /// At accessibility text sizes the grid becomes one column.
     @Environment(\.dynamicTypeSize) private var typeSize
@@ -86,7 +86,7 @@ struct PhoneReaderView: View {
             }
             // The same reader keeps the same watch on its timer; the next book's is a new one.
             .task(id: session.reader.map(ObjectIdentifier.init)) {
-                timer.watch(session.reader)
+                timer.watch(session.reader?.sleepTimerService)
             }
             // A protected book asks for its password over the reader (FR41).
             // One overlay for every book and none, so its identity never
@@ -652,39 +652,18 @@ private final class PhoneUnlockPromptWatcher: ObservableObject {
 
 // MARK: - The Sleep Timer
 
-/// Whether a sleep timer runs for the open reader (FR51, FR52), republished
-/// when that changes and not as the timer counts down, so the reader's
-/// screen redraws only as the timer starts or ends, as `PhoneUnlockPromptWatcher`
-/// republishes only its prompt.
-@MainActor
-final class PhoneSleepTimerWatcher: ObservableObject {
-    /// Whether a timer runs.
-    @Published private(set) var runs = false
-    /// The subscription to the timer's `isActive`.
-    private var subscription: AnyCancellable?
-
-    /// Watches `reader`'s sleep timer, or nothing.
-    func watch(_ reader: ReaderViewModel?) {
-        runs = reader?.sleepTimerService.isActive ?? false
-        subscription = reader?.sleepTimerService.$isActive
-            .removeDuplicates()
-            .sink { [weak self] isActive in
-                // `$isActive` publishes just before the change, with the new value.
-                MainActor.assumeIsolated { self?.timerChanged(runs: isActive) }
+extension PhoneSleepTimerWatcher {
+    /// The reader's watcher: VoiceOver's focus read and moved through the
+    /// focus registry, the move to Play coming after the moment a screen
+    /// change waits for.
+    static func onTheReader() -> PhoneSleepTimerWatcher {
+        PhoneSleepTimerWatcher(
+            isFocusedOnTimer: {
+                PhoneFocusRegistry.shared.view(for: .sleepTimer)?.accessibilityElementIsFocused() == true
+            },
+            requestFocus: { kind, unless in
+                PhoneFocusRegistry.shared.requestFocus(on: kind, after: PhoneFocusPolicy.screenChangedDelay, unless: unless)
             }
-    }
-
-    /// The timer started or ended. As it ends, the Sleep Timer under Play
-    /// leaves the screen; if VoiceOver's focus was on it, focus goes to Play
-    /// once the control has gone, rather than VoiceOver dropping it at the
-    /// top of the screen (`PhoneReaderControl.focusTarget`). Asked here,
-    /// before the screen redraws, while the control is still there to ask.
-    private func timerChanged(runs isActive: Bool) {
-        let focusWasOnTimer = runs && !isActive
-            && PhoneFocusRegistry.shared.view(for: .sleepTimer)?.accessibilityElementIsFocused() == true
-        runs = isActive
-        guard focusWasOnTimer else { return }
-        let target = PhoneReaderControl.focusTarget(returningTo: .sleepTimer, timerRuns: isActive)
-        PhoneFocusRegistry.shared.requestFocus(on: target.focusKind, after: PhoneFocusPolicy.screenChangedDelay)
+        )
     }
 }

@@ -2327,6 +2327,7 @@
 		B0DE4867AF466E019DE0B2A7 /* PhoneScreenHoldsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A59AA31925433C1B56D7C5ED /* PhoneScreenHoldsTests.swift */; };
 		B0E8D8DD86C3E4E238CF695D /* PhoneAnnouncer.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF83A4184CE654613477D42E /* PhoneAnnouncer.swift */; };
 		B0F2DA82C963AB728E6E2466 /* ImportPageProgress.swift in Sources */ = {isa = PBXBuildFile; fileRef = F26F51CD2725190E784815AF /* ImportPageProgress.swift */; };
+		B10BABA7B6EDCD0B30D5FAEC /* PhoneSleepTimerWatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AAB7B7DFA08D0E754170962 /* PhoneSleepTimerWatcher.swift */; };
 		B12A01E0CBC0460665D5A3B3 /* SpeechRefusalReportSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D940238BB91BC631475B5B4 /* SpeechRefusalReportSheet.swift */; };
 		B134952F4B75EADC97231426 /* TimedText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28A3F6623A621E2BD84065AF /* TimedText.swift */; };
 		B14277F654632E7561591CAA /* PackageNavigationAuditTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88F3E9E25E1EF04717C11E94 /* PackageNavigationAuditTests.swift */; };
@@ -3297,6 +3298,7 @@
 		F872415B2CEB321CA2664002 /* InterfaceLanguageChoice.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C8E5AD8D7C8156ED3C073EF /* InterfaceLanguageChoice.swift */; };
 		F883A0BDEEC4FA81F4AED6D3 /* Credits.rtf in Resources */ = {isa = PBXBuildFile; fileRef = 850B45F7BEF7F0620FB0A392 /* Credits.rtf */; };
 		F89198C3A9D9ED226CEEAD23 /* TextAnchorCaptureLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 968F795E85D76DB621C9A2AE /* TextAnchorCaptureLaunchTests.swift */; };
+		F8920F515D73C0DE7B522555 /* PhoneSleepTimerWatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AAB7B7DFA08D0E754170962 /* PhoneSleepTimerWatcher.swift */; };
 		F895DE1FCEF31ED0083592FE /* DOCXTestPackages.swift in Sources */ = {isa = PBXBuildFile; fileRef = E53170AFED6F639025C95F78 /* DOCXTestPackages.swift */; };
 		F89E5A87BC4F0AF9443513A9 /* ImportFuzzMutatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF383270BF526E12EB6E7C71 /* ImportFuzzMutatorTests.swift */; };
 		F8A07A59AA6482B7DC2CC600 /* TextEncodingFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12E27E790250C0B431DA34AB /* TextEncodingFixtures.swift */; };
@@ -4002,6 +4004,7 @@
 		1A26EC3B039D5E06FE05A5D7 /* ArchiveEntryReaderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArchiveEntryReaderTests.swift; sourceTree = "<group>"; };
 		1A2FC61431CECC102B30E88D /* Cleaner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Cleaner.swift; sourceTree = "<group>"; };
 		1A5E6BF84495D0F17C8FA4A7 /* ExportUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportUITests.swift; sourceTree = "<group>"; };
+		1AAB7B7DFA08D0E754170962 /* PhoneSleepTimerWatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneSleepTimerWatcher.swift; sourceTree = "<group>"; };
 		1B041751DE7DDE714D5B5F86 /* WhereAmIPolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhereAmIPolicyTests.swift; sourceTree = "<group>"; };
 		1B19734B5FD8FCE3FBEB0C82 /* AudioEditorModel+Selecting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AudioEditorModel+Selecting.swift"; sourceTree = "<group>"; };
 		1B2F6DB67463910560824B19 /* WindowAccessor+iOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WindowAccessor+iOS.swift"; sourceTree = "<group>"; };
@@ -6678,6 +6681,7 @@
 				9ECE2DE409B05654B4B58F30 /* PhoneShakeRestart.swift */,
 				2FCF5B16185269FB45EDCDB9 /* PhoneSleepDeadline.swift */,
 				3C1BE70522A8B764AFCF0F6C /* PhoneSleepTimerModel.swift */,
+				1AAB7B7DFA08D0E754170962 /* PhoneSleepTimerWatcher.swift */,
 				865A7B73453889D23033C09B /* PhoneSpeechRefusalPresentation.swift */,
 				3D1DBAB47C1E7CBEE85886D0 /* PhoneSyncLifeCycle.swift */,
 				5CCB3319CC5C921003D12FDD /* PhoneSyncSettingsModel.swift */,
@@ -11494,6 +11498,7 @@
 				9A30B18C943CCC35CEE8A4BA /* PhoneShakeRestart.swift in Sources */,
 				3F5112AFD994E3DA7847AC38 /* PhoneSleepDeadline.swift in Sources */,
 				0B80C30DD121D659F7D705EC /* PhoneSleepTimerModel.swift in Sources */,
+				B10BABA7B6EDCD0B30D5FAEC /* PhoneSleepTimerWatcher.swift in Sources */,
 				D4FBEB86E381A5ACD3D75896 /* PhoneSpeechRefusalPresentation.swift in Sources */,
 				65D38BA14E760FF0005C6D4B /* PhoneSyncLifeCycle.swift in Sources */,
 				4F7B42516EADBF9A590D2F7D /* PhoneSyncSettingsModel.swift in Sources */,
@@ -12603,6 +12608,7 @@
 				55CBED5530416008777EA1B4 /* PhoneSleepDeadline.swift in Sources */,
 				EF40548BC38AA36C5304B67C /* PhoneSleepTimerModel.swift in Sources */,
 				46F597D5FFA52DB993E1B8FD /* PhoneSleepTimerSheet.swift in Sources */,
+				F8920F515D73C0DE7B522555 /* PhoneSleepTimerWatcher.swift in Sources */,
 				16CB8F498F5CFA131F74184C /* PhoneSpeechExportRows.swift in Sources */,
 				C99C7709C9DD8EC7895E7088 /* PhoneSpeechRefusalPresentation.swift in Sources */,
 				1F11291ECFFAA18272AD59FE /* PhoneSpeechRefusalSheet.swift in Sources */,
