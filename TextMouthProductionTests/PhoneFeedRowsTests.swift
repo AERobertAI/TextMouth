@@ -56,6 +56,25 @@ final class PhoneFeedRowsTests: XCTestCase {
         XCTAssertEqual(FeedDownloadWait.network.reason, "it downloads once this Mac is on a network without data limits")
     }
 
+    /// Delete Feed…'s question on the iPhone never sends the listener to Move
+    /// to Library…, which the phone's rows don't offer yet; the Mac's still
+    /// ends with it (checkfeedsf1).
+    func testDeleteFeedsQuestionOnTheIPhoneNamesNoMoveToLibrary() {
+        /// The question's words for a feed with two downloads, on the iPhone or the Mac.
+        func message(isPhone: Bool) -> String {
+            FeedWording.deleteFeedMessage(
+                downloads: 2, kept: 0, keptParts: [], noun: .episode, folderPath: "Podcasts/Atlas",
+                mode: .deletePermanently, isPhone: isPhone
+            )
+        }
+        let move = FeedWording.title(of: .moveToLibrary, isArticle: false)
+        XCTAssertFalse(PhoneFeedRows.offers(.moveToLibrary), "the phone offers Move to Library…: say so in its question again")
+        XCTAssertFalse(message(isPhone: true).contains(move), message(isPhone: true))
+        XCTAssertTrue(message(isPhone: false).hasSuffix("To keep an episode, choose \(move) on its row first."), message(isPhone: false))
+        // The rest of the question is the Mac's, word for word.
+        XCTAssertTrue(message(isPhone: false).hasPrefix(message(isPhone: true)))
+    }
+
     // MARK: - The Feeds Section
 
     /// The top of the library lists a feed under the Mac's "Feeds" heading, one

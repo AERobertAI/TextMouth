@@ -968,14 +968,17 @@ extension FeedWording {
     /// downloads: they go to the Trash, where you can recover them until the
     /// Trash is emptied. Its folder “Podcasts/Finish It!” goes too when
     /// nothing else is in it. To keep an episode, choose Move to Library… on
-    /// its row first."
+    /// its row first." On an iPhone (`isPhone`) the last sentence is said
+    /// only once the phone offers Move to Library… (`PhoneFeedRows.offers(_:)`),
+    /// so it never names a command the phone's rows lack.
     static func deleteFeedMessage(
         downloads: Int,
         kept: Int,
         keptParts: KeptParts,
         noun: ItemNoun,
         folderPath: String?,
-        mode: RemovalMode
+        mode: RemovalMode,
+        isPhone: Bool = ThisDevice.isPhone
     ) -> String {
         var sentences = [noun.choose(
             // Translators: The first sentence of the confirmation before Delete Feed, for a feed of episodes.
@@ -1001,7 +1004,8 @@ extension FeedWording {
             // Translators: A sentence of the confirmation before Delete Feed: the feed's library folder is deleted too when it holds nothing else. %@ is the folder's path.
             sentences.append(InterfaceText.line("feed.folderGoesToo", "Its folder “\(folderPath)” goes too when nothing else is in it."))
         }
-        if downloads > 0 {
+        // The way to keep a download, where the rows offer it.
+        if downloads > 0, !isPhone || PhoneFeedRows.offers(.moveToLibrary) {
             let moveName = title(of: .moveToLibrary, isArticle: false)
             sentences.append(noun.choose(
                 // Translators: The last sentence of the confirmation before Delete Feed, for a feed of episodes. %@ is the name of the Move to Library command.
