@@ -31,17 +31,52 @@ final class SpeechBufferSynthesizerTests: XCTestCase {
         XCTAssertEqual(handedOn.value, 1)
     }
 
-    /// An empty buffer, the synthesizer's last, wakes the waiting thread and
-    /// is not handed on.
-    func testAnEmptyBufferWakesTheWait() throws {
+    /// An empty buffer ends one of the synthesizer's segments, about a
+    /// sentence on macOS 27, and not the write: it neither wakes the waiting
+    /// thread nor is handed on, and the buffers after it are handed on. Taken
+    /// for the write's end, it cut each chapter's rendered audio to its first
+    /// sentence, and the reader skipped to the next chapter after it.
+    func testAnEmptyBufferEndsASegmentAndNotTheWrite() throws {
         let handedOn = Counter()
         let wake = DispatchSemaphore(value: 0)
         let delivery = SpeechBufferDelivery(onBuffer: { _ in handedOn.add() }, waking: wake)
 
+        delivery.deliver(try Self.buffer(frames: 100))
         delivery.deliver(try Self.buffer(frames: 0))
+        delivery.deliver(try Self.buffer(frames: 100))
 
-        XCTAssertEqual(wake.wait(timeout: .now()), .success, "the last buffer did not wake the wait")
-        XCTAssertEqual(handedOn.value, 0)
+        XCTAssertEqual(wake.wait(timeout: .now()), .timedOut, "a segment's end woke the wait as if the write had ended")
+        XCTAssertEqual(handedOn.value, 2, "the buffer after a segment's end was not handed on")
+    }
+
+    /// Quiet after a segment's end ends the write once it has lasted the
+    /// limit, the fallback for a synthesizer that never reports its finish;
+    /// quiet with no segment's end, or audio after one, does not. A scripted
+    /// clock times it.
+    func testQuietAfterASegmentsEndEndsTheWriteOnlyPastTheLimit() throws {
+        let uptime = OSAllocatedUnfairLock(initialState: 0.0)
+        let clock = RunningClock(countingWhole: { uptime.withLock { $0 } })
+        let handedOn = Counter()
+        let delivery = SpeechBufferDelivery(onBuffer: { _ in handedOn.add() }, waking: DispatchSemaphore(value: 0), clock: clock)
+
+        delivery.deliver(try Self.buffer(frames: 100))
+        uptime.withLock { $0 += 30 }
+        XCTAssertFalse(delivery.endIfQuietAfterSegmentEnd(limit: 10), "quiet with no segment's end ended the write")
+
+        delivery.deliver(try Self.buffer(frames: 0))
+        uptime.withLock { $0 += 5 }
+        delivery.deliver(try Self.buffer(frames: 100))
+        uptime.withLock { $0 += 30 }
+        XCTAssertFalse(delivery.endIfQuietAfterSegmentEnd(limit: 10), "audio after a segment's end did not count")
+
+        delivery.deliver(try Self.buffer(frames: 0))
+        uptime.withLock { $0 += 9 }
+        XCTAssertFalse(delivery.endIfQuietAfterSegmentEnd(limit: 10), "the write ended before the limit")
+        uptime.withLock { $0 += 1 }
+        XCTAssertTrue(delivery.endIfQuietAfterSegmentEnd(limit: 10))
+
+        delivery.deliver(try Self.buffer(frames: 100))
+        XCTAssertEqual(handedOn.value, 2, "a buffer was handed on after the write ended")
     }
 
     /// What `onBuffer` throws is kept, wakes the wait, and ends the write.
@@ -113,9 +148,9 @@ final class SpeechBufferSynthesizerTests: XCTestCase {
 
     // MARK: - A Write
 
-    /// Buffers come, then the empty last one: the write finishes, having
-    /// handed each buffer on in order, and a buffer the synthesizer sends
-    /// late, after the write returned, is never handed on.
+    /// Buffers come, then the synthesizer's finish: the write finishes,
+    /// having handed each buffer on in order, and a buffer the synthesizer
+    /// sends late, after the write returned, is never handed on.
     func testAWriteFinishesWithEveryBuffer() async throws {
         let writer = ScriptedBufferWriter(.finish(buffers: 3))
         let handedOn = Counter()
@@ -127,6 +162,37 @@ final class SpeechBufferSynthesizerTests: XCTestCase {
         writer.callBackLate()
         XCTAssertEqual(handedOn.value, 3, "a buffer sent after the write returned was handed on")
         XCTAssertEqual(writer.stops, 0)
+    }
+
+    /// A write of several segments, each ending in an empty buffer as macOS
+    /// 27's synthesizer ends about every sentence, hands on every segment's
+    /// buffers and finishes only at the synthesizer's finish: the second and
+    /// third segments come after the write has begun to wait, so a write
+    /// that ended at the first empty buffer would hand on only the first.
+    func testAWriteOfSeveralSegmentsHandsOnEverySegment() async throws {
+        let writer = ScriptedBufferWriter(.segments([2, 3, 4], finishing: true))
+        let handedOn = Counter()
+
+        let end = try await write(with: writer, onBuffer: { _ in handedOn.add() })
+
+        XCTAssertEqual(end, .finished)
+        XCTAssertEqual(handedOn.value, 9, "a segment after the first was lost")
+        XCTAssertEqual(writer.stops, 0)
+    }
+
+    /// A synthesizer that never reports its finish still finishes the write,
+    /// with every segment, once its last segment's end has been followed by
+    /// the quiet limit.
+    func testAWriteWithNoFinishEndsAfterTheQuietLimit() async throws {
+        let writer = ScriptedBufferWriter(.segments([2, 3], finishing: false))
+        let handedOn = Counter()
+        var limits = Self.shortLimits
+        limits.afterSegmentEnd = 0.5
+
+        let end = try await write(with: writer, limits: limits, onBuffer: { _ in handedOn.add() })
+
+        XCTAssertEqual(end, .finished)
+        XCTAssertEqual(handedOn.value, 5)
     }
 
     /// The synthesizer cancelling the utterance on its own, with no buffer,
@@ -376,8 +442,14 @@ private final class Counter: Sendable {
 private final class ScriptedBufferWriter: SpeechBufferWriting, @unchecked Sendable {
     /// What the synthesizer does once the write starts it.
     enum Script {
-        /// Hands on `buffers` buffers of tone, then the empty last one.
+        /// Hands on `buffers` buffers of tone and an empty one, then
+        /// finishes.
         case finish(buffers: Int)
+        /// Hands on segments of so many buffers of tone, each followed by an
+        /// empty buffer, the first at once and each later one a tenth of a
+        /// second after the one before, from another thread; then finishes
+        /// if `finishing`, and otherwise falls silent.
+        case segments([Int], finishing: Bool)
         /// Cancels the utterance with no buffer, as the speech engine does
         /// with a text it refuses.
         case refuse
@@ -415,7 +487,12 @@ private final class ScriptedBufferWriter: SpeechBufferWriting, @unchecked Sendab
         lock.withLock { onBuffer != nil }
     }
 
-    func start(_ utterance: AVSpeechUtterance, onBuffer: @escaping (AVAudioBuffer) -> Void, onCancel: @escaping @Sendable () -> Void) {
+    func start(
+        _ utterance: AVSpeechUtterance,
+        onBuffer: @escaping (AVAudioBuffer) -> Void,
+        onFinish: @escaping @Sendable () -> Void,
+        onCancel: @escaping @Sendable () -> Void
+    ) {
         lock.withLock { self.onBuffer = onBuffer }
         switch script {
         case .finish(let count):
@@ -423,6 +500,9 @@ private final class ScriptedBufferWriter: SpeechBufferWriting, @unchecked Sendab
                 onBuffer(Self.tone)
             }
             onBuffer(Self.empty)
+            onFinish()
+        case .segments(let counts, let finishing):
+            sendSegments(counts, finishing: finishing, onFinish: onFinish)
         case .refuse:
             onCancel()
         case .nothing:
@@ -440,6 +520,36 @@ private final class ScriptedBufferWriter: SpeechBufferWriting, @unchecked Sendab
         callback?(Self.tone)
     }
 
+    /// Sends the first of `counts`' segments at once and the rest from
+    /// another thread, a tenth of a second apart, each segment its buffers
+    /// of tone and then an empty buffer; then calls `onFinish` if
+    /// `finishing`.
+    private func sendSegments(_ counts: [Int], finishing: Bool, onFinish: @escaping @Sendable () -> Void) {
+        guard let first = counts.first else {
+            if finishing { onFinish() }
+            return
+        }
+        sendSegment(of: first)
+        let later = Array(counts.dropFirst())
+        DispatchQueue.global().async { [self] in
+            for count in later {
+                Thread.sleep(forTimeInterval: 0.1)
+                sendSegment(of: count)
+            }
+            if finishing { onFinish() }
+        }
+    }
+
+    /// Sends `count` buffers of tone and then an empty one, through the
+    /// write's callback.
+    private func sendSegment(of count: Int) {
+        guard let callback = lock.withLock({ onBuffer }) else { return }
+        for _ in 0..<count {
+            callback(Self.tone)
+        }
+        callback(Self.empty)
+    }
+
     /// Sends one more buffer to the write, as a synthesizer can after the
     /// write has ended.
     func callBackLate() {
@@ -452,7 +562,7 @@ private final class ScriptedBufferWriter: SpeechBufferWriting, @unchecked Sendab
         (try? makeBuffer(frames: 441)) ?? AVAudioBuffer()
     }
 
-    /// The empty buffer that ends a write.
+    /// The empty buffer that ends one of the synthesizer's segments.
     private static var empty: AVAudioBuffer {
         (try? makeBuffer(frames: 0)) ?? AVAudioBuffer()
     }
