@@ -545185,8 +545185,20 @@
         }
       }
     },
+    "phoneReader.sleepTimerAdjustHint" : {
+      "comment" : "Last sentence of the hint of the iPhone reader's Sleep Timer button, an adjustable control: adjusting it up (VoiceOver's swipe up) starts the running timer again from its whole length, down cancels it. Names no gesture.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adjusting up restarts it at its full length, and down cancels it."
+          }
+        }
+      }
+    },
     "phoneReader.sleepTimerHint" : {
-      "comment" : "Hint of the iPhone reader's Sleep Timer button.",
+      "comment" : "First sentence of the hint of the iPhone reader's Sleep Timer button, shown while a sleep timer runs.",
       "extractionState" : "manual",
       "localizations" : {
         "ar" : {

@@ -295,22 +295,32 @@ final class PlaybackUITests: TextMouthUITestCase {
         try pressPauseIfPlaying(app)
     }
 
-    /// A long press on Play, which VoiceOver's one-finger triple tap makes,
-    /// opens the Sleep Timer sheet, and the book doesn't start: the press that
-    /// ends the hold is cancelled, not taken for Play (FR52).
-    func testALongPressOnPlayOpensTheSleepTimer() throws {
-        try requireSound("Holding Play, which would start the book if the hold were taken for a press")
+    /// While a timer runs, the Sleep Timer is its own control under Play
+    /// (FR55), after Play and before the grid, read as the time left; a
+    /// double tap on it (a tap here) opens the Sleep Timer sheet, with the
+    /// running timer's Reset Timer and Cancel Timer, and closing the sheet
+    /// leaves it on the reader. Play itself opens nothing any more: FR52's
+    /// long press and Actions item are gone, which `PhoneReaderControlsTests`
+    /// and `PhoneControlButtonTests` check, since XCUITest can neither list a
+    /// control's actions nor adjust a control that is not a slider.
+    func testTheSleepTimerUnderPlayOpensItsSheet() throws {
         let app = try launchIntoTheReader()
-        let play = app.buttons["Play"]
-        XCTAssertTrue(play.waitForExistence(timeout: Self.patience), "No Play:\n\(app.debugDescription)")
-        play.press(forDuration: 1.2)
+        try startSleepTimer("Set timer for 10 minutes", in: app)
         XCTAssertTrue(
-            app.navigationBars["Sleep Timer"].waitForExistence(timeout: Self.patience),
-            "Holding Play opened no Sleep Timer sheet:\n\(app.debugDescription)"
+            app.buttons["Pause"].waitForExistence(timeout: Self.patience),
+            "The book did not start playing after the timer was set:\n\(app.debugDescription)"
         )
-        XCTAssertFalse(app.buttons["Pause"].exists, "Holding Play started the book")
+        assertOrder(["Pause", "Sleep Timer", "Where Am I?"], in: try elementsInOrder(of: app))
+        XCTAssertTrue(value(of: app.buttons["Sleep Timer"]).hasSuffix(" remaining"), "The timer's value: \"\(value(of: app.buttons["Sleep Timer"]))\"")
+
+        tap(app.buttons["Sleep Timer"], until: app.navigationBars["Sleep Timer"], in: app, what: "the Sleep Timer under Play")
+        XCTAssertTrue(app.buttons["Reset Timer"].appears(within: Self.patience), "The sheet shows no running timer:\n\(app.debugDescription)")
+        XCTAssertTrue(app.buttons["Cancel Timer"].exists, "The sheet has no Cancel Timer:\n\(app.debugDescription)")
         app.buttons["Close"].tap()
-        XCTAssertTrue(app.buttons["Play"].waitForExistence(timeout: Self.patience), "No Play back on the reader")
+        XCTAssertTrue(
+            app.buttons["Sleep Timer"].waitForExistence(timeout: Self.patience),
+            "The Sleep Timer left the reader though its timer runs:\n\(app.debugDescription)"
+        )
         try pressPauseIfPlaying(app)
     }
 

@@ -156,18 +156,36 @@ final class PhoneReaderControlsTests: XCTestCase {
         XCTAssertEqual(play.value, "")
         XCTAssertEqual(play.hint, "Moves back or forward by sentence.")
         XCTAssertEqual(play.traits, [.button, .adjustable, .startsMediaSession])
-        XCTAssertEqual(play.actions, [.sleepTimer])
+        XCTAssertEqual(play.actions, [])
     }
 
-    /// Play offers the Sleep Timer on the Actions rotor in every state,
-    /// named as the sheet is (FR52): the sure way to it beside the triple tap.
-    func testPlayOffersTheSleepTimerAction() {
-        let changes: [(inout PhoneReaderState) -> Void] = [{ _ in }, { $0.isPlaying = true }, { $0.isLoading = true }]
+    /// Play has no actions in any state (FR55, replacing FR52's Sleep Timer
+    /// action): a swipe up or down moves and a double tap plays or pauses, so
+    /// VoiceOver never says "Actions available" on it.
+    func testPlayHasNoActions() {
+        let changes: [(inout PhoneReaderState) -> Void] = [
+            { _ in }, { $0.isPlaying = true }, { $0.isLoading = true }, { $0.sleepTimerStatus = "9:57 remaining" },
+        ]
         for change in changes {
-            XCTAssertEqual(describe(.play, in: state(change)).actions, [.sleepTimer])
+            XCTAssertEqual(describe(.play, in: state(change)).actions, [])
         }
-        XCTAssertEqual(PhoneControlAction.sleepTimer.name, "Sleep Timer")
-        XCTAssertEqual(PhoneControlAction.sleepTimer.name, describe(.sleepTimer, in: state()).label)
+    }
+
+    /// The four adjustable controls, and what a swipe up or down on each does:
+    /// Play moves, Navigation unit and Speed step, and the Sleep Timer under
+    /// Play restarts or cancels its timer (FR55). Each says it is adjustable,
+    /// and no other control does.
+    func testWhatAdjustingEachControlDoes() {
+        let adjustable: [PhoneReaderControl: PhoneControlAdjustment] = [
+            .play: .move, .navigationUnit: .unit, .speed: .speed, .sleepTimer: .sleepTimer,
+        ]
+        for control in PhoneReaderControl.allCases {
+            XCTAssertEqual(control.adjustment, adjustable[control], "\(control)")
+            XCTAssertEqual(
+                describe(control, in: state()).traits.contains(.adjustable), adjustable[control] != nil,
+                "\(control)'s adjustable trait and its adjustment disagree"
+            )
+        }
     }
 
     /// Playing: "Pause", with an empty value, and without the media trait,
@@ -365,14 +383,21 @@ final class PhoneReaderControlsTests: XCTestCase {
         }
     }
 
-    /// Sleep Timer says "Off", or the Mac's spoken status.
+    /// Sleep Timer says "Off", or the Mac's spoken status; it is an
+    /// adjustable button (FR55) whose hint says what a double tap and a swipe
+    /// do, with no actions.
     func testSleepTimerValue() {
         XCTAssertEqual(describe(.sleepTimer, in: state()).value, "Off")
         XCTAssertEqual(
             describe(.sleepTimer, in: state { $0.sleepTimerStatus = "stops at the end of this heading" }).value,
             "stops at the end of this heading"
         )
-        XCTAssertEqual(describe(.sleepTimer, in: state()).hint, "Opens the sleep timer.")
+        let timer = describe(.sleepTimer, in: state { $0.sleepTimerStatus = "9:57 remaining" })
+        XCTAssertEqual(timer.label, "Sleep Timer")
+        XCTAssertEqual(timer.value, "9:57 remaining")
+        XCTAssertEqual(timer.hint, "Opens the sleep timer. Adjusting up restarts it at its full length, and down cancels it.")
+        XCTAssertEqual(timer.traits, [.button, .adjustable])
+        XCTAssertEqual(timer.actions, [])
     }
 
     /// Voice for a text book, with the Mac's label as its hint; Audio
@@ -396,13 +421,14 @@ final class PhoneReaderControlsTests: XCTestCase {
         XCTAssertEqual(describe(.skipForward, in: state()).label, "Skip forward: Sentence")
     }
 
-    /// No control but Where Am I? and Play (its Sleep Timer, FR52) has
-    /// actions, so VoiceOver never says "Actions available" after one that has
-    /// none to offer; none but Play and Where Am I? start a media session.
-    func testOnlyWhereAmIAndPlayHaveActionsAndOnlyPlayAndWhereAmIStartMedia() {
+    /// No control but Where Am I? has actions (Play lost its Sleep Timer
+    /// action, FR55), so VoiceOver never says "Actions available" after one
+    /// that has none to offer; none but Play and Where Am I? start a media
+    /// session.
+    func testOnlyWhereAmIHasActionsAndOnlyPlayAndWhereAmIStartMedia() {
         for control in PhoneReaderControl.allCases {
             let description = describe(control, in: state())
-            if control != .whereAmI && control != .play {
+            if control != .whereAmI {
                 XCTAssertEqual(description.actions, [], "\(control)")
             }
             if control != .play && control != .whereAmI {

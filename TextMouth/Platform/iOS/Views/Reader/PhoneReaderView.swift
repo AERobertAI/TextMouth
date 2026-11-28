@@ -200,8 +200,7 @@ struct PhoneReaderView: View {
             rotors: rotors(for: item),
             menuItems: menuItems(for: item),
             refreshesEverySecond: item == .sleepTimer,
-            hiddenFromVoiceOver: item.isHiddenFromVoiceOver,
-            longPress: longPress(for: item)
+            hiddenFromVoiceOver: item.isHiddenFromVoiceOver
         )
         .frame(maxWidth: .infinity)
     }
@@ -280,33 +279,17 @@ struct PhoneReaderView: View {
         }
     }
 
-    /// What `item`'s custom actions do: Where Am I?'s two, the Mac's.
+    /// What `item`'s custom actions do: Where Am I?'s two, the Mac's. Play
+    /// has none (FR55), nor does any other control.
     private func customActions(for item: PhoneReaderControl) -> (@MainActor (PhoneControlAction) -> Void)? {
-        guard item == .whereAmI || item == .play else { return nil }
+        guard item == .whereAmI else { return nil }
         let model = model
         return { action in
             switch action {
             case .whereAmIFullSummary: model.whereAmIFullSummary()
             case .copyReadingPosition: model.copyReadingPosition()
-            case .sleepTimer: openSleepTimer(from: item)
             }
         }
-    }
-
-    /// Opens the Sleep Timer sheet from `opener` (FR52: Play's action and its
-    /// long press, which a VoiceOver one-finger triple tap makes), focus
-    /// coming back to `opener` as it closes.
-    private func openSleepTimer(from opener: PhoneReaderControl) {
-        sheetOpener = opener
-        sheet = PhoneReaderControl.sleepTimer.sheet
-    }
-
-    /// What a long press on `item` does: Play's opens the Sleep Timer (FR52).
-    /// VoiceOver's one-finger triple tap is a long press on the item ("Touch
-    /// and hold (long press) the item", Apple's VoiceOver gestures list).
-    private func longPress(for item: PhoneReaderControl) -> (@MainActor () -> Void)? {
-        guard item == .play else { return nil }
-        return { openSleepTimer(from: .play) }
     }
 
     /// `item`'s own rotors: Play's, while their flag is on; none otherwise.
@@ -316,19 +299,23 @@ struct PhoneReaderView: View {
         return { element in Self.playRotors(on: element, model: model) }
     }
 
-    /// What adjusting `item` up or down does: Play moves by the unit,
-    /// Navigation unit steps through the units, Speed steps the speed.
+    /// What adjusting `item` up or down does, by `PhoneReaderControl
+    /// .adjustment`: Play moves by the unit, Navigation unit steps through the
+    /// units, Speed steps the speed, and the Sleep Timer under Play restarts
+    /// the timer (up) or cancels it (down, FR55).
     private func adjustment(for item: PhoneReaderControl, up: Bool) -> (@MainActor () -> Void)? {
         let model = model
-        switch item {
-        case .play:
+        switch item.adjustment {
+        case .move?:
             // Up is forward, as Voice Dream's and Apple's "increase" have it.
             return { model.moveOnScreen(forward: up, source: .adjustingPlay) }
-        case .navigationUnit:
+        case .unit?:
             return { model.adjustUnit(up: up) }
-        case .speed:
+        case .speed?:
             return { model.adjustSpeed(up: up) }
-        default:
+        case .sleepTimer?:
+            return up ? { model.restartSleepTimer() } : { model.cancelSleepTimer() }
+        case nil:
             return nil
         }
     }

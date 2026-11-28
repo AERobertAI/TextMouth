@@ -169,10 +169,15 @@ enum PhoneReaderWording {
         InterfaceText.line("phoneReader.bookActionsHint", "Sleep timer, voice, book information, and export.")
     }
 
-    /// Sleep Timer's hint.
+    /// Sleep Timer's hint, under Play while a timer runs (FR55): what a
+    /// double tap does, then what adjusting it does.
     static var sleepTimerHint: String {
-        // Translators: Hint of the iPhone reader's Sleep Timer button.
-        InterfaceText.line("phoneReader.sleepTimerHint", "Opens the sleep timer.")
+        SentenceWording.joined([
+            // Translators: First sentence of the hint of the iPhone reader's Sleep Timer button, shown while a sleep timer runs.
+            InterfaceText.line("phoneReader.sleepTimerHint", "Opens the sleep timer."),
+            // Translators: Last sentence of the hint of the iPhone reader's Sleep Timer button, an adjustable control: adjusting it up (VoiceOver's swipe up) starts the running timer again from its whole length, down cancels it. Names no gesture.
+            InterfaceText.line("phoneReader.sleepTimerAdjustHint", "Adjusting up restarts it at its full length, and down cancels it."),
+        ])
     }
 
     /// Sleep Timer's value while no timer runs: the sleep timer's own

@@ -104,7 +104,9 @@ enum PhoneReaderControls {
                 label: PhoneReaderVocabulary.sleepTimer,
                 value: state.sleepTimerStatus.isEmpty ? PhoneReaderWording.sleepTimerOff : state.sleepTimerStatus,
                 hint: PhoneReaderWording.sleepTimerHint,
-                traits: .button
+                // Adjustable: it is on the screen only while a timer runs
+                // (FR55), when up restarts the timer and down cancels it.
+                traits: [.button, .adjustable]
             )
         case .voice:
             return voice(in: state)
@@ -156,9 +158,9 @@ enum PhoneReaderControls {
             label: PhoneAppWording.playButton(isPlaying: state.isPlaying),
             value: value,
             hint: PhoneReaderWording.playHint(movingBy: state.unit),
-            traits: traits,
-            // The Sleep Timer from Play (FR52), as its long press opens it.
-            actions: [.sleepTimer]
+            // No actions (FR55): a swipe up or down moves, a double tap plays
+            // or pauses, and VoiceOver says nothing of an Actions rotor here.
+            traits: traits
         )
     }
 

@@ -15,6 +15,8 @@ final class PhoneReaderModelTests: XCTestCase {
     private var engagements = 0
     /// How many times the model asked for Play or Pause.
     private var playPresses = 0
+    /// How many times the model asked the session to play.
+    private var plays = 0
 
     // MARK: - Moving While Paused
 
@@ -132,6 +134,55 @@ final class PhoneReaderModelTests: XCTestCase {
             "\(Int(reader.speechService.wordsPerMinute)) words per minute"
         )
         XCTAssertEqual(posted, [])
+    }
+
+    // MARK: - The Sleep Timer Under Play (FR55)
+
+    /// Adjusting the Sleep Timer up starts the running timer again at its
+    /// full length and asks the session to play, as the Mac's Reset Timer
+    /// does; nothing is announced, since VoiceOver reads the new value.
+    func testAdjustingTheSleepTimerUpRestartsItAtItsFullLength() {
+        let (model, reader) = makeModel()
+        reader.startSleepTimer(duration: .minutes(10))
+        defer { reader.sleepTimerService.stop() }
+        reader.sleepTimerService.remainingSeconds = 30
+
+        model.restartSleepTimer()
+
+        XCTAssertTrue(reader.sleepTimerService.isActive)
+        XCTAssertEqual(reader.sleepTimerService.duration, .minutes(10))
+        XCTAssertEqual(reader.sleepTimerService.remainingSeconds, 600)
+        XCTAssertEqual(plays, 1, "The book plays, as Reset Timer plays it")
+        XCTAssertEqual(posted, [])
+    }
+
+    /// Adjusting the Sleep Timer down cancels the timer, and the Mac's
+    /// "Sleep timer cancelled." is said once, at low priority, after the
+    /// moment a closing sheet waits, so it follows focus going to Play.
+    func testAdjustingTheSleepTimerDownCancelsItAndSaysSoOnce() {
+        let (model, reader) = makeModel()
+        reader.startSleepTimer(duration: .endOfBook)
+        defer { reader.sleepTimerService.stop() }
+
+        model.cancelSleepTimer()
+
+        XCTAssertFalse(reader.sleepTimerService.isActive)
+        XCTAssertEqual(posted, [VoiceOverAnnouncement(message: "Sleep timer cancelled.", priority: .low)])
+        XCTAssertEqual(delays, [VoiceOverAnnouncer.afterSheetDelay])
+        XCTAssertEqual(plays, 0)
+    }
+
+    /// With no timer running, adjusting the Sleep Timer either way does
+    /// nothing and says nothing: no timer is started, and the book stays.
+    func testAdjustingTheSleepTimerWithNoTimerDoesNothing() {
+        let (model, reader) = makeModel()
+
+        model.restartSleepTimer()
+        model.cancelSleepTimer()
+
+        XCTAssertFalse(reader.sleepTimerService.isActive)
+        XCTAssertEqual(posted, [])
+        XCTAssertEqual(plays, 0)
     }
 
     // MARK: - Answers
@@ -318,6 +369,7 @@ final class PhoneReaderModelTests: XCTestCase {
             currentReader: { reader },
             readers: Just(reader).map(Optional.some).eraseToAnyPublisher(),
             playOrPause: { [weak self] in self?.playPresses += 1 },
+            play: { [weak self] in self?.plays += 1 },
             preferences: makeSandboxedPreferences("PhoneReaderModel"),
             post: { [weak self] in self?.posted.append($0) },
             schedule: { [weak self] delay, work in

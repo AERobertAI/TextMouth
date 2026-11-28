@@ -406,6 +406,52 @@ final class PhoneReaderModel {
         invalidate()
     }
 
+    // MARK: - The Sleep Timer Under Play
+
+    /// Adjusting the Sleep Timer under Play up (FR55): the running timer
+    /// starts again at its full length and the book plays, as the Mac's Reset
+    /// Timer does (`SleepTimerView`, "Restarts the timer at its full length
+    /// and plays the book."). Nothing is announced: VoiceOver reads the
+    /// control's new value, the time left, after the adjustment. Does nothing
+    /// with no timer running, or while the book loads.
+    func restartSleepTimer() {
+        guard let reader, !reader.isLoading, reader.sleepTimerService.isActive else { return }
+        _ = collect {
+            reader.restartSleepTimer(startPlaybackIfNeeded: false)
+        }
+        playUnlessUnderWay(reader)
+        invalidate()
+    }
+
+    /// Adjusting the Sleep Timer under Play down (FR55): the timer stops, as
+    /// the Mac's Cancel Timer does, and the Mac's "Sleep timer cancelled." is
+    /// said once. The control leaves the screen with the timer, and focus goes
+    /// to Play (`PhoneSleepTimerWatcher`) 0.35 seconds later; so the words
+    /// wait for the Mac's moment after a sheet closes, longer than that, and
+    /// go at the low priority that queues behind VoiceOver's reading of Play
+    /// rather than cut it off.
+    func cancelSleepTimer() {
+        guard let reader, reader.sleepTimerService.isActive else { return }
+        let said = collect {
+            reader.cancelSleepTimer()
+        }
+        invalidate()
+        // One announcement, the Mac's words first, so none cuts off another.
+        guard let words = PhoneAnnouncer.joined([PhoneSleepTimerVocabulary.cancelled] + said.map(\.message)) else { return }
+        let post = post
+        schedule(VoiceOverAnnouncer.afterSheetDelay) {
+            post(VoiceOverAnnouncement(message: words, priority: .low))
+        }
+    }
+
+    /// Plays `reader`'s book unless it plays already or waits to, as the
+    /// sleep timer's own Play does (`ReaderViewModel.playUnlessUnderWay()`),
+    /// through the session's Play, which a test counts.
+    private func playUnlessUnderWay(_ reader: ReaderViewModel) {
+        guard !reader.isPlaybackUnderWay else { return }
+        play()
+    }
+
     // MARK: - Answers to What the Listener Asked
 
     /// Speaks the Mac's brief Where Am I? summary in the book's voice, or
