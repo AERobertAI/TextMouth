@@ -54,6 +54,8 @@ MISSING_STEP = 2
 HEARTBEAT_SECONDS = 60
 # The kinds of device an app may be installed on.
 INSTALLABLE_DEVICE_TYPES = ("iPhone", "iPad")
+# The hardwareProperties.reality of a real device (a simulator's is "simulated").
+PHYSICAL_REALITY = "physical"
 
 # A team Xcode knows: its identifier, its name, and whether it is a free personal team (whose profile lasts a week).
 Team = namedtuple("Team", "team_id name free")
@@ -79,6 +81,15 @@ ADD_APPLE_ID_STEPS = """Xcode has no team yet. Add your Apple ID to Xcode once:
   2. Choose the plus button, Apple ID, and sign in. A free Apple ID is enough.
   3. Run this command again.
 Or give the team's 10-character identifier yourself with TEAM=<identifier> (make) or --team (the script)."""
+
+# Said when Xcode's preferences hold an Apple ID but no team: the sign-in was begun and not finished.
+FINISH_SIGN_IN_STEPS = """Xcode has your Apple ID, but its sign-in is not finished, so it has no team.
+  1. Open Xcode, then choose Xcode > Settings > Accounts.
+  2. Sign in to your Apple ID again there.
+  3. Run this command again.
+Or give the team's 10-character identifier yourself with TEAM=<identifier> (make) or --team (the script)."""
+# The preferences key under which Xcode lists the Apple IDs it has been given.
+APPLE_ID_LISTS_KEY = "DVTDeveloperAccountManagerAppleIDLists"
 
 
 def read_xcode_preferences(run=subprocess.run):
@@ -116,6 +127,21 @@ def teams_in_preferences(preferences):
     return teams, bool(teams) or not any(values)
 
 
+def has_apple_id(preferences):
+    """True when Xcode's preferences hold at least one account identifier under APPLE_ID_LISTS_KEY. The form of the value
+    is not relied on: any non-empty text found anywhere inside it (in a list, or a dict's keys or values) counts. Only
+    the fact is used; the identifier itself is never shown."""
+    def holds_text(value):
+        if isinstance(value, str):
+            return bool(value.strip())
+        if isinstance(value, dict):
+            return any(holds_text(key) or holds_text(item) for key, item in value.items())
+        if isinstance(value, (list, tuple)):
+            return any(holds_text(item) for item in value)
+        return False
+    return isinstance(preferences, dict) and holds_text(preferences.get(APPLE_ID_LISTS_KEY))
+
+
 def choose_team(flag, environ, read_preferences):
     """The Team to sign for. The flag wins, then the environment's TEXTMOUTH_TEAM (each gives only an identifier, so
     its name is not known), then the one team in Xcode's preferences, which `read_preferences()` gives. Raises
@@ -123,7 +149,8 @@ def choose_team(flag, environ, read_preferences):
     given = flag or environ.get(TEAM_ENVIRONMENT)
     if given:
         return Team(given, "", False)
-    teams, recognized = teams_in_preferences(read_preferences())
+    preferences = read_preferences()
+    teams, recognized = teams_in_preferences(preferences)
     if len(teams) == 1:
         return teams[0]
     if len(teams) > 1:
@@ -135,7 +162,7 @@ def choose_team(flag, environ, read_preferences):
         raise MissingStep("Xcode's preferences name teams in a form this script does not know, so it cannot choose one.\n"
                           "Give the team's 10-character identifier with TEAM=<identifier> (make) or --team (the script). "
                           "Xcode shows it under Signing & Capabilities, in the TextMouthiOS target.")
-    raise MissingStep(ADD_APPLE_ID_STEPS)
+    raise MissingStep(FINISH_SIGN_IN_STEPS if has_apple_id(preferences) else ADD_APPLE_ID_STEPS)
 
 
 def describe_team(team):
@@ -182,6 +209,10 @@ def devices_in_listing(listing):
         name = properties.get("name") if isinstance(properties.get("name"), str) else identifier
         if hardware.get("deviceType") not in INSTALLABLE_DEVICE_TYPES:
             continue  # a watch, a TV, or a Mac: not somewhere this app installs
+        # Xcode 27 lists simulators too, with reality "simulated": never a phone to install on. An entry with no
+        # reality (an older devicectl) is taken as physical.
+        if hardware.get("reality", PHYSICAL_REALITY) != PHYSICAL_REALITY:
+            continue
         if connection.get("pairingState") != "paired":
             others.append((name, "not paired: connect it by USB, unlock it, and tap Trust"))
         elif connection.get("tunnelState") == "unavailable":
@@ -192,11 +223,18 @@ def devices_in_listing(listing):
     return usable, others
 
 
+def comparable(text):
+    """`text` as match_device compares it: with the curly apostrophe (U+2019, which iOS puts in a phone's name) made
+    straight, and without regard to case."""
+    return text.replace("\u2019", "'").casefold()
+
+
 def match_device(selector, usable):
-    """The devices of `usable` that `selector` names: by name (any case), identifier, or UDID."""
-    wanted = selector.casefold()
+    """The devices of `usable` that `selector` names: by name, identifier, or UDID, in any case, and with a curly or a
+    straight apostrophe alike."""
+    wanted = comparable(selector)
     return [device for device in usable
-            if wanted in (device.name.casefold(), device.identifier.casefold(), device.udid.casefold())]
+            if wanted in (comparable(device.name), comparable(device.identifier), comparable(device.udid))]
 
 
 def ready_names(devices):

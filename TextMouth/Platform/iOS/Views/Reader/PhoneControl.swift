@@ -36,6 +36,19 @@ struct PhoneControl: UIViewRepresentable {
     /// The control's own rotors, made when VoiceOver asks, for the element
     /// they're set on; nil for none.
     var rotors: (@MainActor (_ element: UIView) -> [UIAccessibilityCustomRotor])?
+    /// The items of the menu the control opens, made each time it opens, so
+    /// their words are the moment's; nil for a control with no menu (FR51).
+    var menuItems: (@MainActor () -> [UIMenuElement])?
+    /// Whether the visible title is redrawn each second, for a value that
+    /// counts down (the running sleep timer's time left, FR52). For sight
+    /// alone: VoiceOver asks for the value when it reads.
+    var refreshesEverySecond = false
+    /// Whether VoiceOver passes over the control while it runs (FR49); it
+    /// stays on screen and in the tree without VoiceOver.
+    var hiddenFromVoiceOver = false
+    /// What a long press does, a touch and hold or VoiceOver's one-finger
+    /// triple tap (FR52); nil for nothing.
+    var longPress: (@MainActor () -> Void)?
 
     func makeUIView(context: Context) -> PhoneControlButton {
         let button = PhoneControlButton()
@@ -57,6 +70,10 @@ struct PhoneControl: UIViewRepresentable {
         button.perform = perform
         button.showsValue = showsValue
         button.rotors = rotors
+        button.setMenuItems(menuItems)
+        button.refreshesEverySecond = refreshesEverySecond
+        button.hiddenFromVoiceOver = hiddenFromVoiceOver
+        button.setLongPress(longPress)
         if let focusKind {
             PhoneFocusRegistry.shared.register(button, as: focusKind)
         }
@@ -93,6 +110,28 @@ final class PhoneControlButton: UIButton {
     var showsValue = false
     /// The control's own rotors, made when VoiceOver asks.
     var rotors: (@MainActor (_ element: UIView) -> [UIAccessibilityCustomRotor])?
+    /// The items of the control's menu, made as it opens; nil for no menu.
+    private var menuItems: (@MainActor () -> [UIMenuElement])?
+    /// Whether the visible title is redrawn each second while on screen.
+    var refreshesEverySecond = false {
+        didSet {
+            if refreshesEverySecond != oldValue { updateSecondTimer() }
+        }
+    }
+    /// The one-second timer that redraws the title, while one is wanted.
+    private var secondTimer: Timer?
+    /// Whether VoiceOver passes over the button while it runs (FR49).
+    var hiddenFromVoiceOver = false {
+        didSet {
+            if hiddenFromVoiceOver != oldValue { followVoiceOver() }
+        }
+    }
+    /// The observer of VoiceOver starting and stopping, while hidden from it.
+    private var voiceOverObserver: NSObjectProtocol?
+    /// What a long press does; nil for nothing.
+    private var longPressAction: (@MainActor () -> Void)?
+    /// The long-press recognizer, made with the first long-press action.
+    private var longPressRecognizer: UILongPressGestureRecognizer?
 
     /// A plain, large button whose title wraps and follows the text size.
     init() {
@@ -117,6 +156,86 @@ final class PhoneControlButton: UIButton {
     /// Not made from a storyboard: the reader builds its controls in code.
     required init?(coder: NSCoder) {
         return nil
+    }
+
+    /// Gives the button a menu that opens at a touch or VoiceOver's double
+    /// tap, its items asked for each time it opens (an uncached deferred
+    /// element), or takes the menu away for nil. The menu is made once; only
+    /// the items' maker is replaced on later calls.
+    func setMenuItems(_ items: (@MainActor () -> [UIMenuElement])?) {
+        menuItems = items
+        guard items != nil else {
+            menu = nil
+            showsMenuAsPrimaryAction = false
+            return
+        }
+        guard menu == nil else { return }
+        let deferred = UIDeferredMenuElement.uncached { [weak self] completion in
+            MainActor.assumeIsolated {
+                completion(self?.menuItems?() ?? [])
+            }
+        }
+        menu = UIMenu(children: [deferred])
+        showsMenuAsPrimaryAction = true
+    }
+
+    /// Hides the button and its title from VoiceOver while VoiceOver runs and
+    /// the button asks to be passed over, and shows it again otherwise, as
+    /// VoiceOver starts and stops. Without VoiceOver the button stays in the
+    /// accessibility tree, for Voice Control, Switch Control, and the
+    /// interface tests.
+    private func followVoiceOver() {
+        accessibilityElementsHidden = hiddenFromVoiceOver && UIAccessibility.isVoiceOverRunning
+        if hiddenFromVoiceOver, voiceOverObserver == nil {
+            voiceOverObserver = NotificationCenter.default.addObserver(
+                forName: UIAccessibility.voiceOverStatusDidChangeNotification, object: nil, queue: .main
+            ) { [weak self] _ in
+                MainActor.assumeIsolated { self?.followVoiceOver() }
+            }
+        } else if !hiddenFromVoiceOver, let observer = voiceOverObserver {
+            NotificationCenter.default.removeObserver(observer)
+            voiceOverObserver = nil
+        }
+    }
+
+    /// Gives the button a long press that does `action`, or none for nil. A
+    /// recognized long press cancels the touch, so the button's own press
+    /// (Play's play or pause) doesn't follow it as the finger lifts.
+    func setLongPress(_ action: (@MainActor () -> Void)?) {
+        longPressAction = action
+        if action != nil, longPressRecognizer == nil {
+            let recognizer = UILongPressGestureRecognizer(target: self, action: #selector(longPressed(_:)))
+            recognizer.cancelsTouchesInView = true
+            addGestureRecognizer(recognizer)
+            longPressRecognizer = recognizer
+        }
+        longPressRecognizer?.isEnabled = action != nil
+    }
+
+    /// The long press was recognized: its action, once, as it begins.
+    @objc private func longPressed(_ recognizer: UILongPressGestureRecognizer) {
+        guard recognizer.state == .began else { return }
+        longPressAction?()
+    }
+
+    /// Starts the one-second redraw while it is wanted and the button is on
+    /// screen, and stops it otherwise.
+    private func updateSecondTimer() {
+        let wanted = refreshesEverySecond && window != nil
+        if wanted, secondTimer == nil {
+            secondTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
+                MainActor.assumeIsolated { self?.refreshTitle() }
+            }
+        } else if !wanted {
+            secondTimer?.invalidate()
+            secondTimer = nil
+        }
+    }
+
+    /// The redraw follows the button on and off the screen.
+    override func didMoveToWindow() {
+        super.didMoveToWindow()
+        updateSecondTimer()
     }
 
     /// A touch's press, without VoiceOver: the control's action.
@@ -190,6 +309,8 @@ final class PhoneControlButton: UIButton {
     /// reads next are the new ones. Apple's documentation: return true when
     /// the element handled the activation.
     override func accessibilityActivate() -> Bool {
+        // A menu button opens its menu as UIKit's own button does.
+        if menu != nil { return super.accessibilityActivate() }
         guard let activate else { return false }
         activate()
         refreshTitle()

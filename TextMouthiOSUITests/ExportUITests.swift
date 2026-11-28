@@ -94,7 +94,7 @@ final class ExportUITests: TextMouthUITestCase {
         try readTheSpokenAudioRows(in: app)
 
         app.buttons["Cancel"].tap()
-        XCTAssertTrue(app.buttons["Export this book"].appears(within: Self.patience), "The reader's Export control is not back:\n\(app.debugDescription)")
+        XCTAssertTrue(app.buttons["Book Actions"].appears(within: Self.patience), "The reader's Book Actions, which holds Export, is not back:\n\(app.debugDescription)")
         XCTAssertFalse(app.navigationBars[Self.sheetTitle].exists)
     }
 

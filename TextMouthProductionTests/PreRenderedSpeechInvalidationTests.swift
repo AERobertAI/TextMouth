@@ -1103,6 +1103,251 @@ final class PreRenderedSpeechInvalidationTests: XCTestCase {
         }
     }
 
+    // MARK: - A voice chosen while rendered audio is heard (B29)
+
+    // On the iPhone a Play starts on rendered audio, so a voice chosen in
+    // Settings reached an open reader only once the text had ended: the
+    // engine played the old voice's audio. Speech now leaves that audio for
+    // direct speech in the new voice, from the word the engine had reached.
+
+    /// Speaks `spokenText` and moves it onto silent rendered audio of the
+    /// current voice at `offset`, as a Play does on the iPhone, so the engine
+    /// holds the speech. The text's offsets are spread evenly over the
+    /// audio's five seconds, as a render's map spreads them, so the engine
+    /// reports `offset` until a few milliseconds of it have played. Returns
+    /// whether the engine took the speech.
+    private func moveOntoRenderedAudio(_ speech: SpeechService, at offset: Int = 6) -> Bool {
+        speech.speak(Self.spokenText)
+        let engine = speech.audioEngine
+        engine._installRenderedAudioForTesting(signature: Self.signature(of: speech), lasting: 5)
+        let speechFrames: AVAudioFrameCount = 5 * 22_050
+        engine._configureFrameMapForTesting(
+            [(charOffset: 0, frame: 0), (charOffset: Self.spokenText.utf16.count, frame: AVAudioFramePosition(speechFrames))],
+            totalFrames: speechFrames
+        )
+        speech.seek(toCharOffset: offset)
+        return !speech.usingDirectMode
+    }
+
+    /// Where "circled" begins in `spokenText`, and a place inside it.
+    private static let circledStart = 6
+    private static let insideCircled = 9
+    /// Where "harbour" begins in `spokenText`, and a place inside it.
+    private static let harbourStart = 18
+    private static let insideHarbour = 20
+
+    /// A voice chosen while rendered audio plays at a place inside a word
+    /// speaks that word whole in the new voice: direct speech starts at the
+    /// word's start, never at its second half ("cled").
+    func testChoosingAVoiceInsideAWordWhilePlayingSpeaksTheWordWhole() throws {
+        try withSpeechService { speech in
+            let onEngine = moveOntoRenderedAudio(speech, at: Self.insideCircled)
+            speech.currentVoice = try anotherVoice(than: speech.currentVoice)
+            speech.settleVoiceChange()
+
+            let continuedDirectly = speech.usingDirectMode
+            let place = speech.currentCharOffset()
+            speech.stop()
+
+            XCTAssertTrue(onEngine)
+            XCTAssertTrue(continuedDirectly)
+            XCTAssertEqual(place, Self.circledStart)
+        }
+    }
+
+    /// A voice chosen while a sleep fade holds the engine's mixer down waits
+    /// for the fade, which direct speech would not follow, and reaches
+    /// speech when the fade is cancelled.
+    func testAVoiceChosenDuringASleepFadeReachesSpeechWhenTheFadeIsCancelled() throws {
+        try withSpeechService { speech in
+            let onEngine = moveOntoRenderedAudio(speech)
+            speech.setSleepTimerFadeVolume(0.5, duration: 30)
+            speech.currentVoice = try anotherVoice(than: speech.currentVoice)
+            speech.settleVoiceChange()
+            let waitedForTheFade = !speech.usingDirectMode
+
+            speech.cancelSleepTimerFade()
+            let continuedDirectly = speech.usingDirectMode
+            let oldAudioLeft = speech.audioEngine.hasRenderedAudio
+            let volume = speech.audioEngine.intendedVolume
+            speech.stop()
+
+            XCTAssertTrue(onEngine)
+            XCTAssertTrue(waitedForTheFade)
+            XCTAssertTrue(continuedDirectly)
+            XCTAssertFalse(oldAudioLeft)
+            XCTAssertEqual(volume, 1)
+        }
+    }
+
+    /// A voice chosen while the engine stands stopped with speech still
+    /// playing, as on the iPhone between a change of hardware format and
+    /// the engine playing on, speaks on from the place last heard, the one
+    /// the position poll published, not from where the engine's last play
+    /// began.
+    func testChoosingAVoiceWhileTheEngineStandsStoppedSpeaksOnFromThePlaceHeard() throws {
+        try withSpeechService { speech in
+            let onEngine = moveOntoRenderedAudio(speech, at: Self.insideCircled)
+            speech.publishRenderedPosition(Self.insideHarbour, generation: speech.positionGeneration)
+            speech.audioEngine.stop()
+            speech.currentVoice = try anotherVoice(than: speech.currentVoice)
+            speech.settleVoiceChange()
+
+            let continuedDirectly = speech.usingDirectMode
+            let place = speech.currentCharOffset()
+            speech.stop()
+
+            XCTAssertTrue(onEngine)
+            XCTAssertTrue(continuedDirectly)
+            XCTAssertEqual(place, Self.harbourStart)
+        }
+    }
+
+    /// The engine's estimate of a place, taken to the start of the word it
+    /// stands for: inside a word, that word's start; on the space before a
+    /// word, as frames rounded down leave it, the word after; at the ends,
+    /// the ends.
+    func testAnEstimatedPlaceIsTakenToTheStartOfItsWord() {
+        let text = Self.spokenText
+        XCTAssertEqual(SpeechService.wordStart(around: Self.insideCircled, in: text), Self.circledStart)
+        XCTAssertEqual(SpeechService.wordStart(around: Self.circledStart, in: text), Self.circledStart)
+        XCTAssertEqual(SpeechService.wordStart(around: Self.circledStart - 1, in: text), Self.circledStart)
+        XCTAssertEqual(SpeechService.wordStart(around: 0, in: text), 0)
+        XCTAssertEqual(SpeechService.wordStart(around: -3, in: text), 0)
+        XCTAssertEqual(SpeechService.wordStart(around: text.utf16.count, in: text), text.utf16.count)
+        XCTAssertEqual(SpeechService.wordStart(around: 4, in: "wall   "), 7)
+        XCTAssertEqual(SpeechService.wordStart(around: 2, in: ""), 0)
+    }
+
+    /// The same while paused: Play speaks the word whole, from its start.
+    func testChoosingAVoiceInsideAWordWhilePausedResumesAtTheWordsStart() throws {
+        try withSpeechService { speech in
+            let onEngine = moveOntoRenderedAudio(speech, at: Self.insideCircled)
+            speech.pause()
+            speech.currentVoice = try anotherVoice(than: speech.currentVoice)
+            speech.settleVoiceChange()
+
+            let place = speech.currentCharOffset()
+            speech.stop()
+
+            XCTAssertTrue(onEngine)
+            XCTAssertEqual(place, Self.circledStart)
+        }
+    }
+
+    /// A voice chosen while rendered audio plays carries speech on directly,
+    /// in the new voice, with no rendered audio of the old one left.
+    func testChoosingAVoiceWhilePlayingRenderedAudioContinuesDirectly() throws {
+        try withSpeechService { speech in
+            let onEngine = moveOntoRenderedAudio(speech)
+            speech.currentVoice = try anotherVoice(than: speech.currentVoice)
+            speech.settleVoiceChange()
+
+            let continuedDirectly = speech.usingDirectMode
+            let oldAudioLeft = speech.audioEngine.hasRenderedAudio
+            let stillSpeaking = speech.isSpeaking && !speech.isPaused
+            speech.stop()
+
+            XCTAssertTrue(onEngine)
+            XCTAssertTrue(continuedDirectly)
+            XCTAssertFalse(oldAudioLeft)
+            XCTAssertTrue(stillSpeaking)
+        }
+    }
+
+    /// A voice chosen while rendered audio is paused keeps the pause and the
+    /// place, the word paused at ("circled", where the engine was moved to,
+    /// though its estimate may stand on the space before it), and Play then
+    /// speaks directly in the new voice instead of resuming the old voice's
+    /// audio.
+    func testChoosingAVoiceWhilePausedOnRenderedAudioResumesDirectly() throws {
+        try withSpeechService { speech in
+            let onEngine = moveOntoRenderedAudio(speech)
+            speech.pause()
+            speech.currentVoice = try anotherVoice(than: speech.currentVoice)
+            speech.settleVoiceChange()
+
+            let stayedPaused = speech.isPaused
+            let placeAfter = speech.currentCharOffset()
+            let resumed = speech.resume()
+            let resumedDirectly = speech.usingDirectMode
+            let oldAudioLeft = speech.audioEngine.hasRenderedAudio
+            speech.stop()
+
+            XCTAssertTrue(onEngine)
+            XCTAssertTrue(stayedPaused)
+            XCTAssertEqual(placeAfter, Self.circledStart)
+            XCTAssertTrue(resumed)
+            XCTAssertTrue(resumedDirectly)
+            XCTAssertFalse(oldAudioLeft)
+        }
+    }
+
+    /// The same voice assigned again, as the reader does each time any
+    /// setting changes, leaves rendered audio playing.
+    func testAssigningTheSameVoiceKeepsTheRenderedAudioPlaying() throws {
+        try withSpeechService { speech in
+            let onEngine = moveOntoRenderedAudio(speech)
+            let sameVoice = try XCTUnwrap(speech.currentVoice.flatMap { AVSpeechSynthesisVoice(identifier: $0.identifier) })
+            speech.currentVoice = sameVoice
+            speech.settleVoiceChange()
+
+            let stillOnEngine = !speech.usingDirectMode && speech.audioEngine.hasRenderedAudio
+            speech.stop()
+
+            XCTAssertTrue(onEngine)
+            XCTAssertTrue(stillOnEngine)
+        }
+    }
+
+    /// A Play in the same turn of the main queue as the choice, before the
+    /// choice is settled, speaks directly in the new voice instead of
+    /// resuming the old voice's paused audio.
+    func testPlayInTheTurnOfTheChoiceResumesDirectly() throws {
+        try withSpeechService { speech in
+            let onEngine = moveOntoRenderedAudio(speech)
+            speech.pause()
+            speech.currentVoice = try anotherVoice(than: speech.currentVoice)
+
+            let resumed = speech.resume()
+            let resumedDirectly = speech.usingDirectMode
+            let oldAudioLeft = speech.audioEngine.hasRenderedAudio
+            speech.stop()
+
+            XCTAssertTrue(onEngine)
+            XCTAssertTrue(resumed)
+            XCTAssertTrue(resumedDirectly)
+            XCTAssertFalse(oldAudioLeft)
+        }
+    }
+
+    /// A change in Settings, a speed step say, to a reader whose book has a
+    /// voice of its own: `reloadSettings()` gives speech the global voice,
+    /// and the reader gives it the book's again in the same turn
+    /// (`applyLocalSpeechOverrides()`). The audio rendered in the book's
+    /// voice plays on; it was once left for direct speech in the global
+    /// voice, which spoke the next thousand characters in it.
+    func testTheGlobalVoiceGivenAndTakenBackInOneTurnKeepsTheRenderedAudioPlaying() throws {
+        let preferences = makeSandboxedPreferences("pre-rendered-speech.book-voice")
+        let speech = SpeechService(userDefaults: preferences)
+        defer { speech.stop() }
+        let booksVoice = try XCTUnwrap(speech.currentVoice)
+        preferences.set(try anotherVoice(than: booksVoice).identifier, forKey: "selectedVoiceID")
+        let onEngine = moveOntoRenderedAudio(speech)
+
+        speech.reloadSettings()
+        let tookTheGlobalVoice = speech.currentVoice?.identifier != booksVoice.identifier
+        speech.currentVoice = booksVoice
+        speech.settleVoiceChange()
+
+        let stillOnEngine = !speech.usingDirectMode && speech.audioEngine.hasRenderedAudio
+        speech.stop()
+
+        XCTAssertTrue(onEngine)
+        XCTAssertTrue(tookTheGlobalVoice, "reloadSettings() gives speech the global voice first")
+        XCTAssertTrue(stillOnEngine)
+    }
+
     // MARK: - Fixtures
 
     /// When a setting changes relative to the look-ahead render.

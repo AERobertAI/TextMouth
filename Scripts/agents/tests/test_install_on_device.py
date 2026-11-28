@@ -33,12 +33,12 @@ TEAM_B = {"teamID": "BBBBBBBBBB", "teamName": "Test Company", "isFreeProvisionin
 
 
 def device_entry(name="Test Phone", identifier="11111111-AAAA", udid="00001111-AAAA", pairing="paired",
-                 tunnel="disconnected", kind="iPhone"):
+                 tunnel="disconnected", kind="iPhone", reality="physical"):
     """One device of devicectl's JSON, with the fields the tool reads, made up."""
     return {"identifier": identifier,
             "connectionProperties": {"pairingState": pairing, "tunnelState": tunnel, "transportType": "wired"},
             "deviceProperties": {"name": name},
-            "hardwareProperties": {"deviceType": kind, "udid": udid}}
+            "hardwareProperties": {"deviceType": kind, "udid": udid, "reality": reality}}
 
 
 def listing(*entries):
@@ -83,6 +83,30 @@ class TeamTests(unittest.TestCase):
             with self.subTest(preferences=preferences), self.assertRaises(tool.MissingStep) as caught:
                 tool.choose_team(None, {}, lambda: preferences)
             self.assertIn("Xcode > Settings > Accounts", str(caught.exception))
+
+    def test_an_apple_id_without_a_team_says_to_finish_signing_in(self):
+        # Made-up identifiers, in a list, a dict of lists, and as dict keys.
+        for held in (["reader@example.com"], {"Xcode": ["reader@example.com"]}, {"reader@example.com": {}}):
+            preferences = {"DVTDeveloperAccountManagerAppleIDLists": held, "IDEProvisioningTeamByIdentifier": {}}
+            with self.subTest(held=held), self.assertRaises(tool.MissingStep) as caught:
+                tool.choose_team(None, {}, lambda: preferences)
+            message = str(caught.exception)
+            self.assertIn("sign-in is not finished", message)
+            self.assertIn("Sign in to your Apple ID again", message)
+            self.assertNotIn("Add your Apple ID", message)
+            # The identifier itself is never spoken.
+            self.assertNotIn("reader@example.com", message)
+
+    def test_an_empty_apple_id_list_still_says_to_add_one(self):
+        for held in ([], {}, [""], None):
+            with self.subTest(held=held), self.assertRaises(tool.MissingStep) as caught:
+                tool.choose_team(None, {}, lambda: {"DVTDeveloperAccountManagerAppleIDLists": held})
+            self.assertIn("Add your Apple ID", str(caught.exception))
+
+    def test_a_team_wins_over_an_apple_id_list(self):
+        preferences = {"DVTDeveloperAccountManagerAppleIDLists": ["reader@example.com"],
+                       "IDEProvisioningTeamByIdentifier": {"a": [TEAM_A]}}
+        self.assertEqual(tool.choose_team(None, {}, lambda: preferences).team_id, "AAAAAAAAAA")
 
     def test_a_form_it_does_not_know_asks_for_the_team(self):
         for odd in ({"IDEProvisioningTeamByIdentifier": {"a": [{"id": 5}]}},
@@ -139,6 +163,23 @@ class DeviceTests(unittest.TestCase):
             name="Other", identifier="2", udid="u2", tunnel="connected")))
         self.assertEqual([device.name for device in usable], ["Test Phone", "Other"])
 
+    def test_a_simulator_is_never_ready(self):
+        # Xcode 27's devicectl lists simulators, with reality "simulated".
+        usable, others = tool.devices_in_listing(listing(
+            device_entry(name="Test Simulator", identifier="S1", udid="s1", reality="simulated"), device_entry()))
+        self.assertEqual([device.name for device in usable], ["Test Phone"])
+        self.assertEqual(others, [])
+        self.assertEqual(tool.choose_device(None, usable, others).name, "Test Phone")
+
+    def test_a_listing_with_only_a_simulator_has_no_ready_phone(self):
+        usable, others = tool.devices_in_listing(listing(device_entry(reality="simulated")))
+        self.assertEqual((usable, others), ([], []))
+
+    def test_an_entry_without_a_reality_counts_as_physical(self):
+        entry = device_entry()
+        del entry["hardwareProperties"]["reality"]
+        self.assertEqual(len(tool.devices_in_listing(listing(entry))[0]), 1)
+
     def test_no_devices_says_how_to_connect(self):
         usable, others = tool.devices_in_listing(listing())
         with self.assertRaises(tool.MissingStep) as caught:
@@ -181,6 +222,16 @@ class DeviceTests(unittest.TestCase):
                                ("2-bb", "Other Phone"), ("00001111-aaaa", "Test Phone")):
             with self.subTest(selector=selector):
                 self.assertEqual(tool.choose_device(selector, usable, others).name, name)
+
+    def test_a_straight_or_curly_apostrophe_matches_either(self):
+        curly = tool.Device("1", "u1", "Reader\u2019s Phone")
+        straight = tool.Device("2", "u2", "Other's Phone")
+        for selector, expected in (("Reader's Phone", curly), ("Reader\u2019s Phone", curly),
+                                   ("READER\u2019S phone", curly), ("Other\u2019s Phone", straight),
+                                   ("other's phone", straight)):
+            with self.subTest(selector=selector):
+                self.assertEqual(tool.match_device(selector, [curly, straight]), [expected])
+        self.assertEqual(tool.match_device("Readers Phone", [curly, straight]), [])
 
     def test_a_selector_that_names_nothing_lists_the_ready_ones(self):
         usable, others = tool.devices_in_listing(listing(device_entry()))

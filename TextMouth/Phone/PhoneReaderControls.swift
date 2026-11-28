@@ -81,6 +81,9 @@ enum PhoneReaderControls {
         case .goTo:
             return PhoneControlDescription(
                 label: PhoneReaderWording.goTo,
+                // The place, as the sheet's fields start (FR50): read when
+                // VoiceOver asks, never announced as it changes.
+                value: goToValue(in: state),
                 hint: PhoneReaderWording.goToHint,
                 traits: .button
             )
@@ -88,6 +91,12 @@ enum PhoneReaderControls {
             return PhoneControlDescription(
                 label: PhoneReaderVocabulary.returnToPreviousPosition,
                 hint: PhoneReaderWording.returnHint,
+                traits: .button
+            )
+        case .bookActions:
+            return PhoneControlDescription(
+                label: PhoneReaderWording.bookActions,
+                hint: PhoneReaderWording.bookActionsHint,
                 traits: .button
             )
         case .sleepTimer:
@@ -147,7 +156,9 @@ enum PhoneReaderControls {
             label: PhoneAppWording.playButton(isPlaying: state.isPlaying),
             value: value,
             hint: PhoneReaderWording.playHint(movingBy: state.unit),
-            traits: traits
+            traits: traits,
+            // The Sleep Timer from Play (FR52), as its long press opens it.
+            actions: [.sleepTimer]
         )
     }
 
@@ -186,6 +197,38 @@ enum PhoneReaderControls {
             hint: macLabel == label ? "" : macLabel,
             traits: .button
         )
+    }
+
+    // MARK: - Book Content's Height
+
+    /// The most of the reader's visible height Book content may take, so
+    /// that Play always shows below it on the first screen.
+    static let bookContentShareOfScreen = 0.55
+
+    /// Book content's height (FR48): about twelve lines of body text
+    /// (`scaled`, which grows with the text size), but never more than
+    /// `bookContentShareOfScreen` of the `visible` height. At the largest
+    /// accessibility sizes twelve lines are taller than the screen, and a text
+    /// area that fills it leaves a finger nothing outside it to scroll the
+    /// screen by, so Play could not be reached by touch.
+    ///
+    /// - Parameters:
+    ///   - scaled: Twelve lines' height at the text size in force, in points.
+    ///   - visible: The height of the reader's scrolling column, in points.
+    static func bookContentHeight(scaled: Double, visible: Double) -> Double {
+        guard visible > 0 else { return scaled }
+        return min(scaled, visible * bookContentShareOfScreen)
+    }
+
+    // MARK: - Go To
+
+    /// Go To's value (FR50): the page at the place and the time there, the
+    /// starting texts of the sheet's Page and Time fields, "Page 112 of 300,
+    /// 1:02:03"; the page left out in a book of fewer than two pages, and
+    /// nothing while the book loads, when there's no place yet.
+    static func goToValue(in state: PhoneReaderState) -> String {
+        guard !state.isLoading else { return "" }
+        return SentenceWording.commaJoined([state.goToPage, state.goToTime].filter { !$0.isEmpty })
     }
 
     // MARK: - Where Am I?

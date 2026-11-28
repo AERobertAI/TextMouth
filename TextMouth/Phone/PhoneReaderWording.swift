@@ -156,6 +156,19 @@ enum PhoneReaderWording {
         InterfaceText.line("phoneReader.returnHint", "Goes back to where the last jump began.")
     }
 
+    /// The Book Actions menu's label (FR51). The Mac has no such menu: its
+    /// toolbar holds the four actions loose.
+    static var bookActions: String {
+        // Translators: Label of the iPhone reader's menu button that holds the book's less frequent actions: Sleep Timer, Voice, Book Info, and Export.
+        InterfaceText.line("phoneReader.bookActions", "Book Actions")
+    }
+
+    /// The Book Actions menu's hint, naming what it holds.
+    static var bookActionsHint: String {
+        // Translators: Hint of the iPhone reader's Book Actions menu button.
+        InterfaceText.line("phoneReader.bookActionsHint", "Sleep timer, voice, book information, and export.")
+    }
+
     /// Sleep Timer's hint.
     static var sleepTimerHint: String {
         // Translators: Hint of the iPhone reader's Sleep Timer button.
