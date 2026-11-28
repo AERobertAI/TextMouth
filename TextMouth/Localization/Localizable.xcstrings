@@ -536348,151 +536348,151 @@
         "ar" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "يفتح خيارات لفتح كتاب أو استيراد مجلد."
+            "value" : "يفتح خيارات لفتح كتاب أو استيراد مجلد أو إضافة موجز."
           }
         },
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "একটি বই খোলা বা একটি ফোল্ডার আমদানির বিকল্পগুলো খোলে।"
+            "value" : "একটি বই খোলা, একটি ফোল্ডার আমদানি বা একটি ফিড যোগ করার বিকল্পগুলো খোলে।"
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Öffnet Optionen, um ein Buch zu öffnen oder einen Ordner zu importieren."
+            "value" : "Öffnet Optionen, um ein Buch zu öffnen, einen Ordner zu importieren oder einen Feed hinzuzufügen."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Opens options to open a book or import a folder."
+            "value" : "Opens options to open a book, import a folder, or add a feed."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Abre opciones para abrir un libro o importar una carpeta."
+            "value" : "Abre opciones para abrir un libro, importar una carpeta o añadir un canal."
           }
         },
         "fa" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "گزینه‌هایی برای باز کردن کتاب یا وارد کردن پوشه را باز می‌کند."
+            "value" : "گزینه‌هایی برای باز کردن کتاب، وارد کردن پوشه یا افزودن فید را باز می‌کند."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ouvre des options pour ouvrir un livre ou importer un dossier."
+            "value" : "Ouvre des options pour ouvrir un livre, importer un dossier ou ajouter un flux."
           }
         },
         "he" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "פותח אפשרויות לפתיחת ספר או לייבוא תיקייה."
+            "value" : "פותח אפשרויות לפתיחת ספר, לייבוא תיקייה או להוספת ערוץ."
           }
         },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "पुस्तक खोलने या फ़ोल्डर आयात करने के विकल्प खोलता है।"
+            "value" : "पुस्तक खोलने, फ़ोल्डर आयात करने या फ़ीड जोड़ने के विकल्प खोलता है।"
           }
         },
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Membuka opsi untuk membuka buku atau mengimpor folder."
+            "value" : "Membuka opsi untuk membuka buku, mengimpor folder, atau menambahkan feed."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Apre le opzioni per aprire un libro o importare una cartella."
+            "value" : "Apre le opzioni per aprire un libro, importare una cartella o aggiungere un feed."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ブックを開くか、フォルダを読み込むためのオプションを開きます。"
+            "value" : "ブックを開く、フォルダを読み込む、またはフィードを追加するためのオプションを開きます。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "책을 열거나 폴더를 가져오는 옵션을 엽니다."
+            "value" : "책을 열거나 폴더를 가져오거나 피드를 추가하는 옵션을 엽니다."
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Opent opties om een boek te openen of een map te importeren."
+            "value" : "Opent opties om een boek te openen, een map te importeren of een feed toe te voegen."
           }
         },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Otwiera opcje otwierania książki lub importu folderu."
+            "value" : "Otwiera opcje otwierania książki, importu folderu lub dodania kanału."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Abre opções para abrir um livro ou importar uma pasta."
+            "value" : "Abre opções para abrir um livro, importar uma pasta ou adicionar um feed."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Открывает варианты: открыть книгу или импортировать папку."
+            "value" : "Открывает варианты: открыть книгу, импортировать папку или добавить ленту."
           }
         },
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Öppnar alternativ för att öppna en bok eller importera en mapp."
+            "value" : "Öppnar alternativ för att öppna en bok, importera en mapp eller lägga till ett flöde."
           }
         },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "เปิดตัวเลือกสำหรับเปิดหนังสือหรือนำเข้าโฟลเดอร์"
+            "value" : "เปิดตัวเลือกสำหรับเปิดหนังสือ นำเข้าโฟลเดอร์ หรือเพิ่มฟีด"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bir kitap açma veya klasör içe aktarma seçeneklerini açar."
+            "value" : "Bir kitap açma, klasör içe aktarma veya besleme ekleme seçeneklerini açar."
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Відкриває варіанти відкриття книги або імпорту папки."
+            "value" : "Відкриває варіанти: відкрити книгу, імпортувати папку або додати стрічку."
           }
         },
         "ur" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "کتاب کھولنے یا فولڈر درآمد کرنے کے اختیارات کھولتا ہے۔"
+            "value" : "کتاب کھولنے، فولڈر درآمد کرنے یا فیڈ شامل کرنے کے اختیارات کھولتا ہے۔"
           }
         },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Mở các tùy chọn để mở một sách hoặc nhập một thư mục."
+            "value" : "Mở các tùy chọn để mở một sách, nhập một thư mục hoặc thêm một nguồn cấp."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "打开选项以打开图书或导入文件夹。"
+            "value" : "打开选项以打开图书、导入文件夹或添加订阅源。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "打開選項，以打開書籍或輸入檔案夾。"
+            "value" : "打開選項，以打開書籍、輸入檔案夾或加入訂閱源。"
           }
         }
       }
@@ -537782,157 +537782,157 @@
       }
     },
     "phoneImport.onlyOnTheMacNote" : {
-      "comment" : "Note at the end of the iPhone's Add to Library sheet, after its two choices, saying which features the iPhone app does not have yet and the Mac app does. \"For now\": they are planned for the iPhone.",
+      "comment" : "Note at the end of the iPhone's Add to Library sheet, after its choices, saying which features the iPhone app does not have yet and the Mac app does. \"For now\": they are planned for the iPhone.",
       "extractionState" : "manual",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "الموجزات والتسجيل وتحرير الصوت وتفريغ الصوت متاحة على Mac فقط حاليًا."
+            "value" : "التسجيل وتحرير الصوت وتفريغ الصوت متاحة على Mac فقط حاليًا."
           }
         },
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ফিড, রেকর্ডিং, অডিও সম্পাদনা ও ট্রান্সক্রাইব করা আপাতত শুধু Mac-এ আছে।"
+            "value" : "রেকর্ডিং, অডিও সম্পাদনা ও ট্রান্সক্রাইব করা আপাতত শুধু Mac-এ আছে।"
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Feeds, Aufnehmen, Audio bearbeiten und Transkribieren gibt es vorerst nur auf dem Mac."
+            "value" : "Aufnehmen, Audio bearbeiten und Transkribieren gibt es vorerst nur auf dem Mac."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Feeds, recording, editing audio, and transcribing are only on the Mac for now."
+            "value" : "Recording, editing audio, and transcribing are only on the Mac for now."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Los canales, la grabación, la edición de audio y la transcripción solo están en el Mac por ahora."
+            "value" : "La grabación, la edición de audio y la transcripción solo están en el Mac por ahora."
           }
         },
         "fa" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "فیدها، ضبط، ویرایش صدا و رونویسی فعلاً فقط در Mac هستند."
+            "value" : "ضبط، ویرایش صدا و رونویسی فعلاً فقط در Mac هستند."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Les flux, l’enregistrement, la modification de l’audio et la transcription ne sont pour l’instant disponibles que sur Mac."
+            "value" : "L’enregistrement, la modification de l’audio et la transcription ne sont pour l’instant disponibles que sur Mac."
           }
         },
         "he" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ערוצים, הקלטה, עריכת שמע ותמלול זמינים בינתיים רק ב-Mac."
+            "value" : "הקלטה, עריכת שמע ותמלול זמינים בינתיים רק ב-Mac."
           }
         },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "फ़ीड, रिकॉर्डिंग, ऑडियो संपादन और ट्रांसक्राइब करना अभी केवल Mac पर हैं।"
+            "value" : "रिकॉर्डिंग, ऑडियो संपादन और ट्रांसक्राइब करना अभी केवल Mac पर हैं।"
           }
         },
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Feed, perekaman, pengeditan audio, dan transkripsi untuk saat ini hanya ada di Mac."
+            "value" : "Perekaman, pengeditan audio, dan transkripsi untuk saat ini hanya ada di Mac."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Feed, registrazione, modifica audio e trascrizione per ora sono solo sul Mac."
+            "value" : "Registrazione, modifica audio e trascrizione per ora sono solo sul Mac."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "フィード、録音、オーディオの編集、文字起こしは、今のところ Mac でのみ使えます。"
+            "value" : "録音、オーディオの編集、文字起こしは、今のところ Mac でのみ使えます。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "피드, 녹음, 오디오 편집, 대본 만들기는 현재 Mac에서만 사용할 수 있습니다."
+            "value" : "녹음, 오디오 편집, 대본 만들기는 현재 Mac에서만 사용할 수 있습니다."
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Feeds, opnemen, audio wijzigen en transcriberen zijn voorlopig alleen op de Mac beschikbaar."
+            "value" : "Opnemen, audio wijzigen en transcriberen zijn voorlopig alleen op de Mac beschikbaar."
           }
         },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Kanały, nagrywanie, edycja dźwięku i transkrypcja są na razie dostępne tylko na komputerze Mac."
+            "value" : "Nagrywanie, edycja dźwięku i transkrypcja są na razie dostępne tylko na komputerze Mac."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Feeds, gravação, edição de áudio e transcrição, por enquanto, estão só no Mac."
+            "value" : "Gravação, edição de áudio e transcrição, por enquanto, estão só no Mac."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ленты, запись, изменение аудио и расшифровка пока есть только на Mac."
+            "value" : "Запись, изменение аудио и расшифровка пока есть только на Mac."
           }
         },
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Flöden, inspelning, ljudredigering och transkribering finns tills vidare bara på Mac."
+            "value" : "Inspelning, ljudredigering och transkribering finns tills vidare bara på Mac."
           }
         },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ฟีด การบันทึกเสียง การแก้ไขเสียง และการถอดเสียง ตอนนี้มีเฉพาะบน Mac"
+            "value" : "การบันทึกเสียง การแก้ไขเสียง และการถอดเสียง ตอนนี้มีเฉพาะบน Mac"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Beslemeler, kayıt, ses düzenleme ve yazıya dökme şimdilik yalnızca Mac'te var."
+            "value" : "Kayıt, ses düzenleme ve yazıya dökme şimdilik yalnızca Mac'te var."
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Стрічки, запис, редагування аудіо й транскрибування поки є лише на Mac."
+            "value" : "Запис, редагування аудіо й транскрибування поки є лише на Mac."
           }
         },
         "ur" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "فیڈز، ریکارڈنگ، آڈیو میں ترمیم اور ٹرانسکرائب کرنا فی الحال صرف Mac پر ہیں۔"
+            "value" : "ریکارڈنگ، آڈیو میں ترمیم اور ٹرانسکرائب کرنا فی الحال صرف Mac پر ہیں۔"
           }
         },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nguồn cấp, ghi âm, sửa âm thanh và chép lời hiện chỉ có trên Mac."
+            "value" : "Ghi âm, sửa âm thanh và chép lời hiện chỉ có trên Mac."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "订阅源、录音、编辑音频和转录目前仅在 Mac 上提供。"
+            "value" : "录音、编辑音频和转录目前仅在 Mac 上提供。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "訂閱源、錄音、編輯音訊和轉錄目前僅在 Mac 上提供。"
+            "value" : "錄音、編輯音訊和轉錄目前僅在 Mac 上提供。"
           }
         }
       }

@@ -469,7 +469,7 @@ class TextMouthUITestCase: XCTestCase {
         /// reads "unsupported", and `PhoneFontPolicyTests` refuses in the
         /// source) still fails, and so does any other finding on it.
         static let onlyOnTheMacNote = Accepted(
-            type: .dynamicType, label: "Feeds, recording, editing audio, and transcribing are only on the Mac for now.",
+            type: .dynamicType, label: "Recording, editing audio, and transcribing are only on the Mac for now.",
             why: "the Add to Library sheet's note: a plain footnote Text that grows and wraps, flagged as the Library's summary is",
             description: "Dynamic Type font sizes are partially unsupported"
         )
