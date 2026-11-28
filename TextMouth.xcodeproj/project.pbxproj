@@ -3546,79 +3546,24 @@
 		0AABD80E61E84073ACA0DB62 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = Licenses/WavPack;
+			dstPath = "Licenses/foliate-js";
 			dstSubfolderSpec = 7;
 			files = (
-				A403CDD4AF53BA525D9A8BA5 /* COPYING in CopyFiles */,
+				90056498A62AF125B0A40193 /* LICENSE in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		1110009E1C26377EA9791632 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = Licenses/ZIPFoundation;
+			dstPath = "Licenses/swift-cmark";
 			dstSubfolderSpec = 7;
 			files = (
-				3370DE8FDC01A3938CD98B7E /* LICENSE in CopyFiles */,
+				7F45AD2B57BD2C0A720765D2 /* COPYING in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		1C95A964EBB5395E1F896244 /* CopyFiles */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "Licenses/foliate-js";
-			dstSubfolderSpec = 7;
-			files = (
-				58D60DB0C519A04521146FE2 /* LICENSE in CopyFiles */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		22F87EE1CD8EE45ABFA905DA /* CopyFiles */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = Licenses/TrueAudio;
-			dstSubfolderSpec = 7;
-			files = (
-				AB4BEB5B8C2E800487E3E266 /* COPYRIGHT in CopyFiles */,
-				9982A0233B5090F0D459A278 /* README in CopyFiles */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		38646AF7EBDB1D27AC1D1A34 /* CopyFiles */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = Licenses/FFmpeg;
-			dstSubfolderSpec = 7;
-			files = (
-				0CB57D63797A2CB23667DA51 /* COPYING.LGPLv2.1 in CopyFiles */,
-				8AD9A5F1823B2868D241DD63 /* LICENSE.md in CopyFiles */,
-				AE61909BFC965F3A9F5A3772 /* README in CopyFiles */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		43D860587E3D34D99DBE20EE /* CopyFiles */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = Licenses/liblouis;
-			dstSubfolderSpec = 7;
-			files = (
-				6A2194EEB02426EF8CA8ED1F /* COPYING.LESSER in CopyFiles */,
-				7F7F033846B83E56E2E332D4 /* README in CopyFiles */,
-				E3F4F29DD4D7FAF0DD34EC64 /* TABLES-LICENSES.md in CopyFiles */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		6B0B86279E79DE3F37623761 /* CopyFiles */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "Licenses/swift-cmark";
-			dstSubfolderSpec = 7;
-			files = (
-				484B3DE040DF28FFE1FF2B1A /* COPYING in CopyFiles */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		722FBEEA65BD1330BA160782 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = Licenses/FFmpeg;
@@ -3630,29 +3575,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		9084BB8B81525DF351B483C8 /* CopyFiles */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = Licenses/MonkeysAudio;
-			dstSubfolderSpec = 7;
-			files = (
-				63226C27B2F3926F3C2FDEC5 /* License.txt in CopyFiles */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		9279BF2ABA7F3526AB66874A /* CopyFiles */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = Licenses/liblouis;
-			dstSubfolderSpec = 7;
-			files = (
-				0AD845456256B3A16D7C8818 /* COPYING.LESSER in CopyFiles */,
-				41F911ECAF492222AF723C10 /* README in CopyFiles */,
-				3B9E63254B4DF94B16995796 /* TABLES-LICENSES.md in CopyFiles */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		A39FC5304C4E02A9AD636B71 /* CopyFiles */ = {
+		22F87EE1CD8EE45ABFA905DA /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = Licenses/WavPack;
@@ -3662,7 +3585,48 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		A8EA7A5970473F9D2BA7FBC3 /* CopyFiles */ = {
+		38646AF7EBDB1D27AC1D1A34 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = Licenses/TrueAudio;
+			dstSubfolderSpec = 7;
+			files = (
+				F670EE7321BFD5392BFC3FE0 /* COPYRIGHT in CopyFiles */,
+				B64321B34FC2B5BA08402448 /* README in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		43D860587E3D34D99DBE20EE /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "Licenses/foliate-js";
+			dstSubfolderSpec = 7;
+			files = (
+				58D60DB0C519A04521146FE2 /* LICENSE in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		6B0B86279E79DE3F37623761 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = Licenses/MonkeysAudio;
+			dstSubfolderSpec = 7;
+			files = (
+				ACDB2675941A5C0E4C7BBD53 /* License.txt in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		722FBEEA65BD1330BA160782 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = Licenses/SwiftSoup;
+			dstSubfolderSpec = 7;
+			files = (
+				8060835D3173CF79D3AAC057 /* LICENSE in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9084BB8B81525DF351B483C8 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = Licenses/SwiftSoup;
@@ -3672,7 +3636,17 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		AEEC52048DCF4B83D3509FCE /* CopyFiles */ = {
+		9279BF2ABA7F3526AB66874A /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = Licenses/MonkeysAudio;
+			dstSubfolderSpec = 7;
+			files = (
+				63226C27B2F3926F3C2FDEC5 /* License.txt in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A39FC5304C4E02A9AD636B71 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = Licenses/ZIPFoundation;
@@ -3682,14 +3656,36 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		A8EA7A5970473F9D2BA7FBC3 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = Licenses/WavPack;
+			dstSubfolderSpec = 7;
+			files = (
+				A403CDD4AF53BA525D9A8BA5 /* COPYING in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AEEC52048DCF4B83D3509FCE /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = Licenses/liblouis;
+			dstSubfolderSpec = 7;
+			files = (
+				6A2194EEB02426EF8CA8ED1F /* COPYING.LESSER in CopyFiles */,
+				7F7F033846B83E56E2E332D4 /* README in CopyFiles */,
+				E3F4F29DD4D7FAF0DD34EC64 /* TABLES-LICENSES.md in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		BF489798E33F1F27D1434BD7 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = Licenses/TrueAudio;
+			dstPath = Licenses/LAME;
 			dstSubfolderSpec = 7;
 			files = (
-				F670EE7321BFD5392BFC3FE0 /* COPYRIGHT in CopyFiles */,
-				B64321B34FC2B5BA08402448 /* README in CopyFiles */,
+				7FB7320636AAD01C531190FE /* COPYING in CopyFiles */,
+				943853340D2809882740233D /* LICENSE in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3708,14 +3704,59 @@
 		C4DD7093AEE01EB21DD71ECD /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = "Licenses/foliate-js";
+			dstPath = Licenses/ZIPFoundation;
 			dstSubfolderSpec = 7;
 			files = (
-				90056498A62AF125B0A40193 /* LICENSE in CopyFiles */,
+				3370DE8FDC01A3938CD98B7E /* LICENSE in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		C5522D8A663C635367E6426B /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "Licenses/swift-cmark";
+			dstSubfolderSpec = 7;
+			files = (
+				484B3DE040DF28FFE1FF2B1A /* COPYING in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C91BEB2BE96CF7A4E3259148 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = Licenses/FFmpeg;
+			dstSubfolderSpec = 7;
+			files = (
+				0CB57D63797A2CB23667DA51 /* COPYING.LGPLv2.1 in CopyFiles */,
+				8AD9A5F1823B2868D241DD63 /* LICENSE.md in CopyFiles */,
+				AE61909BFC965F3A9F5A3772 /* README in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CC116469FE973F113685AE31 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = Licenses/liblouis;
+			dstSubfolderSpec = 7;
+			files = (
+				0AD845456256B3A16D7C8818 /* COPYING.LESSER in CopyFiles */,
+				41F911ECAF492222AF723C10 /* README in CopyFiles */,
+				3B9E63254B4DF94B16995796 /* TABLES-LICENSES.md in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D926A4A859020D8D1509B2F2 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = Licenses/TrueAudio;
+			dstSubfolderSpec = 7;
+			files = (
+				AB4BEB5B8C2E800487E3E266 /* COPYRIGHT in CopyFiles */,
+				9982A0233B5090F0D459A278 /* README in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E59FEE7CCC021127BD65AEAA /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = Licenses/LAME;
@@ -3723,47 +3764,6 @@
 			files = (
 				71E909A75CB244D9B2F34D62 /* COPYING in CopyFiles */,
 				73E1650B261DC0EF550E5219 /* LICENSE in CopyFiles */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		C91BEB2BE96CF7A4E3259148 /* CopyFiles */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "Licenses/swift-cmark";
-			dstSubfolderSpec = 7;
-			files = (
-				7F45AD2B57BD2C0A720765D2 /* COPYING in CopyFiles */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		CC116469FE973F113685AE31 /* CopyFiles */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = Licenses/LAME;
-			dstSubfolderSpec = 7;
-			files = (
-				7FB7320636AAD01C531190FE /* COPYING in CopyFiles */,
-				943853340D2809882740233D /* LICENSE in CopyFiles */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		D926A4A859020D8D1509B2F2 /* CopyFiles */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = Licenses/SwiftSoup;
-			dstSubfolderSpec = 7;
-			files = (
-				8060835D3173CF79D3AAC057 /* LICENSE in CopyFiles */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		E59FEE7CCC021127BD65AEAA /* CopyFiles */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = Licenses/MonkeysAudio;
-			dstSubfolderSpec = 7;
-			files = (
-				ACDB2675941A5C0E4C7BBD53 /* License.txt in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
