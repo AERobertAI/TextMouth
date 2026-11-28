@@ -539535,7 +539535,7 @@
     },
     "phoneReader.bookActionsHint" : {
       "comment" : "Hint of the iPhone reader's Book Actions menu button.",
-      "extractionState" : "manual",
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -539685,6 +539685,18 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "睡眠計時器、語音、書籍資訊和輸出。"
+          }
+        }
+      }
+    },
+    "phoneReader.bookActionsHint.search" : {
+      "comment" : "Hint of the iPhone reader's Book Actions menu button: what its menu holds, in order.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search, sleep timer, voice, book information, and export."
           }
         }
       }
@@ -540939,7 +540951,7 @@
     },
     "phoneReader.nextHeadingHint" : {
       "comment" : "Hint of the iPhone reader's Next Heading button.",
-      "extractionState" : "manual",
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -544719,7 +544731,7 @@
     },
     "phoneReader.previousHeadingHint" : {
       "comment" : "Hint of the iPhone reader's Previous Heading button.",
-      "extractionState" : "manual",
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {

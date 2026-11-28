@@ -15,12 +15,15 @@ final class ReaderUITests: TextMouthUITestCase {
     static let controls = [
         "Book content", "Skip backward…", "Play", "Skip forward…",
         "Where Am I?", "Navigation unit", "Speed",
-        "Previous Heading", "Next Heading", "Add bookmark", "Bookmarks", "Headings",
-        "Search in Book", "Go To", "Return to previous reading position", "Book Actions",
+        "Add bookmark", "Bookmarks", "Headings",
+        "Go To", "Return to previous reading position", "Book Actions",
     ]
 
-    /// The items of the Book Actions menu, in its order (FR51).
-    static let bookActionItems = ["Sleep Timer", "Voice", "Book Info", "Export this book"]
+    /// Labels gone from the reader: the heading buttons, for everyone (FR54).
+    static let goneControls = ["Previous Heading", "Next Heading"]
+
+    /// The items of the Book Actions menu, in its order (FR51, FR54).
+    static let bookActionItems = ["Search in Book", "Sleep Timer", "Voice", "Book Info", "Export this book"]
 
     /// The reader opens on the book, titled with it, with Back first and its
     /// controls in the spec's order after the title.
@@ -32,6 +35,9 @@ final class ReaderUITests: TextMouthUITestCase {
 
         let elements = try elementsInOrder(of: app)
         assertOrder(["Library", Self.bookTitle] + Self.controls, in: elements)
+        for gone in Self.goneControls {
+            XCTAssertFalse(elements.contains { $0.label == gone }, "\(gone) is still on the reader: \(Self.describe(elements))")
+        }
         keepScreenshot(of: app, named: "Reader")
     }
 
@@ -111,8 +117,8 @@ final class ReaderUITests: TextMouthUITestCase {
         return found
     }
 
-    /// Book Actions opens a menu of Sleep Timer, Voice, Book Info, and Export
-    /// this book, in that order, none of which is on the reader by itself, and
+    /// Book Actions opens a menu of Search in Book, Sleep Timer, Voice, Book
+    /// Info, and Export this book, in that order, none of which is on the reader by itself, and
     /// its Book Info opens the Book Information sheet (FR51).
     func testBookActionsOpensItsMenu() throws {
         let app = try launchIntoTheReader()

@@ -249,6 +249,9 @@ struct PhoneReaderView: View {
                 // On the next turn, once the menu has begun to close, so the
                 // sheet isn't presented over a menu still on its way out.
                 Task { @MainActor in
+                    // Search in Book opens only for a book with text to search;
+                    // any other is told why, and nothing opens (FR54).
+                    if item == .searchInBook, !model.openSearch() { return }
                     sheetOpener = .bookActions
                     sheet = item.sheet
                 }
@@ -268,10 +271,6 @@ struct PhoneReaderView: View {
             return { model.togglePlayPause() }
         case .whereAmI:
             return { model.whereAmI() }
-        case .previousHeading:
-            return { model.moveOnScreen(forward: false, unit: .heading, source: .command) }
-        case .nextHeading:
-            return { model.moveOnScreen(forward: true, unit: .heading, source: .command) }
         case .skipBackward:
             return { model.moveOnScreen(forward: false, source: .command) }
         case .skipForward:

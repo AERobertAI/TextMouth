@@ -16,25 +16,21 @@ enum PhoneReaderControl: CaseIterable, Hashable, Sendable {
     case navigationUnit
     /// The book's speed.
     case speed
-    /// A move to the heading before.
-    case previousHeading
-    /// A move to the next heading.
-    case nextHeading
     /// Adds a bookmark, or removes the one at the place.
     case addBookmark
     /// Opens the Bookmarks sheet.
     case bookmarks
     /// Opens the Headings sheet.
     case headings
-    /// Opens the Search in Book sheet, or says why the book has no text to
-    /// search.
-    case searchInBook
     /// Opens the Go To sheet.
     case goTo
     /// Goes back to where the last jump began.
     case returnToPlace
-    /// A menu of the book's less frequent actions (FR51): the four below.
+    /// A menu of the book's less frequent actions (FR51): the five below.
     case bookActions
+    /// Opens the Search in Book sheet, or says why the book has no text to
+    /// search: under Book Actions (FR54).
+    case searchInBook
     /// Opens the Sleep Timer sheet.
     case sleepTimer
     /// Opens the Voice & Speed sheet, or an audiobook's Audio Settings.
@@ -54,15 +50,15 @@ enum PhoneReaderControl: CaseIterable, Hashable, Sendable {
     static let playRow: [PhoneReaderControl] = [.skipBackward, .play, .skipForward]
 
     /// The grid's rows under Play, left to right and top to bottom, three to
-    /// a row, in VoiceOver's order however the rows break. Each pair stays in
-    /// one row: Previous and Next Heading in the second, Bookmarks, Headings,
-    /// and Search in Book in the third. Book Actions ends the fourth row, in
-    /// place of Sleep Timer, Voice, Book Info, and Export this book, which it
-    /// gathers (FR51).
+    /// a row, in VoiceOver's order however the rows break, Add bookmark,
+    /// Bookmarks, and Headings together in the second. Previous Heading and
+    /// Next Heading are gone for everyone, since Play adjusted by the heading
+    /// unit makes their moves (FR54). Book Actions ends the last row, in place
+    /// of Search in Book, Sleep Timer, Voice, Book Info, and Export this book,
+    /// which it gathers (FR51, FR54).
     static let gridRows: [[PhoneReaderControl]] = [
         [.whereAmI, .navigationUnit, .speed],
-        [.previousHeading, .nextHeading, .addBookmark],
-        [.bookmarks, .headings, .searchInBook],
+        [.addBookmark, .bookmarks, .headings],
         [.goTo, .returnToPlace, .bookActions],
     ]
 
@@ -102,8 +98,10 @@ enum PhoneReaderControl: CaseIterable, Hashable, Sendable {
     }
 
     /// The items of the Book Actions menu, in its order (FR51): the book's
-    /// less frequent actions, each opening its sheet as its button did.
-    static let bookActionItems: [PhoneReaderControl] = [.sleepTimer, .voice, .bookInfo, .export]
+    /// less frequent actions, each opening its sheet as its button did, Search
+    /// in Book first (FR54: the menu is the iPhone's equivalent of the Mac's
+    /// toolbar, the user's answer of November 27).
+    static let bookActionItems: [PhoneReaderControl] = [.searchInBook, .sleepTimer, .voice, .bookInfo, .export]
 
     /// Where VoiceOver's focus goes back to, for a sheet that `control`
     /// opened as it closes, or for the control VoiceOver was on as it leaves
@@ -126,8 +124,6 @@ enum PhoneReaderControl: CaseIterable, Hashable, Sendable {
         case .whereAmI: return .whereAmI
         case .navigationUnit: return .navigationUnit
         case .speed: return .speed
-        case .previousHeading: return .previousHeading
-        case .nextHeading: return .nextHeading
         case .addBookmark: return .addBookmark
         case .bookmarks: return .bookmarks
         case .headings: return .headings

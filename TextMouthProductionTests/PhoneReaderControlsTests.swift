@@ -17,19 +17,20 @@ final class PhoneReaderControlsTests: XCTestCase {
         XCTAssertEqual(PhoneReaderControl.screen(timerRuns: false), [
             .bookContent, .skipBackward, .play, .skipForward,
             .whereAmI, .navigationUnit, .speed,
-            .previousHeading, .nextHeading, .addBookmark, .bookmarks, .headings,
-            .searchInBook, .goTo, .returnToPlace, .bookActions,
+            .addBookmark, .bookmarks, .headings,
+            .goTo, .returnToPlace, .bookActions,
         ])
-        XCTAssertEqual(PhoneReaderControl.grid.count, 12)
+        XCTAssertEqual(PhoneReaderControl.grid.count, 9)
         XCTAssertEqual(PhoneReaderControl.grid.first, .whereAmI)
         XCTAssertEqual(PhoneReaderControl.grid.last, .bookActions)
     }
 
-    /// Book Actions holds Sleep Timer, Voice, Book Info, and Export this book,
-    /// in that order, none of them on the screen as well; every control is on
-    /// the screen or in the menu, never both (FR51).
-    func testBookActionsGathersTheFourLessFrequentActions() {
-        XCTAssertEqual(PhoneReaderControl.bookActionItems, [.sleepTimer, .voice, .bookInfo, .export])
+    /// Book Actions holds Search in Book (FR54), Sleep Timer, Voice, Book
+    /// Info, and Export this book, in that order, none of them on the screen
+    /// as well; every control is on the screen or in the menu, never both
+    /// (FR51).
+    func testBookActionsGathersTheLessFrequentActions() {
+        XCTAssertEqual(PhoneReaderControl.bookActionItems, [.searchInBook, .sleepTimer, .voice, .bookInfo, .export])
         let screen = PhoneReaderControl.screen(timerRuns: false)
         XCTAssertTrue(Set(screen).isDisjoint(with: PhoneReaderControl.bookActionItems), "\(screen)")
         XCTAssertEqual(Set(screen).union(PhoneReaderControl.bookActionItems), Set(PhoneReaderControl.allCases))
@@ -38,7 +39,7 @@ final class PhoneReaderControlsTests: XCTestCase {
         }
         let actions = describe(.bookActions, in: state())
         XCTAssertEqual(actions.label, "Book Actions")
-        XCTAssertEqual(actions.hint, "Sleep timer, voice, book information, and export.")
+        XCTAssertEqual(actions.hint, "Search, sleep timer, voice, book information, and export.")
         XCTAssertEqual(actions.value, "")
         XCTAssertEqual(actions.traits, .button)
         XCTAssertNil(PhoneReaderControl.bookActions.sheet, "Book Actions opens a menu, not a sheet")
@@ -89,15 +90,15 @@ final class PhoneReaderControlsTests: XCTestCase {
     }
 
     /// The grid's rows hold the controls in the grid's order, at most three
-    /// to a row, with each pair kept in one row: the headings, and Bookmarks
-    /// with Headings. The skips have left the grid for Play's row (FR54).
+    /// to a row, with Add bookmark, Bookmarks, and Headings kept in one row.
+    /// The skips have left the grid for Play's row (FR54).
     func testTheGridRowsKeepOrderAndPairs() {
         XCTAssertEqual(PhoneReaderControl.gridRows.flatMap { $0 }, PhoneReaderControl.grid, "The rows change VoiceOver's order")
         for row in PhoneReaderControl.gridRows {
             XCTAssertLessThanOrEqual(row.count, 3, "\(row)")
         }
         let together: [[PhoneReaderControl]] = [
-            [.previousHeading, .nextHeading], [.bookmarks, .headings, .searchInBook],
+            [.addBookmark, .bookmarks, .headings],
         ]
         for group in together {
             XCTAssertTrue(
@@ -107,7 +108,7 @@ final class PhoneReaderControlsTests: XCTestCase {
         }
         XCTAssertFalse(PhoneReaderControl.grid.contains { $0.isSkip }, "A skip is still in the grid")
         // Book Actions ends the last row (FR51).
-        XCTAssertEqual(PhoneReaderControl.gridRows.count, 4, "The grid changed its shape")
+        XCTAssertEqual(PhoneReaderControl.gridRows.count, 3, "The grid changed its shape")
         XCTAssertEqual(PhoneReaderControl.gridRows.last, [.goTo, .returnToPlace, .bookActions])
     }
 
@@ -134,8 +135,8 @@ final class PhoneReaderControlsTests: XCTestCase {
     // MARK: - Search in Book
 
     /// Search in Book is the Mac's command, a button with a hint saying what
-    /// it opens, no value, and no actions; it follows Headings and comes
-    /// before Go To, in every state.
+    /// it opens, no value, and no actions; it is under Book Actions, first
+    /// (FR54), and no longer on the screen.
     func testSearchInBook() {
         let search = describe(.searchInBook, in: state())
         XCTAssertEqual(search.label, "Search in Book")
@@ -143,9 +144,13 @@ final class PhoneReaderControlsTests: XCTestCase {
         XCTAssertEqual(search.hint, "Opens a search of the book's text.")
         XCTAssertEqual(search.traits, .button)
         XCTAssertEqual(search.actions, [])
-        let order = PhoneReaderControl.allCases
-        XCTAssertEqual(order.firstIndex(of: .searchInBook), order.firstIndex(of: .headings).map { $0 + 1 })
-        XCTAssertEqual(order.firstIndex(of: .goTo), order.firstIndex(of: .searchInBook).map { $0 + 1 })
+        XCTAssertEqual(PhoneReaderControl.bookActionItems.first, .searchInBook)
+        for timerRuns in [false, true] {
+            XCTAssertFalse(PhoneReaderControl.screen(timerRuns: timerRuns).contains(.searchInBook))
+        }
+        // Focus comes back to Book Actions after the search sheet, as for the
+        // menu's other items: Search in Book has no button to come back to.
+        XCTAssertEqual(PhoneReaderControl.focusTarget(returningTo: .bookActions, timerRuns: false), .bookActions)
     }
 
     // MARK: - Play
@@ -297,15 +302,14 @@ final class PhoneReaderControlsTests: XCTestCase {
 
     // MARK: - The Grid's Buttons
 
-    /// The heading buttons: the Mac's menu words and the spec's hints.
-    func testTheHeadingButtons() {
-        XCTAssertEqual(describe(.previousHeading, in: state()).label, "Previous Heading")
-        XCTAssertEqual(describe(.nextHeading, in: state()).label, "Next Heading")
-        XCTAssertEqual(
-            describe(.nextHeading, in: state()).hint,
-            "Moves to the next heading, keeping the navigation unit."
-        )
-        XCTAssertEqual(describe(.previousHeading, in: state()).traits, .button)
+    /// The heading buttons are gone for everyone (FR54): Play adjusted by
+    /// the heading unit makes their moves, and Headings and Search in Book's
+    /// neighbors are what the grid's second row holds now.
+    func testTheHeadingButtonsAreGone() {
+        let labels = PhoneReaderControl.allCases.map { describe($0, in: state()).label }
+        XCTAssertFalse(labels.contains(ShortcutAction.previousHeading.title), "\(labels)")
+        XCTAssertFalse(labels.contains(ShortcutAction.nextHeading.title), "\(labels)")
+        XCTAssertTrue(PhoneNavigationUnits.offered(isAudioBook: false, hasSeveralPages: false).contains(.heading))
     }
 
     /// Add bookmark becomes Remove bookmark near a bookmark.

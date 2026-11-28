@@ -40,18 +40,6 @@ enum PhoneReaderControls {
             )
         case .speed:
             return speed(in: state)
-        case .previousHeading:
-            return PhoneControlDescription(
-                label: ShortcutAction.previousHeading.title,
-                hint: PhoneReaderWording.previousHeadingHint,
-                traits: .button
-            )
-        case .nextHeading:
-            return PhoneControlDescription(
-                label: ShortcutAction.nextHeading.title,
-                hint: PhoneReaderWording.nextHeadingHint,
-                traits: .button
-            )
         case .addBookmark:
             return PhoneControlDescription(
                 label: state.isNearBookmark ? PhoneReaderVocabulary.removeBookmark : PhoneReaderVocabulary.addBookmark,
