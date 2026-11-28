@@ -154,6 +154,40 @@ final class PhoneFeedRowsTests: XCTestCase {
         XCTAssertFalse(row.commands.contains { $0.action == .feedItem(.showInFinder) })
     }
 
+    /// A book the listener put in a feed's folder, which came from no item, is listed under the Mac's "Books" heading
+    /// after the items, as its row always reads.
+    func testABookOfNoItemIsListedAfterTheItems() async throws {
+        let world = try FeedTestWorld(self, label: "PhoneFeedRowsOtherBooks")
+        let feed = try await subscribe(world, title: "The Tactile Atlas", path: "/atlas.xml")
+        let folderPath = try XCTUnwrap(world.library.feedFolderPath(forFolderID: feed.folderID))
+        let own = PhoneLibraryFixture.book("Braille Primer", in: folderPath)
+        world.library.library.books.append(own)
+        let rows = PhoneLibraryFixture.rows(of: world.library, at: LibraryLocation(category: .folders, folderPath: folderPath))
+
+        XCTAssertEqual(rows.sections.map(\.header), ["Episodes (1)", "Books (1)"])
+        XCTAssertEqual(rows.rowIDs, [.feedItem(feedID: feed.id, itemID: "guid:ep-1"), .book(own.id)])
+        XCTAssertTrue(rows.sections.last?.rows.first?.commands.contains { $0.action == .remove } ?? false, "an own book keeps its removal")
+    }
+
+    /// A feed the listener unsubscribed from says so, and its row offers Resubscribe where a subscribed feed's offers
+    /// Unsubscribe.
+    func testAnUnsubscribedFeedOffersResubscribe() async throws {
+        let world = try FeedTestWorld(self, label: "PhoneFeedRowsUnsubscribed")
+        let feed = try await subscribe(world, title: "The Tactile Atlas", path: "/atlas.xml")
+        let rows = PhoneLibraryFixture.rows(of: world.library)
+        let subscribed = try XCTUnwrap(rows.sections.first { $0.id == "feeds" }?.rows.first)
+        XCTAssertTrue(subscribed.commands.contains { $0.action == .feed(.unsubscribe) })
+        XCTAssertFalse(subscribed.commands.contains { $0.action == .feed(.resubscribe) })
+
+        _ = world.center.unsubscribe(feed.id)
+        await waitFor("the row says unsubscribed") { rows.sections.first { $0.id == "feeds" }?.rows.first?.label.contains("unsubscribed") == true }
+
+        let unsubscribed = try XCTUnwrap(rows.sections.first { $0.id == "feeds" }?.rows.first)
+        XCTAssertTrue(unsubscribed.commands.contains { $0.action == .feed(.resubscribe) })
+        XCTAssertFalse(unsubscribed.commands.contains { $0.action == .feed(.unsubscribe) })
+        XCTAssertEqual(unsubscribed.id, subscribed.id, "the row keeps its identity, so focus stays on it")
+    }
+
     /// The summary of a feed's folder counts its items and says its last check,
     /// the Mac's words, even while no item is downloaded.
     func testAFeedsFolderSummarySaysItsItemsAndLastCheck() async throws {
