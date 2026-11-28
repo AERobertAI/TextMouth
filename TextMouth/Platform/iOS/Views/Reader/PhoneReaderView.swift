@@ -222,7 +222,10 @@ struct PhoneReaderView: View {
             activate: action(for: item),
             increment: adjustment(for: item, up: true),
             decrement: adjustment(for: item, up: false),
-            perform: customActions(for: item),
+            // Whatever custom actions its description lists (Where Am I?'s
+            // two, the running Sleep Timer's Reset Timer and Cancel Timer,
+            // FR55; Play has none), each done by the model.
+            perform: { action in model.perform(action) },
             focusKind: item.focusKind,
             showsValue: item == .navigationUnit || item == .speed || item == .sleepTimer,
             rotors: rotors(for: item),
@@ -302,22 +305,6 @@ struct PhoneReaderView: View {
             return {
                 sheetOpener = item
                 sheet = item.sheet
-            }
-        }
-    }
-
-    /// What `item`'s custom actions do: Where Am I?'s two, the Mac's, and
-    /// the running Sleep Timer's Reset Timer and Cancel Timer (FR55). Play has
-    /// none (FR55), nor does any other control.
-    private func customActions(for item: PhoneReaderControl) -> (@MainActor (PhoneControlAction) -> Void)? {
-        guard item == .whereAmI || item == .sleepTimer else { return nil }
-        let model = model
-        return { action in
-            switch action {
-            case .whereAmIFullSummary: model.whereAmIFullSummary()
-            case .copyReadingPosition: model.copyReadingPosition()
-            case .resetSleepTimer: model.restartSleepTimer()
-            case .cancelSleepTimer: model.cancelSleepTimer()
             }
         }
     }

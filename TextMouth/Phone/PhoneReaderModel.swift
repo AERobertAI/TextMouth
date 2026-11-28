@@ -406,6 +406,21 @@ final class PhoneReaderModel {
         invalidate()
     }
 
+    // MARK: - Custom Actions
+
+    /// Does the custom action `action`, picked on a control's Actions rotor
+    /// (`PhoneReaderControls`' descriptions list them): the one place an
+    /// action is tied to what it does, so the Mac's test host checks it, and
+    /// the reader's view only hands the action on.
+    func perform(_ action: PhoneControlAction) {
+        switch action {
+        case .whereAmIFullSummary: whereAmIFullSummary()
+        case .copyReadingPosition: copyReadingPosition()
+        case .resetSleepTimer: restartSleepTimer()
+        case .cancelSleepTimer: cancelSleepTimer()
+        }
+    }
+
     // MARK: - The Sleep Timer Under Play
 
     /// The Sleep Timer's Reset Timer action (FR55): the running timer starts

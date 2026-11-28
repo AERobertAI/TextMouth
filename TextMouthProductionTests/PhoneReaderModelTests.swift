@@ -150,7 +150,8 @@ final class PhoneReaderModelTests: XCTestCase {
         defer { reader.sleepTimerService.stop() }
         reader.sleepTimerService.remainingSeconds = 30
 
-        model.restartSleepTimer()
+        // Picked on the Actions rotor, as the control's description lists it.
+        model.perform(.resetSleepTimer)
 
         XCTAssertTrue(reader.sleepTimerService.isActive)
         XCTAssertEqual(reader.sleepTimerService.duration, .minutes(10))
@@ -170,7 +171,8 @@ final class PhoneReaderModelTests: XCTestCase {
         reader.startSleepTimer(duration: .endOfBook)
         defer { reader.sleepTimerService.stop() }
 
-        model.cancelSleepTimer()
+        // Picked on the Actions rotor, as the control's description lists it.
+        model.perform(.cancelSleepTimer)
 
         XCTAssertFalse(reader.sleepTimerService.isActive)
         XCTAssertEqual(posted, [VoiceOverAnnouncement(message: "Sleep timer cancelled.", priority: .low)])
