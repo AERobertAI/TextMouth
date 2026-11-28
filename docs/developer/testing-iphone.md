@@ -94,6 +94,21 @@ Tests that act as a person does find what tests of the parts miss.
 - To run them, use the `TextMouthiOS` scheme with the build rules in [Building TextMouth](building.md): the iPhone 17 simulator, the one build folder, `Scripts/agents/run_locked.py`, and a new result-bundle name for each pass.
   A test run has the shape `xcodebuild test -project TextMouth.xcodeproj -scheme TextMouthiOS -destination 'platform=iOS Simulator,name=iPhone 17' -derivedDataPath build/DerivedData-ios.noindex`, and `-only-testing:TextMouthiOSTests` or `-only-testing:TextMouthiOSUITests` runs one bundle.
 
+## Tests of feeds and the reader's round 2
+<!-- id: iphone-feed-reader-tests; keys: FR53, FR54, FR55, PhoneFeedRowsTests, PhoneFeedsHubTests, FeedUITests, stand-in server; src: TextMouthProductionTests/PhoneFeedRowsTests.swift, TextMouthiOSTests/PhoneFeedsHubTests.swift, TextMouthiOSUITests/FeedUITests.swift, TextMouthProductionTests/PhoneReaderControlsTests.swift, TextMouthProductionTests/PhoneReaderModelTests.swift -->
+
+Feeds on the iPhone (FR53, see [Feeds on the iPhone](../architecture/platforms-phone-feeds.md)):
+- `PhoneFeedRowsTests` (18 tests, the Mac's host): the rows, the commands offered, the Mac's words reused, "this iPhone" in every sentence that names the device, and Delete Feed…'s question without Move to Library….
+- `PhoneFeedsHubTests` (8 tests, `TextMouthiOSTests`): that Add Feed… opens its sheet once the Add to Library sheet has closed, with the feed's folder going in the folder the Library showed, and the debug-only stand-in server.
+- `FeedUITests` (2 tests, `TextMouthiOSUITests`): the Add Feed sheet's order and audit, and a subscription to the stand-in feed that lists its two episodes, downloads one, opens it in the reader, and plays.
+  - The app answers `https://feeds.textmouth.test/atlas.xml` and serves every episode as the silent file the launch names in `TEXTMOUTH_UI_FEED_EPISODE`, so no test reaches the network.
+  - The test that types and plays runs only where sound is allowed (see In the simulator, below).
+
+The reader's round 2 (FR54, FR55):
+- `PhoneReaderControlsTests`: the order, the skips hidden or not, Play's adjustment, and the timer's actions.
+- `PhoneReaderModelTests`: Reset Timer, Cancel Timer, the shake, and focus.
+- `SleepTimerServiceTests` (`endedByItselfAt`), and `PhoneSettingsDefaultsTests` and `PhoneSettingsModelTests` (the three rows).
+
 ## In the simulator, sound tests run on GitHub only
 <!-- id: simulator-sound-tests-run-github; keys: UI sound, no audio on the Mac, keyboard clicks, GitHub runner, requireSound; src: TextMouthiOSUITests/TextMouthUITestCase.swift, Scripts/agents/run-ios-ui-tests.py, Scripts/agents/tests/test_run_ios_ui_tests.py, project.yml, .github/workflows/tests.yml, TestData/alice.epub -->
 
