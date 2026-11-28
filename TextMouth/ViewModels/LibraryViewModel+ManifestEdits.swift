@@ -154,7 +154,9 @@ extension LibraryViewModel {
         }
         let sessions = editor.sessions
         let isDataless = access.isDataless
-        DispatchQueue.global(qos: .utility).async {
+        // Weak here too: a strong capture would hold the library until the
+        // looks end, though the closure below is written for its going.
+        DispatchQueue.global(qos: .utility).async { [weak self] in
             let found = books.map { book in
                 (bookID: book.id, found: sessions.look(at: book, isDataless: isDataless))
             }

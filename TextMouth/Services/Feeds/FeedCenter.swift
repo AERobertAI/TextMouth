@@ -464,7 +464,11 @@ final class FeedCenter: ObservableObject {
         self.library = library
         // Before anything reads the choice, so all read the same one.
         FeedSettings.moveToItemPolicyIfNeeded(in: environment.preferences)
-        return Task {
+        // Weak, then strong once it runs: a strong capture made here would
+        // hold the center before the task began, though the observers below
+        // are written for its going; the guard keeps the work as it was.
+        return Task { [weak self] in
+            guard let self else { return }
             await store.load()
             moveKeptEntriesOverrides()
             await fetchStates.load()

@@ -135,7 +135,7 @@ extension SyncKey {
         case .book(let id, _): return id
         case .bookmark(let book, _): return book
         case .readingList(let book): return book
-        case .folder, .readingListOption: return nil
+        case .folder, .readingListOption, .feed: return nil
         }
     }
 
@@ -145,13 +145,19 @@ extension SyncKey {
         return nil
     }
 
+    /// The feed a key is about (FR56), or nil.
+    var feedID: UUID? {
+        if case .feed(let id, _) = self { return id }
+        return nil
+    }
+
     /// Whether `value`, under this key, is a removal mark: of a book or a
-    /// bookmark or a place on the reading list (`.null`), or of a folder
+    /// bookmark or a place on the reading list or a feed (`.null`), or of a folder
     /// (`.null`, or the ID of the folder it was folded into). Any other
     /// `.null` is a value that is none (a detail cleared, say).
     func marksRemoval(_ value: JSONValue) -> Bool {
         switch self {
-        case .book(_, .presence), .bookmark, .readingList: return value == .null
+        case .book(_, .presence), .bookmark, .readingList, .feed(_, .presence): return value == .null
         case .folder(_, .presence): return value == .null || value.stringValue != nil
         default: return false
         }
@@ -192,6 +198,11 @@ struct SyncProjection: Equatable, Sendable {
     private(set) var values: [SyncKey: JSONValue]
     /// The keys a person edited by hand (`HandEdits`).
     private(set) var byHand: Set<SyncKey>
+    /// True for a projection made without the feeds (FR56), because the host
+    /// had none to give (its feeds not loaded yet, or a host without feeds):
+    /// it holds no `feed/` key, and `SyncMerge.changes` then reports no feed
+    /// key at all, rather than every feed as removed. Never true in a baseline.
+    private(set) var leavesFeedsAlone = false
 
     /// A projection holding nothing: the baseline of a library never recorded.
     init() {
@@ -199,10 +210,11 @@ struct SyncProjection: Equatable, Sendable {
         byHand = []
     }
 
-    /// A projection of `values`, for `of(_:contents:)` and for tests.
-    fileprivate init(values: [SyncKey: JSONValue], byHand: Set<SyncKey>) {
+    /// A projection of `values`, for `of(_:contents:feeds:)` and for tests.
+    fileprivate init(values: [SyncKey: JSONValue], byHand: Set<SyncKey>, leavesFeedsAlone: Bool = false) {
         self.values = values
         self.byHand = byHand
+        self.leavesFeedsAlone = leavesFeedsAlone
     }
 
     // MARK: Keeping a baseline
@@ -241,6 +253,8 @@ struct SyncProjection: Equatable, Sendable {
             for gone in values.keys.filter({ $0.bookID == id }) { values[gone] = nil; byHand.remove(gone) }
         case .folder(let id, .presence):
             for gone in values.keys.filter({ $0.folderID == id }) { values[gone] = nil; byHand.remove(gone) }
+        case .feed(let id, .presence):
+            for gone in values.keys.filter({ $0.feedID == id }) { values[gone] = nil; byHand.remove(gone) }
         default:
             values[key] = nil
             byHand.remove(key)
@@ -281,11 +295,14 @@ extension SyncProjection: Codable {
 
 extension SyncProjection {
     /// The projection of `library`: a key for each value the sync keeps.
-    /// - Parameter contents: the uploaded content of the books that have any; a book
-    ///   without it has no `content` key yet.
+    /// - Parameters:
+    ///   - contents: the uploaded content of the books that have any; a book
+    ///     without it has no `content` key yet.
+    ///   - feeds: the subscriptions (FR56), or nil when the host has none to give yet (its feed
+    ///     store not loaded): the projection then holds no feed key and leaves the feeds alone.
     /// - Note: A book's place on the reading list is its order, a whole number.
     ///   Feed items are left out, and so is `keep`, which no row holds.
-    static func of(_ library: Library, contents: [UUID: SyncContent]) -> SyncProjection {
+    static func of(_ library: Library, contents: [UUID: SyncContent], feeds: [Feed]? = nil) -> SyncProjection {
         var values: [SyncKey: JSONValue] = [:]
         var byHand = Set<SyncKey>()
         let index = SyncFolderIndex(library.folders)
@@ -327,6 +344,10 @@ extension SyncProjection {
         values[.readingListOption(.continuation)] = .string(library.readingList.continuation.rawValue)
         values[.readingListOption(.skipsFinished)] = .bool(library.readingList.skipsFinished)
         values[.readingListOption(.removesFinished)] = .bool(library.readingList.removesFinished)
+
+        // The feeds: what a person decided of each, never what a refresh read (FR56).
+        guard let feeds else { return SyncProjection(values: values, byHand: byHand, leavesFeedsAlone: true) }
+        values.merge(SyncFeedValues.values(of: feeds, using: encoder), uniquingKeysWith: { _, feed in feed })
         return SyncProjection(values: values, byHand: byHand)
     }
 }
@@ -359,6 +380,9 @@ extension SyncValueCoding {
                 })
             }
             return .object(members)
+        case .feed(_, let field):
+            // A feed's setting through its own type, so a field a later TextMouth added is no change (V04).
+            return SyncFeedValues.comparable(value, of: field)
         default:
             return value
         }
@@ -384,21 +408,32 @@ extension SyncValueCoding {
 /// still missing, silently. A book a person removes in the running app is
 /// not held: it was in the library when the app started.
 struct SyncLaunchHold: Sendable {
-    /// The keys held back: presence keys of books and folders missing at launch.
+    /// The keys held back: presence keys of books, folders, and feeds missing at launch.
     private(set) var held: Set<SyncKey> = []
     /// Whether the launch has been looked at.
     private var hasObserved = false
+    /// Whether the feeds have been looked at (FR56). The host gives them only once its feed
+    /// store has loaded, which may be after the first record, so they are looked at, held,
+    /// and settled on their own: at the first record and the first settle that have them.
+    private var hasObservedFeeds = false
+    /// Whether the feeds' hold has ended.
+    private var hasSettledFeeds = false
 
     init() {}
 
-    /// Looks at the library as it stands at launch: the first call holds what the
-    /// baseline has and `now` lacks. Later calls do nothing.
+    /// Looks at the library as it stands at launch: the first call holds the books and
+    /// folders the baseline has and `now` lacks, and the first call whose `now` has the
+    /// feeds holds the feeds the same way. Later calls do nothing.
     mutating func observeLaunch(baseline: SyncProjection, now: SyncProjection) {
-        guard !hasObserved else { return }
+        let observesFeeds = !hasObservedFeeds && !now.leavesFeedsAlone
+        guard !hasObserved || observesFeeds else { return }
+        let observesLibrary = !hasObserved
         hasObserved = true
-        held = Set(baseline.values.keys.filter { key in
+        if observesFeeds { hasObservedFeeds = true }
+        held.formUnion(baseline.values.keys.filter { key in
             switch key {
-            case .book(_, .presence), .folder(_, .presence): return now.values[key] == nil
+            case .book(_, .presence), .folder(_, .presence): return observesLibrary && now.values[key] == nil
+            case .feed(_, .presence): return observesFeeds && now.values[key] == nil
             default: return false
             }
         })
@@ -406,10 +441,21 @@ struct SyncLaunchHold: Sendable {
 
     /// Ends the hold after the first apply after launch: a held key that is still missing from
     /// `now` is dropped from `baseline`, so it is neither put back nor reported as removed.
+    /// The feeds' keys wait for a settle whose `now` has the feeds and follows their observing.
     mutating func settle(baseline: inout SyncProjection, now: SyncProjection) {
-        for key in held where now.values[key] == nil { baseline.forget(key) }
-        held = []
+        let settlesFeeds = hasObservedFeeds && !now.leavesFeedsAlone
+        for key in held {
+            let isFeed = key.feedID != nil
+            if isFeed && !settlesFeeds { continue }
+            if now.values[key] == nil { baseline.forget(key) }
+            held.remove(key)
+        }
+        if settlesFeeds { hasSettledFeeds = true }
     }
+
+    /// Whether the feeds' hold has yet to end (FR56): the host asks for another settle after
+    /// an apply that had the feeds.
+    var awaitsFeeds: Bool { !hasSettledFeeds }
 }
 
 // MARK: - What changed
@@ -459,6 +505,9 @@ extension SyncMerge {
             // A removal already in the baseline is not reported again.
             if stored == .null, key.marksRemoval(.null) { continue }
             switch key {
+            case .feed(_, .presence):
+                // A projection without the feeds says nothing of them (FR56); a feed missing at launch is put back.
+                if reportsRemoval && !now.leavesFeedsAlone && !held.contains(key) { changes[key] = .null }
             case .book(_, .presence), .folder(_, .presence):
                 // A book or folder missing at launch is put back, not removed.
                 if reportsRemoval && !held.contains(key) { changes[key] = .null }

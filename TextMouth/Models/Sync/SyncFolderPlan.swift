@@ -28,6 +28,9 @@ struct SyncFolderPlan {
         /// The folder this one was folded into, when its removal mark says so.
         var foldedInto: UUID?
         var existing: BookFolder?
+        /// Whether its removal mark stands: a folder a person removed (or folded), not one
+        /// whose entries are still arriving.
+        var isRemoved = false
     }
 
     /// The live folders after every rule, in the library's order and then new ones by age.
@@ -77,6 +80,24 @@ struct SyncFolderPlan {
         return nil
     }
 
+    /// The folder a feed listing in folder `id` lists in once the plan is applied (FR56): `id`
+    /// while it lives, the live folder it was folded into, and, for a folder removed without a
+    /// fold, the removed folder itself, so the feed stays without a folder, as Delete Folder…
+    /// leaves one on its own device, rather than taking over a folder above it that holds a
+    /// person's books. Nil for a folder whose entries haven't all arrived, which the feed waits for.
+    func feedFolder(_ id: UUID) -> UUID? {
+        var current = id
+        var seen = Set<UUID>()
+        while seen.insert(current).inserted {
+            if pathByID[current] != nil { return current }
+            guard let node = nodes[current], node.isRemoved else { return nil }
+            guard let folded = redirect[current] ?? node.foldedInto else { return current }
+            current = folded
+        }
+        // A loop of folds lands nowhere.
+        return nil
+    }
+
     /// Whether `id` is a folder the plan knows, live or not.
     func knows(_ id: UUID) -> Bool { nodes[id] != nil }
 
@@ -119,6 +140,7 @@ struct SyncFolderPlan {
                 let newest = [name?.stamp, parent?.stamp].compactMap { $0 }.max()
                 node.isLive = !presence.key.marksRemoval(presence.value) || (newest.map { $0 > presence.stamp } ?? false)
                 node.foldedInto = node.isLive ? nil : SyncValueCoding.uuid(from: presence.value)
+                node.isRemoved = !node.isLive
             } else {
                 node.isLive = node.existing != nil
             }
@@ -223,6 +245,7 @@ struct SyncFolderPlan {
             for folded in ordered.dropFirst() {
                 redirect[folded] = keeper
                 nodes[folded]?.isLive = false
+                nodes[folded]?.isRemoved = true
                 parentOf[folded] = nil
                 // The removal mark names the folder it folded into, so that it lasts: a book recorded
                 // into this folder later still lands in the survivor, and so does a folder.

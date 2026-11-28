@@ -205,7 +205,9 @@ final class BookManifestEditor {
     /// pauses the reader keeps between its tracks.
     func lookForOutsideEdit(of book: Book, showingPauses pauses: ChapterPauses?, in library: LibraryViewModel) {
         let bookID = book.id
-        sessions.scheduleLook(at: book, showingPauses: pauses) { found in
+        // Weak at both closures: a strong capture in the outer one would hold
+        // the editor and the library until the look ends.
+        sessions.scheduleLook(at: book, showingPauses: pauses) { [weak self, weak library] found in
             Task { @MainActor [weak self, weak library] in
                 guard let self, let library else { return }
                 self.handle(found, for: bookID, in: library)

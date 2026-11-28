@@ -224,10 +224,13 @@ enum SyncWording {
         InterfaceText.line("sync.status.notDownloaded", "Some changes from iPhone haven't downloaded yet. TextMouth will try again.")
     }
 
-    /// Removals held back as a mass removal.
-    static func heldRemovals(books: Int, device: String) -> String {
+    /// Removals held back as a mass removal: of books, of feeds (FR56), or of both, each counted
+    /// ("42 books", "5 feeds", "42 books, 5 feeds").
+    static func heldRemovals(books: Int, feeds: Int = 0, device: String) -> String {
+        let counts = (books > 0 || feeds == 0 ? [Self.books(books)] : []) + (feeds > 0 ? [CountWording.feeds(feeds)] : [])
+        let removals = CountWording.joinedCounts(counts)
         // Translators: The Sync status when TextMouth held back removing many books at once because it looked like a mistake. The first %@ is a phrase counting books ("42 books"), and the second names the device ("this Mac" or "this iPhone"), whose library the person should check. Sync Now is the name of a command.
-        InterfaceText.line("sync.status.heldRemovals", "TextMouth held back removing \(Self.books(books)), since it looked like a mistake. Check the library on \(device), then choose Sync Now.")
+        return InterfaceText.line("sync.status.heldRemovals", "TextMouth held back removing \(removals), since it looked like a mistake. Check the library on \(device), then choose Sync Now.")
     }
 
     /// Everything is synced.
