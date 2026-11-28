@@ -657,6 +657,7 @@
 		300935A0EAF74C123A15F126 /* BrailleExportWriterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CD1B3006DAA910AEFA0062E /* BrailleExportWriterTests.swift */; };
 		3010E44BF19DD79F2E4CF759 /* MarkdownExportWriterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA57971FD93B4B8AE00F8DC3 /* MarkdownExportWriterTests.swift */; };
 		30241368A8A6B507A46CA059 /* OwnAudioSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD17B1C8FBAF8EC46E27557F /* OwnAudioSource.swift */; };
+		3025E93BFFBED1BAB43391B4 /* SpeechWriteTrace.swift in Sources */ = {isa = PBXBuildFile; fileRef = C851F40C43025324B17C7507 /* SpeechWriteTrace.swift */; };
 		304682897A28F9A50407943E /* ViewsAndWindowsCloudStatesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4776C9B0EAD6B661C0F7E05 /* ViewsAndWindowsCloudStatesTests.swift */; };
 		305C2BCD6F9107A732AF3142 /* PortableXMLPath.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E14C27D7689D65EA8740AD3 /* PortableXMLPath.swift */; };
 		3093AD6F8F1BB42A0AC1AA23 /* ReadingListTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD418ED2DDCA03DC9ACF0A72 /* ReadingListTests.swift */; };
@@ -3414,6 +3415,7 @@
 		FF279005A89127313B2184FD /* PhoneLibraryOfferTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C27C8AF8724D03F8107A01B1 /* PhoneLibraryOfferTests.swift */; };
 		FF34D03F228015EE01A43AA7 /* InterfaceLanguageEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8104B9DDBA0AE1890B4117B9 /* InterfaceLanguageEnvironment.swift */; };
 		FF545097B6D53ED12090D8FC /* TimeRemainingTally.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2576297CC6059125FCE682C4 /* TimeRemainingTally.swift */; };
+		FF5BA7536D0B8E746B03BB70 /* SpeechWriteTraceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CB89D2FACE67A82639A7904 /* SpeechWriteTraceTests.swift */; };
 		FF676EFC2129E094A5D05363 /* LibrarySearchTextStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 992E5571161393CFF92DE8C5 /* LibrarySearchTextStoreTests.swift */; };
 		FF6C701411C0B48F3EA985C8 /* FeedNewestRule.swift in Sources */ = {isa = PBXBuildFile; fileRef = C14297E44DC19985B5769549 /* FeedNewestRule.swift */; };
 		FFA2A96D8F3B64CBF90482FA /* TimedTextMarkup.swift in Sources */ = {isa = PBXBuildFile; fileRef = D97891DE98ED1F51332BE51C /* TimedTextMarkup.swift */; };
@@ -4038,6 +4040,7 @@
 		1C090461ADC1679DC0477C4F /* DOCXSymbolTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DOCXSymbolTests.swift; sourceTree = "<group>"; };
 		1C4981110E48A997DB1CA074 /* SyncPlaceholder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncPlaceholder.swift; sourceTree = "<group>"; };
 		1CAB7D7B735376475942A514 /* DOCXEdgeCaseTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DOCXEdgeCaseTests.swift; sourceTree = "<group>"; };
+		1CB89D2FACE67A82639A7904 /* SpeechWriteTraceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechWriteTraceTests.swift; sourceTree = "<group>"; };
 		1CC767F35BF5E96B70C5705F /* AudioMediaImportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioMediaImportTests.swift; sourceTree = "<group>"; };
 		1CE695A21D1A7F122D182C33 /* AudioEditorSavingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEditorSavingTests.swift; sourceTree = "<group>"; };
 		1D20B42E053A144A83BEDEF0 /* PageImageScriptedRecognizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageImageScriptedRecognizer.swift; sourceTree = "<group>"; };
@@ -5494,6 +5497,7 @@
 		C7E873DC9B3DF3165889E28E /* PhoneLogExport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneLogExport.swift; sourceTree = "<group>"; };
 		C7F6EDA0C13DB2893710CFA8 /* DAISYPageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DAISYPageTests.swift; sourceTree = "<group>"; };
 		C80E4011CB6F111965BD5C0E /* PackContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PackContainer.swift; sourceTree = "<group>"; };
+		C851F40C43025324B17C7507 /* SpeechWriteTrace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechWriteTrace.swift; sourceTree = "<group>"; };
 		C8661F7ED06ADE835B6F3729 /* WordDocumentSections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordDocumentSections.swift; sourceTree = "<group>"; };
 		C88D3D70CA6BC1EFA10C5F71 /* PhoneGoToModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneGoToModelTests.swift; sourceTree = "<group>"; };
 		C8D26084C193E10B62EDD9DA /* LibrarySearchEngineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibrarySearchEngineTests.swift; sourceTree = "<group>"; };
@@ -8287,6 +8291,8 @@
 				8CE0128FC4D8CBCFBBB84437 /* SpeechRefusalSheetTests.swift */,
 				450BAF2FF4A918E6A9B7A8C1 /* SpeechRenderCoordinatorTests.swift */,
 				70EAC2B4ED1C8ED9B69A02B6 /* SpeechVoiceWarmUpTests.swift */,
+				C851F40C43025324B17C7507 /* SpeechWriteTrace.swift */,
+				1CB89D2FACE67A82639A7904 /* SpeechWriteTraceTests.swift */,
 				819A292A7538FC1A8C83542C /* SpeedBesideTimesTests.swift */,
 				D3FB754EDCAD346448D59062 /* SSMLReaderTests.swift */,
 				A61B46F44B06CD3760CAFDCC /* StackProbe.swift */,
@@ -10656,6 +10662,8 @@
 				312F6E770BCB7FDA2FADBCDC /* SpeechRefusalSheetTests.swift in Sources */,
 				0E09E888CCAF8E370815D0E6 /* SpeechRenderCoordinatorTests.swift in Sources */,
 				E2732B6BD3B2371D6EF0616D /* SpeechVoiceWarmUpTests.swift in Sources */,
+				3025E93BFFBED1BAB43391B4 /* SpeechWriteTrace.swift in Sources */,
+				FF5BA7536D0B8E746B03BB70 /* SpeechWriteTraceTests.swift in Sources */,
 				5797F1DC300FAE36591F779D /* SpeedBesideTimesTests.swift in Sources */,
 				FFE39238835A8C4BBBAFE676 /* StackProbe.swift in Sources */,
 				7BB36FE7FE4A2827C7AF961F /* StagedImportTests.swift in Sources */,
