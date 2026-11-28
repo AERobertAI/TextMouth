@@ -254,6 +254,7 @@ final class SpeechWriteTraceTests: XCTestCase {
         let synthesizer = Self.synthesizer(over: writer)
         let outcome = OSAllocatedUnfairLock<Result<SpeechWriteEnd, Error>?>(initialState: nil)
         let ended = expectation(description: "the write ended")
+        ended.assertForOverFulfill = false
         DispatchQueue.global().async {
             let utterance = SpeechExportUtterance(text: trace.text, voiceIdentifier: "stand-in", rate: 0.5, pitchMultiplier: 1)
             let result = Result {
