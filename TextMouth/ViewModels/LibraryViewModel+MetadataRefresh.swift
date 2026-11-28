@@ -118,7 +118,9 @@ extension LibraryViewModel {
             return
         }
         isRefreshingMetadata = true
-        DispatchQueue.global(qos: .utility).async {
+        // Weak here too: a strong capture would hold the library until the
+        // pass ends, though the closure below is written for its going.
+        DispatchQueue.global(qos: .utility).async { [weak self] in
             let boundary = StorageBoundary.shared
             let skips = CloudSkips(.metadataRefresh)
             var readings: [MetadataReading] = []

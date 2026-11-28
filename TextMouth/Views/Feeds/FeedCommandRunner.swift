@@ -381,7 +381,9 @@ extension LibraryFeedsPresenter {
     /// - Returns: The refresh, which tests await.
     @discardableResult
     func refreshAll(in context: FeedCommandContext) -> Task<Void, Never> {
-        Task {
+        // Weak at both closures: a strong capture in the Task would hold the
+        // runner until the refresh ends.
+        Task { [weak self] in
             await context.center.refreshAllSaying { [weak self] message in
                 self?.announce(message, context.window)
             }

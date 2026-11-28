@@ -135,6 +135,27 @@ final class TextAnchorCaptureLaunchTests: FeedItemIndexTestCase {
         }
     }
 
+    /// The pass does not keep the library alive: a library released while
+    /// the pass reads, off the main thread, is gone at once, and the pass
+    /// still ends (FU12: its closure held the library strongly).
+    @MainActor
+    func testThePassDoesNotHoldTheLibrary() async throws {
+        let book = try makeTextBookWithAPosition(title: "Released")
+        var model: LibraryViewModel? = makeModel(with: [book])
+        weak var watched = model
+        let held = HeldFileAccess()
+        let ended = expectation(description: "The pass ended")
+        model?.captureMissingTextAnchors(access: held.access) { _ in ended.fulfill() }
+        XCTAssertTrue(held.waitUntilHeld(), "the pass never reached the book's text")
+
+        model = nil
+        let released = eventually(within: 5) { watched == nil }
+        held.release()
+        await fulfillment(of: [ended], timeout: 20)
+
+        XCTAssertTrue(released, "the pass kept the library alive")
+    }
+
     // MARK: - Before the Text Cache Batch
 
     /// A place saved in a text an older extraction wrote takes the words of
