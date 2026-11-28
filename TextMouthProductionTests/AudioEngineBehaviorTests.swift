@@ -1244,18 +1244,25 @@ final class AudioEngineBehaviorTests: XCTestCase {
         XCTAssertEqual(reported.withLock { $0 }, false, "a render whose engine is gone reported audio installed")
     }
 
-    /// A render cancelled by the engine wakes the render queue's wait
-    /// without a sound: the observer signals the semaphore it was given and
-    /// remembers the cancel.
-    func testTheCancellationObserverWakesTheWait() {
-        let semaphore = DispatchSemaphore(value: 0)
-        let observer = RenderCancellationObserver(waking: semaphore)
-        XCTAssertFalse(observer.wasCancelled)
+    /// A write's relay, which a render gives its synthesizer, passes on the
+    /// synthesizer's finish and its cancel, each to its own closure, without
+    /// a sound: the render's wait wakes at either, and only a cancel is
+    /// remembered as one.
+    func testTheWriteRelayPassesOnTheFinishAndTheCancel() {
+        let finishes = OSAllocatedUnfairLock(initialState: 0)
+        let cancels = OSAllocatedUnfairLock(initialState: 0)
+        let relay = SpeechWriteRelay(
+            onFinish: { finishes.withLock { $0 += 1 } },
+            onCancel: { cancels.withLock { $0 += 1 } }
+        )
 
-        observer.speechSynthesizer(AVSpeechSynthesizer(), didCancel: AVSpeechUtterance(string: "x"))
+        relay.speechSynthesizer(AVSpeechSynthesizer(), didFinish: AVSpeechUtterance(string: "x"))
+        XCTAssertEqual(finishes.withLock { $0 }, 1)
+        XCTAssertEqual(cancels.withLock { $0 }, 0)
 
-        XCTAssertEqual(semaphore.wait(timeout: .now() + 1), .success)
-        XCTAssertTrue(observer.wasCancelled)
+        relay.speechSynthesizer(AVSpeechSynthesizer(), didCancel: AVSpeechUtterance(string: "x"))
+        XCTAssertEqual(finishes.withLock { $0 }, 1)
+        XCTAssertEqual(cancels.withLock { $0 }, 1)
     }
 
     /// Render `request` into `engine` in its turn on the app's render
