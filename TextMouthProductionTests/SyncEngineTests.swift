@@ -224,7 +224,8 @@ final class SyncEngineTests: XCTestCase {
         XCTAssertEqual(emptied.recorded, 0)
         XCTAssertEqual(emptied.heldFeedRemovals, 6)
         XCTAssertEqual(emptied.heldRemovals, 0, "no book was removed")
-        let still = await engine.entry(for: .feed(feeds[0].id, .presence))
+        let first = try XCTUnwrap(feeds.first)
+        let still = await engine.entry(for: .feed(first.id, .presence))
         XCTAssertEqual(still?.value, .bool(true), "nothing was sent")
         // Sync Now confirms them.
         await engine.confirmHeldRemovals()
