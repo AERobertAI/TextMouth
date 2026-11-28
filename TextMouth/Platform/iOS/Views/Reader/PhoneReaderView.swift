@@ -3,9 +3,9 @@ import SwiftUI
 import UIKit
 
 /// The reader's screen: Book content, Play, and a grid of up to three columns
-/// and six rows (`PhoneReaderControl.gridRows`), in the spec's order and
-/// layout (the spec, under "The reader"; Search in Book follows Headings,
-/// which makes sixteen controls).
+/// and five rows (`PhoneReaderControl.gridRows`), in the spec's order and
+/// layout (the spec, under "The reader"), its less frequent actions under
+/// Book Actions (FR51).
 ///
 /// The view is thin. It reads the session's snapshot, which changes only
 /// when the book's title, playing, or loading does, never as the place moves;
@@ -28,11 +28,14 @@ struct PhoneReaderView: View {
     @State private var bookmarkToRemove: Bookmark?
     /// Whether the load failure has VoiceOver's focus.
     @AccessibilityFocusState private var failureFocused: Bool
+    /// Whether a sleep timer runs, changing only when that does.
+    @StateObject private var timer = PhoneSleepTimerWatcher()
 
     /// At accessibility text sizes the grid becomes one column.
     @Environment(\.dynamicTypeSize) private var typeSize
-    /// Book content's height: about six lines of body text at any size.
-    @ScaledMetric(relativeTo: .body) private var textHeight: CGFloat = 150
+    /// Book content's height: about twelve lines of body text at any size,
+    /// the reader's main area, as Voice Dream Reader's text is (FR48).
+    @ScaledMetric(relativeTo: .body) private var textHeight: CGFloat = 300
     /// Play's height, the same in every book.
     @ScaledMetric(relativeTo: .title2) private var playHeight: CGFloat = 88
 
@@ -79,6 +82,10 @@ struct PhoneReaderView: View {
             // screen, and focus stays where the listener put it.
             .task {
                 await arrive()
+            }
+            // The same reader keeps the same watch on its timer; the next book's is a new one.
+            .task(id: session.reader.map(ObjectIdentifier.init)) {
+                timer.watch(session.reader)
             }
             // A protected book asks for its password over the reader (FR41).
             // One overlay for every book and none, so its identity never
@@ -131,10 +138,21 @@ struct PhoneReaderView: View {
                 snapshot: session.snapshot,
                 followsInBraille: { PhoneReaderView.followsInBraille }
             )
-            .frame(height: textHeight)
+            // Twelve lines, but never so tall that Play falls below the first
+            // screen at the largest text sizes: the share is of the reader's
+            // scroll view, the nearest container.
+            .containerRelativeFrame(.vertical) { visible, _ in
+                CGFloat(PhoneReaderControls.bookContentHeight(scaled: Double(textHeight), visible: Double(visible)))
+            }
 
             control(.play)
                 .frame(height: playHeight)
+
+            // While a timer runs, the Sleep Timer shows under Play, its value
+            // the time left (`PhoneReaderControl.screen(timerRuns:)`).
+            if timer.runs {
+                control(.sleepTimer)
+            }
 
             if typeSize.isAccessibilitySize {
                 ForEach(PhoneReaderControl.grid, id: \.self) { item in
@@ -178,17 +196,50 @@ struct PhoneReaderView: View {
             decrement: adjustment(for: item, up: false),
             perform: customActions(for: item),
             focusKind: item.focusKind,
-            showsValue: item == .navigationUnit || item == .speed,
-            rotors: rotors(for: item)
+            showsValue: item == .navigationUnit || item == .speed || item == .sleepTimer,
+            rotors: rotors(for: item),
+            menuItems: menuItems(for: item),
+            refreshesEverySecond: item == .sleepTimer,
+            hiddenFromVoiceOver: item.isHiddenFromVoiceOver,
+            longPress: longPress(for: item)
         )
         .frame(maxWidth: .infinity)
+    }
+
+    /// The maker of `item`'s menu items: Book Actions' (FR51); nil for the
+    /// controls with no menu.
+    private func menuItems(for item: PhoneReaderControl) -> (@MainActor () -> [UIMenuElement])? {
+        guard item == .bookActions else { return nil }
+        return { bookActionsMenu() }
+    }
+
+    /// The Book Actions menu's items (FR51), made as it opens: each is its
+    /// old button's label, and opens that button's sheet. No subtitle: the
+    /// sleep timer's status shows on its own control under Play while one
+    /// runs. Focus comes back to Book Actions when the sheet closes, since the
+    /// item's own button isn't on screen.
+    private func bookActionsMenu() -> [UIMenuElement] {
+        let model = model
+        return PhoneReaderControl.bookActionItems.compactMap { item in
+            guard let description = model.description(of: item) else { return nil }
+            let action = UIAction(title: description.label) { _ in
+                // On the next turn, once the menu has begun to close, so the
+                // sheet isn't presented over a menu still on its way out.
+                Task { @MainActor in
+                    sheetOpener = .bookActions
+                    sheet = item.sheet
+                }
+            }
+            return action
+        }
     }
 
     /// What activating `item` does.
     private func action(for item: PhoneReaderControl) -> (@MainActor () -> Void)? {
         let model = model
         switch item {
-        case .bookContent, .speed:
+        case .bookContent, .speed, .bookActions:
+            // Book content and Speed have no action; Book Actions opens its menu.
             return nil
         case .play:
             return { model.togglePlayPause() }
@@ -231,14 +282,31 @@ struct PhoneReaderView: View {
 
     /// What `item`'s custom actions do: Where Am I?'s two, the Mac's.
     private func customActions(for item: PhoneReaderControl) -> (@MainActor (PhoneControlAction) -> Void)? {
-        guard item == .whereAmI else { return nil }
+        guard item == .whereAmI || item == .play else { return nil }
         let model = model
         return { action in
             switch action {
             case .whereAmIFullSummary: model.whereAmIFullSummary()
             case .copyReadingPosition: model.copyReadingPosition()
+            case .sleepTimer: openSleepTimer(from: item)
             }
         }
+    }
+
+    /// Opens the Sleep Timer sheet from `opener` (FR52: Play's action and its
+    /// long press, which a VoiceOver one-finger triple tap makes), focus
+    /// coming back to `opener` as it closes.
+    private func openSleepTimer(from opener: PhoneReaderControl) {
+        sheetOpener = opener
+        sheet = PhoneReaderControl.sleepTimer.sheet
+    }
+
+    /// What a long press on `item` does: Play's opens the Sleep Timer (FR52).
+    /// VoiceOver's one-finger triple tap is a long press on the item ("Touch
+    /// and hold (long press) the item", Apple's VoiceOver gestures list).
+    private func longPress(for item: PhoneReaderControl) -> (@MainActor () -> Void)? {
+        guard item == .play else { return nil }
+        return { openSleepTimer(from: .play) }
     }
 
     /// `item`'s own rotors: Play's, while their flag is on; none otherwise.
@@ -291,13 +359,16 @@ struct PhoneReaderView: View {
     }
 
     /// A sheet closed: the text follows a jump made in it, and focus returns
-    /// to the control that opened it.
+    /// to the control that opened it, or to Play when that control has left
+    /// the screen (the Sleep Timer under Play, its timer turned off in the
+    /// sheet: `PhoneReaderControl.focusTarget`).
     private func sheetClosed() {
         model.invalidate()
         model.placeDidMove?()
-        guard let kind = sheetOpener?.focusKind else { return }
+        guard let opener = sheetOpener else { return }
         sheetOpener = nil
-        returnFocus(to: kind)
+        let timerRuns = session.reader?.sleepTimerService.isActive ?? false
+        returnFocus(to: PhoneReaderControl.focusTarget(returningTo: opener, timerRuns: timerRuns).focusKind)
     }
 
     /// Returns focus to the control of `kind` after 0.35 seconds, by a layout
@@ -549,5 +620,44 @@ private final class PhoneUnlockPromptWatcher: ObservableObject {
                 // `$unlockPrompt` publishes just before the change, with the new value.
                 MainActor.assumeIsolated { self?.watchedPrompt = new }
             }
+    }
+}
+
+// MARK: - The Sleep Timer
+
+/// Whether a sleep timer runs for the open reader (FR51, FR52), republished
+/// when that changes and not as the timer counts down, so the reader's
+/// screen redraws only as the timer starts or ends, as `PhoneUnlockPromptWatcher`
+/// republishes only its prompt.
+@MainActor
+final class PhoneSleepTimerWatcher: ObservableObject {
+    /// Whether a timer runs.
+    @Published private(set) var runs = false
+    /// The subscription to the timer's `isActive`.
+    private var subscription: AnyCancellable?
+
+    /// Watches `reader`'s sleep timer, or nothing.
+    func watch(_ reader: ReaderViewModel?) {
+        runs = reader?.sleepTimerService.isActive ?? false
+        subscription = reader?.sleepTimerService.$isActive
+            .removeDuplicates()
+            .sink { [weak self] isActive in
+                // `$isActive` publishes just before the change, with the new value.
+                MainActor.assumeIsolated { self?.timerChanged(runs: isActive) }
+            }
+    }
+
+    /// The timer started or ended. As it ends, the Sleep Timer under Play
+    /// leaves the screen; if VoiceOver's focus was on it, focus goes to Play
+    /// once the control has gone, rather than VoiceOver dropping it at the
+    /// top of the screen (`PhoneReaderControl.focusTarget`). Asked here,
+    /// before the screen redraws, while the control is still there to ask.
+    private func timerChanged(runs isActive: Bool) {
+        let focusWasOnTimer = runs && !isActive
+            && PhoneFocusRegistry.shared.view(for: .sleepTimer)?.accessibilityElementIsFocused() == true
+        runs = isActive
+        guard focusWasOnTimer else { return }
+        let target = PhoneReaderControl.focusTarget(returningTo: .sleepTimer, timerRuns: isActive)
+        PhoneFocusRegistry.shared.requestFocus(on: target.focusKind, after: PhoneFocusPolicy.screenChangedDelay)
     }
 }

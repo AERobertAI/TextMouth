@@ -189,6 +189,67 @@ final class PhonePassagePolicyTests: XCTestCase {
         XCTAssertNil(place([], chapter: 0, offset: 0))
     }
 
+    // MARK: - The Sentence Being Spoken (FR48)
+
+    /// The highlight follows the speech while VoiceOver's focus is elsewhere,
+    /// holds still under it unless Follow in Braille is on, and waits five
+    /// seconds after the person's own scroll.
+    func testTheHighlightFollowsOnlyAwayFromFocusAndAfterAScrollSettles() {
+        XCTAssertTrue(PhonePassagePolicy.highlightFollows(hasFocus: false, followsInBraille: false, secondsSinceScroll: nil))
+        XCTAssertFalse(PhonePassagePolicy.highlightFollows(hasFocus: true, followsInBraille: false, secondsSinceScroll: nil))
+        XCTAssertTrue(PhonePassagePolicy.highlightFollows(hasFocus: true, followsInBraille: true, secondsSinceScroll: nil))
+        XCTAssertFalse(PhonePassagePolicy.highlightFollows(hasFocus: false, followsInBraille: false, secondsSinceScroll: 4.9))
+        XCTAssertTrue(PhonePassagePolicy.highlightFollows(hasFocus: false, followsInBraille: false, secondsSinceScroll: 5))
+        XCTAssertFalse(PhonePassagePolicy.highlightFollows(hasFocus: true, followsInBraille: false, secondsSinceScroll: 60))
+    }
+
+    /// The highlighted sentence is the one holding the place, from its start
+    /// to the next sentence's, as a range in the passage.
+    func testTheSpokenSentenceIsTheOneHoldingThePlace() {
+        let passage = "One two. Three four! Five?"
+        // The passage starts 100 characters into its chapter.
+        XCTAssertEqual(PhonePassagePolicy.spokenSentence(inPassage: passage, passageStart: 100, place: 100), 0..<9)
+        XCTAssertEqual(PhonePassagePolicy.spokenSentence(inPassage: passage, passageStart: 100, place: 104), 0..<9)
+        XCTAssertEqual(PhonePassagePolicy.spokenSentence(inPassage: passage, passageStart: 100, place: 109), 9..<21)
+        XCTAssertEqual(PhonePassagePolicy.spokenSentence(inPassage: passage, passageStart: 100, place: 115), 9..<21)
+        XCTAssertEqual(PhonePassagePolicy.spokenSentence(inPassage: passage, passageStart: 100, place: 121), 21..<26)
+    }
+
+    /// The tick's 10-second refresh waits while a finger scrolls the text, as
+    /// the highlight does, so a new passage never pulls the text from under
+    /// it; once the five quiet seconds pass, the refresh is asked for again.
+    func testTheRefreshWaitsWhileAFingerScrolls() {
+        func plan(refreshDue: Bool = true, placeMoved: Bool = true, hasFocus: Bool = false, since: TimeInterval?) -> PhonePassagePolicy.TickPlan {
+            PhonePassagePolicy.tickPlan(
+                refreshDue: refreshDue, placeMoved: placeMoved, hasFocus: hasFocus,
+                followsInBraille: false, secondsSinceScroll: since
+            )
+        }
+        XCTAssertEqual(plan(since: nil), .init(asksRefresh: true, movesHighlight: true))
+        XCTAssertEqual(plan(since: 1), .init(asksRefresh: false, movesHighlight: false))
+        XCTAssertEqual(plan(since: 4.9), .init(asksRefresh: false, movesHighlight: false))
+        XCTAssertEqual(plan(since: 5), .init(asksRefresh: true, movesHighlight: true))
+        XCTAssertEqual(plan(refreshDue: false, since: nil), .init(asksRefresh: false, movesHighlight: true))
+        // Under VoiceOver's focus the refresh is still asked for: `changesPassage` refuses it.
+        XCTAssertEqual(plan(hasFocus: true, since: nil), .init(asksRefresh: true, movesHighlight: false))
+    }
+
+    /// A place that hasn't moved since the highlight was placed (a paused
+    /// book) leaves the highlight, and the 20,000 characters under it, alone.
+    func testAPlaceThatHasNotMovedLeavesTheHighlightAlone() {
+        let still = PhonePassagePolicy.tickPlan(
+            refreshDue: false, placeMoved: false, hasFocus: false, followsInBraille: false, secondsSinceScroll: nil
+        )
+        XCTAssertEqual(still, .init(asksRefresh: false, movesHighlight: false))
+    }
+
+    /// A place before the passage or past its end lights nothing.
+    func testAPlaceOutsideThePassageLightsNothing() {
+        XCTAssertNil(PhonePassagePolicy.spokenSentence(inPassage: "One. Two.", passageStart: 10, place: 9))
+        XCTAssertNil(PhonePassagePolicy.spokenSentence(inPassage: "One. Two.", passageStart: 10, place: 19))
+        XCTAssertNil(PhonePassagePolicy.spokenSentence(inPassage: "", passageStart: 0, place: 0))
+    }
+
     // MARK: - Read All's page turns
 
     /// Paused, a turn moves the place as well as the text, so stopping Read All

@@ -10,6 +10,17 @@ import UIKit
 /// code. Its passage starts at the sentence at the reading position; what
 /// changes it, and when, is `PhonePassagePolicy`'s.
 ///
+/// One scrollable text area, as Voice Dream Reader has (FR48): one element
+/// for VoiceOver, never one per paragraph, so a swipe passes the whole text
+/// at once. The sentence at the reading place is highlighted for sight, and
+/// while the book plays the highlight moves with the speech once a second
+/// and the text scrolls to keep it in view, but only while VoiceOver's focus
+/// is elsewhere (or Follow in Braille is on): nothing is posted to VoiceOver
+/// and no focus moves, so a person reading the text by speech or braille
+/// keeps their place. Where the speech is reaches VoiceOver as the passage's
+/// start, which is the sentence at the place whenever focus arrives (within
+/// the 10-second refresh), and as Where Am I?'s value.
+///
 /// Nothing here has run on iOS. Unverified, and on the hand-check list:
 /// whether a selectable text view's selection follows VoiceOver's cursor or a
 /// router key; how the Sentences rotor behaves; paging by three-finger swipe.
@@ -71,8 +82,23 @@ final class PhoneBookTextView: UITextView {
     private var rotorSentence: Int?
     /// Whether this view turned off the screen's sleep, which it puts back.
     private var endScreenHold: (@MainActor () -> Void)?
-    /// The 10-second tick while the app is active and the view on screen.
+    /// The one-second tick while the app is active and the view on screen:
+    /// it moves the highlight each time, and asks for the passage's
+    /// 10-second refresh when that is due.
     private var tick: Timer?
+    /// When the tick last asked for the passage's refresh.
+    private var lastRefresh = Date.distantPast
+    /// The highlighted sentence, as a range in the passage; nil for none.
+    private var highlighted: Range<Int>?
+    /// The reading place the highlight was last placed for, as chapter and
+    /// UTF-16 offset; nil since the passage changed. The tick does nothing
+    /// more while the place stays here.
+    private var highlightedPlace: [Int]?
+    /// When the person last scrolled the text by touch; nil since it was shown.
+    private var lastTouchScroll: Date?
+    /// The highlight's color: the system's yellow, faint enough to read
+    /// through in light and dark appearance.
+    private static let highlightColor = UIColor.systemYellow.withAlphaComponent(0.35)
     /// The app's activity observers.
     private var observers: [NSObjectProtocol] = []
     /// Whether the app went to the background since it was last active, so
@@ -92,6 +118,12 @@ final class PhoneBookTextView: UITextView {
         layer.cornerRadius = 8
         textContainerInset = UIEdgeInsets(top: 8, left: 8, bottom: 8, right: 8)
         accessibilityTextualContext = .narrative
+        // One element, so VoiceOver never splits the text by paragraph and a
+        // single swipe passes it (FR48); its rotor still moves through it by
+        // line, word, and character, as for the Mac's twin `ReadOnlyTextArea`.
+        isAccessibilityElement = true
+        // Told of the person's own scrolls, which hold the highlight back.
+        delegate = self
     }
 
     /// Not made from a storyboard.
@@ -199,9 +231,62 @@ final class PhoneBookTextView: UITextView {
         guard next != shown else { return }
         shown = next
         rotorSentence = nil
+        highlighted = nil
+        highlightedPlace = nil
+        lastTouchScroll = nil
         text = next.text
         selectedRange = NSRange(location: 0, length: 0)
         setContentOffset(.zero, animated: false)
+        // The new passage starts at the place: its first sentence is lit.
+        moveHighlight(of: reader, scrolls: false)
+    }
+
+    // MARK: - The Highlighted Sentence (FR48)
+
+    /// Lights the sentence at `reader`'s place in the passage shown, and, when
+    /// `scrolls`, brings it into view. Only the text's background changes,
+    /// never its characters, and nothing is posted to VoiceOver.
+    private func moveHighlight(of reader: ReaderViewModel, scrolls: Bool) {
+        guard let shown, let chapter = shown.chapter else { return }
+        highlightedPlace = Self.place(of: reader)
+        let sentence = reader.currentChapterIndex == chapter
+            ? PhonePassagePolicy.spokenSentence(
+                inPassage: shown.text,
+                passageStart: shown.range.lowerBound,
+                place: reader.currentCharacterOffset
+            )
+            : nil
+        guard sentence != highlighted else { return }
+        let storage = textStorage
+        let length = storage.length
+        if let old = highlighted, old.upperBound <= length {
+            storage.removeAttribute(.backgroundColor, range: NSRange(location: old.lowerBound, length: old.count))
+        }
+        highlighted = sentence
+        guard let sentence, sentence.upperBound <= length, !sentence.isEmpty else { return }
+        let range = NSRange(location: sentence.lowerBound, length: sentence.count)
+        storage.addAttribute(.backgroundColor, value: Self.highlightColor, range: range)
+        if scrolls { scrollToShow(range) }
+    }
+
+    /// Scrolls so the sentence in `range` is in view, near the area's top,
+    /// when any of it is out of view; a sentence in view leaves the text still.
+    private func scrollToShow(_ range: NSRange) {
+        guard let start = position(from: beginningOfDocument, offset: range.location),
+              let end = position(from: start, offset: range.length),
+              let textRange = textRange(from: start, to: end) else { return }
+        let rect = firstRect(for: textRange)
+        guard !rect.isNull, !rect.isInfinite else { return }
+        let visible = CGRect(origin: contentOffset, size: bounds.size)
+        guard !visible.contains(rect) else { return }
+        let highest = max(0, contentSize.height - bounds.height)
+        let top = min(max(0, rect.minY - textContainerInset.top), highest)
+        setContentOffset(CGPoint(x: 0, y: top), animated: true)
+    }
+
+    /// `reader`'s place, as the chapter and the UTF-16 offset in it.
+    private static func place(of reader: ReaderViewModel) -> [Int] {
+        [reader.currentChapterIndex, reader.currentCharacterOffset]
     }
 
     /// The UTF-16 range `range` of `text`.
@@ -213,15 +298,45 @@ final class PhoneBookTextView: UITextView {
 
     // MARK: - The Tick
 
-    /// Starts the 10-second tick, which follows the book while it plays and
-    /// the text doesn't have focus. It runs on the main run loop, and only
-    /// while the app is active and the view is on screen.
+    /// Starts the one-second tick: each time it moves the highlight with the
+    /// speech, and every 10 seconds it asks for the passage's refresh, which
+    /// follows the book while it plays and the text doesn't have focus. It
+    /// runs on the main run loop, and only while the app is active and the
+    /// view is on screen.
     private func startTick() {
         guard tick == nil, window != nil else { return }
-        tick = Timer.scheduledTimer(withTimeInterval: PhonePassagePolicy.refreshInterval, repeats: true) { [weak self] _ in
+        let timer = Timer.scheduledTimer(withTimeInterval: PhonePassagePolicy.followInterval, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated {
-                self?.passageEvent(.playingTick)
+                self?.ticked()
             }
+        }
+        // A fifth of a second's leeway lets the system group the wake-ups,
+        // which saves battery; the highlight needs no finer timing.
+        timer.tolerance = PhonePassagePolicy.followInterval / 5
+        tick = timer
+    }
+
+    /// One tick, as `PhonePassagePolicy.tickPlan` says: the passage's refresh
+    /// when 10 seconds have passed since the last and no finger is scrolling,
+    /// then the highlight, when the place has moved and the policy lets it.
+    private func ticked() {
+        guard let reader = model?.reader else { return }
+        let now = Date()
+        let plan = PhonePassagePolicy.tickPlan(
+            refreshDue: now.timeIntervalSince(lastRefresh) >= PhonePassagePolicy.refreshInterval,
+            placeMoved: highlightedPlace != Self.place(of: reader),
+            hasFocus: hasFocus,
+            followsInBraille: followsInBraille(),
+            secondsSinceScroll: lastTouchScroll.map { now.timeIntervalSince($0) }
+        )
+        if plan.asksRefresh {
+            lastRefresh = now
+            passageEvent(.playingTick)
+        }
+        // A refresh that showed a new passage has lit its first sentence and
+        // noted the place already, so the place is asked about again here.
+        if plan.movesHighlight, highlightedPlace != Self.place(of: reader) {
+            moveHighlight(of: reader, scrolls: true)
         }
     }
 
@@ -397,5 +512,20 @@ final class PhoneBookTextView: UITextView {
     private func allowScreenSleep() {
         endScreenHold?()
         endScreenHold = nil
+    }
+}
+
+// MARK: - The Person's Own Scrolls
+
+extension PhoneBookTextView: UITextViewDelegate {
+    /// A finger began to scroll the text: the highlight holds still for a few
+    /// seconds rather than pull the text back (`PhonePassagePolicy.touchQuietInterval`).
+    func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
+        lastTouchScroll = Date()
+    }
+
+    /// The finger let go: the quiet seconds count from here.
+    func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) {
+        lastTouchScroll = Date()
     }
 }

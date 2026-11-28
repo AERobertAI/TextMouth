@@ -38,6 +38,100 @@ enum PhonePassagePolicy {
     /// content doesn't have focus.
     static let refreshInterval: TimeInterval = 10
 
+    /// How often the highlighted sentence follows the speech inside the
+    /// passage shown (FR48): a second, so the sentence being spoken stays in
+    /// sight without the text view being touched at every word.
+    static let followInterval: TimeInterval = 1
+
+    /// How long a person's own scroll of the text keeps the highlight from
+    /// scrolling it back to the sentence being spoken (FR48).
+    static let touchQuietInterval: TimeInterval = 5
+
+    // MARK: - The Sentence Being Spoken (FR48)
+
+    /// Whether the highlighted sentence may move, and the text scroll to it:
+    /// never under VoiceOver's focus, since a text that scrolls or changes
+    /// while VoiceOver reads it can lose the listener's place (unless Follow
+    /// in Braille asks the text to follow the book), and not for a few
+    /// seconds after the person scrolled the text by hand.
+    ///
+    /// - Parameters:
+    ///   - hasFocus: Whether Book content has VoiceOver's focus.
+    ///   - followsInBraille: Whether Settings' Follow in Braille is on.
+    ///   - secondsSinceScroll: How long ago the person last scrolled the
+    ///     text by touch; nil when they haven't since it was shown.
+    static func highlightFollows(hasFocus: Bool, followsInBraille: Bool, secondsSinceScroll: TimeInterval?) -> Bool {
+        if hasFocus && !followsInBraille { return false }
+        return !isTouchScrolling(secondsSinceScroll: secondsSinceScroll)
+    }
+
+    /// Whether the person scrolled the text by touch in the last few seconds
+    /// (`touchQuietInterval`), so that nothing moves it under their finger.
+    static func isTouchScrolling(secondsSinceScroll: TimeInterval?) -> Bool {
+        guard let secondsSinceScroll else { return false }
+        return secondsSinceScroll < touchQuietInterval
+    }
+
+    /// What one tick of Book content's one-second timer does (FR48).
+    struct TickPlan: Equatable, Sendable {
+        /// Whether it asks for the passage's refresh (`Event.playingTick`),
+        /// which `changesPassage` may still refuse.
+        var asksRefresh: Bool
+        /// Whether it moves the highlight to the sentence being spoken.
+        var movesHighlight: Bool
+    }
+
+    /// One tick's work. The refresh, every 10 seconds, waits while the person
+    /// scrolls by touch, as the highlight does: a new passage starts at the
+    /// top and would pull the text from under their finger. The highlight
+    /// moves only when the place has moved since it was last lit, so a paused
+    /// book costs the tick nothing but this question.
+    ///
+    /// - Parameters:
+    ///   - refreshDue: Whether 10 seconds have passed since the last refresh.
+    ///   - placeMoved: Whether the reading place differs from the one the
+    ///     highlight was last placed for.
+    ///   - hasFocus: Whether Book content has VoiceOver's focus.
+    ///   - followsInBraille: Whether Settings' Follow in Braille is on.
+    ///   - secondsSinceScroll: How long ago the person last scrolled the
+    ///     text by touch; nil when they haven't since it was shown.
+    static func tickPlan(
+        refreshDue: Bool,
+        placeMoved: Bool,
+        hasFocus: Bool,
+        followsInBraille: Bool,
+        secondsSinceScroll: TimeInterval?
+    ) -> TickPlan {
+        TickPlan(
+            asksRefresh: refreshDue && !isTouchScrolling(secondsSinceScroll: secondsSinceScroll),
+            movesHighlight: placeMoved && highlightFollows(
+                hasFocus: hasFocus,
+                followsInBraille: followsInBraille,
+                secondsSinceScroll: secondsSinceScroll
+            )
+        )
+    }
+
+    /// The sentence holding the reading place, as a range in the passage
+    /// shown, for the highlight: from the start of the sentence that holds
+    /// `place` to the start of the next one (or the passage's end). Nil when
+    /// the place lies outside the passage, as it does once the speech has
+    /// read past it or the place is in another chapter.
+    ///
+    /// - Parameters:
+    ///   - passage: The passage's text.
+    ///   - passageStart: Where the passage begins in its chapter, as a UTF-16
+    ///     offset.
+    ///   - place: The reading place in the chapter, as a UTF-16 offset.
+    static func spokenSentence(inPassage passage: String, passageStart: Int, place: Int) -> Range<Int>? {
+        let length = passage.utf16Length
+        let local = place - passageStart
+        guard local >= 0, local < length else { return nil }
+        let start = ReaderViewModel.sentenceStart(in: passage, before: local)
+        let end = ReaderViewModel.nextSentenceStart(in: passage, after: start) ?? length
+        return start..<max(start, end)
+    }
+
     /// Whether `event` changes the passage. A focused text view must not
     /// change under a reader, in speech or in braille, so with focus on Book
     /// content only the listener's own requests change it, and the book's
