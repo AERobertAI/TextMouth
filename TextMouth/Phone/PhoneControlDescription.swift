@@ -24,9 +24,11 @@ enum PhoneControlAction: Equatable, Hashable, Sendable {
     case whereAmIFullSummary
     /// The Mac's Copy Reading Position.
     case copyReadingPosition
-    /// Opens the Sleep Timer sheet, from Play (FR52): the sure way beside a
-    /// one-finger triple tap, which VoiceOver turns into a long press.
-    case sleepTimer
+    /// The running sleep timer's Reset Timer, the Mac's: the timer starts
+    /// again at its full length (FR55), on the Sleep Timer under Play.
+    case resetSleepTimer
+    /// The running sleep timer's Cancel Timer, the Mac's (FR55).
+    case cancelSleepTimer
 
     /// The action's name, as VoiceOver reads it: the Mac's command names.
     @MainActor
@@ -34,9 +36,24 @@ enum PhoneControlAction: Equatable, Hashable, Sendable {
         switch self {
         case .whereAmIFullSummary: return ReaderWhereAmIToolbarButton.fullSummaryActionName
         case .copyReadingPosition: return ShortcutAction.copyReadingPosition.title
-        case .sleepTimer: return PhoneReaderVocabulary.sleepTimer
+        case .resetSleepTimer: return PhoneSleepTimerVocabulary.resetTimer
+        case .cancelSleepTimer: return PhoneSleepTimerVocabulary.cancelTimer
         }
     }
+}
+
+/// What adjusting a reader control does: VoiceOver's swipe up or down on an
+/// element with the adjustable trait (`accessibilityIncrement()` and
+/// `accessibilityDecrement()`). One value per adjustable control, so the
+/// Mac's test host checks which control does what, and the reader's view only
+/// carries it out.
+enum PhoneControlAdjustment: Equatable, Hashable, Sendable {
+    /// Play: up moves forward by the unit in force, down moves back.
+    case move
+    /// Navigation unit: steps through the units the book offers.
+    case unit
+    /// Speed: steps the book's speed.
+    case speed
 }
 
 /// Everything VoiceOver reads of one reader control at one moment: its

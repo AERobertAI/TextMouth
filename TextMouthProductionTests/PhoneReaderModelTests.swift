@@ -15,6 +15,10 @@ final class PhoneReaderModelTests: XCTestCase {
     private var engagements = 0
     /// How many times the model asked for Play or Pause.
     private var playPresses = 0
+    /// How many times the model asked the session to play.
+    private var plays = 0
+    /// The preferences the last model made reads, sandboxed.
+    private var preferences: UserDefaults?
 
     // MARK: - Moving While Paused
 
@@ -132,6 +136,182 @@ final class PhoneReaderModelTests: XCTestCase {
             "\(Int(reader.speechService.wordsPerMinute)) words per minute"
         )
         XCTAssertEqual(posted, [])
+    }
+
+    // MARK: - The Sleep Timer Under Play (FR55)
+
+    /// The Sleep Timer's Reset Timer starts the running timer again at its
+    /// full length and asks the session to play, as the Mac's Reset Timer
+    /// does, and says the Mac's "Timer reset: 10:00 remaining." a moment
+    /// later, once.
+    func testResetTimerRestartsItAtItsFullLength() {
+        let (model, reader) = makeModel()
+        reader.startSleepTimer(duration: .minutes(10))
+        defer { reader.sleepTimerService.stop() }
+        reader.sleepTimerService.remainingSeconds = 30
+
+        // Picked on the Actions rotor, as the control's description lists it.
+        model.perform(.resetSleepTimer)
+
+        XCTAssertTrue(reader.sleepTimerService.isActive)
+        XCTAssertEqual(reader.sleepTimerService.duration, .minutes(10))
+        XCTAssertEqual(reader.sleepTimerService.remainingSeconds, 600)
+        XCTAssertEqual(plays, 1, "The book plays, as Reset Timer plays it")
+        let status = reader.sleepTimerService.spokenStatus
+        XCTAssertTrue(status.hasSuffix("remaining"), status)
+        XCTAssertEqual(posted.map(\.message), ["Timer reset: \(status)."])
+        XCTAssertEqual(delays, [PhoneAnnouncer.delay])
+    }
+
+    /// The Sleep Timer's Cancel Timer cancels the timer, and the Mac's
+    /// "Sleep timer cancelled." is said once, at low priority, after the
+    /// moment a closing sheet waits, so it follows focus going to Play.
+    func testCancelTimerCancelsItAndSaysSoOnce() {
+        let (model, reader) = makeModel()
+        reader.startSleepTimer(duration: .endOfBook)
+        defer { reader.sleepTimerService.stop() }
+
+        // Picked on the Actions rotor, as the control's description lists it.
+        model.perform(.cancelSleepTimer)
+
+        XCTAssertFalse(reader.sleepTimerService.isActive)
+        XCTAssertEqual(posted, [VoiceOverAnnouncement(message: "Sleep timer cancelled.", priority: .low)])
+        XCTAssertEqual(delays, [VoiceOverAnnouncer.afterSheetDelay])
+        XCTAssertEqual(plays, 0)
+    }
+
+    /// With no timer running, Reset Timer and Cancel Timer do nothing and
+    /// say nothing: no timer is started, and the book stays.
+    func testTheTimersActionsWithNoTimerDoNothing() {
+        let (model, reader) = makeModel()
+
+        model.restartSleepTimer()
+        model.cancelSleepTimer()
+
+        XCTAssertFalse(reader.sleepTimerService.isActive)
+        XCTAssertEqual(posted, [])
+        XCTAssertEqual(plays, 0)
+    }
+
+    // MARK: - Focus on the Sleep Timer Under Play (FR55)
+
+    /// Reset Timer, picked on the running Sleep Timer's Actions rotor, starts
+    /// the timer again, which stops it for an instant first. Focus stays on
+    /// the control: the move to Play the stop asks for is skipped, since a
+    /// timer runs again at its moment. A timer that really ends moves focus
+    /// to Play, once.
+    func testResettingTheTimerKeepsFocusOnItsControl() {
+        let timer = SleepTimerService(userDefaults: makeSandboxedPreferences("PhoneSleepTimerWatcher"), registry: SleepTimerRegistry())
+        defer { timer.stop() }
+        var requests: [(kind: PhoneControlKind, unless: @MainActor () -> Bool)] = []
+        let watcher = PhoneSleepTimerWatcher(isFocusedOnTimer: { true }, requestFocus: { requests.append(($0, $1)) })
+        timer.start(duration: .minutes(10), onExpire: {})
+        watcher.watch(timer)
+        XCTAssertTrue(watcher.runs)
+
+        // Reset Timer: the reader's restart starts the same timer again.
+        timer.start(duration: .minutes(10), onExpire: {})
+        XCTAssertTrue(watcher.runs)
+        XCTAssertTrue(requests.allSatisfy { $0.unless() }, "Focus left the Sleep Timer for Play after Reset Timer")
+
+        // Cancel Timer: the control goes, and focus goes to Play.
+        requests = []
+        timer.stop()
+        XCTAssertFalse(watcher.runs)
+        XCTAssertEqual(requests.map(\.kind), [.play])
+        XCTAssertEqual(requests.map { $0.unless() }, [false])
+    }
+
+    /// A timer that ends with focus elsewhere moves nothing.
+    func testATimerEndingWithFocusElsewhereMovesNothing() {
+        let timer = SleepTimerService(userDefaults: makeSandboxedPreferences("PhoneSleepTimerWatcher"), registry: SleepTimerRegistry())
+        var requests: [PhoneControlKind] = []
+        let watcher = PhoneSleepTimerWatcher(isFocusedOnTimer: { false }, requestFocus: { kind, _ in requests.append(kind) })
+        timer.start(duration: .minutes(10), onExpire: {})
+        watcher.watch(timer)
+
+        timer.stop()
+
+        XCTAssertFalse(watcher.runs)
+        XCTAssertEqual(requests, [])
+    }
+
+    // MARK: - Shaking to Restart the Sleep Timer (FR55)
+
+    /// Within a minute of a shake, the timer last used starts again, the
+    /// words to say are returned, and the book is left for the caller to
+    /// start once they have been said.
+    func testAShakeSoonAfterTheTimerEndedStartsItAgain() throws {
+        let (model, reader) = makeModel()
+        let ended = try endHeadingTimer(of: reader)
+        defer { reader.sleepTimerService.stop() }
+
+        let words = model.restartSleepTimerAfterShake(at: ended.advanced(by: .seconds(30)))
+
+        XCTAssertEqual(words, "Timer restarted: End of heading.")
+        XCTAssertTrue(reader.sleepTimerService.isActive)
+        XCTAssertEqual(reader.sleepTimerService.duration, .endOfHeading)
+        XCTAssertNil(reader.sleepTimerService.endedByItselfAt, "A second shake would restart it again")
+        XCTAssertEqual(plays, 0, "The book started before the words were said")
+        XCTAssertEqual(posted, [], "The caller says the words, once")
+
+        XCTAssertNil(model.restartSleepTimerAfterShake(at: ended.advanced(by: .seconds(31))), "A running timer was restarted by a shake")
+        model.playScreenBookUnlessUnderWay()
+        XCTAssertEqual(plays, 1)
+    }
+
+    /// A shake more than a minute after the timer ended, or with Settings'
+    /// switch off, does nothing.
+    func testAShakeTooLateOrSwitchedOffDoesNothing() throws {
+        let (model, reader) = makeModel()
+        let ended = try endHeadingTimer(of: reader)
+        defer { reader.sleepTimerService.stop() }
+
+        XCTAssertNil(model.restartSleepTimerAfterShake(at: ended.advanced(by: .seconds(61))))
+        let store = try XCTUnwrap(preferences)
+        PhoneDefaults.setShakeRestartsSleepTimer(false, in: store)
+        XCTAssertNil(model.restartSleepTimerAfterShake(at: ended.advanced(by: .seconds(5))))
+        XCTAssertFalse(reader.sleepTimerService.isActive)
+        XCTAssertEqual(plays, 0)
+    }
+
+    /// A timer the listener cancelled is never brought back by a shake.
+    func testAShakeAfterACancelDoesNothing() {
+        let (model, reader) = makeModel()
+        reader.startSleepTimer(duration: .minutes(10))
+        reader.cancelSleepTimer()
+
+        XCTAssertNil(model.restartSleepTimerAfterShake(at: .now))
+        XCTAssertFalse(reader.sleepTimerService.isActive)
+    }
+
+    /// The window: from the moment the timer ended to a minute after, with
+    /// the switch on and no timer running; never before the end, as a clock
+    /// read out of order would put it.
+    func testTheShakesWindow() {
+        let ended = ContinuousClock.now
+        func restarts(after seconds: Int, isEnabled: Bool = true, timerRuns: Bool = false) -> Bool {
+            PhoneShakeRestart.restarts(
+                isEnabled: isEnabled, timerRuns: timerRuns, endedAt: ended, now: ended.advanced(by: .seconds(seconds))
+            )
+        }
+        XCTAssertEqual(PhoneShakeRestart.window, .seconds(60))
+        XCTAssertTrue(restarts(after: 0))
+        XCTAssertTrue(restarts(after: 60))
+        XCTAssertFalse(restarts(after: 61))
+        XCTAssertFalse(restarts(after: -1))
+        XCTAssertFalse(restarts(after: 10, isEnabled: false))
+        XCTAssertFalse(restarts(after: 10, timerRuns: true))
+        XCTAssertFalse(PhoneShakeRestart.restarts(isEnabled: true, timerRuns: false, endedAt: nil, now: ended))
+    }
+
+    /// Starts a timer for the end of the heading on `reader` and ends it as
+    /// playback reaching the heading's end does, saying nothing and pausing
+    /// nothing; returns the moment it ended.
+    private func endHeadingTimer(of reader: ReaderViewModel) throws -> ContinuousClock.Instant {
+        reader.startSleepTimer(duration: .endOfHeading)
+        XCTAssertTrue(reader.sleepTimerService.expireAtHeadingEnd(by: reader.readerID))
+        return try XCTUnwrap(reader.sleepTimerService.endedByItselfAt)
     }
 
     // MARK: - Answers
@@ -314,11 +494,14 @@ final class PhoneReaderModelTests: XCTestCase {
     /// Sentence, its announcements caught here and posted at once.
     private func makeModel(format: BookFormat = .txt, packaged: Bool = false) -> (PhoneReaderModel, ReaderViewModel) {
         let reader = makeReader(format: format, packaged: packaged)
+        let preferences = makeSandboxedPreferences("PhoneReaderModel")
+        self.preferences = preferences
         let model = PhoneReaderModel(
             currentReader: { reader },
             readers: Just(reader).map(Optional.some).eraseToAnyPublisher(),
             playOrPause: { [weak self] in self?.playPresses += 1 },
-            preferences: makeSandboxedPreferences("PhoneReaderModel"),
+            play: { [weak self] in self?.plays += 1 },
+            preferences: preferences,
             post: { [weak self] in self?.posted.append($0) },
             schedule: { [weak self] delay, work in
                 self?.delays.append(delay)

@@ -3680,8 +3680,7 @@ extension ReaderViewModel {
                 "RESTART_ACTION book=\(bookToken) result=rearm-last duration=\(last.logName)"
             )
             startSleepTimer(duration: last, startPlaybackIfNeeded: true)
-            // Translators: VoiceOver announcement after the Restart Sleep Timer command set the last timer used again. %@ is that timer's name, such as 30 minutes or End of heading.
-            announceToVoiceOver(InterfaceText.line("readerViewModel.restartLastSleepTimer.restarted", "Timer restarted: \(last.displayName)."))
+            announceToVoiceOver(Self.sleepTimerRestartedAnnouncement(last))
         } else {
             // First-ever press — nothing to repeat.
             SleepTimerService.log(
@@ -3691,6 +3690,14 @@ extension ReaderViewModel {
             // Translators: VoiceOver announcement when the Restart Sleep Timer command finds no timer was ever set.
             announceToVoiceOver(InterfaceText.line("readerViewModel.restartLastSleepTimer.none", "No previous sleep timer to restart."))
         }
+    }
+
+    /// What VoiceOver says once the timer last used, `duration`, has been set
+    /// again after it ended: "Timer restarted: 30 minutes." The Restart Sleep
+    /// Timer command says it, and so does the iPhone's shake (FR55).
+    static func sleepTimerRestartedAnnouncement(_ duration: SleepTimerDuration) -> String {
+        // Translators: VoiceOver announcement after the Restart Sleep Timer command set the last timer used again. %@ is that timer's name, such as 30 minutes or End of heading.
+        InterfaceText.line("readerViewModel.restartLastSleepTimer.restarted", "Timer restarted: \(duration.displayName).")
     }
 
     /// Pause playback as `pause()` does, making the pause sound only when

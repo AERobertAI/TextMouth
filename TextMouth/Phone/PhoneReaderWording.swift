@@ -59,20 +59,6 @@ enum PhoneReaderWording {
         InterfaceText.line("phoneReader.textSpeedHint", "Changes the speed in steps of \(number: Int(ReaderViewModel.speechSpeedStep)) words per minute.")
     }
 
-    // MARK: The Heading Buttons
-
-    /// Previous Heading's hint.
-    static var previousHeadingHint: String {
-        // Translators: Hint of the iPhone reader's Previous Heading button.
-        InterfaceText.line("phoneReader.previousHeadingHint", "Moves to the previous heading, keeping the navigation unit.")
-    }
-
-    /// Next Heading's hint.
-    static var nextHeadingHint: String {
-        // Translators: Hint of the iPhone reader's Next Heading button.
-        InterfaceText.line("phoneReader.nextHeadingHint", "Moves to the next heading, keeping the navigation unit.")
-    }
-
     // MARK: Book Content
 
     /// Book content's hint while paused, when activating plays from VoiceOver's
@@ -165,8 +151,8 @@ enum PhoneReaderWording {
 
     /// The Book Actions menu's hint, naming what it holds.
     static var bookActionsHint: String {
-        // Translators: Hint of the iPhone reader's Book Actions menu button.
-        InterfaceText.line("phoneReader.bookActionsHint", "Sleep timer, voice, book information, and export.")
+        // Translators: Hint of the iPhone reader's Book Actions menu button: what its menu holds, in order.
+        InterfaceText.line("phoneReader.bookActionsHint.search", "Search, sleep timer, voice, book information, and export.")
     }
 
     /// Sleep Timer's hint.

@@ -53,4 +53,28 @@ final class MagicTapWindow: UIWindow {
     override func accessibilityPerformMagicTap() -> Bool {
         session?.togglePlayPauseFromAnywhere() ?? false
     }
+
+    /// A shake ended: within a minute after the open book's sleep timer ended,
+    /// it starts the timer again and says so once, then plays the book
+    /// (FR55, `PhoneShakeRestart`).
+    ///
+    /// Apple's documentation for `motionEnded(_:with:)`: "Motion events are
+    /// delivered initially to the first responder and are forwarded up the
+    /// responder chain", and the window is in every chain, as for the magic
+    /// tap. UIKit tells only the app in front, so a shake with the screen
+    /// locked does nothing. Any other motion, or a shake that restarts
+    /// nothing, goes on up the chain as UIKit's own implementation sends it.
+    override func motionEnded(_ motion: UIEvent.EventSubtype, with event: UIEvent?) {
+        guard motion == .motionShake, let session, session.reader != nil else {
+            super.motionEnded(motion, with: event)
+            return
+        }
+        let model = PhoneReaderModel.attached(to: session)
+        guard let words = model.restartSleepTimerAfterShake() else {
+            super.motionEnded(motion, with: event)
+            return
+        }
+        // The words first, then the book, as the Sleep Timer sheet starts it.
+        PhoneSheetFarewell.say([words], thenRun: { model.playScreenBookUnlessUnderWay() })
+    }
 }

@@ -40,18 +40,6 @@ enum PhoneReaderControls {
             )
         case .speed:
             return speed(in: state)
-        case .previousHeading:
-            return PhoneControlDescription(
-                label: ShortcutAction.previousHeading.title,
-                hint: PhoneReaderWording.previousHeadingHint,
-                traits: .button
-            )
-        case .nextHeading:
-            return PhoneControlDescription(
-                label: ShortcutAction.nextHeading.title,
-                hint: PhoneReaderWording.nextHeadingHint,
-                traits: .button
-            )
         case .addBookmark:
             return PhoneControlDescription(
                 label: state.isNearBookmark ? PhoneReaderVocabulary.removeBookmark : PhoneReaderVocabulary.addBookmark,
@@ -104,7 +92,12 @@ enum PhoneReaderControls {
                 label: PhoneReaderVocabulary.sleepTimer,
                 value: state.sleepTimerStatus.isEmpty ? PhoneReaderWording.sleepTimerOff : state.sleepTimerStatus,
                 hint: PhoneReaderWording.sleepTimerHint,
-                traits: .button
+                traits: .button,
+                // It is on the screen only while a timer runs (FR55): its
+                // actions are the sheet's, picked on the Actions rotor and
+                // done with a double tap, as a Library row's are; a double tap
+                // with none picked opens the sheet.
+                actions: [.resetSleepTimer, .cancelSleepTimer]
             )
         case .voice:
             return voice(in: state)
@@ -156,9 +149,9 @@ enum PhoneReaderControls {
             label: PhoneAppWording.playButton(isPlaying: state.isPlaying),
             value: value,
             hint: PhoneReaderWording.playHint(movingBy: state.unit),
-            traits: traits,
-            // The Sleep Timer from Play (FR52), as its long press opens it.
-            actions: [.sleepTimer]
+            // No actions (FR55): a swipe up or down moves, a double tap plays
+            // or pauses, and VoiceOver says nothing of an Actions rotor here.
+            traits: traits
         )
     }
 
@@ -205,15 +198,16 @@ enum PhoneReaderControls {
     /// that Play always shows below it on the first screen.
     static let bookContentShareOfScreen = 0.55
 
-    /// Book content's height (FR48): about twelve lines of body text
-    /// (`scaled`, which grows with the text size), but never more than
+    /// Book content's height (FR48): the lines Settings choose, twelve by
+    /// default (`scaled`, which grows with the text size, FR54), but never more than
     /// `bookContentShareOfScreen` of the `visible` height. At the largest
     /// accessibility sizes twelve lines are taller than the screen, and a text
     /// area that fills it leaves a finger nothing outside it to scroll the
     /// screen by, so Play could not be reached by touch.
     ///
     /// - Parameters:
-    ///   - scaled: Twelve lines' height at the text size in force, in points.
+    ///   - scaled: The chosen lines' height at the text size in force, in
+    ///     points (`PhoneBookContentHeight.scaled(fromTwelveLines:)`).
     ///   - visible: The height of the reader's scrolling column, in points.
     static func bookContentHeight(scaled: Double, visible: Double) -> Double {
         guard visible > 0 else { return scaled }

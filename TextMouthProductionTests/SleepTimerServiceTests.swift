@@ -178,6 +178,36 @@ final class SleepTimerServiceTests: XCTestCase {
         XCTAssertFalse(service.expireAtHeadingEnd(by: owner), "An ended timer ended again")
     }
 
+    /// The moment a timer ended by itself is kept for the iPhone's shake to
+    /// restart (FR55): a countdown that ran out, and a timer that reached the
+    /// end of its heading or chapter, set it; a timer cancelled does not, and
+    /// a timer started again clears it.
+    func testOnlyATimerThatEndedByItselfKeepsWhenItEnded() {
+        XCTAssertNil(service.endedByItselfAt)
+        let before = ContinuousClock.now
+
+        start(.minutes(1))
+        service._expireForTesting()
+        XCTAssertFalse(service.isActive)
+        XCTAssertNotNil(service.endedByItselfAt, "A countdown ran out and kept no moment")
+        if let ranOut = service.endedByItselfAt {
+            XCTAssertGreaterThanOrEqual(ranOut, before)
+        }
+
+        start(.minutes(1))
+        XCTAssertNil(service.endedByItselfAt, "A new timer kept the old one's end")
+        service.stop()
+        XCTAssertNil(service.endedByItselfAt, "A timer cancelled counts as ended by itself")
+
+        start(.endOfHeading)
+        XCTAssertTrue(service.expireAtHeadingEnd(by: owner))
+        XCTAssertNotNil(service.endedByItselfAt, "A heading timer that reached its end kept no moment")
+
+        start(.endOfBook)
+        XCTAssertTrue(service.expireAtChapterEnd(endingTheHeading: false, endingTheBook: true, by: owner))
+        XCTAssertNotNil(service.endedByItselfAt, "A book timer that reached the end kept no moment")
+    }
+
     /// Only a timer for the end of a heading ends where a heading does: one
     /// counting minutes, or waiting for the book's end, goes on, and nothing
     /// happens with no timer at all.

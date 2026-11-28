@@ -191,6 +191,7 @@ struct PhoneSettingsView: View {
         case .sleepTimer:
             stepperRow(.fadeOutDuration, value: noted($settings.sleepFadeOutDuration))
             switchRow(.closeSleepTimerSheet, isOn: noted($settings.sleepTimerAutoClose))
+            switchRow(.shakeToRestartTimer, isOn: shakeRestartsSleepTimer)
         case .times:
             switchRow(.includeSpeedWithTimes, isOn: noted($settings.includeSpeedWithTimes))
         case .pages:
@@ -198,6 +199,8 @@ struct PhoneSettingsView: View {
             switchRow(.sayPageInWhereAmI, isOn: noted($settings.saysPageInWhereAmI))
         case .reading:
             switchRow(.followInBraille, isOn: followsInBraille)
+            choiceRow(.bookContentHeight, value: bookContentHeight.title)
+            switchRow(.hideSkipButtons, isOn: hidesSkipsFromVoiceOver)
         case .braille:
             // The table braille files are read with from now on, a row opening the tables of every language, then the
             // characters a BRF or BRL file is read in, and whether a new book's code is guessed (FR32).
@@ -441,6 +444,15 @@ struct PhoneSettingsView: View {
                 settings.brailleTable = id
                 noteChange()
             }
+        case .bookContentHeight:
+            PhoneChoiceSheet(
+                title: row.title,
+                choices: PhoneSettingsModel.bookContentHeightChoices,
+                selected: bookContentHeight
+            ) { height in
+                PhoneDefaults.setBookContentHeight(height, in: TextMouthRuntime.current.preferences)
+                noteChange()
+            }
         case .brailleFileCode:
             PhoneChoiceSheet(
                 title: row.title,
@@ -595,13 +607,38 @@ struct PhoneSettingsView: View {
         PhoneSettingsModel.audioNavigationUnit(in: TextMouthRuntime.current.preferences)
     }
 
-    /// Follow in Braille, as kept in `PhoneDefaults`, counting each change so
-    /// the screen redraws.
+    /// Follow in Braille, as kept in `PhoneDefaults`.
     private var followsInBraille: Binding<Bool> {
+        phonePreference(get: PhoneDefaults.followInBraille(in:), set: PhoneDefaults.setFollowInBraille(_:in:))
+    }
+
+    /// How tall the reader's Book content stands (FR54), as kept in
+    /// `PhoneDefaults`.
+    private var bookContentHeight: PhoneBookContentHeight {
+        PhoneDefaults.bookContentHeight(in: TextMouthRuntime.current.preferences)
+    }
+
+    /// Hide skip buttons from VoiceOver (FR54), as kept in `PhoneDefaults`.
+    private var hidesSkipsFromVoiceOver: Binding<Bool> {
+        phonePreference(get: PhoneDefaults.hidesSkipsFromVoiceOver(in:), set: PhoneDefaults.setHidesSkipsFromVoiceOver(_:in:))
+    }
+
+    /// Shake to restart the timer (FR55), as kept in `PhoneDefaults`.
+    private var shakeRestartsSleepTimer: Binding<Bool> {
+        phonePreference(get: PhoneDefaults.shakeRestartsSleepTimer(in:), set: PhoneDefaults.setShakeRestartsSleepTimer(_:in:))
+    }
+
+    /// A switch over one of the phone's own preferences in `PhoneDefaults`,
+    /// read and kept in the app's preferences by `get` and `set`, counting
+    /// each change so the screen redraws.
+    private func phonePreference(
+        get: @escaping @MainActor (UserDefaults) -> Bool,
+        set: @escaping @MainActor (Bool, UserDefaults) -> Void
+    ) -> Binding<Bool> {
         Binding(
-            get: { PhoneDefaults.followInBraille(in: TextMouthRuntime.current.preferences) },
+            get: { get(TextMouthRuntime.current.preferences) },
             set: { isOn in
-                PhoneDefaults.setFollowInBraille(isOn, in: TextMouthRuntime.current.preferences)
+                set(isOn, TextMouthRuntime.current.preferences)
                 noteChange()
             }
         )

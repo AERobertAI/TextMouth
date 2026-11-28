@@ -78,6 +78,8 @@ enum PhoneSettingsRow: Hashable, Identifiable {
     case brailleTable
     /// The braille file characters a BRF or BRL file is read in (FR32).
     case brailleFileCode
+    /// How tall the reader's Book content stands (FR54).
+    case bookContentHeight
     /// Export Interface Text…, under Interface Language (FR39): the system's file exporter, which focus must come back from.
     case exportInterfaceText
     case shareLogs
@@ -97,6 +99,7 @@ enum PhoneSettingsRow: Hashable, Identifiable {
         case .interfaceLanguage: return InterfaceLanguagePickerWording.title
         case .brailleTable: return BrailleSettingsWording.codeLabel
         case .brailleFileCode: return BrailleSettingsWording.fileCodeLabel
+        case .bookContentHeight: return PhoneSettingsWording.bookContentHeight
         case .exportInterfaceText: return InterfaceTextOverridesWording.exportTitle
         case .shareLogs: return PhoneSettingsWording.shareLogs
         }
@@ -111,7 +114,7 @@ enum PhoneSettingsRow: Hashable, Identifiable {
         case .rewindTo: return Words.rewindOnResumeUnit.title
         case .endOfBook: return Words.endOfBookBehavior.title
         case .textNavigationUnit, .audioNavigationUnit, .readingStatistics, .interfaceLanguage, .exportInterfaceText, .shareLogs,
-             .brailleTable, .brailleFileCode:
+             .brailleTable, .brailleFileCode, .bookContentHeight:
             return title
         }
     }
@@ -128,7 +131,7 @@ enum PhoneSettingsRow: Hashable, Identifiable {
         case .brailleTable: return PhoneSettingsWording.brailleCodeHint
         case .brailleFileCode: return BrailleSettingsWording.fileCodeHint
         case .exportInterfaceText: return InterfaceTextOverridesWording.exportHint
-        case .language, .readingStatistics: return nil
+        case .language, .readingStatistics, .bookContentHeight: return nil
         }
     }
 }
@@ -296,6 +299,15 @@ struct PhoneSettingsSwitch: Sendable {
         )
     }
 
+    /// Under Sleep Timer: the phone's own (FR55).
+    static var shakeToRestartTimer: PhoneSettingsSwitch {
+        PhoneSettingsSwitch(
+            title: PhoneSettingsWording.shakeToRestartTimer,
+            hint: PhoneSettingsWording.shakeToRestartTimerHint,
+            showsHintAsCaption: true
+        )
+    }
+
     /// Under Times.
     static var includeSpeedWithTimes: PhoneSettingsSwitch {
         PhoneSettingsSwitch(
@@ -328,6 +340,15 @@ struct PhoneSettingsSwitch: Sendable {
         PhoneSettingsSwitch(
             title: PhoneSettingsWording.followInBraille,
             hint: PhoneSettingsWording.followInBrailleHint,
+            showsHintAsCaption: true
+        )
+    }
+
+    /// Under Reading: the phone's own (FR54).
+    static var hideSkipButtons: PhoneSettingsSwitch {
+        PhoneSettingsSwitch(
+            title: PhoneSettingsWording.hideSkipButtons,
+            hint: PhoneSettingsWording.hideSkipButtonsHint,
             showsHintAsCaption: true
         )
     }
@@ -450,6 +471,11 @@ enum PhoneSettingsModel {
 
     /// The When book ends row's choices, in the Mac's order.
     static var endOfBookChoices: [PhoneChoice<EndOfBookBehavior>] { choices(of: EndOfBookBehavior.allCases, titled: \.title) }
+
+    /// Book content's heights, shortest first (FR54).
+    static var bookContentHeightChoices: [PhoneChoice<PhoneBookContentHeight>] {
+        choices(of: PhoneBookContentHeight.allCases, titled: \.title)
+    }
 
     /// A choice for each of `cases`, named by its localized title, as the
     /// Mac's pickers name them (a raw value is what is stored, never shown).
