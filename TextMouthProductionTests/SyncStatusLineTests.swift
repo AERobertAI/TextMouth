@@ -65,6 +65,18 @@ final class SyncStatusLineTests: XCTestCase {
         XCTAssertEqual(line(status), SyncWording.statusUpToDate(at: "9:41 AM"))
     }
 
+    /// Feed removals held back are said too (FR56), counted as feeds, never as books.
+    func testHeldFeedRemovalsAreSpoken() {
+        var status = upToDate
+        status.heldFeedRemovals = 5
+        XCTAssertEqual(
+            line(status),
+            "TextMouth held back removing 5 feeds, since it looked like a mistake. Check the library on this Mac, then choose Sync Now."
+        )
+        status.heldRemovals = 42
+        XCTAssertTrue(line(status).contains("42 books, 5 feeds"))
+    }
+
     /// The new lines' English, pinned: what a person hears when keeping stops, and when a fetch stalls.
     func testTheNewLinesInEnglish() {
         XCTAssertEqual(SyncWording.announceStoppedKeeping(title: "Moby-Dick"), "No longer keeping Moby-Dick on all devices.")

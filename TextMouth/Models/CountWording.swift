@@ -206,7 +206,7 @@ enum CountWording {
     /// language, as a narrow list: "743 books, 2 feeds", "2 books, 5
     /// episodes, 1 article" in English, where a sentence's "and" would only
     /// slow VoiceOver and braille down. Each count is already localized.
-    private static func joinedCounts(_ counts: [String]) -> String {
+    static func joinedCounts(_ counts: [String]) -> String {
         counts.formatted(.list(type: .and, width: .narrow).locale(InterfaceLanguage.current.locale))
     }
 

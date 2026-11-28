@@ -207,6 +207,50 @@ final class SyncEngineTests: XCTestCase {
         XCTAssertEqual(removed.heldRemovals, 0)
     }
 
+    /// The feeds emptied at once are held back too (FR56), counted on their own, and one feed deleted is sent.
+    func testAMassRemovalOfFeedsIsHeldBack() async throws {
+        let sandbox = try makeSandboxDirectory("sync-engine-mass-feeds")
+        let engine = try SyncEngine(local: local(sandbox, "a"), identity: identity())
+        let library = SyncTestFixtures.library(books: (0..<6).map { _ in SyncTestFixtures.book() })
+        let feeds = (0..<6).map { number in
+            Feed(
+                feedURL: URL(string: "https://example.com/\(number).xml") ?? URL(fileURLWithPath: "/"), folderID: UUID(),
+                subscribedDate: Date(timeIntervalSince1970: 1_000)
+            )
+        }
+        _ = try await engine.record(library: library, feeds: feeds)
+        try await engine.settleLaunch(library: library, feeds: feeds)
+        let emptied = try await engine.record(library: library, feeds: [])
+        XCTAssertEqual(emptied.recorded, 0)
+        XCTAssertEqual(emptied.heldFeedRemovals, 6)
+        XCTAssertEqual(emptied.heldRemovals, 0, "no book was removed")
+        let first = try XCTUnwrap(feeds.first)
+        let still = await engine.entry(for: .feed(first.id, .presence))
+        XCTAssertEqual(still?.value, .bool(true), "nothing was sent")
+        // Sync Now confirms them.
+        await engine.confirmHeldRemovals()
+        let sent = try await engine.record(library: library, feeds: [])
+        XCTAssertEqual(sent.heldFeedRemovals, 0)
+        XCTAssertEqual(sent.recorded, 6)
+    }
+
+    /// One feed deleted, the person's own, is sent at once.
+    func testOneFeedRemovalIsSent() async throws {
+        let sandbox = try makeSandboxDirectory("sync-engine-one-feed")
+        let engine = try SyncEngine(local: local(sandbox, "a"), identity: identity())
+        let feeds = (0..<6).map { number in
+            Feed(
+                feedURL: URL(string: "https://example.com/\(number).xml") ?? URL(fileURLWithPath: "/"), folderID: UUID(),
+                subscribedDate: Date(timeIntervalSince1970: 1_000)
+            )
+        }
+        _ = try await engine.record(library: SyncTestFixtures.library(), feeds: feeds)
+        try await engine.settleLaunch(library: SyncTestFixtures.library(), feeds: feeds)
+        let removed = try await engine.record(library: SyncTestFixtures.library(), feeds: Array(feeds.dropFirst()))
+        XCTAssertEqual(removed.recorded, 1)
+        XCTAssertEqual(removed.heldFeedRemovals, 0)
+    }
+
     /// A confirmation is for the removals held when it was given: a different mass removal held later stays held.
     func testAConfirmationIsForTheHeldRemovalsOnly() async throws {
         let sandbox = try makeSandboxDirectory("sync-engine-confirm")

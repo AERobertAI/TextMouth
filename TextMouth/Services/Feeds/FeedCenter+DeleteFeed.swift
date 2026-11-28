@@ -90,12 +90,18 @@ extension FeedCenter {
     ///
     /// An item the listener moved into the library (Move to Library…) is a
     /// book of the library's own, which stays.
+    /// - Parameter leavingLibraryFolder: true for a deletion another device
+    ///   made (FR56), which skips step 5: that device chose the folder's fate
+    ///   by what it held there, and the folder's own sync keys carry the
+    ///   choice, so this device's reading, which may lack a book not arrived
+    ///   yet, never removes a folder that device kept. The outcome then says
+    ///   `.none`.
     /// - Returns: What deleting did, for the words the listener hears; nil
     ///   for a feed TextMouth has no record of, or one being deleted already.
     /// - Throws: `FeedDeleteError`, the feed then staying with what was not
     ///   deleted.
     @discardableResult
-    func deleteFeed(_ feedID: UUID) async throws(FeedDeleteError) -> FeedDeleteOutcome? {
+    func deleteFeed(_ feedID: UUID, leavingLibraryFolder: Bool = false) async throws(FeedDeleteError) -> FeedDeleteOutcome? {
         guard store.record(of: feedID) != nil, let library, !downloads.isClosed(feedID) else { return nil }
         if let inUse = downloadInUse(of: feedID, in: library) {
             throw inUse
@@ -156,8 +162,8 @@ extension FeedCenter {
         downloads.reopenFeed(feedID)
         rulePauses[feedID] = nil
 
-        // 5. Its library folder, when nothing else is in it.
-        let folder = await library.removeFolderOfDeletedFeed(feed.folderID)
+        // 5. Its library folder, when nothing else is in it, unless the folder's fate is another device's.
+        let folder = leavingLibraryFolder ? FeedFolderFate.none : await library.removeFolderOfDeletedFeed(feed.folderID)
         let outcome = FeedDeleteOutcome(
             title: feed.title,
             deletedDownloads: removal.removed.filter { !$0.wasOnShelf }.count,

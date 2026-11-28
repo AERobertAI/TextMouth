@@ -1238,6 +1238,7 @@ targets:
       - TextMouthProductionTests/SyncBaselineTests.swift
       - TextMouthProductionTests/SyncCenterTests.swift
       - TextMouthProductionTests/SyncEngineTests.swift
+      - TextMouthProductionTests/SyncFeedTests.swift
       - TextMouthProductionTests/SyncFolderIOTests.swift
       - TextMouthProductionTests/SyncFolderTests.swift
       - TextMouthProductionTests/SyncFormatTests.swift
