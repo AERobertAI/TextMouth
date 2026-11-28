@@ -1,0 +1,25 @@
+{
+  "areas": [
+    "speech",
+    "audio",
+    "speech-export"
+  ],
+  "classes": [
+    "SpeechWriteTraceTests",
+    "SpeechVoiceWarmUpTests",
+    "SpeechBufferSynthesizerTests",
+    "SpeechChapterRendererTests",
+    "AudioEngineBehaviorTests",
+    "UncheckedConcurrencyPolicyTests"
+  ],
+  "full": false,
+  "shards": 1,
+  "train": "1128-0934",
+  "requests": [
+    {
+      "agent": "tracereplay",
+      "branch": "test/q20-write-traces",
+      "head": "517ac09f584c52b99c42e34312a3df6feb14ebee"
+    }
+  ]
+}
