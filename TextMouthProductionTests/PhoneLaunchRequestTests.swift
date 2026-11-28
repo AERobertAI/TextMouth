@@ -88,12 +88,12 @@ final class PhoneLaunchRequestTests: XCTestCase {
         XCTAssertNil(PhoneLaunchRequest.feedEpisodeFile([:]))
     }
 
-    /// The app's feed sessions try the stand-in feed server only in the iPhone's debug build, inside one
-    /// `#if DEBUG && os(iOS)`, and the server's own file is compiled into debug builds alone, so no release build holds
-    /// the host it answers.
+    /// The app's feed sessions try the stand-in feed server only in the iPhone's debug build, inside `#if os(iOS)` and
+    /// `#if DEBUG` (the Mac's boundary test reads the first, so the shared file may name the iPhone's type), and the
+    /// server's own file is compiled into debug builds alone, so no release build holds the host it answers.
     func testTheStandInFeedServerIsTheIPhonesDebugBuildsAlone() throws {
         let network = try Self.source("Services/Feeds/FeedNetwork.swift")
-        let guarded = try Self.text(from: "#if DEBUG && os(iOS)", upTo: "#endif", in: network)
+        let guarded = try Self.text(from: "#if os(iOS)\n        #if DEBUG\n", upTo: "#endif", in: network)
         XCTAssertTrue(guarded.contains("PhoneUITestFeedStub.isOn()"))
         XCTAssertEqual(network.components(separatedBy: "PhoneUITestFeedStub").count - 1, 2, "The stand-in is named outside #if DEBUG")
 
