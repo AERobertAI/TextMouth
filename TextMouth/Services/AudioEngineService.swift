@@ -895,8 +895,15 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
     /// competing with the direct-mode synthesizer for system TTS resources
     /// and causing delays. Its ticket identifies the render to its own
     /// completion (`claimRenderCompletion(for:)`).
-    private var currentRender: (synth: AVSpeechSynthesizer, ticket: RenderTicket)?
+    private var currentRender: (writer: any SpeechBufferWriting, ticket: RenderTicket)?
     private let renderLock = NSLock()
+
+    /// Makes the synthesizer one write of a render uses, a fresh one each
+    /// time: the Mac's own (`AVSpeechBufferWriter`) in the app, the same the
+    /// speech export writes with, and a scripted writer in tests, which
+    /// replay what a real synthesizer did without a voice
+    /// (`SpeechWriteTrace`).
+    private let makeWriter: @Sendable () -> any SpeechBufferWriting
 
     /// Where a render's job runs, off the main thread: the global queue in
     /// the app; a test passes a queue of its own, held until it lets it go.
@@ -908,11 +915,14 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
     ///     many of them.
     ///   - slicesAhead: How many slices of a play stand scheduled at a time.
     ///   - renderQueue: Where a render's job runs.
+    ///   - makeWriter: Makes the synthesizer each write of a render uses.
     init(
         sliceFrameCount: Int = AudioEngineService.defaultSliceFrameCount,
         slicesAhead: Int = AudioEngineService.defaultSlicesAhead,
-        renderQueue: DispatchQueue = .global(qos: .userInitiated)
+        renderQueue: DispatchQueue = .global(qos: .userInitiated),
+        makeWriter: @escaping @Sendable () -> any SpeechBufferWriting = { AVSpeechBufferWriter() }
     ) {
+        self.makeWriter = makeWriter
         let node = AVAudioPlayerNode()
         playerNode = node
         feeder = RenderedSpeechFeeder(node: node, sliceFrameCount: sliceFrameCount, slicesAhead: slicesAhead)
@@ -984,10 +994,10 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
     /// compete with direct-mode TTS for system resources.
     func cancelRender() {
         renderLock.lock()
-        let synth = currentRender?.synth
+        let writer = currentRender?.writer
         currentRender = nil
         renderLock.unlock()
-        synth?.stopSpeaking(at: .immediate)
+        writer?.stop()
         isRendering = false
     }
 
@@ -1221,11 +1231,11 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
         for ticket: RenderTicket,
         asRetry: Bool
     ) -> RenderWrite {
-        let renderSynth = AVSpeechSynthesizer()
+        let writer = makeWriter()
         renderLock.lock()
         let letGoAlready = asRetry && currentRender?.ticket !== ticket
         if !letGoAlready {
-            currentRender = (renderSynth, ticket)
+            currentRender = (writer, ticket)
         }
         renderLock.unlock()
         guard !letGoAlready else { return .notWritten }
@@ -1247,20 +1257,17 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
         let delivery = SpeechBufferDelivery(onBuffer: { builder.append($0) }, waking: semaphore, clock: clock)
         // The synthesizer's finish, not an empty buffer, ends the write: an
         // empty buffer ends only one of its segments, about a sentence
-        // (`SpeechWriteRelay`). A cancel wakes the wait too. The
-        // synthesizer's delegate is weak, so the relay is held here until
-        // the wait returns.
+        // (`SpeechWriteRelay`). A cancel wakes the wait too.
         let cancelled = OSAllocatedUnfairLock(initialState: false)
-        let relay = SpeechWriteRelay(
+        writer.start(
+            utterance,
+            onBuffer: { buffer in delivery.deliver(buffer) },
             onFinish: { semaphore.signal() },
             onCancel: {
                 cancelled.withLock { $0 = true }
                 semaphore.signal()
             }
         )
-        renderSynth.delegate = relay
-
-        renderSynth.write(utterance) { buffer in delivery.deliver(buffer) }
 
         // A render the engine lets go of ends its wait at once: on macOS 27
         // `stopSpeaking(at:)` does not stop a write (it returns false and
@@ -1276,10 +1283,9 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
         )
         // However the wait ended, no piece reaches the builder after it.
         delivery.end()
-        renderSynth.delegate = nil
-        // The delegate is weak: the relay must live until the wait is over,
-        // or the finish it relays would never come.
-        withExtendedLifetime(relay) {}
+        // The writer lives until the wait is over, or the finish it relays
+        // would never come.
+        withExtendedLifetime(writer) {}
 
         return RenderWrite(
             builder: builder,

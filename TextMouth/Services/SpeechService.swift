@@ -542,23 +542,40 @@ enum VoiceWarmUp {
     /// audio, and call `finished` exactly once, from any thread: true when
     /// the synthesizer delivered its last buffer, false when `timeout`
     /// passed first.
+    ///
+    /// - Parameter makeWriter: Makes the synthesizer that writes: the Mac's
+    ///   own, the same the engine's renders and the speech export use
+    ///   (`AVSpeechBufferWriter`), unless a test gives a scripted one.
     @MainActor
-    static func writeOneWord(in voice: AVSpeechSynthesisVoice?, finished: @escaping @Sendable (Bool) -> Void) {
+    static func writeOneWord(
+        in voice: AVSpeechSynthesisVoice?,
+        makeWriter: () -> any SpeechBufferWriting = { AVSpeechBufferWriter() },
+        finished: @escaping @Sendable (Bool) -> Void
+    ) {
         let report = reportingOnce(finished)
-        let synthesizer = AVSpeechSynthesizer()
+        let writer = makeWriter()
         let utterance = AVSpeechUtterance(string: word)
         utterance.voice = voice
         utterance.prefersAssistiveTechnologySettings = false
-        synthesizer.write(utterance, toBufferCallback: lastBufferReporter(keepingAlive: synthesizer, report: report))
+        // The writer is kept alive by the callback until the last buffer;
+        // the finish and the cancel are not waited for, as before: the
+        // timeout covers a voice that never answers.
+        writer.start(
+            utterance,
+            onBuffer: lastBufferReporter(keepingAlive: writer, report: report),
+            onFinish: {},
+            onCancel: {}
+        )
         DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + timeout) {
             report(false)
         }
     }
 
     /// The buffer callback of a warm-up's write: once the synthesizer
-    /// delivers its last buffer, the empty one that ends its output, it
-    /// reports the warm-up finished through `report`, and it holds
-    /// `synthesizer` until then, so the synthesizer lives to deliver it.
+    /// delivers its empty buffer, which for the one word is the end of its
+    /// output, it reports the warm-up finished through `report`, and it
+    /// holds `synthesizer`, the writer or the synthesizer, until then, so
+    /// that it lives to deliver it.
     ///
     /// The callback is made here, outside the main actor, so that it is not
     /// isolated to it (board #732). The synthesizer calls it on a thread of
@@ -570,9 +587,9 @@ enum VoiceWarmUp {
     /// makes safe on any thread (`reportingOnce`), and the synthesizer it
     /// keeps alive, so it may run on any thread.
     nonisolated static func lastBufferReporter(
-        keepingAlive synthesizer: AVSpeechSynthesizer,
+        keepingAlive synthesizer: AnyObject,
         report: @escaping @Sendable (Bool) -> Void
-    ) -> AVSpeechSynthesizer.BufferCallback {
+    ) -> (AVAudioBuffer) -> Void {
         { buffer in
             guard let pcm = buffer as? AVAudioPCMBuffer, pcm.frameLength == 0 else { return }
             withExtendedLifetime(synthesizer) {
