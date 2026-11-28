@@ -263,7 +263,8 @@ final class SpeechWriteTraceTests: XCTestCase {
             outcome.withLock { $0 = result }
             ended.fulfill()
         }
-        XCTAssertTrue(waitUntil(timeout: 10) { writer.isWaitingForRelease }, "the write never reached its hold")
+        let reachedHold = await eventually(timeout: 10) { writer.isWaitingForRelease }
+        XCTAssertTrue(reachedHold, "the write never reached its hold")
         let pressedAt = ContinuousClock.now
 
         cancellation.cancel()
@@ -279,8 +280,23 @@ final class SpeechWriteTraceTests: XCTestCase {
         // The synthesizer, which ignores the stop, goes on; nothing is handed on after.
         let handedOnAtStop = handedOn.withLock { $0 }
         writer.release()
-        XCTAssertTrue(waitUntil(timeout: 10) { writer.isFinished })
+        let replayEnded = await eventually(timeout: 10) { writer.isFinished }
+        XCTAssertTrue(replayEnded, "the held replay never ended")
         XCTAssertEqual(handedOn.withLock { $0 }, handedOnAtStop, "a buffer was handed on after the write ended")
+    }
+
+    /// Waits, yielding the main actor, until `condition` holds or `timeout`
+    /// seconds pass, and says whether it held. An async test cannot spin the
+    /// main run loop (`waitUntil`): it runs as a block of the main queue, and
+    /// the writer's deliveries, which are main-queue blocks too, would wait
+    /// behind it for as long as it spun.
+    private func eventually(timeout: TimeInterval, _ condition: () -> Bool) async -> Bool {
+        let deadline = Date().addingTimeInterval(timeout)
+        while !condition() {
+            guard Date() < deadline else { return false }
+            try? await Task.sleep(for: .milliseconds(10))
+        }
+        return true
     }
 
     /// Writes `trace`'s text into a CAF at `url` as an export chapter, on a
