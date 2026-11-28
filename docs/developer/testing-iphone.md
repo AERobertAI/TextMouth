@@ -109,6 +109,8 @@ The rule:
 - `TextMouthUITestCase` decides in one place.
   `requireSound(_:)` skips the test, saying why, unless the variable is 1.
   The helpers that make sound (`pressPlay`, `pressPause`, `startSleepTimer`, `type`) call it first themselves, so a test that forgot still makes no sound on this Mac.
+- `openReaderSheet(_:titled:waitingFor:under:)` opens a reader sheet from its control, and looks for a control that isn't on the reader under the Book Actions menu (`under`), which it opens first: Sleep Timer, Voice, Book Info, and Export this book are items of it (FR51).
+  The Sleep Timer is on the reader only while a timer runs, so a test asks that it exists then and not before, and `PlaybackUITests.value(of:)` reads "" for a control that has left.
   A test that makes sound calls `requireSound` before it launches anything, so a skip is quick.
 - On this Mac those tests skip.
   Do not set the variable in a shell here.

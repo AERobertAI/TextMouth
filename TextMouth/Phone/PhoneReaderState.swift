@@ -1,8 +1,10 @@
 import Foundation
 
-/// The reader's elements after Back and the title, in VoiceOver's order and
-/// the layout's (the spec, under "VoiceOver's order"). They never appear or
-/// vanish while a book is open: only their words change.
+/// The reader's controls: those on the screen after Back and the title, in
+/// VoiceOver's order and the layout's (the spec, under "VoiceOver's order";
+/// `screen`), then those under Book Actions (`bookActionItems`, FR51). The
+/// screen's controls never appear or vanish while a book is open: only their
+/// words change.
 enum PhoneReaderControl: CaseIterable, Hashable, Sendable {
     /// The book's text, how a braille reader reads the book.
     case bookContent
@@ -31,6 +33,8 @@ enum PhoneReaderControl: CaseIterable, Hashable, Sendable {
     case goTo
     /// Goes back to where the last jump began.
     case returnToPlace
+    /// A menu of the book's less frequent actions (FR51): the four below.
+    case bookActions
     /// Opens the Sleep Timer sheet.
     case sleepTimer
     /// Opens the Voice & Speed sheet, or an audiobook's Audio Settings.
@@ -44,28 +48,63 @@ enum PhoneReaderControl: CaseIterable, Hashable, Sendable {
     /// A move forward by the unit in force.
     case skipForward
 
-    /// The controls of the grid under Play, row by row, three to a row:
-    /// Where Am I? to Skip forward.
-    static let grid: [PhoneReaderControl] = Array(allCases.drop { $0 != .whereAmI })
-
-    /// The grid's rows, left to right and top to bottom in `grid`'s order, so
-    /// that VoiceOver's order is the same however the rows break. The spec's
-    /// layout ("The layout") has three to a row, ending with Book Info, Skip
-    /// backward, and Skip forward. Search in Book makes sixteen, so a plain
-    /// three to a row would leave Skip forward alone; the rows are broken so
-    /// that each pair stays together instead: Previous and Next Heading in
-    /// the second row, Bookmarks, Headings, and Search in Book in the third,
-    /// and the two skips side by side in the last, as the spec's last row
-    /// has them. The fifth row holds Voice, Book Info, and Export this book
-    /// (FR31), so the grid keeps its shape and the two skips stay last.
+    /// The grid's rows under Play, left to right and top to bottom, three to
+    /// a row, in VoiceOver's order however the rows break. Each pair stays in
+    /// one row: Previous and Next Heading in the second, Bookmarks, Headings,
+    /// and Search in Book in the third, and the two skips side by side in the
+    /// last, as the spec's last row has them. Book Actions ends the fourth
+    /// row, in place of Sleep Timer, Voice, Book Info, and Export this book,
+    /// which it gathers (FR51).
     static let gridRows: [[PhoneReaderControl]] = [
         [.whereAmI, .navigationUnit, .speed],
         [.previousHeading, .nextHeading, .addBookmark],
         [.bookmarks, .headings, .searchInBook],
-        [.goTo, .returnToPlace, .sleepTimer],
-        [.voice, .bookInfo, .export],
+        [.goTo, .returnToPlace, .bookActions],
         [.skipBackward, .skipForward],
     ]
+
+    /// The controls of the grid under Play, row by row: Where Am I? to Skip
+    /// forward.
+    static let grid: [PhoneReaderControl] = gridRows.flatMap { $0 }
+
+    /// The reader's controls on the screen, in VoiceOver's order: Book
+    /// content, Play, the Sleep Timer while a timer runs, and the grid. The
+    /// Sleep Timer is the one control that comes and goes (FR51, FR52): with
+    /// no timer it lives under Book Actions, and while one runs it shows under
+    /// Play too, its value the time left.
+    static func screen(timerRuns: Bool) -> [PhoneReaderControl] {
+        [.bookContent, .play] + (timerRuns ? [.sleepTimer] : []) + grid
+    }
+
+    /// Whether VoiceOver passes over the control (FR49): Skip backward and
+    /// Skip forward, since adjusting Play (a swipe up or down) makes the same
+    /// moves, so for VoiceOver the two buttons only add swipes. They stay on
+    /// screen for touch, and for Voice Control and Switch Control, which run
+    /// without VoiceOver; their keyboard shortcuts stay too.
+    var isHiddenFromVoiceOver: Bool {
+        self == .skipBackward || self == .skipForward
+    }
+
+    /// The reader's controls VoiceOver reaches, in its order: the screen's,
+    /// less those it passes over while it runs (FR49).
+    static func voiceOverOrder(timerRuns: Bool, voiceOverRuns: Bool) -> [PhoneReaderControl] {
+        screen(timerRuns: timerRuns).filter { !(voiceOverRuns && $0.isHiddenFromVoiceOver) }
+    }
+
+    /// The items of the Book Actions menu, in its order (FR51): the book's
+    /// less frequent actions, each opening its sheet as its button did.
+    static let bookActionItems: [PhoneReaderControl] = [.sleepTimer, .voice, .bookInfo, .export]
+
+    /// Where VoiceOver's focus goes back to, for a sheet that `control`
+    /// opened as it closes, or for the control VoiceOver was on as it leaves
+    /// the screen: `control` while it is still on the screen, and Play when
+    /// it is not. Only the Sleep Timer under Play comes and goes (FR52): a
+    /// timer turned off in its sheet, or one that ran out under VoiceOver's
+    /// focus, would otherwise leave focus on a control that is gone, and
+    /// VoiceOver would drop it at the top of the screen.
+    static func focusTarget(returningTo control: PhoneReaderControl, timerRuns: Bool) -> PhoneReaderControl {
+        screen(timerRuns: timerRuns).contains(control) ? control : .play
+    }
 
     /// The kind `PhoneFocusRegistry` knows the control by, for focus on
     /// arrival and on return from a sheet: every control has one, so a
@@ -85,6 +124,7 @@ enum PhoneReaderControl: CaseIterable, Hashable, Sendable {
         case .searchInBook: return .searchInBook
         case .goTo: return .goTo
         case .returnToPlace: return .returnToPlace
+        case .bookActions: return .bookActions
         case .sleepTimer: return .sleepTimer
         case .voice: return .voice
         case .bookInfo: return .bookInfo
@@ -176,4 +216,12 @@ struct PhoneReaderState: Equatable {
     var headingPosition: HeadingPosition
     /// The sleep timer's status as the Mac speaks it, or "" with no timer.
     var sleepTimerStatus: String
+    /// The page at the place, "Page 112 of 300", for Go To's value (FR50);
+    /// "" in a book of fewer than two pages. Unlike Where Am I?'s page, it
+    /// doesn't wait on the reader screen's page setting: Go To goes to pages.
+    var goToPage: String = ""
+    /// The time at the place, as Go To's Time field starts ("1:02:03"): the
+    /// recording's for an audiobook, else at the book's listening speed
+    /// (FR50).
+    var goToTime: String = ""
 }

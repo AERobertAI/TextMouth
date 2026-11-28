@@ -8,20 +8,82 @@ import XCTest
 final class PhoneReaderControlsTests: XCTestCase {
     // MARK: - Order
 
-    /// The elements after Back and the title, in VoiceOver's order, and the
-    /// grid of three columns under Play: five full rows, and a sixth holding
-    /// the two skips, since Search in Book follows Headings and Export this
-    /// book follows Book Info.
+    /// The elements after Back and the title, in VoiceOver's order: Book
+    /// content, Play, and the grid of three columns under Play, four full
+    /// rows and a fifth holding the two skips, Book Actions in place of the
+    /// four actions it gathers (FR51).
     func testTheControlsAreInTheSpecsOrder() {
-        XCTAssertEqual(PhoneReaderControl.allCases, [
+        XCTAssertEqual(PhoneReaderControl.screen(timerRuns: false), [
             .bookContent, .play, .whereAmI, .navigationUnit, .speed,
             .previousHeading, .nextHeading, .addBookmark, .bookmarks, .headings,
-            .searchInBook, .goTo, .returnToPlace, .sleepTimer, .voice, .bookInfo, .export,
+            .searchInBook, .goTo, .returnToPlace, .bookActions,
             .skipBackward, .skipForward,
         ])
-        XCTAssertEqual(PhoneReaderControl.grid.count, 17)
+        XCTAssertEqual(PhoneReaderControl.grid.count, 14)
         XCTAssertEqual(PhoneReaderControl.grid.first, .whereAmI)
         XCTAssertEqual(PhoneReaderControl.grid.last, .skipForward)
+    }
+
+    /// Book Actions holds Sleep Timer, Voice, Book Info, and Export this book,
+    /// in that order, none of them on the screen as well; every control is on
+    /// the screen or in the menu, never both (FR51).
+    func testBookActionsGathersTheFourLessFrequentActions() {
+        XCTAssertEqual(PhoneReaderControl.bookActionItems, [.sleepTimer, .voice, .bookInfo, .export])
+        let screen = PhoneReaderControl.screen(timerRuns: false)
+        XCTAssertTrue(Set(screen).isDisjoint(with: PhoneReaderControl.bookActionItems), "\(screen)")
+        XCTAssertEqual(Set(screen).union(PhoneReaderControl.bookActionItems), Set(PhoneReaderControl.allCases))
+        for item in PhoneReaderControl.bookActionItems {
+            XCTAssertNotNil(item.sheet, "\(item) opens no sheet from the menu")
+        }
+        let actions = describe(.bookActions, in: state())
+        XCTAssertEqual(actions.label, "Book Actions")
+        XCTAssertEqual(actions.hint, "Sleep timer, voice, book information, and export.")
+        XCTAssertEqual(actions.value, "")
+        XCTAssertEqual(actions.traits, .button)
+        XCTAssertNil(PhoneReaderControl.bookActions.sheet, "Book Actions opens a menu, not a sheet")
+    }
+
+    /// VoiceOver passes over Skip backward and Skip forward while it runs,
+    /// since adjusting Play makes the same moves; without VoiceOver every
+    /// control on the screen is reachable (FR49). Play stays adjustable.
+    func testVoiceOverPassesOverTheSkipsOnlyWhileItRuns() {
+        let hidden = PhoneReaderControl.allCases.filter(\.isHiddenFromVoiceOver)
+        XCTAssertEqual(hidden, [.skipBackward, .skipForward])
+        for timerRuns in [false, true] {
+            XCTAssertEqual(
+                PhoneReaderControl.voiceOverOrder(timerRuns: timerRuns, voiceOverRuns: false),
+                PhoneReaderControl.screen(timerRuns: timerRuns)
+            )
+            let withVoiceOver = PhoneReaderControl.voiceOverOrder(timerRuns: timerRuns, voiceOverRuns: true)
+            XCTAssertEqual(withVoiceOver, PhoneReaderControl.screen(timerRuns: timerRuns).filter { !hidden.contains($0) })
+            XCTAssertEqual(withVoiceOver.last, .bookActions, "\(withVoiceOver)")
+        }
+        XCTAssertTrue(describe(.play, in: state()).traits.contains(.adjustable), "Play must still move back and forward")
+    }
+
+    /// While a timer runs, the Sleep Timer shows under Play as well as in the
+    /// menu, its value the time left; with none it is only in the menu.
+    func testTheSleepTimerShowsUnderPlayOnlyWhileATimerRuns() {
+        let running = PhoneReaderControl.screen(timerRuns: true)
+        XCTAssertEqual(Array(running.prefix(3)), [.bookContent, .play, .sleepTimer])
+        XCTAssertEqual(Array(running.dropFirst(3)), PhoneReaderControl.grid)
+        XCTAssertFalse(PhoneReaderControl.screen(timerRuns: false).contains(.sleepTimer))
+    }
+
+    /// Focus goes back to the Sleep Timer under Play while a timer still runs,
+    /// and to Play once it has gone (turned off in its sheet, or run out under
+    /// VoiceOver's focus), never to a control no longer on the screen. Every
+    /// other control on the screen gets focus back itself.
+    func testFocusReturnsToPlayWhenTheSleepTimerHasGone() {
+        XCTAssertEqual(PhoneReaderControl.focusTarget(returningTo: .sleepTimer, timerRuns: true), .sleepTimer)
+        XCTAssertEqual(PhoneReaderControl.focusTarget(returningTo: .sleepTimer, timerRuns: false), .play)
+        for timerRuns in [false, true] {
+            for control in PhoneReaderControl.screen(timerRuns: timerRuns) {
+                XCTAssertEqual(PhoneReaderControl.focusTarget(returningTo: control, timerRuns: timerRuns), control)
+            }
+            // The menu's items have no button on the screen but the timer's.
+            XCTAssertEqual(PhoneReaderControl.focusTarget(returningTo: .voice, timerRuns: timerRuns), .play)
+        }
     }
 
     /// The grid's rows hold the controls in the grid's order, at most three
@@ -42,9 +104,9 @@ final class PhoneReaderControlsTests: XCTestCase {
             )
         }
         XCTAssertEqual(PhoneReaderControl.gridRows.last, [.skipBackward, .skipForward], "The skips aren't the last row")
-        // Voice, Book Info, and Export this book are the fifth row, the third of it the Export control (FR31).
-        XCTAssertEqual(PhoneReaderControl.gridRows.count, 6, "The grid changed its shape")
-        XCTAssertEqual(PhoneReaderControl.gridRows.dropFirst(4).first, [.voice, .bookInfo, .export])
+        // Book Actions ends the fourth row (FR51).
+        XCTAssertEqual(PhoneReaderControl.gridRows.count, 5, "The grid changed its shape")
+        XCTAssertEqual(PhoneReaderControl.gridRows.dropFirst(3).first, [.goTo, .returnToPlace, .bookActions])
     }
 
     /// Every control has a focus kind of its own, and every kind belongs to
@@ -94,7 +156,18 @@ final class PhoneReaderControlsTests: XCTestCase {
         XCTAssertEqual(play.value, "")
         XCTAssertEqual(play.hint, "Moves back or forward by sentence.")
         XCTAssertEqual(play.traits, [.button, .adjustable, .startsMediaSession])
-        XCTAssertEqual(play.actions, [])
+        XCTAssertEqual(play.actions, [.sleepTimer])
+    }
+
+    /// Play offers the Sleep Timer on the Actions rotor in every state,
+    /// named as the sheet is (FR52): the sure way to it beside the triple tap.
+    func testPlayOffersTheSleepTimerAction() {
+        let changes: [(inout PhoneReaderState) -> Void] = [{ _ in }, { $0.isPlaying = true }, { $0.isLoading = true }]
+        for change in changes {
+            XCTAssertEqual(describe(.play, in: state(change)).actions, [.sleepTimer])
+        }
+        XCTAssertEqual(PhoneControlAction.sleepTimer.name, "Sleep Timer")
+        XCTAssertEqual(PhoneControlAction.sleepTimer.name, describe(.sleepTimer, in: state()).label)
     }
 
     /// Playing: "Pause", with an empty value, and without the media trait,
@@ -247,6 +320,32 @@ final class PhoneReaderControlsTests: XCTestCase {
         XCTAssertEqual(describe(.bookInfo, in: state()).hint, "Show book information")
     }
 
+    /// Book content keeps its twelve lines while they fit in 55 percent of the
+    /// screen, and is cut to that share at the largest text sizes, so Play
+    /// still shows under it; an unmeasured screen leaves the twelve lines.
+    func testBookContentLeavesRoomForPlayAtTheLargestTextSizes() {
+        // The default size on the smallest iPhone: 300 points of 560 fits.
+        XCTAssertEqual(PhoneReaderControls.bookContentHeight(scaled: 300, visible: 560), 300)
+        // The largest accessibility size, about 3.1 times the body's: cut.
+        XCTAssertEqual(PhoneReaderControls.bookContentHeight(scaled: 935, visible: 750), 412.5, accuracy: 0.001)
+        XCTAssertEqual(PhoneReaderControls.bookContentHeight(scaled: 300, visible: 0), 300)
+    }
+
+    /// Go To's value is the place, as the sheet's Page and Time fields start:
+    /// the page and the time, the page left out in a book without pages, and
+    /// nothing while loading (FR50). It is no button's visible title: Go To
+    /// shows its name alone.
+    func testGoToSaysThePageAndTheTime() {
+        let place = state { $0.goToPage = "Page 112 of 300"; $0.goToTime = "1:02:03" }
+        XCTAssertEqual(describe(.goTo, in: place).value, "Page 112 of 300, 1:02:03")
+        XCTAssertEqual(describe(.goTo, in: state { $0.goToTime = "0:05:00" }).value, "0:05:00")
+        XCTAssertEqual(describe(.goTo, in: state()).value, "")
+        var loading = place
+        loading.isLoading = true
+        XCTAssertEqual(describe(.goTo, in: loading).value, "")
+        XCTAssertEqual(describe(.goTo, in: place).label, "Go To", "The place belongs in the value, after the name")
+    }
+
     /// Export this book is the Mac's toolbar button: its spoken label, its drawn
     /// title "Export", and its hint, a button with no value and no actions; it
     /// follows Book Info and comes before the skips.
@@ -297,13 +396,13 @@ final class PhoneReaderControlsTests: XCTestCase {
         XCTAssertEqual(describe(.skipForward, in: state()).label, "Skip forward: Sentence")
     }
 
-    /// No control but Where Am I? has actions, so VoiceOver never says
-    /// "Actions available" after one that has none to offer; none but Play
-    /// and Where Am I? start a media session.
-    func testOnlyWhereAmIHasActionsAndOnlyPlayAndWhereAmIStartMedia() {
+    /// No control but Where Am I? and Play (its Sleep Timer, FR52) has
+    /// actions, so VoiceOver never says "Actions available" after one that has
+    /// none to offer; none but Play and Where Am I? start a media session.
+    func testOnlyWhereAmIAndPlayHaveActionsAndOnlyPlayAndWhereAmIStartMedia() {
         for control in PhoneReaderControl.allCases {
             let description = describe(control, in: state())
-            if control != .whereAmI {
+            if control != .whereAmI && control != .play {
                 XCTAssertEqual(description.actions, [], "\(control)")
             }
             if control != .play && control != .whereAmI {

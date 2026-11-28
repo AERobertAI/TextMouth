@@ -21,19 +21,18 @@ final class SpanishUITests: TextMouthUITestCase {
         try launchIntoTheReader(arguments: Self.spanish, playLabel: "Reproducir", loadingValue: "Cargando")
     }
 
-    /// The Sleep Timer, with no timer running, in the catalog's Spanish: the reader's Sleep Timer value, then in the
+    /// The Sleep Timer, with no timer running, in the catalog's Spanish: reached through Book Actions, then in the
     /// sheet the New Timer heading, each preset's label, the custom minutes field's label, the stepper's label, the
     /// custom Set button's label, and the Stop At heading and buttons.
     func testTheSleepTimerSheetIsInSpanish() throws {
         let app = try launchIntoTheSpanishReader()
-        // The reader's Sleep Timer button is named "Sleep Timer" in Spanish, and its value is the
-        // sleep timer's own: "Off" ("Desactivado") while no timer runs.
-        let reader = try elementsInOrder(of: app)
-        let timerValue = reader.first { $0.label == "Temporizador de apagado" }?.value
-        XCTAssertEqual(timerValue, "Desactivado", "The reader's Sleep Timer read: \(Self.describe(reader))")
-        // The reader's button and the sheet's title are both "Sleep Timer" in Spanish, and Close is the Mac's
-        // own localized word since the pilot's review (finding 4), so the sheet is not half English.
-        let elements = try openReaderSheet("Temporizador de apagado", titled: "Temporizador de apagado", waitingFor: "Cerrar", in: app)
+        // The Book Actions menu's item and the sheet's title are both "Sleep Timer" in Spanish, and Close is the
+        // Mac's own localized word since the pilot's review (finding 4), so the sheet is not half English. The
+        // menu itself is "Book Actions" (FR51).
+        let elements = try openReaderSheet(
+            "Temporizador de apagado", titled: "Temporizador de apagado", waitingFor: "Cerrar",
+            under: "Acciones del libro", in: app
+        )
         keepScreenshot(of: app, named: "Sleep Timer sheet in Spanish")
         assertOrder([
             "Temporizador de apagado", "Cerrar",  // "Sleep Timer", "Close"

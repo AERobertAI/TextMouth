@@ -34,6 +34,7 @@ Each reads the commit as it was when it started (`Scripts/ios/typecheck.py` take
 
 - **`make typecheck-ios`** copies the committed sources of HEAD into a work folder of its own, writes a Swift package around them, and builds it with SwiftPM and the iOS SDK, for iOS 26.0, compiling the sources the iOS app compiles and linking its four C libraries.
   It never changes the repository.
+  Xcode 27's compiler colors and links its diagnostics even in a log file, so `typecheck.py` strips those escapes before it matches them.
   It builds no FFmpeg: its package links a C stand-in for the session's functions, written against the session's real header (see [The FFmpeg build](building.md#the-ffmpeg-build)).
   A clean run means the iOS app's sources compile and link; because it builds a package of its own and not the Xcode target, it does not test the target's build settings.
   It takes about two minutes once it has the lock.
@@ -217,7 +218,9 @@ Its variables:
   With several teams the command lists their names and asks for `TEAM=`.
 - `DEVICE=<name or UDID>`, else the one paired iPhone or iPad that `xcrun devicectl list devices` shows.
   With several, the command lists their names and asks for `DEVICE=`.
+  Xcode 27's devicectl lists simulators too (reality "simulated"), which are skipped; a name matches in any case, with a curly or a straight apostrophe.
 - `LAUNCH=1` starts the app on the iPhone after installing it.
+- `device=`, `team=`, and `launch=` in lower case work as well; a value given as `DEVICE`, in the environment, or on the command line wins.
 
 ### Checking it, and when it fails
 <!-- id: installing-on-own-iphone-fixes; keys: dry-run, install.log, exit status 2, expired profile, untrusted developer, VPN & Device Management; src: Scripts/ios/install-on-device.py, Scripts/agents/tests/test_install_on_device.py -->
@@ -234,6 +237,7 @@ The command prints the fixes for the errors a person is likely to meet:
 - **Expired profile:** run again, which makes a new one.
 - **Bundle identifier another team holds:** use the team that holds it (`TEAM=`), or sign the other Apple ID out of Xcode's Accounts.
 - **No team:** step 1.
+  If Xcode's preferences hold an Apple ID but no team, a sign-in was begun and not finished: the message says to sign in again in Xcode > Settings > Accounts, or to give `TEAM=`.
 - **iPhone newer than this Xcode supports:** update Xcode.
 
 ## Building TextMouthiOS for the simulator

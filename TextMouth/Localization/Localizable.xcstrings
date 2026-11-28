@@ -539533,6 +539533,318 @@
         }
       }
     },
+    "phoneReader.bookActions" : {
+      "comment" : "Label of the iPhone reader's menu button that holds the book's less frequent actions: Sleep Timer, Voice, Book Info, and Export.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "إجراءات الكتاب"
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বইয়ের কাজ"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Buchaktionen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Book Actions"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Acciones del libro"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "کارهای کتاب"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Actions du livre"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "פעולות ספר"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "पुस्तक के कार्य"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tindakan Buku"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Azioni libro"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ブックの操作"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "책 동작"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Boekacties"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Działania książki"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ações do livro"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Действия с книгой"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bokåtgärder"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "การทำงานกับหนังสือ"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kitap İşlemleri"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Дії з книгою"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "کتاب کے اقدامات"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tác vụ sách"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "图书操作"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "書籍動作"
+          }
+        }
+      }
+    },
+    "phoneReader.bookActionsHint" : {
+      "comment" : "Hint of the iPhone reader's Book Actions menu button.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "مؤقت النوم، والصوت، ومعلومات الكتاب، والتصدير."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "স্লিপ টাইমার, ভয়েস, বইয়ের তথ্য এবং রপ্তানি।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Einschlaf-Timer, Stimme, Buchinfo und Export."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sleep timer, voice, book information, and export."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Temporizador de apagado, voz, información del libro y exportación."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "زمان‌سنج خواب، صدا، اطلاعات کتاب و صادر کردن."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Minuteur de mise en veille, voix, informations sur le livre et exportation."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "טיימר שינה, קול, פרטי הספר וייצוא."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "स्लीप टाइमर, आवाज़, पुस्तक जानकारी और निर्यात।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Timer tidur, suara, info buku, dan ekspor."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Timer di spegnimento, voce, info libro ed esportazione."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "スリープタイマー、声、ブック情報、書き出し。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "취침 타이머, 음성, 책 정보 및 내보내기."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Slaaptimer, stem, boekinfo en exporteren."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Wyłącznik czasowy, głos, informacje o książce i eksport."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Timer de repouso, voz, informações do livro e exportação."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Таймер сна, голос, сведения о книге и экспорт."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Insomningstimer, röst, bokinfo och export."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ตัวตั้งเวลาปิด เสียง ข้อมูลหนังสือ และการส่งออก"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Uyku zamanlayıcısı, ses, kitap bilgileri ve dışa aktarma."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Таймер сну, голос, інформація про книгу та експорт."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "سلیپ ٹائمر، آواز، کتاب کی معلومات اور برآمد۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Hẹn giờ ngủ, giọng nói, thông tin sách và xuất."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "睡眠定时器、语音、图书信息和导出。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "睡眠計時器、語音、書籍資訊和輸出。"
+          }
+        }
+      }
+    },
     "phoneReader.bookContentPausedHint" : {
       "comment" : "Hint of the iPhone reader's book text while the book is paused: activating it plays from the place VoiceOver is at.",
       "extractionState" : "manual",

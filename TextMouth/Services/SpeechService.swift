@@ -731,7 +731,22 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// (the reader takes each word from `onWordSpoken`), and publishing it
     /// announced a change of the service 3 to 5 times a second for nothing.
     var currentWordRange: NSRange?
-    @Published var currentVoice: AVSpeechSynthesisVoice?
+    /// The voice speech is made in. Choosing another one, from any source
+    /// (the global setting, the book's own, a reset), reaches speech that is
+    /// being heard from rendered audio once the main queue's turn ends
+    /// (`settleVoiceChange()`), since that audio was made in the old voice
+    /// and plays on in it otherwise (B29).
+    @Published var currentVoice: AVSpeechSynthesisVoice? {
+        didSet {
+            // The same voice assigned again (the reader applies the settings
+            // each time one changes) is no change.
+            guard oldValue?.identifier != currentVoice?.identifier else { return }
+            scheduleVoiceChangeCheck()
+        }
+    }
+    /// Whether a voice was chosen since the main queue last turned, and
+    /// `settleVoiceChange()` is queued to act on it.
+    private var voiceChangeCheckIsScheduled = false
     @Published var wordsPerMinute: Double = 200 {
         didSet {
             // This is a reader's effective speed. Only SettingsViewModel may
@@ -783,8 +798,9 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// previous voice when a voice was chosen part-way through the text, or
     /// from another text when a render finished after it was abandoned.
     /// Speech then carries on directly in the current voice. Rendered audio
-    /// already playing keeps playing until its text ends, since switching
-    /// mid-playback is never seamless.
+    /// already playing or paused when another voice is chosen is left for
+    /// direct speech in the new voice (`leaveRenderedAudioOfAnotherVoice()`,
+    /// B29), the one direction a switch may go while speech is heard.
     private var renderedAudioMatchesSpeech: Bool {
         renderedAudioMatches(text: currentText)
     }
@@ -2017,9 +2033,12 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     }
 
     /// Restore normal-volume direct speech when a running fade is cancelled.
-    /// Rendered playback only needs its mixer volume restored.
+    /// Rendered playback only needs its mixer volume restored, and leaves
+    /// for direct speech now if another voice was chosen while the fade held
+    /// it (`leaveRenderedAudioOfAnotherVoice()`, which waits out a fade).
     func cancelSleepTimerFade() {
         madeAudioEngine?.restoreVolume()
+        leaveRenderedAudioOfAnotherVoice()
         guard isDirectSleepFadeActive else { return }
 
         let offset = max(
@@ -2121,6 +2140,9 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     @discardableResult
     func resume() -> Bool {
         guard isPaused else { return false }
+        // A voice chosen in this turn leaves paused audio of the old voice
+        // first, so the policy below never resumes it.
+        settleVoiceChange()
 
         let offset = Self.resumeOffset(
             reportedWord: currentWordRange,
@@ -2300,6 +2322,112 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         startPositionTracking()
 
         transitionLog(.trace, "PRE_RENDERED_START: playing chapter (\(text.utf16Length) UTF-16 units) from offset \(charOffset)")
+    }
+
+    /// Moves speech off rendered audio made in a voice other than the
+    /// current one, when the voice was chosen while that audio was playing or
+    /// paused (B29): the engine plays what it was given, so the old voice
+    /// would otherwise be heard to the end of the text, and a paused play
+    /// would resume in it (`SpeechResumePolicy`: "a paused engine resumes
+    /// its own audio"). On the iPhone a Play starts on rendered audio, so
+    /// this was the way speech was usually heard there.
+    ///
+    /// Moving to direct speech is the direction allowed while speech is
+    /// heard, never the reverse (`feedback_playback_architecture`):
+    ///   - paused: nothing is heard, so the place is kept and Play restarts
+    ///     directly from it, in the new voice (`pendingDirectSeekOffset`);
+    ///   - playing: direct speech starts at the word the engine had reached.
+    ///
+    /// The engine's offset is an estimate that spreads the audio evenly over
+    /// the text (`AudioEngineService.frameMap`), so it can fall inside a
+    /// word or on the space before one: the place is taken to that word's
+    /// start (`wordStart(around:in:)`), and the new voice says the word
+    /// whole, never its second half nor the word before again.
+    ///
+    /// It does nothing when speech is direct already (the next chunk takes
+    /// the voice), when the audio is of the new voice, or while a sleep
+    /// fade holds the mixer down, which direct speech would not follow: a
+    /// fade cancelled leaves then (`cancelSleepTimerFade()`), and a fade run
+    /// out pauses with the engine stopped, so Play speaks in the new voice.
+    /// It runs once the main queue's turn ends (`settleVoiceChange()`), not
+    /// at each choice.
+    private func leaveRenderedAudioOfAnotherVoice() {
+        guard isSpeaking,
+              !usingDirectMode,
+              let engine = madeAudioEngine,
+              engine.hasRenderedAudio,
+              !renderedAudioMatchesSpeech,
+              engine.intendedVolume >= 1 else { return }
+
+        // The engine knows its place while it plays or is paused. Stopped, as
+        // over a change of hardware format on the iPhone until it plays on
+        // (`engineConfigurationChanged()`), it knows only where its last play
+        // began, and the place last published is the one heard.
+        let heard = engine.isPlaying || engine.isPaused
+            ? engine.currentCharOffset()
+            : currentWordRange?.location ?? engine.currentCharOffset()
+        let offset = Self.wordStart(around: heard, in: currentText)
+        transitionLog(.event, "VOICE_CHANGED_ON_ENGINE: leaving audio rendered in another voice at offset=\(offset) paused=\(isPaused)")
+        // Drop in-flight position reports of the audio being left, then the
+        // audio itself, so no seek or resume can find it again.
+        positionGeneration += 1
+        stopPositionTracking()
+        engine.discardRenderedAudio()
+        currentWordRange = NSRange(location: offset, length: 0)
+        usingDirectMode = true
+        if isPaused {
+            pendingDirectSeekOffset = offset
+        } else {
+            speakDirect(currentText, fromCharOffset: offset)
+        }
+    }
+
+    /// The start of the word an estimated `offset` of `text` stands for: on
+    /// white space, the word after it, since the engine's estimate falls a
+    /// unit short of a word's start as often as on it (rounding frames down);
+    /// inside a word, that word's start (`ReaderViewModel.snappedWordStart`).
+    /// White space at the text's end gives the end.
+    nonisolated static func wordStart(around offset: Int, in text: String) -> Int {
+        let length = text.utf16Length
+        var place = max(0, min(offset, length))
+        guard place < length else { return length }
+        var index = text.index(atUTF16Offset: place)
+        while index < text.endIndex && text[index].isWhitespace {
+            index = text.index(after: index)
+        }
+        place = text.utf16Offset(of: index)
+        return ReaderViewModel.snappedWordStart(in: text, at: place)
+    }
+
+    /// Queues `settleVoiceChange()` for the end of the main queue's turn,
+    /// once however many voices are chosen in it.
+    ///
+    /// A voice is often chosen and then chosen back in one turn: a change in
+    /// Settings posts `speechSettingsChanged`, `reloadSettings()` gives
+    /// speech the global voice, and the reader then gives a book with a
+    /// voice of its own that voice again (`applyLocalSpeechOverrides()`),
+    /// at each change in Settings, a speed step too. Acting at the first
+    /// choice left the book's rendered audio for direct speech in the global
+    /// voice, the wrong one, until the next chunk.
+    private func scheduleVoiceChangeCheck() {
+        guard !voiceChangeCheckIsScheduled else { return }
+        voiceChangeCheckIsScheduled = true
+        DispatchQueue.main.async { [weak self] in
+            self?.settleVoiceChange()
+        }
+    }
+
+    /// Acts on a voice chosen since the main queue last turned, if any
+    /// (`leaveRenderedAudioOfAnotherVoice()`), with the voice chosen last:
+    /// queued by the choice (`scheduleVoiceChangeCheck()`), and called by a
+    /// resume before it decides how to go on, so that a Play in the same
+    /// turn as the choice never resumes audio of the old voice. Internal so
+    /// that tests settle a choice without turning the main run loop, which
+    /// would let the system synthesizer be heard.
+    func settleVoiceChange() {
+        guard voiceChangeCheckIsScheduled else { return }
+        voiceChangeCheckIsScheduled = false
+        leaveRenderedAudioOfAnotherVoice()
     }
 
     // MARK: - Seeking

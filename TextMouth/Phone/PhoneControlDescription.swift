@@ -24,6 +24,9 @@ enum PhoneControlAction: Equatable, Hashable, Sendable {
     case whereAmIFullSummary
     /// The Mac's Copy Reading Position.
     case copyReadingPosition
+    /// Opens the Sleep Timer sheet, from Play (FR52): the sure way beside a
+    /// one-finger triple tap, which VoiceOver turns into a long press.
+    case sleepTimer
 
     /// The action's name, as VoiceOver reads it: the Mac's command names.
     @MainActor
@@ -31,6 +34,7 @@ enum PhoneControlAction: Equatable, Hashable, Sendable {
         switch self {
         case .whereAmIFullSummary: return ReaderWhereAmIToolbarButton.fullSummaryActionName
         case .copyReadingPosition: return ShortcutAction.copyReadingPosition.title
+        case .sleepTimer: return PhoneReaderVocabulary.sleepTimer
         }
     }
 }

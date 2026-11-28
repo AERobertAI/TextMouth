@@ -25,12 +25,11 @@ Speech, for text books.
     The speech service's own engine builds its graph at once, as SpeechService.audioEngine makes it, through prepareGraph(), while direct speech is already speaking, so the first seek, resume, or chapter handoff onto the engine does not wait for the build (PERF08: 142 ms, 2.5 s cold).
     The look-ahead's engine never calls it: a look-ahead that only renders builds no graph, since a render needs only the synthesizer.
     - speak() on text whose rendered audio the engine already holds, with the same signature (the text's hash and UTF-16 length, and the voice; renderedAudioMatches(text:)), as when Play follows Stop, keeps that audio and renders nothing again (RENDER_KEPT in textmouth_transition.log).
-    - Direct speech starts as before.
   - Rendered audio is a RenderedSpeechAudio: the synthesizer's pieces converted to 16-bit samples as they arrive, in blocks of 128 KB, then the silence padding every render ends with.
     It is immutable, so the look-ahead's engine hands it to the speech service's.
-    A play converts back only what it schedules: RenderedSpeechFeeder schedules a few slices on the player node at once, and fills and schedules the next each time the node reports one consumed, on a serial queue of its own, so a busy main thread never leaves the node without audio.
-    A seek schedules from the slice that holds the cursor, copying nothing else.
-  - The voice is loaded ahead of the first Play: SpeechRenderCoordinator.warmUp(_:) renders one word with it and drops the audio (VoiceWarmUp), once per voice in a session, on the render queue like any render, giving up its turn after 30 seconds.
+    A play converts back only what it schedules: RenderedSpeechFeeder schedules a few slices on the player node at once, and fills and schedules the next each time the node reports one consumed, on a serial queue of its own, so a busy main thread starves nothing.
+    A seek schedules from the slice that holds the cursor.
+  - The voice is loaded ahead of the first Play: SpeechRenderCoordinator.warmUp(_:) renders one word with it and drops the audio (VoiceWarmUp), once per voice in a session, on the render queue like any render, giving up after 30 seconds.
     A text book's reader asks when it opens and when its voice changes (ReaderViewModel.warmUpVoice()).
 
 #### The markup guard
@@ -58,12 +57,11 @@ Speech, for text books.
     - that the ampersand, bare or in an entity, is never refused, so the guard leaves it alone;
     - that an utterance queued behind another is refused only once the one ahead of it finishes;
     - and that whatever is queued behind a refused utterance is dropped without a callback.
-    All of this was measured offline with write(_:toBufferCallback:), which plays nothing, as SpeechMarkupGuardTests render too.
     - neutralized(_:) also turns each NUL (U+0000) into a space, one unit for one, after guarding brackets (#1542): a NUL ends the text for the engine, which drops the rest of the utterance without a cancel, so neither a recovery nor the report of a refusal hears it.
     Every other control character passes: the offline probe Scripts/agents/probes/speech-control-character-probe.swift found the 64 others, C0, DEL, and C1, spoken in full in Samantha, and nothing lost at all in Alex.
 - Who may write it: the reader, through speak, pause, resume, seek, and stop, and releaseSpeech() as it closes.
   A resume starts from the word last reported.
-  With none reported yet in direct mode, it starts from the offset the direct utterance began at, snapped to its word (SpeechService.resumeOffset(reportedWord:usingDirectMode:directModeBaseOffset:engineOffset:), ST03).
+  With none reported yet in direct mode, it starts from the offset the direct utterance began at, snapped to its word (SpeechService.resumeOffset, ST03).
   This happens when a Pause comes within about 0.3 seconds of Play and the engine's own offset is 0 or stale, so a quick Play and Pause keeps the place instead of restarting the chapter.
 
 ### How speech is observed
@@ -79,9 +77,10 @@ Speech, for text books.
   Every utterance a synthesizer callback reports (a word, a start, a pause, a continue, a finish, or a cancel) is held until the callback is handled on the main queue (ReportedUtterance), so a new utterance made at a reused address can never take that callback for its own.
   There the service reads the synthesizer's state from its own synthesizer, never the callback's.
   Switches between the modes are logged in textmouth_transition.log, and switchToRenderedAudio(at:) is the one way direct speech hands over to rendered audio, always where nothing is heard, at the natural breaks the Owner item lists.
+  The one move the other way: a voice chosen while rendered audio plays or is paused is acted on at the end of the main queue's turn (settleVoiceChange(), queued by currentVoice's didSet, B29).
+  That runs leaveRenderedAudioOfAnotherVoice(), which drops the audio and speaks directly in the new voice from the start of the word heard (wordStart(around:in:)), or, paused, keeps the place for Play; during a sleep fade it waits for the fade's cancel.
   A sleep fade never switches (setSleepTimerFadeVolume(_:duration:)): direct speech fades through prepareDirectSleepFade(fromUTF16Offset:duration:startingVolume:), which starts the voice again from the last word reported in ever quieter segments, and rendered audio through the engine's volume.
   A seek and the watchdogs go through switchToRenderedAudioOrSpeakDirectly(at:failureTag:), which speaks directly when the engine does not start (SEEK_ENGINE_FAILED, DIRECT_WATCHDOG_ENGINE_FAILED, DIRECT_START_WATCHDOG_ENGINE_FAILED).
-  AudioEngineService starts its engine through startEngineIfStopped(for:), which tests make fail (_refusesToStartForTesting).
 
 #### The watchdogs
 <!-- id: speech-watchdogs; keys: start watchdog; src: TextMouth/Services/SpeechService.swift -->
@@ -142,7 +141,7 @@ The installed voices.
 - Owner: VoiceCatalog.shared, on the main actor: the voices and their languages.
   The system keeps no list, and each AVSpeechSynthesisVoice.speechVoices() call enumerates every installed voice afresh, so the catalog lists them off the main thread.
   Since 0.4.5 each listing runs on a thread of its own, started from the catalog's own serial queue and never in Swift's concurrency pool, where a listing that never returned held one of its few threads for good.
-  The queue gives up on a listing after 10 seconds (listingDeadline), skips one cancelled before it starts, and a later loadIfNeeded() or reload() tries again; a listing given up on never publishes. waitUntilListed(limit:) answers false when its limit (15 seconds unless given) passes first.
+  The queue gives up on a listing after 10 seconds (listingDeadline), skips one cancelled before it starts, and a later loadIfNeeded() or reload() tries again. waitUntilListed(limit:) answers false when its limit (15 seconds unless given) passes first.
 - Who may write it:
   - loadIfNeeded(), which the first Library window, the Settings window, and the reader's voice sheet call as they appear, lists the voices once;
   - listNow() lists them at once, on the main thread, only at the very first launch, when SettingsViewModel must choose a default voice;

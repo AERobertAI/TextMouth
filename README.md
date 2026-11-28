@@ -38,6 +38,7 @@ ARCHITECTURE.md, in the same folder, is the index of the pages explaining how th
   - [Media keys and the sleep timer](docs/user/reader-media-and-sleep-timer.md): headphones, AirPods, the timer.
   - [When a book ends, and your saved places](docs/user/reader-book-end.md): what plays next.
   - [When speech or audio goes wrong](docs/user/reader-speech-problems.md): refusals, stalls, memory limits.
+  - [The reader on the iPhone](docs/user/reader-on-iphone.md): VoiceOver's order, Book content, Book Actions.
 - [Exporting books](docs/user/exporting-books.md): what Export copies, and the Convert to menu.
   - [Exporting on the iPhone](docs/user/exporting-on-iphone.md): the sheet, the kept folder, braille rows.
   - [Exporting braille files](docs/user/exporting-braille.md): BRF and PEF options, layout, and emphasis.

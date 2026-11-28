@@ -160,9 +160,9 @@ Part of [TextMouth's documentation](../../README.md).
     With the book playing, the same press leaves Pause on screen.
   - `testASleepTimerCountsDownWhileTheBookPlaysAndStopsWhenItPauses`: the 10-minute preset starts the book (Pause), the Sleep Timer reads "M:SS remaining" between 9:00 and 10:00, a later reading is smaller while it plays, and two readings four seconds apart are equal once it is paused.
   - `testAnEndOfBookTimerNamesItsStopAndCancelEndsIt`: "Stop at the end of the book" starts the book and the control reads "stops at the end of the book".
-    The sheet then lists Sleep Timer (its title), Reset Timer, Cancel Timer and New Timer, and after Cancel Timer the control reads "Off".
+    The sheet then lists Sleep Timer (its title), Reset Timer, Cancel Timer and New Timer, and after Cancel Timer the control has left the reader (FR51).
     The sheet's "Current Timer" heading and its status line are not in the tree once a timer is set, though Reset Timer after them is; a list scrolled to the last timer used would explain the heading but not that, so whether VoiceOver misses them is not settled and needs a device.
-  - `testAnEndOfHeadingTimerSetAtTheCoverPlaysOnAndNamesItsStop`: at the book's opening, "Stop at the end of this heading" starts the book (Pause), the Sleep Timer reads "stops at the end of this heading" and not "Off", and Pause is still there three seconds later (`assertHolds`).
+  - `testAnEndOfHeadingTimerSetAtTheCoverPlaysOnAndNamesItsStop`: at the book's opening, "Stop at the end of this heading" starts the book (Pause), the Sleep Timer shows, reading "stops at the end of this heading", and Pause is still there three seconds later (`assertHolds`).
     It passed in run 43041108180 with the fix, in 23 seconds, and fails without it (see the proof, below).
 - **End of heading at the cover.**
   A timer set to the end of the heading takes the heading Play starts in (`retargetSleepTimerHeading(toPlayStartingAt:)`, since 0.4.6), not the first heading after the cursor, since Play skips a silent cover chapter to the first chapter with words.

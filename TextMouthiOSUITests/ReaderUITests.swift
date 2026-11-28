@@ -14,9 +14,12 @@ final class ReaderUITests: TextMouthUITestCase {
     static let controls = [
         "Book content", "Play", "Where Am I?", "Navigation unit", "Speed",
         "Previous Heading", "Next Heading", "Add bookmark", "Bookmarks", "Headings",
-        "Search in Book", "Go To", "Return to previous reading position", "Sleep Timer", "Voice", "Book Info", "Export this book",
+        "Search in Book", "Go To", "Return to previous reading position", "Book Actions",
         "Skip backward…", "Skip forward…",
     ]
+
+    /// The items of the Book Actions menu, in its order (FR51).
+    static let bookActionItems = ["Sleep Timer", "Voice", "Book Info", "Export this book"]
 
     /// The reader opens on the book, titled with it, with Back first and its
     /// controls in the spec's order after the title.
@@ -32,8 +35,8 @@ final class ReaderUITests: TextMouthUITestCase {
     }
 
     /// Before anything is pressed: Play says "Play" with no value, a text
-    /// book moves by sentence, the timer is off, no bookmark is counted, and
-    /// Book content holds the book's text from its place.
+    /// book moves by sentence, no timer shows (FR51), no bookmark is counted,
+    /// and Book content holds the book's text from its place.
     func testTheControlsHoldTheirFirstValues() throws {
         let app = try launchIntoTheReader()
         let play = app.buttons["Play"]
@@ -45,13 +48,84 @@ final class ReaderUITests: TextMouthUITestCase {
             elements.first { $0.label == label }?.value
         }
         XCTAssertEqual(value(of: "Navigation unit"), "Sentence")
-        XCTAssertEqual(value(of: "Sleep Timer"), "Off")
+        // Go To says the place, its time at least (FR50).
+        XCTAssertFalse((value(of: "Go To") ?? "").isEmpty, "Go To says no place: \(Self.describe(elements))")
+        XCTAssertFalse(elements.contains { $0.label == "Sleep Timer" }, "A Sleep Timer shows with no timer running: \(Self.describe(elements))")
         XCTAssertTrue((value(of: "Bookmarks") ?? "").isEmpty, "No bookmark yet: \(value(of: "Bookmarks") ?? "")")
         XCTAssertTrue(elements.contains { $0.label.hasPrefix("Skip forward") && $0.label.hasSuffix("Sentence") }, "The skips don't name the unit")
 
         let text = try XCTUnwrap(value(of: "Book content"), "Book content holds no text")
         XCTAssertFalse(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, "Book content is blank")
         XCTAssertLessThanOrEqual(text.count, 20_000, "More than the passage's limit")
+    }
+
+    /// Book content is one element, one swipe for VoiceOver (FR48): nothing
+    /// labeled stands between it and Play, as a paragraph of its own would,
+    /// and it is the screen's main area, taller than Play.
+    ///
+    /// The text view's own scroll bars ("Vertical scroll bar, 5 pages", train
+    /// 1127-1548) are in XCUITest's tree, which also lists what lies inside
+    /// an element, as it lists a cell's labels. VoiceOver stops at an element
+    /// and never visits what is inside it, so the bars are passed over only
+    /// where they are Book content's own descendants, as this checks: beside
+    /// it, they would be stops of their own.
+    func testBookContentIsOneElementAndTheMainArea() throws {
+        let app = try launchIntoTheReader()
+        let content = try XCTUnwrap(Self.snapshot(labeled: "Book content", in: try app.snapshot()), "No Book content")
+        let inside = Self.labeledDescendants(of: content)
+        XCTAssertTrue(
+            inside.allSatisfy { $0.contains("scroll bar") },
+            "Something besides its scroll bars inside Book content: \(inside)"
+        )
+        let elements = try elementsInOrder(of: app)
+        let index = try XCTUnwrap(elements.firstIndex { $0.label == "Book content" }, "No Book content")
+        // What follows Book content once its own descendants are passed.
+        let next = index + 1 + inside.count
+        let after = elements.indices.contains(next) ? elements[next].label : "nothing"
+        XCTAssertEqual(after, "Play", "The element after Book content: \(Self.describe(elements))")
+        let play = try XCTUnwrap(elements.first { $0.label == "Play" })
+        XCTAssertGreaterThan(elements[index].frame.height, play.frame.height, "Book content is smaller than Play")
+    }
+
+    /// The first element labeled `label` in `root`'s tree, depth first.
+    private static func snapshot(labeled label: String, in root: any XCUIElementSnapshot) -> (any XCUIElementSnapshot)? {
+        var stack: [any XCUIElementSnapshot] = [root]
+        while let next = stack.popLast() {
+            if next.label == label { return next }
+            stack.append(contentsOf: next.children.reversed())
+        }
+        return nil
+    }
+
+    /// The labels of `root`'s descendants that have one, depth first, as
+    /// `elementsInOrder(of:)` lists them after `root`.
+    private static func labeledDescendants(of root: any XCUIElementSnapshot) -> [String] {
+        var found: [String] = []
+        var stack = Array(root.children.reversed())
+        while let next = stack.popLast() {
+            if !next.label.isEmpty { found.append(next.label) }
+            stack.append(contentsOf: next.children.reversed())
+        }
+        return found
+    }
+
+    /// Book Actions opens a menu of Sleep Timer, Voice, Book Info, and Export
+    /// this book, in that order, none of which is on the reader by itself, and
+    /// its Book Info opens the Book Information sheet (FR51).
+    func testBookActionsOpensItsMenu() throws {
+        let app = try launchIntoTheReader()
+        let before = try elementsInOrder(of: app)
+        for item in Self.bookActionItems {
+            XCTAssertFalse(before.contains { $0.label == item }, "\(item) is loose in the reader: \(Self.describe(before))")
+        }
+        tap(app.buttons["Book Actions"], until: app.buttons["Book Info"], in: app, what: "Book Actions")
+        assertOrder(Self.bookActionItems, in: try elementsInOrder(of: app))
+        keepScreenshot(of: app, named: "Book Actions")
+        app.buttons["Book Info"].tap()
+        XCTAssertTrue(
+            app.navigationBars["Book Information"].waitForExistence(timeout: Self.patience),
+            "Book Info in the menu opened no sheet:\n\(app.debugDescription)"
+        )
     }
 
     /// Each control is big enough to find by touch: at least 44 points tall,
