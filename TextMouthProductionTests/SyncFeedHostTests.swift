@@ -70,6 +70,51 @@ final class SyncFeedHostTests: XCTestCase {
         XCTAssertEqual(world.center.store.record(of: show.id)?.feed.isSubscribed, true)
     }
 
+    /// A setting a person changed here after the merge was made keeps their value, as a book's
+    /// field does; the merge's other fields land, and the feed's keys are offered again.
+    func testAPersonsChangeSinceTheMergeStands() async throws {
+        let world = try FeedTestWorld(self, label: "SyncFeedHostStale")
+        await world.start()
+        let show = try feed(in: world)
+        world.center.store.add(FeedRecord(feed: show))
+        let persons = ListeningOptions(predownloadsNext: false)
+        world.center.setListeningOptions(persons, of: show.id)
+        var theirs = show
+        theirs.listeningOptions = ListeningOptions(skipsFinished: false)
+        theirs.deleteDownloadsDaysAfterPlayedOverride = 5
+        let failed = await world.center.applySync(SyncFeedApplication(feedsToChange: [theirs], startFeeds: [show.id: show]))
+        XCTAssertEqual(failed, [show.id])
+        let now = try XCTUnwrap(world.center.store.record(of: show.id)?.feed)
+        XCTAssertEqual(now.listeningOptions, persons)
+        XCTAssertEqual(now.deleteDownloadsDaysAfterPlayedOverride, 5)
+    }
+
+    /// A feed a person changed here after the merge was made is not deleted by it: their change
+    /// may bring it back on every device.
+    func testFeedChangedSinceTheMergeIsNotDeleted() async throws {
+        let world = try FeedTestWorld(self, label: "SyncFeedHostStaleRemove")
+        await world.start()
+        let show = try feed(in: world)
+        world.center.store.add(FeedRecord(feed: show))
+        world.center.setDeleteDownloadsDaysAfterPlayed(3, of: show.id)
+        let failed = await world.center.applySync(SyncFeedApplication(feedsToRemove: [show.id], startFeeds: [show.id: show]))
+        XCTAssertEqual(failed, [show.id])
+        XCTAssertNotNil(world.center.store.record(of: show.id))
+    }
+
+    /// A feed another device subscribed to, of an address subscribed here since the merge was
+    /// made, is not added as a second feed of one show.
+    func testFeedSubscribedHereMeanwhileIsNotAddedTwice() async throws {
+        let world = try FeedTestWorld(self, label: "SyncFeedHostSameAddress")
+        await world.start()
+        let mine = try feed(in: world)
+        world.center.store.add(FeedRecord(feed: mine))
+        let theirs = try feed(in: world, address: "http://sync.example/show.xml/")
+        let failed = await world.center.applySync(SyncFeedApplication(feedsToAdd: [theirs]))
+        XCTAssertEqual(failed, [theirs.id])
+        XCTAssertNil(world.center.store.record(of: theirs.id))
+    }
+
     /// A feed deleted on another device, with nothing downloaded, is deleted here.
     func testRemovedFeedIsDeleted() async throws {
         let world = try FeedTestWorld(self, label: "SyncFeedHostRemove")

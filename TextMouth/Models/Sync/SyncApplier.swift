@@ -335,11 +335,15 @@ private struct SyncApplier {
             let group = entriesOfFeed[feed.id] ?? [:]
             if isFeedRemoved(group) {
                 removed.append(feed.id)
+                feeds.startFeeds[feed.id] = feed
                 appliedKeys.insert(.feed(feed.id, .presence))
                 continue
             }
             let updated = apply(group, to: feed)
-            if updated != feed { feeds.feedsToChange.append(updated) }
+            if updated != feed {
+                feeds.feedsToChange.append(updated)
+                feeds.startFeeds[feed.id] = feed
+            }
             staying.append(updated)
         }
         feeds.feedsToRemove = removed.sorted { $0.uuidString < $1.uuidString }

@@ -21,16 +21,29 @@ extension FeedCenter {
     /// fields through the engine's commands; and deletes each feed another
     /// device deleted, as Delete Feed… does, with this device's removal
     /// setting.
+    /// A feed a person changed since the merge was made (`SyncFeedApplication.startFeeds`)
+    /// keeps their change, as a book's row does (`SyncRowMerge`): none of the merge's fields
+    /// goes over theirs, it is not deleted, and its keys are offered again, by when the
+    /// person's change is recorded and outranks the merge's.
     /// - Returns: The feeds whose change did not land (the records not loaded,
-    ///   a feed gone meanwhile, a deletion refused because a download is in
-    ///   use): their keys are applied again at a later sync.
+    ///   a feed gone meanwhile or changed since the merge, one subscribed here
+    ///   meanwhile, a deletion refused because a download is in use): their
+    ///   keys are applied again at a later sync.
     func applySync(_ application: SyncFeedApplication) async -> Set<UUID> {
         let named = Set(application.feedsToAdd.map(\.id) + application.feedsToChange.map(\.id) + application.feedsToRemove)
         guard store.hasLoaded else { return named }
         var failed = Set<UUID>()
-        for feed in application.feedsToAdd { addSyncedFeed(feed) }
-        for feed in application.feedsToChange where !changeSyncedFields(to: feed) { failed.insert(feed.id) }
+        for feed in application.feedsToAdd where !addSyncedFeed(feed) { failed.insert(feed.id) }
+        for feed in application.feedsToChange where !changeSyncedFields(to: feed, from: application.startFeeds[feed.id]) {
+            failed.insert(feed.id)
+        }
         for feedID in application.feedsToRemove {
+            // A feed a person changed since the merge was made waits: their change may bring it back.
+            if let start = application.startFeeds[feedID], let current = store.record(of: feedID)?.feed,
+               SyncFeedValues.values(of: [current]) != SyncFeedValues.values(of: [start]) {
+                failed.insert(feedID)
+                continue
+            }
             do {
                 // Nil: no record (gone already, which is the merge's aim) or a deletion under way.
                 if try await deleteFeed(feedID) == nil, store.record(of: feedID) != nil { failed.insert(feedID) }
@@ -47,36 +60,56 @@ extension FeedCenter {
     /// now, so the episodes out before it arrived are not new here. A
     /// subscribed feed is checked at once, as discretionary work (it waits
     /// for a network without data limits), so its folder lists its episodes.
-    private func addSyncedFeed(_ feed: Feed) {
-        guard store.record(of: feed.id) == nil else { return }
+    /// - Returns: False, adding nothing, when a feed of its address was
+    ///   subscribed here since the merge was made: the next merge leaves the
+    ///   copy out, as it leaves out any copy of a feed this device has.
+    private func addSyncedFeed(_ feed: Feed) -> Bool {
+        guard store.record(of: feed.id) == nil else { return true }
+        let address = FeedAddress.comparisonKey(feed.feedURL)
+        guard !store.feeds.contains(where: { FeedAddress.comparisonKey($0.feedURL) == address }) else { return false }
         var arriving = feed
         arriving.newestItemDate = max(feed.subscribedDate, environment.now())
         store.add(FeedRecord(feed: arriving))
         DiagnosticLog.event(.feeds, "FEED_SYNC: added \(feed.feedURL.host ?? "a feed") from another device") // l10n: no (debug log text, which stays English)
-        guard arriving.isSubscribed, environment.worksOnItsOwn else { return }
+        guard arriving.isSubscribed, environment.worksOnItsOwn else { return true }
         let feedID = arriving.id
         Task { [weak self] in _ = await self?.refresher.refresh(feedID, origin: .scheduled) }
+        return true
     }
 
     /// Writes the synced fields of `feed` to this device's record of it,
     /// through the commands the listener's changes take, and only where they
-    /// differ. Returns false for a feed this device no longer has.
-    private func changeSyncedFields(to feed: Feed) -> Bool {
+    /// differ and this device's value is still `start`'s (the record the
+    /// merge was made from; nil writes every field that differs).
+    /// - Returns: False for a feed this device no longer has, or one with a
+    ///   field a person changed since `start`, which keeps their value.
+    private func changeSyncedFields(to feed: Feed, from start: Feed?) -> Bool {
         guard let current = store.record(of: feed.id)?.feed else { return false }
-        if current.feedURL != feed.feedURL { store.update(feed.id) { $0.feed.feedURL = feed.feedURL } }
-        if current.folderID != feed.folderID { setFolder(feed.folderID, of: feed.id) }
-        if current.itemPolicyOverride != feed.itemPolicyOverride {
+        var keptAPersonsChange = false
+        /// Whether the merge's value of `field` lands: it differs from this device's, and this
+        /// device's is still the one the merge was made from.
+        func lands<Value: Equatable>(_ field: KeyPath<Feed, Value>) -> Bool {
+            guard current[keyPath: field] != feed[keyPath: field] else { return false }
+            if let start, current[keyPath: field] != start[keyPath: field] {
+                keptAPersonsChange = true
+                return false
+            }
+            return true
+        }
+        if lands(\.feedURL) { store.update(feed.id) { $0.feed.feedURL = feed.feedURL } }
+        if lands(\.folderID) { setFolder(feed.folderID, of: feed.id) }
+        if lands(\.itemPolicyOverride) {
             // Not through `setItemPolicy`: its quiet time is for a number being typed, and its
             // announcement for the listener who made the change, on the other device. The rule's pass follows.
             store.update(feed.id) { $0.feed.itemPolicyOverride = feed.itemPolicyOverride }
             requestItemPolicyPass(for: [feed.id])
         }
-        if current.deleteDownloadsDaysAfterPlayedOverride != feed.deleteDownloadsDaysAfterPlayedOverride {
+        if lands(\.deleteDownloadsDaysAfterPlayedOverride) {
             setDeleteDownloadsDaysAfterPlayed(feed.deleteDownloadsDaysAfterPlayedOverride, of: feed.id)
         }
-        if current.listeningOptions != feed.listeningOptions { setListeningOptions(feed.listeningOptions, of: feed.id) }
-        if current.unsubscribedDate != feed.unsubscribedDate { applySyncedSubscription(of: feed, current: current) }
-        return true
+        if lands(\.listeningOptions) { setListeningOptions(feed.listeningOptions, of: feed.id) }
+        if lands(\.unsubscribedDate) { applySyncedSubscription(of: feed, current: current) }
+        return !keptAPersonsChange
     }
 
     /// Unsubscribes or subscribes again as another device did. Unsubscribing

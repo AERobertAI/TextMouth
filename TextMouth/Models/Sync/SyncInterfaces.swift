@@ -309,6 +309,9 @@ struct SyncFeedApplication: Equatable, Sendable {
     var feedsToChange: [Feed] = []
     /// Feeds another device deleted (Delete Feed…), by ID, in ID order.
     var feedsToRemove: [UUID] = []
+    /// The feeds to change and to remove as this device had them when the merge was made, by
+    /// ID: a feed a person changed since keeps their change, and its keys are offered again.
+    var startFeeds: [UUID: Feed] = [:]
     /// True when the merge was made without the feeds (the host's not loaded yet) while the
     /// winners hold feed keys: none of those was applied, so the host applies again later.
     var waitsForFeeds = false
