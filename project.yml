@@ -63,7 +63,7 @@ settings:
 # MARKETING_VERSION line, and the Mac app and the iOS app share it.
 settingGroups:
   appVersion:
-    MARKETING_VERSION: "0.6.1"
+    MARKETING_VERSION: "0.6.2"
     CURRENT_PROJECT_VERSION: "1"
   # How TextMouth's own braille code in TextMouthBraille/ compiles, in the
   # Mac's helper and in the iPhone's library alike (DR34): liblouis.h is
