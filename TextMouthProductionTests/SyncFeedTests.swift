@@ -496,4 +496,42 @@ final class SyncFeedTwoDeviceTests: XCTestCase {
         XCTAssertEqual(onMac.feeds.feedsToChange.map(\.unsubscribedDate), [phoneFeed.unsubscribedDate])
         XCTAssertTrue(onMac.feeds.feedsToAdd.isEmpty)
     }
+
+    /// One show subscribed apart on both devices is one feed on each; Delete Feed… on the Mac
+    /// deletes the iPhone's copy too, and the Mac never adds that copy back at its next sync.
+    func testDeletingOneCopyDeletesTheOther() async throws {
+        let world = try SyncTwoDevices(sandbox: try makeSandboxDirectory("feed-two-copies"))
+        let macFolder = BookFolder(name: "Show")
+        let phoneFolder = BookFolder(name: "Show on iPhone")
+        let macLibrary = SyncTestFixtures.library(folders: [macFolder])
+        let phoneLibrary = SyncTestFixtures.library(folders: [phoneFolder])
+        let mine = Feed(
+            feedURL: try XCTUnwrap(URL(string: "https://example.com/show.xml")), folderID: macFolder.id,
+            subscribedDate: Date(timeIntervalSince1970: 1_000)
+        )
+        let theirs = Feed(
+            feedURL: try XCTUnwrap(URL(string: "http://Example.com/show.xml/")), folderID: phoneFolder.id,
+            subscribedDate: Date(timeIntervalSince1970: 2_000)
+        )
+        try await world.mac.engine.record(library: macLibrary, feeds: [mine])
+        _ = try await world.mac.engine.exchange(in: world.folder)
+        try await world.phone.engine.record(library: phoneLibrary, feeds: [theirs])
+        _ = try await world.phone.engine.exchange(in: world.folder)
+        _ = try await world.mac.engine.exchange(in: world.folder)
+        // Each device leaves the other's copy out.
+        let first = await world.mac.engine.application(for: macLibrary, feeds: [mine], voices: nil)
+        XCTAssertTrue(first.feeds.feedsToAdd.isEmpty)
+        try await world.mac.engine.didApply(first, keys: first.appliedKeys)
+
+        // Delete Feed… on the Mac.
+        let recorded = try await world.mac.engine.record(library: first.library, feeds: [])
+        XCTAssertEqual(recorded.recorded, 2, "the Mac's feed and the iPhone's copy")
+        _ = try await world.mac.engine.exchange(in: world.folder)
+        let onMac = await world.mac.engine.application(for: first.library, feeds: [], voices: nil)
+        XCTAssertTrue(onMac.feeds.feedsToAdd.isEmpty, "the iPhone's copy is not added back")
+
+        _ = try await world.phone.engine.exchange(in: world.folder)
+        let onPhone = await world.phone.engine.application(for: phoneLibrary, feeds: [theirs], voices: nil)
+        XCTAssertEqual(onPhone.feeds.feedsToRemove, [theirs.id])
+    }
 }

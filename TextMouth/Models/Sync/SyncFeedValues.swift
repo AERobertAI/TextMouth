@@ -132,6 +132,45 @@ enum SyncFeedValues {
         }
     }
 
+    /// The removal marks of the other devices' copies of each feed `changes` removes (FR56):
+    /// a feed of the same address (`FeedAddress.comparisonKey`) subscribed apart on another
+    /// device, which this device left out as one it subscribes already (`SyncApplier.addNewFeeds`).
+    /// Without them, Delete Feed… here would end with that copy added here at the next sync, no
+    /// copy of this device's being in its way, and its newest episodes downloaded again; with
+    /// them, the feed is deleted on every device, as Delete Feed… is meant to be.
+    /// - Parameters:
+    ///   - changes: what this record reports; a feed's removal is its `presence` key's `.null`.
+    ///   - baseline: the values last recorded or applied here, which hold each removed feed's address.
+    ///   - winners: the registers' winning entries.
+    ///   - feeds: this device's feeds now: a copy among them, or one of an address another of
+    ///     them still has, is no copy left out.
+    static func removalsOfCopies(
+        removedBy changes: [SyncKey: JSONValue], baseline: SyncProjection, winners: [SyncKey: SyncEntry], feeds: [Feed]
+    ) -> [SyncKey: JSONValue] {
+        // The addresses of the feeds this record removes.
+        var removedAddresses = Set<String>()
+        for (key, value) in changes where value == .null {
+            guard case .feed(let id, .presence) = key,
+                  let text = baseline.values[.feed(id, .address)]?.stringValue, let url = URL(string: text) else { continue }
+            removedAddresses.insert(FeedAddress.comparisonKey(url))
+        }
+        // An address this device still subscribes keeps its copies elsewhere.
+        removedAddresses.subtract(feeds.map { FeedAddress.comparisonKey($0.feedURL) })
+        guard !removedAddresses.isEmpty else { return [:] }
+        let own = Set(feeds.map(\.id))
+        var removals: [SyncKey: JSONValue] = [:]
+        for (key, entry) in winners {
+            guard case .feed(let id, .address) = key, !own.contains(id),
+                  // Only a copy left out here: one this device applied is its own, and its removal is reported already.
+                  baseline.values[.feed(id, .presence)] == nil, changes[.feed(id, .presence)] == nil,
+                  let presence = winners[.feed(id, .presence)], presence.value != .null,
+                  let text = entry.value.stringValue, let url = URL(string: text),
+                  removedAddresses.contains(FeedAddress.comparisonKey(url)) else { continue }
+            removals[.feed(id, .presence)] = .null
+        }
+        return removals
+    }
+
     /// The record of a feed this device lacks, made from its winning values:
     /// its address, when it began, and its folder (`folderID`, as the folder
     /// plan lands it), with its settings written on. Nil when the address or

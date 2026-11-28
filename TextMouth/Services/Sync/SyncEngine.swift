@@ -229,6 +229,11 @@ actor SyncEngine {
         let projection = SyncProjection.of(library, contents: contents(), feeds: feeds)
         launchHold.observeLaunch(baseline: baseline, now: projection)
         var changes = SyncMerge.changes(from: baseline, to: projection, hold: launchHold)
+        // A feed deleted here takes the copies of it that other devices subscribed apart (FR56).
+        if let feeds {
+            let copies = SyncFeedValues.removalsOfCopies(removedBy: changes, baseline: baseline, winners: registers.entries, feeds: feeds)
+            changes.merge(copies, uniquingKeysWith: { reported, _ in reported })
+        }
 
         // A mass removal is not a person's: index recovery or a wrong folder empties the library at once.
         let removals = changes.filter { key, value in
