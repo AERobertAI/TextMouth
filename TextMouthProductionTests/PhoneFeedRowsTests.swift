@@ -52,11 +52,11 @@ final class PhoneFeedRowsTests: XCTestCase {
 
     /// With no feed there is no Feeds section, and a library of books lists as it did.
     func testWithNoFeedThereIsNoFeedsSection() {
-        let model = PhoneLibraryFixture.model(books: [PhoneLibraryFixture.book("Emma")])
-        let rows = PhoneLibraryFixture.rows(of: model)
+        let emma = PhoneLibraryFixture.book("Emma")
+        let rows = PhoneLibraryFixture.rows(of: PhoneLibraryFixture.model(books: [emma]))
 
         XCTAssertEqual(rows.sections.map(\.header), ["Books (1)"])
-        XCTAssertEqual(rows.rowIDs, [.book(model.library.books[0].id)])
+        XCTAssertEqual(rows.rowIDs, [.book(emma.id)])
     }
 
     /// The Mac's summary says the feeds beside the books, "2 books, 1 feed".
@@ -168,6 +168,25 @@ final class PhoneFeedRowsTests: XCTestCase {
         XCTAssertTrue(summary.counts.hasPrefix("1 episode"), summary.counts)
     }
 
+    /// VoiceOver hears the Mac's words on arriving: a feed's folder names the feed and counts its items; the folder
+    /// holding it names it beside its books.
+    func testArrivingSaysFeedsAsTheMacDoes() async throws {
+        let world = try FeedTestWorld(self, label: "PhoneFeedRowsArrival")
+        let feed = try await subscribe(world, title: "The Tactile Atlas", path: "/atlas.xml", items: [
+            FeedXML.Item(guid: "ep-2", title: "Second map", published: world.day(1)),
+            FeedXML.Item(guid: "ep-1", title: "First map", published: world.day(-3)),
+        ])
+        let feedFolders = LibraryFeedFolders(center: world.center)
+        let folderPath = try XCTUnwrap(world.library.feedFolderPath(forFolderID: feed.folderID))
+
+        let arrival = PhoneRowWording.folderArrival(at: folderPath, in: world.library.library, feedFolders: feedFolders)
+        XCTAssertEqual(arrival, FeedWording.folderAnnouncement(name: "The Tactile Atlas", counts: world.center.counts(of: feed.id)))
+        XCTAssertTrue(arrival.hasPrefix("The Tactile Atlas, Feed, 2 episodes"), arrival)
+
+        let parent = PhoneRowWording.folderArrival(at: world.folder.path, in: world.library.library, feedFolders: feedFolders)
+        XCTAssertTrue(parent.hasSuffix(", 0 books, 1 feed"), parent)
+    }
+
     // MARK: - What Republishes
 
     /// An item played, or one downloaded, is a change of the list its row says;
@@ -187,6 +206,43 @@ final class PhoneFeedRowsTests: XCTestCase {
 
         XCTAssertTrue(rows.sections.first?.rows.first?.label.contains("Played") ?? false, rows.sections.first?.rows.first?.label ?? "nil")
         XCTAssertEqual(rows.sections.first?.rows.first?.commands.map(\.title).contains("Mark Unplayed"), true)
+    }
+
+    // MARK: - How a Download Ends
+
+    /// A download the listener asked for says how it ended in its row's own words; one Open asked for, whose end is the
+    /// reader opening, and one the newest-N rule made, say nothing; and no other event says anything.
+    func testADownloadTheListenerAskedForSaysHowItEnded() async throws {
+        let world = try FeedTestWorld(self, label: "PhoneFeedRowsEnded")
+        let feed = try await subscribe(world, title: "The Tactile Atlas", path: "/atlas.xml", items: [
+            FeedXML.Item(guid: "ep-1", title: "First map", published: world.day(1)),
+        ])
+        let key = PhoneFeedAnnouncements.ItemKey(feedID: feed.id, itemID: "guid:ep-1")
+        let finished = FeedEvent.downloadFinished(feedID: feed.id, itemID: "guid:ep-1", bookID: UUID())
+        let failed = FeedEvent.downloadFailed(feedID: feed.id, itemID: "guid:ep-1", reason: "the server says the file is gone")
+
+        world.center.store.updateItem("guid:ep-1", of: feed.id) { $0.downloadOrigin = .listener }
+        XCTAssertEqual(PhoneFeedAnnouncements.words(for: finished, in: world.center, opening: []), "First map, Downloaded")
+        XCTAssertEqual(
+            PhoneFeedAnnouncements.words(for: failed, in: world.center, opening: []),
+            "First map, Download Failed, the server says the file is gone"
+        )
+        XCTAssertNil(PhoneFeedAnnouncements.words(for: finished, in: world.center, opening: [key]), "the reader opening says it")
+        XCTAssertEqual(
+            PhoneFeedAnnouncements.words(for: failed, in: world.center, opening: [key]),
+            "First map, Download Failed, the server says the file is gone",
+            "a failure opens nothing, so it is said"
+        )
+        for quiet in [FeedEvent.downloadStarted(feedID: feed.id, itemID: "guid:ep-1"), .downloadCancelled(feedID: feed.id, itemID: "guid:ep-1"), .subscribed(feedID: feed.id)] {
+            XCTAssertNil(PhoneFeedAnnouncements.words(for: quiet, in: world.center, opening: []), "\(quiet)")
+        }
+
+        world.center.store.updateItem("guid:ep-1", of: feed.id) { $0.downloadOrigin = .window }
+        XCTAssertNil(PhoneFeedAnnouncements.words(for: finished, in: world.center, opening: []), "the rule's own download was announced")
+        XCTAssertNil(PhoneFeedAnnouncements.words(for: failed, in: world.center, opening: []))
+        XCTAssertNil(PhoneFeedAnnouncements.words(
+            for: .downloadFinished(feedID: feed.id, itemID: "guid:gone", bookID: UUID()), in: world.center, opening: []
+        ), "an item that is gone")
     }
 
     // MARK: - Finding What a Command Acts On

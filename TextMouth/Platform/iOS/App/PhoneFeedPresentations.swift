@@ -24,6 +24,10 @@ struct PhoneFeedPresentations: ViewModifier {
 
     func body(content: Content) -> some View {
         withAlerts(withSheets(content))
+            .onAppear {
+                // Says how a download the listener asked for ends, as `PhoneFeedAnnouncements` words it.
+                PhoneFeedsHub.shared.listen(to: library.feeds)
+            }
     }
 
     /// The library the commands run in.

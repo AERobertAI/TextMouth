@@ -270,7 +270,8 @@ struct PhoneAddFeedSheet: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .disabled(model.isWorking)
-        .accessibilityLabel(FeedWording.subscribeToResultLabel(result))
+        // The title and who publishes it, as the Mac's list reads a podcast; the hint says that pressing it subscribes.
+        .accessibilityLabel(FeedWording.searchResultLabel(result))
         .accessibilityHint(FeedWording.subscribeToResultHint)
     }
 }

@@ -1,3 +1,4 @@
+import Combine
 import Foundation
 
 /// What the iPhone's screens share of the feed reader (FR53, phase F1): the
@@ -25,12 +26,47 @@ final class PhoneFeedsHub {
     /// on the Mac, `AddToLibraryModel`). Nil when none was chosen.
     private var requestedAddFeedParent: String?
 
+    /// The items the listener opened from a row, whose downloads open them when they end, so their ending is the reader
+    /// opening and says itself (`PhoneFeedAnnouncements`).
+    private var opening: Set<PhoneFeedAnnouncements.ItemKey> = []
+    /// Hears the engine's announcements, once `listen(to:)` has been called.
+    private var eventSubscription: AnyCancellable?
+
     /// A hub whose presenter says what it does through the phone's announcer.
     init(presenter: LibraryFeedsPresenter = LibraryFeedsPresenter()) {
         self.presenter = presenter
         // The phone has one window, so the Mac's "from the window it was chosen in" is nothing: what a command says is
         // queued after VoiceOver's own speech about the change, as the Library's other announcements are.
         presenter.announce = { message, _ in PhoneAnnouncer.say(message) }
+    }
+
+    // MARK: - Hearing the Downloads End
+
+    /// Starts saying how the downloads the listener asked for end, as `center` announces them; once only, whichever
+    /// screen asks first.
+    func listen(to center: FeedCenter) {
+        guard eventSubscription == nil else { return }
+        eventSubscription = center.events
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self, weak center] event in
+                MainActor.assumeIsolated {
+                    guard let self, let center else { return }
+                    self.heard(event, in: center)
+                }
+            }
+    }
+
+    /// Says what `event` calls for (`PhoneFeedAnnouncements`), then forgets that the item it ends was being opened.
+    func heard(_ event: FeedEvent, in center: FeedCenter) {
+        if let words = PhoneFeedAnnouncements.words(for: event, in: center, opening: opening) {
+            PhoneAnnouncer.say(words)
+        }
+        switch event {
+        case .downloadFinished(let feedID, let itemID, _), .downloadFailed(let feedID, let itemID, _), .downloadCancelled(let feedID, let itemID):
+            opening.remove(PhoneFeedAnnouncements.ItemKey(feedID: feedID, itemID: itemID))
+        case .subscribed, .refreshed, .refreshedAll, .downloadStarted, .itemPolicyApplied:
+            break
+        }
     }
 
     // MARK: - Add Feed…
@@ -74,6 +110,11 @@ final class PhoneFeedsHub {
     /// downloaded book's row, saying what it did; nothing once the item is gone.
     func perform(_ command: FeedItemCommand, feedID: UUID, itemID: FeedItem.ID, in library: LibraryViewModel) {
         guard let action = PhoneFeedRows.itemAction(command, feedID: feedID, itemID: itemID, in: library.feeds) else { return }
+        // Open downloads an item that is not here and then opens it: the reader opening says that download's end.
+        if command == .open, let item = library.feeds.store.record(of: feedID)?.item(itemID),
+           library.feeds.state(of: item, in: feedID).linkedBookID == nil {
+            opening.insert(PhoneFeedAnnouncements.ItemKey(feedID: feedID, itemID: itemID))
+        }
         presenter.perform(action, in: context(in: library))
     }
 }

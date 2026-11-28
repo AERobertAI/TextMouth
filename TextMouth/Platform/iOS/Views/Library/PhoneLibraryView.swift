@@ -130,6 +130,10 @@ struct PhoneLibraryView: View {
                 // An export that goes on with its sheet closed (FR31, phase 2): the sheet's title, how far it has
                 // come, and Stop; then what it did, and Close. It shows nothing while no export has its card.
                 PhoneExportProgressCard(focus: $focus)
+                // The feed downloads under way, as the Mac's section shows them (FR53): its title, Cancel, how many are done and
+                // how far the one under way has come, in one element for VoiceOver. It shows nothing while none runs, and
+                // observes only the downloads' progress, so a download redraws it and nothing else of the list.
+                FeedDownloadProgressObserver(library: library, progress: library.feedDownloadProgress)
                 // The Mac's Storage problems notice, as it is, at the top of
                 // the list while a write keeps failing: it observes only the
                 // failure center, and shows nothing until then. Each of its
@@ -528,7 +532,11 @@ struct PhoneLibraryView: View {
             hasAppeared = true
             if isFolderScreen {
                 // Focus is left where VoiceOver puts it, the title or Back.
-                let words = PhoneRowWording.folderArrival(at: rows.location.folderPath, in: library.library)
+                let words = PhoneRowWording.folderArrival(
+                    at: rows.location.folderPath,
+                    in: library.library,
+                    feedFolders: LibraryFeedFolders.shared
+                )
                 DispatchQueue.main.asyncAfter(deadline: .now() + PhoneListFocus.settleDelay) {
                     PhoneAnnouncer.say(words)
                 }

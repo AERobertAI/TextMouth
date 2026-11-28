@@ -95,7 +95,7 @@ final class PhoneUITestFeedStub: URLProtocol {
 
     /// Tells the client the answer, `bytes` of `type`, then that it is done.
     private func deliver(_ bytes: Data, type: String, for url: URL) {
-        let headers = ["Content-Type": type, "Content-Length": "\(bytes.count)"]
+        let headers = ["Content-Type": type, "Content-Length": "\(bytes.count)"] // l10n: no (HTTP header names)
         guard let response = HTTPURLResponse(url: url, statusCode: 200, httpVersion: "HTTP/1.1", headerFields: headers) else {
             client?.urlProtocol(self, didFailWithError: URLError(.badServerResponse))
             return
