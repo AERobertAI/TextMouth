@@ -52,11 +52,19 @@ final class PhoneLibraryChoicesTests: XCTestCase {
         )
     }
 
-    /// Feeds, and a view of feeds alone, aren't offered on the phone.
-    func testFeedsArentOffered() throws {
-        let feeds = try XCTUnwrap(LibraryViewDefinition.shipped(LibraryViewID.feeds))
-        XCTAssertFalse(PhoneLibraryChoices.isOfferedOnPhone(feeds))
-        XCTAssertTrue(PhoneLibraryChoices.isOfferedOnPhone(LibraryViewDefinition.shipped(.allItems)))
-        XCTAssertTrue(PhoneLibraryChoices.isOfferedOnPhone(LibraryViewDefinition.shipped(.folders)))
+    /// The sheet offers the views the Mac's pop-up offers: with no feed, no
+    /// Feeds view, since a view shown when applicable lists something; the
+    /// phone filters none of them out any more (FR53).
+    func testWithNoFeedTheSheetOffersWhatTheMacOffers() {
+        let model = PhoneLibraryFixture.model(books: [PhoneLibraryFixture.book("Emma")])
+        let list = LibraryViewDefinitionList.shipped
+        // The library's own engine, which was never started and so holds no feed.
+        let center = model.feeds
+
+        let offered = PhoneLibraryChoices.views(in: model, list: list, current: .category(.folders), center: center)
+
+        XCTAssertEqual(offered.map(\.id), model.offeredViews(in: list, current: .category(.folders), center: center).map(\.id))
+        XCTAssertFalse(offered.contains { $0.id == .feeds }, "a Feeds view with no feed to list was offered")
+        XCTAssertTrue(offered.contains { $0.id == .category(.allItems) })
     }
 }
