@@ -11,6 +11,8 @@ Each part below is a page of its own under docs/architecture, so an agent can re
 - [The parts of the app](docs/architecture/parts-of-the-app.md)
 - [The two apps and the platform folders](docs/architecture/platforms.md)
   - [The iPhone interface: announcements, text, sheets, and search](docs/architecture/platforms-phone-interface.md)
+  - [The iPhone reader's controls: Book Actions, the timer, and the skips](docs/architecture/platforms-phone-reader.md)
+  - [Feeds on the iPhone: rows, the hub, and focus](docs/architecture/platforms-phone-feeds.md)
 - [Launch](docs/architecture/launch.md)
 
 ## Who owns each kind of state

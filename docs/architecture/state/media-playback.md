@@ -127,7 +127,7 @@ Speech, for text books.
   - and the stop is recorded and the position saved, the chapter left as it is.
   It then shows the report, which tells the listener.
   A service no reader listens to announces SpeechService.engineRefusedAnnouncement, "Speech stopped: the Mac's speech engine refused this text.", itself.
-  AudioEngineService.render makes its synthesizer's delegate a RenderCancellationObserver, which wakes the render queue's wait when the synthesizer cancels, since a refused write delivers no audio at all and the wait used to run its whole two minutes.
+  AudioEngineService.render ends its write at the SpeechWriteRelay's didFinish, not at an empty buffer, and wakes at didCancel too, since a refused write delivers no audio ([how a write ends](../parts-of-the-app.md), B31).
   A cancel the engine did not ask for (RENDER_REFUSED) is followed by one more write with every bracket silent (RenderGuard.everyBracket, through SpeechMarkupGuard.neutralizedStrictly(_:)) on a fresh synthesizer, under the same render (write(_:voice:for:asRetry:)).
   Its audio is installed with the request's signature (RENDER_RETRY_RENDERED), so a look-ahead render gets it too.
   Refused again (a second RENDER_REFUSED), nothing is installed, and speech, which began directly, goes on directly.

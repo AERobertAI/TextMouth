@@ -202,20 +202,6 @@ Part of [TextMouth's architecture](../../ARCHITECTURE.md).
 - A related fix from the same round: a `Slider` in the Voice sheet is labeled by its label closure alone.
   A `.accessibilityLabel` on top of it made VoiceOver read "Speed, Speed", so the extra modifier was removed.
 
-## Book Actions, the timer control, and the skips
-<!-- id: phone-book-actions-timer; keys: FR49, FR50, FR51, FR52, long press, triple tap, Go To value, focusTarget; src: TextMouth/Phone/PhoneReaderState.swift, TextMouth/Phone/PhoneReaderControls.swift, TextMouth/Phone/PhoneControlDescription.swift, TextMouth/Platform/iOS/Views/Reader/PhoneReaderView.swift, TextMouth/Platform/iOS/Views/Reader/PhoneControl.swift, TextMouthProductionTests/PhoneReaderControlsTests.swift -->
-
-- Book Actions (`PhoneReaderControl.bookActions`) is a menu button at the end of the fourth row, holding `bookActionItems`: Sleep Timer, Voice, Book Info, and Export this book.
-  - The items are made as the menu opens (`PhoneControl.setMenuItems`), and each opens its old sheet.
-  - Focus returns to Book Actions as the sheet closes, since the item's own button isn't on screen.
-- While a sleep timer runs, the Sleep Timer shows under Play (`PhoneReaderControl.screen(timerRuns:)`), its value the time left, redrawn each second for sight alone.
-  `PhoneSleepTimerWatcher` republishes only when the timer starts or ends.
-  - `focusTarget(returningTo:timerRuns:)` sends focus to Play when the control it names has left the screen, as when the timer ends under VoiceOver's focus.
-- Play has a long press, which is VoiceOver's one-finger triple tap, and a Sleep Timer action; both open the Sleep Timer sheet with focus returning to Play.
-- Skip backward and Skip forward are hidden from VoiceOver only while it runs (`isHiddenFromVoiceOver`, `voiceOverOrder`), since adjusting Play makes the same moves.
-  They stay for touch, Voice Control, Switch Control, and the shortcuts.
-- Go To's value is the page at the place and the time there (`goToValue`: "Page 112 of 300, 1:02:03"), read when VoiceOver asks and never announced as it changes.
-
 ## Search in Book
 <!-- id: search-book; keys: reader controls, control grid, VoiceOver order, openSearch, gridRows; src: TextMouth/Phone/PhoneReaderState.swift, TextMouth/Phone/PhoneReaderControls.swift, TextMouth/Phone/PhoneReaderModel.swift, TextMouth/Phone/PhoneBookSearch.swift, TextMouth/Phone/PhoneLaunchRequest.swift, TextMouth/Platform/iOS/Views/Reader/PhoneReaderView.swift, TextMouth/ViewModels/ReaderViewModel+Bookmarks.swift, TextMouthProductionTests/PhoneReaderControlsTests.swift -->
 

@@ -148,14 +148,18 @@ On the iPhone, the in-app engines of braille and FFmpeg count their time by Runn
 It does so because iOS keeps the system's clocks counting while it holds the app suspended (see [Imports: audio only FFmpeg reads](state/imports-audio-ffmpeg.md#the-in-app-run)).
 
 ### Swift 6 mode and unchecked declarations
-<!-- id: swift6-mode-unchecked-declarations; keys: Swift 6, strict concurrency, unchecked Sendable, nonisolated(unsafe), isolation checks, UncheckedConcurrencyPolicyTests; src: project.yml, TextMouthProductionTests/UncheckedConcurrencyPolicyTests.swift, TextMouth/Services/SpeechService.swift, TextMouth/Services/AudioEngineService.swift, TextMouth/ViewModels/LibraryInfoSpeaker.swift, TextMouth/ViewModels/ReaderViewModel+WhereAmI.swift, TextMouth/Services/BookManifestEditing.swift, TextMouth/Services/LibraryPersistenceService.swift -->
+<!-- id: swift6-mode-unchecked-declarations; keys: Swift 6, strict concurrency, unchecked Sendable, nonisolated(unsafe), isolation checks, UncheckedConcurrencyPolicyTests; src: project.yml, TextMouthProductionTests/UncheckedConcurrencyPolicyTests.swift, TextMouth/Services/SpeechService.swift, TextMouth/Services/AudioEngineService.swift, TextMouth/Services/SpeechExport/SpeechBufferSynthesizer.swift, TextMouth/ViewModels/LibraryInfoSpeaker.swift, TextMouth/ViewModels/ReaderViewModel+WhereAmI.swift, TextMouth/Services/BookManifestEditing.swift, TextMouth/Services/LibraryPersistenceService.swift -->
 
 Every target builds in the Swift 6 language mode, set once in project.yml (TextMouthTests/Package.swift matches it), so concurrency diagnostics are errors.
 `make check` fails on any Swift warning and on a Release app larger than 40 MB, and warns above 30 MB.
 `make build` does not compile with code coverage, and the symbols are stripped into a dSYM that `make install` keeps for the last five installs.
 The mode adds runtime isolation checks to `@objc` methods of main-actor classes and to main-actor closures handed to Objective-C APIs; each of the app's checks runs on the main thread, and VoiceWarmUp's buffer callback relies on AVSpeechSynthesizer calling back on the thread that called write().
 SpeechService handles every callback of its direct synthesizer on the main queue, so its announcement of a text the speech engine refused, made only when no reader listens, asserts the main actor there (endDirectSpeechRefused(at:refusing:spanning:)).
-A render's RenderCancellationObserver, called on whatever thread the synthesizer uses, only sets a flag in an OSAllocatedUnfairLock and signals the semaphore the render queue waits on.
+A write of AVSpeechSynthesizer ends at SpeechWriteRelay's didFinish (TextMouth/Services/SpeechExport/SpeechBufferSynthesizer.swift), shared by the speech export and AudioEngineService.render, not at an empty buffer.
+On macOS 27 the synthesizer sends an empty buffer after each segment, about a sentence, and a render that stopped at the first kept one sentence of each chapter (B31).
+The relay, called on whatever thread the synthesizer uses, signals the semaphore the render queue waits on at didFinish, and at didCancel (a refused write delivers no audio) sets a flag in an OSAllocatedUnfairLock first.
+A synthesizer that never says didFinish ends the write after 10 seconds without a buffer following a segment's end (SpeechBufferDelivery.quietAfterSegmentEnd).
+A render the engine lets go of ends its wait at once, since stopSpeaking(at:) does not stop a write on macOS 27 and the render queue would hold the next render meanwhile.
 It is Sendable, as the SDK makes every synthesizer delegate (AVSpeechSynthesizerDelegate is NS_SWIFT_SENDABLE), and the compiler checks it, with no `@unchecked`.
 Speak Info's LibraryInfoSpeechDelegate ends an announcement at once when called on the main thread, and otherwise on the next turn of the main queue, and the reader's WhereAmIDelegateHelper hands each finish and cancel of an announcement to the main queue.
 UncheckedConcurrencyPolicyTests requires a comment naming a lock, queue, actor, or thread on the three lines above each `@unchecked Sendable` or `nonisolated(unsafe)` declaration and pins their counts (31 and 16).

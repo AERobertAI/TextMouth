@@ -136,9 +136,10 @@ Each rule has a test in the branch that first needed it.
 - R2, the library never waits: `SyncEngine` is an actor opened off the main actor; every coordinated call has a limit (`SyncFolderIO.coordinationLimit`, the reader's `SyncReadLimits`, `waitUntilHere`); offline is an ordinary state.
 - R3, the outbox first: `SyncEngine.append` writes the outbox file before the registers or the baseline, and nothing is copied that isn't in the outbox.
 - R4, one writer per file: `stagedPlace` never goes over a file; `store.json` is made only by `SyncFolder.create`; `device.json` alone is written with `replacing: true`; blobs, manifests, change files, and snapshots are written once.
-- R5, no new key in library.json, config.json, or bookInfo.json: `OnDiskContractTests` key sets pass unchanged; Keep on All Devices and a book's content live in the registers.
+- R5, no new key in library.json, config.json, bookInfo.json, or a feed's record: `OnDiskContractTests` key sets pass unchanged; Keep on All Devices, a book's content, and a feed's synced fields live in the registers.
 - R6, a local library and an iCloud Drive folder: `SyncCenter.requireLocalLibrary` and `requireICloudDrive` refuse otherwise, and `SyncSettingsModel.refusal` says so before anything is made.
 - R7, a removal crosses only when a person made it in a running TextMouth:
-  `SyncLaunchHold` puts back a book or folder missing at launch unless its package holds a removal marker, and `massRemovalLimit` holds a mass removal until Sync Now confirms it.
+  `SyncLaunchHold` puts back a book, folder, or feed missing at launch unless its package holds a removal marker.
+  `massRemovalLimit` holds a mass removal until Sync Now confirms it, counting books and feeds each against their own number.
 - R8, iCloud decides: TextMouth never forces an upload, and asks for a download only of the file it is about to read; it reads upload states at moments and during a fetch.
 - R9, everything spoken: every state, refusal, and result is a `SyncWording` line, pinned by `SyncWordingTests`, and translated into every interface language before its branch merges.

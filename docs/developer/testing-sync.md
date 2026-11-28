@@ -7,7 +7,7 @@ The design is in [Library sync: the folder, the outbox, and the merge](../archit
 No test touches the user's drive or library: every file is made up, in the test's own sandbox.
 
 ## The sync area
-<!-- id: sync-test-area; keys: [sync], areas.conf, run-area, test classes, hosted tests; src: Scripts/test/areas.conf, Scripts/test/run-area.py -->
+<!-- id: sync-test-area; keys: [sync], areas.conf, run-area, test classes, hosted tests; src: Scripts/test/areas.conf, Scripts/test/run-area.py, TextMouthProductionTests/SyncFeedTests.swift, TextMouthProductionTests/SyncFeedHostTests.swift -->
 
 The `[sync]` area of `Scripts/test/areas.conf` holds every class of FR43.
 Run it with `python3 Scripts/test/run-area.py sync`, or `make test-area AREAS=sync`; see [Reusable test tools](testing-tools.md).
@@ -18,6 +18,7 @@ By part, in `TextMouthProductionTests`:
 - The stored formats and the words: `SyncFormatTests`, `OnDiskContractTests` (the names and key sets), `FileDigestTests`, `SyncWordingTests`, `SyncStatusLineTests`.
 - The engine and the folder: `SyncEngineTests`, `SyncOutboxTests`, `SyncFolderTests`, `SyncFolderIOTests`, `PlainSyncFolderAccessTests`, `SyncCenterTests`, `SyncSchedulerTests`.
 - Books: `StoreBackupTests`, `StoreFetchTests`, `SyncPlaceholderTests`, `SyncOpenAndRemoveTests`, `SyncLibraryHostTests`, `SyncReaderPlaceTests`, `SyncOlderVersionsTests`.
+- Feeds: `SyncFeedTests` (keys, projection, merge, duplicates of one address, folds, the launch, an older TextMouth's reading), `SyncFeedTwoDeviceTests` (two real engines over one drive), and `SyncFeedHostTests` (`FeedCenter.applySync` against a real feed store).
 - The interface: `SyncSettingsSectionTests` (the Mac), and `PhoneSyncSettingsTests`, `PhoneSyncLifeCycleTests`, and `PhoneReaderCloudPhaseTests` (the phone's decisions, run on the Mac's host).
 
 `SyncSettingsUITests` (`TextMouthiOSUITests`) reads the iPhone's section with sync off: its heading, summary, status, and two buttons, in order, and no Sync Now on the library's summary.

@@ -7,7 +7,7 @@ TextMouth is a Mac app, and, since phase 0 of the iOS port, a second app, for iO
 The design is in research/IOS-PORT-RESEARCH-2026-11-03.md, in the repository root, whose sections "How one codebase builds both apps" and "A plan in phases" this page follows.
 Phase 0 had one goal: the iOS app compiles and links, and the Mac app does exactly what it did.
 This page says how the code is divided between the two, and then how the iPhone app built on that division is put together (see "The iPhone app", below).
-The iPhone interface of research/IOS-INTERFACE-SPEC-2026-11-07.md has run in the iOS simulator; nothing has run on a phone.
+Its feeds are real, not a stand-in: see [Feeds on the iPhone](platforms-phone-feeds.md).
 
 ## One source folder, two apps
 <!-- id: one-source-folder-two-apps; keys: targets, XcodeGen, excludes, Swift 6, strict concurrency, shared code; src: project.yml, TextMouthProductionTests/UncheckedConcurrencyPolicyTests.swift -->
