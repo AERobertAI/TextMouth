@@ -3,9 +3,13 @@ import UniformTypeIdentifiers
 
 /// The iPhone's Add to Library sheet (the spec's "Adding a book"), rebuilt
 /// for the phone over the Mac's words: its title, a Cancel button, then
-/// "Open Book…" and "Import Folder…", each with the Mac's summary as its
-/// hint, and last a note naming what only the Mac has for now (FR53). Focus
-/// lands on Open Book.
+/// "Open Book…", "Import Folder…", and "Add Feed…", each with the Mac's summary
+/// as its hint, and last a note naming what only the Mac has for now (FR53).
+/// Focus lands on Open Book.
+///
+/// Add Feed… closes the sheet and then opens the Add Feed sheet, as the Mac's
+/// does, since a sheet the choice opens would be refused while this one is
+/// still closing (`PhoneFeedsHub.requestAddFeed(parentPath:)`).
 ///
 /// One `fileImporter` serves both rows, set by which row was chosen: books,
 /// several at once, or one folder. Two on one view are reported not to work.
@@ -55,6 +59,7 @@ struct PhoneAddToLibrarySheet: View {
                     row(for: .openBook, mode: .books)
                         .accessibilityFocused($isOpenBookFocused)
                     row(for: .importFolder, mode: .folder)
+                    addFeedRow
                 } footer: {
                     onlyOnTheMacNote
                 }
@@ -85,11 +90,25 @@ struct PhoneAddToLibrarySheet: View {
     /// summary, shown under it and given as its hint, so VoiceOver reads it
     /// once. Pressing it shows the picker set for `mode`.
     private func row(for choice: AddToLibraryChoice, mode: PickerMode) -> some View {
-        let summary = AddToLibraryWording.summary(choice)
-        return Button {
+        row(for: choice) {
             self.mode = mode
             isPickerPresented = true
-        } label: {
+        }
+    }
+
+    /// Add Feed…: the sheet closes, and the Add Feed sheet opens in its place once it has (FR53).
+    private var addFeedRow: some View {
+        row(for: .addFeed) {
+            PhoneFeedsHub.shared.requestAddFeed(parentPath: folderPath)
+            dismiss()
+        }
+    }
+
+    /// The row of `choice`, which runs `action` when pressed: the Mac's title as its label, and the Mac's summary, shown
+    /// under it and given as its hint, so VoiceOver reads it once.
+    private func row(for choice: AddToLibraryChoice, action: @escaping () -> Void) -> some View {
+        let summary = AddToLibraryWording.summary(choice)
+        return Button(action: action) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(choice.title).phonePrimaryText()
                 Text(summary)

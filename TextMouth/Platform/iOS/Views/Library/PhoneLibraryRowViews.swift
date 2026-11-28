@@ -65,6 +65,63 @@ struct PhoneFolderRow: View, Equatable {
     }
 }
 
+/// A feed's row in the Feeds section (FR53): a button that opens the feed's
+/// folder, said in the Mac's words, "The Tactile Atlas, Feed, 3 episodes, 1
+/// downloaded, checked today at 3:05 PM", with the feed's commands.
+struct PhoneFeedRow: View, Equatable {
+    /// The row's words and commands.
+    let value: PhoneRowValue
+    /// Opens the feed's folder.
+    let open: () -> Void
+    /// Runs one of the row's commands.
+    let perform: (PhoneLibraryOffer.Action) -> Void
+
+    var body: some View {
+        Button(action: open) {
+            HStack {
+                // For sight alone: the label says it's a feed by its note.
+                Image(systemName: "dot.radiowaves.up.forward")
+                    .accessibilityHidden(true)
+                PhoneRowLines(title: value.title, detail: value.detail)
+            }
+        }
+        .accessibilityLabel(value.label)
+        .accessibilityHint(value.hint ?? FeedWording.feedRowHint)
+        .phoneRowCommands(value.commands, perform: perform)
+    }
+
+    /// Rows compare by their value alone.
+    nonisolated static func == (lhs: PhoneFeedRow, rhs: PhoneFeedRow) -> Bool {
+        lhs.value == rhs.value
+    }
+}
+
+/// The row of a feed's item that is not downloaded (FR53): a button that
+/// downloads it and opens it, said in the Mac's words, "Ep. 368, Not
+/// Downloaded, July 17, 2026, 1 hour, 4 minutes", with the item's commands.
+struct PhoneFeedItemRow: View, Equatable {
+    /// The row's words and commands.
+    let value: PhoneRowValue
+    /// Opens the item, downloading it first.
+    let open: () -> Void
+    /// Runs one of the row's commands.
+    let perform: (PhoneLibraryOffer.Action) -> Void
+
+    var body: some View {
+        Button(action: open) {
+            PhoneRowLines(title: value.title, detail: value.detail)
+        }
+        .accessibilityLabel(value.label)
+        .accessibilityHint(value.hint ?? "")
+        .phoneRowCommands(value.commands, perform: perform)
+    }
+
+    /// Rows compare by their value alone.
+    nonisolated static func == (lhs: PhoneFeedItemRow, rhs: PhoneFeedItemRow) -> Bool {
+        lhs.value == rhs.value
+    }
+}
+
 /// The one sentence a list shows where it has nothing: static text, read as
 /// it is.
 struct PhoneNoteRow: View {
@@ -182,7 +239,7 @@ extension View {
             }
             .contextMenu {
                 ForEach(commands) { command in
-                    Button(command.title, role: command.action == .remove ? .destructive : nil) {
+                    Button(command.title, role: command.isDestructive ? .destructive : nil) {
                         perform(command.action)
                     }
                 }
