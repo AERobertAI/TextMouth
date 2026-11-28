@@ -192,7 +192,33 @@ final class PhoneImportWordingTests: XCTestCase {
     func testAddToLibraryButtonHint() {
         XCTAssertEqual(
             PhoneImportWording.addToLibraryButtonHint,
-            "Opens options to open a book or import a folder."
+            "Opens options to open a book, import a folder, or add a feed."
         )
+    }
+
+    /// The sheet's last line names each feature the phone lacks and the Mac
+    /// has, and says they are coming, so a person looking for them learns
+    /// where they are (FR53).
+    func testOnlyOnTheMacNote() {
+        XCTAssertEqual(
+            PhoneImportWording.onlyOnTheMacNote,
+            "Recording, editing audio, and transcribing are only on the Mac for now."
+        )
+    }
+
+    /// The phone's Add to Library sheet shows the note, after its three rows,
+    /// in the footer of their section; read from the sheet's source, since
+    /// the Mac's test host cannot draw an iPhone view (the order itself is
+    /// `ScreenOrderUITests`'s, on GitHub).
+    func testTheAddToLibrarySheetShowsTheNoteAfterItsRows() throws {
+        let file = AppSourceFile.folder.appendingPathComponent("Platform/iOS/Views/Import/PhoneAddToLibrarySheet.swift")
+        let source = try String(contentsOf: file, encoding: .utf8)
+        let importFolder = try XCTUnwrap(source.range(of: "row(for: .importFolder, mode: .folder)"))
+        // Add Feed… follows Import Folder… (FR53), and the note follows it.
+        let addFeed = try XCTUnwrap(source.range(of: "                    addFeedRow\n"))
+        let footer = try XCTUnwrap(source.range(of: "} footer: {\n                    onlyOnTheMacNote"))
+        XCTAssertLessThan(importFolder.lowerBound, addFeed.lowerBound)
+        XCTAssertLessThan(addFeed.lowerBound, footer.lowerBound)
+        XCTAssertTrue(source.contains("Text(PhoneImportWording.onlyOnTheMacNote)"))
     }
 }

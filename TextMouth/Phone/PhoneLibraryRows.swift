@@ -78,6 +78,8 @@ final class PhoneLibraryRows: ObservableObject {
 
     /// The library the rows come from.
     private let library: LibraryViewModel
+    /// Which folders hold feeds, and the feed engine the feeds' rows come from (FR53).
+    private let feedFolders: LibraryFeedFolders
     /// The speed time left is counted at.
     private let wordsPerMinute: @MainActor () -> Double
     /// The removal preferences, which name a row's removal.
@@ -111,6 +113,8 @@ final class PhoneLibraryRows: ObservableObject {
         listening: AnyPublisher<PhoneLibraryListening, Never>
     ) {
         self.library = library
+        // The app's own, while the library works with the app's engine; a test's engine has its own.
+        feedFolders = library.feeds === FeedCenter.shared ? .shared : LibraryFeedFolders(center: library.feeds)
         self.location = location
         self.wordsPerMinute = wordsPerMinute
         self.removalPreferences = removalPreferences
@@ -119,6 +123,17 @@ final class PhoneLibraryRows: ObservableObject {
         // `$library` publishes before the library changes, so the change is
         // read a turn of the main queue later, once it is in place.
         library.$library
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                MainActor.assumeIsolated {
+                    self?.libraryChanged()
+                }
+            }
+            .store(in: &subscriptions)
+        // A feed subscribed, refreshed, or unsubscribed, and an item downloaded, played, or deleted (FR53): the engine
+        // publishes for these, never for how far a download has got, so the rows are built again only when it matters.
+        // Read a turn later, as `$library` is, once the change is in place.
+        library.feeds.objectWillChange
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 MainActor.assumeIsolated {
@@ -298,10 +313,15 @@ final class PhoneLibraryRows: ObservableObject {
         var note: PhoneRowNote?
         /// Whether the books' heading is shown with the sentence.
         var noteHasBooksHeader = false
+        /// What the screen holds of feeds: the Feeds section, feeds' folders, and a feed folder's items (FR53).
+        var feeds = PhoneFeedRows.Gathered()
+        /// Whether the books are listed at all: not in a view that lists feeds alone, whose Feeds section is all it has.
+        var listsBooks = true
         /// The list's signature.
         var signature: Signature {
             Signature(
                 folders: folders.map { Signature.FolderEntry(path: $0.fullPath, name: $0.name) },
+                feeds: feeds.signature,
                 books: books.map {
                     Signature.BookEntry(id: $0.id, title: $0.title, author: $0.author, inReadingList: inReadingList.contains($0.id))
                 },
@@ -328,6 +348,8 @@ final class PhoneLibraryRows: ObservableObject {
             let inReadingList: Bool
         }
         let folders: [FolderEntry]
+        /// What the feeds on the screen say (FR53).
+        let feeds: [String]
         let books: [BookEntry]
         let sortField: LibrarySortField
         let note: PhoneRowNote?
@@ -357,6 +379,12 @@ final class PhoneLibraryRows: ObservableObject {
         contents.folders = library.library.folders
             .filter { $0.name.lowercased().contains(query) }
             .sortedStably { $0.fullPath.localizedStandardCompare($1.fullPath) == .orderedAscending }
+        // A feed's folder found by name still says it is a feed's (FR53).
+        for folder in contents.folders {
+            if let feedID = feedFolders.feedID(inFolder: folder.id) {
+                contents.feeds.heldFeedCounts[folder.id] = feedFolders.center.counts(of: feedID)
+            }
+        }
         let everything = LibraryLocation(category: .allItems, folderPath: "")
         contents.books = library.displayedBooks(at: everything, matching: searchText)
         contents.sortField = library.sortState(at: everything).field
@@ -375,22 +403,34 @@ final class PhoneLibraryRows: ObservableObject {
         let sort = library.sortState(at: location)
         contents.sortField = sort.field
         contents.atReadingList = location.keepsItsOwnOrder
-        if location.view.kind == .folders {
-            contents.folders = library.subfoldersOf(location.folderPath)
-        }
         contents.books = library.displayedBooks(at: location)
+        // The feeds on the screen (FR53): the Feeds section, the folders without the feeds' that it stands for, and a
+        // feed's own folder's items.
+        contents.feeds = PhoneFeedRows.gather(
+            at: location,
+            subfolders: location.view.kind == .folders ? library.subfoldersOf(location.folderPath) : [],
+            books: contents.books,
+            in: library,
+            feedFolders: feedFolders,
+            wordsPerMinute: wordsPerMinute(),
+            bookCount: { [library] in library.bookCount(inFolderTree: $0.fullPath) }
+        )
+        contents.folders = contents.feeds.folders
+        // A view that lists feeds alone has no books to list, nor a heading for them.
+        contents.listsBooks = location.view.filter?.listsOnlyFeeds != true
         if location.reorderTarget(sortedBy: sort) != nil {
             contents.moves = LibraryManualMoves.moves(in: contents.books)
         }
-        guard contents.books.isEmpty else { return }
-        contents.noteHasBooksHeader = true
+        guard contents.books.isEmpty, contents.feeds.folder == nil else { return }
+        contents.noteHasBooksHeader = contents.listsBooks
+        let hasFeeds = !contents.feeds.feeds.isEmpty
         switch location.view.kind {
         case .readingList:
             contents.note = .emptyReadingList
         case .folders:
-            contents.note = contents.folders.isEmpty ? .emptyFolder : nil
+            contents.note = contents.folders.isEmpty && !hasFeeds ? .emptyFolder : nil
         case .filter:
-            contents.note = .emptyView
+            contents.note = hasFeeds ? nil : .emptyView
         }
     }
 
@@ -405,7 +445,7 @@ final class PhoneLibraryRows: ObservableObject {
         if built != sections {
             sections = built
         }
-        let newSummary = isSearching || contents.books.isEmpty ? nil : summary(of: contents.books)
+        let newSummary = summary(of: contents)
         if newSummary != summary {
             summary = newSummary
         }
@@ -413,8 +453,9 @@ final class PhoneLibraryRows: ObservableObject {
         refreshContinueRow()
     }
 
-    /// The sections of `contents`: the folders, then the books, by letter
-    /// where the sort and their number call for it, or the sentence.
+    /// The sections of `contents`: the folders, the feeds, then the books, by
+    /// letter where the sort and their number call for it, or the sentence;
+    /// in a feed's own folder, its items and then its other books.
     private func sections(of contents: Contents) -> [PhoneLibrarySection] {
         var sections: [PhoneLibrarySection] = []
         if !contents.folders.isEmpty {
@@ -422,9 +463,26 @@ final class PhoneLibraryRows: ObservableObject {
                 id: "folders",
                 header: PhoneLibraryVocabulary.foldersHeader,
                 indexLabel: nil,
-                rows: contents.folders.map { folderRow($0) }
+                rows: contents.folders.map { folderRow($0, in: contents) }
             ))
         }
+        // A feed's folder: its items, newest first, a downloaded one as its book's row, under the Mac's heading
+        // counting them (FR53); then the books that came from no item.
+        if let feedFolder = contents.feeds.folder {
+            sections += feedFolderSections(of: feedFolder, in: contents)
+            return sections
+        }
+        // The Feeds section, after Folders and before Books, as the Mac's list has it (FR53).
+        if !contents.feeds.feeds.isEmpty {
+            sections.append(PhoneLibrarySection(
+                id: "feeds",
+                header: FeedWording.feedsSectionTitle,
+                indexLabel: nil,
+                rows: contents.feeds.feeds.map(PhoneFeedRows.feedRow)
+            ))
+        }
+        // A view that lists feeds alone lists no books, so it has no Books heading.
+        guard contents.listsBooks else { return sections }
         if let note = contents.note {
             let header = contents.noteHasBooksHeader ? CountWording.booksHeader(of: []) : nil
             sections.append(PhoneLibrarySection(id: "note", header: header, indexLabel: nil, rows: [.note(note)]))
@@ -454,14 +512,48 @@ final class PhoneLibraryRows: ObservableObject {
         return sections
     }
 
+    /// The sections of a feed's own folder (FR53): its items under the Mac's
+    /// heading, and the folder's other books under theirs, each only when it
+    /// has rows.
+    private func feedFolderSections(of folder: PhoneFeedRows.FolderContents, in contents: Contents) -> [PhoneLibrarySection] {
+        let listing = folder.listing
+        var sections = [PhoneLibrarySection(
+            id: "feed-items",
+            header: FeedWording.sectionTitle(listing.noun, count: listing.entries.count, total: listing.total),
+            indexLabel: nil,
+            rows: listing.entries.map { entry in
+                switch entry {
+                case .book(let book, _):
+                    return bookRow(book, in: contents, feedActions: PhoneFeedRows.bookRowActions(of: entry))
+                case .item(let content):
+                    return PhoneFeedRows.itemRow(content)
+                }
+            }
+        )]
+        if !listing.otherBooks.isEmpty {
+            sections.append(PhoneLibrarySection(
+                id: "feed-other-books",
+                header: FeedWording.otherBooksTitle(count: listing.otherBooks.count),
+                indexLabel: nil,
+                rows: listing.otherBooks.map { bookRow($0, in: contents) }
+            ))
+        }
+        return sections
+    }
+
     /// A folder's row: the Mac's label, "Fiction, 12 books", and its commands.
-    private func folderRow(_ folder: BookFolder) -> PhoneRowValue {
+    /// A feed's folder says "Feed" and counts the feed's items instead (FR53),
+    /// and a folder holding feeds names them beside its books, "Podcasts, 3
+    /// books, 2 feeds".
+    private func folderRow(_ folder: BookFolder, in contents: Contents) -> PhoneRowValue {
         let count = library.bookCount(inFolderTree: folder.fullPath)
+        let feedCounts = contents.feeds.heldFeedCounts[folder.id]
+        let feedsBelow = contents.feeds.feedsBelow[folder.id] ?? 0
         return PhoneRowValue(
             id: .folder(folder.id),
-            label: FolderRow.accessibilityLabel(name: folder.name, bookCount: count, feedCounts: nil),
+            label: FolderRow.accessibilityLabel(name: folder.name, bookCount: count, feedCounts: feedCounts, feedsBelow: feedsBelow),
             title: folder.name,
-            detail: FolderRow.countText(bookCount: count, feedCounts: nil),
+            detail: FolderRow.countText(bookCount: count, feedCounts: feedCounts, feedsBelow: feedsBelow),
             commands: PhoneLibraryOffer.folderCommands(offersDelete: library.offersDeleteFolder(folder), bookCount: count)
         )
     }
@@ -469,7 +561,7 @@ final class PhoneLibraryRows: ObservableObject {
     /// A book's row: exactly the Mac's label, with the place its reader has
     /// reached now, the visible title and the author with progress, and its
     /// commands.
-    private func bookRow(_ listed: Book, in contents: Contents) -> PhoneRowValue {
+    private func bookRow(_ listed: Book, in contents: Contents, feedActions: [FeedItemAction] = []) -> PhoneRowValue {
         let book = library.livePositions.applied(to: listed)
         let inReadingList = contents.inReadingList.contains(book.id)
         let cloudState = BookCloudStates.shared.listedState(of: book.id)
@@ -500,13 +592,33 @@ final class PhoneLibraryRows: ObservableObject {
                 removal: removalPreferences(),
                 isKeptOnAllDevices: isKept,
                 canDownload: cloudState?.canDownload == true,
-                canRemoveDownload: BookCloudStates.shared.canRemoveDownload(book)
+                canRemoveDownload: BookCloudStates.shared.canRemoveDownload(book),
+                feedActions: feedActions
             )
         )
     }
 
-    /// The Mac's spoken summary of `books`, as its summary bar says it.
-    private func summary(of books: [Book]) -> String {
-        TimeRemainingBar(books: books, wpm: wordsPerMinute(), livePositions: library.livePositions).summaryAccessibilityLabel
+    /// The Mac's spoken summary of the books `contents` lists, as its summary
+    /// bar says it, with the feeds beside them where the Feeds section lists
+    /// any ("743 books, 2 feeds"); in a feed's own folder, the feed's items
+    /// counted and its last check (FR53). Nil while searching, and with
+    /// nothing to sum up.
+    private func summary(of contents: Contents) -> String? {
+        guard !isSearching else { return nil }
+        if let feedFolder = contents.feeds.folder {
+            return PhoneFeedRows.summary(
+                of: feedFolder.summary,
+                books: contents.books,
+                wordsPerMinute: wordsPerMinute(),
+                livePositions: library.livePositions
+            )
+        }
+        guard !contents.books.isEmpty, contents.listsBooks else { return nil }
+        return TimeRemainingBar(
+            books: contents.books,
+            wpm: wordsPerMinute(),
+            livePositions: library.livePositions,
+            feedCount: contents.feeds.feeds.count
+        ).summaryAccessibilityLabel
     }
 }

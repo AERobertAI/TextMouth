@@ -39,7 +39,16 @@ struct FeedNetwork: Sendable {
     /// The app's network: the system's reachability, and, in a process
     /// hosting tests, sessions that refuse every request.
     static let app: FeedNetwork = {
-        let refusing: [AnyClass] = TextMouthRuntime.current.isHostedTest ? [FeedNetworkRefusal.self] : []
+        var refusing: [AnyClass] = TextMouthRuntime.current.isHostedTest ? [FeedNetworkRefusal.self] : []
+        #if os(iOS)
+        #if DEBUG
+        // An interface test of the iPhone app (FR53) subscribes to one stand-in feed, which answers its own host and no other,
+        // ahead of the refusal of every request.
+        if PhoneUITestFeedStub.isOn() {
+            refusing.insert(PhoneUITestFeedStub.self, at: 0)
+        }
+        #endif
+        #endif
         return FeedNetwork(protocolClasses: refusing, reachability: .system)
     }()
 
@@ -160,9 +169,13 @@ enum FeedFetchError: Error, Equatable, Sendable {
     case cancelled
 
     /// The sentence the library shows and VoiceOver speaks about a feed
-    /// named `name` (its title, or its host).
-    func message(about name: String) -> String {
+    /// named `name` (its title, or its host), naming the device it runs on
+    /// where it names one: "this iPhone" when `isPhone`, else "this Mac".
+    func message(about name: String, isPhone: Bool = ThisDevice.isPhone) -> String {
         switch self {
+        case .offline where isPhone:
+            // Translators: Why a feed could not be refreshed on an iPhone: the iPhone has no internet. %@ is the feed's title or server.
+            return InterfaceText.line("feedFetchError.message.offlinePhone", "This iPhone is offline, so \(name) can't be refreshed. Connect to the internet and try again.")
         case .offline:
             // Translators: Why a feed could not be refreshed: this Mac has no internet. %@ is the feed's title or server.
             return InterfaceText.line("feedFetchError.message.offline", "This Mac is offline, so \(name) can't be refreshed. Connect to the internet and try again.")

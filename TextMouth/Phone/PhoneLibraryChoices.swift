@@ -9,8 +9,8 @@ enum PhoneLibraryChoices {
     // MARK: - Library View
 
     /// The views the Library view sheet offers a screen showing `current`:
-    /// what the Mac's View pop-up offers, but Feeds, and any view that lists
-    /// only feeds, since the phone has none.
+    /// exactly what the Mac's View pop-up offers, Feeds, and any view that
+    /// lists feeds, among them once there is a feed to list (FR53).
     static func views(
         in library: LibraryViewModel,
         list: LibraryViewDefinitionList,
@@ -18,14 +18,7 @@ enum PhoneLibraryChoices {
         center: FeedCenter
     ) -> [PhoneChoice<LibraryViewID>] {
         library.offeredViews(in: list, current: current, center: center)
-            .filter(isOfferedOnPhone)
             .map { PhoneChoice(id: $0.id, label: $0.name) }
-    }
-
-    /// Whether the phone offers `view`: not Feeds, and not a view of feeds
-    /// alone.
-    nonisolated static func isOfferedOnPhone(_ view: LibraryViewDefinition) -> Bool {
-        view.id != .feeds && view.filter?.listsOnlyFeeds != true
     }
 
     // MARK: - Sort

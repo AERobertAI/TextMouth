@@ -46,6 +46,7 @@ struct PhoneRootView: View {
         }
         .modifier(PhoneLibraryErrorAlert(library: model.library))
         .phoneImportPresentations(model)
+        .phoneFeedPresentations(model)
         .phoneReopening(model)
         .task {
             model.startAfterFirstWindow()

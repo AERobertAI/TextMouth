@@ -25,6 +25,14 @@ enum PhoneRowWording {
         FolderNavigationHistory.announcement(for: path, library: library)
     }
 
+    /// What VoiceOver says once a folder opens where feeds are kept (FR53), as the Mac says it: a feed's folder says its
+    /// name, "Feed", and its items counted, "Planet Money, Feed, 10 of 381 episodes listed, 3 downloaded"; a folder
+    /// holding feeds names them beside its books, "Podcasts, 3 books, 2 feeds".
+    @MainActor
+    static func folderArrival(at path: String, in library: Library, feedFolders: LibraryFeedFolders) -> String {
+        FolderNavigationHistory.announcement(for: path, library: library, feedFolders: feedFolders)
+    }
+
     // MARK: The Library View Row and the Bottom Bar
 
     /// The Library view row's label, the Mac's "Library view", which the

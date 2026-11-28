@@ -464,6 +464,59 @@ class TextMouthUITestCase: XCTestCase {
             labelIsPrefix: true
         )
 
+        /// The Add to Library sheet's note on what only the Mac has (FR53), a
+        /// plain `Text` in the footnote style in its section's footer, which
+        /// wraps to two lines: flagged "partially unsupported" at the default
+        /// size as the Library's summary is (train 1127-1548), for a cause not
+        /// known, while `LargeTextUITests` passes the same sheet at the
+        /// largest size. Matched by the note's whole words, the Dynamic Type
+        /// kind, and Apple's exact short description, so a fixed font (which
+        /// reads "unsupported", and `PhoneFontPolicyTests` refuses in the
+        /// source) still fails, and so does any other finding on it.
+        static let onlyOnTheMacNote = Accepted(
+            type: .dynamicType, label: "Recording, editing audio, and transcribing are only on the Mac for now.",
+            why: "the Add to Library sheet's note: a plain footnote Text that grows and wraps, flagged as the Library's summary is",
+            description: "Dynamic Type font sizes are partially unsupported"
+        )
+
+        /// The Add to Library sheet's Add Feed… row and its summary (FR53), flagged "partially unsupported" in train
+        /// 1127-2052 as the sheet's note below them is, for a cause not known: plain `Text` in the system styles that grows
+        /// and wraps. Matched by each one's words, the Dynamic Type kind, and Apple's exact short description.
+        static let addFeedRow = Accepted(
+            type: .dynamicType, label: "Add Feed…",
+            why: "the Add to Library sheet's last row, flagged as the note under it is",
+            description: "Dynamic Type font sizes are partially unsupported"
+        )
+
+        /// The summary line of the Add Feed… row, as `addFeedRow`.
+        static let addFeedSummary = Accepted(
+            type: .dynamicType, label: "Opens a sheet to type a feed's address and choose its folder",
+            why: "the Add to Library sheet's last row's summary, flagged as the note under it is",
+            description: "Dynamic Type font sizes are partially unsupported"
+        )
+
+        /// A button of the Add Feed sheet that is dimmed while nothing is typed (Subscribe, Search): iOS dims it, and the
+        /// audit weighs the dimmed words against the contrast it holds an enabled control to. The iPhone's disabled
+        /// color is the system's gray on purpose (`PhoneTextColor.disabled`); the buttons are drawn in full contrast
+        /// the moment they work.
+        static func dimmedButton(_ label: String) -> Accepted {
+            Accepted(type: .contrast, label: label, why: "a dimmed button, in the system's gray for a control that does nothing now")
+        }
+
+        /// The Add Feed sheet's Search section heading, which iOS draws in its own header style: the audit finds its
+        /// contrast "nearly" enough and its Dynamic Type "partially unsupported", as it found Settings' first header.
+        static func sectionHeader(_ label: String) -> [Accepted] {
+            [
+                Accepted(type: .contrast, label: label, why: "a section header in iOS's own style"),
+                Accepted(type: .dynamicType, label: label, why: "a section header in iOS's own style"),
+            ]
+        }
+
+        /// A text field's placeholder that iOS clips at the larger text sizes, read whole by VoiceOver and braille.
+        static func clippedField(_ label: String) -> Accepted {
+            Accepted(type: .textClipped, label: label, why: "a text field's placeholder, read whole by VoiceOver and braille")
+        }
+
         /// A Dynamic Type finding that names no element, in Apple's exact
         /// words `description`. Every Dynamic Type finding that names an
         /// element (audited alone) is matched by that element, so one that

@@ -74,6 +74,34 @@ final class PhoneLaunchRequestTests: XCTestCase {
         XCTAssertEqual(sheet.components(separatedBy: "PhoneLaunchRequest.").count - 1, 1, "PhoneLaunchRequest is read outside #if DEBUG")
     }
 
+    // MARK: - The Feed's Episode File (FR53)
+
+    /// An absolute path names the audio file the stand-in feed server serves; anything else names none, so the stand-in
+    /// is off.
+    func testOnlyAnAbsolutePathNamesTheFeedEpisodeFile() {
+        XCTAssertEqual(
+            PhoneLaunchRequest.feedEpisodeFile(["TEXTMOUTH_UI_FEED_EPISODE": "/tmp/episode.wav"]),
+            URL(fileURLWithPath: "/tmp/episode.wav")
+        )
+        XCTAssertNil(PhoneLaunchRequest.feedEpisodeFile(["TEXTMOUTH_UI_FEED_EPISODE": "episode.wav"]))
+        XCTAssertNil(PhoneLaunchRequest.feedEpisodeFile(["TEXTMOUTH_UI_FEED_EPISODE": ""]))
+        XCTAssertNil(PhoneLaunchRequest.feedEpisodeFile([:]))
+    }
+
+    /// The app's feed sessions try the stand-in feed server only in the iPhone's debug build, inside `#if os(iOS)` and
+    /// `#if DEBUG` (the Mac's boundary test reads the first, so the shared file may name the iPhone's type), and the
+    /// server's own file is compiled into debug builds alone, so no release build holds the host it answers.
+    func testTheStandInFeedServerIsTheIPhonesDebugBuildsAlone() throws {
+        let network = try Self.source("Services/Feeds/FeedNetwork.swift")
+        let guarded = try Self.text(from: "#if os(iOS)\n        #if DEBUG\n", upTo: "#endif", in: network)
+        XCTAssertTrue(guarded.contains("PhoneUITestFeedStub.isOn()"))
+        XCTAssertEqual(network.components(separatedBy: "PhoneUITestFeedStub").count - 1, 2, "The stand-in is named outside #if DEBUG")
+
+        let stub = try Self.source("Platform/iOS/Services/PhoneUITestFeedStub.swift")
+        XCTAssertEqual(stub.split(separator: "\n").filter { $0 == "#if DEBUG" }.count, 1, "Not exactly one #if DEBUG line")
+        XCTAssertTrue(stub.hasSuffix("}\n\n#endif\n"), "The stand-in is not the last thing inside the #if DEBUG")
+    }
+
     // MARK: - Where It Is Read
 
     /// Each place that reads the request does so in a debug build of the

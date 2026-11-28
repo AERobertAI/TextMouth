@@ -47,7 +47,17 @@ extension FeedFetchError {
     /// directory refuses searches past about 20 a minute, with 403 (which
     /// reads as a password asked for) or 429.
     var searchMessage: String {
+        searchMessage(isPhone: ThisDevice.isPhone)
+    }
+
+    /// The sentence about a directory search that failed this way, naming the
+    /// device it runs on where it names one: "this iPhone" when `isPhone`, else
+    /// "this Mac".
+    func searchMessage(isPhone: Bool) -> String {
         switch self {
+        case .offline where isPhone:
+            // Translators: Why a podcast search failed on an iPhone: the iPhone has no internet.
+            return InterfaceText.line("feedFetchError.searchMessage.offlinePhone", "This iPhone is offline, so the directory can't be searched. Connect to the internet and try again.")
         case .offline:
             // Translators: Why a podcast search failed: this Mac has no internet.
             return InterfaceText.line("feedFetchError.searchMessage.offline", "This Mac is offline, so the directory can't be searched. Connect to the internet and try again.")

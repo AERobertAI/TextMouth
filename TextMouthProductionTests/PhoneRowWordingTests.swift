@@ -93,7 +93,7 @@ final class PhoneRowWordingTests: XCTestCase {
         XCTAssertEqual(PhoneRowWording.sortHint, "Chooses the order of the books.")
         XCTAssertEqual(
             PhoneRowWording.addToLibraryHint,
-            "Opens options to open a book or import a folder."
+            "Opens options to open a book, import a folder, or add a feed."
         )
     }
 

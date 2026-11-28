@@ -23,8 +23,12 @@ struct PhoneImportPresentations: ViewModifier {
     func body(content: Content) -> some View {
         content
             // A question that arose while this sheet showed couldn't be
-            // presented over it; it is offered again once the sheet is gone.
-            .sheet(item: $copier.addToLibraryFolder, onDismiss: { copier.presentQuestionAgain() }) { request in
+            // presented over it; it is offered again once the sheet is gone. So is the Add Feed sheet, when the
+            // sheet's Add Feed… chose it (FR53).
+            .sheet(item: $copier.addToLibraryFolder, onDismiss: {
+                copier.presentQuestionAgain()
+                PhoneFeedsHub.shared.showRequestedAddFeed(in: model.library)
+            }) { request in
                 PhoneAddToLibrarySheet(folderPath: request.folderPath, copier: copier)
             }
             .sheet(item: questionBinding) { question in

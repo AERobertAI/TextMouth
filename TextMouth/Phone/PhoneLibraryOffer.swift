@@ -43,6 +43,11 @@ enum PhoneLibraryOffer {
         case exportFolder
         /// Deletes the folder, asking what becomes of what it holds.
         case deleteFolder
+        /// One of a feed's commands, offered by its row in the Feeds section (FR53): the Mac's `FeedCommand`.
+        case feed(FeedCommand)
+        /// One of a feed item's commands, offered by the row of an item not downloaded, and beside the book's own
+        /// by the row of a downloaded one (FR53): the Mac's `FeedItemCommand`.
+        case feedItem(FeedItemCommand)
     }
 
     /// One command a row offers: what it does, and its name.
@@ -51,9 +56,29 @@ enum PhoneLibraryOffer {
         let action: Action
         /// Its name on the Actions rotor and in the context menu.
         let title: String
+        /// Whether the command deletes something of the listener's, which the context menu marks as destructive: a
+        /// book's removal, Delete Feed…, and a feed item's Delete Episode… (FR53).
+        var isDestructive = false
 
         /// A row offers each action at most once, so the action identifies it.
         var id: Action { action }
+
+        /// The command of `action`, a feed's command as the Mac offers it (FR53).
+        init(_ action: FeedAction) {
+            self.init(action: .feed(action.command), title: action.title, isDestructive: action.deletes)
+        }
+
+        /// The command of `action`, a feed item's command as the Mac offers it (FR53).
+        init(_ action: FeedItemAction) {
+            self.init(action: .feedItem(action.command), title: action.title, isDestructive: action.role == .destructive)
+        }
+
+        /// A command that does `action` under `title`; destructive when `isDestructive`.
+        init(action: Action, title: String, isDestructive: Bool = false) {
+            self.action = action
+            self.title = title
+            self.isDestructive = isDestructive || action == .remove
+        }
     }
 
     /// The commands of `book`'s row, each only where it applies, in the
@@ -73,6 +98,8 @@ enum PhoneLibraryOffer {
     ///     is added before a folder is chosen).
     ///   - canDownload: Whether the book's files are only in the cloud, so Download Now is offered (FR43).
     ///   - canRemoveDownload: Whether the book is whole on this device in a synced library, so Remove Download is offered (FR46).
+    ///   - feedActions: The commands of the feed item the book was downloaded from, which the Mac's row offers after
+    ///     the cloud commands and in place of the removal, since Delete Download is the removal of a feed item (FR53).
     static func bookCommands(
         for book: Book,
         isInReadingList: Bool,
@@ -80,7 +107,8 @@ enum PhoneLibraryOffer {
         removal: RemovalPreferences,
         isKeptOnAllDevices: Bool? = nil,
         canDownload: Bool = false,
-        canRemoveDownload: Bool = false
+        canRemoveDownload: Bool = false,
+        feedActions: [FeedItemAction] = []
     ) -> [Command] {
         var commands = [Command(action: .bookInfo, title: PhoneLibraryVocabulary.bookInfo)]
         // The Mac's own rule: a book is offered exactly one of the two, by
@@ -115,8 +143,13 @@ enum PhoneLibraryOffer {
             let action: Action = move.direction < 0 ? .moveUp : .moveDown
             commands.append(Command(action: action, title: move.title))
         }
-        let removeTitle = LibraryRemoveCommandWording(preferences: removal, books: [book]).menuTitle
-        commands.append(Command(action: .remove, title: removeTitle))
+        // The commands of the feed item the book came from, as the Mac's row offers them (FR53).
+        commands += feedActions.map { Command($0) }
+        // One feed item's own Delete Download stands for the removal, so a row never offers both (REV11 F2).
+        if LibraryRemoveCommandWording.isOfferedOnRow(for: [book], feedActions: feedActions) {
+            let removeTitle = LibraryRemoveCommandWording(preferences: removal, books: [book]).menuTitle
+            commands.append(Command(action: .remove, title: removeTitle))
+        }
         return commands
     }
 

@@ -74,6 +74,8 @@ struct PhoneLibraryView: View {
     @State private var rowsWhenLeft: [PhoneRowID] = []
     /// Whether the screen has appeared before, so a folder says its words once.
     @State private var hasAppeared = false
+    /// The row a feed command was run from, until the row it takes away has gone and focus has moved to its place (FR53).
+    @State private var feedFocus: PhoneFeedFocusRequest?
     /// The count said once typing stops, waiting for a second of quiet.
     @State private var searchCountTask: Task<Void, Never>?
     /// Whether "No books match." was said for the current run of no results.
@@ -128,6 +130,10 @@ struct PhoneLibraryView: View {
                 // An export that goes on with its sheet closed (FR31, phase 2): the sheet's title, how far it has
                 // come, and Stop; then what it did, and Close. It shows nothing while no export has its card.
                 PhoneExportProgressCard(focus: $focus)
+                // The feed downloads under way, as the Mac's section shows them (FR53): its title, Cancel, how many are done and
+                // how far the one under way has come, in one element for VoiceOver. It shows nothing while none runs, and
+                // observes only the downloads' progress, so a download redraws it and nothing else of the list.
+                FeedDownloadProgressObserver(library: library, progress: library.feedDownloadProgress)
                 // The Mac's Storage problems notice, as it is, at the top of
                 // the list while a write keeps failing: it observes only the
                 // failure center, and shows nothing until then. Each of its
@@ -197,6 +203,10 @@ struct PhoneLibraryView: View {
         .accessibilityAction(.escape) { scrubbed() }
         .onChange(of: searchText) { _, text in
             searched(text)
+        }
+        // A feed command that took its row away (Delete Download, Delete Episode…) leaves focus on the row now in its place.
+        .onChange(of: rows.rowIDs) { _, now in
+            feedRowsChanged(to: now)
         }
         .navigationTitle(PhoneRowWording.screenTitle(for: rows.location))
         .navigationBarTitleDisplayMode(.inline)
@@ -280,6 +290,17 @@ struct PhoneLibraryView: View {
                 .equatable()
         case .note:
             PhoneNoteRow(value: row)
+        case .feed(let feedID):
+            PhoneFeedRow(value: row, open: { openFeed(feedID) }, perform: { perform($0, onFeed: feedID) })
+                .equatable()
+        case .feedItem(let feedID, let itemID):
+            PhoneFeedItemRow(
+                value: row,
+                // The item's default action opens it, downloading it first when it is not here (FR53).
+                open: { perform(.feedItem(.open), onItem: itemID, of: feedID, from: row.id) },
+                perform: { perform($0, onItem: itemID, of: feedID, from: row.id) }
+            )
+            .equatable()
         }
     }
 
@@ -511,7 +532,11 @@ struct PhoneLibraryView: View {
             hasAppeared = true
             if isFolderScreen {
                 // Focus is left where VoiceOver puts it, the title or Back.
-                let words = PhoneRowWording.folderArrival(at: rows.location.folderPath, in: library.library)
+                let words = PhoneRowWording.folderArrival(
+                    at: rows.location.folderPath,
+                    in: library.library,
+                    feedFolders: LibraryFeedFolders.shared
+                )
                 DispatchQueue.main.asyncAfter(deadline: .now() + PhoneListFocus.settleDelay) {
                     PhoneAnnouncer.say(words)
                 }
@@ -550,6 +575,68 @@ struct PhoneLibraryView: View {
     private func requestFocus(_ target: PhoneLibraryFocus) {
         guard let scroller else { return }
         PhoneListFocus.focus(target, proxy: scroller, state: $focus)
+    }
+
+    // MARK: - Feeds (FR53)
+
+    /// Opens the folder of the feed `feedID`, which lists its items, and
+    /// pushes its screen; Back returns focus to its row. A feed whose folder
+    /// has gone says so, as the Mac does, and opens nothing.
+    private func openFeed(_ feedID: UUID) {
+        guard let feed = library.feeds.store.record(of: feedID)?.feed else { return }
+        guard let path = library.feeds.folderPath(of: feed) else {
+            PhoneAnnouncer.say(FeedWording.folderMissing(title: feed.title))
+            return
+        }
+        leaveRow(.feed(feedID))
+        model.path.append(.folder(path: path))
+    }
+
+    /// Runs a feed row's command, which the Mac's runner does and says: the
+    /// questions it asks and the sheets it opens are the root's. Delete Feed…
+    /// takes the row away once confirmed, so focus is asked to follow it to the
+    /// row in its place (`feedRowsChanged(to:)`), as an item's Delete Episode… does.
+    private func perform(_ action: PhoneLibraryOffer.Action, onFeed feedID: UUID) {
+        guard case .feed(let command) = action else { return }
+        // Any other command forgets a request a cancelled question left behind.
+        feedFocus = command == .deleteFeed
+            ? PhoneFeedFocusRequest(row: .feed(feedID), successor: nil, oldRows: rows.rowIDs)
+            : nil
+        PhoneFeedsHub.shared.perform(command, feedID: feedID, in: library)
+    }
+
+    /// Runs a feed item's command from its own row or its downloaded book's,
+    /// `row`. A command that takes the row away or gives it another identity
+    /// (Delete Download makes a book's row the item's; Delete Episode… takes
+    /// it out of the list) first asks that focus follow it to the row in its
+    /// place (`feedRowsChanged(to:)`).
+    private func perform(_ action: PhoneLibraryOffer.Action, onItem itemID: String, of feedID: UUID, from row: PhoneRowID) {
+        guard case .feedItem(let command) = action else { return }
+        // Any other command forgets a request a cancelled question, or a refused deletion, left behind.
+        feedFocus = command == .deleteDownload || command == .deleteItem
+            ? PhoneFeedFocusRequest(
+                row: row,
+                successor: command == .deleteDownload ? .feedItem(feedID: feedID, itemID: itemID) : nil,
+                oldRows: rows.rowIDs
+            )
+            : nil
+        PhoneFeedsHub.shared.perform(command, feedID: feedID, itemID: itemID, in: library)
+        rows.rebuild()
+    }
+
+    /// Once the list changes after a feed command, sends focus to the row in
+    /// the place of the one the command took away: the row that took its
+    /// identity, else the one after it, or before it. A row still there
+    /// leaves focus where VoiceOver has it (the command was cancelled, or
+    /// changed only the row's words).
+    private func feedRowsChanged(to now: [PhoneRowID]) {
+        guard let request = feedFocus, !now.contains(request.row) else { return }
+        feedFocus = nil
+        let target = request.successor.flatMap { now.contains($0) ? $0 : nil }
+            ?? PhoneListFocus.fallback(forGone: request.row, oldRows: request.oldRows, newRows: now, otherwise: nil)
+        if let target {
+            requestFocus(.row(target))
+        }
     }
 
     // MARK: - Searching
@@ -644,7 +731,11 @@ struct PhoneLibraryView: View {
             } else {
                 remove(book)
             }
-        case .renameFolder, .moveFolder, .deleteFolder, .exportFolder:
+        case .feedItem:
+            // The commands of the feed item the book was downloaded from (FR53).
+            guard let link = book.feedLink else { return }
+            perform(action, onItem: link.itemID, of: link.feedID, from: .book(bookID))
+        case .renameFolder, .moveFolder, .deleteFolder, .exportFolder, .feed:
             break
         }
     }
