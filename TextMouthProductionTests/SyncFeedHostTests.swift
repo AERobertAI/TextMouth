@@ -43,6 +43,25 @@ final class SyncFeedHostTests: XCTestCase {
         XCTAssertEqual(world.center.feed(inFolder: world.bookFolder.id)?.id, show.id)
     }
 
+    /// A subscribed feed another device added is checked at once by an engine that works on its
+    /// own, so its folder lists its episodes without waiting for the next scheduled check.
+    func testNewFeedIsCheckedAtOnce() async throws {
+        let world = try FeedTestWorld(self, label: "SyncFeedHostCheck", worksOnItsOwn: true)
+        FeedSettings.refreshAtLaunchPreference.write(false, to: world.preferences)
+        FeedSettings.refreshIntervalHoursPreference.write(0, to: world.preferences)
+        world.server.serve("/synced.xml", .feed(FeedXML.rss(items: [FeedXML.Item(guid: "ep-1", title: "The first visit")])))
+        await world.start()
+        let show = Feed(
+            feedURL: world.server.url("/synced.xml"), folderID: world.bookFolder.id,
+            subscribedDate: world.clock.value.addingTimeInterval(-86_400)
+        )
+        let failed = await world.center.applySync(SyncFeedApplication(feedsToAdd: [show]))
+        XCTAssertEqual(failed, [])
+        await waitFor("the feed another device added is checked") {
+            world.center.store.record(of: show.id)?.item("guid:ep-1") != nil
+        }
+    }
+
     /// A synced change of a feed's settings and its subscription lands through the engine.
     func testChangedSettingsLand() async throws {
         let world = try FeedTestWorld(self, label: "SyncFeedHostChange")
