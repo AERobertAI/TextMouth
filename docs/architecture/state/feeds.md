@@ -26,7 +26,7 @@ Feed records (FR03): each subscription and the episodes and articles it keeps.
   - and, in a library in the cloud, the notes of launches that found the record missing (.record-absent- followed by a Mac's ID and a launch's, FeedRecordAbsence).
 
 ### Who may write feed records
-<!-- id: feed-record-writers; keys: FeedReconciler, Delete Feed, applySync, leavingLibraryFolder; src: TextMouth/Services/Feeds/FeedReconciler.swift, TextMouth/Services/Feeds/FeedCenter+Sync.swift, TextMouth/Services/Feeds/FeedCenter+DeleteFeed.swift -->
+<!-- id: feed-record-writers; keys: FeedReconciler, Delete Feed; src: TextMouth/Services/Feeds/FeedReconciler.swift -->
 
 - Who may write it:
   - FeedCenter's operations (subscribing, unsubscribing and resubscribing, a feed's folder and its own settings, marking an item played or unplayed, or every item played, deleting a download or an item, and deleting the feed, below),
@@ -45,8 +45,6 @@ Feed records (FR03): each subscription and the episodes and articles it keeps.
   FeedEnvironment.failureCenter names the center, so tests use their own.
   Delete Feed… (FeedCenter.deleteFeed(_:), Services/Feeds/FeedCenter+DeleteFeed.swift, FR14) is the one command that deletes a feed, subscribed or not, in an order whose every stopping point is safe.
   It refuses while one of the feed's downloads is in use, open in a reader, being transcribed, or being exported (FeedLibraryHost.feedBookUse(of:); FeedDeleteError.downloadInUse(title:use:), FEED_DELETE_REFUSED).
-  A deletion another device made (FR56, [Library sync](library-sync.md)) arrives through FeedCenter.applySync(_:) in Services/Feeds/FeedCenter+Sync.swift, which calls deleteFeed(_:leavingLibraryFolder: true): the library folder is left to its own sync keys, the outcome says .none, and a feed with a download in use waits for a later sync.
-  The same sync adds a feed another device subscribed to (checked at once when subscribed) and writes its changed synced fields through the engine's commands.
   Then it closes the feed's downloads (FeedDownloadManager.closeFeed(_:), below) and waits for the imports and rule removals already on the import queue (runBesideImports):
   - removes the feed's downloads and the packages it kept for removed downloads as Delete Episode removes one, the Trash or for good as the removal setting says,
     - every row of the feed (LibraryViewModel.everyRow(ofFeed:), ViewModels/LibraryViewModel+DeleteFeed.swift) leaving the library and its reading list and the indexes written before any file goes (FeedLibraryHost.removeFeedFiles(of:keepingPackages:remove:)),

@@ -139,6 +139,7 @@ Each rule has a test in the branch that first needed it.
 - R5, no new key in library.json, config.json, bookInfo.json, or a feed's record: `OnDiskContractTests` key sets pass unchanged; Keep on All Devices, a book's content, and a feed's synced fields live in the registers.
 - R6, a local library and an iCloud Drive folder: `SyncCenter.requireLocalLibrary` and `requireICloudDrive` refuse otherwise, and `SyncSettingsModel.refusal` says so before anything is made.
 - R7, a removal crosses only when a person made it in a running TextMouth:
-  `SyncLaunchHold` puts back a book, folder, or feed missing at launch unless its package holds a removal marker, and `massRemovalLimit` holds a mass removal until Sync Now confirms it; books and feeds are each counted against their own number.
+  `SyncLaunchHold` puts back a book, folder, or feed missing at launch unless its package holds a removal marker.
+  `massRemovalLimit` holds a mass removal until Sync Now confirms it, counting books and feeds each against their own number.
 - R8, iCloud decides: TextMouth never forces an upload, and asks for a download only of the file it is about to read; it reads upload states at moments and during a fetch.
 - R9, everything spoken: every state, refusal, and result is a `SyncWording` line, pinned by `SyncWordingTests`, and translated into every interface language before its branch merges.
