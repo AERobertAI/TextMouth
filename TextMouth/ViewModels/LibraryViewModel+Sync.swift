@@ -320,8 +320,29 @@ extension LibraryViewModel: SyncLibraryHost {
         // feed whose change did not land keeps its keys for a later sync.
         let applied = merge.appliedKeys(of: application, failed: failed)
         guard !application.feeds.isEmpty else { return applied }
-        let failedFeeds = await feeds.applySync(application.feeds)
+        let (landing, waiting) = Self.feedsWithTheirFolders(application, in: library)
+        let failedFeeds = await feeds.applySync(landing).union(waiting)
         return applied.filter { key in key.feedID.map { !failedFeeds.contains($0) } ?? true }
+    }
+
+    /// What `application` does to the feeds, less the feeds it adds to, or moves into, a folder
+    /// the merge makes that `library` lacks: the folders changed meanwhile, so the merge's were
+    /// left out (`SyncRowMerge.foldersAreStale`), and such a feed waits for them, its keys
+    /// unapplied, rather than listing in no folder. Returns the rest, and the IDs that wait.
+    static func feedsWithTheirFolders(
+        _ application: SyncApplication, in library: Library
+    ) -> (landing: SyncFeedApplication, waiting: Set<UUID>) {
+        let missing = Set(application.library.folders.map(\.id)).subtracting(library.folders.map(\.id))
+        var landing = application.feeds
+        guard !missing.isEmpty else { return (landing, []) }
+        var waiting = Set<UUID>()
+        // A change waits only when it moves the feed into such a folder.
+        let movesIntoMissing = { (feed: Feed) in
+            missing.contains(feed.folderID) && application.feeds.startFeeds[feed.id]?.folderID != feed.folderID
+        }
+        landing.feedsToAdd.removeAll { feed in missing.contains(feed.folderID) && waiting.insert(feed.id).inserted }
+        landing.feedsToChange.removeAll { feed in movesIntoMissing(feed) && waiting.insert(feed.id).inserted }
+        return (landing, waiting)
     }
 
     /// Changes the folders and moves the packages the merge says, through

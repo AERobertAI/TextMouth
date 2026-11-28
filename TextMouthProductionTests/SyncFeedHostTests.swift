@@ -157,6 +157,30 @@ final class SyncFeedHostTests: XCTestCase {
         XCTAssertNil(world.center.store.record(of: show.id))
     }
 
+    /// A feed arriving with a new folder waits, its keys unapplied, when a person changed the
+    /// folders meanwhile and the merge's folders were left out: it never lists in no folder.
+    func testFeedWaitsForAFolderTheApplyLeftOut() async throws {
+        let world = try FeedTestWorld(self, label: "SyncFeedHostStaleFolders")
+        await world.start()
+        let source = world.library.library
+        let arriving = BookFolder(name: "Show")
+        var merged = source
+        merged.folders.append(arriving)
+        // A person makes a folder of their own before the merge lands.
+        world.library.library.folders.append(BookFolder(name: "Mine"))
+        var show = try feed(in: world)
+        show.folderID = arriving.id
+        let application = SyncApplication(
+            library: merged, booksToAdd: [], booksToRemove: [], movesPackages: true, entriesToRecord: [:],
+            appliedKeys: [.feed(show.id, .presence), .folder(arriving.id, .presence)],
+            feeds: SyncFeedApplication(feedsToAdd: [show])
+        )
+        let applied = await world.library.applySync(application, from: source)
+        XCTAssertNil(world.center.store.record(of: show.id))
+        XCTAssertFalse(applied.contains(.feed(show.id, .presence)))
+        XCTAssertFalse(applied.contains(.folder(arriving.id, .presence)))
+    }
+
     /// The library's apply carries out the feeds and reports their keys applied, but not a failed feed's.
     func testLibraryApplyReportsFeedKeys() async throws {
         let world = try FeedTestWorld(self, label: "SyncFeedHostLibrary")
