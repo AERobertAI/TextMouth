@@ -9,22 +9,23 @@ The Mac's reader windows are in [Reader windows](reader-windows.md); this page s
 
 After Back and the title, VoiceOver passes these, one swipe each:
 
-- Book content, then Play.
+- Book content.
+- Skip backward, Play, and Skip forward.
 - The Sleep Timer, only while a timer runs: its value is the time left.
 - Where Am I?, Navigation unit, and Speed.
-- Previous Heading, Next Heading, and Add bookmark.
-- Bookmarks, Headings, and Search in Book.
+- Add bookmark, Bookmarks, and Headings.
 - Go To, Return, and Book Actions.
 
-Skip backward and Skip forward are on the screen for touch, but VoiceOver passes over them: swipe up or down on Play, which adjusts it, to move back or forward by the navigation unit.
-They stay for Voice Control and Switch Control.
+Play is adjustable: swipe up or down on it to move forward or back by the navigation unit, which can be a heading, so the reader has no Previous Heading or Next Heading buttons.
+Skip backward and Skip forward make the same moves.
+Settings has a switch, Hide skip buttons from VoiceOver, which is off; turn it on and VoiceOver passes over the skips, which stay for touch, Voice Control, and Switch Control.
 
 ## Book content
 <!-- id: iphone-reader-book-content; keys: text area, highlight, follow, scroll; src: TextMouth/Phone/PhonePassagePolicy.swift, TextMouth/Platform/iOS/Views/Reader/PhoneBookTextView.swift -->
 
 Book content is one element holding the passage at the reading place, so one swipe passes the whole text.
 VoiceOver's rotor moves through it by line, word, and character.
-It is the main area of the screen, about twelve lines and never more than 55% of the height, so Play is on the first screen at any text size.
+It is the main area of the screen, about twelve lines by default (see Settings for the reader, below) and never more than 55% of the height, so Play is on the first screen at any text size.
 
 - The sentence being spoken has a yellow background, for sight; it changes nothing VoiceOver reads and moves no focus.
 - While the book plays, the highlight moves with the speech once a second and the text scrolls to keep it in view.
@@ -32,14 +33,26 @@ It is the main area of the screen, about twelve lines and never more than 55% of
 - While the book plays, a new passage replaces the text about every 10 seconds, under the same rules.
 
 ## Book Actions and the Sleep Timer
-<!-- id: iphone-reader-book-actions; keys: menu, Sleep Timer, Voice, Book Info, Export, long press, triple tap, focus; src: TextMouth/Phone/PhoneReaderControls.swift, TextMouth/Phone/PhoneControlDescription.swift, TextMouth/Platform/iOS/Views/Reader/PhoneReaderView.swift -->
+<!-- id: iphone-reader-book-actions; keys: menu, Sleep Timer, Reset Timer, Cancel Timer, shake, Search in Book, Voice, focus; src: TextMouth/Phone/PhoneReaderControls.swift, TextMouth/Phone/PhoneControlDescription.swift, TextMouth/Phone/PhoneShakeRestart.swift, TextMouth/Platform/iOS/Views/Reader/PhoneReaderView.swift -->
 
-- Book Actions is a menu: double tap it, then choose Sleep Timer, Voice, Book Info, or Export this book.
+- Book Actions is a menu: double tap it, then choose Search in Book, Sleep Timer, Voice, Book Info, or Export this book.
   Each opens its sheet, and when the sheet closes, VoiceOver's focus returns to Book Actions.
-- Play opens the Sleep Timer too: with VoiceOver, choose the Sleep Timer action in Play's actions, or triple tap with one finger; without it, touch and hold Play.
-  A short press still plays or pauses.
-- While a timer runs, the Sleep Timer also shows under Play with the time left.
-  When the timer ends or you turn it off, focus goes to Play, not to the top of the screen.
+- While a timer runs, the Sleep Timer shows after Skip forward with the time left.
+  Double tap it to open the Sleep Timer sheet, or choose one of its actions first:
+  - Reset Timer starts it again at its full length and plays the book, and VoiceOver's focus stays on the control;
+  - Cancel Timer stops it, and focus goes to Play.
+- When a timer ends by itself, focus goes to Play, not to the top of the screen.
+- Within a minute after a timer ends by itself, shaking the iPhone starts the same timer again and plays the book.
+  This works anywhere a book is open while TextMouth is in front, and Settings' Shake to restart the timer switch, which is on, turns it off.
+  A timer you cancelled is not restarted by a shake.
+
+## Settings for the reader
+<!-- id: iphone-reader-settings; keys: Book content height, Short, Medium, Tall, Hide skip buttons, Shake to restart the timer; src: TextMouth/Phone/PhoneBookContentHeight.swift, TextMouth/Phone/PhoneSettingsModel.swift, TextMouth/Phone/PhoneDefaults.swift -->
+
+Settings has three rows for the reader:
+- Book content height, Short, Medium, or Tall: about 6, 12, or 18 lines of text, Medium until you choose, and never more than 55% of the screen.
+- Hide skip buttons from VoiceOver, under Reading.
+- Shake to restart the timer, under Sleep Timer.
 
 ## Go To's value
 <!-- id: iphone-reader-go-to-value; keys: page, time, Go To; src: TextMouth/Phone/PhoneReaderControls.swift -->

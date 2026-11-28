@@ -8,10 +8,11 @@ It keeps their downloads in a folder of the feed's own in the data directory, wi
 A feed's commands, and an episode's, are in their rows' context menus and among the rows' actions in VoiceOver's Actions menu (VO-Command-Space), under the same names.
 
 ## The other feed pages
-<!-- id: feeds-other-pages; keys: Commands, Listing and downloading, Downloads under way, Saving and quitting, Listening on to the next episode, Feeds tab of Settings; src: docs/user/feed-downloads.md, docs/user/feed-commands.md, docs/user/feed-listening-and-settings.md -->
+<!-- id: feeds-other-pages; keys: Commands, Listing and downloading, Downloads under way, Saving and quitting, Listening on to the next episode, Feeds tab of Settings; src: docs/user/feed-downloads.md, docs/user/feed-commands.md, docs/user/feed-listening-and-settings.md, docs/user/feeds-on-iphone.md -->
 
 - Listing and downloading, Downloads under way, and Saving and quitting are in [Downloading feed episodes and articles](feed-downloads.md).
 - Commands are in [Feed, episode, and article commands](feed-commands.md).
+- Feeds on the iPhone are in [Feeds on the iPhone](feeds-on-iphone.md).
 - Listening on to the next episode, The Feeds tab of Settings, and An episode's own transcript and chapters are in [Listening on, feed settings, and transcripts](feed-listening-and-settings.md).
 
 ## Subscribing
