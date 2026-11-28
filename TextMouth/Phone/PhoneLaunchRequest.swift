@@ -27,6 +27,9 @@ import Foundation
 /// the copier works from a copy, and the phone keeps every original
 /// (`PhoneDefaults`).
 ///
+/// With `feedEpisodeVariable`, the app's feed sessions answer one stand-in feed, and its two episodes with the file
+/// named, instead of refusing every request (`PhoneUITestFeedStub`).
+///
 /// With `exportFolderVariable`, the Export sheet takes the folder named as the
 /// folder its files go to, so that a UI test exports without the system's
 /// folder picker, which no test can drive. The folder is used as it is: it
@@ -42,6 +45,9 @@ enum PhoneLaunchRequest {
     /// An absolute path: the folder the Export sheet exports to, with no
     /// folder picker.
     static let exportFolderVariable = "TEXTMOUTH_EXPORT_TO"
+    /// An absolute path: the audio file the stand-in feed server serves as each of its episodes
+    /// (`PhoneUITestFeedStub`), so that a UI test subscribes, downloads, and plays without the network.
+    static let feedEpisodeVariable = "TEXTMOUTH_UI_FEED_EPISODE"
 
     /// Whether `environment` asks for a sandbox: only the exact value "1", so
     /// an empty or mistyped value leaves the app as it is.
@@ -55,6 +61,13 @@ enum PhoneLaunchRequest {
     static func filesToOpen(_ environment: [String: String]) -> [URL] {
         guard let path = environment[openVariable], path.hasPrefix("/") else { return [] }
         return [URL(fileURLWithPath: path)]
+    }
+
+    /// The episode file `environment` names for the stand-in feed server, or none. Only an absolute path counts, as for
+    /// `filesToOpen(_:)`.
+    static func feedEpisodeFile(_ environment: [String: String]) -> URL? {
+        guard let path = environment[feedEpisodeVariable], path.hasPrefix("/") else { return nil }
+        return URL(fileURLWithPath: path)
     }
 
     /// The folder `environment` names for exports, or none. Only an absolute

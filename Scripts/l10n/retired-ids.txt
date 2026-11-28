@@ -2,3 +2,4 @@
 phoneSync.otherDeviceName
 phoneSync.announce.stoppedKeeping
 encryptedArchive.namesMore
+phoneReader.sleepTimerAdjustHint

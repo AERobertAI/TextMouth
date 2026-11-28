@@ -266233,6 +266233,162 @@
         }
       }
     },
+    "feedDownloadError.message.notEnoughSpacePhone" : {
+      "comment" : "Why a feed's episode could not be downloaded on an iPhone: its storage is too full. %@ is the file's size with its unit, such as 61 MB.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لا توجد مساحة كافية على هذا الـ iPhone لهذه الحلقة (%@)."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই iPhone-এ এই পর্বের (%@) জন্য জায়গা নেই।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Auf diesem iPhone ist kein Platz für diese Folge (%@)."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "There isn't room on this iPhone for this episode (%@)."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No hay espacio en este iPhone para este episodio (%@)."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "در این iPhone برای این قسمت (%@) جا نیست."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Il n’y a pas de place sur cet iPhone pour cet épisode (%@)."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "אין מקום ב-iPhone הזה לאפיזודה הזו (%@)."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "इस iPhone पर इस एपिसोड (%@) के लिए जगह नहीं है।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tidak ada cukup ruang di iPhone ini untuk episode ini (%@)."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Non c’è spazio su questo iPhone per questo episodio (%@)."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "この iPhone にこのエピソード（%@）を保存する空き容量がありません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이 iPhone에 이 에피소드(%@)를 저장할 공간이 없습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Er is op deze iPhone geen ruimte voor deze aflevering (%@)."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Na tym urządzeniu iPhone nie ma miejsca na ten odcinek (%@)."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Não há espaço neste iPhone para este episódio (%@)."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "На этом iPhone нет места для этого выпуска (%@)."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Det finns inte plats på den här iPhone för det här avsnittet (%@)."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iPhone เครื่องนี้มีพื้นที่ไม่พอสำหรับไฟล์ของตอน (%@)"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bu iPhone'da bu podcast bölümü için yer yok (%@)."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "На цьому iPhone немає місця для цього епізоду (%@)."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اس iPhone پر اس ایپی سوڈ (%@) کے لیے جگہ نہیں ہے۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iPhone này không đủ chỗ cho tập này (%@)."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "这部 iPhone 上没有足够空间存放此单集（%@）。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "這部 iPhone 上沒有足夠的空間容納此單集（%@）。"
+          }
+        }
+      }
+    },
     "feedDownloadError.message.unsupportedFile" : {
       "comment" : "Why a feed's episode could not be downloaded: the file is of a kind TextMouth does not play. %@ is the file's type or extension, such as audio/x-flac.",
       "extractionState" : "manual",
@@ -273193,6 +273349,510 @@
         }
       }
     },
+    "feedDownloadProgress.waits.networkPhone" : {
+      "comment" : "A line of the iPhone's feed downloads section: how many downloads wait for a network without data limits, which includes an iPhone that is offline. %lld is the number waiting.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld بانتظار اتصال هذا الـ iPhone بشبكة بلا حدود للبيانات"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld بانتظار اتصال هذا الـ iPhone بشبكة بلا حدود للبيانات"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld بانتظار اتصال هذا الـ iPhone بشبكة بلا حدود للبيانات"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld بانتظار اتصال هذا الـ iPhone بشبكة بلا حدود للبيانات"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld بانتظار اتصال هذا الـ iPhone بشبكة بلا حدود للبيانات"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld بانتظار اتصال هذا الـ iPhone بشبكة بلا حدود للبيانات"
+                }
+              }
+            }
+          }
+        },
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "এই iPhone ডেটা সীমাহীন নেটওয়ার্কে না আসা পর্যন্ত অপেক্ষায় %lldটি"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "এই iPhone ডেটা সীমাহীন নেটওয়ার্কে না আসা পর্যন্ত অপেক্ষায় %lldটি"
+                }
+              }
+            }
+          }
+        },
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld wartet, bis dieses iPhone in einem Netzwerk ohne Datenlimit ist"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld warten, bis dieses iPhone in einem Netzwerk ohne Datenlimit ist"
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld waiting until this iPhone is on a network without data limits"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld waiting until this iPhone is on a network without data limits"
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld esperando a que este iPhone esté en una red sin límites de datos"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld esperando a que este iPhone esté en una red sin límites de datos"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld esperando a que este iPhone esté en una red sin límites de datos"
+                }
+              }
+            }
+          }
+        },
+        "fa" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld در انتظار اتصال این iPhone به شبکه‌ای بدون محدودیت داده"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld در انتظار اتصال این iPhone به شبکه‌ای بدون محدودیت داده"
+                }
+              }
+            }
+          }
+        },
+        "fr" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld en attente que cet iPhone soit sur un réseau sans limite de données"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld en attente que cet iPhone soit sur un réseau sans limite de données"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld en attente que cet iPhone soit sur un réseau sans limite de données"
+                }
+              }
+            }
+          }
+        },
+        "he" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld ממתין עד שה-iPhone הזה יהיה ברשת ללא מגבלות נתונים"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld ממתינים עד שה-iPhone הזה יהיה ברשת ללא מגבלות נתונים"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld ממתינים עד שה-iPhone הזה יהיה ברשת ללא מגבלות נתונים"
+                }
+              }
+            }
+          }
+        },
+        "hi" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld तब तक प्रतीक्षा में जब तक यह iPhone डेटा सीमा रहित नेटवर्क पर न हो"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld तब तक प्रतीक्षा में जब तक यह iPhone डेटा सीमा रहित नेटवर्क पर न हो"
+                }
+              }
+            }
+          }
+        },
+        "id" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld menunggu hingga iPhone ini terhubung ke jaringan tanpa batas data"
+                }
+              }
+            }
+          }
+        },
+        "it" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld in attesa che questo iPhone usi una rete senza limiti di dati"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld in attesa che questo iPhone usi una rete senza limiti di dati"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld in attesa che questo iPhone usi una rete senza limiti di dati"
+                }
+              }
+            }
+          }
+        },
+        "ja" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "この iPhone がデータ量の制限のないネットワークに接続されるまで待機中%lld件"
+                }
+              }
+            }
+          }
+        },
+        "ko" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "이 iPhone의 데이터 제한 없는 네트워크 연결 대기 중 %lld개"
+                }
+              }
+            }
+          }
+        },
+        "nl" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld wacht tot deze iPhone verbonden is met een netwerk zonder datalimiet"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld wachten tot deze iPhone verbonden is met een netwerk zonder datalimiet"
+                }
+              }
+            }
+          }
+        },
+        "pl" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld czekają, aż to urządzenie iPhone połączy się z siecią bez limitów danych"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld czeka, aż to urządzenie iPhone połączy się z siecią bez limitów danych"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld czeka, aż to urządzenie iPhone połączy się z siecią bez limitów danych"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld czeka, aż to urządzenie iPhone połączy się z siecią bez limitów danych"
+                }
+              }
+            }
+          }
+        },
+        "pt-BR" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld aguardando este iPhone usar uma rede sem limite de dados"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld aguardando este iPhone usar uma rede sem limite de dados"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld aguardando este iPhone usar uma rede sem limite de dados"
+                }
+              }
+            }
+          }
+        },
+        "ru" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "ждут, пока этот iPhone подключится к сети без ограничений трафика: %lld"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "ждут, пока этот iPhone подключится к сети без ограничений трафика: %lld"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "ждут, пока этот iPhone подключится к сети без ограничений трафика: %lld"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "ждут, пока этот iPhone подключится к сети без ограничений трафика: %lld"
+                }
+              }
+            }
+          }
+        },
+        "sv" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld väntar tills den här iPhone är på ett nätverk utan databegränsningar"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld väntar tills den här iPhone är på ett nätverk utan databegränsningar"
+                }
+              }
+            }
+          }
+        },
+        "th" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld รายการรอจนกว่า iPhone เครื่องนี้จะเชื่อมต่อเครือข่ายที่ไม่จำกัดข้อมูล"
+                }
+              }
+            }
+          }
+        },
+        "tr" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld indirme, bu iPhone veri sınırı olmayan bir ağa bağlanana kadar bekliyor"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld indirme, bu iPhone veri sınırı olmayan bir ağa bağlanana kadar bekliyor"
+                }
+              }
+            }
+          }
+        },
+        "uk" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld чекають, поки цей iPhone підключиться до мережі без обмежень даних"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld чекають, поки цей iPhone підключиться до мережі без обмежень даних"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld чекає, поки цей iPhone підключиться до мережі без обмежень даних"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld чекають, поки цей iPhone підключиться до мережі без обмежень даних"
+                }
+              }
+            }
+          }
+        },
+        "ur" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld انتظار میں، جب تک یہ iPhone ڈیٹا کی حد کے بغیر کسی نیٹ ورک پر نہ ہو"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld انتظار میں، جب تک یہ iPhone ڈیٹا کی حد کے بغیر کسی نیٹ ورک پر نہ ہو"
+                }
+              }
+            }
+          }
+        },
+        "vi" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld đang chờ iPhone này vào mạng không giới hạn dữ liệu"
+                }
+              }
+            }
+          }
+        },
+        "zh-Hans" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld 个正在等待这部 iPhone 连接到不受数据流量限制的网络"
+                }
+              }
+            }
+          }
+        },
+        "zh-Hant" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld 個正在等待這部 iPhone 連上沒有資料用量限制的網路"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "feedDownloadProgress.waits.room" : {
       "comment" : "A line of the feed downloads section: how many downloads wait for room on this Mac's disk. %lld is the number waiting.",
       "extractionState" : "manual",
@@ -273690,6 +274350,510 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "%lld 個正在等待這部 Mac 騰出空間"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "feedDownloadProgress.waits.roomPhone" : {
+      "comment" : "A line of the iPhone's feed downloads section: how many downloads wait for room in the iPhone's storage. %lld is the number waiting.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld بانتظار مساحة على هذا الـ iPhone"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld بانتظار مساحة على هذا الـ iPhone"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld بانتظار مساحة على هذا الـ iPhone"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld بانتظار مساحة على هذا الـ iPhone"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld بانتظار مساحة على هذا الـ iPhone"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld بانتظار مساحة على هذا الـ iPhone"
+                }
+              }
+            }
+          }
+        },
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "এই iPhone-এ জায়গার অপেক্ষায় %lldটি"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "এই iPhone-এ জায়গার অপেক্ষায় %lldটি"
+                }
+              }
+            }
+          }
+        },
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld wartet auf freien Speicherplatz auf diesem iPhone"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld warten auf freien Speicherplatz auf diesem iPhone"
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld waiting for room on this iPhone"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld waiting for room on this iPhone"
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld esperando espacio en este iPhone"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld esperando espacio en este iPhone"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld esperando espacio en este iPhone"
+                }
+              }
+            }
+          }
+        },
+        "fa" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld در انتظار فضای این iPhone"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld در انتظار فضای این iPhone"
+                }
+              }
+            }
+          }
+        },
+        "fr" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld en attente de place sur cet iPhone"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld en attente de place sur cet iPhone"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld en attente de place sur cet iPhone"
+                }
+              }
+            }
+          }
+        },
+        "he" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld ממתין למקום פנוי ב-iPhone הזה"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld ממתינים למקום פנוי ב-iPhone הזה"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld ממתינים למקום פנוי ב-iPhone הזה"
+                }
+              }
+            }
+          }
+        },
+        "hi" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld इस iPhone पर जगह की प्रतीक्षा में"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld इस iPhone पर जगह की प्रतीक्षा में"
+                }
+              }
+            }
+          }
+        },
+        "id" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld menunggu ruang kosong di iPhone ini"
+                }
+              }
+            }
+          }
+        },
+        "it" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld in attesa di spazio su questo iPhone"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld in attesa di spazio su questo iPhone"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld in attesa di spazio su questo iPhone"
+                }
+              }
+            }
+          }
+        },
+        "ja" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "この iPhone の空き容量待ち%lld件"
+                }
+              }
+            }
+          }
+        },
+        "ko" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "이 iPhone의 공간 확보 대기 중 %lld개"
+                }
+              }
+            }
+          }
+        },
+        "nl" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld wacht op ruimte op deze iPhone"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld wachten op ruimte op deze iPhone"
+                }
+              }
+            }
+          }
+        },
+        "pl" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld czekają na miejsce na tym urządzeniu iPhone"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld czeka na miejsce na tym urządzeniu iPhone"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld czeka na miejsce na tym urządzeniu iPhone"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld czeka na miejsce na tym urządzeniu iPhone"
+                }
+              }
+            }
+          }
+        },
+        "pt-BR" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld aguardando espaço neste iPhone"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld aguardando espaço neste iPhone"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld aguardando espaço neste iPhone"
+                }
+              }
+            }
+          }
+        },
+        "ru" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "ждут места на этом iPhone: %lld"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "ждут места на этом iPhone: %lld"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "ждут места на этом iPhone: %lld"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "ждут места на этом iPhone: %lld"
+                }
+              }
+            }
+          }
+        },
+        "sv" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld väntar på utrymme på den här iPhone"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld väntar på utrymme på den här iPhone"
+                }
+              }
+            }
+          }
+        },
+        "th" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld รายการรอพื้นที่ว่างบน iPhone เครื่องนี้"
+                }
+              }
+            }
+          }
+        },
+        "tr" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld indirme bu iPhone'da yer bekliyor"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld indirme bu iPhone'da yer bekliyor"
+                }
+              }
+            }
+          }
+        },
+        "uk" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld чекають на місце на цьому iPhone"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld чекають на місце на цьому iPhone"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld чекає на місце на цьому iPhone"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld чекають на місце на цьому iPhone"
+                }
+              }
+            }
+          }
+        },
+        "ur" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld اس iPhone پر جگہ کے انتظار میں"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld اس iPhone پر جگہ کے انتظار میں"
+                }
+              }
+            }
+          }
+        },
+        "vi" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld đang chờ đủ chỗ trống trên iPhone này"
+                }
+              }
+            }
+          }
+        },
+        "zh-Hans" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld 个正在等待这部 iPhone 腾出空间"
+                }
+              }
+            }
+          }
+        },
+        "zh-Hant" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld 個正在等待這部 iPhone 騰出空間"
                 }
               }
             }
@@ -277273,6 +278437,162 @@
         }
       }
     },
+    "feedDownloadWait.reason.networkPhone" : {
+      "comment" : "Why a feed item's download waits on an iPhone, after the note \"Waiting to Download\" on its row. Lower case, without a full stop.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "سيُنزَّل عندما يصبح هذا الـ iPhone على شبكة بلا حدود للبيانات"
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই iPhone ডেটা সীমাহীন নেটওয়ার্কে এলে এটি ডাউনলোড হবে"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "es wird heruntergeladen, sobald dieses iPhone in einem Netzwerk ohne Datenlimit ist"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "it downloads once this iPhone is on a network without data limits"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "se descargará cuando este iPhone esté en una red sin límites de datos"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "پس از اتصال این iPhone به شبکه‌ای بدون محدودیت داده بارگیری می‌شود"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "il se téléchargera quand cet iPhone sera sur un réseau sans limite de données"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ההורדה תתחיל ברגע שה-iPhone הזה יהיה ברשת ללא מגבלות נתונים"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "यह तब डाउनलोड होगा जब यह iPhone डेटा सीमा रहित नेटवर्क पर होगा"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "diunduh setelah iPhone ini terhubung ke jaringan tanpa batas data"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "verrà scaricato quando questo iPhone sarà su una rete senza limiti di dati"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "この iPhone がデータ量の制限のないネットワークに接続されると、ダウンロードされます"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이 iPhone이 데이터 제한 없는 네트워크에 연결되면 다운로드됩니다"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "wordt gedownload zodra deze iPhone verbonden is met een netwerk zonder datalimiet"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "pobierze się, gdy to urządzenie iPhone będzie w sieci bez limitów danych"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ele é baixado quando este iPhone estiver em uma rede sem limite de dados"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "она загрузится, когда этот iPhone подключится к сети без ограничений трафика"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "den hämtas när den här iPhone är på ett nätverk utan databegränsningar"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "จะดาวน์โหลดเมื่อ iPhone เครื่องนี้เชื่อมต่อเครือข่ายที่ไม่จำกัดข้อมูล"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "bu iPhone veri sınırı olmayan bir ağa bağlanınca indirilir"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "завантажиться, щойно цей iPhone підключиться до мережі без обмежень даних"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "یہ اس وقت ڈاؤن لوڈ ہوتا ہے جب یہ iPhone ڈیٹا کی حد کے بغیر نیٹ ورک پر ہو"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "nó sẽ tải về khi iPhone này vào mạng không giới hạn dữ liệu"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "等这部 iPhone 连接到不受数据流量限制的网络后会下载"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "這部 iPhone 連上沒有資料用量限制的網路後就會下載"
+          }
+        }
+      }
+    },
     "feedDownloadWait.reason.room" : {
       "comment" : "Why a feed item's download waits, after the note \"Waiting to Download\" on its row: the disk lacks room. %@ is the size needed with its unit, such as 61 MB. Lower case, without a full stop.",
       "extractionState" : "manual",
@@ -277425,6 +278745,162 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "需要在這部 Mac 上有 %@ 的空間"
+          }
+        }
+      }
+    },
+    "feedDownloadWait.reason.roomPhone" : {
+      "comment" : "Why a feed item's download waits on an iPhone, after the note \"Waiting to Download\" on its row: its storage lacks room. %@ is the size needed with its unit, such as 61 MB. Lower case, without a full stop.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يحتاج إلى %@ من المساحة على هذا الـ iPhone"
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই iPhone-এ এর জন্য %@ জায়গা দরকার"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "es braucht Platz für %@ auf diesem iPhone"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "it needs room for %@ on this iPhone"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "necesita espacio para %@ en este iPhone"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "برای %@ در این iPhone جا لازم دارد"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "il lui faut de la place pour %@ sur cet iPhone"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הוא זקוק ל-%@ פנויים ב-iPhone הזה"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "इसके लिए इस iPhone पर %@ की जगह चाहिए"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "memerlukan ruang %@ di iPhone ini"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "richiede spazio per %@ su questo iPhone"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "この iPhone に%@の空き容量が必要です"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이 iPhone에 %@의 공간이 필요함"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "er is ruimte voor %@ nodig op deze iPhone"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "potrzebuje miejsca na %@ na tym urządzeniu iPhone"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ele precisa de espaço para %@ neste iPhone"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "для неё нужно %@ свободного места на этом iPhone"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "den behöver utrymme för %@ på den här iPhone"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ต้องมีพื้นที่ %@ บน iPhone เครื่องนี้"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "bu iPhone'da %@ için yer gerekiyor"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "потрібно %@ місця на цьому iPhone"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اس iPhone پر اسے %@ کی جگہ چاہیے"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "nó cần chỗ cho %@ trên iPhone này"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "它需要这部 iPhone 上有 %@ 的空间"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "需要在這部 iPhone 上有 %@ 的空間"
           }
         }
       }
@@ -278397,6 +279873,162 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "「%@」會在這部 Mac 連上沒有資料用量限制的網路後下載。"
+          }
+        }
+      }
+    },
+    "feedFetchError.download.constrainedNetworkPhone" : {
+      "comment" : "Why a feed item's download did not run now on an iPhone: the network has data limits. Says the same as the row's wait reason. %@ is the item's title.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ستُنزَّل “%@” عندما يصبح هذا الـ iPhone على شبكة بلا حدود للبيانات."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই iPhone ডেটা সীমাহীন নেটওয়ার্কে এলে “%@” ডাউনলোড হবে।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "„%@“ wird heruntergeladen, sobald dieses iPhone in einem Netzwerk ohne Datenlimit ist."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“%@” downloads once this iPhone is on a network without data limits."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” se descargará cuando este iPhone esté en una red sin límites de datos."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "«%@» پس از اتصال این iPhone به شبکه‌ای بدون محدودیت داده بارگیری می‌شود."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "« %@ » se téléchargera quand cet iPhone sera sur un réseau sans limite de données."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ההורדה של “%@” תתחיל ברגע שה-iPhone הזה יהיה ברשת ללא מגבלות נתונים."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” तब डाउनलोड होगा जब यह iPhone डेटा सीमा रहित नेटवर्क पर होगा।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” diunduh setelah iPhone ini terhubung ke jaringan tanpa batas data."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” verrà scaricato quando questo iPhone sarà su una rete senza limiti di dati."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "「%@」は、この iPhone がデータ量の制限のないネットワークに接続されるとダウンロードされます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이 iPhone이 데이터 제한 없는 네트워크에 연결되면 “%@”이(가) 다운로드됩니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” wordt gedownload zodra deze iPhone verbonden is met een netwerk zonder datalimiet."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Pobieranie „%@” nastąpi, gdy to urządzenie iPhone będzie w sieci bez limitów danych."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” é baixado quando este iPhone estiver em uma rede sem limite de dados."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Загрузка «%@» начнётся, когда этот iPhone подключится к сети без ограничений трафика."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "”%@” hämtas när den här iPhone är på ett nätverk utan databegränsningar."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” จะดาวน์โหลดเมื่อ iPhone เครื่องนี้เชื่อมต่อเครือข่ายที่ไม่จำกัดข้อมูล"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@”, bu iPhone veri sınırı olmayan bir ağa bağlanınca indirilir."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "«%@» завантажиться, щойно цей iPhone підключиться до мережі без обмежень даних."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” اس وقت ڈاؤن لوڈ ہوتا ہے جب یہ iPhone ڈیٹا کی حد کے بغیر نیٹ ورک پر ہو۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” sẽ tải về khi iPhone này vào mạng không giới hạn dữ liệu."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@”会在这部 iPhone 连接到不受数据流量限制的网络后下载。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "「%@」會在這部 iPhone 連上沒有資料用量限制的網路後下載。"
           }
         }
       }
@@ -279489,6 +281121,162 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "這部 Mac 已離線，因此無法下載「%@」。請連上網際網路後再試一次。"
+          }
+        }
+      }
+    },
+    "feedFetchError.downloadMessage.offlinePhone" : {
+      "comment" : "Why a feed item's download failed on an iPhone: the iPhone has no internet. %@ is the item's title.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "هذا الـ iPhone غير متصل بالإنترنت، لذا لا يمكن تنزيل “%@”. اتصل بالإنترنت وحاول مرة أخرى."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই iPhone অফলাইন, তাই “%@” ডাউনলোড করা যায়নি। ইন্টারনেটে সংযোগ করে আবার চেষ্টা করুন।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Dieses iPhone ist offline, daher kann „%@“ nicht heruntergeladen werden. Stelle eine Internetverbindung her und versuche es erneut."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This iPhone is offline, so “%@” can't be downloaded. Connect to the internet and try again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Este iPhone no tiene conexión, así que no se puede descargar “%@”. Conéctate a internet e inténtalo de nuevo."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "این iPhone آفلاین است، پس «%@» بارگیری نمی‌شود. به اینترنت متصل شوید و دوباره تلاش کنید."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Cet iPhone est hors ligne, donc « %@ » ne peut pas être téléchargé. Connectez-vous à Internet et réessayez."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ה-iPhone הזה אינו מקוון, ולכן אי אפשר להוריד את “%@”. התחבר לאינטרנט ונסה שוב."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "यह iPhone ऑफ़लाइन है, इसलिए “%@” डाउनलोड नहीं हो सकता। इंटरनेट से कनेक्ट करें और फिर से प्रयास करें।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iPhone ini offline, jadi “%@” tidak dapat diunduh. Sambungkan ke internet dan coba lagi."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Questo iPhone è offline, quindi “%@” non può essere scaricato. Connettiti a internet e riprova."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "この iPhone はオフラインのため、「%@」をダウンロードできません。インターネットに接続してから、もう一度お試しください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이 iPhone이 오프라인이어서 “%@”을(를) 다운로드할 수 없습니다. 인터넷에 연결한 다음 다시 시도하십시오."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Deze iPhone is offline, dus “%@” kan niet worden gedownload. Maak verbinding met internet en probeer het opnieuw."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "To urządzenie iPhone jest offline, więc nie można pobrać „%@”. Połącz się z internetem i spróbuj ponownie."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Este iPhone está off-line, então “%@” não pode ser baixado. Conecte-se à internet e tente novamente."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Этот iPhone не в сети, поэтому «%@» нельзя загрузить. Подключитесь к интернету и повторите попытку."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Den här iPhone är offline, så ”%@” kan inte hämtas. Anslut till internet och försök igen."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iPhone เครื่องนี้ออฟไลน์ จึงดาวน์โหลด “%@” ไม่ได้ เชื่อมต่ออินเทอร์เน็ตแล้วลองอีกครั้ง"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bu iPhone çevrimdışı, bu yüzden “%@” indirilemiyor. İnternete bağlanıp tekrar deneyin."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Цей iPhone не підключений до інтернету, тому «%@» не можна завантажити. Підключіться до інтернету й спробуйте знову."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "یہ iPhone آف لائن ہے، اس لیے “%@” کو ڈاؤن لوڈ نہیں کیا جا سکتا۔ انٹرنیٹ سے جڑیں اور دوبارہ کوشش کریں۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iPhone này đang ngoại tuyến, nên không tải về được “%@”. Hãy kết nối internet và thử lại."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "这部 iPhone 已离线，因此无法下载“%@”。请连接互联网后重试。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "這部 iPhone 已離線，因此無法下載「%@」。請連上網際網路後再試一次。"
           }
         }
       }
@@ -281049,6 +282837,162 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "這部 Mac 已離線，因此無法更新 %@。請連上網際網路後再試一次。"
+          }
+        }
+      }
+    },
+    "feedFetchError.message.offlinePhone" : {
+      "comment" : "Why a feed could not be refreshed on an iPhone: the iPhone has no internet. %@ is the feed's title or server.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "هذا الـ iPhone غير متصل بالإنترنت، لذا لا يمكن تحديث %@. اتصل بالإنترنت وحاول مرة أخرى."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই iPhone অফলাইন, তাই %@ রিফ্রেশ করা যায়নি। ইন্টারনেটে সংযোগ করে আবার চেষ্টা করুন।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Dieses iPhone ist offline, daher kann %@ nicht aktualisiert werden. Stelle eine Internetverbindung her und versuche es erneut."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This iPhone is offline, so %@ can't be refreshed. Connect to the internet and try again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Este iPhone no tiene conexión, así que no se puede actualizar %@. Conéctate a internet e inténtalo de nuevo."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "این iPhone آفلاین است، پس %@ تازه‌سازی نمی‌شود. به اینترنت متصل شوید و دوباره تلاش کنید."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Cet iPhone est hors ligne, donc %@ ne peut pas être actualisé. Connectez-vous à Internet et réessayez."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ה-iPhone הזה אינו מקוון, ולכן אי אפשר לרענן את %@. התחבר לאינטרנט ונסה שוב."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "यह iPhone ऑफ़लाइन है, इसलिए %@ रीफ़्रेश नहीं हो सकता। इंटरनेट से कनेक्ट करें और फिर से प्रयास करें।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iPhone ini offline, jadi %@ tidak dapat disegarkan. Sambungkan ke internet dan coba lagi."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Questo iPhone è offline, quindi %@ non può essere aggiornato. Connettiti a internet e riprova."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "この iPhone はオフラインのため、%@を更新できません。インターネットに接続してから、もう一度お試しください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이 iPhone이 오프라인이어서 %@을(를) 새로 고칠 수 없습니다. 인터넷에 연결한 다음 다시 시도하십시오."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Deze iPhone is offline, dus %@ kan niet worden ververst. Maak verbinding met internet en probeer het opnieuw."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "To urządzenie iPhone jest offline, więc nie można odświeżyć kanału %@. Połącz się z internetem i spróbuj ponownie."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Este iPhone está off-line, então %@ não pode ser atualizado. Conecte-se à internet e tente novamente."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Этот iPhone не в сети, поэтому %@ нельзя обновить. Подключитесь к интернету и повторите попытку."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Den här iPhone är offline, så %@ kan inte uppdateras. Anslut till internet och försök igen."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iPhone เครื่องนี้ออฟไลน์ จึงรีเฟรช %@ ไม่ได้ เชื่อมต่ออินเทอร์เน็ตแล้วลองอีกครั้ง"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bu iPhone çevrimdışı, bu yüzden yenileme yapılamıyor (%@). İnternete bağlanıp tekrar deneyin."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Цей iPhone не підключений до інтернету, тому %@ не можна оновити. Підключіться до інтернету й спробуйте знову."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "یہ iPhone آف لائن ہے، اس لیے %@ کو ریفریش نہیں کیا جا سکتا۔ انٹرنیٹ سے جڑیں اور دوبارہ کوشش کریں۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iPhone này đang ngoại tuyến, nên không làm mới được %@. Hãy kết nối internet và thử lại."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "这部 iPhone 已离线，因此无法刷新 %@。请连接互联网后重试。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "這部 iPhone 已離線，因此無法更新 %@。請連上網際網路後再試一次。"
           }
         }
       }
@@ -282957,6 +284901,162 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "這部 Mac 已離線，因此無法搜尋目錄。請連上網際網路後再試一次。"
+          }
+        }
+      }
+    },
+    "feedFetchError.searchMessage.offlinePhone" : {
+      "comment" : "Why a podcast search failed on an iPhone: the iPhone has no internet.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "هذا الـ iPhone غير متصل بالإنترنت، لذا لا يمكن البحث في الدليل. اتصل بالإنترنت وحاول مرة أخرى."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই iPhone অফলাইন, তাই ডিরেক্টরি অনুসন্ধান করা যায়নি। ইন্টারনেটে সংযোগ করে আবার চেষ্টা করুন।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Dieses iPhone ist offline, daher kann das Verzeichnis nicht durchsucht werden. Stelle eine Internetverbindung her und versuche es erneut."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This iPhone is offline, so the directory can't be searched. Connect to the internet and try again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Este iPhone no tiene conexión, así que no se puede buscar en el directorio. Conéctate a internet e inténtalo de nuevo."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "این iPhone آفلاین است، پس نمی‌توان در فهرست جست‌وجو کرد. به اینترنت متصل شوید و دوباره تلاش کنید."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Cet iPhone est hors ligne, donc l’annuaire ne peut pas être interrogé. Connectez-vous à Internet et réessayez."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ה-iPhone הזה אינו מקוון, ולכן אי אפשר לחפש במאגר הפודקאסטים. התחבר לאינטרנט ונסה שוב."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "यह iPhone ऑफ़लाइन है, इसलिए डायरेक्टरी में खोज नहीं की जा सकती। इंटरनेट से कनेक्ट करें और फिर से प्रयास करें।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iPhone ini offline, jadi direktori tidak dapat dicari. Sambungkan ke internet dan coba lagi."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Questo iPhone è offline, quindi non è possibile cercare nella directory. Connettiti a internet e riprova."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "この iPhone はオフラインのため、ディレクトリを検索できません。インターネットに接続してから、もう一度お試しください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "이 iPhone이 오프라인이어서 디렉터리를 검색할 수 없습니다. 인터넷에 연결한 다음 다시 시도하십시오."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Deze iPhone is offline, dus de gids kan niet worden doorzocht. Maak verbinding met internet en probeer het opnieuw."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "To urządzenie iPhone jest offline, więc nie można przeszukać katalogu. Połącz się z internetem i spróbuj ponownie."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Este iPhone está off-line, então não é possível buscar no diretório. Conecte-se à internet e tente novamente."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Этот iPhone не в сети, поэтому в каталоге нельзя искать. Подключитесь к интернету и повторите попытку."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Den här iPhone är offline, så det går inte att söka i katalogen. Anslut till internet och försök igen."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iPhone เครื่องนี้ออฟไลน์ จึงค้นหาไดเรกทอรีไม่ได้ เชื่อมต่ออินเทอร์เน็ตแล้วลองอีกครั้ง"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bu iPhone çevrimdışı, bu yüzden dizinde arama yapılamıyor. İnternete bağlanıp tekrar deneyin."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Цей iPhone не підключений до інтернету, тому здійснити пошук у каталозі неможливо. Підключіться до інтернету й спробуйте знову."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "یہ iPhone آف لائن ہے، اس لیے ڈائریکٹری میں تلاش نہیں کی جا سکتی۔ انٹرنیٹ سے جڑیں اور دوبارہ کوشش کریں۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iPhone này đang ngoại tuyến, nên không tìm kiếm được danh mục. Hãy kết nối internet và thử lại."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "这部 iPhone 已离线，因此无法搜索目录。请连接互联网后重试。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "這部 iPhone 已離線，因此無法搜尋目錄。請連上網際網路後再試一次。"
           }
         }
       }
@@ -536348,151 +538448,151 @@
         "ar" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "يفتح خيارات لفتح كتاب أو استيراد مجلد."
+            "value" : "يفتح خيارات لفتح كتاب أو استيراد مجلد أو إضافة موجز."
           }
         },
         "bn" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "একটি বই খোলা বা একটি ফোল্ডার আমদানির বিকল্পগুলো খোলে।"
+            "value" : "একটি বই খোলা, একটি ফোল্ডার আমদানি বা একটি ফিড যোগ করার বিকল্পগুলো খোলে।"
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Öffnet Optionen, um ein Buch zu öffnen oder einen Ordner zu importieren."
+            "value" : "Öffnet Optionen, um ein Buch zu öffnen, einen Ordner zu importieren oder einen Feed hinzuzufügen."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Opens options to open a book or import a folder."
+            "value" : "Opens options to open a book, import a folder, or add a feed."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Abre opciones para abrir un libro o importar una carpeta."
+            "value" : "Abre opciones para abrir un libro, importar una carpeta o añadir un canal."
           }
         },
         "fa" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "گزینه‌هایی برای باز کردن کتاب یا وارد کردن پوشه را باز می‌کند."
+            "value" : "گزینه‌هایی برای باز کردن کتاب، وارد کردن پوشه یا افزودن فید را باز می‌کند."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ouvre des options pour ouvrir un livre ou importer un dossier."
+            "value" : "Ouvre des options pour ouvrir un livre, importer un dossier ou ajouter un flux."
           }
         },
         "he" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "פותח אפשרויות לפתיחת ספר או לייבוא תיקייה."
+            "value" : "פותח אפשרויות לפתיחת ספר, לייבוא תיקייה או להוספת ערוץ."
           }
         },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "पुस्तक खोलने या फ़ोल्डर आयात करने के विकल्प खोलता है।"
+            "value" : "पुस्तक खोलने, फ़ोल्डर आयात करने या फ़ीड जोड़ने के विकल्प खोलता है।"
           }
         },
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Membuka opsi untuk membuka buku atau mengimpor folder."
+            "value" : "Membuka opsi untuk membuka buku, mengimpor folder, atau menambahkan feed."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Apre le opzioni per aprire un libro o importare una cartella."
+            "value" : "Apre le opzioni per aprire un libro, importare una cartella o aggiungere un feed."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ブックを開くか、フォルダを読み込むためのオプションを開きます。"
+            "value" : "ブックを開く、フォルダを読み込む、またはフィードを追加するためのオプションを開きます。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "책을 열거나 폴더를 가져오는 옵션을 엽니다."
+            "value" : "책을 열거나 폴더를 가져오거나 피드를 추가하는 옵션을 엽니다."
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Opent opties om een boek te openen of een map te importeren."
+            "value" : "Opent opties om een boek te openen, een map te importeren of een feed toe te voegen."
           }
         },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Otwiera opcje otwierania książki lub importu folderu."
+            "value" : "Otwiera opcje otwierania książki, importu folderu lub dodania kanału."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Abre opções para abrir um livro ou importar uma pasta."
+            "value" : "Abre opções para abrir um livro, importar uma pasta ou adicionar um feed."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Открывает варианты: открыть книгу или импортировать папку."
+            "value" : "Открывает варианты: открыть книгу, импортировать папку или добавить ленту."
           }
         },
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Öppnar alternativ för att öppna en bok eller importera en mapp."
+            "value" : "Öppnar alternativ för att öppna en bok, importera en mapp eller lägga till ett flöde."
           }
         },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "เปิดตัวเลือกสำหรับเปิดหนังสือหรือนำเข้าโฟลเดอร์"
+            "value" : "เปิดตัวเลือกสำหรับเปิดหนังสือ นำเข้าโฟลเดอร์ หรือเพิ่มฟีด"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bir kitap açma veya klasör içe aktarma seçeneklerini açar."
+            "value" : "Bir kitap açma, klasör içe aktarma veya besleme ekleme seçeneklerini açar."
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Відкриває варіанти відкриття книги або імпорту папки."
+            "value" : "Відкриває варіанти: відкрити книгу, імпортувати папку або додати стрічку."
           }
         },
         "ur" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "کتاب کھولنے یا فولڈر درآمد کرنے کے اختیارات کھولتا ہے۔"
+            "value" : "کتاب کھولنے، فولڈر درآمد کرنے یا فیڈ شامل کرنے کے اختیارات کھولتا ہے۔"
           }
         },
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Mở các tùy chọn để mở một sách hoặc nhập một thư mục."
+            "value" : "Mở các tùy chọn để mở một sách, nhập một thư mục hoặc thêm một nguồn cấp."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "打开选项以打开图书或导入文件夹。"
+            "value" : "打开选项以打开图书、导入文件夹或添加订阅源。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "打開選項，以打開書籍或輸入檔案夾。"
+            "value" : "打開選項，以打開書籍、輸入檔案夾或加入訂閱源。"
           }
         }
       }
@@ -537777,6 +539877,162 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%1$@需要「%2$@」，這是 Mac 內建的點字表之一，iPhone 版 TextMouth 沒有這個點字表。"
+          }
+        }
+      }
+    },
+    "phoneImport.onlyOnTheMacNote" : {
+      "comment" : "Note at the end of the iPhone's Add to Library sheet, after its choices, saying which features the iPhone app does not have yet and the Mac app does. \"For now\": they are planned for the iPhone.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "التسجيل وتحرير الصوت وتفريغ الصوت متاحة على Mac فقط حاليًا."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "রেকর্ডিং, অডিও সম্পাদনা ও ট্রান্সক্রাইব করা আপাতত শুধু Mac-এ আছে।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Aufnehmen, Audio bearbeiten und Transkribieren gibt es vorerst nur auf dem Mac."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recording, editing audio, and transcribing are only on the Mac for now."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La grabación, la edición de audio y la transcripción solo están en el Mac por ahora."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ضبط، ویرایش صدا و رونویسی فعلاً فقط در Mac هستند."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "L’enregistrement, la modification de l’audio et la transcription ne sont pour l’instant disponibles que sur Mac."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הקלטה, עריכת שמע ותמלול זמינים בינתיים רק ב-Mac."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "रिकॉर्डिंग, ऑडियो संपादन और ट्रांसक्राइब करना अभी केवल Mac पर हैं।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Perekaman, pengeditan audio, dan transkripsi untuk saat ini hanya ada di Mac."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Registrazione, modifica audio e trascrizione per ora sono solo sul Mac."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "録音、オーディオの編集、文字起こしは、今のところ Mac でのみ使えます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "녹음, 오디오 편집, 대본 만들기는 현재 Mac에서만 사용할 수 있습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Opnemen, audio wijzigen en transcriberen zijn voorlopig alleen op de Mac beschikbaar."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nagrywanie, edycja dźwięku i transkrypcja są na razie dostępne tylko na komputerze Mac."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Gravação, edição de áudio e transcrição, por enquanto, estão só no Mac."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Запись, изменение аудио и расшифровка пока есть только на Mac."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Inspelning, ljudredigering och transkribering finns tills vidare bara på Mac."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "การบันทึกเสียง การแก้ไขเสียง และการถอดเสียง ตอนนี้มีเฉพาะบน Mac"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kayıt, ses düzenleme ve yazıya dökme şimdilik yalnızca Mac'te var."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Запис, редагування аудіо й транскрибування поки є лише на Mac."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ریکارڈنگ، آڈیو میں ترمیم اور ٹرانسکرائب کرنا فی الحال صرف Mac پر ہیں۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ghi âm, sửa âm thanh và chép lời hiện chỉ có trên Mac."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "录音、编辑音频和转录目前仅在 Mac 上提供。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "錄音、編輯音訊和轉錄目前僅在 Mac 上提供。"
           }
         }
       }
@@ -539535,7 +541791,7 @@
     },
     "phoneReader.bookActionsHint" : {
       "comment" : "Hint of the iPhone reader's Book Actions menu button.",
-      "extractionState" : "manual",
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -539685,6 +541941,162 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "睡眠計時器、語音、書籍資訊和輸出。"
+          }
+        }
+      }
+    },
+    "phoneReader.bookActionsHint.search" : {
+      "comment" : "Hint of the iPhone reader's Book Actions menu button: what its menu holds, in order.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "البحث، ومؤقت النوم، والصوت، ومعلومات الكتاب، والتصدير."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "অনুসন্ধান, স্লিপ টাইমার, ভয়েস, বইয়ের তথ্য এবং রপ্তানি।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Suche, Einschlaf-Timer, Stimme, Buchinfo und Export."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search, sleep timer, voice, book information, and export."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Búsqueda, temporizador de apagado, voz, información del libro y exportación."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "جست‌وجو، زمان‌سنج خواب، صدا، اطلاعات کتاب و صادر کردن."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Recherche, minuteur de mise en veille, voix, informations sur le livre et exportation."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "חיפוש, טיימר שינה, קול, פרטי הספר וייצוא."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "खोज, स्लीप टाइमर, आवाज़, पुस्तक जानकारी और निर्यात।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Pencarian, timer tidur, suara, info buku, dan ekspor."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ricerca, timer di spegnimento, voce, info libro ed esportazione."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "検索、スリープタイマー、声、ブック情報、書き出し。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "검색, 취침 타이머, 음성, 책 정보 및 내보내기."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zoeken, slaaptimer, stem, boekinfo en exporteren."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Wyszukiwanie, wyłącznik czasowy, głos, informacje o książce i eksport."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Busca, timer de repouso, voz, informações do livro e exportação."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Поиск, таймер сна, голос, сведения о книге и экспорт."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sökning, insomningstimer, röst, bokinfo och export."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "การค้นหา ตัวตั้งเวลาปิด เสียง ข้อมูลหนังสือ และการส่งออก"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Arama, uyku zamanlayıcısı, ses, kitap bilgileri ve dışa aktarma."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Пошук, таймер сну, голос, інформація про книгу та експорт."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تلاش، سلیپ ٹائمر، آواز، کتاب کی معلومات اور برآمد۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tìm kiếm, hẹn giờ ngủ, giọng nói, thông tin sách và xuất."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "搜索、睡眠定时器、语音、图书信息和导出。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "搜尋、睡眠計時器、語音、書籍資訊和輸出。"
           }
         }
       }
@@ -540939,7 +543351,7 @@
     },
     "phoneReader.nextHeadingHint" : {
       "comment" : "Hint of the iPhone reader's Next Heading button.",
-      "extractionState" : "manual",
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -544719,7 +547131,7 @@
     },
     "phoneReader.previousHeadingHint" : {
       "comment" : "Hint of the iPhone reader's Previous Heading button.",
-      "extractionState" : "manual",
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -547717,6 +550129,630 @@
         }
       }
     },
+    "phoneSettings.bookContentHeight" : {
+      "comment" : "Label and title of the iPhone Settings row that chooses how tall the reader's Book content (the book's text area) stands. \"Book content\" is the element's name as VoiceOver reads it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ارتفاع محتوى الكتاب"
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বইয়ের বিষয়বস্তুর উচ্চতা"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Höhe des Buchinhalts"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Book content height"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Altura del contenido del libro"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ارتفاع محتوای کتاب"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Hauteur du contenu du livre"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "גובה תוכן הספר"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "पुस्तक की सामग्री की ऊँचाई"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tinggi isi buku"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Altezza del contenuto del libro"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ブックの内容の高さ"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "책 내용 높이"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Hoogte van boekinhoud"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Wysokość zawartości książki"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Altura do conteúdo do livro"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Высота содержимого книги"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Höjd på bokinnehåll"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ความสูงของเนื้อหาหนังสือ"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kitap içeriği yüksekliği"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Висота вмісту книги"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "کتاب کے مواد کی اونچائی"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Chiều cao nội dung sách"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "图书内容高度"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "書籍內容高度"
+          }
+        }
+      }
+    },
+    "phoneSettings.bookContentHeight.medium" : {
+      "comment" : "A choice of the Book content height row in iPhone Settings: about twelve lines, the default.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "متوسط"
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "মাঝারি"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mittel"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Medium"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Media"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "متوسط"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Moyenne"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "בינוני"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "मध्यम"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sedang"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Media"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "中"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "중간"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Middel"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Średnia"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Média"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Средняя"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mellan"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "กลาง"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Orta"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Середня"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "درمیانی"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Vừa"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "中"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "中"
+          }
+        }
+      }
+    },
+    "phoneSettings.bookContentHeight.short" : {
+      "comment" : "A choice of the Book content height row in iPhone Settings: the book's text area on the reader is about six lines tall.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "قصير"
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ছোট"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Niedrig"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Short"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Baja"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "کوتاه"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Basse"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "נמוך"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "छोटी"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Pendek"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bassa"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "低"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "낮게"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Laag"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Niska"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Baixa"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Низкая"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Låg"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ต่ำ"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kısa"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Низька"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "چھوٹی"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Thấp"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "矮"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "矮"
+          }
+        }
+      }
+    },
+    "phoneSettings.bookContentHeight.tall" : {
+      "comment" : "A choice of the Book content height row in iPhone Settings: about eighteen lines.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "طويل"
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "লম্বা"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Hoch"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tall"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Alta"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "بلند"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Haute"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "גבוה"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "लंबी"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tinggi"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Alta"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "高"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "높게"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Hoog"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Wysoka"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Alta"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Высокая"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Hög"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "สูง"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Uzun"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Висока"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لمبی"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Cao"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "高"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "高"
+          }
+        }
+      }
+    },
     "phoneSettings.brailleCaption" : {
       "comment" : "The caption under the Braille code row in the iPhone's Settings. A book keeps the braille code it was added with.",
       "extractionState" : "manual",
@@ -548497,6 +551533,318 @@
         }
       }
     },
+    "phoneSettings.hideSkipButtons" : {
+      "comment" : "Switch in the Reading section of iPhone Settings: VoiceOver passes over the reader's Skip backward and Skip forward buttons. VoiceOver is Apple's screen reader; keep its name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "إخفاء زري التخطي عن VoiceOver"
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "VoiceOver থেকে স্কিপ বোতাম লুকান"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sprungtasten vor VoiceOver ausblenden"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hide skip buttons from VoiceOver"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ocultar los botones de salto a VoiceOver"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "پنهان کردن دکمه‌های پرش از VoiceOver"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Masquer les boutons de saut à VoiceOver"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הסתרת כפתורי הדילוג מ-VoiceOver"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "VoiceOver से स्किप बटन छिपाएँ"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sembunyikan tombol lompat dari VoiceOver"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nascondi i pulsanti di salto a VoiceOver"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "スキップボタンをVoiceOverに表示しない"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "VoiceOver에서 건너뛰기 버튼 숨기기"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Verberg springknoppen voor VoiceOver"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ukryj przyciski przeskoku przed VoiceOver"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ocultar os botões de pular do VoiceOver"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Скрыть кнопки перехода от VoiceOver"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Dölj hoppknappar för VoiceOver"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ซ่อนปุ่มข้ามจาก VoiceOver"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Atlama düğmelerini VoiceOver’dan gizle"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Сховати кнопки переходу від VoiceOver"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "VoiceOver سے اسکپ بٹن چھپائیں"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ẩn các nút bỏ qua khỏi VoiceOver"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "对 VoiceOver 隐藏跳转按钮"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "對 VoiceOver 隱藏跳轉按鈕"
+          }
+        }
+      }
+    },
+    "phoneSettings.hideSkipButtonsHint" : {
+      "comment" : "Hint of the Hide skip buttons from VoiceOver switch in iPhone Settings. Adjusting Play is VoiceOver's swipe up or down on the Play button.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ضبط زر التشغيل يقوم بالتنقلات نفسها."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "চালান বোতাম সামঞ্জস্য করলে একই সরণ হয়।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Das Anpassen von „Wiedergeben“ springt genauso."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adjusting Play makes the same moves."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ajustar Reproducir hace los mismos saltos."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تنظیم پخش همان جابه‌جایی‌ها را انجام می‌دهد."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ajuster Lire fait les mêmes déplacements."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "כוונון הכפתור נגן מבצע את אותם המעברים."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "चलाएँ बटन को समायोजित करने से वही आगे-पीछे होता है।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Menyesuaikan Putar melakukan perpindahan yang sama."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Regolare Riproduci fa gli stessi spostamenti."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "再生を調整しても同じ移動ができます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "재생을 조절해도 같은 이동을 합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Speel af aanpassen maakt dezelfde sprongen."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Regulacja przycisku Odtwórz wykonuje te same przeskoki."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ajustar Reproduzir faz os mesmos saltos."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Настройка кнопки «Воспроизвести» делает те же переходы."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Att justera Spela upp gör samma förflyttningar."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "การปรับปุ่มเล่นจะเลื่อนไปแบบเดียวกัน"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Oynat’ı ayarlamak aynı geçişleri yapar."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Налаштування кнопки «Відтворити» робить ті самі переходи."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "چلائیں کو ایڈجسٹ کرنے سے وہی حرکت ہوتی ہے۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Điều chỉnh nút Phát cũng di chuyển như vậy."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "调节“播放”按钮可进行同样的移动。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "調整「播放」按鈕可進行同樣的移動。"
+          }
+        }
+      }
+    },
     "phoneSettings.navigationUnitHint" : {
       "comment" : "Hint of the two iPhone Settings rows that choose a navigation unit, one for text books and one for audiobooks.",
       "extractionState" : "manual",
@@ -548961,6 +552309,318 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "閱讀統計"
+          }
+        }
+      }
+    },
+    "phoneSettings.shakeToRestartTimer" : {
+      "comment" : "Switch in the Sleep Timer section of iPhone Settings: shaking the iPhone soon after a sleep timer ends starts the same timer again.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "هز الجهاز لإعادة تشغيل المؤقت"
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ঝাঁকিয়ে টাইমার আবার চালু করুন"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Schütteln startet den Timer neu"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shake to restart the timer"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Agitar para reiniciar el temporizador"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تکان دادن برای شروع دوبارهٔ زمان‌سنج"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Secouer pour relancer le minuteur"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ניעור להפעלה מחדש של הטיימר"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "टाइमर फिर शुरू करने के लिए हिलाएँ"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Goyangkan untuk memulai ulang timer"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Scuoti per riavviare il timer"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "振ってタイマーを再開"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "흔들어서 타이머 다시 시작"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Schud om de timer opnieuw te starten"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Potrząśnij, aby wznowić wyłącznik"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Agitar para reiniciar o timer"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Встряхнуть, чтобы перезапустить таймер"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Skaka för att starta om timern"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "เขย่าเพื่อเริ่มตัวตั้งเวลาใหม่"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zamanlayıcıyı yeniden başlatmak için salla"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Струсніть, щоб перезапустити таймер"
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ٹائمر دوبارہ شروع کرنے کے لیے ہلائیں"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Lắc để khởi động lại bộ hẹn giờ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "摇动以重新开始定时器"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "搖動以重新開始計時器"
+          }
+        }
+      }
+    },
+    "phoneSettings.shakeToRestartTimerHint" : {
+      "comment" : "Hint of the Shake to restart the timer switch in iPhone Settings.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لمدة دقيقة بعد انتهاء مؤقت النوم، يؤدي هز iPhone إلى تشغيله من جديد."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "স্লিপ টাইমার শেষ হওয়ার পর এক মিনিটের মধ্যে iPhone ঝাঁকালে সেটি আবার চালু হয়।"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Eine Minute lang nach dem Ende eines Einschlaf-Timers startet ihn Schütteln des iPhone erneut."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "For a minute after a sleep timer ends, shaking iPhone starts it again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Durante un minuto después de que termine un temporizador de apagado, agitar el iPhone lo vuelve a iniciar."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تا یک دقیقه پس از پایان زمان‌سنج خواب، تکان دادن iPhone آن را دوباره شروع می‌کند."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Pendant une minute après la fin d’un minuteur de mise en veille, secouer l’iPhone le relance."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "במשך דקה אחרי שטיימר שינה מסתיים, ניעור ה-iPhone מפעיל אותו מחדש."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "स्लीप टाइमर खत्म होने के बाद एक मिनट तक iPhone हिलाने से वह फिर शुरू हो जाता है।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Selama satu menit setelah timer tidur berakhir, menggoyangkan iPhone memulainya lagi."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Per un minuto dopo la fine di un timer di spegnimento, scuotere l’iPhone lo fa ripartire."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "スリープタイマーが終了してから1分間は、iPhoneを振るとタイマーが再び始まります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "취침 타이머가 끝난 뒤 1분 동안 iPhone을 흔들면 타이머가 다시 시작됩니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tot een minuut nadat een slaaptimer is afgelopen, start schudden met de iPhone hem opnieuw."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Przez minutę po zakończeniu wyłącznika czasowego potrząśnięcie iPhone’em uruchamia go ponownie."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Por um minuto depois que um timer de repouso termina, agitar o iPhone o inicia de novo."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "В течение минуты после окончания таймера сна встряхивание iPhone запускает его снова."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "I en minut efter att en insomningstimer har tagit slut startar du om den genom att skaka iPhone."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ภายในหนึ่งนาทีหลังตัวตั้งเวลาปิดหมดเวลา การเขย่า iPhone จะเริ่มตัวตั้งเวลาอีกครั้ง"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bir uyku zamanlayıcısı bittikten sonraki bir dakika içinde iPhone’u sallamak onu yeniden başlatır."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Протягом хвилини після завершення таймера сну струшування iPhone запускає його знову."
+          }
+        },
+        "ur" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "سلیپ ٹائمر ختم ہونے کے بعد ایک منٹ تک iPhone ہلانے سے وہ دوبارہ شروع ہو جاتا ہے۔"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Trong một phút sau khi hẹn giờ ngủ kết thúc, lắc iPhone sẽ khởi động lại nó."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "睡眠定时器结束后的一分钟内，摇动 iPhone 会让它重新开始。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "睡眠計時器結束後的一分鐘內，搖動 iPhone 會讓它重新開始。"
           }
         }
       }

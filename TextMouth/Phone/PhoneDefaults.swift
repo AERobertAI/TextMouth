@@ -123,4 +123,56 @@ enum PhoneDefaults {
     static func setFollowInBraille(_ isOn: Bool, in preferences: UserDefaults) {
         preferences.set(isOn, forKey: followInBrailleKey)
     }
+
+    // MARK: - Book Content's Height
+
+    /// The preference that holds how tall the reader's Book content stands
+    /// (FR54): Settings' "Book content height" under Reading.
+    nonisolated static let bookContentHeightKey = "phoneBookContentHeight"
+
+    /// How tall Book content stands: Medium, its twelve lines, until the
+    /// listener chooses, or when what is kept names no height.
+    static func bookContentHeight(in preferences: UserDefaults) -> PhoneBookContentHeight {
+        preferences.string(forKey: bookContentHeightKey).flatMap(PhoneBookContentHeight.init(rawValue:)) ?? .default
+    }
+
+    /// Keeps how tall Book content stands.
+    static func setBookContentHeight(_ height: PhoneBookContentHeight, in preferences: UserDefaults) {
+        preferences.set(height.rawValue, forKey: bookContentHeightKey)
+    }
+
+    // MARK: - Hide Skip Buttons from VoiceOver
+
+    /// The preference that holds whether VoiceOver passes over Skip backward
+    /// and Skip forward (FR54): Settings' switch under Reading.
+    nonisolated static let hidesSkipsFromVoiceOverKey = "phoneHidesSkipsFromVoiceOver"
+
+    /// Whether VoiceOver passes over the skips: off until the listener turns
+    /// it on, so VoiceOver reaches them around Play.
+    static func hidesSkipsFromVoiceOver(in preferences: UserDefaults) -> Bool {
+        preferences.bool(forKey: hidesSkipsFromVoiceOverKey)
+    }
+
+    /// Keeps whether VoiceOver passes over the skips.
+    static func setHidesSkipsFromVoiceOver(_ isOn: Bool, in preferences: UserDefaults) {
+        preferences.set(isOn, forKey: hidesSkipsFromVoiceOverKey)
+    }
+
+    // MARK: - Shake to Restart the Sleep Timer
+
+    /// The preference that holds whether shaking the iPhone soon after a
+    /// sleep timer ends starts it again (FR55): Settings' switch under Sleep
+    /// Timer.
+    nonisolated static let shakeRestartsSleepTimerKey = "phoneShakeRestartsSleepTimer"
+
+    /// Whether a shake soon after a sleep timer ends starts it again: on until
+    /// the listener turns it off, so a missing preference reads as on.
+    static func shakeRestartsSleepTimer(in preferences: UserDefaults) -> Bool {
+        preferences.object(forKey: shakeRestartsSleepTimerKey) as? Bool ?? true
+    }
+
+    /// Keeps whether a shake starts an ended sleep timer again.
+    static func setShakeRestartsSleepTimer(_ isOn: Bool, in preferences: UserDefaults) {
+        preferences.set(isOn, forKey: shakeRestartsSleepTimerKey)
+    }
 }

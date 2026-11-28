@@ -15,10 +15,6 @@ enum PhoneControlKind: Hashable, Sendable, CaseIterable {
     case skipBackward
     /// Moves forward by the unit.
     case skipForward
-    /// Moves to the previous heading, whatever the unit.
-    case previousHeading
-    /// Moves to the next heading, whatever the unit.
-    case nextHeading
     /// The speed.
     case speed
     /// Where Am I?
@@ -29,7 +25,7 @@ enum PhoneControlKind: Hashable, Sendable, CaseIterable {
     case bookmarks
     /// The Headings sheet.
     case headings
-    /// The Search in Book sheet.
+    /// The Search in Book sheet, under Book Actions (FR54).
     case searchInBook
     /// The Go To sheet.
     case goTo

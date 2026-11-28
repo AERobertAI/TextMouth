@@ -114,7 +114,8 @@ final class SearchUITests: TextMouthUITestCase {
             app.buttons["Back to Book"].waitForNonExistence(timeout: Self.patience),
             "The sheet stayed open after a result was chosen:\n\(app.debugDescription)"
         )
-        XCTAssertTrue(app.buttons["Search in Book"].waitForExistence(timeout: Self.patience), "No Search in Book back on the reader")
+        // Search in Book is under Book Actions (FR54), the control that opened the sheet.
+        XCTAssertTrue(app.buttons["Book Actions"].waitForExistence(timeout: Self.patience), "No Book Actions back on the reader")
         XCTAssertEqual(app.buttons["Play"].label, "Play", "The book started to play after a jump")
 
         // Book content follows the move a moment later: look for the word,

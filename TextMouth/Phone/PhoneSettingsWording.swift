@@ -31,6 +31,19 @@ enum PhoneSettingsWording {
         InterfaceText.line("phoneSettings.navigationUnitHint", "What a book of this kind moves by until it has a unit of its own.")
     }
 
+    // MARK: Sleep Timer
+
+    /// The switch that lets a shake start an ended sleep timer again (FR55).
+    static var shakeToRestartTimer: String {
+        // Translators: Switch in the Sleep Timer section of iPhone Settings: shaking the iPhone soon after a sleep timer ends starts the same timer again.
+        InterfaceText.line("phoneSettings.shakeToRestartTimer", "Shake to restart the timer")
+    }
+    /// What the switch does.
+    static var shakeToRestartTimerHint: String {
+        // Translators: Hint of the Shake to restart the timer switch in iPhone Settings.
+        InterfaceText.line("phoneSettings.shakeToRestartTimerHint", "For a minute after a sleep timer ends, shaking iPhone starts it again.")
+    }
+
     // MARK: Reading
 
     /// The section holding Follow in Braille.
@@ -53,6 +66,23 @@ enum PhoneSettingsWording {
     static var followInBraille: String {
         // Translators: Switch in iPhone Settings: while a book plays, the book's text moves on with the speech, for a braille display.
         InterfaceText.line("phoneSettings.followInBraille", "Follow in Braille")
+    }
+    /// The row choosing how tall the reader's Book content stands (FR54).
+    static var bookContentHeight: String {
+        // Translators: Label and title of the iPhone Settings row that chooses how tall the reader's Book content (the book's text area) stands. "Book content" is the element's name as VoiceOver reads it.
+        InterfaceText.line("phoneSettings.bookContentHeight", "Book content height")
+    }
+
+    /// The switch that hides Skip backward and Skip forward from VoiceOver
+    /// (FR54).
+    static var hideSkipButtons: String {
+        // Translators: Switch in the Reading section of iPhone Settings: VoiceOver passes over the reader's Skip backward and Skip forward buttons. VoiceOver is Apple's screen reader; keep its name.
+        InterfaceText.line("phoneSettings.hideSkipButtons", "Hide skip buttons from VoiceOver")
+    }
+    /// What the switch does.
+    static var hideSkipButtonsHint: String {
+        // Translators: Hint of the Hide skip buttons from VoiceOver switch in iPhone Settings. Adjusting Play is VoiceOver's swipe up or down on the Play button.
+        InterfaceText.line("phoneSettings.hideSkipButtonsHint", "Adjusting Play makes the same moves.")
     }
     /// What Follow in Braille does.
     static var followInBrailleHint: String {

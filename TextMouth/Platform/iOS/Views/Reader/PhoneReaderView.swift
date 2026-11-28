@@ -2,8 +2,8 @@ import Combine
 import SwiftUI
 import UIKit
 
-/// The reader's screen: Book content, Play, and a grid of up to three columns
-/// and five rows (`PhoneReaderControl.gridRows`), in the spec's order and
+/// The reader's screen: Book content, Play between the two skips, and a grid
+/// of up to three columns (`PhoneReaderControl.gridRows`), in the spec's order and
 /// layout (the spec, under "The reader"), its less frequent actions under
 /// Book Actions (FR51).
 ///
@@ -29,12 +29,13 @@ struct PhoneReaderView: View {
     /// Whether the load failure has VoiceOver's focus.
     @AccessibilityFocusState private var failureFocused: Bool
     /// Whether a sleep timer runs, changing only when that does.
-    @StateObject private var timer = PhoneSleepTimerWatcher()
+    @StateObject private var timer = PhoneSleepTimerWatcher.onTheReader()
 
     /// At accessibility text sizes the grid becomes one column.
     @Environment(\.dynamicTypeSize) private var typeSize
-    /// Book content's height: about twelve lines of body text at any size,
-    /// the reader's main area, as Voice Dream Reader's text is (FR48).
+    /// Twelve lines of body text at any size: Book content's height at
+    /// Medium, the reader's main area, as Voice Dream Reader's text is (FR48);
+    /// Settings' Book content height scales it (FR54).
     @ScaledMetric(relativeTo: .body) private var textHeight: CGFloat = 300
     /// Play's height, the same in every book.
     @ScaledMetric(relativeTo: .title2) private var playHeight: CGFloat = 88
@@ -85,7 +86,7 @@ struct PhoneReaderView: View {
             }
             // The same reader keeps the same watch on its timer; the next book's is a new one.
             .task(id: session.reader.map(ObjectIdentifier.init)) {
-                timer.watch(session.reader)
+                timer.watch(session.reader?.sleepTimerService)
             }
             // A protected book asks for its password over the reader (FR41).
             // One overlay for every book and none, so its identity never
@@ -132,21 +133,23 @@ struct PhoneReaderView: View {
     /// Book content, Play, and the grid. No `accessibilityElement(children:)`
     /// wraps it, or the UIKit views would vanish from VoiceOver.
     private var column: some View {
-        VStack(spacing: 12) {
+        // Book content's chosen lines at the text size in force (FR54), read
+        // here, as the reader is drawn, and not inside the frame's closure.
+        let contentLines = Self.contentHeight.scaled(fromTwelveLines: Double(textHeight))
+        return VStack(spacing: 12) {
             PhoneBookContent(
                 model: model,
                 snapshot: session.snapshot,
                 followsInBraille: { PhoneReaderView.followsInBraille }
             )
-            // Twelve lines, but never so tall that Play falls below the first
-            // screen at the largest text sizes: the share is of the reader's
-            // scroll view, the nearest container.
+            // The lines Settings choose, but never so tall that Play falls
+            // below the first screen at the largest text sizes: the share is
+            // of the reader's scroll view, the nearest container.
             .containerRelativeFrame(.vertical) { visible, _ in
-                CGFloat(PhoneReaderControls.bookContentHeight(scaled: Double(textHeight), visible: Double(visible)))
+                CGFloat(PhoneReaderControls.bookContentHeight(scaled: contentLines, visible: Double(visible)))
             }
 
-            control(.play)
-                .frame(height: playHeight)
+            playRow
 
             // While a timer runs, the Sleep Timer shows under Play, its value
             // the time left (`PhoneReaderControl.screen(timerRuns:)`).
@@ -168,6 +171,31 @@ struct PhoneReaderView: View {
                 }
             }
         }
+    }
+
+    /// Skip backward, Play, and Skip forward, in VoiceOver's order and the
+    /// layout's (FR54): side by side, Play's height, or one above another at
+    /// accessibility text sizes, where three across would not fit their words.
+    @ViewBuilder
+    private var playRow: some View {
+        if typeSize.isAccessibilitySize {
+            ForEach(PhoneReaderControl.playRow, id: \.self) { item in
+                playRowControl(item)
+            }
+        } else {
+            HStack(spacing: 12) {
+                ForEach(PhoneReaderControl.playRow, id: \.self) { item in
+                    playRowControl(item)
+                }
+            }
+        }
+    }
+
+    /// One control of Play's row: Play always at Play's height, the skips at
+    /// it too beside Play, so the row is one even band to find by touch.
+    private func playRowControl(_ item: PhoneReaderControl) -> some View {
+        control(item)
+            .frame(height: item == .play || !typeSize.isAccessibilitySize ? playHeight : nil)
     }
 
     /// The book's title, with the Mac's prefix for a book read from the
@@ -194,14 +222,16 @@ struct PhoneReaderView: View {
             activate: action(for: item),
             increment: adjustment(for: item, up: true),
             decrement: adjustment(for: item, up: false),
-            perform: customActions(for: item),
+            // Whatever custom actions its description lists (Where Am I?'s
+            // two, the running Sleep Timer's Reset Timer and Cancel Timer,
+            // FR55; Play has none), each done by the model.
+            perform: { action in model.perform(action) },
             focusKind: item.focusKind,
             showsValue: item == .navigationUnit || item == .speed || item == .sleepTimer,
             rotors: rotors(for: item),
             menuItems: menuItems(for: item),
             refreshesEverySecond: item == .sleepTimer,
-            hiddenFromVoiceOver: item.isHiddenFromVoiceOver,
-            longPress: longPress(for: item)
+            hiddenFromVoiceOver: item.isHiddenFromVoiceOver(hidingSkips: Self.hidesSkips)
         )
         .frame(maxWidth: .infinity)
     }
@@ -226,6 +256,9 @@ struct PhoneReaderView: View {
                 // On the next turn, once the menu has begun to close, so the
                 // sheet isn't presented over a menu still on its way out.
                 Task { @MainActor in
+                    // Search in Book opens only for a book with text to search;
+                    // any other is told why, and nothing opens (FR54).
+                    if item == .searchInBook, !model.openSearch() { return }
                     sheetOpener = .bookActions
                     sheet = item.sheet
                 }
@@ -245,10 +278,6 @@ struct PhoneReaderView: View {
             return { model.togglePlayPause() }
         case .whereAmI:
             return { model.whereAmI() }
-        case .previousHeading:
-            return { model.moveOnScreen(forward: false, unit: .heading, source: .command) }
-        case .nextHeading:
-            return { model.moveOnScreen(forward: true, unit: .heading, source: .command) }
         case .skipBackward:
             return { model.moveOnScreen(forward: false, source: .command) }
         case .skipForward:
@@ -280,35 +309,6 @@ struct PhoneReaderView: View {
         }
     }
 
-    /// What `item`'s custom actions do: Where Am I?'s two, the Mac's.
-    private func customActions(for item: PhoneReaderControl) -> (@MainActor (PhoneControlAction) -> Void)? {
-        guard item == .whereAmI || item == .play else { return nil }
-        let model = model
-        return { action in
-            switch action {
-            case .whereAmIFullSummary: model.whereAmIFullSummary()
-            case .copyReadingPosition: model.copyReadingPosition()
-            case .sleepTimer: openSleepTimer(from: item)
-            }
-        }
-    }
-
-    /// Opens the Sleep Timer sheet from `opener` (FR52: Play's action and its
-    /// long press, which a VoiceOver one-finger triple tap makes), focus
-    /// coming back to `opener` as it closes.
-    private func openSleepTimer(from opener: PhoneReaderControl) {
-        sheetOpener = opener
-        sheet = PhoneReaderControl.sleepTimer.sheet
-    }
-
-    /// What a long press on `item` does: Play's opens the Sleep Timer (FR52).
-    /// VoiceOver's one-finger triple tap is a long press on the item ("Touch
-    /// and hold (long press) the item", Apple's VoiceOver gestures list).
-    private func longPress(for item: PhoneReaderControl) -> (@MainActor () -> Void)? {
-        guard item == .play else { return nil }
-        return { openSleepTimer(from: .play) }
-    }
-
     /// `item`'s own rotors: Play's, while their flag is on; none otherwise.
     private func rotors(for item: PhoneReaderControl) -> (@MainActor (UIView) -> [UIAccessibilityCustomRotor])? {
         guard item == .play, Self.playRotorsEnabled else { return nil }
@@ -316,19 +316,20 @@ struct PhoneReaderView: View {
         return { element in Self.playRotors(on: element, model: model) }
     }
 
-    /// What adjusting `item` up or down does: Play moves by the unit,
-    /// Navigation unit steps through the units, Speed steps the speed.
+    /// What adjusting `item` up or down does, by `PhoneReaderControl
+    /// .adjustment`: Play moves by the unit, Navigation unit steps through the
+    /// units, and Speed steps the speed.
     private func adjustment(for item: PhoneReaderControl, up: Bool) -> (@MainActor () -> Void)? {
         let model = model
-        switch item {
-        case .play:
+        switch item.adjustment {
+        case .move?:
             // Up is forward, as Voice Dream's and Apple's "increase" have it.
             return { model.moveOnScreen(forward: up, source: .adjustingPlay) }
-        case .navigationUnit:
+        case .unit?:
             return { model.adjustUnit(up: up) }
-        case .speed:
+        case .speed?:
             return { model.adjustSpeed(up: up) }
-        default:
+        case nil:
             return nil
         }
     }
@@ -479,6 +480,19 @@ struct PhoneReaderView: View {
         }
     }
 
+    /// Settings' Book content height, read from preferences as the reader is
+    /// drawn (FR54).
+    private static var contentHeight: PhoneBookContentHeight {
+        PhoneDefaults.bookContentHeight(in: TextMouthRuntime.current.preferences)
+    }
+
+    /// Whether Settings' "Hide skip buttons from VoiceOver" is on, read from
+    /// preferences as each control is drawn: Settings is reached from the
+    /// Library, so the reader is drawn again after any change (FR54).
+    private static var hidesSkips: Bool {
+        PhoneDefaults.hidesSkipsFromVoiceOver(in: TextMouthRuntime.current.preferences)
+    }
+
     /// Whether Settings' Follow in Braille is on, read from preferences.
     private static var followsInBraille: Bool {
         TextMouthRuntime.current.preferences.bool(forKey: PhoneDefaults.followInBrailleKey)
@@ -625,39 +639,18 @@ private final class PhoneUnlockPromptWatcher: ObservableObject {
 
 // MARK: - The Sleep Timer
 
-/// Whether a sleep timer runs for the open reader (FR51, FR52), republished
-/// when that changes and not as the timer counts down, so the reader's
-/// screen redraws only as the timer starts or ends, as `PhoneUnlockPromptWatcher`
-/// republishes only its prompt.
-@MainActor
-final class PhoneSleepTimerWatcher: ObservableObject {
-    /// Whether a timer runs.
-    @Published private(set) var runs = false
-    /// The subscription to the timer's `isActive`.
-    private var subscription: AnyCancellable?
-
-    /// Watches `reader`'s sleep timer, or nothing.
-    func watch(_ reader: ReaderViewModel?) {
-        runs = reader?.sleepTimerService.isActive ?? false
-        subscription = reader?.sleepTimerService.$isActive
-            .removeDuplicates()
-            .sink { [weak self] isActive in
-                // `$isActive` publishes just before the change, with the new value.
-                MainActor.assumeIsolated { self?.timerChanged(runs: isActive) }
+extension PhoneSleepTimerWatcher {
+    /// The reader's watcher: VoiceOver's focus read and moved through the
+    /// focus registry, the move to Play coming after the moment a screen
+    /// change waits for.
+    static func onTheReader() -> PhoneSleepTimerWatcher {
+        PhoneSleepTimerWatcher(
+            isFocusedOnTimer: {
+                PhoneFocusRegistry.shared.view(for: .sleepTimer)?.accessibilityElementIsFocused() == true
+            },
+            requestFocus: { kind, unless in
+                PhoneFocusRegistry.shared.requestFocus(on: kind, after: PhoneFocusPolicy.screenChangedDelay, unless: unless)
             }
-    }
-
-    /// The timer started or ended. As it ends, the Sleep Timer under Play
-    /// leaves the screen; if VoiceOver's focus was on it, focus goes to Play
-    /// once the control has gone, rather than VoiceOver dropping it at the
-    /// top of the screen (`PhoneReaderControl.focusTarget`). Asked here,
-    /// before the screen redraws, while the control is still there to ask.
-    private func timerChanged(runs isActive: Bool) {
-        let focusWasOnTimer = runs && !isActive
-            && PhoneFocusRegistry.shared.view(for: .sleepTimer)?.accessibilityElementIsFocused() == true
-        runs = isActive
-        guard focusWasOnTimer else { return }
-        let target = PhoneReaderControl.focusTarget(returningTo: .sleepTimer, timerRuns: isActive)
-        PhoneFocusRegistry.shared.requestFocus(on: target.focusKind, after: PhoneFocusPolicy.screenChangedDelay)
+        )
     }
 }

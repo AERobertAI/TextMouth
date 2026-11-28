@@ -11,6 +11,13 @@ enum PhoneRowID: Hashable, Sendable {
     case folder(UUID)
     /// The one sentence a list shows where it has nothing.
     case note(PhoneRowNote)
+    /// A feed's row in the Feeds section (FR53), by the feed's ID, which
+    /// stays through a refresh, a rename of its folder, and an unsubscribe.
+    case feed(UUID)
+    /// The row of a feed's item that is not downloaded, or whose book is in
+    /// another folder (FR53): by the feed and the item's identity, which a
+    /// refresh keeps. A downloaded item is its book's row instead.
+    case feedItem(feedID: UUID, itemID: String)
 }
 
 /// The sentence a Library list shows where it has nothing to list.
@@ -44,6 +51,10 @@ struct PhoneRowValue: Identifiable, Equatable, Sendable {
         case folder
         /// A sentence, which does nothing.
         case note
+        /// A feed, which opens the feed's folder (FR53).
+        case feed
+        /// A feed's item not downloaded, which downloads and opens it (FR53).
+        case feedItem
     }
 
     /// The row's identity.
@@ -60,6 +71,9 @@ struct PhoneRowValue: Identifiable, Equatable, Sendable {
     let detail: String?
     /// The row's commands, in the order offered.
     let commands: [PhoneLibraryOffer.Command]
+    /// What VoiceOver says of what the row does, for a row whose hint depends on its state: a feed item's (FR53). Nil for
+    /// a row whose view gives its own hint.
+    var hint: String? = nil
 
     /// What kind of row it is, by its identity.
     var kind: Kind {
@@ -67,6 +81,8 @@ struct PhoneRowValue: Identifiable, Equatable, Sendable {
         case .book: .book
         case .folder: .folder
         case .note: .note
+        case .feed: .feed
+        case .feedItem: .feedItem
         }
     }
 

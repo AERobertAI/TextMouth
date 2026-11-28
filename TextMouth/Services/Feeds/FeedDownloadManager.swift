@@ -32,14 +32,19 @@ enum FeedDownloadError: Error, Equatable, Sendable {
     }
 
     /// The sentence the library shows and VoiceOver speaks about the item
-    /// titled `title`.
-    func message(about title: String) -> String {
+    /// titled `title`, naming the device it runs on where it names one: "this
+    /// iPhone" when `isPhone`, else "this Mac".
+    func message(about title: String, isPhone: Bool = ThisDevice.isPhone) -> String {
         switch self {
         case .transfer(let error):
-            return error.downloadMessage(about: title)
+            return error.downloadMessage(about: title, isPhone: isPhone)
         case .folderMissing:
             // Translators: Why a feed's episode could not be downloaded: the feed's folder was removed from the library.
             return InterfaceText.line("feedDownloadError.message.folderMissing", "The folder for this feed is no longer in the library. Choose another folder for it.")
+        case .notEnoughSpace(let bytes) where isPhone:
+            let size = ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
+            // Translators: Why a feed's episode could not be downloaded on an iPhone: its storage is too full. %@ is the file's size with its unit, such as 61 MB.
+            return InterfaceText.line("feedDownloadError.message.notEnoughSpacePhone", "There isn't room on this iPhone for this episode (\(size)).")
         case .notEnoughSpace(let bytes):
             let size = ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
             // Translators: Why a feed's episode could not be downloaded: the disk is too full. %@ is the file's size with its unit, such as 61 MB.
@@ -97,7 +102,19 @@ enum FeedDownloadWait: Equatable, Sendable {
     /// covers a Mac offline as well as one on a network with data limits
     /// (REV13 item 4), or "it needs room for 61 MB on this Mac".
     var reason: String {
+        reason(isPhone: ThisDevice.isPhone)
+    }
+
+    /// Why, as the item's row says it, naming the device it runs on: "this
+    /// iPhone" when `isPhone`, else "this Mac".
+    func reason(isPhone: Bool) -> String {
         switch self {
+        case .network where isPhone:
+            // Translators: Why a feed item's download waits on an iPhone, after the note "Waiting to Download" on its row. Lower case, without a full stop.
+            return InterfaceText.line("feedDownloadWait.reason.networkPhone", "it downloads once this iPhone is on a network without data limits")
+        case .room(let bytes) where isPhone:
+            // Translators: Why a feed item's download waits on an iPhone, after the note "Waiting to Download" on its row: its storage lacks room. %@ is the size needed with its unit, such as 61 MB. Lower case, without a full stop.
+            return InterfaceText.line("feedDownloadWait.reason.roomPhone", "it needs room for \(ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)) on this iPhone")
         case .network:
             // Translators: Why a feed item's download waits, after the note "Waiting to Download" on its row. Lower case, without a full stop.
             return InterfaceText.line("feedDownloadWait.reason.network", "it downloads once this Mac is on a network without data limits")
@@ -110,9 +127,13 @@ enum FeedDownloadWait: Equatable, Sendable {
 
 extension FeedFetchError {
     /// The sentence about a download of the item titled `title` that failed
-    /// this way, naming the server by its host alone.
-    func downloadMessage(about title: String) -> String {
+    /// this way, naming the server by its host alone, and the device it runs
+    /// on where it names one: "this iPhone" when `isPhone`, else "this Mac".
+    func downloadMessage(about title: String, isPhone: Bool = ThisDevice.isPhone) -> String {
         switch self {
+        case .offline where isPhone:
+            // Translators: Why a feed item's download failed on an iPhone: the iPhone has no internet. %@ is the item's title.
+            return InterfaceText.line("feedFetchError.downloadMessage.offlinePhone", "This iPhone is offline, so “\(title)” can't be downloaded. Connect to the internet and try again.")
         case .offline:
             // Translators: Why a feed item's download failed: this Mac has no internet. %@ is the item's title.
             return InterfaceText.line("feedFetchError.downloadMessage.offline", "This Mac is offline, so “\(title)” can't be downloaded. Connect to the internet and try again.")
@@ -143,6 +164,9 @@ extension FeedFetchError {
         case .notAWebAddress:
             // Translators: Why a feed item's download failed: its address is not an http or https address.
             return InterfaceText.line("feedFetchError.downloadMessage.notAWebAddress", "The file's address isn't a web address TextMouth can open.")
+        case .constrainedNetwork where isPhone:
+            // Translators: Why a feed item's download did not run now on an iPhone: the network has data limits. Says the same as the row's wait reason. %@ is the item's title.
+            return InterfaceText.line("feedFetchError.download.constrainedNetworkPhone", "“\(title)” downloads once this iPhone is on a network without data limits.")
         case .constrainedNetwork:
             // Translators: Why a feed item's download did not run now: the network has data limits. Says the same as the row's wait reason. %@ is the item's title.
             return InterfaceText.line("feedFetchError.download.constrainedNetwork", "“\(title)” downloads once this Mac is on a network without data limits.")

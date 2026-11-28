@@ -19,8 +19,9 @@ final class ScreenOrderUITests: TextMouthUITestCase {
     // MARK: - Add to Library
 
     /// The Add to Library sheet reads its title, Cancel, "Open Book…" with the
-    /// Mac's summary as its hint, and "Import Folder…" (the spec, under
-    /// "Adding a book"), and passes the audit.
+    /// Mac's summary as its hint, "Import Folder…" (the spec, under "Adding a
+    /// book"), then the note on what only the Mac has for now (FR53), and
+    /// passes the audit.
     func testTheAddToLibrarySheetHasTheSpecsOrder() throws {
         let app = try launch(sendingTheBook: false)
         XCTAssertTrue(app.buttons["Add to Library"].waitForExistence(timeout: Self.patience), "No Add to Library:\n\(app.debugDescription)")
@@ -28,8 +29,9 @@ final class ScreenOrderUITests: TextMouthUITestCase {
         XCTAssertTrue(app.buttons["Open Book…"].waitForExistence(timeout: Self.patience), "The sheet never opened:\n\(app.debugDescription)")
 
         let elements = try elementsOfSheet(titled: "Add to Library", in: app)
-        assertOrder(["Add to Library", "Cancel", "Open Book…", "Import Folder…"], in: elements)
-        try audit(app, screen: "Add to Library sheet", accepting: [.navigationTitle("Add to Library"), .barItem("Cancel")])
+        let note = Accepted.onlyOnTheMacNote.label
+        assertOrder(["Add to Library", "Cancel", "Open Book…", "Import Folder…", "Add Feed…", note], in: elements)
+        try audit(app, screen: "Add to Library sheet", accepting: [.navigationTitle("Add to Library"), .barItem("Cancel"), .onlyOnTheMacNote, .addFeedRow, .addFeedSummary])
     }
 
     // MARK: - Settings
@@ -53,7 +55,8 @@ final class ScreenOrderUITests: TextMouthUITestCase {
             "Navigation unit for text books", "Navigation unit for audiobooks", "Auto-play after navigation",
             "Rewind on resume unit",
             "End of book behavior",
-            "Follow in Braille",
+            "Close sleep timer sheet after setting a timer", "Shake to restart the timer",
+            "Follow in Braille", "Book content height", "Hide skip buttons from VoiceOver",
             "Braille code", "Braille file characters", "Guess the braille code of new books",
             "Confirm before removing a book",
             "Reading Statistics",

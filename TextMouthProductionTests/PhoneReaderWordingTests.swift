@@ -21,8 +21,6 @@ final class PhoneReaderWordingTests: XCTestCase {
             PhoneReaderWording.playHint(movingBy: .heading),
             PhoneReaderWording.navigationUnitHint,
             PhoneReaderWording.textSpeedHint,
-            PhoneReaderWording.previousHeadingHint,
-            PhoneReaderWording.nextHeadingHint,
             PhoneReaderWording.bookContentPausedHint,
             PhoneReaderWording.bookContentPlayingHint,
             PhoneReaderWording.bookmarksHint,
