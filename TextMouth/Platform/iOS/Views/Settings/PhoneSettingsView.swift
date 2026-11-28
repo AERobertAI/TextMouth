@@ -191,6 +191,7 @@ struct PhoneSettingsView: View {
         case .sleepTimer:
             stepperRow(.fadeOutDuration, value: noted($settings.sleepFadeOutDuration))
             switchRow(.closeSleepTimerSheet, isOn: noted($settings.sleepTimerAutoClose))
+            switchRow(.shakeToRestartTimer, isOn: shakeRestartsSleepTimer)
         case .times:
             switchRow(.includeSpeedWithTimes, isOn: noted($settings.includeSpeedWithTimes))
         case .pages:
@@ -595,13 +596,27 @@ struct PhoneSettingsView: View {
         PhoneSettingsModel.audioNavigationUnit(in: TextMouthRuntime.current.preferences)
     }
 
-    /// Follow in Braille, as kept in `PhoneDefaults`, counting each change so
-    /// the screen redraws.
+    /// Follow in Braille, as kept in `PhoneDefaults`.
     private var followsInBraille: Binding<Bool> {
+        phonePreference(get: PhoneDefaults.followInBraille(in:), set: PhoneDefaults.setFollowInBraille(_:in:))
+    }
+
+    /// Shake to restart the timer (FR55), as kept in `PhoneDefaults`.
+    private var shakeRestartsSleepTimer: Binding<Bool> {
+        phonePreference(get: PhoneDefaults.shakeRestartsSleepTimer(in:), set: PhoneDefaults.setShakeRestartsSleepTimer(_:in:))
+    }
+
+    /// A switch over one of the phone's own preferences in `PhoneDefaults`,
+    /// read and kept in the app's preferences by `get` and `set`, counting
+    /// each change so the screen redraws.
+    private func phonePreference(
+        get: @escaping @MainActor (UserDefaults) -> Bool,
+        set: @escaping @MainActor (Bool, UserDefaults) -> Void
+    ) -> Binding<Bool> {
         Binding(
-            get: { PhoneDefaults.followInBraille(in: TextMouthRuntime.current.preferences) },
+            get: { get(TextMouthRuntime.current.preferences) },
             set: { isOn in
-                PhoneDefaults.setFollowInBraille(isOn, in: TextMouthRuntime.current.preferences)
+                set(isOn, TextMouthRuntime.current.preferences)
                 noteChange()
             }
         )

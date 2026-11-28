@@ -545185,20 +545185,8 @@
         }
       }
     },
-    "phoneReader.sleepTimerAdjustHint" : {
-      "comment" : "Last sentence of the hint of the iPhone reader's Sleep Timer button, an adjustable control: adjusting it up (VoiceOver's swipe up) starts the running timer again from its whole length, down cancels it. Names no gesture.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Adjusting up restarts it at its full length, and down cancels it."
-          }
-        }
-      }
-    },
     "phoneReader.sleepTimerHint" : {
-      "comment" : "First sentence of the hint of the iPhone reader's Sleep Timer button, shown while a sleep timer runs.",
+      "comment" : "Hint of the iPhone reader's Sleep Timer button.",
       "extractionState" : "manual",
       "localizations" : {
         "ar" : {
@@ -548973,6 +548961,30 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "閱讀統計"
+          }
+        }
+      }
+    },
+    "phoneSettings.shakeToRestartTimer" : {
+      "comment" : "Switch in the Sleep Timer section of iPhone Settings: shaking the iPhone soon after a sleep timer ends starts the same timer again.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shake to restart the timer"
+          }
+        }
+      }
+    },
+    "phoneSettings.shakeToRestartTimerHint" : {
+      "comment" : "Hint of the Shake to restart the timer switch in iPhone Settings.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "For a minute after a sleep timer ends, shaking iPhone starts it again."
           }
         }
       }

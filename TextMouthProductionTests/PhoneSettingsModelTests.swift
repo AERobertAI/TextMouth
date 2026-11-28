@@ -239,6 +239,10 @@ final class PhoneSettingsModelTests: XCTestCase {
                 false
             ),
             (
+                .shakeToRestartTimer, "Shake to restart the timer", "Shake to restart the timer",
+                "For a minute after a sleep timer ends, shaking iPhone starts it again.", true
+            ),
+            (
                 .includeSpeedWithTimes, ReaderTimeWording.settingTitle, ReaderTimeWording.settingTitle,
                 ReaderTimeWording.settingHint, true
             ),

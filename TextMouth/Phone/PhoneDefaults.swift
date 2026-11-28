@@ -123,4 +123,22 @@ enum PhoneDefaults {
     static func setFollowInBraille(_ isOn: Bool, in preferences: UserDefaults) {
         preferences.set(isOn, forKey: followInBrailleKey)
     }
+
+    // MARK: - Shake to Restart the Sleep Timer
+
+    /// The preference that holds whether shaking the iPhone soon after a
+    /// sleep timer ends starts it again (FR55): Settings' switch under Sleep
+    /// Timer.
+    nonisolated static let shakeRestartsSleepTimerKey = "phoneShakeRestartsSleepTimer"
+
+    /// Whether a shake soon after a sleep timer ends starts it again: on until
+    /// the listener turns it off, so a missing preference reads as on.
+    static func shakeRestartsSleepTimer(in preferences: UserDefaults) -> Bool {
+        preferences.object(forKey: shakeRestartsSleepTimerKey) as? Bool ?? true
+    }
+
+    /// Keeps whether a shake starts an ended sleep timer again.
+    static func setShakeRestartsSleepTimer(_ isOn: Bool, in preferences: UserDefaults) {
+        preferences.set(isOn, forKey: shakeRestartsSleepTimerKey)
+    }
 }

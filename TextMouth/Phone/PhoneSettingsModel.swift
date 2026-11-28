@@ -296,6 +296,15 @@ struct PhoneSettingsSwitch: Sendable {
         )
     }
 
+    /// Under Sleep Timer: the phone's own (FR55).
+    static var shakeToRestartTimer: PhoneSettingsSwitch {
+        PhoneSettingsSwitch(
+            title: PhoneSettingsWording.shakeToRestartTimer,
+            hint: PhoneSettingsWording.shakeToRestartTimerHint,
+            showsHintAsCaption: true
+        )
+    }
+
     /// Under Times.
     static var includeSpeedWithTimes: PhoneSettingsSwitch {
         PhoneSettingsSwitch(

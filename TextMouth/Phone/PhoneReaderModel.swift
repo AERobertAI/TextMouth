@@ -408,22 +408,26 @@ final class PhoneReaderModel {
 
     // MARK: - The Sleep Timer Under Play
 
-    /// Adjusting the Sleep Timer under Play up (FR55): the running timer
-    /// starts again at its full length and the book plays, as the Mac's Reset
-    /// Timer does (`SleepTimerView`, "Restarts the timer at its full length
-    /// and plays the book."). Nothing is announced: VoiceOver reads the
-    /// control's new value, the time left, after the adjustment. Does nothing
-    /// with no timer running, or while the book loads.
+    /// The Sleep Timer's Reset Timer action (FR55): the running timer starts
+    /// again at its full length and the book plays, as the Mac's Reset Timer
+    /// does (`SleepTimerView`, "Restarts the timer at its full length and
+    /// plays the book."), and the Mac's "Timer reset: 15:00 remaining." is
+    /// said a moment later, since VoiceOver reads nothing after an action.
+    /// Does nothing with no timer running, or while the book loads.
     func restartSleepTimer() {
         guard let reader, !reader.isLoading, reader.sleepTimerService.isActive else { return }
-        _ = collect {
+        let said = collect {
             reader.restartSleepTimer(startPlaybackIfNeeded: false)
         }
         playUnlessUnderWay(reader)
         invalidate()
+        let reset = VoiceOverAnnouncement(
+            message: SleepTimerView.resetAnnouncement(status: reader.sleepTimerService.spokenStatus), priority: .medium
+        )
+        announceLater([reset] + said)
     }
 
-    /// Adjusting the Sleep Timer under Play down (FR55): the timer stops, as
+    /// The Sleep Timer's Cancel Timer action (FR55): the timer stops, as
     /// the Mac's Cancel Timer does, and the Mac's "Sleep timer cancelled." is
     /// said once. The control leaves the screen with the timer, and focus goes
     /// to Play (`PhoneSleepTimerWatcher`) 0.35 seconds later; so the words
@@ -442,6 +446,37 @@ final class PhoneReaderModel {
         schedule(VoiceOverAnnouncer.afterSheetDelay) {
             post(VoiceOverAnnouncement(message: words, priority: .low))
         }
+    }
+
+    /// The iPhone was shaken at `now` (FR55): within a minute after the
+    /// screen's book's sleep timer ended by itself, with Settings' switch on,
+    /// the timer last used starts again, as Restart Sleep Timer starts it.
+    /// The book is left for the caller to start once the words have been
+    /// said, as the Sleep Timer sheet does, so speech doesn't cover them.
+    ///
+    /// - Returns: What to say, "Timer restarted: 30 minutes.", or nil when
+    ///   the shake did nothing.
+    func restartSleepTimerAfterShake(at now: ContinuousClock.Instant = .now) -> String? {
+        guard let reader, !reader.isLoading else { return nil }
+        let timer = reader.sleepTimerService
+        guard PhoneShakeRestart.restarts(
+            isEnabled: PhoneDefaults.shakeRestartsSleepTimer(in: preferences),
+            timerRuns: timer.isActive,
+            endedAt: timer.endedByItselfAt,
+            now: now
+        ), let last = timer.lastUsedDuration else { return nil }
+        let said = collect {
+            reader.startSleepTimer(duration: last, startPlaybackIfNeeded: false)
+        }
+        invalidate()
+        return PhoneAnnouncer.joined([ReaderViewModel.sleepTimerRestartedAnnouncement(last)] + said.map(\.message))
+    }
+
+    /// Plays the screen's book unless it plays already or waits to: after a
+    /// shake's words have been said (`restartSleepTimerAfterShake(at:)`).
+    func playScreenBookUnlessUnderWay() {
+        guard let reader else { return }
+        playUnlessUnderWay(reader)
     }
 
     /// Plays `reader`'s book unless it plays already or waits to, as the

@@ -12,16 +12,31 @@ final class PhoneSettingsDefaultsTests: XCTestCase {
         XCTAssertEqual(PhoneDefaults.textNavigationUnitKey, "phoneTextNavigationUnit")
         XCTAssertEqual(PhoneDefaults.audioNavigationUnitKey, "phoneAudioNavigationUnit")
         XCTAssertEqual(PhoneDefaults.followInBrailleKey, "phoneFollowInBraille")
+        XCTAssertEqual(PhoneDefaults.shakeRestartsSleepTimerKey, "phoneShakeRestartsSleepTimer")
     }
 
     /// Nothing stored, the rows say the defaults the reviews gave: Sentence
-    /// for a text book, 15 seconds for an audiobook; and Follow in Braille is
-    /// off.
+    /// for a text book, 15 seconds for an audiobook; Follow in Braille is
+    /// off, and Shake to restart the timer is on (FR55).
     func testNothingStoredSaysTheDefaults() {
         let store = makeSandboxedPreferences("PhoneSettingsDefaults")
         XCTAssertEqual(PhoneSettingsModel.textNavigationUnit(in: store), .sentence)
         XCTAssertEqual(PhoneSettingsModel.audioNavigationUnit(in: store), .seconds15)
         XCTAssertFalse(PhoneDefaults.followInBraille(in: store))
+        XCTAssertTrue(PhoneDefaults.shakeRestartsSleepTimer(in: store))
+    }
+
+    /// Shake to restart the timer is kept as a Boolean, and reads back either
+    /// way: turned off, it stays off, though nothing stored reads as on.
+    func testShakeToRestartIsKeptAsItIsSet() {
+        let store = makeSandboxedPreferences("PhoneSettingsDefaults")
+
+        PhoneDefaults.setShakeRestartsSleepTimer(false, in: store)
+        XCTAssertFalse(PhoneDefaults.shakeRestartsSleepTimer(in: store))
+        XCTAssertEqual(store.object(forKey: "phoneShakeRestartsSleepTimer") as? Bool, false)
+
+        PhoneDefaults.setShakeRestartsSleepTimer(true, in: store)
+        XCTAssertTrue(PhoneDefaults.shakeRestartsSleepTimer(in: store))
     }
 
     /// A choice the rows' sheets make is kept as the unit's raw value, and the

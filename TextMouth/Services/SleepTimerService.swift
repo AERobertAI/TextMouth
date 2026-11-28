@@ -111,6 +111,13 @@ final class SleepTimerService: ObservableObject {
     private(set) var expiryCount = 0
     /// The number of the expiry `lastExpiredOwnerID` ran out in.
     private(set) var lastExpiryNumber = 0
+    /// When the timer last ended by itself, on a clock that goes on while the
+    /// device sleeps: its countdown ran out (after any fade), or playback
+    /// reached the end of the heading or chapter it waited for. Nil once a
+    /// timer starts, and while none has ended by itself. The iPhone's shake to
+    /// restart reads it (FR55, `PhoneShakeRestart`): a timer the listener
+    /// cancelled never sets it, so a shake never brings one back.
+    private(set) var endedByItselfAt: ContinuousClock.Instant?
 
     // MARK: Held for the Next Book (0.2.5)
 
@@ -363,6 +370,7 @@ final class SleepTimerService: ObservableObject {
         self.isActive = true
         self.pendingFadeCompletion = false
         self.lastExpiredOwnerID = nil
+        self.endedByItselfAt = nil
         registry.forgetExpiredMarks(ofSerial: serial)
         registry.noteTimerChange()
 
@@ -1026,6 +1034,7 @@ final class SleepTimerService: ObservableObject {
         guard waitsForHeadingEnd(ownedBy: callerID) else { return false }
         timerLog(.event, "HEADING_END_REACHED caller=\(Self.ownerToken(callerID))")
         stop(reason: "heading-end-reached")
+        endedByItselfAt = .now
         return true
     }
 
@@ -1077,6 +1086,7 @@ final class SleepTimerService: ObservableObject {
                 + "endingTheHeading=\(endingTheHeading) endingTheBook=\(endingTheBook)"
         )
         stop(reason: "chapter-end-reached")
+        endedByItselfAt = .now
         return true
     }
 
@@ -1143,6 +1153,7 @@ final class SleepTimerService: ObservableObject {
     /// was held for a book ran out before that book's reader took it, which
     /// the reader asks (`consumeExpiredWhileHeld(forBook:)`).
     private func noteExpiry() {
+        endedByItselfAt = .now
         lastExpiredOwnerID = ownerID
         expiryCount += 1
         lastExpiryNumber = expiryCount
@@ -1335,6 +1346,7 @@ final class SleepTimerService: ObservableObject {
     func _resetForTesting() {
         stop(reason: "test-reset")
         lastExpiredOwnerID = nil
+        endedByItselfAt = nil
         registry.forgetExpiredMarks(ofSerial: serial)
         registry.forgetLastStarted(savedIn: userDefaults)
         userDefaults.removeObject(forKey: Self.lastUsedDurationKey)

@@ -31,6 +31,19 @@ enum PhoneSettingsWording {
         InterfaceText.line("phoneSettings.navigationUnitHint", "What a book of this kind moves by until it has a unit of its own.")
     }
 
+    // MARK: Sleep Timer
+
+    /// The switch that lets a shake start an ended sleep timer again (FR55).
+    static var shakeToRestartTimer: String {
+        // Translators: Switch in the Sleep Timer section of iPhone Settings: shaking the iPhone soon after a sleep timer ends starts the same timer again.
+        InterfaceText.line("phoneSettings.shakeToRestartTimer", "Shake to restart the timer")
+    }
+    /// What the switch does.
+    static var shakeToRestartTimerHint: String {
+        // Translators: Hint of the Shake to restart the timer switch in iPhone Settings.
+        InterfaceText.line("phoneSettings.shakeToRestartTimerHint", "For a minute after a sleep timer ends, shaking iPhone starts it again.")
+    }
+
     // MARK: Reading
 
     /// The section holding Follow in Braille.
