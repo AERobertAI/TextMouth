@@ -195,6 +195,26 @@ extension LibraryViewModel: SyncLibraryHost {
             && dataDirectoryMove == nil
     }
 
+    /// The subscriptions the sync records and merges (FR56): the feed engine's,
+    /// once its records have loaded, and nil before.
+    var syncFeeds: [Feed]? {
+        feeds.syncFeeds
+    }
+
+    /// Tells the sync when a feed's synced values change (FR56), as the
+    /// library's `didSet` does for its own: a subscription added or deleted, or
+    /// a setting a person changed. A refresh changes none of those values, so it
+    /// records nothing and schedules no sync. Followed from when the feed engine
+    /// starts with this library.
+    func followFeedsForSync() {
+        feeds.store.$records
+            .map { records in SyncFeedValues.values(of: Array(records.values.map(\.feed))) }
+            .removeDuplicates()
+            .dropFirst()
+            .sink { _ in SyncCenter.shared.libraryDidChange() }
+            .store(in: &cancellables)
+    }
+
     /// Applies a merge made from the library as it is now.
     func applySync(_ application: SyncApplication) async -> Set<SyncKey> {
         await applySync(application, from: library)
@@ -296,7 +316,12 @@ extension LibraryViewModel: SyncLibraryHost {
         }
         if !application.booksToRemove.isEmpty { save() }
 
-        return merge.appliedKeys(of: application, failed: failed)
+        // 6. The feeds (FR56), once the folders they list in are in place. A
+        // feed whose change did not land keeps its keys for a later sync.
+        let applied = merge.appliedKeys(of: application, failed: failed)
+        guard !application.feeds.isEmpty else { return applied }
+        let failedFeeds = await feeds.applySync(application.feeds)
+        return applied.filter { key in key.feedID.map { !failedFeeds.contains($0) } ?? true }
     }
 
     /// Changes the folders and moves the packages the merge says, through

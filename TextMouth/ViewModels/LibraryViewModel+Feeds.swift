@@ -39,6 +39,8 @@ extension LibraryViewModel: FeedLibraryHost {
     func startFeeds() {
         feeds.start(library: self)
         moveFeedDownloadsOnceRecordsLoad()
+        // A subscription or a feed's own setting changing is a change the sync records (FR56).
+        followFeedsForSync()
     }
 
     // MARK: - FeedLibraryHost

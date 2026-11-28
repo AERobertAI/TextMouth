@@ -55,6 +55,19 @@ enum SyncFeedValues {
         }
     }
 
+    /// Every synced value of `feeds`, key by key: the feeds' part of a projection
+    /// (`SyncProjection.of`), and what the host compares to know whether a change of
+    /// the records is one the sync records at all.
+    static func values(of feeds: [Feed], using encoder: JSONEncoder? = nil) -> [SyncKey: JSONValue] {
+        var values: [SyncKey: JSONValue] = [:]
+        for feed in feeds {
+            for field in SyncFeedField.allCases {
+                values[.feed(feed.id, field)] = value(of: field, in: feed, using: encoder)
+            }
+        }
+        return values
+    }
+
     /// Writes `value` to `field` of `feed`, one of `feedFields`. Returns false,
     /// changing nothing, for a value the field cannot hold (an address that is
     /// no web address, a choice this TextMouth doesn't know) or for a field

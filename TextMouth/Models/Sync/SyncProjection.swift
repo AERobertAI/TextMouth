@@ -347,11 +347,7 @@ extension SyncProjection {
 
         // The feeds: what a person decided of each, never what a refresh read (FR56).
         guard let feeds else { return SyncProjection(values: values, byHand: byHand, leavesFeedsAlone: true) }
-        for feed in feeds {
-            for field in SyncFeedField.allCases {
-                values[.feed(feed.id, field)] = SyncFeedValues.value(of: field, in: feed, using: encoder)
-            }
-        }
+        values.merge(SyncFeedValues.values(of: feeds, using: encoder), uniquingKeysWith: { _, feed in feed })
         return SyncProjection(values: values, byHand: byHand)
     }
 }

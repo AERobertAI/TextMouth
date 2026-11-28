@@ -588,8 +588,9 @@ struct SyncCenterEnvironment {
         }
         // The library is read after the flags are looked at, and nothing awaits in between.
         let library = host.library
+        let feeds = host.syncFeeds
         // A record that throws leaves what was held as it was.
-        if let result = try? await engine.record(library: library) {
+        if let result = try? await engine.record(library: library, feeds: feeds) {
             status.heldRemovals = result.heldRemovals
         }
         status.pendingChanges = await engine.pendingChanges()
@@ -725,19 +726,24 @@ struct SyncCenterEnvironment {
             // Reset however this ends: a record that throws must not leave recording off for good.
             defer { recorder?.isApplying = false }
             let source = host.library
-            let recorded = try await engine.record(library: source)
+            // The feeds are read with the library, so the merge is made from the subscriptions recorded (FR56).
+            let sourceFeeds = host.syncFeeds
+            let recorded = try await engine.record(library: source, feeds: sourceFeeds)
             status.heldRemovals = recorded.heldRemovals
-            let application = await engine.application(for: source, voices: host.availableVoiceIDs)
+            let application = await engine.application(for: source, feeds: sourceFeeds, voices: host.availableVoiceIDs)
             // Who wrote each winning value, by name, for the host's words.
             deviceNames.merge(result.read.names) { _, new in new }
             let writerIDs = await engine.writers(of: application.appliedKeys.union(result.changedKeys))
             writers = writerIDs.compactMapValues { deviceNames[$0] }
             let applied = await host.applySync(application, from: source)
-            // Keys the host left alone are applied again at the next sync.
-            applyAgain = !application.appliedKeys.isSubset(of: applied)
+            // Keys the host left alone are applied again at the next sync, and so are feeds' keys
+            // that waited for the host's feeds to load (FR56).
+            applyAgain = !application.appliedKeys.isSubset(of: applied) || application.feeds.waitsForFeeds
             try await engine.didApply(application, keys: applied)
-            if firstApplyPending {
-                try await engine.settleLaunch(library: host.library)
+            // The launch hold ends at the first apply, the feeds' at the first apply that had them.
+            let feedsAwaitSettle = await engine.launchHoldAwaitsFeeds
+            if firstApplyPending || (sourceFeeds != nil && feedsAwaitSettle) {
+                try await engine.settleLaunch(library: host.library, feeds: host.syncFeeds)
                 firstApplyPending = false
             }
         }

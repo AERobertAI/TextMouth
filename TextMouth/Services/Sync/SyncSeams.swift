@@ -158,11 +158,18 @@ enum SyncActivity {
     func syncDidFetch(bookID: UUID, contentPath: String?)
     /// The IDs of the voices this device has, or nil for all: a voice a device lacks isn't applied to a row.
     var availableVoiceIDs: Set<String>? { get }
+    /// The subscriptions (FR56), or nil while the host has none to give (its feed store not loaded):
+    /// then no feed key is recorded or applied, and nothing reads as a feed removed. The host's
+    /// `applySync` carries out `SyncApplication.feeds`.
+    var syncFeeds: [Feed]? { get }
 }
 
 extension SyncLibraryHost {
     /// A host that doesn't say has every voice.
     var availableVoiceIDs: Set<String>? { nil }
+
+    /// A host that keeps no feeds leaves them alone.
+    var syncFeeds: [Feed]? { nil }
 
     /// A host that keeps the row's file name as it made it has nothing to do.
     func syncDidFetch(bookID: UUID, contentPath: String?) {}
