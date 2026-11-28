@@ -17,6 +17,8 @@ The reference pages are under `docs/` (see `README.md` and `ARCHITECTURE.md`).
 - [FEED-ITEMS-RESEARCH-2026-10-07.md](FEED-ITEMS-RESEARCH-2026-10-07.md): Every feed item keeps its record (FR11)
 - [FORMAT-LIBRARIES-RESEARCH-2026-11-04.md](FORMAT-LIBRARIES-RESEARCH-2026-11-04.md): Readers for the formats iOS can't read, and for Kindle books (November…
 - [FORMATS-RESEARCH-2026-10-17.md](FORMATS-RESEARCH-2026-10-17.md): New formats and export: research (October 17, 2026)
+- [FR53-IPHONE-FEEDS-RECORDING-EDITING-2026-11-27.md](FR53-IPHONE-FEEDS-RECORDING-EDITING-2026-11-27.md): Feeds, recording, and audio editing on the iPhone: plan (FR53)
+- [FR56-FEED-SYNC-2026-11-27.md](FR56-FEED-SYNC-2026-11-27.md): Syncing feeds between devices: design and phases (FR56)
 - [HTML-PARSER-AND-IMPORT-RESEARCH-2026-11-14.md](HTML-PARSER-AND-IMPORT-RESEARCH-2026-11-14.md): The HTML parser's size and the import's algorithms: research (November 14, 2026)
 - [IOS-INTERFACE-SPEC-2026-11-07.md](IOS-INTERFACE-SPEC-2026-11-07.md): TextMouth for iPhone: the interface specification (November 7, 2026)
 - [IOS-PORT-RESEARCH-2026-11-03.md](IOS-PORT-RESEARCH-2026-11-03.md): TextMouth on iOS: research (November 3, 2026)
@@ -33,6 +35,7 @@ The reference pages are under `docs/` (see `README.md` and `ARCHITECTURE.md`).
 - [RSS-READER-RESEARCH-2026-10-03.md](RSS-READER-RESEARCH-2026-10-03.md): A podcast and article reader fed by RSS and Atom feeds
 - [SETTINGS-SCOPES-PLAN-2026-11-15.md](SETTINGS-SCOPES-PLAN-2026-11-15.md): Speech and playback settings for a feed, folder, or Reading List (FR23)
 - [SHORTCUT-LABELS-RESEARCH-2026-11-15.md](SHORTCUT-LABELS-RESEARCH-2026-11-15.md): Menu and context menu items that show their keyboard shortcuts (FR22)
+- [SPEECH-TESTS-PLAN-2026-11-28.md](SPEECH-TESTS-PLAN-2026-11-28.md): Tests of real speech synthesis: a plan, after B31
 - [STRINGS-SYSTEM-DESIGN-2026-11-21.md](STRINGS-SYSTEM-DESIGN-2026-11-21.md): TextMouth's own interface strings: IDs, one compressed pack, overrides, a picker (FR39)
 - [TEXT-ANCHORS-ADDENDUM-2026-10-10.md](TEXT-ANCHORS-ADDENDUM-2026-10-10.md): Addendum to T06: finding places again by diff when a book's text…
 - [TEXT-ANCHORS-RESEARCH-2026-10-10.md](TEXT-ANCHORS-RESEARCH-2026-10-10.md): Reading places that survive re-extraction (T06)
