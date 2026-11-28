@@ -100,6 +100,29 @@ enum SyncBookField: String, Codable, Sendable, CaseIterable {
 /// The fields of a folder that sync.
 enum SyncFolderField: String, Codable, Sendable { case presence, name, parent }
 
+/// The fields of a feed (a subscription) that sync (FR56): only what a person
+/// decides, never what a refresh reads from the feed, so a refresh writes no
+/// entry. A device lacking the feed makes its record from `address`,
+/// `subscribed`, and `folder`; research/FR56-FEED-SYNC-2026-11-27.md is the design.
+enum SyncFeedField: String, Codable, Sendable, CaseIterable {
+    /// `true`, or null for Delete Feed….
+    case presence
+    /// The address the feed is fetched from (`Feed.feedURL`).
+    case address
+    /// When the subscription began (`Feed.subscribedDate`), which never changes.
+    case subscribed
+    /// The library folder the feed lists its episodes in, by ID (`Feed.folderID`).
+    case folder
+    /// When the listener unsubscribed (`Feed.unsubscribedDate`), or null while subscribed.
+    case unsubscribed
+    /// The feed's own "List and download" choice (`Feed.itemPolicyOverride`), or null for the global one.
+    case itemPolicy
+    /// The feed's own days after playing that a download goes, or null for the setting.
+    case deleteAfterPlayed
+    /// The feed's own listening options (FR19), or null for the standard ones.
+    case listening
+}
+
 /// The reading list's options that sync.
 enum SyncListOption: String, Codable, Sendable { case continuation, skipsFinished, removesFinished }
 
@@ -107,11 +130,13 @@ enum SyncListOption: String, Codable, Sendable { case continuation, skipsFinishe
 enum SyncKey: Hashable, Codable, Sendable {
     case book(UUID, SyncBookField), bookmark(book: UUID, id: UUID)
     case folder(UUID, SyncFolderField), readingList(book: UUID), readingListOption(SyncListOption)
+    /// A feed's field (FR56). A TextMouth before it knows no `feed/` key and leaves its entries out.
+    case feed(UUID, SyncFeedField)
 
     /// The key as one line of text, which is how a file holds it and how
     /// keys are sorted: `book/<id>/<field>`, `bookmark/<book id>/<id>`,
-    /// `folder/<id>/<field>`, `readingList/<book id>`, and
-    /// `readingListOption/<option>`, with lower-case IDs.
+    /// `folder/<id>/<field>`, `readingList/<book id>`,
+    /// `readingListOption/<option>`, and `feed/<id>/<field>`, with lower-case IDs.
     var text: String {
         switch self {
         case .book(let id, let field): return "book/\(Self.text(of: id))/\(field.rawValue)"
@@ -119,6 +144,7 @@ enum SyncKey: Hashable, Codable, Sendable {
         case .folder(let id, let field): return "folder/\(Self.text(of: id))/\(field.rawValue)"
         case .readingList(let book): return "readingList/\(Self.text(of: book))"
         case .readingListOption(let option): return "readingListOption/\(option.rawValue)"
+        case .feed(let id, let field): return "feed/\(Self.text(of: id))/\(field.rawValue)"
         }
     }
 
@@ -142,6 +168,9 @@ enum SyncKey: Hashable, Codable, Sendable {
         case ("readingListOption", 2):
             guard let option = SyncListOption(rawValue: parts[1]) else { return nil }
             self = .readingListOption(option)
+        case ("feed", 3):
+            guard let id = UUID(uuidString: parts[1]), let field = SyncFeedField(rawValue: parts[2]) else { return nil }
+            self = .feed(id, field)
         default:
             return nil
         }
@@ -264,6 +293,28 @@ struct SyncApplication: Sendable {
     /// Entries to record, as same-named folders are folded.
     var entriesToRecord: [SyncKey: JSONValue]
     var appliedKeys: Set<SyncKey>
+    /// What the merge does to the feeds (FR56); nothing for a merge made without them.
+    var feeds = SyncFeedApplication()
+}
+
+/// What applying a merge does to the feeds (FR56), for the feed store to
+/// carry out (`FeedCenter.applySync(_:)`). Each feed is given whole, as the
+/// winners make it from this device's own record, so the host writes only
+/// the synced fields of it.
+struct SyncFeedApplication: Equatable, Sendable {
+    /// Feeds another device subscribed to, which this device lacks: a record
+    /// each, made from their address, date, and folder, with their settings.
+    var feedsToAdd: [Feed] = []
+    /// Feeds of this device whose synced fields the winners change.
+    var feedsToChange: [Feed] = []
+    /// Feeds another device deleted (Delete Feed…), by ID, in ID order.
+    var feedsToRemove: [UUID] = []
+    /// True when the merge was made without the feeds (the host's not loaded yet) while the
+    /// winners hold feed keys: none of those was applied, so the host applies again later.
+    var waitsForFeeds = false
+
+    /// Whether the merge changes no feed.
+    var isEmpty: Bool { feedsToAdd.isEmpty && feedsToChange.isEmpty && feedsToRemove.isEmpty }
 }
 
 /// The pure merge: what changed locally, and what a merged state does to a

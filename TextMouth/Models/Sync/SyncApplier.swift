@@ -12,13 +12,15 @@ extension SyncMerge {
     ///   - voices: the voices this device has; a book's voice is applied only
     ///     if it is one of them (nil: every voice counts as there). A voice
     ///     the device lacks leaves the book's own voice as it is.
+    ///   - feeds: this device's subscriptions (FR56), or nil when the host has none to give yet:
+    ///     no feed key is then applied, and `SyncFeedApplication.waitsForFeeds` says whether any waits.
     /// - Note: In `SyncApplication.library` the books to remove are gone and
     ///   the reading list names the books to add, whose rows the host adds
     ///   (so the list is whole once it has). A new book's row has no
     ///   package: its `filePath` and `tmbDirectoryName` are empty, for the
     ///   host to fill when it makes the placeholder.
-    static func apply(_ winners: SyncRegisters, to library: Library, voices: Set<String>?) -> SyncApplication {
-        var applier = SyncApplier(entries: winners.entries, source: library, voices: voices)
+    static func apply(_ winners: SyncRegisters, to library: Library, feeds: [Feed]? = nil, voices: Set<String>?) -> SyncApplication {
+        var applier = SyncApplier(entries: winners.entries, source: library, feeds: feeds, voices: voices)
         return applier.run()
     }
 }
@@ -27,6 +29,8 @@ extension SyncMerge {
 private struct SyncApplier {
     let entries: [SyncKey: SyncEntry]
     let source: Library
+    /// This device's subscriptions, or nil when the host gave none (FR56).
+    let sourceFeeds: [Feed]?
     let voices: Set<String>?
 
     /// The library as it is being made.
@@ -37,29 +41,41 @@ private struct SyncApplier {
     var movesPackages = false
     var entriesToRecord: [SyncKey: JSONValue] = [:]
     var appliedKeys: Set<SyncKey> = []
+    var feeds = SyncFeedApplication()
 
     /// The winning entries of each book, by book.
     private let entriesOfBook: [UUID: [SyncKey: SyncEntry]]
+    /// The winning entries of each feed, by feed and field.
+    private let entriesOfFeed: [UUID: [SyncFeedField: SyncEntry]]
 
-    init(entries: [SyncKey: SyncEntry], source: Library, voices: Set<String>?) {
+    init(entries: [SyncKey: SyncEntry], source: Library, feeds: [Feed]?, voices: Set<String>?) {
         self.entries = entries
         self.source = source
+        sourceFeeds = feeds
         self.voices = voices
         library = source
         plan = SyncFolderPlan(library: source, entries: entries)
         var grouped: [UUID: [SyncKey: SyncEntry]] = [:]
-        for (key, entry) in entries { if let book = key.bookID { grouped[book, default: [:]][key] = entry } }
+        var groupedFeeds: [UUID: [SyncFeedField: SyncEntry]] = [:]
+        for (key, entry) in entries {
+            if let book = key.bookID { grouped[book, default: [:]][key] = entry }
+            if case .feed(let feed, let field) = key { groupedFeeds[feed, default: [:]][field] = entry }
+        }
         entriesOfBook = grouped
+        entriesOfFeed = groupedFeeds
     }
 
-    /// Applies folders, books, and the reading list, in that order.
+    /// Applies folders, books, the reading list, and the feeds, in that order:
+    /// a feed lands in a folder the folders' step has made.
     mutating func run() -> SyncApplication {
         applyFolders()
         applyBooks()
         applyReadingList()
+        applyFeeds()
         return SyncApplication(
             library: library, booksToAdd: booksToAdd, booksToRemove: booksToRemove,
-            movesPackages: movesPackages, entriesToRecord: entriesToRecord, appliedKeys: appliedKeys
+            movesPackages: movesPackages, entriesToRecord: entriesToRecord, appliedKeys: appliedKeys,
+            feeds: feeds
         )
     }
 
@@ -299,5 +315,128 @@ private struct SyncApplier {
     private func flag(in value: JSONValue) -> Bool? {
         if case .bool(let flag) = value { return flag }
         return nil
+    }
+
+    // MARK: - Feeds (FR56)
+
+    /// Changes this device's feeds as the winners say, removes the ones another
+    /// device deleted, and adds the ones another device subscribed to. With no
+    /// feeds from the host nothing is applied, and the application says whether
+    /// any feed key waits.
+    private mutating func applyFeeds() {
+        guard let sourceFeeds else {
+            feeds.waitsForFeeds = !entriesOfFeed.isEmpty
+            return
+        }
+        var removed: [UUID] = []
+        // This device's feeds as the merge leaves them, which the new ones are measured against.
+        var staying: [Feed] = []
+        for feed in sourceFeeds {
+            let group = entriesOfFeed[feed.id] ?? [:]
+            if isFeedRemoved(group) {
+                removed.append(feed.id)
+                appliedKeys.insert(.feed(feed.id, .presence))
+                continue
+            }
+            let updated = apply(group, to: feed)
+            if updated != feed { feeds.feedsToChange.append(updated) }
+            staying.append(updated)
+        }
+        feeds.feedsToRemove = removed.sorted { $0.uuidString < $1.uuidString }
+        feeds.feedsToChange.sort { $0.id.uuidString < $1.id.uuidString }
+        addNewFeeds(besides: staying, known: Set(sourceFeeds.map(\.id)))
+    }
+
+    /// Whether a feed's removal mark stands: it is later than every other entry of the feed.
+    private func isFeedRemoved(_ group: [SyncFeedField: SyncEntry]) -> Bool {
+        guard let mark = group[.presence], mark.value == .null else { return false }
+        return !group.values.contains { $0.key != mark.key && $0.stamp > mark.stamp }
+    }
+
+    /// `feed`, a subscription of this device, with the winners' values of its
+    /// synced fields, each only where it differs, and its folder where the
+    /// folder plan lands it.
+    private mutating func apply(_ group: [SyncFeedField: SyncEntry], to feed: Feed) -> Feed {
+        var feed = feed
+        for field in SyncFeedValues.feedFields {
+            guard let entry = group[field] else { continue }
+            let local = SyncFeedValues.value(of: field, in: feed)
+            if !SyncValueCoding.isSame(local, entry.value, for: entry.key) {
+                // A value this TextMouth can't hold leaves the feed's own, and is offered again.
+                guard SyncFeedValues.set(field, to: entry.value, in: &feed) else { continue }
+            }
+            appliedKeys.insert(entry.key)
+        }
+        applyFolder(group[.folder], to: &feed)
+        if let mark = group[.presence], mark.key.marksRemoval(mark.value) {
+            // A later change brought the feed back: say so, so that the removal does not stand.
+            entriesToRecord[.feed(feed.id, .presence)] = .bool(true)
+        } else if group[.presence] != nil {
+            appliedKeys.insert(.feed(feed.id, .presence))
+        }
+        if let subscribed = group[.subscribed] { appliedKeys.insert(subscribed.key) }
+        return feed
+    }
+
+    /// Moves `feed` to the folder its winning entry names, or, with none, after
+    /// its own folder where that was folded into another or removed: a feed lists
+    /// its episodes in the live folder the plan lands it in. A folder that lands
+    /// nowhere (the top level) leaves the feed where it is, since a feed needs a
+    /// folder of its own.
+    private mutating func applyFolder(_ entry: SyncEntry?, to feed: inout Feed) {
+        let named = entry.flatMap { SyncValueCoding.uuid(from: $0.value) }
+        guard let target = plan.landing(named ?? feed.folderID) else { return }
+        feed.folderID = target
+        if let entry, named != nil { appliedKeys.insert(entry.key) }
+    }
+
+    /// Adds a record for each live feed another device subscribed to and this
+    /// device lacks, once its address, date, and folder have arrived and the
+    /// folder lands in a live one. A feed whose address this device subscribes
+    /// already is not added (the same feed subscribed on both devices stays one
+    /// here), and of two new feeds of one address the older, then the lower ID,
+    /// is added, so every device adds the same one. Nor is a feed added to a
+    /// folder another feed lists in (two feeds of one title, subscribed apart,
+    /// whose same-named folders the plan folded into one): a folder lists one
+    /// feed's episodes (`FeedStore.feed(inFolder:)`), so it waits, its keys unapplied.
+    /// - Parameters:
+    ///   - local: this device's feeds as the merge leaves them.
+    ///   - known: the IDs of every feed this device has, the removed ones among them.
+    private mutating func addNewFeeds(besides local: [Feed], known: Set<UUID>) {
+        // A candidate with the keys it applies, and whether a later change brought it back from a removal.
+        var candidates: [(feed: Feed, keys: Set<SyncKey>, revives: Bool)] = []
+        for (id, group) in entriesOfFeed where !known.contains(id) {
+            guard let presence = group[.presence], !isFeedRemoved(group),
+                  let folderValue = group[.folder], let named = SyncValueCoding.uuid(from: folderValue.value),
+                  let folderID = plan.landing(named) else { continue }
+            guard let feed = SyncFeedValues.makeFeed(id: id, values: group.mapValues(\.value), folderID: folderID) else { continue }
+            var keys = Set(group.values.map(\.key))
+            // A value this TextMouth can't hold (a later TextMouth's choice) is not applied.
+            for field in SyncFeedValues.feedFields where field != .address {
+                guard let entry = group[field] else { continue }
+                var probe = feed
+                if !SyncFeedValues.set(field, to: entry.value, in: &probe) { keys.remove(entry.key) }
+            }
+            let revives = presence.value == .null
+            if revives { keys.remove(presence.key) }
+            candidates.append((feed, keys, revives))
+        }
+        var seen = Set(local.map { FeedAddress.comparisonKey($0.feedURL) })
+        var usedFolders = Set(local.map(\.folderID))
+        let offered = candidates
+            .sorted { ($0.feed.subscribedDate, $0.feed.id.uuidString) < ($1.feed.subscribedDate, $1.feed.id.uuidString) }
+            .filter { candidate in
+                guard !usedFolders.contains(candidate.feed.folderID),
+                      seen.insert(FeedAddress.comparisonKey(candidate.feed.feedURL)).inserted else { return false }
+                usedFolders.insert(candidate.feed.folderID)
+                return true
+            }
+        // A copy that was left out is no feed of this device: none of its keys is applied.
+        for candidate in offered {
+            appliedKeys.formUnion(candidate.keys)
+            // A later change brought the feed back: say so, so that the removal does not stand.
+            if candidate.revives { entriesToRecord[.feed(candidate.feed.id, .presence)] = .bool(true) }
+        }
+        feeds.feedsToAdd = offered.map(\.feed)
     }
 }

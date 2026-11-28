@@ -222,9 +222,11 @@ actor SyncEngine {
     /// record after launch learns which books and folders the library lacks (`SyncLaunchHold`),
     /// and none of those is reported removed until `settleLaunch` (R7). A record that would remove
     /// a great many books at once is held back and reported, not sent.
+    /// - Parameter feeds: the subscriptions (FR56), or nil while the host has none to give: no feed
+    ///   key is then recorded, and no feed is reported added or removed.
     @discardableResult
-    func record(library: Library) throws -> SyncRecordResult {
-        let projection = SyncProjection.of(library, contents: contents())
+    func record(library: Library, feeds: [Feed]? = nil) throws -> SyncRecordResult {
+        let projection = SyncProjection.of(library, contents: contents(), feeds: feeds)
         launchHold.observeLaunch(baseline: baseline, now: projection)
         var changes = SyncMerge.changes(from: baseline, to: projection, hold: launchHold)
 
@@ -272,10 +274,14 @@ actor SyncEngine {
     /// Ends the launch hold, once the first apply after launch has had its chance to put books back:
     /// a book or folder still missing is forgotten by the baseline, so it is neither put back nor
     /// reported as removed (R7).
-    func settleLaunch(library: Library) throws {
-        launchHold.settle(baseline: &baseline, now: SyncProjection.of(library, contents: contents()))
+    /// The feeds' hold ends at the first settle given the feeds (FR56).
+    func settleLaunch(library: Library, feeds: [Feed]? = nil) throws {
+        launchHold.settle(baseline: &baseline, now: SyncProjection.of(library, contents: contents(), feeds: feeds))
         try local.saveBaseline(baseline)
     }
+
+    /// Whether the launch hold of the feeds has yet to end (FR56): until a settle is given them.
+    var launchHoldAwaitsFeeds: Bool { launchHold.awaitsFeeds }
 
     /// Records Keep on All Devices on or off, as a person chose (section 16): never projected from the library.
     func recordKeep(_ keep: Bool, for bookIDs: [UUID]) throws {
@@ -442,8 +448,8 @@ actor SyncEngine {
     // MARK: Applying
 
     /// What the merged registers do to `library`.
-    func application(for library: Library, voices: Set<String>?) -> SyncApplication {
-        SyncMerge.apply(registers, to: library, voices: voices)
+    func application(for library: Library, feeds: [Feed]? = nil, voices: Set<String>?) -> SyncApplication {
+        SyncMerge.apply(registers, to: library, feeds: feeds, voices: voices)
     }
 
     /// Takes the values applied to the library into the baseline, key by key, so a change made
