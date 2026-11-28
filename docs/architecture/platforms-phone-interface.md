@@ -28,7 +28,7 @@ Part of [TextMouth's architecture](../../ARCHITECTURE.md).
 - Words that should follow VoiceOver's speech go through `say`: the sheets' farewell words, a folder's arrival words, and import results.
 
 ## Book content: PhonePassagePolicy
-<!-- id: phone-passage-policy; keys: page turn, Read All, causesPageTurn, Follow in Braille, Cover chapter, accessibilityScroll; src: TextMouth/Phone/PhonePassagePolicy.swift, TextMouth/Platform/iOS/Views/Reader/PhoneBookTextView.swift, TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouthProductionTests/PhonePassagePolicyTests.swift -->
+<!-- id: phone-passage-policy; keys: page turn, Read All, causesPageTurn, Follow in Braille, Cover chapter, accessibilityScroll; src: TextMouth/Phone/PhonePassagePolicy.swift, TextMouth/Platform/iOS/Views/Reader/PhoneBookTextView.swift, TextMouth/Phone/PhoneReaderControls.swift, TextMouth/ViewModels/ReaderViewModel+Playback.swift, TextMouthProductionTests/PhonePassagePolicyTests.swift -->
 
 - `PhonePassagePolicy` decides what passage Book content holds and when it changes.
   It is a plain type, so the Mac's tests cover every rule.
@@ -56,6 +56,11 @@ Part of [TextMouth's architecture](../../ARCHITECTURE.md).
     Paused, a move always shows.
   - The ten-second tick follows the book only while it plays and Book content has no focus, or Follow in Braille is on.
   - The book loading, focus leaving, and the listener's own request always change it.
+- Book content is one accessibility element (FR48), so a swipe passes the whole text; its rotor still moves by line, word, and character.
+  - Its timer ticks each second (`followInterval`), and `tickPlan` says what a tick does: it asks for the 10-second refresh when due, and it moves the highlight when the place has moved.
+  - The highlight is the sentence at the place (`spokenSentence`), as a background color only: nothing is posted to VoiceOver and no focus moves.
+  - `highlightFollows`: it moves, and the text scrolls to it, only while Book content has no focus (or Follow in Braille is on) and not for 5 quiet seconds (`touchQuietInterval`) after a finger scroll; the refresh waits then too.
+  - The height is twelve lines at the text size, at most 55% of the reader's scrolling column (`PhoneReaderControls.bookContentHeight`), so Play stays on the first screen and a finger has something outside the text to scroll by.
 
 ## PhoneEscapePolicy
 <!-- id: phone-escape-policy; keys: two-finger scrub, escape gesture, import question, navigation Back, search field; src: TextMouth/Phone/PhoneEscapePolicy.swift, TextMouth/Platform/iOS/Views/Library/PhoneLibraryView.swift, TextMouth/Platform/iOS/Views/Import/PhoneImportQuestionSheet.swift, TextMouthProductionTests/PhoneEscapePolicyTests.swift -->
@@ -197,10 +202,24 @@ Part of [TextMouth's architecture](../../ARCHITECTURE.md).
 - A related fix from the same round: a `Slider` in the Voice sheet is labeled by its label closure alone.
   A `.accessibilityLabel` on top of it made VoiceOver read "Speed, Speed", so the extra modifier was removed.
 
+## Book Actions, the timer control, and the skips
+<!-- id: phone-book-actions-timer; keys: FR49, FR50, FR51, FR52, long press, triple tap, Go To value, focusTarget; src: TextMouth/Phone/PhoneReaderState.swift, TextMouth/Phone/PhoneReaderControls.swift, TextMouth/Phone/PhoneControlDescription.swift, TextMouth/Platform/iOS/Views/Reader/PhoneReaderView.swift, TextMouth/Platform/iOS/Views/Reader/PhoneControl.swift, TextMouthProductionTests/PhoneReaderControlsTests.swift -->
+
+- Book Actions (`PhoneReaderControl.bookActions`) is a menu button at the end of the fourth row, holding `bookActionItems`: Sleep Timer, Voice, Book Info, and Export this book.
+  - The items are made as the menu opens (`PhoneControl.setMenuItems`), and each opens its old sheet.
+  - Focus returns to Book Actions as the sheet closes, since the item's own button isn't on screen.
+- While a sleep timer runs, the Sleep Timer shows under Play (`PhoneReaderControl.screen(timerRuns:)`), its value the time left, redrawn each second for sight alone.
+  `PhoneSleepTimerWatcher` republishes only when the timer starts or ends.
+  - `focusTarget(returningTo:timerRuns:)` sends focus to Play when the control it names has left the screen, as when the timer ends under VoiceOver's focus.
+- Play has a long press, which is VoiceOver's one-finger triple tap, and a Sleep Timer action; both open the Sleep Timer sheet with focus returning to Play.
+- Skip backward and Skip forward are hidden from VoiceOver only while it runs (`isHiddenFromVoiceOver`, `voiceOverOrder`), since adjusting Play makes the same moves.
+  They stay for touch, Voice Control, Switch Control, and the shortcuts.
+- Go To's value is the page at the place and the time there (`goToValue`: "Page 112 of 300, 1:02:03"), read when VoiceOver asks and never announced as it changes.
+
 ## Search in Book
 <!-- id: search-book; keys: reader controls, control grid, VoiceOver order, openSearch, gridRows; src: TextMouth/Phone/PhoneReaderState.swift, TextMouth/Phone/PhoneReaderControls.swift, TextMouth/Phone/PhoneReaderModel.swift, TextMouth/Phone/PhoneBookSearch.swift, TextMouth/Phone/PhoneLaunchRequest.swift, TextMouth/Platform/iOS/Views/Reader/PhoneReaderView.swift, TextMouth/ViewModels/ReaderViewModel+Bookmarks.swift, TextMouthProductionTests/PhoneReaderControlsTests.swift -->
 
-- The reader's eleventh control, `PhoneReaderControl.searchInBook` (the ninth of the 17 in `PhoneReaderControl.grid`), comes after Headings and before Go To in VoiceOver's order.
+- The reader's eleventh control, `PhoneReaderControl.searchInBook` (the ninth of the 14 in `PhoneReaderControl.grid`), comes after Headings and before Go To in VoiceOver's order.
   Its label is "Search in Book", the Mac's command (`ShortcutAction.searchInBook.title`), and its hint is "Opens a search of the book's text."
   (`PhoneBookSearchVocabulary`).
   It opens `PhoneReaderSheet.search`.
@@ -208,19 +227,15 @@ Part of [TextMouth's architecture](../../ARCHITECTURE.md).
   - While the book loads, it says "Loading TITLE" with medium priority and opens nothing.
   - For an audiobook with no transcript text, it says why, in the Mac's words (`ReaderViewModel.announceNoTextToSearch`), and opens nothing.
   - For a text book that failed to load, it says nothing: that screen shows the failure in place of the controls.
-- The grid has six rows (`PhoneReaderControl.gridRows`), each a slice of `grid`, so VoiceOver's order is the same however the rows break:
+- The grid has five rows (`PhoneReaderControl.gridRows`), and `grid` is their concatenation, so VoiceOver's order is the same however the rows break:
   - Where Am I?, Navigation unit, Speed;
   - Previous Heading, Next Heading, Add bookmark;
   - Bookmarks, Headings, Search in Book;
-  - Go To, Return, Sleep Timer;
-  - Voice, Book Info, Export this book;
+  - Go To, Return, Book Actions;
   - Skip backward, Skip forward.
-- A plain three to a row would leave Skip forward alone in a sixth row.
-  So the rows are broken to keep each pair together, and the two skips are the last row, as in the spec.
-  The fifth row holds three (Export this book joined it in FR31), and the spec had five rows.
+- A plain three to a row would split the skips, so each pair stays together and the two skips are the last row, as in the spec.
   - `testTheGridRowsKeepOrderAndPairs` pins the order, at most three to a row, the three groups, and the last row.
     It does not pin the exact rows.
-  - The comments on `PhoneReaderControl.grid` ("three to a row") and above `testTheControlsAreInTheSpecsOrder` ("five full rows and a sixth") still say the old count.
 
 ### The search sheet and its typing pause
 <!-- id: search-sheet-typing-pause; keys: debounce, typing pause, Braille Screen Input, BookSearchModel, status line, regular expression; src: TextMouth/Platform/iOS/Views/Reader/PhoneSearchSheet.swift, TextMouth/Phone/PhoneBookSearch.swift, TextMouth/ViewModels/BookSearchModel.swift, TextMouth/Views/Reader/BookSearchView.swift, TextMouthProductionTests/PhoneBookSearchTests.swift, TextMouthProductionTests/BookSearchModelTests.swift -->
@@ -300,7 +315,7 @@ Export on the iPhone (FR31, phase 1) is the shared `BookExportModel` under a she
 
 - Two entry points open it:
   - `PhoneLibraryOffer`'s `.export` command, "Export…" (`BookExportWording.commandTitle(count: 1)`), in a book's row after Move to Folder... as on the Mac;
-  - `PhoneReaderControl.export`, "Export this book", after Book Info, which opens `PhoneReaderSheet.export` over the reader, so a speech refusal's report waits for it to close.
+  - `PhoneReaderControl.export`, "Export this book", an item of Book Actions, which opens `PhoneReaderSheet.export` over the reader, so a speech refusal's report waits for it to close.
 - `PhoneExportSheet` is a `NavigationStack` over one `List`, its buttons placed by `PhoneSheetButton`.
   What it offers and says at each stage is decided in plain types the Mac's host tests: `PhoneExportOffer.kinds` (every kind), `Stage`, `content(stage:kindCount:)`, the `Bar`, the Stop row, the spoken audio and braille rows, `shareButton`, the card, and `folderRow(folderName:)`.
   The bar is Cancel, or Stop while exporting, or Close, then Export; Close takes Stop's place while the spoken audio file is made, and Export is dimmed while another export runs.

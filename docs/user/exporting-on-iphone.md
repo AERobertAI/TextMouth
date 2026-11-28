@@ -10,14 +10,14 @@ The Mac's Export dialog, its kinds, its file names, and what each format holds a
 - In the Library, "Export…" is a command of a book's row: on VoiceOver's Actions rotor and in the row's context menu.
   It comes after "Move to Folder..." and before Move Up, Move Down, and the removal.
   It has no hint.
-- In the reader, "Export this book" is a button after Book Info and before Skip backward.
+- In the reader, "Export this book" is an item of the Book Actions menu, after Book Info.
   Its hint is "Opens the Export dialog: the book's audio, its text, or its own file."
   It is drawn as "Export".
 - On a folder's row, "Export 12 Books…" is a command after Move Folder... and before Delete Folder..., named by the books in the folder and below it ("Export…" for one).
   It opens one sheet, titled "Export 12 Books", and each book goes into a folder of its own, as on the Mac.
   A folder with no books has no such command.
 - Either opens one sheet, titled "Export" and the book's title, as in "Export Moby-Dick".
-- Closing the sheet puts VoiceOver's focus back on the row or the button that opened it.
+- Closing the sheet puts VoiceOver's focus back on the row or the button that opened it, or on Book Actions in the reader.
 
 ## The sheet's rows
 <!-- id: iphone-export-sheet-rows; keys: What to export, Cancel, Close, Stop, switch, Convert to, escape gesture, nothing to export; src: TextMouth/Platform/iOS/Views/Export/PhoneExportSheet.swift, TextMouth/Phone/PhoneExportOffer.swift -->
