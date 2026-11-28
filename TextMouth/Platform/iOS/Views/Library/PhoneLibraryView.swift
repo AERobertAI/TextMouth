@@ -593,9 +593,15 @@ struct PhoneLibraryView: View {
     }
 
     /// Runs a feed row's command, which the Mac's runner does and says: the
-    /// questions it asks and the sheets it opens are the root's.
+    /// questions it asks and the sheets it opens are the root's. Delete Feed…
+    /// takes the row away once confirmed, so focus is asked to follow it to the
+    /// row in its place (`feedRowsChanged(to:)`), as an item's Delete Episode… does.
     private func perform(_ action: PhoneLibraryOffer.Action, onFeed feedID: UUID) {
         guard case .feed(let command) = action else { return }
+        // Any other command forgets a request a cancelled question left behind.
+        feedFocus = command == .deleteFeed
+            ? PhoneFeedFocusRequest(row: .feed(feedID), successor: nil, oldRows: rows.rowIDs)
+            : nil
         PhoneFeedsHub.shared.perform(command, feedID: feedID, in: library)
     }
 
@@ -606,13 +612,14 @@ struct PhoneLibraryView: View {
     /// place (`feedRowsChanged(to:)`).
     private func perform(_ action: PhoneLibraryOffer.Action, onItem itemID: String, of feedID: UUID, from row: PhoneRowID) {
         guard case .feedItem(let command) = action else { return }
-        if command == .deleteDownload || command == .deleteItem {
-            feedFocus = PhoneFeedFocusRequest(
+        // Any other command forgets a request a cancelled question, or a refused deletion, left behind.
+        feedFocus = command == .deleteDownload || command == .deleteItem
+            ? PhoneFeedFocusRequest(
                 row: row,
                 successor: command == .deleteDownload ? .feedItem(feedID: feedID, itemID: itemID) : nil,
                 oldRows: rows.rowIDs
             )
-        }
+            : nil
         PhoneFeedsHub.shared.perform(command, feedID: feedID, itemID: itemID, in: library)
         rows.rebuild()
     }
