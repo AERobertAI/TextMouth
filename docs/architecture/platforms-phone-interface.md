@@ -219,7 +219,7 @@ Part of [TextMouth's architecture](../../ARCHITECTURE.md).
 ## Search in Book
 <!-- id: search-book; keys: reader controls, control grid, VoiceOver order, openSearch, gridRows; src: TextMouth/Phone/PhoneReaderState.swift, TextMouth/Phone/PhoneReaderControls.swift, TextMouth/Phone/PhoneReaderModel.swift, TextMouth/Phone/PhoneBookSearch.swift, TextMouth/Phone/PhoneLaunchRequest.swift, TextMouth/Platform/iOS/Views/Reader/PhoneReaderView.swift, TextMouth/ViewModels/ReaderViewModel+Bookmarks.swift, TextMouthProductionTests/PhoneReaderControlsTests.swift -->
 
-- The reader's eleventh control, `PhoneReaderControl.searchInBook` (the ninth of the 17 in `PhoneReaderControl.grid`), comes after Headings and before Go To in VoiceOver's order.
+- The reader's eleventh control, `PhoneReaderControl.searchInBook` (the ninth of the 14 in `PhoneReaderControl.grid`), comes after Headings and before Go To in VoiceOver's order.
   Its label is "Search in Book", the Mac's command (`ShortcutAction.searchInBook.title`), and its hint is "Opens a search of the book's text."
   (`PhoneBookSearchVocabulary`).
   It opens `PhoneReaderSheet.search`.
@@ -315,7 +315,7 @@ Export on the iPhone (FR31, phase 1) is the shared `BookExportModel` under a she
 
 - Two entry points open it:
   - `PhoneLibraryOffer`'s `.export` command, "Export…" (`BookExportWording.commandTitle(count: 1)`), in a book's row after Move to Folder... as on the Mac;
-  - `PhoneReaderControl.export`, "Export this book", after Book Info, which opens `PhoneReaderSheet.export` over the reader, so a speech refusal's report waits for it to close.
+  - `PhoneReaderControl.export`, "Export this book", an item of Book Actions, which opens `PhoneReaderSheet.export` over the reader, so a speech refusal's report waits for it to close.
 - `PhoneExportSheet` is a `NavigationStack` over one `List`, its buttons placed by `PhoneSheetButton`.
   What it offers and says at each stage is decided in plain types the Mac's host tests: `PhoneExportOffer.kinds` (every kind), `Stage`, `content(stage:kindCount:)`, the `Bar`, the Stop row, the spoken audio and braille rows, `shareButton`, the card, and `folderRow(folderName:)`.
   The bar is Cancel, or Stop while exporting, or Close, then Export; Close takes Stop's place while the spoken audio file is made, and Export is dimmed while another export runs.
