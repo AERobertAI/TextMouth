@@ -39,7 +39,14 @@ struct FeedNetwork: Sendable {
     /// The app's network: the system's reachability, and, in a process
     /// hosting tests, sessions that refuse every request.
     static let app: FeedNetwork = {
-        let refusing: [AnyClass] = TextMouthRuntime.current.isHostedTest ? [FeedNetworkRefusal.self] : []
+        var refusing: [AnyClass] = TextMouthRuntime.current.isHostedTest ? [FeedNetworkRefusal.self] : []
+        #if DEBUG && os(iOS)
+        // An interface test of the iPhone app (FR53) subscribes to one stand-in feed, which answers its own host and no other,
+        // ahead of the refusal of every request.
+        if PhoneUITestFeedStub.isOn() {
+            refusing.insert(PhoneUITestFeedStub.self, at: 0)
+        }
+        #endif
         return FeedNetwork(protocolClasses: refusing, reachability: .system)
     }()
 
