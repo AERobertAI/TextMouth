@@ -1271,6 +1271,9 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
         // However the wait ended, no piece reaches the builder after it.
         delivery.end()
         renderSynth.delegate = nil
+        // The delegate is weak: the relay must live until the wait is over,
+        // or the finish it relays would never come.
+        withExtendedLifetime(relay) {}
 
         // Whether this render was let go of while the write was waited for.
         renderLock.lock()
